@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- ПОЛЬЗОВАТЕЛИ ---
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("USER") // "USER" или "ADMIN"
+  phone     String?
+  
+  orders    Order[]  // История заказов пользователя
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- ТОВАРЫ ---
+model Category {
+  id        Int       @id @default(autoincrement())
+  name_ru   String
+  name_en   String?
+  name_uk   String?
+  name_nl   String?
+  slug      String    @unique
+  products  Product[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  name_ru     String
+  name_en     String?
+  name_uk     String?
+  name_nl     String?
+  
+  description_ru String?
+  ingredients_ru String?
+  ingredients_en String?
+  
+  price       Float
+  imageUrl    String?
+  
+  isPopular   Boolean  @default(false)
+  isChefRecommendation Boolean @default(false)
+  
+  orderItems  OrderItem[]
+}
+
+// --- ЗАКАЗЫ ---
+model Order {
+  id         Int         @id @default(autoincrement())
+  createdAt  DateTime    @default(now())
+  status     String      @default("PENDING") // PENDING, CONFIRMED, DELIVERED, CANCELLED
+  totalPrice Float
+
+  customerName  String   @default("Гость")
+  phone         String   @default("")
+  address       String   @default("")
+  paymentMethod String   @default("CASH")
+  comment       String?
+  
+  // Связь с пользователем (опционально, так как заказ может сделать гость)
+  userId     Int?
+  user       User?       @relation(fields: [userId], references: [id])
+
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+}
