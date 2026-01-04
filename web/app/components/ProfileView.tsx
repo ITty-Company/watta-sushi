@@ -1,294 +1,261 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
+import { 
+  ArrowLeft, User, MapPin, Heart, History, Edit2, LogOut, Phone, Bell, ShoppingBag, Menu
+} from 'lucide-react'
 
-interface User {
-  id: string
-  name: string
-  email: string
-  phone: string
-  address: string
-  isAdmin: boolean
-  createdAt: string
-  role?: string
-}
-
-interface OrderItem {
-  id: number
-  quantity: number
-  price: number
-  product: { name_ru: string; imageUrl?: string }
+// --- ТИПЫ ДАННЫХ ---
+interface ProfileViewProps {
+  onBack: () => void
+  onMenuClick?: () => void
+  onOpenPhone?: () => void
+  onOpenNotifications?: () => void
+  onOpenFavorites?: () => void // Эта функция теперь будет переключать вкладку внутри
+  onOpenCart?: () => void
+  onSelectCategory?: (key: string) => void
+  // НОВЫЙ ПРОП: Начальная вкладка
+  initialTab?: 'history' | 'address' | 'favorites'
 }
 
 interface Order {
   id: number
+  createdAt: string
   totalPrice: number
   status: string
-  createdAt: string
-  items: OrderItem[]
+  items: { product: { name_ru: string }; quantity: number }[]
 }
 
-interface ProfileViewProps {
-  onSwitchTab?: (tab: number) => void
-  onBack?: () => void // <--- НОВЫЙ ПРОП
+interface Product {
+  id: number
+  name_ru: string
+  price: number
+  description?: string
+  imageUrl?: string
 }
 
-export default function ProfileView({ onSwitchTab, onBack }: ProfileViewProps = {}) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
-  const [showRegister, setShowRegister] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
-  const [orders, setOrders] = useState<Order[]>([])
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+const categoriesData = [
+  { key: 'rolls', name: 'Роллы', emoji: '🍣' },
+  { key: 'sushi', name: 'Суши', emoji: '🍱' },
+  { key: 'sets', name: 'Сеты', emoji: '🍱' },
+  { key: 'soups', name: 'Супы', emoji: '🍲' },
+  { key: 'bowls', name: 'Боулы', emoji: '🥣' },
+  { key: 'snacks', name: 'Закуски', emoji: '🦐' },
+  { key: 'drinks', name: 'Напитки', emoji: '🥤' },
+  { key: 'sauces', name: 'Соусы', emoji: '🍶' }
+]
 
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
+export default function ProfileView({ 
+  onBack, 
+  onMenuClick, 
+  onOpenPhone, 
+  onOpenNotifications, 
+  onOpenFavorites, 
+  onOpenCart, 
+  onSelectCategory,
+  initialTab = 'history' // По умолчанию История
+}: ProfileViewProps) {
   
-  const [registerName, setRegisterName] = useState('')
-  const [registerEmail, setRegisterEmail] = useState('')
-  const [registerPhone, setRegisterPhone] = useState('')
-  const [registerAddress, setRegisterAddress] = useState('')
-  const [registerPassword, setRegisterPassword] = useState('')
-  const [registerConfirmPassword, setRegisterConfirmPassword] = useState('')
+  // Инициализируем стейт из пропса
+  const [activeTab, setActiveTab] = useState<'history' | 'address' | 'favorites'>('history')
   
+  // Эффект, чтобы переключать вкладку, если проп изменился
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const token = localStorage.getItem('token')
+    if (initialTab) {
+      setActiveTab(initialTab)
+    }
+  }, [initialTab])
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [user, setUser] = useState({ name: 'Гость', email: '', phone: '' })
+  const [orders, setOrders] = useState<Order[]>([])
+  const [favorites, setFavorites] = useState<Product[]>([])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('currentUser')
-      
-      if (token && savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser)
-          setUser(parsed)
-          setIsLoggedIn(true)
-        } catch (e) {
-          console.error('Error loading user:', e)
-          localStorage.removeItem('token')
-        }
-      }
+      if (savedUser) try { setUser(JSON.parse(savedUser)) } catch (e) {}
+
+      const savedOrders = localStorage.getItem('userOrders')
+      if (savedOrders) try { setOrders(JSON.parse(savedOrders).reverse()) } catch (e) {}
+
+      const savedFavorites = localStorage.getItem('favorites')
+      if (savedFavorites) try { setFavorites(JSON.parse(savedFavorites)) } catch (e) {}
     }
   }, [])
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword })
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        alert(data.message || 'Ошибка входа')
-        return
-      }
-      const userData = { ...data.user, isAdmin: data.user.role === 'ADMIN' }
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('currentUser', JSON.stringify(userData))
-      localStorage.setItem('userId', data.user.id)
-      setUser(userData)
-      setIsLoggedIn(true)
-      setShowRegister(false)
-      setLoginEmail('')
-      setLoginPassword('')
-      window.dispatchEvent(new Event('userChanged'))
-    } catch (err) {
-      console.error(err)
-      alert('Ошибка соединения с сервером')
-    }
-  }
-  
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (registerPassword !== registerConfirmPassword) {
-      alert('Паролі не співпадають')
-      return
-    }
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: registerName,
-          email: registerEmail,
-          password: registerPassword,
-        })
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        alert(data.message || 'Ошибка регистрации')
-        return
-      }
-      const userData = { ...data.user, isAdmin: data.user.role === 'ADMIN', phone: registerPhone, address: registerAddress }
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('currentUser', JSON.stringify(userData))
-      localStorage.setItem('userId', data.user.id)
-      setUser(userData)
-      setIsLoggedIn(true)
-      setShowRegister(false)
-      window.dispatchEvent(new Event('userChanged'))
-      alert('Реєстрація успішна!')
-    } catch (err) {
-      console.error(err)
-      alert('Ошибка соединения с сервером')
-    }
-  }
-  
-  const fetchHistory = async () => {
-    if (!user?.id) return
-    setIsLoadingHistory(true)
-    setShowHistory(true)
-    try {
-      const res = await fetch(`/api/orders/user/${user.id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setOrders(data)
-      } else {
-        alert('Не удалось загрузить историю')
-      }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setIsLoadingHistory(false)
-    }
-  }
-
   const handleLogout = () => {
-    setUser(null)
-    setIsLoggedIn(false)
-    setShowRegister(false)
-    setShowHistory(false)
-    setOrders([])
-    localStorage.removeItem('token')
-    localStorage.removeItem('currentUser')
-    localStorage.removeItem('userId')
-    window.dispatchEvent(new Event('userChanged'))
-    setTimeout(() => handleBackToHome(), 100)
-  }
-  
-  const switchToRegister = () => setShowRegister(true)
-  const switchToLogin = () => setShowRegister(false)
-  
-  // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ НАЗАД ---
-  const handleBackToHome = (e?: React.MouseEvent) => {
-    if (e) { e.preventDefault(); e.stopPropagation() }
-    
-    // Если нам передали функцию закрытия (из Меню), вызываем её
-    if (onBack) {
+    if (confirm('Вы уверены, что хотите выйти?')) {
+      localStorage.removeItem('currentUser')
+      window.dispatchEvent(new Event('userChanged'))
       onBack()
-      return
-    }
-
-    // Иначе (если мы на отдельной странице), пробуем переключить вкладку
-    if (onSwitchTab) onSwitchTab(0)
-    if (typeof window !== 'undefined') {
-      const event = new CustomEvent('switchTab', { detail: 0, bubbles: true, cancelable: true })
-      window.dispatchEvent(event)
     }
   }
 
-  if (!isLoggedIn) {
-    return (
-      <>
-        <button className="profile-back-to-home-web" onClick={handleBackToHome} style={{ zIndex: 999999, position: 'fixed', top: '20px', left: '20px' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-        <div className="profile-auth-container-web">
-          <div className="profile-auth-background-web">
-            <div className="profile-auth-shapes-web">
-              <div className="profile-shape-web profile-shape-1-web"></div>
-              <div className="profile-shape-web profile-shape-2-web"></div>
-              <div className="profile-shape-web profile-shape-3-web"></div>
-            </div>
-          </div>
-        {!showRegister ? (
-          <div className="profile-auth-form-wrapper-web">
-            <div className="profile-auth-form-web profile-auth-form-single-web">
-              <div className="profile-auth-header-web">
-                <div className="profile-auth-logo-web">
-                  <Image src="/watta-sushi-logo.png" alt="Logo" width={300} height={100} className="profile-auth-logo-image-web" priority style={{ objectFit: 'contain' }} />
-                </div>
-                <h2 className="profile-auth-title-web">Вітає Вас!</h2>
-                <p className="profile-auth-subtitle-web">Увійдіть до свого акаунту</p>
-              </div>
-              <form onSubmit={handleLogin} className="profile-form-web">
-                <div className="profile-form-group-web">
-                  <label className="profile-form-label-web"><span className="profile-form-icon-web">📧</span>Email</label>
-                  <input type="email" className="profile-form-input-web" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-                </div>
-                <div className="profile-form-group-web">
-                  <label className="profile-form-label-web"><span className="profile-form-icon-web">🔒</span>Пароль</label>
-                  <input type="password" className="profile-form-input-web" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
-                </div>
-                <button type="submit" className="profile-form-button-web profile-form-button-primary-web"><span>Увійти</span></button>
-                <button type="button" onClick={switchToRegister} className="profile-form-button-web profile-form-button-link-web">Немає акаунту? <span>Зареєструватися</span></button>
-              </form>
-            </div>
-          </div>
-        ) : (
-          <div className="profile-auth-form-wrapper-web">
-            <div className="profile-auth-form-web profile-auth-form-single-web">
-              <div className="profile-auth-header-web">
-                <button className="profile-auth-back-btn-web" onClick={switchToLogin}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-                <h2 className="profile-auth-title-web">Реєстрація</h2>
-              </div>
-              <form onSubmit={handleRegister} className="profile-form-web">
-                <div className="profile-form-group-web"><label className="profile-form-label-web">Ім'я</label><input type="text" className="profile-form-input-web" value={registerName} onChange={(e) => setRegisterName(e.target.value)} required /></div>
-                <div className="profile-form-group-web"><label className="profile-form-label-web">Email</label><input type="email" className="profile-form-input-web" value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} required /></div>
-                <div className="profile-form-group-web"><label className="profile-form-label-web">Телефон</label><input type="tel" className="profile-form-input-web" value={registerPhone} onChange={(e) => setRegisterPhone(e.target.value)} required /></div>
-                <div className="profile-form-group-web"><label className="profile-form-label-web">Пароль</label><input type="password" className="profile-form-input-web" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} required minLength={6} /></div>
-                <div className="profile-form-group-web"><label className="profile-form-label-web">Підтвердження</label><input type="password" className="profile-form-input-web" value={registerConfirmPassword} onChange={(e) => setRegisterConfirmPassword(e.target.value)} required minLength={6} /></div>
-                <button type="submit" className="profile-form-button-web profile-form-button-primary-web"><span>Зареєструватися</span></button>
-              </form>
-            </div>
-          </div>
-        )}
-        </div>
-      </>
-    )
-  }
-  
+  // --- SVG ФОНЫ ---
+  const GreenButtonBg = () => (
+    <div className="absolute inset-0 z-0 rounded-[20px] overflow-hidden">
+      <svg width="100%" height="100%" preserveAspectRatio="none">
+        <filter id="noiseGreen" x="0%" y="0%" width="100%" height="100%">
+           <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" stitchTiles="stitch" />
+           <feColorMatrix type="matrix" values="0 0 0 0 0.08 0 0 0 0 0.32 0 0 0 0 0.26 0 0 0 1 0" />
+        </filter>
+        <rect width="100%" height="100%" fill="#145142"/>
+        <rect width="100%" height="100%" filter="url(#noiseGreen)" opacity="0.4"/>
+      </svg>
+      <div className="absolute inset-0 border-2 border-[#145142]/50 rounded-[20px] pointer-events-none"></div>
+    </div>
+  )
+
+  const GrayButtonBg = () => (
+    <div className="absolute inset-0 z-0 rounded-[20px] overflow-hidden">
+      <svg width="100%" height="100%" preserveAspectRatio="none"><rect width="100%" height="100%" fill="#F3F4F6"/></svg>
+    </div>
+  )
+
+  const UserCardBg = () => (
+    <div className="absolute inset-0 z-0 rounded-[20px] bg-white border border-black/80 shadow-sm"></div>
+  )
+
+  // --- ХЕДЕР ---
+  const Header = () => (
+    <div className="absolute top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-[500]">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={onBack}>
+        <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+        <img src="/1.jpg" alt="Watta Sushi" className="h-6 w-auto object-contain" />
+      </div>
+
+      <div className="flex items-center gap-3 md:gap-6 text-gray-700">
+        <button onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full transition"><Phone size={24} /></button>
+        <button onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full transition"><Bell size={24} /></button>
+        
+        {/* Кнопка Сердца внутри профиля просто переключает таб */}
+        <button onClick={() => setActiveTab('favorites')} className={`hover:bg-gray-100 p-2 rounded-full transition ${activeTab === 'favorites' ? 'text-[#145142]' : ''}`}><Heart size={24} /></button>
+        
+        <button onClick={onOpenCart} className="hover:bg-gray-100 p-2 rounded-full transition"><ShoppingBag size={24} /></button>
+        <button className="hover:bg-gray-100 p-2 rounded-full text-[#145142]"><User size={24} /></button>
+        <button onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition"><Menu size={24} /></button>
+      </div>
+    </div>
+  )
+
+  const CategoryBar = () => (
+    <div className="flex justify-center w-full">
+      <div className="bg-white/80 backdrop-blur-md rounded-[30px] px-6 py-3 flex gap-4 shadow-sm overflow-x-auto scrollbar-hide max-w-full">
+        {categoriesData.map((cat) => (
+          <button 
+            key={cat.key}
+            onClick={() => { setSelectedCategory(cat.key); if (onSelectCategory) onSelectCategory(cat.key) }}
+            className={`flex flex-col items-center justify-center w-[70px] h-[70px] shrink-0 rounded-[18px] transition-all duration-200 ${selectedCategory === cat.key ? 'bg-[#145142] text-white shadow-lg scale-110 translate-y-[-5px]' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+          >
+            <span className="text-2xl mb-1 filter drop-shadow-sm">{cat.emoji}</span>
+            <span className="text-[10px] font-bold leading-none">{cat.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
   return (
-    <div className="profile-container-web">
-      <button className="profile-back-to-home-web" onClick={handleBackToHome} style={{ zIndex: 999999, position: 'fixed', top: '20px', left: '20px' }}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      </button>
-      <div className="profile-hero-web">
-        <div className="profile-hero-background-web"></div>
-        <div className="profile-hero-content-web">
-          <div className="profile-avatar-wrapper-web">
-            <div className="profile-avatar-web">{user?.name?.[0]?.toUpperCase() || '👤'}</div>
-            {user?.isAdmin && <div className="profile-admin-crown-web">👑</div>}
+    <div className="min-h-screen bg-[#F3F4F6] font-sans text-[#145142] pt-[130px] pb-20 overflow-x-hidden">
+      <Header />
+
+      <div className="max-w-[1600px] mx-auto px-4">
+        
+        <div className="relative mb-12 flex flex-col md:flex-row items-center justify-center md:justify-between gap-6">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 hidden md:block">
+            <button onClick={onBack} className="bg-white px-6 py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-gray-50 transition">
+              <ArrowLeft size={20} /> Назад
+            </button>
           </div>
-          <div className="profile-info-web">
-            <h2 className="profile-name-web">{user?.name || 'Користувач'}</h2>
-            {user?.isAdmin && <span className="profile-admin-badge-web">Адміністратор</span>}
-            <p className="profile-email-web">{user?.email}</p>
-          </div>
+          <div className="w-full flex justify-center"><CategoryBar /></div>
         </div>
-      </div>
-      <div className="profile-actions-web" style={{ marginBottom: '20px' }}>
-        <button className="profile-action-button-web profile-action-primary-web" onClick={fetchHistory}><span className="profile-action-icon-web">📋</span><span>Історія замовлень</span></button>
-        <button className="profile-action-button-web profile-action-logout-web" onClick={handleLogout}><span className="profile-action-icon-web">🚪</span><span>Вийти</span></button>
-      </div>
-      {showHistory && (
-        <div className="profile-history-web" style={{ padding: '0 20px 40px' }}>
-          <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '15px' }}>Мої замовлення</h3>
-          {isLoadingHistory ? <p>Завантаження...</p> : orders.length === 0 ? <p className="text-gray-500">Замовлень поки немає</p> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {orders.map(order => (
-                <div key={order.id} style={{ background: 'white', padding: '15px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}><span style={{ fontWeight: 'bold' }}>Замовлення #{order.id}</span><span style={{ color: order.status === 'DELIVERED' ? 'green' : 'orange', fontWeight: 'bold', fontSize: '14px' }}>{order.status}</span></div>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>{new Date(order.createdAt).toLocaleDateString()}</div>
-                  <div style={{ borderTop: '1px solid #eee', paddingTop: '8px' }}>{order.items.map(item => (<div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px' }}><span>{item.product.name_ru} x{item.quantity}</span><span>{item.price * item.quantity} ₴</span></div>))}</div>
-                  <div style={{ marginTop: '10px', textAlign: 'right', fontWeight: 'bold', fontSize: '16px', color: '#ec4899' }}>Всього: {order.totalPrice} ₴</div>
-                </div>
-              ))}
+
+        <div className="flex flex-col lg:flex-row gap-16 items-start">
+          <div className="w-full lg:w-[380px] shrink-0 flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
+              <button onClick={() => setActiveTab('history')} className="relative w-full h-[75px] group">
+                {activeTab === 'history' ? <GreenButtonBg /> : <GrayButtonBg />}
+                <div className={`relative z-10 flex items-center px-8 gap-4 h-full font-bold text-xl transition-colors ${activeTab === 'history' ? 'text-white' : 'text-black/70'}`}><History size={28} /> История заказов</div>
+              </button>
+              <button onClick={() => setActiveTab('address')} className="relative w-full h-[75px] group">
+                {activeTab === 'address' ? <GreenButtonBg /> : <GrayButtonBg />}
+                <div className={`relative z-10 flex items-center px-8 gap-4 h-full font-bold text-xl transition-colors ${activeTab === 'address' ? 'text-white' : 'text-black/70'}`}><MapPin size={28} /> Адрес доставки</div>
+              </button>
+              <button onClick={() => setActiveTab('favorites')} className="relative w-full h-[75px] group">
+                {activeTab === 'favorites' ? <GreenButtonBg /> : <GrayButtonBg />}
+                <div className={`relative z-10 flex items-center px-8 gap-4 h-full font-bold text-xl transition-colors ${activeTab === 'favorites' ? 'text-white' : 'text-black/70'}`}><Heart size={28} /> Избранное</div>
+              </button>
             </div>
-          )}
+
+            <div className="relative w-full h-[213px] mt-4">
+              <UserCardBg />
+              <div className="relative z-10 p-8 flex flex-col justify-between h-full">
+                <div className="flex items-start justify-between">
+                  <div className="flex gap-4">
+                    <div className="w-16 h-16 rounded-full border-[1.5px] border-black flex items-center justify-center text-gray-600 bg-gray-50"><User size={32} /></div>
+                    <div className="mt-1">
+                      <h3 className="font-bold text-black text-lg leading-tight">{user.name || 'Гость'}</h3>
+                      <p className="text-sm text-gray-500 max-w-[150px] truncate">{user.email || 'Нет почты'}</p>
+                    </div>
+                  </div>
+                  <button className="text-gray-400 hover:text-black transition"><Edit2 size={20} /></button>
+                </div>
+                <div>
+                  <button onClick={handleLogout} className="w-full bg-[#F3F4F6]/50 py-3 rounded-xl text-[#145142] font-bold text-base flex items-center justify-center gap-2 hover:bg-[#F3F4F6] transition"><LogOut size={18} /> Выйти</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full pt-2">
+            <h1 className="text-5xl font-bold text-black mb-8 tracking-tight">
+              {activeTab === 'history' && 'История заказов'}
+              {activeTab === 'address' && 'Адрес доставки'}
+              {activeTab === 'favorites' && 'Избранное'}
+            </h1>
+
+            {activeTab === 'history' && (
+              <div className="space-y-4">
+                {orders.length === 0 ? (
+                   <div className="w-full h-[300px] bg-[#F3F4F6] rounded-[30px] flex items-center justify-center shadow-inner"><span className="text-3xl text-black font-medium opacity-80">Пока что пусто</span></div>
+                ) : (
+                  orders.map((order, index) => (
+                    <div key={`${order.id}-${index}`} className="bg-white p-6 rounded-[25px] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-black">Заказ №{order.id}</h3>
+                        <p className="text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        <p className="text-gray-500 text-sm mt-1 max-w-md">{order.items.map(i => `${i.product.name_ru} x${i.quantity}`).join(', ')}</p>
+                      </div>
+                      <div className="text-right">
+                         <div className="text-2xl font-bold text-[#145142]">{order.totalPrice} ₴</div>
+                         <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold mt-2">{order.status}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === 'favorites' && (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {favorites.length === 0 ? (
+                    <div className="col-span-full w-full h-[300px] bg-[#FFFFFF] rounded-[30px] flex items-center justify-center shadow-inner"><span className="text-3xl text-black font-medium opacity-80">В избранном пусто</span></div>
+                  ) : (
+                    favorites.map(product => (
+                      <div key={product.id} className="bg-white p-4 rounded-[25px] shadow-sm flex items-center gap-4">
+                         <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0">{product.imageUrl ? <img src={product.imageUrl} className="w-full h-full object-cover"/> : <span className="text-2xl">🍣</span>}</div>
+                         <div><h4 className="font-bold text-lg leading-tight">{product.name_ru}</h4><p className="text-[#145142] font-bold">{product.price} ₴</p></div>
+                      </div>
+                    ))
+                  )}
+               </div>
+            )}
+
+            {activeTab === 'address' && <div className="w-full h-[300px] bg-[#FFFFFF] rounded-[30px] flex items-center justify-center shadow-inner"><span className="text-3xl text-black font-medium opacity-80">Адреса не сохранены</span></div>}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

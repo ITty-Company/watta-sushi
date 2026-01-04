@@ -1,25 +1,23 @@
 import React from 'react';
-import { X, Bell } from 'lucide-react';
+import { X, Bell } from 'lucide-react'; // Или твои иконки
 
-// ВАЖНО: Используем export const, чтобы совпадало с import { NotificationsView }
-export const NotificationsView = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  
-  // Если меню закрыто и анимация не нужна (или простая проверка), можно не рендерить
-  // Но для анимации лучше управлять классами. 
-  // Если в твоем MenuView компонент рендерится условно (&&), то этот блок не нужен.
-  // Если он рендерится всегда, но скрыт - оставляем логику ниже.
-  
+interface NotificationsSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ isOpen, onClose }) => {
   return (
     <>
-      {/* 1. Фон (Backdrop) - показываем только если isOpen */}
+      {/* 1. Затемнение фона (Backdrop) */}
       <div 
         className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+          isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
-        onClick={onClose} 
+        onClick={onClose} // Закрываем при клике на фон
       />
 
-      {/* 2. Сама панель */}
+      {/* 2. Сама боковая панель */}
       <div 
         className={`fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
@@ -38,12 +36,15 @@ export const NotificationsView = ({ isOpen, onClose }: { isOpen: boolean; onClos
             </button>
           </div>
 
-          {/* Контент: Пустое состояние */}
+          {/* Контент (Пустое состояние как на фото) */}
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+            
+            {/* Иконка колокольчика с крестиком */}
             <div className="relative mb-6">
               <Bell size={64} className="text-gray-400" strokeWidth={1.5} />
               <div className="absolute -top-1 -right-1 bg-white rounded-full p-1">
                  <X size={20} className="text-orange-500 bg-white rounded-full border border-white" /> 
+                 {/* Или просто красный крестик поверх */}
               </div>
             </div>
 
@@ -54,8 +55,12 @@ export const NotificationsView = ({ isOpen, onClose }: { isOpen: boolean; onClos
               Ми повідомимо, коли з'явиться щось цікаве
             </p>
           </div>
+
+          {/* Можно добавить футер или кнопку внизу, если нужно */}
         </div>
       </div>
     </>
   );
 };
+
+export default NotificationsSidebar;
