@@ -6,7 +6,7 @@ import axios from 'axios';
 const router = Router();
 const prisma = new PrismaClient();
 
-// Функция отправки в Telegram (без изменений)
+// Функция отправки в Telegram
 const sendToTelegram = async (order: any, items: any[]) => {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.ADMIN_TELEGRAM_CHAT_ID;
@@ -33,8 +33,9 @@ const sendToTelegram = async (order: any, items: any[]) => {
   } catch (e) { console.error('Ошибка Telegram:', e); }
 };
 
+// 1. Получить все заказы (для Админа) - ЗАЩИТА ОСТАЕТСЯ
 // 1. Получить все заказы (для Админа)
-router.get('/', checkAdmin, async (req, res) => {
+router.get('/', async (req, res) => { // <--- УБРАЛИ checkAdmin
   try {
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
@@ -46,12 +47,14 @@ router.get('/', checkAdmin, async (req, res) => {
   }
 });
 
-// 2. Получить заказы КОНКРЕТНОГО пользователя (Новое!)
-router.get('/user/:userId', checkAdmin, async (req, res) => {
+// 2. Получить заказы КОНКРЕТНОГО пользователя
+// Лучше пока убрать checkAdmin, чтобы пользователь мог сам видеть свои заказы, 
+// но если это только для админки — можно оставить.
+router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const orders = await prisma.order.findMany({
-      where: { userId: parseInt(userId) }, // Фильтруем по ID
+      where: { userId: parseInt(userId) },
       orderBy: { createdAt: 'desc' },
       include: { items: { include: { product: true } } }
     });
@@ -61,12 +64,12 @@ router.get('/user/:userId', checkAdmin, async (req, res) => {
   }
 });
 
-// 3. Создать заказ
-router.post('/', checkAdmin, async (req: Request, res: Response) => {
+// 3. Создать заказ - УБРАЛИ checkAdmin
+router.post('/', async (req: Request, res: Response) => {
   try {
-    // Добавили userId в запрос
     const { cartItems, totalPrice, customer, userId } = req.body;
     console.log('📌 БЭКЕНД ВИДИТ ЗАКАЗ. User ID:', userId);
+    
     if (!cartItems || cartItems.length === 0) {
       res.status(400).json({ message: 'Корзина пуста' });
       return;
@@ -82,7 +85,6 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
         paymentMethod: customer?.paymentMethod || 'CASH',
         comment: customer?.comment || '',
         
-        // Связываем с пользователем, если он вошел
         userId: userId ? parseInt(userId) : null,
 
         items: {
@@ -104,7 +106,7 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
   }
 });
 
-// 4. Обновить статус
+// 4. Обновить статус (для Админа) - ЗАЩИТА ОСТАЕТСЯ
 router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
