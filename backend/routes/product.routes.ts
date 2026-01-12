@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-// import { checkAdmin } from '../authMiddleware'; // Временно отключаем
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -28,45 +27,68 @@ router.get('/categories', async (req, res) => {
 });
 
 // 3. Создать товар
-router.post('/', async (req: any, res: any) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name_ru, price, description, imageUrl, categoryId } = req.body;
+    const { 
+      name_ru, name_ua, name_en, name_nl, 
+      price, 
+      description_ru, description_ua, description_en, description_nl,
+      categoryId, imageUrl 
+    } = req.body;
 
-    if (!name_ru || !price || !categoryId) {
-      return res.status(400).json({ message: 'Заполните обязательные поля' });
-    }
-
-    const newProduct = await prisma.product.create({
+    const product = await prisma.product.create({
       data: {
+        // Названия
         name_ru,
+        name_ua: name_ua || name_ru,
+        name_en: name_en || name_ru,
+        name_nl: name_nl || name_ru,
+        
         price: parseFloat(price),
-        // ИСПРАВЛЕНО: description -> description_ru
-        description_ru: description || '', 
-        imageUrl: imageUrl || '',
-        category: { connect: { id: parseInt(categoryId) } }
+        
+        // Описания
+        description_ru: description_ru || "", 
+        description_ua: description_ua || description_ru || "",
+        description_en: description_en || description_ru || "",
+        description_nl: description_nl || description_ru || "",
+        
+        categoryId: parseInt(categoryId),
+        imageUrl
       }
     });
-
-    res.status(201).json(newProduct);
+    res.json(product);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Не удалось создать товар' });
+    res.status(500).json({ error: 'Ошибка создания товара' });
   }
 });
 
 // 4. Обновить товар
-router.put('/:id', async (req: any, res: any) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name_ru, price, description, imageUrl, categoryId } = req.body;
+    const { 
+      name_ru, name_ua, name_en, name_nl,
+      price, 
+      description_ru, description_ua, description_en, description_nl,
+      imageUrl, categoryId 
+    } = req.body;
 
     const updatedProduct = await prisma.product.update({
       where: { id: parseInt(id) },
       data: {
         name_ru,
+        name_ua,
+        name_en,
+        name_nl,
+        
         price: parseFloat(price),
-        // ИСПРАВЛЕНО: description -> description_ru
-        description_ru: description || '',
+        
+        description_ru,
+        description_ua,
+        description_en,
+        description_nl,
+
         imageUrl: imageUrl || '',
         category: { connect: { id: parseInt(categoryId) } }
       }
@@ -80,7 +102,7 @@ router.put('/:id', async (req: any, res: any) => {
 });
 
 // 5. Удалить товар
-router.delete('/:id', async (req: any, res: any) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.product.delete({
@@ -92,4 +114,4 @@ router.delete('/:id', async (req: any, res: any) => {
   }
 });
 
-export default router;  
+export default router;

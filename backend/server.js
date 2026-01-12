@@ -9,6 +9,7 @@ import shopRoutes from './routes/shop.routes.ts';
 import orderRoutes from './routes/order.routes.ts';
 import authRoutes from './routes/auth.routes.ts';
 import productRoutes from './routes/product.routes.ts';
+import promoRoutes from './routes/promo.routes';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api/shop', shopRoutes);     // Меню: /api/shop/menu
 app.use('/api/orders', orderRoutes);  // Заказы: /api/orders
 app.use('/api/auth', authRoutes);     // Вход: /api/auth/login
 app.use('/api/products', productRoutes);
+app.use('/api/promo', promoRoutes);
 
 // 4. Тестовый маршрут
 app.get('/', (req, res) => {

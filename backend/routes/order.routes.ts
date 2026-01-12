@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { checkAdmin } from '../authMiddleware';
+// import { checkAdmin } from '../authMiddleware'; // Если нужно будет в будущем
 import axios from 'axios';
+import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
 
 const router = Router();
 const prisma = new PrismaClient();
+const SECRET_KEY = process.env.JWT_SECRET || 'secret-key'; // <--- КЛЮЧ ДЛЯ РАСШИФРОВКИ
 
 // Функция отправки в Telegram
 const sendToTelegram = async (order: any, items: any[]) => {
@@ -24,6 +26,9 @@ const sendToTelegram = async (order: any, items: any[]) => {
 💳 ${order.paymentMethod === 'CARD' ? 'Картой' : 'Наличными'}
 💬 ${order.comment || 'Без комментария'}
 💰 <b>Сумма: ${order.totalPrice} ₴</b>
+
+📦 <b>Состав:</b>
+${itemsList}
 `;
 
   try {
@@ -33,9 +38,45 @@ const sendToTelegram = async (order: any, items: any[]) => {
   } catch (e) { console.error('Ошибка Telegram:', e); }
 };
 
-// 1. Получить все заказы (для Админа) - ЗАЩИТА ОСТАЕТСЯ
-// 1. Получить все заказы (для Админа)
-router.get('/', async (req, res) => { // <--- УБРАЛИ checkAdmin
+// ==========================================
+// 1. Получить МОИ заказы (по Токену) - НОВОЕ
+// ==========================================
+router.get('/my', async (req: Request, res: Response) => {
+  try {
+    // 1. Берем токен из заголовка
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      res.status(401).json({ message: 'Нет токена авторизации' });
+      return;
+    }
+
+    const token = authHeader.split(' ')[1]; // "Bearer <token>" -> "<token>"
+
+    // 2. Расшифровываем токен, чтобы узнать userId
+    const decoded = jwt.verify(token, SECRET_KEY) as { userId: string | number };
+    
+    // 3. Ищем заказы этого пользователя
+    const orders = await prisma.order.findMany({
+      where: { userId: Number(decoded.userId) },
+      orderBy: { createdAt: 'desc' },
+      include: { 
+        items: { 
+          include: { product: true } 
+        } 
+      }
+    });
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Ошибка получения моих заказов:', error);
+    res.status(401).json({ message: 'Неверный токен или ошибка сервера' });
+  }
+});
+
+// ==========================================
+// 2. Получить все заказы (Админ)
+// ==========================================
+router.get('/', async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
@@ -47,9 +88,9 @@ router.get('/', async (req, res) => { // <--- УБРАЛИ checkAdmin
   }
 });
 
-// 2. Получить заказы КОНКРЕТНОГО пользователя
-// Лучше пока убрать checkAdmin, чтобы пользователь мог сам видеть свои заказы, 
-// но если это только для админки — можно оставить.
+// ==========================================
+// 3. Получить заказы по ID (для Админки или дебага)
+// ==========================================
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -64,7 +105,9 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-// 3. Создать заказ - УБРАЛИ checkAdmin
+// ==========================================
+// 4. Создать заказ
+// ==========================================
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { cartItems, totalPrice, customer, userId } = req.body;
@@ -106,8 +149,10 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-// 4. Обновить статус (для Админа) - ЗАЩИТА ОСТАЕТСЯ
-router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
+// ==========================================
+// 5. Обновить статус
+// ==========================================
+router.patch('/:id/status', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;

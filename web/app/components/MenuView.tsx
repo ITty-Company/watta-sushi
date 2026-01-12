@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useLanguage } from '../context/LanguageContext'
-import LanguageSelector from './LanguageSelector'
+import { LanguageSelector } from './LanguageSelector'
 import PhoneView from './PhoneView'
 import { NotificationsView } from './NotificationsView';
 import FavoritesView from './FavoritesView' // Больше не используется как отдельная страница, но импорт можно оставить, если он нужен внутри профиля (хотя мы перенесли логику)
@@ -366,25 +366,35 @@ export default function MenuView() {
           onOpenFavorites={() => openProfileTab('favorites')} // Переключаем вкладку внутри
           onOpenCart={openCart}
           onSelectCategory={(key) => { handleClosePage(); setSelectedCategory(key) }}
+          onOpenAdmin={() => setActivePage('admin')}
           initialTab={profileInitialTab} // <-- ПЕРЕДАЕМ ВЫБРАННУЮ ВКЛАДКУ
         />
+        
       </div>
     )
   }
 
-  if (activePage === 'admin') return <div className="full-page-web"><AdminView onBack={handleClosePage} /></div>
+ if (activePage === 'admin') {
+    return (
+      <div className="full-page-web">
+        <AdminView onBack={handleClosePage} />
+      </div>
+    )
+  }
   if (activePage === 'delivery') return <div className="full-page-web"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">Доставка</h1></div><div className="full-page-content-web"><DeliveryView /></div></div>
   if (activePage === 'promotions') return <div className="full-page-web"><PromotionsView onBack={handleClosePage} onMenuClick={toggleSidebar} /></div>
   if (activePage === 'about') return <div className="full-page-web"><AboutView onBack={handleClosePage} onMenuClick={toggleSidebar} /></div>
 
   // СТРАНИЦА КОРЗИНЫ
   // Обратите внимание: мы передаем функции для навигации
-  if (activePage === 'cart') { // Вам нужно убедиться, что activePage становится 'cart' при нажатии на сумку
+  if (activePage === 'cart') {
     return (
       <div className="full-page-web">
         <CartView 
           onBack={handleClosePage}
+          // Связываем кнопки хедеров с функциями навигации
           onOpenProfile={() => openProfileTab('history')}
+          onOpenFavorites={() => openProfileTab('favorites')} // <-- Вот это важно
           onOpenPhone={() => handlePageOpen('phone')}
           onOpenNotifications={() => handlePageOpen('notifications')}
           onMenuClick={toggleSidebar}
