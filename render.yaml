@@ -21,9 +21,8 @@ services:
     name: watta-sushi-web
     env: node
     plan: free
-    rootDir: web
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: npm run build:web
+    startCommand: npm run start:web
     envVars:
       - key: NODE_ENV
         value: production
