@@ -23,7 +23,7 @@ services:
     env: node
     plan: free
     rootDir: web
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: NODE_ENV=development npm install && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
