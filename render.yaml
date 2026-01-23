@@ -4,8 +4,9 @@ services:
     name: watta-sushi-backend
     env: node
     plan: free
-    buildCommand: npm install --prefix backend && npm run migrate --prefix backend
-    startCommand: npm run start:single --prefix backend
+    rootDir: backend
+    buildCommand: npm install && npm run migrate
+    startCommand: npm run start:single
     envVars:
       - key: NODE_ENV
         value: production
@@ -21,8 +22,9 @@ services:
     name: watta-sushi-web
     env: node
     plan: free
-    buildCommand: npm run build:web
-    startCommand: npm run start:web
+    rootDir: web
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production

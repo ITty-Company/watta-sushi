@@ -1,0 +1,6 @@
+{
+  "watch": ["routes", "*.js", "*.ts"],
+  "ext": "js,ts,json",
+  "exec": "npx tsx server.js",
+  "ignore": ["node_modules", "prisma/dev.db", "*.db"]
+}

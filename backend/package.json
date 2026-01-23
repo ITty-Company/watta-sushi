@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec \"npx tsx server.js\"",
+    "dev": "nodemon server.js",
     "start": "npx tsx server.js",
     "start:single": "npx tsx server.js",
     "migrate": "prisma migrate deploy",
