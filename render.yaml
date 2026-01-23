@@ -29,4 +29,4 @@ services:
       - key: PORT
         value: 3000
       - key: NEXT_PUBLIC_API_URL
-        value: https://watta-sushi-backend.onrender.com  # URL вашего backend сервиса
+        value: https://watta-sushi-9qfh.onrender.com  # URL вашего backend сервиса
