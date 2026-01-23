@@ -16,6 +16,49 @@ export default function Home() {
     }
   }, [])
 
+  // Функции для навигации в CartView
+  const handleBack = useCallback(() => {
+    setActiveTab(0)
+  }, [])
+
+  const handleOpenProfile = useCallback(() => {
+    setActiveTab(2)
+  }, [])
+
+  const handleOpenFavorites = useCallback(() => {
+    setActiveTab(2)
+  }, [])
+
+  const handleOpenPhone = useCallback(() => {
+    // Можно добавить логику для открытия страницы телефона
+  }, [])
+
+  const handleOpenNotifications = useCallback(() => {
+    // Можно добавить логику для открытия уведомлений
+  }, [])
+
+  const handleMenuClick = useCallback(() => {
+    // Можно добавить логику для открытия меню
+  }, [])
+
+  // Функции для навигации в ProfileView
+  const handleProfileBack = useCallback(() => {
+    setActiveTab(0)
+  }, [])
+
+  const handleOpenCart = useCallback(() => {
+    setActiveTab(1)
+  }, [])
+
+  const handleSelectCategory = useCallback((key: string) => {
+    setActiveTab(0)
+    // Можно добавить логику для выбора категории
+  }, [])
+
+  const handleOpenAdmin = useCallback(() => {
+    // Можно добавить логику для открытия админ-панели
+  }, [])
+
   useEffect(() => {
     // Проверяем, что мы на клиенте
     if (typeof window === 'undefined') return
@@ -75,8 +118,28 @@ export default function Home() {
       <div className="app-web" suppressHydrationWarning>
         <div className="content-web">
         {activeTab === 0 && <MenuView />}
-        {activeTab === 1 && <CartView />}
-          {activeTab === 2 && <ProfileView onSwitchTab={handleSwitchTab} />}
+        {activeTab === 1 && (
+          <CartView 
+            onBack={handleBack}
+            onOpenProfile={handleOpenProfile}
+            onOpenFavorites={handleOpenFavorites}
+            onOpenPhone={handleOpenPhone}
+            onOpenNotifications={handleOpenNotifications}
+            onMenuClick={handleMenuClick}
+          />
+        )}
+          {activeTab === 2 && (
+            <ProfileView 
+              onBack={handleProfileBack}
+              onMenuClick={handleMenuClick}
+              onOpenPhone={handleOpenPhone}
+              onOpenNotifications={handleOpenNotifications}
+              onOpenFavorites={handleOpenFavorites}
+              onOpenCart={handleOpenCart}
+              onSelectCategory={handleSelectCategory}
+              onOpenAdmin={handleOpenAdmin}
+            />
+          )}
       </div>
     </div>
     </LanguageProvider>
