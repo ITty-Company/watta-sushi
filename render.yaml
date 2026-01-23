@@ -1,0 +1,32 @@
+services:
+  # Backend API Service
+  - type: web
+    name: watta-sushi-backend
+    env: node
+    plan: free
+    buildCommand: npm install --prefix backend && npm run migrate --prefix backend
+    startCommand: npm run start:single --prefix backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false  # Нужно будет добавить вручную в Render dashboard
+      - key: JWT_SECRET
+        sync: false  # Нужно будет добавить вручную в Render dashboard
+
+  # Frontend Web Service
+  - type: web
+    name: watta-sushi-web
+    env: node
+    plan: free
+    buildCommand: npm install --prefix web && npm run build --prefix web
+    startCommand: npm run start --prefix web
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        value: https://watta-sushi-backend.onrender.com  # URL вашего backend сервиса

@@ -1,14 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
+    // Используем переменную окружения для URL API, или localhost для разработки
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:3001/api/:path*', // Адрес твоего Express бэкенда
+        destination: `${apiUrl}/api/:path*`, // Адрес Express бэкенда
       },
       {
         source: '/uploads/:path*',
-        destination: 'http://localhost:3001/uploads/:path*', // Для картинок
+        destination: `${apiUrl}/uploads/:path*`, // Для картинок
       },
     ];
   },
