@@ -22,7 +22,7 @@ export default function CityMapPicker({ results, selected, onSelect, className =
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markersRef = useRef<L.Marker[]>([])
-  const leafletRef = useRef<typeof import('leaflet') | null>(null)
+  const leafletRef = useRef<typeof L | null>(null)
 
   const clearMarkers = useCallback(() => {
     const map = mapRef.current
@@ -42,7 +42,7 @@ export default function CityMapPicker({ results, selected, onSelect, className =
         attribution: '© OpenStreetMap',
       }).addTo(map)
       mapRef.current = map
-      leafletRef.current = mod
+      leafletRef.current = L
     })
     return () => {
       cancelled = true
@@ -57,7 +57,7 @@ export default function CityMapPicker({ results, selected, onSelect, className =
 
   useEffect(() => {
     const map = mapRef.current
-    const L = leafletRef.current?.default
+    const L = leafletRef.current
     if (!map || !L) return
 
     clearMarkers()
