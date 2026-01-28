@@ -1,8 +1,8 @@
 databases:
   - name: watta-sushi-db
-    plan: free
     databaseName: watta_sushi
     user: watta_sushi_user
+    plan: free
 
 services:
   - type: web

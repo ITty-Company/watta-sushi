@@ -10,17 +10,32 @@
 
 2. **Затем создайте сервисы** через Blueprint (render.yaml) или вручную
 
-## Если `DATABASE_URL` не подхватывается автоматически
+## ⚠️ ВАЖНО: Создание базы данных ПЕРЕД деплоем
 
-Если после создания базы данных переменная `DATABASE_URL` все еще не установлена:
+**Проблема:** Если база данных не создана, переменная `DATABASE_URL` не будет установлена автоматически через `render.yaml`.
 
-1. **Render Dashboard** → **PostgreSQL** (`watta-sushi-db`) → **Info**
-2. Скопируйте **Internal Database URL** (для сервисов в том же регионе) или **External Database URL**
-3. **Web Service** (`watta-sushi-backend`) → **Environment**
-4. Добавьте переменную:
+### Решение 1: Создать базу данных вручную (РЕКОМЕНДУЕТСЯ)
+
+1. **Render Dashboard** → **New** → **PostgreSQL**
+2. Заполните форму:
+   - **Name:** `watta-sushi-db` (ВАЖНО: точно такое же имя!)
+   - **Database:** `watta_sushi`
+   - **User:** `watta_sushi_user`
+   - **Plan:** Free
+   - **Region:** выберите тот же регион, где будет бэкенд
+3. **Create Database**
+4. После создания базы данных:
+   - **Render Dashboard** → **PostgreSQL** (`watta-sushi-db`) → **Info**
+   - Скопируйте **Internal Database URL** (для сервисов в том же регионе)
+5. **Render Dashboard** → **Web Service** (`watta-sushi-backend`) → **Environment**
+6. Добавьте переменную:
    - **Key:** `DATABASE_URL`
    - **Value:** вставьте скопированный URL
-5. **Save Changes** → **Manual Deploy** (или дождитесь автодеплоя)
+7. **Save Changes** → сервис автоматически перезапустится
+
+### Решение 2: Использовать Blueprint (если база еще не создана)
+
+Если база данных еще не создана, Render может создать её автоматически через Blueprint, но это работает только при первом деплое Blueprint. Если база уже существует с другим именем, нужно либо удалить старую, либо использовать её имя в `render.yaml`.
 
 **Важно:** Убедитесь, что имя базы данных в `render.yaml` (`watta-sushi-db`) точно совпадает с именем в Render Dashboard!
 
