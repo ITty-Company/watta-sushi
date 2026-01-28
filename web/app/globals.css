@@ -2106,21 +2106,9 @@ body {
 
 .header-actions-web {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
   flex-shrink: 0;
-}
-
-@media (min-width: 769px) {
-  .header-actions-web {
-    gap: 6px;
-  }
-}
-
-@media (min-width: 1025px) {
-  .header-actions-web {
-    gap: 8px;
-  }
 }
 
 /* Кнопка выбора языка в хедере: та же ширина и высота, что и меню (три линии) */
@@ -2131,7 +2119,7 @@ body {
   padding: 0 !important;
   border-radius: 12px !important;
   border: 2px solid #145142 !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   gap: 4px !important;
   display: flex !important;
   align-items: center !important;
@@ -2142,6 +2130,11 @@ body {
 .header-actions-web .header-lang-wrap-web button svg {
   width: 14px !important;
   height: 14px !important;
+}
+
+.header-actions-web .header-lang-wrap-web {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .header-icon-btn-web {
@@ -3498,7 +3491,7 @@ body {
   }
   
   .header-actions-web {
-    gap: 4px;
+    gap: 8px;
   }
 
   /* Кнопки хедера меньше на телефоне, одна высота, меню и язык — одна ширина */
@@ -3527,7 +3520,7 @@ body {
     min-width: 38px !important;
     height: 38px !important;
     border-radius: 10px !important;
-    font-size: 10px !important;
+    font-size: 9px !important;
     gap: 2px !important;
   }
 
@@ -3585,7 +3578,7 @@ body {
   }
   
   .header-actions-web {
-    gap: 4px;
+    gap: 8px;
   }
 
   .header-cart-btn-text-web {
@@ -3607,7 +3600,7 @@ body {
     min-width: 40px !important;
     height: 40px !important;
     border-radius: 10px !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
     gap: 2px !important;
   }
 
@@ -3661,7 +3654,7 @@ body {
   }
   
   .header-actions-web {
-    gap: 6px;
+    gap: 8px;
   }
   
   .location-section-web {

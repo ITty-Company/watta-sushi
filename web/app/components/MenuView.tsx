@@ -1660,7 +1660,7 @@ export default function MenuView() {
           </div>
           
           <div className="header-actions-web">
-            <div className="location-section-web header-lang-wrap-web" style={{ marginRight: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div className="location-section-web header-lang-wrap-web" style={{ display: 'flex', alignItems: 'center' }}>
               <LanguageSelector />
             </div>
             
