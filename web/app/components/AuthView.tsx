@@ -165,6 +165,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Mail, Lock, User, Check, Eye, EyeOff, Phone } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import { useLanguage } from '../context/LanguageContext'
+import { getApiUrl } from '../../lib/utils'
 
 interface AuthViewProps {
   onBack: () => void
@@ -203,7 +204,7 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
 
     try {
       // 1. Выбираем URL: Вход или Регистрация
-      const url = isRegister ? '/api/auth/register' : '/api/auth/login'
+      const url = getApiUrl(isRegister ? '/api/auth/register' : '/api/auth/login')
       
       // 2. Готовим данные для отправки
       const body = isRegister 
