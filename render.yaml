@@ -1,11 +1,18 @@
 services:
+  # PostgreSQL Database
+  - type: pg
+    name: watta-sushi-db
+    plan: free
+    databaseName: watta_sushi
+    user: watta_sushi_user
+
   # Backend API Service
   - type: web
     name: watta-sushi-backend
     env: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npx prisma generate && npm run migrate && npm run seed
+    buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss --skip-generate && npm run seed
     startCommand: npm run start:single
     envVars:
       - key: NODE_ENV
@@ -13,7 +20,10 @@ services:
       - key: PORT
         value: 3001
       - key: DATABASE_URL
-        sync: false  # Нужно будет добавить вручную в Render dashboard
+        fromService:
+          type: pg
+          name: watta-sushi-db
+          property: connectionString
       - key: JWT_SECRET
         sync: false  # Нужно будет добавить вручную в Render dashboard
 

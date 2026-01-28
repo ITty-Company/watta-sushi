@@ -202,8 +202,14 @@ async function main() {
 
   for (const product of products) {
     // Используем upsert, чтобы не дублировать товары при повторном запуске
-    // Но для простоты при dev-разработке create тоже пойдет, если базу чистишь
-    await prisma.product.create({ data: product })
+    try {
+      await prisma.product.create({ data: product })
+    } catch (error) {
+      // Игнорируем ошибки дубликатов (если товар уже существует)
+      if (!error.message?.includes('Unique constraint') && !error.code?.includes('P2002')) {
+        console.warn(`⚠️ Ошибка при создании товара ${product.name_ru}:`, error.message)
+      }
+    }
   }
 
   console.log('✅ Full Menu created!')
