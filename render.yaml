@@ -12,8 +12,8 @@ services:
     env: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss --skip-generate && npm run seed
-    startCommand: npm run start:single
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm run init-db && npm run start:single
     envVars:
       - key: NODE_ENV
         value: production
