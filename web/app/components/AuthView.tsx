@@ -204,7 +204,8 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
 
     try {
       // 1. Выбираем URL: Вход или Регистрация
-      const url = getApiUrl(isRegister ? '/api/auth/register' : '/api/auth/login')
+      // Используем относительные пути - Next.js API routes проксируют запросы к бэкенду
+      const url = isRegister ? '/api/auth/register' : '/api/auth/login'
       
       // 2. Готовим данные для отправки
       const body = isRegister 
