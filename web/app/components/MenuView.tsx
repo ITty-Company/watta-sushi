@@ -1660,7 +1660,7 @@ export default function MenuView() {
           </div>
           
           <div className="header-actions-web">
-            <div className="location-section-web" style={{ marginRight: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div className="location-section-web header-lang-wrap-web" style={{ marginRight: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
               <LanguageSelector />
             </div>
             
@@ -1669,9 +1669,10 @@ export default function MenuView() {
               onClick={toggleSidebar} 
               aria-label="Меню"
               style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '14px',
+                width: '44px',
+                height: '44px',
+                minWidth: '44px',
+                borderRadius: '12px',
                 border: '2px solid #145142',
                 background: '#ffffff',
                 cursor: 'pointer',
@@ -1686,7 +1687,7 @@ export default function MenuView() {
               }}
             >
               <Menu 
-                size={22} 
+                size={20} 
                 className="header-menu-icon-web"
                 style={{ 
                   color: '#145142',
@@ -1703,16 +1704,17 @@ export default function MenuView() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                padding: '10px 18px',
-                borderRadius: '14px',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '12px',
                 border: '2px solid #145142',
                 background: '#ffffff',
                 cursor: 'pointer',
                 position: 'relative',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: '600',
                 color: '#145142',
+                height: '44px',
                 backdropFilter: 'blur(10px)',
                 boxShadow: '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)',
                 overflow: 'hidden'
@@ -1720,7 +1722,7 @@ export default function MenuView() {
             >
               <span className="header-cart-label-web">{t.cart}</span>
               <div className="header-cart-icon-wrap-web" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ShoppingBag size={20} className="header-cart-icon-web" />
+                <ShoppingBag size={18} className="header-cart-icon-web" />
                 {cartCount > 0 && (
                   <span 
                     className="cart-badge-web"

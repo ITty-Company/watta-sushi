@@ -2123,6 +2123,27 @@ body {
   }
 }
 
+/* Кнопка выбора языка в хедере: та же ширина и высота, что и меню (три линии) */
+.header-actions-web .header-lang-wrap-web button {
+  width: 44px !important;
+  min-width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  border: 2px solid #145142 !important;
+  font-size: 12px !important;
+  gap: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1) !important;
+}
+
+.header-actions-web .header-lang-wrap-web button svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
 .header-icon-btn-web {
   width: 44px;
   height: 44px;
@@ -3480,12 +3501,13 @@ body {
     gap: 4px;
   }
 
-  /* Кнопки хедера меньше на телефоне */
+  /* Кнопки хедера меньше на телефоне, одна высота, меню и язык — одна ширина */
   .header-cart-btn-text-web {
     padding: 6px 10px !important;
     gap: 6px !important;
     font-size: 12px !important;
     border-radius: 10px !important;
+    height: 38px !important;
   }
 
   .header-cart-icon-web {
@@ -3494,10 +3516,24 @@ body {
   }
 
   .header-menu-btn-web {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
     border-radius: 10px !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    font-size: 10px !important;
+    gap: 2px !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button svg {
+    width: 11px !important;
+    height: 11px !important;
   }
 
   .header-menu-icon-web {
@@ -3556,12 +3592,28 @@ body {
     padding: 8px 14px !important;
     gap: 8px !important;
     font-size: 13px !important;
+    height: 40px !important;
   }
 
   .header-menu-btn-web {
-    width: 42px !important;
-    height: 42px !important;
-    min-width: 42px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    border-radius: 10px !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    gap: 2px !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button svg {
+    width: 12px !important;
+    height: 12px !important;
   }
 
   .header-menu-icon-web {
