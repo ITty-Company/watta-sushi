@@ -1660,6 +1660,41 @@ export default function MenuView() {
           </div>
           
           <div className="header-actions-web">
+            <div className="location-section-web" style={{ marginRight: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <LanguageSelector />
+            </div>
+            
+            <button 
+              className="header-menu-btn-web"
+              onClick={toggleSidebar} 
+              aria-label="Меню"
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                border: '2px solid #145142',
+                background: '#ffffff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)',
+                flexShrink: 0,
+                position: 'relative',
+                overflow: 'hidden',
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              <Menu 
+                size={22} 
+                className="header-menu-icon-web"
+                style={{ 
+                  color: '#145142',
+                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
+                  strokeWidth: 2.5
+                }} 
+              />
+            </button>
             
             <button 
               className="header-cart-btn-text-web" 
@@ -1714,42 +1749,6 @@ export default function MenuView() {
                   </span>
                 )}
               </div>
-            </button>
-            
-            <div className="location-section-web" style={{ marginLeft: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <LanguageSelector />
-            </div>
-            
-            <button 
-              className="header-menu-btn-web"
-              onClick={toggleSidebar} 
-              aria-label="Меню"
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '14px',
-                border: '2px solid #145142',
-                background: '#ffffff',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)',
-                flexShrink: 0,
-                position: 'relative',
-                overflow: 'hidden',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <Menu 
-                size={22} 
-                className="header-menu-icon-web"
-                style={{ 
-                  color: '#145142',
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
-                  strokeWidth: 2.5
-                }} 
-              />
             </button>
           </div>
         </div>
