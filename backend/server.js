@@ -3,6 +3,43 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
+// Загружаем переменные окружения из .env файла (если существует)
+// На Render переменные окружения уже установлены, поэтому это не перезапишет их
+// Используем override: false чтобы не перезаписывать существующие переменные
+const dotenvResult = dotenv.config({ override: false });
+if (dotenvResult.error && process.env.NODE_ENV !== 'production') {
+  console.warn('⚠️  Не удалось загрузить .env файл:', dotenvResult.error.message);
+}
+
+// ДИАГНОСТИКА: Выводим все переменные окружения для отладки
+console.log('🔍 Диагностика переменных окружения:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('Все переменные с DATABASE:', Object.keys(process.env).filter(key => key.includes('DATABASE') || key.includes('DB')));
+console.log('Все переменные окружения:', Object.keys(process.env).sort().join(', '));
+
+// Проверяем наличие критически важных переменных окружения
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl || databaseUrl.trim() === '') {
+  console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: DATABASE_URL не установлен или пустой!');
+  console.error('');
+  console.error('📋 ИНСТРУКЦИИ ПО ИСПРАВЛЕНИЮ:');
+  console.error('1. Убедитесь, что база данных "watta-sushi-db" создана на Render');
+  console.error('2. Проверьте, что сервис "watta-sushi-backend" связан с базой данных');
+  console.error('3. В Render Dashboard -> watta-sushi-backend -> Environment проверьте наличие DATABASE_URL');
+  console.error('4. Убедитесь, что в render.yaml правильно указано:');
+  console.error('   - key: DATABASE_URL');
+  console.error('     fromDatabase:');
+  console.error('       name: watta-sushi-db');
+  console.error('       property: connectionString');
+  console.error('');
+  console.error('Текущие переменные с DATABASE:', Object.keys(process.env).filter(key => key.includes('DATABASE') || key.includes('DB')));
+  console.error('Всего переменных окружения:', Object.keys(process.env).length);
+  process.exit(1);
+}
+
+console.log('✅ DATABASE_URL найден:', process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 30)}...` : 'НЕ НАЙДЕН');
+
 // Импорт наших роутов
 // Мы используем .ts файлы, так как запускаем через tsx
 import shopRoutes from './routes/shop.routes.ts';
@@ -15,8 +52,6 @@ import bannerRoutes from './routes/banner.routes.ts';
 import countryRoutes from './routes/country.routes.ts';
 import deliveryZoneRoutes from './routes/deliveryZone.routes.ts';
 import teamRoutes from './routes/team.routes.ts';
-
-dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
@@ -68,6 +103,14 @@ app.get('/', (req, res) => {
 // 5. Проверка подключения к базе данных перед запуском
 async function startServer() {
   try {
+    // Дополнительная проверка DATABASE_URL перед подключением
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL не установлен в переменных окружения');
+    }
+    
+    console.log('🔌 Попытка подключения к базе данных...');
+    console.log('DATABASE_URL (первые 30 символов):', process.env.DATABASE_URL.substring(0, 30) + '...');
+    
     // Проверяем подключение к базе данных
     await prisma.$connect();
     console.log('✅ Подключение к базе данных установлено');
