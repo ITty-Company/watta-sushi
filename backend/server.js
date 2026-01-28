@@ -65,13 +65,34 @@ app.get('/', (req, res) => {
   res.send('🍣 Sushi API is running cleanly!');
 });
 
-// 5. Запуск сервера
-app.listen(PORT, () => {
-  console.log(`
+// 5. Проверка подключения к базе данных перед запуском
+async function startServer() {
+  try {
+    // Проверяем подключение к базе данных
+    await prisma.$connect();
+    console.log('✅ Подключение к базе данных установлено');
+    
+    // Проверяем наличие JWT_SECRET
+    if (!process.env.JWT_SECRET) {
+      console.warn('⚠️  ВНИМАНИЕ: JWT_SECRET не установлен! Аутентификация может не работать.');
+    } else {
+      console.log('✅ JWT_SECRET настроен');
+    }
+    
+    // Запускаем сервер
+    app.listen(PORT, () => {
+      console.log(`
   🚀 Сервер успешно запущен!
   ---------------------------
   Local:      http://localhost:${PORT}
   Menu:       http://localhost:${PORT}/api/shop/menu
   ---------------------------
   `);
-});
+    });
+  } catch (error) {
+    console.error('❌ Ошибка при запуске сервера:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

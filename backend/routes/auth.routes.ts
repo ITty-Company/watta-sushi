@@ -12,6 +12,11 @@ router.post('/login', async (req: any, res: any) => {
   try {
     const { email, password } = req.body;
 
+    // Валидация входных данных
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email и пароль обязательны' });
+    }
+
     // 1. Ищем пользователя
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -24,15 +29,21 @@ router.post('/login', async (req: any, res: any) => {
       return res.status(400).json({ message: 'Неверный пароль' });
     }
 
-    // 3. Создаем токен (пропуск)
-    const secret = process.env.JWT_SECRET || 'secret';
+    // 3. Проверяем наличие JWT_SECRET
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('⚠️ JWT_SECRET не установлен!');
+      return res.status(500).json({ message: 'Ошибка конфигурации сервера' });
+    }
+
+    // 4. Создаем токен
     const token = jwt.sign(
       { userId: user.id, role: user.role }, // Что зашито в токене
       secret,
       { expiresIn: '24h' } // Срок действия 24 часа
     );
 
-    // 4. Отправляем ответ
+    // 5. Отправляем ответ
     res.json({
       token,
       user: {
@@ -43,9 +54,17 @@ router.post('/login', async (req: any, res: any) => {
       }
     });
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+  } catch (error: any) {
+    console.error('Ошибка входа:', error);
+    
+    // Более детальная обработка ошибок
+    if (error.name === 'PrismaClientKnownRequestError') {
+      return res.status(500).json({ message: 'Ошибка базы данных. Попробуйте позже.' });
+    }
+    
+    res.status(500).json({ 
+      message: error.message || 'Ошибка сервера при входе' 
+    });
   }
 });
 
@@ -86,7 +105,11 @@ router.post('/register', async (req: any, res: any) => {
         });
 
         // Сразу даем токен, чтобы не логиниться после регистрации
-        const secret = process.env.JWT_SECRET || 'secret';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            console.error('⚠️ JWT_SECRET не установлен!');
+            return res.status(500).json({ message: 'Ошибка конфигурации сервера' });
+        }
         const token = jwt.sign({ userId: user.id, role: user.role }, secret, { expiresIn: '24h' });
 
         res.status(201).json({ 

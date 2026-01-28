@@ -41,6 +41,6 @@ services:
       - key: PORT
         value: 3000
       - key: NEXT_PUBLIC_API_URL
-        # ВАЖНО: Замените на реальный URL вашего backend сервиса на Render
-        # Обычно это https://watta-sushi-backend.onrender.com или похожий URL
-        value: https://watta-sushi-9qfh.onrender.com
+        # URL бэкенда на Render (обычно https://watta-sushi-backend.onrender.com)
+        # Если URL отличается, замените на правильный из Render Dashboard
+        value: https://watta-sushi-backend.onrender.com
