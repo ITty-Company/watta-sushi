@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "npx tsx server.js",
-    "start:single": "npx tsx server.js",
+    "start": "npm run init-db && npx tsx server.js",
+    "start:single": "npm run init-db && npx tsx server.js",
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "migrate:reset": "prisma migrate reset",
@@ -16,7 +16,7 @@
     "build": "npm install && (cd frontend && npm install && npm run build)"
   },
   "dependencies": {
-    "-": "^0.0.1",
+    "@prisma/client": "^5.22.0",
     "@sendgrid/mail": "^8.1.6",
     "@supabase/supabase-js": "^2.78.0",
     "@types/bcryptjs": "^2.4.6",
@@ -42,7 +42,6 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
-    "@prisma/client": "^5.22.0",
     "@types/express": "^5.0.6",
     "@types/react": "^19.1.15",
     "@types/react-dom": "^19.1.9",

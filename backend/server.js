@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { execSync } from 'child_process';
 
 // Загружаем переменные окружения из .env файла (если существует)
 // На Render переменные окружения уже установлены, поэтому это не перезапишет их
@@ -114,6 +115,33 @@ async function startServer() {
     // Проверяем подключение к базе данных
     await prisma.$connect();
     console.log('✅ Подключение к базе данных установлено');
+
+    // На Render база может быть новой/пустой (без таблиц). Если схемы нет — создаем через db push.
+    // Это делает бэкенд "самовосстанавливающимся" и убирает P2021 на первом старте.
+    try {
+      await prisma.user.count();
+    } catch (error) {
+      const isMissingTables =
+        error?.code === 'P2021' ||
+        (typeof error?.message === 'string' && error.message.includes('does not exist'));
+
+      if (!isMissingTables) {
+        throw error;
+      }
+
+      console.warn('⚠️  Таблицы не найдены (P2021). Выполняем prisma db push...');
+      execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
+
+      // После создания схемы можно засидить базу через существующий init-db скрипт.
+      // Он безопасен (upsert) и не будет дублировать данные при повторном запуске.
+      console.warn('🌱 Запускаем init-db для заполнения базовых данных...');
+      execSync('npx tsx scripts/init-db.js', { stdio: 'inherit' });
+
+      // На всякий случай переподключаемся после db push/init
+      await prisma.$disconnect();
+      await prisma.$connect();
+      console.log('✅ Схема создана и база инициализирована');
+    }
     
     // Проверяем наличие JWT_SECRET
     if (!process.env.JWT_SECRET) {
