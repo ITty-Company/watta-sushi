@@ -525,10 +525,11 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { useLanguage } from '../context/LanguageContext'
 import { LanguageSelector } from './LanguageSelector'
+import { CountryCitySelector } from './CountryCitySelector'
 import LogoBackground from './LogoBackground'
 import PhoneView from './PhoneView'
 import { NotificationsView } from './NotificationsView';
@@ -589,6 +590,8 @@ interface MenuItem {
   description: string
   price: number
   category: string
+  categorySlug?: string // Slug категории для фильтрации
+  categoryId?: number // ID категории
   subcategory?: string
   emoji: string
   isTop?: boolean
@@ -598,6 +601,7 @@ interface MenuItem {
 interface MenuCategory {
   id: string
   key: string
+  slug?: string // Добавляем slug для более точной фильтрации
   name: string
   emoji: string
   subcategories: MenuSubcategory[]
@@ -611,13 +615,13 @@ interface MenuSubcategory {
 
 const defaultCategories: MenuCategory[] = [
   { id: 'rolls', key: 'rolls', name: 'Роллы', emoji: '🍣', subcategories: [] },
-  { id: 'sushi', key: 'sushi', name: 'Суши', emoji: '🍱', subcategories: [] },
+  { id: 'sushi', key: 'sushi', name: 'Суши', emoji: '🍙', subcategories: [] },
   { id: 'sets', key: 'sets', name: 'Сеты', emoji: '🍱', subcategories: [] },
-  { id: 'soups', key: 'soups', name: 'Супы', emoji: '🍲', subcategories: [] },
-  { id: 'bowls', key: 'bowls', name: 'Боули', emoji: '🥣', subcategories: [] },
-  { id: 'snacks', key: 'snacks', name: 'Закуски', emoji: '🦐', subcategories: [] },
-  { id: 'drinks', key: 'drinks', name: 'Напитки', emoji: '🥤', subcategories: [] },
-  { id: 'sauces', key: 'sauces', name: 'Соуси', emoji: '🍶', subcategories: [] }
+  { id: 'soups', key: 'soups', name: 'Супы', emoji: '🍜', subcategories: [] },
+  { id: 'bowls', key: 'bowls', name: 'Боули', emoji: '🥗', subcategories: [] },
+  { id: 'snacks', key: 'snacks', name: 'Закуски', emoji: '🍤', subcategories: [] },
+  { id: 'drinks', key: 'drinks', name: 'Напитки', emoji: '🧃', subcategories: [] },
+  { id: 'sauces', key: 'sauces', name: 'Соуси', emoji: '🌶️', subcategories: [] }
 ]
 
 interface User {
@@ -638,61 +642,319 @@ export default function MenuView() {
   // --- ГОРОДА ДОСТАВКИ ---
   const [deliveryCities, setDeliveryCities] = useState<{id: number, name: string, name_nl?: string}[]>([])
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
-  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false)
-  const cityDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch('/api/cities')
-      .then(res => res.json())
-      .then(data => {
-        setDeliveryCities(data)
-        if (data.length > 0 && !selectedCityId) {
-          setSelectedCityId(data[0].id)
-        }
-      })
-      .catch(err => console.error('Ошибка загрузки городов:', err))
-  }, [])
-
-  // Закрытие dropdown при клике вне его
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (cityDropdownRef.current && !cityDropdownRef.current.contains(event.target as Node)) {
-        setIsCityDropdownOpen(false)
+    // Проверяем сохранённый город из localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const savedCityId = localStorage.getItem('selectedCityId')
+      if (savedCityId) {
+        const cityId = parseInt(savedCityId)
+        setSelectedCityId(cityId)
       }
     }
-
-    if (isCityDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+    
+    // Проверяем кэш для городов
+    const cacheKey = 'cities_cache'
+    const cached = sessionStorage.getItem(cacheKey)
+    const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
+    const now = Date.now()
+    
+    if (cached && cacheTime && (now - parseInt(cacheTime)) < 10 * 60 * 1000) {
+      // Используем кэш если он свежий (менее 10 минут)
+      try {
+        const data = JSON.parse(cached)
+        setDeliveryCities(data || [])
+        if ((data || []).length > 0 && !selectedCityId) {
+          const firstCityId = data[0].id
+          setSelectedCityId(firstCityId)
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('selectedCityId', firstCityId.toString())
+          }
+        }
+        return
+      } catch (e) {
+        // Если кэш поврежден, загружаем заново
+      }
     }
+    
+    fetch('/api/cities', {
+      headers: {
+        'Cache-Control': 'max-age=600' // 10 минут кэша
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          console.error('Ошибка загрузки городов:', res.status, res.statusText)
+          return []
+        }
+        return res.json()
+      })
+      .then(data => {
+        // Сохраняем в кэш
+        sessionStorage.setItem(cacheKey, JSON.stringify(data))
+        sessionStorage.setItem(`${cacheKey}_time`, now.toString())
+        
+        setDeliveryCities(data || [])
+        // Если город не выбран и есть города, выбираем первый
+        if ((data || []).length > 0 && !selectedCityId) {
+          const firstCityId = data[0].id
+          setSelectedCityId(firstCityId)
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('selectedCityId', firstCityId.toString())
+          }
+        }
+      })
+      .catch(err => {
+        console.error('Ошибка загрузки городов:', err)
+        setDeliveryCities([])
+      })
+  }, [])
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+  // --- ЗАГРУЗКА БАННЕРОВ ---
+  interface Banner {
+    id: number
+    title_ru: string
+    title_ua?: string
+    title_en?: string
+    title_nl?: string
+    imageUrl: string
+    order: number
+    isActive: boolean
+  }
+  
+  const [banners, setBanners] = useState<Banner[]>([])
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
+  
+  const loadBanners = () => {
+    fetch('/api/banners')
+      .then(res => res.json())
+      .then(data => {
+        setBanners(data)
+        if (data.length > 0) {
+          setCurrentBannerIndex(0)
+        }
+      })
+      .catch(err => console.error('Ошибка загрузки баннеров:', err))
+  }
+  
+  useEffect(() => {
+    loadBanners()
+  }, [])
+  
+  // Слушаем событие обновления баннеров из админ-панели
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleBannersUpdate = () => {
+        loadBanners()
+      }
+      window.addEventListener('bannersUpdated', handleBannersUpdate)
+      return () => window.removeEventListener('bannersUpdated', handleBannersUpdate)
     }
-  }, [isCityDropdownOpen])
+  }, [])
+  
+  // Используем useRef для хранения значений свайпа
+  const touchStartRef = useRef<number | null>(null)
+  const touchEndRef = useRef<number | null>(null)
+  const isSwipingRef = useRef<boolean>(false)
+  
+  // Минимальное расстояние для свайпа (в пикселях)
+  const minSwipeDistance = 50
+  
+  // Обработка свайпа (работает на мобильных и десктопе)
+  const onTouchStart = (e: React.TouchEvent) => {
+    isSwipingRef.current = true
+    touchEndRef.current = null
+    touchStartRef.current = e.targetTouches[0].clientX
+  }
+  
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartRef.current !== null && isSwipingRef.current) {
+      touchEndRef.current = e.targetTouches[0].clientX
+    }
+  }
+  
+  const onTouchEnd = () => {
+    if (touchStartRef.current === null || touchEndRef.current === null) {
+      touchStartRef.current = null
+      touchEndRef.current = null
+      isSwipingRef.current = false
+      return
+    }
+    
+    const distance = touchStartRef.current - touchEndRef.current
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe && banners.length > 0) {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
+    }
+    if (isRightSwipe && banners.length > 0) {
+      setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length)
+    }
+    
+    touchStartRef.current = null
+    touchEndRef.current = null
+    isSwipingRef.current = false
+  }
+  
+  // Обработка свайпа мышью для десктопа (простое перетаскивание)
+  const onMouseDown = (e: React.MouseEvent) => {
+    isSwipingRef.current = true
+    touchEndRef.current = null
+    touchStartRef.current = e.clientX
+  }
+  
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (touchStartRef.current !== null && isSwipingRef.current) {
+      touchEndRef.current = e.clientX
+    }
+  }
+  
+  const onMouseUp = () => {
+    if (touchStartRef.current === null || touchEndRef.current === null) {
+      touchStartRef.current = null
+      touchEndRef.current = null
+      isSwipingRef.current = false
+      return
+    }
+    
+    const distance = touchStartRef.current - touchEndRef.current
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe && banners.length > 0) {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
+    }
+    if (isRightSwipe && banners.length > 0) {
+      setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length)
+    }
+    
+    touchStartRef.current = null
+    touchEndRef.current = null
+    isSwipingRef.current = false
+  }
+
+  // Автоматическая смена баннеров (отключается во время свайпа)
+  useEffect(() => {
+    if (banners.length <= 1) return
+    
+    const interval = setInterval(() => {
+      // Не меняем автоматически, если пользователь свайпает
+      if (!isSwipingRef.current) {
+        setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
+      }
+    }, 5000) // Меняем каждые 5 секунд
+    
+    return () => clearInterval(interval)
+  }, [banners.length])
 
   // --- ЗАГРУЗКА МЕНЮ С СЕРВЕРА ---
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   
-  useEffect(() => {
-    const url = selectedCityId ? `/api/products?cityId=${selectedCityId}` : '/api/products'
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        const realItems = data.map((p: any) => ({
+  const loadMenuItems = useCallback(() => {
+    // Если город не выбран, используем первый доступный или загружаем все товары
+    const cityIdToUse = selectedCityId || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
+    const url = cityIdToUse ? `/api/products?cityId=${cityIdToUse}` : '/api/products'
+    
+    // Проверяем кэш
+    const cacheKey = `menu_items_${cityIdToUse}_${language}`
+    const cached = sessionStorage.getItem(cacheKey)
+    const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
+    const now = Date.now()
+    
+    if (cached && cacheTime && (now - parseInt(cacheTime)) < 2 * 60 * 1000) {
+      // Используем кэш если он свежий (менее 2 минут)
+      try {
+        const data = JSON.parse(cached)
+        const realItems = (data || []).map((p: any) => ({
           id: p.id,
-          // ВАЖНО: Локализуем имя, описание и категорию
           name: getLocalized(p, 'name'), 
           description: getLocalized(p, 'description') || '',
           price: p.price,
-          category: getLocalized(p.category, 'name') || 'Роллы', 
+          category: getLocalized(p.category, 'name') || 'Роллы',
+          categorySlug: p.category?.slug || 'rolls',
+          categoryId: p.categoryId,
+          emoji: '🍣',
+          imageUrl: p.imageUrl,
+          isTop: p.isPopular
+        }));
+        setMenuItems(realItems);
+        return
+      } catch (e) {
+        // Если кэш поврежден, загружаем заново
+      }
+    }
+    
+    fetch(url, {
+      headers: {
+        'Cache-Control': 'max-age=120' // 2 минуты кэша
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          console.error('Ошибка загрузки товаров:', res.status, res.statusText)
+          return []
+        }
+        return res.json()
+      })
+      .then(data => {
+        // Сохраняем в кэш
+        sessionStorage.setItem(cacheKey, JSON.stringify(data))
+        sessionStorage.setItem(`${cacheKey}_time`, now.toString())
+        
+        const realItems = (data || []).map((p: any) => ({
+          id: p.id,
+          name: getLocalized(p, 'name'), 
+          description: getLocalized(p, 'description') || '',
+          price: p.price,
+          category: getLocalized(p.category, 'name') || 'Роллы',
+          categorySlug: p.category?.slug || 'rolls',
+          categoryId: p.categoryId,
           emoji: '🍣',
           imageUrl: p.imageUrl,
           isTop: p.isPopular
         }));
         setMenuItems(realItems);
       })
-      .catch(err => console.error('Ошибка загрузки меню:', err));
-  }, [language, getLocalized, selectedCityId]); // Перезагружаем при смене языка или города
+      .catch(err => {
+        console.error('Ошибка загрузки меню:', err)
+        setMenuItems([])
+      });
+  }, [selectedCityId, deliveryCities, language, getLocalized])
+  
+  useEffect(() => {
+    loadMenuItems()
+  }, [loadMenuItems]); // Используем мемоизированную функцию
+  
+  // Слушаем событие обновления товаров из админ-панели
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleProductsUpdate = () => {
+        // Перезагружаем товары с актуальными значениями
+        const url = selectedCityId ? `/api/products?cityId=${selectedCityId}` : '/api/products'
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            const realItems = data.map((p: any) => ({
+              id: p.id,
+              name: getLocalized(p, 'name'), 
+              description: getLocalized(p, 'description') || '',
+              price: p.price,
+              category: getLocalized(p.category, 'name') || 'Роллы',
+              categorySlug: p.category?.slug || 'rolls',
+              categoryId: p.categoryId,
+              emoji: '🍣',
+              imageUrl: p.imageUrl,
+              isTop: p.isPopular
+            }));
+            setMenuItems(realItems);
+          })
+          .catch(err => console.error('Ошибка загрузки меню:', err));
+      }
+      window.addEventListener('productsUpdated', handleProductsUpdate)
+      return () => window.removeEventListener('productsUpdated', handleProductsUpdate)
+    }
+  }, [language, getLocalized, selectedCityId])
 
   // --- КОРЗИНА ---
   const [cartCount, setCartCount] = useState(0)
@@ -738,33 +1000,167 @@ export default function MenuView() {
   }, [])
 
   // --- КАТЕГОРИИ ---
-  // Обновляем названия категорий при смене языка
-  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(defaultCategories)
+  // Загружаем категории из базы данных
+  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([])
+  
+  const loadCategories = useCallback(() => {
+    // Загружаем категории из API
+    fetch('/api/products/categories')
+      .then(res => res.json())
+      .then(data => {
+        console.log('Загружены категории из БД:', data)
+        // Преобразуем данные из БД в формат MenuCategory
+        const categories = data
+          .filter((cat: any) => cat.isActive !== false) // Показываем только активные
+          .map((cat: any) => ({
+            id: cat.id.toString(),
+            key: cat.slug,
+            slug: cat.slug, // Сохраняем slug для фильтрации
+            name: language === 'uk' && cat.name_ua 
+              ? cat.name_ua 
+              : language === 'en' && cat.name_en
+              ? cat.name_en
+              : language === 'nl' && cat.name_nl
+              ? cat.name_nl
+              : cat.name_ru,
+            emoji: cat.emoji || '🍣',
+            subcategories: []
+          }))
+          .sort((a: any, b: any) => {
+            const catA = data.find((c: any) => c.slug === a.key)
+            const catB = data.find((c: any) => c.slug === b.key)
+            return (catA?.order || 0) - (catB?.order || 0)
+          })
+        console.log('Обработанные категории:', categories)
+        setMenuCategories(categories)
+        // Устанавливаем первую категорию как выбранную, если еще не выбрана или если текущая категория не найдена
+        setSelectedCategory((prev) => {
+          if (categories.length > 0) {
+            const currentCategoryExists = categories.find((c: MenuCategory) => c.key === prev)
+            if (!currentCategoryExists || !prev) {
+              const firstCategoryKey = categories[0].key
+              console.log('Устанавливаем первую категорию:', firstCategoryKey)
+              return firstCategoryKey
+            }
+          }
+          return prev || (categories.length > 0 ? categories[0].key : '')
+        })
+      })
+      .catch(err => {
+        console.error('Ошибка загрузки категорий:', err)
+        // Fallback на статические категории при ошибке
+        const updatedCategories = defaultCategories.map(cat => ({
+          ...cat,
+          name: t.categories[cat.key as keyof typeof t.categories] || cat.name
+        }))
+        setMenuCategories(updatedCategories)
+      })
+  }, [language, t.categories])
   
   useEffect(() => {
-    // Обновляем названия категорий из переводов
-    const updatedCategories = defaultCategories.map(cat => ({
-      ...cat,
-      name: t.categories[cat.key as keyof typeof t.categories] || cat.name
-    }))
-    setMenuCategories(updatedCategories)
+    loadCategories()
   }, [language, t.categories])
+  
+  // Слушаем событие обновления категорий из админ-панели
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleCategoriesUpdate = () => {
+        console.log('Получено событие categoriesUpdated, перезагружаем категории...')
+        // Используем loadCategories для перезагрузки
+        loadCategories()
+      }
+      window.addEventListener('categoriesUpdated', handleCategoriesUpdate)
+      return () => window.removeEventListener('categoriesUpdated', handleCategoriesUpdate)
+    }
+  }, [loadCategories]) // Используем loadCategories как зависимость
 
-  const [selectedCategory, setSelectedCategory] = useState('rolls')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [showSubmenu, setShowSubmenu] = useState(false)
   
   const currentCategory = menuCategories.find(cat => cat.key === selectedCategory)
   
-  // Фильтрация товаров
-  const filteredItems = selectedSubcategory 
-    ? currentCategory?.subcategories.find(sub => sub.id === selectedSubcategory)?.items || []
-    : menuItems.filter(item => {
-        // Получаем переведенное название текущей выбранной категории
-        const currentCategoryName = t.categories[selectedCategory as keyof typeof t.categories];
-        // Сравниваем с категорией товара (которая тоже переведена через getLocalized)
-        return item.category === currentCategoryName;
-      })
+  // Фильтрация товаров - улучшенная логика
+  const filteredItems = React.useMemo(() => {
+    // Если выбрана подкатегория, возвращаем товары из подкатегории
+    if (selectedSubcategory && currentCategory) {
+      return currentCategory.subcategories.find(sub => sub.id === selectedSubcategory)?.items || []
+    }
+    
+    // Если категория не выбрана или категории не загружены, показываем все товары
+    if (!selectedCategory || menuCategories.length === 0 || menuItems.length === 0) {
+      return menuItems
+    }
+    
+    const selectedCat = menuCategories.find(cat => cat.key === selectedCategory)
+    if (!selectedCat) {
+      console.warn('Категория не найдена:', selectedCategory, 'Доступные категории:', menuCategories.map(c => c.key))
+      return menuItems
+    }
+    
+    const filtered = menuItems.filter(item => {
+      // Приоритет 1: Используем slug категории для фильтрации (более надежно)
+      if (item.categorySlug) {
+        // Проверяем по key (slug) категории
+        const matchesSlug = item.categorySlug === selectedCategory || 
+                           item.categorySlug === selectedCat.key ||
+                           (selectedCat.slug && item.categorySlug === selectedCat.slug)
+        if (matchesSlug) {
+          return true
+        }
+      }
+      
+      // Приоритет 2: Сравниваем по categoryId, если есть
+      if (item.categoryId && selectedCat.id) {
+        // Проверяем как строку и как число
+        const itemCategoryId = item.categoryId.toString()
+        const selectedCatId = selectedCat.id.toString()
+        const matches = itemCategoryId === selectedCatId
+        if (matches) {
+          return true
+        }
+      }
+      
+      // Приоритет 3: Сравниваем по названию категории (менее надежно, но как fallback)
+      if (item.category) {
+        const itemCategoryName = item.category.toLowerCase().trim()
+        const selectedCatName = selectedCat.name.toLowerCase().trim()
+        const matches = itemCategoryName === selectedCatName
+        if (matches) {
+          return true
+        }
+      }
+      
+      return false
+    })
+    
+    console.log('Фильтрация товаров:', {
+      selectedCategory,
+      selectedCatName: selectedCat.name,
+      selectedCatId: selectedCat.id,
+      totalItems: menuItems.length,
+      filteredCount: filtered.length,
+      sampleItems: menuItems.slice(0, 3).map(item => ({ 
+        id: item.id,
+        name: item.name,
+        categorySlug: item.categorySlug, 
+        category: item.category, 
+        categoryId: item.categoryId 
+      }))
+    })
+    
+    return filtered
+  }, [menuItems, selectedCategory, selectedSubcategory, currentCategory, menuCategories])
+  
+  // Отладочный эффект для отслеживания изменений
+  useEffect(() => {
+    console.log('Состояние фильтрации обновлено:', {
+      selectedCategory,
+      filteredItemsCount: filteredItems.length,
+      menuItemsCount: menuItems.length,
+      categoriesCount: menuCategories.length
+    })
+  }, [selectedCategory, filteredItems.length, menuItems.length, menuCategories.length])
 
   // --- НАВИГАЦИЯ ---
   const [activePage, setActivePage] = useState<string | null>(null)
@@ -877,26 +1273,219 @@ export default function MenuView() {
   // --- СКРОЛЛ КАТЕГОРИЙ ---
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const categoriesPanelRef = useRef<HTMLDivElement | null>(null)
+  const scrollPositionRef = useRef<number>(0)
+  const isUserScrollingRef = useRef<boolean>(false)
+  const restorePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const checkScrollButtons = (element: HTMLElement) => {
+  const checkScrollButtons = useCallback((element: HTMLElement) => {
     if (element) {
-      setCanScrollLeft(element.scrollLeft > 0)
-      setCanScrollRight(element.scrollLeft < element.scrollWidth - element.clientWidth - 1)
+      const scrollLeft = element.scrollLeft
+      const scrollWidth = element.scrollWidth
+      const clientWidth = element.clientWidth
+      const threshold = 5 // Небольшой порог для предотвращения дёргания
+      
+      setCanScrollLeft(scrollLeft > threshold)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - threshold)
     }
-  }
+  }, [])
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    // Помечаем, что пользователь прокручивает
+    isUserScrollingRef.current = true
+    
+    // Сохраняем позицию прокрутки постоянно
+    const currentScroll = e.currentTarget.scrollLeft
+    scrollPositionRef.current = currentScroll
+    
+    // Отменяем предыдущий таймаут
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+    
+    // Проверяем кнопки с небольшой задержкой для плавности
+    scrollTimeoutRef.current = setTimeout(() => {
+      checkScrollButtons(e.currentTarget)
+      // Сбрасываем флаг после завершения прокрутки
+      setTimeout(() => {
+        isUserScrollingRef.current = false
+      }, 150)
+    }, 50)
+  }, [checkScrollButtons])
+  
+  // Постоянно отслеживаем и восстанавливаем позицию прокрутки
+  useEffect(() => {
+    const panel = categoriesPanelRef.current
+    if (!panel) return
+
+    const savedPosition = scrollPositionRef.current
+    
+    // Функция для восстановления позиции (только если пользователь не прокручивает)
+    const restorePosition = () => {
+      if (panel && savedPosition > 0 && !isUserScrollingRef.current) {
+        const currentScroll = panel.scrollLeft
+        // Восстанавливаем только если позиция сильно отличается
+        if (Math.abs(currentScroll - savedPosition) > 5) {
+          panel.scrollLeft = savedPosition
+        }
+      }
+    }
+
+    // Отменяем предыдущий таймаут восстановления
+    if (restorePositionTimeoutRef.current) {
+      clearTimeout(restorePositionTimeoutRef.current)
+    }
+
+    // Восстанавливаем позицию после небольшой задержки (чтобы дать время на рендер)
+    restorePositionTimeoutRef.current = setTimeout(() => {
+      restorePosition()
+    }, 50)
+    
+    // Восстанавливаем после рендера
+    requestAnimationFrame(() => {
+      setTimeout(restorePosition, 10)
+    })
+    
+    // Восстанавливаем с дополнительными задержками для надёжности
+    const timeout1 = setTimeout(restorePosition, 100)
+    const timeout2 = setTimeout(restorePosition, 200)
+    const timeout3 = setTimeout(restorePosition, 500)
+
+    // Отслеживаем изменения в DOM
+    const observer = new MutationObserver(() => {
+      if (!isUserScrollingRef.current) {
+        restorePosition()
+      }
+    })
+    
+    observer.observe(panel, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    })
+
+    // Постоянно восстанавливаем позицию при любых изменениях (но только если пользователь не прокручивает)
+    const interval = setInterval(() => {
+      if (!isUserScrollingRef.current) {
+        restorePosition()
+      }
+    }, 300)
+
+    return () => {
+      if (restorePositionTimeoutRef.current) {
+        clearTimeout(restorePositionTimeoutRef.current)
+      }
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
+      clearTimeout(timeout3)
+      clearInterval(interval)
+      observer.disconnect()
+    }
+  }, [selectedCategory, menuCategories])
+
+  // Очистка таймаута при размонтировании
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const CategoriesPanel = () => (
     <div className="categories-panel-wrapper-web">
-      <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web'); if(p) { p.scrollBy({ left: -200, behavior: 'smooth' }); setTimeout(() => checkScrollButtons(p as HTMLElement), 300) } }}>‹</button>
-      <div className="categories-panel-web" onScroll={(e) => checkScrollButtons(e.currentTarget)}>
+      <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { 
+        const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
+        if(p) { 
+          // Прокручиваем на ширину одной категории + gap (85px) для планшета, или стандартно для других устройств
+          const scrollAmount = window.innerWidth >= 481 && window.innerWidth <= 1024 ? 85 : 200;
+          p.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); 
+          setTimeout(() => checkScrollButtons(p), 300);
+        } 
+      }}>‹</button>
+      <div 
+        ref={categoriesPanelRef}
+        className="categories-panel-web" 
+        onScroll={handleScroll}
+      >
         {menuCategories.map(category => (
-          <button key={category.key} className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`} onClick={() => { setSelectedCategory(category.key); setShowSubmenu(category.subcategories.length > 0); setSelectedSubcategory(null) }}>
+          <button 
+            key={category.key} 
+            className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`} 
+            onClick={(e) => { 
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Сохраняем текущую позицию прокрутки перед изменением состояния
+              if (categoriesPanelRef.current) {
+                scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+              }
+              
+              // Устанавливаем выбранную категорию
+              const newCategoryKey = category.key
+              console.log('Выбрана категория:', newCategoryKey, 'Категория:', category.name, 'Slug:', category.slug || category.key)
+              
+              // Убеждаемся, что категория устанавливается
+              setSelectedCategory(newCategoryKey); 
+              setShowSubmenu(category.subcategories.length > 0); 
+              setSelectedSubcategory(null);
+              
+              // Прокручиваем к началу списка товаров при смене категории
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+              }
+              
+              // Немедленно восстанавливаем позицию прокрутки несколькими способами для надёжности
+              const savedPosition = scrollPositionRef.current
+              if (categoriesPanelRef.current) {
+                requestAnimationFrame(() => {
+                  if (categoriesPanelRef.current) {
+                    categoriesPanelRef.current.scrollLeft = savedPosition
+                  }
+                })
+                setTimeout(() => {
+                  if (categoriesPanelRef.current) {
+                    categoriesPanelRef.current.scrollLeft = savedPosition
+                  }
+                }, 0)
+                setTimeout(() => {
+                  if (categoriesPanelRef.current) {
+                    categoriesPanelRef.current.scrollLeft = savedPosition
+                  }
+                }, 10)
+              }
+            }}
+            onMouseDown={(e) => {
+              // Предотвращаем случайное выделение текста при клике
+              e.preventDefault()
+              // Сохраняем позицию прокрутки перед любыми действиями
+              if (categoriesPanelRef.current) {
+                scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+              }
+            }}
+            onFocus={(e) => {
+              // Предотвращаем автоматическую прокрутку при фокусе
+              e.preventDefault();
+              e.currentTarget.blur();
+            }}
+            tabIndex={-1}
+            style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
+          >
             <div className="category-button-icon-web">{category.emoji}</div>
             <span className="category-button-label-web">{category.name}</span>
           </button>
         ))}
       </div>
-      <button className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web'); if(p) { p.scrollBy({ left: 200, behavior: 'smooth' }); setTimeout(() => checkScrollButtons(p as HTMLElement), 300) } }}>›</button>
+      <button className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { 
+        const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
+        if(p) { 
+          // Прокручиваем на ширину одной категории + gap (85px) для планшета, или стандартно для других устройств
+          const scrollAmount = window.innerWidth >= 481 && window.innerWidth <= 1024 ? 85 : 200;
+          p.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
+          setTimeout(() => checkScrollButtons(p), 300);
+        } 
+      }}>›</button>
     </div>
   )
 
@@ -979,11 +1568,23 @@ export default function MenuView() {
     <div className="menu-page-web relative">
       <LogoBackground />
       <header className="app-header-web relative z-10" style={{
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%)',
-        backdropFilter: 'blur(20px)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-        borderBottom: '1px solid rgba(0,0,0,0.06)'
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(250,252,251,0.98) 100%)',
+        backdropFilter: 'blur(30px)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 4px 16px rgba(20,81,66,0.08), inset 0 1px 0 rgba(255,255,255,0.95)',
+        borderBottom: '2px solid rgba(20,81,66,0.1)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        {/* Декоративный градиент сверху */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '2px',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(20,81,66,0.3) 50%, transparent 100%)',
+          animation: 'shimmer 3s infinite'
+        }} />
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
             <div className="logo-icon-web"><Image src="/logo.png" alt="Logo" width={50} height={50} className="logo-image-web" priority style={{ objectFit: 'contain' }} /></div>
@@ -992,95 +1593,24 @@ export default function MenuView() {
           
           {/* Центральная навигация для десктопа */}
           <div className="header-center-nav-web" style={{
-            display: 'none',
+            display: 'flex',
             alignItems: 'center',
-            gap: '24px',
+            gap: '16px',
             flex: 1,
             justifyContent: 'center',
             padding: '0 20px'
           }}>
-            <div 
-              ref={cityDropdownRef}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                transition: 'all 0.2s ease',
-                position: 'relative'
+            <CountryCitySelector 
+              onCityChange={(cityId: number) => {
+                setSelectedCityId(cityId)
+                // Перезагружаем меню для выбранного города
+                loadMenuItems()
+                // Отправляем событие для обновления других компонентов
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
+                }
               }}
-              onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(20,81,66,0.05)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
-              }}
-            >
-              <div style={{ 
-                width: '24px', 
-                height: '16px', 
-                background: 'linear-gradient(180deg, #AE1C28 0%, #AE1C28 50%, #FFFFFF 50%, #FFFFFF 100%)', 
-                borderRadius: '2px', 
-                flexShrink: 0,
-                border: '1px solid rgba(0,0,0,0.1)'
-              }}></div>
-              <span style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>Нидерланды</span>
-              {selectedCityId && deliveryCities.find(c => c.id === selectedCityId) && (
-                <span style={{ fontSize: '14px', fontWeight: '500', color: '#666' }}>
-                  {deliveryCities.find(c => c.id === selectedCityId)?.name_nl || deliveryCities.find(c => c.id === selectedCityId)?.name}
-                </span>
-              )}
-              {isCityDropdownOpen && deliveryCities.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  left: 0,
-                  background: 'white',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                  border: '1px solid rgba(0,0,0,0.1)',
-                  minWidth: '200px',
-                  zIndex: 1000,
-                  maxHeight: '300px',
-                  overflowY: 'auto'
-                }}>
-                  {deliveryCities.map(city => (
-                    <div
-                      key={city.id}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedCityId(city.id)
-                        setIsCityDropdownOpen(false)
-                      }}
-                      style={{
-                        padding: '10px 14px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid rgba(0,0,0,0.05)',
-                        background: selectedCityId === city.id ? 'rgba(20,81,66,0.08)' : 'transparent',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (selectedCityId !== city.id) {
-                          e.currentTarget.style.background = 'rgba(20,81,66,0.05)'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (selectedCityId !== city.id) {
-                          e.currentTarget.style.background = 'transparent'
-                        }
-                      }}
-                    >
-                      <span style={{ fontSize: '14px', fontWeight: selectedCityId === city.id ? '600' : '500', color: '#333' }}>
-                        {city.name_nl || city.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            />
             
             <button 
               onClick={() => handlePageOpen('delivery')}
@@ -1175,31 +1705,34 @@ export default function MenuView() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '12px',
-                border: '1px solid rgba(0,0,0,0.1)',
-                background: 'rgba(255,255,255,0.8)',
+                gap: '10px',
+                padding: '10px 18px',
+                borderRadius: '14px',
+                border: '2px solid #145142',
+                background: '#ffffff',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
+                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
                 fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
+                fontWeight: '600',
+                color: '#145142',
                 backdropFilter: 'blur(10px)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                boxShadow: '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.95)'
-                e.currentTarget.style.borderColor = 'rgba(20,81,66,0.2)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
-                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.background = 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)'
+                e.currentTarget.style.color = '#ffffff'
+                e.currentTarget.style.borderColor = '#145142'
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(20,81,66,0.35), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 3px rgba(20,81,66,0.1)'
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.8)'
-                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04)'
-                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.background = '#ffffff'
+                e.currentTarget.style.color = '#145142'
+                e.currentTarget.style.borderColor = '#145142'
+                e.currentTarget.style.boxShadow = '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)'
+                e.currentTarget.style.transform = 'translateY(0) scale(1)'
               }}
             >
               <span>{t.cart}</span>
@@ -1210,21 +1743,23 @@ export default function MenuView() {
                     className="cart-badge-web"
                     style={{ 
                       position: 'absolute', 
-                      top: '-6px', 
-                      right: '-6px', 
-                      backgroundColor: '#ec4899', 
+                      top: '-8px', 
+                      right: '-8px', 
+                      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%)',
                       color: 'white', 
-                      fontSize: '10px', 
-                      fontWeight: '700', 
-                      borderRadius: '10px', 
-                      minHeight: '16px', 
-                      minWidth: '16px', 
-                      padding: cartCount > 9 ? '2px 5px' : '2px',
+                      fontSize: '11px', 
+                      fontWeight: '800', 
+                      borderRadius: '12px', 
+                      minHeight: '20px', 
+                      minWidth: '20px', 
+                      padding: cartCount > 9 ? '3px 6px' : '3px',
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
                       lineHeight: '1',
-                      boxShadow: '0 2px 6px rgba(236,72,153,0.4), 0 0 0 2px rgba(255,255,255,0.8)'
+                      boxShadow: '0 4px 12px rgba(255,107,53,0.5), 0 0 0 3px rgba(255,255,255,0.9), inset 0 1px 0 rgba(255,255,255,0.3)',
+                      border: '2px solid #ffffff',
+                      letterSpacing: '-0.3px'
                     }}
                   >
                     {cartCount > 99 ? '99+' : cartCount}
@@ -1233,7 +1768,7 @@ export default function MenuView() {
               </div>
             </button>
             
-            <div className="location-section-web" style={{ marginLeft: '8px' }}>
+            <div className="location-section-web" style={{ marginLeft: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
               <LanguageSelector />
             </div>
             
@@ -1241,51 +1776,54 @@ export default function MenuView() {
               onClick={toggleSidebar} 
               aria-label="Меню"
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
-                border: '1.5px solid rgba(20,81,66,0.15)',
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,251,252,0.95) 100%)',
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                border: '2px solid #145142',
+                background: '#ffffff',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(20,81,66,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)',
+                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 flexShrink: 0,
                 position: 'relative',
                 overflow: 'hidden',
                 backdropFilter: 'blur(10px)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(20,81,66,0.1) 0%, rgba(20,81,66,0.05) 100%)'
-                e.currentTarget.style.borderColor = 'rgba(20,81,66,0.3)'
-                e.currentTarget.style.boxShadow = '0 8px 24px rgba(20,81,66,0.2), 0 4px 12px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.8)'
-                e.currentTarget.style.transform = 'translateY(-3px) scale(1.08) rotate(2deg)'
+                e.currentTarget.style.background = 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)'
+                e.currentTarget.style.borderColor = '#145142'
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(20,81,66,0.35), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 3px rgba(20,81,66,0.1)'
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.1) rotate(5deg)'
                 const icon = e.currentTarget.querySelector('svg')
                 if (icon) {
-                  icon.style.transform = 'scale(1.1) rotate(5deg)'
-                  icon.style.color = '#145142'
+                  icon.style.transform = 'scale(1.15) rotate(-5deg)'
+                  icon.style.color = '#ffffff'
+                  icon.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,251,252,0.95) 100%)'
-                e.currentTarget.style.borderColor = 'rgba(20,81,66,0.15)'
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(20,81,66,0.12), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)'
+                e.currentTarget.style.background = '#ffffff'
+                e.currentTarget.style.borderColor = '#145142'
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)'
                 e.currentTarget.style.transform = 'translateY(0) scale(1) rotate(0deg)'
                 const icon = e.currentTarget.querySelector('svg')
                 if (icon) {
                   icon.style.transform = 'scale(1) rotate(0deg)'
-                  icon.style.color = '#333'
+                  icon.style.color = '#145142'
+                  icon.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
                 }
               }}
             >
               <Menu 
-                size={20} 
+                size={22} 
                 style={{ 
-                  color: '#333',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
+                  color: '#145142',
+                  transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
+                  strokeWidth: 2.5
                 }} 
               />
             </button>
@@ -1302,27 +1840,95 @@ export default function MenuView() {
         </div>
       )}
 
-      <div className="hero-banner-web">
-        <div className="hero-content-web">
-          {/* Используем t.hero.title для перевода заголовка */}
-          <div className="hero-text-web"><h1 className="hero-title-web" style={{whiteSpace: 'pre-line'}}>{t.hero.title.replace(/ /g, '\n')}</h1></div>
-          <div className="hero-images-web"><div className="hero-image-item-web hero-image-1"><div className="hero-image-placeholder-web">🍜</div></div><div className="hero-image-item-web hero-image-2"><div className="hero-image-placeholder-web">🍲</div></div><div className="hero-image-item-web hero-image-3"><div className="hero-image-placeholder-web">🥘</div></div></div>
+      {banners.length > 0 ? (
+        <div 
+          className="hero-banner-web"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+          style={{ 
+            cursor: 'grab', 
+            userSelect: 'none', 
+            touchAction: 'pan-x pan-y',
+            backgroundImage: `url(${banners[currentBannerIndex].imageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            position: 'relative'
+          }}
+        >
+          <div 
+            className="hero-content-web"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2, minHeight: '100%' }}
+          />
+          <div className="hero-dots-web" style={{ position: 'relative', zIndex: 3 }}>
+            {banners.map((_, i) => (
+              <span 
+                key={i} 
+                className={`hero-dot-web ${i === currentBannerIndex ? 'active' : ''}`}
+                onClick={() => setCurrentBannerIndex(i)}
+                style={{ cursor: 'pointer' }}
+              />
+            ))}
+          </div>
         </div>
-        <div className="hero-dots-web">{[1, 2, 3, 4, 5, 6, 7, 8].map((_, i) => <span key={i} className={`hero-dot-web ${i === 0 ? 'active' : ''}`}></span>)}</div>
-      </div>
+      ) : (
+        <div className="hero-banner-web">
+          <div className="hero-content-web">
+            {/* Используем t.hero.title для перевода заголовка (fallback) */}
+            <div className="hero-text-web"><h1 className="hero-title-web" style={{whiteSpace: 'pre-line'}}>{t.hero.title.replace(/ /g, '\n')}</h1></div>
+            <div className="hero-images-web"><div className="hero-image-item-web hero-image-1"><div className="hero-image-placeholder-web">🍜</div></div><div className="hero-image-item-web hero-image-2"><div className="hero-image-placeholder-web">🍲</div></div><div className="hero-image-item-web hero-image-3"><div className="hero-image-placeholder-web">🥘</div></div></div>
+          </div>
+          <div className="hero-dots-web">{[1, 2, 3, 4, 5, 6, 7, 8].map((_, i) => <span key={i} className={`hero-dot-web ${i === 0 ? 'active' : ''}`}></span>)}</div>
+        </div>
+      )}
 
       <div className="section-header-web"><h2 className="section-title-web">{t.section.title}</h2><p className="section-description-web">{t.section.description}</p></div>
       
       <div className="menu-section-web">
-        <h3 className="category-title-web">{t.categories[selectedCategory as keyof typeof t.categories] || ''}</h3>
+        <h3 className="category-title-web">{t.categories[selectedCategory as keyof typeof t.categories] || menuCategories.find(c => c.key === selectedCategory)?.name || ''}</h3>
         <div className="menu-items-grid-web">
-          {filteredItems.map(item => (
-            <div key={item.id} className="menu-item-card-web">
-              {item.isTop && <div className="top-badge-web"><span className="badge-icon-web">⚡</span><span className="badge-text-web">{t.popular || 'Топ'}</span></div>}
-              <div className="item-image-web">{item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.emoji}</div>
-              <div className="item-info-web"><h4 className="item-name-web">{item.name}</h4><p className="item-description-web">{item.description}</p><div className="item-footer-web"><span className="item-price-web">{item.price} ₴</span><button className="add-btn-web" onClick={() => addToCart(item)}>+</button></div></div>
+          {filteredItems.length > 0 ? (
+            filteredItems.map(item => (
+              <div key={item.id} className="menu-item-card-web">
+                {item.isTop && <div className="top-badge-web"><span className="badge-icon-web">⚡</span><span className="badge-text-web">{t.popular || 'Топ'}</span></div>}
+                <div className="item-image-web">{item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.emoji}</div>
+                <div className="item-info-web"><h4 className="item-name-web">{item.name}</h4><p className="item-description-web">{item.description}</p><div className="item-footer-web"><span className="item-price-web">{item.price} ₴</span><button className="add-btn-web" onClick={() => addToCart(item)}>+</button></div></div>
+              </div>
+            ))
+          ) : (
+            <div style={{ 
+              gridColumn: '1 / -1', 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              color: '#666',
+              fontSize: '16px'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🍣</div>
+              <p style={{ margin: 0, fontWeight: '500' }}>
+                {language === 'uk' ? 'Товарів у цій категорії поки немає' : 
+                 language === 'en' ? 'No items in this category yet' :
+                 language === 'nl' ? 'Nog geen items in deze categorie' :
+                 'Товаров в этой категории пока нет'}
+              </p>
+              <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.7 }}>
+                {language === 'uk' ? 'Додайте товари через адмін-панель' :
+                 language === 'en' ? 'Add items through the admin panel' :
+                 language === 'nl' ? 'Voeg items toe via het adminpaneel' :
+                 'Добавьте товары через админ-панель'}
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

@@ -86,41 +86,82 @@ const getNetherlandsMapUrl = (cities: City[]) => {
   return `https://www.google.com/maps?q=Netherlands&output=embed&z=8&markers=${encodeURIComponent(markers)}`
 }
 
-// Функция для генерации URL карты для конкретного города
+// Функция для генерации URL карты для конкретного города (используем сохранённые lat/lng/zoom)
 const getCityMapUrl = (city: City) => {
-  const cityName = encodeURIComponent(city.name + ', Netherlands')
-  return `https://www.google.com/maps?q=${cityName}&output=embed`
+  const { lat, lng } = city.coordinates
+  const z = city.zoom || 12
+  if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+    return `https://www.google.com/maps?q=${lat},${lng}&output=embed&z=${z}`
+  }
+  const cityName = encodeURIComponent(city.name)
+  return `https://www.google.com/maps?q=${cityName}&output=embed&z=${z}`
 }
 
 export default function DeliveryView() {
-  const [selectedCity, setSelectedCity] = useState<City>(defaultCities[0])
-  const [cities, setCities] = useState<City[]>(defaultCities)
+  const [selectedCity, setSelectedCity] = useState<City | null>(null)
+  const [cities, setCities] = useState<City[]>([])
+  const [countries, setCountries] = useState<any[]>([])
   const [showAllCities, setShowAllCities] = useState(true) // По умолчанию показываем все города
+  const [loading, setLoading] = useState(true)
 
+  // Загрузка стран и городов из API
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    // Загружаем сохраненные зоны доставки из localStorage
-    if (window.localStorage) {
-      const savedZones = localStorage.getItem('deliveryZones')
-      if (savedZones) {
-        try {
-          const parsed = JSON.parse(savedZones)
-          setCities(parsed)
-          const currentCity = parsed.find((c: City) => c.id === selectedCity.id)
-          if (currentCity) {
-            setSelectedCity(currentCity)
-          }
-        } catch (e) {
-          console.error('Error loading delivery zones:', e)
+    const loadData = async () => {
+      try {
+        const [countriesRes, citiesRes] = await Promise.all([
+          fetch('/api/countries'),
+          fetch('/api/cities')
+        ])
+        
+        if (countriesRes.ok) {
+          const countriesData = await countriesRes.json()
+          setCountries(countriesData)
         }
+        
+        if (citiesRes.ok) {
+          const citiesData = await citiesRes.json()
+          // Преобразуем данные из API в формат City
+          const formattedCities: City[] = citiesData.map((c: any) => ({
+            id: c.id.toString(),
+            name: c.name,
+            coordinates: c.latitude && c.longitude ? { lat: c.latitude, lng: c.longitude } : { lat: 52.3676, lng: 4.9041 },
+            zoom: c.zoom || 12,
+            deliveryZones: c.deliveryZones ? c.deliveryZones.map((z: any) => ({
+              id: z.id.toString(),
+              name: z.name,
+              color: z.color,
+              coordinates: typeof z.coordinates === 'string' ? JSON.parse(z.coordinates) : z.coordinates
+            })) : []
+          }))
+          
+          setCities(formattedCities)
+          if (formattedCities.length > 0 && !selectedCity) {
+            setSelectedCity(formattedCities[0])
+          }
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки данных доставки:', error)
+        // Fallback на дефолтные данные
+        setCities(defaultCities)
+        setSelectedCity(defaultCities[0])
+      } finally {
+        setLoading(false)
       }
     }
+
+    loadData()
   }, [])
 
+  // Загружаем сохраненный город из localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      // Сохраняем зоны доставки в localStorage
-      localStorage.setItem('deliveryZones', JSON.stringify(cities))
+    if (typeof window !== 'undefined' && window.localStorage && cities.length > 0) {
+      const savedCityId = localStorage.getItem('selectedCityId')
+      if (savedCityId) {
+        const city = cities.find(c => c.id === savedCityId)
+        if (city) {
+          setSelectedCity(city)
+        }
+      }
     }
   }, [cities])
 
@@ -129,6 +170,10 @@ export default function DeliveryView() {
     if (city) {
       setSelectedCity(city)
       setShowAllCities(false) // При выборе города показываем только его карту
+      // Сохраняем выбранный город
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('selectedCityId', cityId)
+      }
     }
   }
 
@@ -136,49 +181,118 @@ export default function DeliveryView() {
     setShowAllCities(true)
   }
 
-  const handleAddZone = () => {
+  const handleAddZone = async () => {
+    if (!selectedCity) return
+    
     const zoneName = prompt('Введіть назву зони доставки:')
     if (!zoneName) return
 
     const colors = ['#4ade80', '#60a5fa', '#f59e0b', '#ef4444', '#a78bfa', '#ec4899']
     const randomColor = colors[Math.floor(Math.random() * colors.length)]
 
-    const newZone: DeliveryZone = {
-      id: `zone-${Date.now()}`,
-      name: zoneName,
-      color: randomColor,
-      coordinates: []
-    }
-
-    const updatedCities = cities.map(city => {
-      if (city.id === selectedCity.id) {
-        return {
-          ...city,
-          deliveryZones: [...city.deliveryZones, newZone]
-        }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Вы не авторизованы как администратор')
+        return
       }
-      return city
-    })
 
-    setCities(updatedCities)
-    setSelectedCity(updatedCities.find(c => c.id === selectedCity.id)!)
+      const res = await fetch('/api/delivery-zones', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: zoneName,
+          color: randomColor,
+          cityId: parseInt(selectedCity.id),
+          coordinates: JSON.stringify([]) // Пустой массив координат, можно будет редактировать позже
+        })
+      })
+
+      if (res.ok) {
+        // Перезагружаем данные
+        const citiesRes = await fetch('/api/cities')
+        if (citiesRes.ok) {
+          const citiesData = await citiesRes.json()
+          const formattedCities: City[] = citiesData.map((c: any) => ({
+            id: c.id.toString(),
+            name: c.name,
+            coordinates: c.latitude && c.longitude ? { lat: c.latitude, lng: c.longitude } : { lat: 52.3676, lng: 4.9041 },
+            zoom: c.zoom || 12,
+            deliveryZones: c.deliveryZones ? c.deliveryZones.map((z: any) => ({
+              id: z.id.toString(),
+              name: z.name,
+              color: z.color,
+              coordinates: typeof z.coordinates === 'string' ? JSON.parse(z.coordinates) : z.coordinates
+            })) : []
+          }))
+          setCities(formattedCities)
+          const updatedCity = formattedCities.find(c => c.id === selectedCity.id)
+          if (updatedCity) {
+            setSelectedCity(updatedCity)
+          }
+        }
+        alert('Зона доставки успешно создана!')
+      } else {
+        alert('Ошибка создания зоны доставки')
+      }
+    } catch (error) {
+      console.error('Ошибка создания зоны доставки:', error)
+      alert('Не удалось создать зону доставки')
+    }
   }
 
-  const handleDeleteZone = (zoneId: string) => {
+  const handleDeleteZone = async (zoneId: string) => {
+    if (!selectedCity) return
     if (!confirm('Ви впевнені, що хочете видалити цю зону?')) return
 
-    const updatedCities = cities.map(city => {
-      if (city.id === selectedCity.id) {
-        return {
-          ...city,
-          deliveryZones: city.deliveryZones.filter(z => z.id !== zoneId)
-        }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Вы не авторизованы как администратор')
+        return
       }
-      return city
-    })
 
-    setCities(updatedCities)
-    setSelectedCity(updatedCities.find(c => c.id === selectedCity.id)!)
+      const res = await fetch(`/api/delivery-zones/${zoneId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (res.ok) {
+        // Перезагружаем данные
+        const citiesRes = await fetch('/api/cities')
+        if (citiesRes.ok) {
+          const citiesData = await citiesRes.json()
+          const formattedCities: City[] = citiesData.map((c: any) => ({
+            id: c.id.toString(),
+            name: c.name,
+            coordinates: c.latitude && c.longitude ? { lat: c.latitude, lng: c.longitude } : { lat: 52.3676, lng: 4.9041 },
+            zoom: c.zoom || 12,
+            deliveryZones: c.deliveryZones ? c.deliveryZones.map((z: any) => ({
+              id: z.id.toString(),
+              name: z.name,
+              color: z.color,
+              coordinates: typeof z.coordinates === 'string' ? JSON.parse(z.coordinates) : z.coordinates
+            })) : []
+          }))
+          setCities(formattedCities)
+          const updatedCity = formattedCities.find(c => c.id === selectedCity.id)
+          if (updatedCity) {
+            setSelectedCity(updatedCity)
+          }
+        }
+        alert('Зона доставки успешно удалена!')
+      } else {
+        alert('Ошибка удаления зоны доставки')
+      }
+    } catch (error) {
+      console.error('Ошибка удаления зоны доставки:', error)
+      alert('Не удалось удалить зону доставки')
+    }
   }
 
 
@@ -188,28 +302,32 @@ export default function DeliveryView() {
       <div className="relative z-10">
         {/* Заголовок страницы */}
         <div className="delivery-header-section-web">
-        <h1 className="delivery-page-title-web">Всі наші міста де працює доставка</h1>
-      </div>
+          <h1 className="delivery-page-title-web">Всі наші міста де працює доставка</h1>
+        </div>
 
-      {/* Выбор города */}
-      <div className="cities-selector-web">
-        {cities.map(city => (
-          <button
-            key={city.id}
-            className={`city-btn-web ${selectedCity.id === city.id ? 'active' : ''}`}
-            onClick={() => handleCityChange(city.id)}
-          >
-            <span className="city-icon-web">📍</span>
-            <span className="city-name-web">{city.name}</span>
-            {city.deliveryZones.length > 0 && (
-              <span className="city-zones-badge-web">{city.deliveryZones.length}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Загрузка данных...</div>
+      ) : (
+        <>
+          {/* Выбор города */}
+          <div className="cities-selector-web">
+            {cities.map(city => (
+              <button
+                key={city.id}
+                className={`city-btn-web ${selectedCity?.id === city.id ? 'active' : ''}`}
+                onClick={() => handleCityChange(city.id)}
+              >
+                <span className="city-icon-web">📍</span>
+                <span className="city-name-web">{city.name}</span>
+                {city.deliveryZones && city.deliveryZones.length > 0 && (
+                  <span className="city-zones-badge-web">{city.deliveryZones.length}</span>
+                )}
+              </button>
+            ))}
+          </div>
 
-      {/* Карта доставки */}
-      <div className="delivery-map-container-web">
+          {/* Карта доставки */}
+          <div className="delivery-map-container-web">
         <div className="map-controls-web">
           <button
             className={`map-view-btn-web ${showAllCities ? 'active' : ''}`}
@@ -217,83 +335,99 @@ export default function DeliveryView() {
           >
             🗺️ Всі міста
           </button>
-          <button
-            className={`map-view-btn-web ${!showAllCities ? 'active' : ''}`}
-            onClick={() => {
-              setShowAllCities(false)
-            }}
-          >
-            📍 {selectedCity.name}
-          </button>
+          {selectedCity && (
+            <button
+              className={`map-view-btn-web ${!showAllCities ? 'active' : ''}`}
+              onClick={() => {
+                setShowAllCities(false)
+              }}
+            >
+              📍 {selectedCity.name}
+            </button>
+          )}
         </div>
         <div className="delivery-map-web">
-          <iframe
-            key={showAllCities ? 'all-cities' : selectedCity.id}
-            src={showAllCities ? getNetherlandsMapUrl(cities) : getCityMapUrl(selectedCity)}
-            width="100%"
-            height="600"
-            style={{ border: 0, borderRadius: '12px', display: 'block' }}
-            allowFullScreen={true}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            title={showAllCities ? 'Карта доставки - Всі міста' : `Карта доставки - ${selectedCity.name}`}
-          ></iframe>
+          {selectedCity && (
+            <iframe
+              key={showAllCities ? 'all-cities' : selectedCity.id}
+              src={showAllCities ? getNetherlandsMapUrl(cities) : getCityMapUrl(selectedCity)}
+              width="100%"
+              height="600"
+              style={{ border: 0, borderRadius: '12px', display: 'block' }}
+              allowFullScreen={true}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title={showAllCities ? 'Карта доставки - Всі міста' : `Карта доставки - ${selectedCity.name}`}
+            ></iframe>
+          )}
           {/* Fallback если карта не загрузилась */}
-          <div className="map-fallback-web" style={{ display: 'none' }}>
-            <a 
-              href={showAllCities 
-                ? 'https://www.google.com/maps/search/Netherlands'
-                : `https://www.google.com/maps/search/${encodeURIComponent(selectedCity.name + ', Netherlands')}`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="map-link-web"
-            >
-              Відкрити карту в Google Maps
-            </a>
-          </div>
+          {selectedCity && (
+            <div className="map-fallback-web" style={{ display: 'none' }}>
+              <a 
+                href={showAllCities 
+                  ? 'https://www.google.com/maps/search/Netherlands'
+                  : (() => {
+                      const { lat, lng } = selectedCity.coordinates
+                      if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+                        return `https://www.google.com/maps?q=${lat},${lng}`
+                      }
+                      return `https://www.google.com/maps/search/${encodeURIComponent(selectedCity.name)}`
+                    })()
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="map-link-web"
+              >
+                Відкрити карту в Google Maps
+              </a>
+            </div>
+          )}
           {/* Админ панель для управления зонами доставки */}
-          <div className="admin-panel-overlay-web">
-            <div className="admin-panel-web">
-              <div className="admin-panel-header-web">
-                <h3>Управління зонами доставки</h3>
-              </div>
-              <div className="admin-panel-content-web">
-                <p>Місто: <strong>{selectedCity.name}</strong></p>
-                <p>Зон доставки: <strong>{selectedCity.deliveryZones.length}</strong></p>
-                <button 
-                  className="add-zone-btn-web"
-                  onClick={handleAddZone}
-                >
-                  ➕ Додати зону доставки
-                </button>
-                {selectedCity.deliveryZones.length > 0 && (
-                  <div className="admin-zone-list-web">
-                    {selectedCity.deliveryZones.map(zone => (
-                      <div key={zone.id} className="admin-zone-item-web">
-                        <div 
-                          className="zone-color-box-web" 
-                          style={{ backgroundColor: zone.color }}
-                        ></div>
-                        <span>{zone.name}</span>
-                        <button 
-                          className="delete-zone-btn-web"
-                          onClick={() => handleDeleteZone(zone.id)}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+          {selectedCity && (
+            <div className="admin-panel-overlay-web">
+              <div className="admin-panel-web">
+                <div className="admin-panel-header-web">
+                  <h3>Управління зонами доставки</h3>
+                </div>
+                <div className="admin-panel-content-web">
+                  <p>Місто: <strong>{selectedCity.name}</strong></p>
+                  <p>Зон доставки: <strong>{selectedCity.deliveryZones?.length || 0}</strong></p>
+                  <button 
+                    className="add-zone-btn-web"
+                    onClick={handleAddZone}
+                  >
+                    ➕ Додати зону доставки
+                  </button>
+                  {selectedCity.deliveryZones && selectedCity.deliveryZones.length > 0 && (
+                    <div className="admin-zone-list-web">
+                      {selectedCity.deliveryZones.map(zone => (
+                        <div key={zone.id} className="admin-zone-item-web">
+                          <div 
+                            className="zone-color-box-web" 
+                            style={{ backgroundColor: zone.color }}
+                          ></div>
+                          <span>{zone.name}</span>
+                          <button 
+                            className="delete-zone-btn-web"
+                            onClick={() => handleDeleteZone(zone.id)}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
-      </div>
+          </div>
+        </>
+      )}
 
       {/* Информация о зонах доставки */}
-      {selectedCity.deliveryZones.length > 0 && (
+      {selectedCity && selectedCity.deliveryZones && selectedCity.deliveryZones.length > 0 && (
         <div className="delivery-zones-info-web">
           <h3 className="zones-info-title-web">Зони доставки в {selectedCity.name}</h3>
           <div className="zones-grid-web">

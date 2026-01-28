@@ -11,16 +11,21 @@ import authRoutes from './routes/auth.routes.ts';
 import productRoutes from './routes/product.routes.ts';
 import promoRoutes from './routes/promo.routes.ts';
 import cityRoutes from './routes/city.routes.ts';
+import bannerRoutes from './routes/banner.routes.ts';
+import countryRoutes from './routes/country.routes.ts';
+import deliveryZoneRoutes from './routes/deliveryZone.routes.ts';
+import teamRoutes from './routes/team.routes.ts';
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // 1. Настройки безопасности и парсинга
 app.use(cors()); // Разрешает запросы с фронтенда
-app.use(express.json()); // Позволяет читать JSON из тела запроса
+app.use(express.json({ limit: '50mb' })); // Позволяет читать JSON из тела запроса (увеличен лимит для изображений)
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Для form-data
 
 // 2. Логирование (чтобы видеть запросы в консоли)
 app.use((req, res, next) => {
@@ -35,6 +40,10 @@ app.use('/api/auth', authRoutes);     // Вход: /api/auth/login
 app.use('/api/products', productRoutes);
 app.use('/api/promo', promoRoutes);
 app.use('/api/cities', cityRoutes);   // Города: /api/cities
+app.use('/api/countries', countryRoutes); // Страны: /api/countries
+app.use('/api/delivery-zones', deliveryZoneRoutes); // Зоны доставки: /api/delivery-zones
+app.use('/api/banners', bannerRoutes); // Баннеры: /api/banners
+app.use('/api/team', teamRoutes); // Команда: /api/team
 
 // 4. Тестовый маршрут
 app.get('/', (req, res) => {

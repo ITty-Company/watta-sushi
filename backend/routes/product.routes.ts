@@ -31,36 +31,122 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Получить один товар по ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const product = await prisma.product.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        category: true,
-        cities: {
-          include: { city: true }
-        }
-      }
-    });
-    if (!product) {
-      return res.status(404).json({ message: 'Товар не найден' });
-    }
-    res.json(product);
-  } catch (error) {
-    console.error('Ошибка получения товара:', error);
-    res.status(500).json({ message: 'Ошибка получения товара' });
-  }
-});
-
-// 2. Получить ВСЕ категории
+// 2. Получить ВСЕ категории (ВАЖНО: должен быть ПЕРЕД роутом /:id)
 router.get('/categories', async (req, res) => {
   try {
-    const categories = await prisma.category.findMany();
+    const categories = await prisma.category.findMany({
+      orderBy: { order: 'asc' }
+    });
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: 'Ошибка получения категорий' });
+  }
+});
+
+// 2.1. Создать категорию
+router.post('/categories', async (req: Request, res: Response) => {
+  try {
+    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive } = req.body;
+    
+    if (!name_ru) {
+      return res.status(400).json({ error: 'Название категории (name_ru) обязательно' });
+    }
+    
+    // Генерируем slug если не указан
+    let categorySlug = slug || name_ru.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    // Проверяем уникальность slug и добавляем суффикс если нужно
+    let finalSlug = categorySlug;
+    let counter = 1;
+    const maxAttempts = 100; // Защита от бесконечного цикла
+    
+    while (counter <= maxAttempts) {
+      const existing = await prisma.category.findUnique({
+        where: { slug: finalSlug }
+      });
+      if (!existing) {
+        break; // Slug уникален
+      }
+      finalSlug = `${categorySlug}-${counter}`;
+      counter++;
+    }
+    
+    if (counter > maxAttempts) {
+      // Если не удалось найти уникальный slug за 100 попыток, добавляем timestamp
+      finalSlug = `${categorySlug}-${Date.now()}`;
+    }
+    
+    const category = await prisma.category.create({
+      data: {
+        name_ru,
+        name_ua: name_ua || name_ru,
+        name_en: name_en || name_ru,
+        name_nl: name_nl || name_ru,
+        slug: finalSlug,
+        emoji: emoji || '🍣',
+        order: order || 0,
+        isActive: isActive !== undefined ? isActive : true
+      }
+    });
+    res.json(category);
+  } catch (error: any) {
+    console.error('Ошибка создания категории:', error);
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: 'Категория с таким slug уже существует' });
+    }
+    res.status(500).json({ error: 'Ошибка создания категории', message: error.message });
+  }
+});
+
+// 2.2. Обновить категорию
+router.put('/categories/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive } = req.body;
+    
+    const category = await prisma.category.update({
+      where: { id },
+      data: {
+        name_ru,
+        name_ua,
+        name_en,
+        name_nl,
+        slug,
+        emoji,
+        order,
+        isActive
+      }
+    });
+    res.json(category);
+  } catch (error) {
+    console.error('Ошибка обновления категории:', error);
+    res.status(500).json({ error: 'Ошибка обновления категории' });
+  }
+});
+
+// 2.3. Удалить категорию
+router.delete('/categories/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    
+    // Проверяем, есть ли товары в этой категории
+    const productsCount = await prisma.product.count({
+      where: { categoryId: id }
+    });
+    
+    if (productsCount > 0) {
+      return res.status(400).json({ 
+        error: 'Нельзя удалить категорию, в которой есть товары. Сначала удалите или переместите товары.' 
+      });
+    }
+    
+    await prisma.category.delete({
+      where: { id }
+    });
+    res.json({ message: 'Категория удалена' });
+  } catch (error) {
+    console.error('Ошибка удаления категории:', error);
+    res.status(500).json({ error: 'Ошибка удаления категории' });
   }
 });
 
@@ -178,6 +264,37 @@ router.delete('/:id', async (req: Request, res: Response) => {
     res.json({ message: 'Товар удален' });
   } catch (error) {
     res.status(500).json({ message: 'Ошибка удаления' });
+  }
+});
+
+// 6. Получить один товар по ID (ВАЖНО: должен быть ПОСЛЕ всех специфичных роутов)
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Проверяем, что это не запрос к категориям
+    if (id === 'categories') {
+      return res.status(404).json({ message: 'Используйте /api/products/categories для получения категорий' });
+    }
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ message: 'Неверный ID товара' });
+    }
+    const productId = parseInt(id);
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: true,
+        cities: {
+          include: { city: true }
+        }
+      }
+    });
+    if (!product) {
+      return res.status(404).json({ message: 'Товар не найден' });
+    }
+    res.json(product);
+  } catch (error) {
+    console.error('Ошибка получения товара:', error);
+    res.status(500).json({ message: 'Ошибка получения товара' });
   }
 });
 

@@ -30,15 +30,52 @@ model Category {
   name_ua  String?
   name_nl  String?
   slug     String    @unique
+  emoji    String?   @default("🍣") // Эмодзи для категории
+  order    Int       @default(0) // Порядок отображения
+  isActive Boolean   @default(true) // Активна ли категория
   products Product[]
 }
 
-model City {
+model Country {
   id        Int       @id @default(autoincrement())
-  name      String    @unique
+  name      String    @unique // Название страны (например, "Нидерланды")
+  name_ua   String?   // Украинское название
+  name_en   String?   // Английское название
   name_nl   String?   // Нидерландское название
+  flag      String?   // Эмодзи флага (например, "🇳🇱")
+  code      String    @unique // Код страны (например, "NL")
   isActive  Boolean   @default(true)
-  products  ProductCity[]
+  cities    City[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model City {
+  id            Int       @id @default(autoincrement())
+  name          String
+  name_nl       String?   // Нидерландское название
+  name_en       String?   // Английское название
+  countryId     Int
+  country       Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  latitude      Float?    // Широта для карты
+  longitude     Float?    // Долгота для карты
+  zoom          Int       @default(12) // Уровень зума карты
+  isActive      Boolean   @default(true)
+  products      ProductCity[]
+  deliveryZones DeliveryZone[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([name, countryId])
+}
+
+model DeliveryZone {
+  id        Int       @id @default(autoincrement())
+  name      String    // Название зоны (например, "Центр")
+  color     String    @default("#4ade80") // Цвет зоны на карте
+  cityId    Int
+  city      City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  coordinates String  // JSON строка с координатами полигона [{lat, lng}, ...]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -114,4 +151,40 @@ model PromoCode {
   code     String  @unique // Сам код (например, "WATTA10")
   discount Int // Процент скидки (например, 10)
   isActive Boolean @default(true)
+}
+
+// --- БАННЕРЫ ---
+model Banner {
+  id        Int      @id @default(autoincrement())
+  title_ru  String   // Заголовок на русском
+  title_ua  String?  // Заголовок на украинском
+  title_en  String?  // Заголовок на английском
+  title_nl  String?  // Заголовок на нидерландском
+  imageUrl  String   // URL изображения баннера
+  order     Int      @default(0) // Порядок отображения
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- КОМАНДА ---
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  name_ru   String   // Имя на русском
+  name_ua   String?  // Имя на украинском
+  name_en   String?  // Имя на английском
+  name_nl   String?  // Имя на нидерландском
+  position_ru  String   // Должность на русском
+  position_ua  String?  // Должность на украинском
+  position_en  String?  // Должность на английском
+  position_nl  String?  // Должность на нидерландском
+  imageUrl  String?  // URL фото сотрудника
+  bio_ru    String?  // Биография на русском
+  bio_ua    String?  // Биография на украинском
+  bio_en    String?  // Биография на английском
+  bio_nl    String?  // Биография на нидерландском
+  order     Int      @default(0) // Порядок отображения
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

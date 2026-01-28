@@ -7,6 +7,7 @@
     "start": "npx tsx server.js",
     "start:single": "npx tsx server.js",
     "migrate": "prisma migrate deploy",
+    "seed:countries": "npx tsx scripts/seed-countries.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npm install && (cd frontend && npm install && npm run build)"
   },

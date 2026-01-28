@@ -17,6 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="uk">
+      <head>
+        <link rel="preconnect" href="http://localhost:3001" />
+        <link rel="dns-prefetch" href="http://localhost:3001" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta name="theme-color" content="#145142" />
+      </head>
       <body>{children}</body>
     </html>
   )

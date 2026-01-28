@@ -27,12 +27,12 @@ export default function LogoBackground() {
       const containerRect = container.getBoundingClientRect()
       const minSize = 60 // Минимальный размер логотипа (уменьшен для заполнения пустот)
       const maxSize = 200 // Максимальный размер логотипа
-      const minGap = 30 // Минимальный зазор между логотипами (уменьшен)
-      const maxAttempts = 500 // Увеличено количество попыток для лучшего заполнения
+      const minGap = 30 // Минимальный зазор между логотипами
+      const maxAttempts = 300 // Уменьшено для производительности
       
-      // Значительно увеличиваем количество логотипов для заполнения пустот
-      const baseLogoCount = Math.floor((containerRect.width * containerRect.height) / (maxSize * maxSize * 0.6)) || 35
-      const logoCount = Math.min(baseLogoCount, 60) // Увеличено до 60 логотипов
+      // Оптимизированное количество логотипов для производительности (уменьшено для быстрой загрузки)
+      const baseLogoCount = Math.floor((containerRect.width * containerRect.height) / (maxSize * maxSize * 1.2)) || 20
+      const logoCount = Math.min(baseLogoCount, 25) // Уменьшено до 25 логотипов для максимальной производительности
       
       const newLogos: LogoPosition[] = []
       const existingLogos: { x: number; y: number; size: number }[] = []
@@ -160,8 +160,8 @@ export default function LogoBackground() {
         }
       }
       
-      // Дополнительный проход для заполнения оставшихся пустот меньшими логотипами
-      const additionalLogos = Math.floor(logoCount * 0.3) // Еще 30% логотипов для заполнения пустот
+      // Дополнительный проход для заполнения оставшихся пустот меньшими логотипами (оптимизировано)
+      const additionalLogos = Math.floor(logoCount * 0.1) // Уменьшено до 10% для максимальной производительности
       for (let i = 0; i < additionalLogos; i++) {
         let placed = false
         let attempts = 0
@@ -224,23 +224,121 @@ export default function LogoBackground() {
       setLogos(newLogos)
     }
 
-    // Генерируем логотипы только один раз после небольшой задержки для правильного расчета размеров
+    // Генерируем логотипы после загрузки страницы для лучшей производительности
     const timeoutId = setTimeout(() => {
-      if (logos.length === 0) {
-        generateLogos()
+      if (logos.length === 0 && document.readyState === 'complete') {
+        // Используем requestIdleCallback для генерации в свободное время
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(() => {
+            generateLogos()
+          }, { timeout: 2000 })
+        } else {
+          setTimeout(generateLogos, 500)
+        }
       }
-    }, 100)
+    }, 300)
 
     return () => {
       clearTimeout(timeoutId)
     }
   }, [logos.length])
 
+  useEffect(() => {
+    // Оптимизированное обновление размеров с debounce
+    let updateTimeout: ReturnType<typeof setTimeout> | null = null
+    
+    const updateSize = () => {
+      if (!containerRef.current) return
+      const container = containerRef.current
+      const parent = container.parentElement
+      if (!parent) return
+      
+      // Получаем полную высоту контента страницы
+      const aboutContainer = document.getElementById('about-page-container')
+      const containerHeight = aboutContainer 
+        ? Math.max(aboutContainer.scrollHeight, aboutContainer.offsetHeight, aboutContainer.clientHeight)
+        : 0
+      
+      const contentHeight = Math.max(
+        containerHeight,
+        parent.scrollHeight,
+        parent.offsetHeight,
+        document.documentElement.scrollHeight,
+        window.innerHeight
+      )
+      
+      // Устанавливаем высоту контейнера равной высоте контента
+      container.style.height = `${contentHeight}px`
+      container.style.minHeight = `${contentHeight}px`
+    }
+    
+    // Debounced update function
+    const debouncedUpdate = () => {
+      if (updateTimeout) clearTimeout(updateTimeout)
+      updateTimeout = setTimeout(updateSize, 150)
+    }
+    
+    // Обновляем сразу
+    updateSize()
+    
+    // Обновляем после небольших задержек
+    const timeoutId = setTimeout(updateSize, 200)
+    const timeoutId2 = setTimeout(updateSize, 500)
+    
+    window.addEventListener('resize', debouncedUpdate, { passive: true })
+    
+    // Используем ResizeObserver с debounce
+    let resizeObserver: ResizeObserver | null = null
+    if (containerRef.current?.parentElement && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(debouncedUpdate)
+      resizeObserver.observe(containerRef.current.parentElement)
+    }
+    
+    // Используем MutationObserver с debounce только для значительных изменений
+    let mutationObserver: MutationObserver | null = null
+    if (typeof MutationObserver !== 'undefined' && containerRef.current?.parentElement) {
+      mutationObserver = new MutationObserver((mutations) => {
+        // Обновляем только если добавлены/удалены узлы (не просто изменения атрибутов)
+        const hasSignificantChanges = mutations.some(m => m.addedNodes.length > 0 || m.removedNodes.length > 0)
+        if (hasSignificantChanges) {
+          debouncedUpdate()
+        }
+      })
+      mutationObserver.observe(containerRef.current.parentElement, {
+        childList: true,
+        subtree: false, // Только прямые дети для производительности
+        attributes: false // Игнорируем изменения атрибутов
+      })
+    }
+    
+    return () => {
+      if (updateTimeout) clearTimeout(updateTimeout)
+      clearTimeout(timeoutId)
+      clearTimeout(timeoutId2)
+      window.removeEventListener('resize', debouncedUpdate)
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
+      if (mutationObserver) {
+        mutationObserver.disconnect()
+      }
+    }
+  }, [])
+
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 overflow-hidden pointer-events-none"
-      style={{ zIndex: 0 }}
+      className="absolute inset-0 overflow-hidden pointer-events-none"
+      style={{ 
+        zIndex: 0,
+        minHeight: '100%',
+        height: '100%',
+        width: '100%',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}
     >
       {logos.map((logo, index) => (
         <div
@@ -258,11 +356,15 @@ export default function LogoBackground() {
         >
           <img
             src="/logo.png"
-            alt="Watta Sushi"
+            alt=""
             className="w-full h-full object-contain"
             loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             style={{
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+              willChange: 'auto',
+              contentVisibility: 'auto'
             }}
           />
         </div>

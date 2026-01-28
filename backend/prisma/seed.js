@@ -28,20 +28,23 @@ async function main() {
 
   // 1. Создаем ВСЕ категории
   const categories = [
-    { name_ru: 'Роллы', slug: 'rolls' },
-    { name_ru: 'Суши', slug: 'sushi' },
-    { name_ru: 'Сеты', slug: 'sets' },
-    { name_ru: 'Боулы', slug: 'bowls' },
-    { name_ru: 'Супы', slug: 'soups' },
-    { name_ru: 'Закуски', slug: 'snacks' },
-    { name_ru: 'Напитки', slug: 'drinks' },
-    { name_ru: 'Соусы', slug: 'sauces' },
+    { name_ru: 'Роллы', slug: 'rolls', emoji: '🍣', order: 0 },
+    { name_ru: 'Суши', slug: 'sushi', emoji: '🍙', order: 1 },
+    { name_ru: 'Сеты', slug: 'sets', emoji: '🍱', order: 2 },
+    { name_ru: 'Супы', slug: 'soups', emoji: '🍜', order: 3 },
+    { name_ru: 'Боулы', slug: 'bowls', emoji: '🥗', order: 4 },
+    { name_ru: 'Закуски', slug: 'snacks', emoji: '🍤', order: 5 },
+    { name_ru: 'Напитки', slug: 'drinks', emoji: '🧃', order: 6 },
+    { name_ru: 'Соусы', slug: 'sauces', emoji: '🌶️', order: 7 },
   ]
 
   for (const cat of categories) {
     await prisma.category.upsert({
       where: { slug: cat.slug },
-      update: {},
+      update: {
+        emoji: cat.emoji,
+        order: cat.order
+      },
       create: cat,
     })
   }
