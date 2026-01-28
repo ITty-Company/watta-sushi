@@ -18,9 +18,10 @@ const nextConfig = {
   swcMinify: true,
   
   // Экспериментальные функции для производительности
-  experimental: {
-    optimizeCss: true,
-  },
+  // optimizeCss отключен, так как требует модуль 'critters'
+  // experimental: {
+  //   optimizeCss: true,
+  // },
   
   async rewrites() {
     // Используем переменную окружения для URL API, или localhost для разработки
