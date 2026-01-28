@@ -100,9 +100,23 @@ router.post('/register', async (req: any, res: any) => {
           } 
         });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Ошибка регистрации' });
+    } catch (error: any) {
+        console.error('Ошибка регистрации:', error);
+        
+        // Более детальная обработка ошибок
+        if (error.code === 'P2002') {
+            // Prisma unique constraint violation
+            return res.status(400).json({ message: 'Email уже занят' });
+        }
+        
+        if (error.name === 'PrismaClientKnownRequestError') {
+            return res.status(400).json({ message: 'Ошибка базы данных. Попробуйте позже.' });
+        }
+        
+        // Для других ошибок возвращаем общее сообщение
+        res.status(500).json({ 
+            message: error.message || 'Ошибка регистрации. Попробуйте позже.' 
+        });
     }
 });
 

@@ -215,12 +215,13 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
 
       // 4. Отправляем запрос на сервер с таймаутом
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // Максимум 10 секунд
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // Максимум 15 секунд
 
       let response: Response | undefined
       let data: any
 
       try {
+        console.log('Отправка запроса:', url, body)
         const fetchPromise = fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -234,51 +235,24 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
         clearTimeout(timeoutId)
         
         if (!response) {
-          throw new Error('Нет ответа от сервера')
+          throw new Error(t.auth.errors.timeout)
         }
         
-        data = await response.json()
+        // Пытаемся распарсить JSON, даже если статус не OK
+        try {
+          data = await response.json()
+          console.log('Ответ сервера:', response.status, data)
+        } catch (parseError) {
+          // Если не удалось распарсить JSON, создаем объект с сообщением об ошибке
+          console.error('Ошибка парсинга ответа:', parseError)
+          data = { message: response.statusText || t.auth.errors.generic }
+        }
       } catch (fetchError: any) {
         clearTimeout(timeoutId)
         
-        // Если произошла ошибка сети или таймаут, проверяем существование пользователя
+        // Если произошла ошибка сети или таймаут
         if (fetchError.name === 'AbortError' || fetchError.message.includes('fetch') || fetchError.message.includes('network') || !response) {
-          // Пытаемся проверить, существует ли пользователь
-          try {
-            const checkUserUrl = `/api/auth/check-user?email=${encodeURIComponent(formData.email)}`
-            const checkResponse = await fetch(checkUserUrl, {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-            })
-            
-            if (checkResponse.ok) {
-              const checkData = await checkResponse.json()
-              if (checkData.exists) {
-                // Пользователь существует
-                if (isRegister) {
-                  throw new Error(t.auth.errors.userExists)
-                } else {
-                  throw new Error(t.auth.errors.invalidCredentials)
-                }
-              } else {
-                // Пользователь не существует
-                if (isRegister) {
-                  throw new Error(t.auth.errors.required)
-                } else {
-                  throw new Error(t.auth.errors.userNotFound)
-                }
-              }
-            } else {
-              // Если проверка не удалась, показываем общую ошибку
-              throw new Error(t.auth.errors.generic)
-            }
-          } catch (checkError: any) {
-            // Если проверка не удалась, показываем сообщение из ошибки или общую ошибку
-            if (checkError.message && checkError.message !== fetchError.message && !checkError.message.includes('fetch')) {
-              throw checkError
-            }
-            throw new Error(t.auth.errors.generic)
-          }
+          throw new Error(t.auth.errors.timeout)
         }
         throw fetchError
       }
@@ -286,25 +260,32 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
       // 5. Если ошибка - показываем её
       if (!response || !response.ok) {
         // Преобразуем технические ошибки в понятные сообщения
-        let errorMessage = data.message || 'Ошибка авторизации'
+        let errorMessage = data?.message || response.statusText || t.auth.errors.generic
         
         // Обработка различных типов ошибок с переводами
         if (errorMessage.includes('pattern') || errorMessage.includes('validation') || errorMessage.includes('format')) {
           errorMessage = t.auth.errors.pattern
-        } else if (errorMessage.includes('email') || errorMessage.includes('Email')) {
-          errorMessage = t.auth.errors.emailInvalid
-        } else if (errorMessage.includes('password') || errorMessage.includes('Password')) {
+        } else if (errorMessage.includes('email') || errorMessage.includes('Email') || errorMessage.includes('email')) {
+          if (errorMessage.includes('уже') || errorMessage.includes('занят') || errorMessage.includes('already') || errorMessage.includes('exists')) {
+            errorMessage = t.auth.errors.userExists
+          } else {
+            errorMessage = t.auth.errors.emailInvalid
+          }
+        } else if (errorMessage.includes('password') || errorMessage.includes('Password') || errorMessage.includes('пароль') || errorMessage.includes('Пароль')) {
           errorMessage = t.auth.errors.passwordMin
-        } else if (errorMessage.includes('phone') || errorMessage.includes('Phone')) {
+        } else if (errorMessage.includes('phone') || errorMessage.includes('Phone') || errorMessage.includes('телефон') || errorMessage.includes('Телефон')) {
           errorMessage = t.auth.errors.phoneInvalid
         } else if (errorMessage.includes('exists') || errorMessage.includes('уже') || errorMessage.includes('already') || errorMessage.includes('занят')) {
           errorMessage = t.auth.errors.userExists
         } else if (errorMessage.includes('not found') || errorMessage.includes('не найден') || errorMessage.includes('niet gevonden')) {
           errorMessage = t.auth.errors.userNotFound
-        } else if (errorMessage.includes('invalid') || errorMessage.includes('неверный') || errorMessage.includes('ongeldig')) {
+        } else if (errorMessage.includes('invalid') || errorMessage.includes('неверный') || errorMessage.includes('ongeldig') || errorMessage.includes('Неверный')) {
           errorMessage = t.auth.errors.invalidCredentials
-        } else if (errorMessage.includes('required') || errorMessage.includes('обязательно') || errorMessage.includes('verplicht')) {
+        } else if (errorMessage.includes('required') || errorMessage.includes('обязательно') || errorMessage.includes('обязательны') || errorMessage.includes('verplicht')) {
           errorMessage = t.auth.errors.required
+        } else if (errorMessage.includes('регистрации') || errorMessage.includes('registration')) {
+          // Если это общая ошибка регистрации, оставляем как есть или показываем общую ошибку
+          errorMessage = t.auth.errors.generic
         }
         
         throw new Error(errorMessage)
