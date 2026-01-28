@@ -1855,23 +1855,12 @@ body {
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
   flex-shrink: 0;
   min-width: 0;
   padding: 4px 8px;
   border-radius: 12px;
   background: rgba(255,255,255,0.5);
   backdrop-filter: blur(10px);
-}
-
-.logo-section-web:hover {
-  background: rgba(255,255,255,0.8);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.logo-section-web:hover {
-  opacity: 0.8;
 }
 
 .logo-icon-web {
@@ -1887,17 +1876,17 @@ body {
 
 @media (max-width: 480px) {
   .logo-icon-web {
-    width: 40px;
-    height: 40px;
-    min-width: 35px;
+    width: 48px;
+    height: 48px;
+    min-width: 44px;
   }
 }
 
 @media (min-width: 481px) and (max-width: 1024px) {
   .logo-icon-web {
-    width: 45px;
-    height: 45px;
-    min-width: 40px;
+    width: 50px;
+    height: 50px;
+    min-width: 46px;
   }
 }
 
@@ -1924,21 +1913,21 @@ body {
 
 @media (max-width: 480px) {
   .logo-text-images-web {
-    height: 30px;
+    height: 38px;
   }
   
   .logo-text-image-web {
-    max-width: 100px;
+    max-width: 130px;
   }
 }
 
 @media (min-width: 481px) and (max-width: 1024px) {
   .logo-text-images-web {
-    height: 35px;
+    height: 42px;
   }
   
   .logo-text-image-web {
-    max-width: 140px;
+    max-width: 150px;
   }
 }
 
@@ -1996,8 +1985,8 @@ body {
 
 @media (max-width: 480px) {
   .language-selector-button-web {
-    min-width: 70px;
-    height: 28px;
+    min-width: 64px;
+    height: 26px;
     padding: 2px 6px;
     font-size: 0.7em;
     gap: 3px;
@@ -2029,7 +2018,6 @@ body {
 .language-selector-button-web:hover {
   background: #349F13;
   color: white;
-  font-size: 1em;
 }
 
 .language-selector-button-web:hover .language-code-web,
@@ -3470,26 +3458,51 @@ body {
   }
 
   .logo-section-web {
-    gap: 6px;
+    gap: 8px;
   }
 
   .logo-icon-web {
-    width: 35px;
-    height: 35px;
-    min-width: 30px;
+    width: 50px;
+    height: 50px;
+    min-width: 46px;
   }
 
   .logo-text-images-web {
-    height: 28px;
+    height: 40px;
   }
 
   .logo-text-image-web {
-    max-width: 90px !important;
-    height: 28px !important;
+    max-width: 135px !important;
+    height: 40px !important;
   }
   
   .header-actions-web {
-    gap: 2px;
+    gap: 4px;
+  }
+
+  /* Кнопки хедера меньше на телефоне */
+  .header-cart-btn-text-web {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .header-cart-icon-web {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .header-menu-btn-web {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 10px !important;
+  }
+
+  .header-menu-icon-web {
+    width: 18px !important;
+    height: 18px !important;
   }
 
   .location-section-web {
@@ -3523,20 +3536,37 @@ body {
   }
 
   .logo-section-web {
-    gap: 8px;
+    gap: 10px;
   }
 
   .logo-text-images-web {
-    height: 32px;
+    height: 42px;
   }
 
   .logo-text-image-web {
-    max-width: 120px !important;
-    height: 32px !important;
+    max-width: 150px !important;
+    height: 42px !important;
   }
   
   .header-actions-web {
     gap: 4px;
+  }
+
+  .header-cart-btn-text-web {
+    padding: 8px 14px !important;
+    gap: 8px !important;
+    font-size: 13px !important;
+  }
+
+  .header-menu-btn-web {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+  }
+
+  .header-menu-icon-web {
+    width: 20px !important;
+    height: 20px !important;
   }
 
   .location-section-web {
@@ -3619,9 +3649,6 @@ body {
     gap: 4px;
   }
 
-  .language-selector-button-web:hover {
-    font-size: 0.9em;
-  }
 
   .language-name-web {
     font-size: 0.75em;

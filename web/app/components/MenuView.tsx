@@ -1575,16 +1575,6 @@ export default function MenuView() {
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Декоративный градиент сверху */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '2px',
-          background: 'linear-gradient(90deg, transparent 0%, rgba(20,81,66,0.3) 50%, transparent 100%)',
-          animation: 'shimmer 3s infinite'
-        }} />
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
             <div className="logo-icon-web"><Image src="/logo.png" alt="Logo" width={50} height={50} className="logo-image-web" priority style={{ objectFit: 'contain' }} /></div>
@@ -1622,16 +1612,7 @@ export default function MenuView() {
                 color: '#333',
                 cursor: 'pointer',
                 padding: '4px 8px',
-                borderRadius: '6px',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#145142'
-                e.currentTarget.style.background = 'rgba(20,81,66,0.05)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#333'
-                e.currentTarget.style.background = 'transparent'
+                borderRadius: '6px'
               }}
             >
               {t.navigation.delivery}
@@ -1647,16 +1628,7 @@ export default function MenuView() {
                 color: '#333',
                 cursor: 'pointer',
                 padding: '4px 8px',
-                borderRadius: '6px',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#145142'
-                e.currentTarget.style.background = 'rgba(20,81,66,0.05)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#333'
-                e.currentTarget.style.background = 'transparent'
+                borderRadius: '6px'
               }}
             >
               {t.navigation.about}
@@ -1672,16 +1644,7 @@ export default function MenuView() {
                 color: '#333',
                 cursor: 'pointer',
                 padding: '4px 8px',
-                borderRadius: '6px',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#145142'
-                e.currentTarget.style.background = 'rgba(20,81,66,0.05)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#333'
-                e.currentTarget.style.background = 'transparent'
+                borderRadius: '6px'
               }}
             >
               Новини
@@ -1711,7 +1674,6 @@ export default function MenuView() {
                 border: '2px solid #145142',
                 background: '#ffffff',
                 cursor: 'pointer',
-                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
                 fontSize: '14px',
                 fontWeight: '600',
@@ -1720,24 +1682,10 @@ export default function MenuView() {
                 boxShadow: '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)',
                 overflow: 'hidden'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)'
-                e.currentTarget.style.color = '#ffffff'
-                e.currentTarget.style.borderColor = '#145142'
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(20,81,66,0.35), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 3px rgba(20,81,66,0.1)'
-                e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#ffffff'
-                e.currentTarget.style.color = '#145142'
-                e.currentTarget.style.borderColor = '#145142'
-                e.currentTarget.style.boxShadow = '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)'
-                e.currentTarget.style.transform = 'translateY(0) scale(1)'
-              }}
             >
-              <span>{t.cart}</span>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ShoppingBag size={20} />
+              <span className="header-cart-label-web">{t.cart}</span>
+              <div className="header-cart-icon-wrap-web" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShoppingBag size={20} className="header-cart-icon-web" />
                 {cartCount > 0 && (
                   <span 
                     className="cart-badge-web"
@@ -1773,6 +1721,7 @@ export default function MenuView() {
             </div>
             
             <button 
+              className="header-menu-btn-web"
               onClick={toggleSidebar} 
               aria-label="Меню"
               style={{
@@ -1786,42 +1735,17 @@ export default function MenuView() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)',
-                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 flexShrink: 0,
                 position: 'relative',
                 overflow: 'hidden',
                 backdropFilter: 'blur(10px)'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)'
-                e.currentTarget.style.borderColor = '#145142'
-                e.currentTarget.style.boxShadow = '0 8px 24px rgba(20,81,66,0.35), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 3px rgba(20,81,66,0.1)'
-                e.currentTarget.style.transform = 'translateY(-3px) scale(1.1) rotate(5deg)'
-                const icon = e.currentTarget.querySelector('svg')
-                if (icon) {
-                  icon.style.transform = 'scale(1.15) rotate(-5deg)'
-                  icon.style.color = '#ffffff'
-                  icon.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#ffffff'
-                e.currentTarget.style.borderColor = '#145142'
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)'
-                e.currentTarget.style.transform = 'translateY(0) scale(1) rotate(0deg)'
-                const icon = e.currentTarget.querySelector('svg')
-                if (icon) {
-                  icon.style.transform = 'scale(1) rotate(0deg)'
-                  icon.style.color = '#145142'
-                  icon.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
-                }
-              }}
             >
               <Menu 
                 size={22} 
+                className="header-menu-icon-web"
                 style={{ 
                   color: '#145142',
-                  transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                   filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
                   strokeWidth: 2.5
                 }} 
