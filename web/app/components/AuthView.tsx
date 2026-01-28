@@ -221,7 +221,6 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
       let data: any
 
       try {
-        console.log('Отправка запроса:', url, body)
         const fetchPromise = fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -241,10 +240,8 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
         // Пытаемся распарсить JSON, даже если статус не OK
         try {
           data = await response.json()
-          console.log('Ответ сервера:', response.status, data)
         } catch (parseError) {
           // Если не удалось распарсить JSON, создаем объект с сообщением об ошибке
-          console.error('Ошибка парсинга ответа:', parseError)
           data = { message: response.statusText || t.auth.errors.generic }
         }
       } catch (fetchError: any) {
