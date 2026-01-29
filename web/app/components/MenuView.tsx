@@ -1816,8 +1816,6 @@ export default function MenuView() {
         </div>
       )}
 
-      <div className="section-header-web"><h2 className="section-title-web">{t.section.title}</h2><p className="section-description-web">{t.section.description}</p></div>
-      
       <div className="menu-section-web">
         <h3 className="category-title-web">{t.categories[selectedCategory as keyof typeof t.categories] || menuCategories.find(c => c.key === selectedCategory)?.name || ''}</h3>
         <div className="menu-items-grid-web">
