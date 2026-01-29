@@ -2579,14 +2579,22 @@ body {
 
 @media (max-width: 480px) {
   .categories-panel-wrapper-web {
-    margin: 0 auto;
-    width: fit-content;
-    max-width: calc(100% - 24px);
-    gap: 4px;
+    /* Фиксирована под шапкой, на всю ширину, контент по центру */
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 60px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 16px !important;
+    gap: 6px;
     min-height: 52px;
-    padding: 6px 12px;
-    top: 60px;
-    border-radius: 14px;
+    border-radius: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 }
 
@@ -2671,15 +2679,8 @@ body {
   }
   
   .categories-panel-wrapper-web {
-    width: fit-content;
-    max-width: calc(100% - 24px);
-    padding: 8px 10px;
-    margin: 0 auto;
     gap: 6px;
     align-items: center;
-    border-radius: 16px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    background: #ffffff !important;
   }
   
   .categories-panel-web {
@@ -2858,24 +2859,26 @@ body {
     box-shadow: 0 1px 4px rgba(0,0,0,0.12);
   }
   
-  /* Мобильная панель категорий — как у Скотти: скругление, тень, 4 категории видно, остальные листать */
+  /* Мобильная панель категорий: прикреплена к верхней панели, по центру, 4 категории видно, остальные листать */
   .categories-panel-wrapper-web {
-    width: fit-content;
-    max-width: calc(100vw - 24px);
-    padding: 8px 10px;
-    margin: 0 auto;
-    position: sticky;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 60px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 16px !important;
     z-index: 99;
     background: #ffffff !important;
     border: none !important;
-    border-radius: 16px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
     overflow: visible;
     gap: 6px;
-    align-items: center;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
   
   /* Контейнер: ровно 4 категории в видимой области, остальные — горизонтальный скролл */
