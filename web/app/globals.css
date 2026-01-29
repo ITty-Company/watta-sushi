@@ -2579,7 +2579,7 @@ body {
 
 @media (max-width: 480px) {
   .categories-panel-wrapper-web {
-    /* Фиксирована под шапкой, на всю ширину, контент по центру */
+    /* Компактная панель-карточка по центру: 4 категории видно, остальные листать */
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
@@ -2587,15 +2587,17 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 8px 16px !important;
-    transform: none !important; /* сбрасываем translateX(-50%), чтобы контент центрировался через flex */
-    gap: 6px;
-    min-height: 52px;
+    padding: 10px 12px !important;
+    transform: none !important;
+    gap: 8px;
+    min-height: 56px;
     border-radius: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
 }
 
@@ -2618,7 +2620,7 @@ body {
 }
 @media (max-width: 480px) {
   .categories-panel-spacer-web {
-    height: 64px;
+    height: 76px;
   }
 }
 @media (min-width: 481px) and (max-width: 1024px) {
@@ -2848,19 +2850,27 @@ body {
     pointer-events: none;
   }
   
-  /* На телефоне: стрелки меньше панели */
+  /* На телефоне: компактные стрелки листания */
   .categories-scroll-btn-web {
     display: flex;
-    width: 22px;
-    height: 22px;
-    font-size: 14px;
-    min-width: 22px;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    min-width: 28px;
     flex-shrink: 0;
     border-radius: 50%;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    background: #fff;
+    border: 1px solid rgba(20, 81, 66, 0.2);
+    color: #145142;
+    box-shadow: 0 2px 6px rgba(20, 81, 66, 0.12);
+    font-weight: 600;
   }
   
-  /* Мобильная панель категорий: прикреплена к верхней панели, по центру, 4 категории видно, остальные листать */
+  .categories-scroll-btn-web:active {
+    background: #f0f7f5;
+  }
+  
+  /* Мобильная панель: карточка по центру, 4 категории видно, остальные — свайп */
   .categories-panel-wrapper-web {
     position: fixed !important;
     left: 0 !important;
@@ -2869,28 +2879,30 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 8px 16px !important;
+    padding: 10px 12px !important;
     transform: none !important;
     z-index: 99;
-    background: #ffffff !important;
+    background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%) !important;
     border: none !important;
     border-radius: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 0 rgba(255, 255, 255, 0.8) inset !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
     overflow: visible;
-    gap: 6px;
+    gap: 8px;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
   }
   
-  /* Контейнер: ровно 4 категории в видимой области, остальные — горизонтальный скролл */
+  /* Скролл-контейнер: ровно 4 категории в видимой зоне, остальные листать */
   .categories-panel-web {
-    padding: 8px 10px;
-    border-radius: 14px;
+    padding: 6px 8px;
+    border-radius: 16px;
     gap: 6px;
     flex: 0 1 auto;
     min-width: 0;
-    width: min(298px, calc(100vw - 70px));
+    /* 4 чипа по ~52px + 3*gap + отступы + стрелки: ~260px видимая область */
+    width: min(260px, calc(100vw - 56px));
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     overflow-x: auto;
@@ -2901,36 +2913,41 @@ body {
     scrollbar-width: none;
     -ms-overflow-style: none;
     display: flex;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.04);
   }
   
   .categories-panel-web::-webkit-scrollbar {
     display: none;
   }
   
-  /* Кнопки: 4 в ряд видны, размер подстраивается под узкие экраны */
+  /* Кнопки категорий: 4 в ряд, компактные */
   .category-button-web {
     scroll-snap-align: start;
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
-    min-width: 48px;
-    width: min(64px, calc((100vw - 112px) / 4));
-    max-width: 64px;
-    padding: 8px 4px;
-    font-size: 0.7rem;
+    min-width: 52px;
+    width: 52px;
+    max-width: 52px;
+    padding: 6px 2px;
+    font-size: 0.65rem;
+    border-radius: 12px;
+    gap: 4px;
   }
   
   .category-button-icon-web {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
   
   .category-button-label-web {
-    font-size: 9px;
+    font-size: 8px;
     line-height: 1.1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    font-weight: 600;
   }
   
   .categories-panel-web::before,
@@ -3065,10 +3082,12 @@ body {
 
 @media (max-width: 480px) {
   .category-button-web {
-    padding: 6px 4px;
-    gap: 6px;
-    border-radius: 14px;
-    /* ширина задаётся в блоке панели категорий — 4 видимых */
+    padding: 6px 2px;
+    gap: 4px;
+    border-radius: 12px;
+    min-width: 52px;
+    width: 52px;
+    max-width: 52px;
   }
 }
 
@@ -3202,7 +3221,7 @@ body {
 
 @media (max-width: 480px) {
   .category-button-icon-web {
-    font-size: 24px;
+    font-size: 1.1rem;
   }
 }
 
