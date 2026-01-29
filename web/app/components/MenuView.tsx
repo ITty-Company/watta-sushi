@@ -1726,17 +1726,13 @@ export default function MenuView() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 14px',
                 borderRadius: '12px',
                 border: '2px solid #145142',
                 background: '#ffffff',
                 cursor: 'pointer',
                 position: 'relative',
-                fontSize: '13px',
                 fontWeight: '600',
                 color: '#145142',
-                height: '44px',
                 backdropFilter: 'blur(10px)',
                 boxShadow: '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)',
                 overflow: 'hidden'

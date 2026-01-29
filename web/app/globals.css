@@ -3465,6 +3465,20 @@ body {
   transform: scale(1.1);
 }
 
+/* Базовые стили для кнопки корзины на десктопе */
+.header-cart-btn-text-web {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  height: 44px;
+  font-size: 13px;
+}
+
+.header-cart-label-web {
+  display: inline;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .app-header-web {
@@ -3500,17 +3514,31 @@ body {
   }
 
   /* Кнопки хедера меньше на телефоне, одна высота, меню и язык — одна ширина */
-  .header-cart-btn-text-web {
-    padding: 6px 10px !important;
-    gap: 6px !important;
+  .header-actions-web .header-cart-btn-text-web {
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    gap: 0 !important;
     font-size: 12px !important;
     border-radius: 10px !important;
-    height: 38px !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
 
-  .header-cart-icon-web {
-    width: 16px !important;
-    height: 16px !important;
+  .header-actions-web .header-cart-btn-text-web .header-cart-label-web {
+    display: none !important;
+  }
+
+  .header-actions-web .header-cart-btn-text-web .header-cart-icon-wrap-web {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .header-actions-web .header-cart-icon-web {
+    width: 18px !important;
+    height: 18px !important;
   }
 
   .header-menu-btn-web,
