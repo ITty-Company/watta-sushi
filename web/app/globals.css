@@ -2862,10 +2862,10 @@ body {
     scroll-snap-align: start;
     flex-shrink: 0;
     box-sizing: border-box;
-    /* 5 штук видно: (100% контейнера - padding 16px - 4 промежутка по 6px) / 5 */
-    min-width: calc((100% - 16px - 24px) / 5);
-    width: calc((100% - 16px - 24px) / 5);
-    max-width: calc((100% - 16px - 24px) / 5);
+    /* 4 штуки видно: (100% контейнера - padding 16px - 3 промежутка по 6px) / 4 */
+    min-width: calc((100% - 16px - 18px) / 4);
+    width: calc((100% - 16px - 18px) / 4);
+    max-width: calc((100% - 16px - 18px) / 4);
     padding: 6px 4px;
     font-size: 0.7rem;
   }
