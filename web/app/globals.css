@@ -1816,7 +1816,7 @@ body {
   padding-bottom: 80px;
 }
 
-/* Header Web */
+/* Header Web — всегда сверху при скролле */
 .app-header-web {
   background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
   padding: 18px 28px;
@@ -1830,7 +1830,6 @@ body {
   transition: all 0.3s ease;
   left: 0;
   right: 0;
-  position: relative;
 }
 
 /* Продолжение фона вверх для мобильных устройств */
@@ -1881,8 +1880,8 @@ body {
   }
   
   .categories-panel-wrapper-web {
-    top: 86px;
-    padding: 12px 0;
+    top: 74px;
+    padding: 8px 0;
   }
 }
 
@@ -2544,24 +2543,24 @@ body {
   border-bottom: 1px solid #e5e5e5;
 }
 
-/* Обертка для панели категорий с кнопками прокрутки */
+/* Обертка для панели категорий с кнопками прокрутки — всегда под хедером при скролле */
 .categories-panel-wrapper-web {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   margin: 0 auto;
-  padding: 12px 0;
+  padding: 8px 0;
   max-width: 1400px;
   width: 100%;
   position: sticky;
-  top: 86px;
+  top: 72px;
   z-index: 99;
   background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0,0,0,0.06);
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-  min-height: 90px;
+  min-height: 64px;
   left: 0;
   right: 0;
 }
@@ -2571,8 +2570,9 @@ body {
     margin: 0 auto;
     width: 100%;
     gap: 4px;
-    min-height: 70px;
-    padding: 8px 0;
+    min-height: 52px;
+    padding: 6px 0;
+    top: 60px;
   }
 }
 
@@ -2581,25 +2581,26 @@ body {
     margin: 0 auto;
     width: fit-content;
     gap: 6px;
-    min-height: 85px;
-    top: 86px;
-    padding: 12px 0;
+    min-height: 60px;
+    top: 72px;
+    padding: 8px 0;
   }
 }
 
+/* Кнопки-стрелки меньше высоты панели категорий */
 .categories-scroll-btn-web {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border: 2px solid rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: bold;
   color: #333333;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
@@ -2626,13 +2627,13 @@ body {
 }
 
 @media (max-width: 768px) {
-  /* Стрелки влево/вправо видны на всём мобильном */
+  /* Стрелки меньше панели на мобильном */
   .categories-scroll-btn-web {
     display: flex;
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    font-size: 18px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    font-size: 14px;
     flex-shrink: 0;
     border-radius: 50%;
     box-shadow: 0 1px 4px rgba(0,0,0,0.12);
@@ -2641,8 +2642,8 @@ body {
   .categories-panel-wrapper-web {
     width: 100%;
     max-width: 100%;
-    padding: 8px 4px;
-    margin: 16px auto;
+    padding: 6px 4px;
+    margin: 0 auto;
     gap: 4px;
     align-items: center;
   }
@@ -2655,7 +2656,7 @@ body {
     min-width: 0;
     width: 100%;
     max-width: 100%;
-    padding: 8px;
+    padding: 6px 8px;
     gap: 6px;
   }
   
@@ -2678,26 +2679,26 @@ body {
   }
 }
 
-/* Новая панель категорий */
+/* Панель категорий — компактнее */
 .categories-panel-web {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 10px;
-  padding-top: 16px;
-  padding-bottom: 16px;
+  gap: 8px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   padding-left: 0;
   padding-right: 0;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 18px;
+  border-radius: 14px;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 20px rgba(0, 0, 0, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   flex: 0 1 auto;
   width: fit-content;
   min-width: 0;
-  max-width: calc(100vw - 120px);
+  max-width: calc(100vw - 100px);
   overflow-x: auto;
   overflow-y: hidden;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -2707,7 +2708,6 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   overscroll-behavior-x: contain;
-  /* Улучшенная прокрутка для мобильных */
   scroll-snap-type: none;
   touch-action: pan-x;
 }
@@ -2812,13 +2812,13 @@ body {
     pointer-events: none;
   }
   
-  /* На телефоне: компактные стрелки влево/вправо для прокрутки категорий */
+  /* На телефоне: стрелки меньше панели */
   .categories-scroll-btn-web {
     display: flex;
-    width: 28px;
-    height: 28px;
-    font-size: 18px;
-    min-width: 28px;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    min-width: 22px;
     flex-shrink: 0;
     border-radius: 50%;
     box-shadow: 0 1px 4px rgba(0,0,0,0.12);
@@ -2827,10 +2827,10 @@ body {
   .categories-panel-wrapper-web {
     width: 100%;
     max-width: 100%;
-    padding: 8px 4px;
+    padding: 6px 4px;
     margin: 0 auto;
     position: sticky;
-    top: 72px;
+    top: 60px;
     z-index: 99;
     background: #ffffff !important;
     border: none !important;
@@ -2846,11 +2846,11 @@ body {
   
   /* Контейнер скролла: 4 категории видно, остальные — листать влево/вправо */
   .categories-panel-web {
-    padding-top: 8px;
-    padding-bottom: 8px;
-    padding-left: 8px;
-    padding-right: 8px;
-    border-radius: 16px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    border-radius: 12px;
     gap: 6px;
     flex: 1;
     min-width: 0;

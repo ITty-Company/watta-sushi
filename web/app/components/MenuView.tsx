@@ -1400,21 +1400,32 @@ export default function MenuView() {
     }
   }, [])
 
+  // Начальная проверка стрелок при монтировании и при смене категорий/списка
+  useEffect(() => {
+    const panel = categoriesPanelRef.current
+    if (panel) {
+      checkScrollButtons(panel)
+      const t1 = setTimeout(() => checkScrollButtons(panel), 100)
+      const t2 = setTimeout(() => checkScrollButtons(panel), 400)
+      return () => { clearTimeout(t1); clearTimeout(t2) }
+    }
+  }, [menuCategories.length, selectedCategory, checkScrollButtons])
+
+  const scrollPanelBy = (direction: 'left' | 'right') => {
+    const panel = categoriesPanelRef.current
+    if (!panel) return
+    const amount = panel.clientWidth * 0.7
+    const scrollAmount = direction === 'left' ? -amount : amount
+    panel.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    ;[150, 350, 550].forEach((ms) => setTimeout(() => checkScrollButtons(panel), ms))
+  }
+
   const CategoriesPanel = () => (
     <div
       className="categories-panel-wrapper-web"
       style={isMobile ? { background: '#ffffff', border: 'none', borderBottom: 'none', boxShadow: 'none' } : undefined}
     >
-      <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { 
-        const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
-        if(p) { 
-          // Телефон: ~2 категории; планшет: 85px; десктоп: 200px
-          const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
-          const scrollAmount = w <= 768 ? (w - 80) / 4 * 2 : w <= 1024 ? 85 : 200;
-          p.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); 
-          setTimeout(() => checkScrollButtons(p), 300);
-        } 
-      }}>‹</button>
+      <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={() => scrollPanelBy('left')}>‹</button>
       <div 
         ref={categoriesPanelRef}
         className="categories-panel-web" 
@@ -1488,15 +1499,7 @@ export default function MenuView() {
           </button>
         ))}
       </div>
-      <button className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { 
-        const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
-        if(p) { 
-          const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
-          const scrollAmount = w <= 768 ? (w - 80) / 4 * 2 : w <= 1024 ? 85 : 200;
-          p.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
-          setTimeout(() => checkScrollButtons(p), 300);
-        } 
-      }}>›</button>
+      <button className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={() => scrollPanelBy('right')}>›</button>
     </div>
   )
 
