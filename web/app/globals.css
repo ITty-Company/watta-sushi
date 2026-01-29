@@ -1492,19 +1492,9 @@ body {
   transform: scale(1.1);
 }
 
-/* Нижняя навигация */
+/* Нижняя навигация — убрана */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 600px;
-  display: flex;
-  background: white;
-  border-top: 1px solid #e0e0e0;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  display: none !important;
 }
 
 .bottom-nav button {
@@ -1821,23 +1811,39 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: #ffffff;
-  padding-bottom: 24px;
+  padding-bottom: 0;
 }
 
-/* Header Web — всегда сверху при скролле */
+/* Отступ под фиксированным хедером */
+.app-header-spacer-web {
+  flex-shrink: 0;
+  height: 74px;
+}
+@media (max-width: 480px) {
+  .app-header-spacer-web {
+    height: 60px;
+  }
+}
+@media (min-width: 481px) and (max-width: 1024px) {
+  .app-header-spacer-web {
+    height: 70px;
+  }
+}
+
+/* Header Web — фиксирован сверху, не поднимается при скролле вниз */
 .app-header-web {
   background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
   padding: 18px 28px;
   border-bottom: 1px solid rgba(0,0,0,0.06);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04), inset 0 -1px 0 rgba(255,255,255,0.8);
   width: 100%;
   backdrop-filter: blur(20px);
   transition: all 0.3s ease;
-  left: 0;
-  right: 0;
 }
 
 /* Продолжение фона вверх для мобильных устройств */
@@ -2562,7 +2568,7 @@ body {
   max-width: 1400px;
   width: 100%;
   position: fixed;
-  top: 72px;
+  top: 74px;
   z-index: 99;
   background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
   backdrop-filter: blur(20px);
@@ -5216,9 +5222,16 @@ body {
   font-weight: 500;
 }
 
-/* Нижняя навигация — скрыта по запросу */
-.bottom-navigation-web {
+/* Нижняя белая панель навигации — полностью убрана на всю ширину */
+.bottom-navigation-web,
+.bottom-nav {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+  pointer-events: none !important;
 }
 
 .bottom-nav-item-web {

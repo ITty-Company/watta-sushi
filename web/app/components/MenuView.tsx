@@ -1752,6 +1752,7 @@ export default function MenuView() {
           </div>
         </div>
       </header>
+      <div className="app-header-spacer-web" aria-hidden />
 
       <CategoriesPanel />
       <div className="categories-panel-spacer-web" aria-hidden />
