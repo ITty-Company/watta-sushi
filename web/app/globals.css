@@ -2797,14 +2797,22 @@ body {
     pointer-events: none;
   }
   
+  /* На телефоне: компактные стрелки влево/вправо для прокрутки категорий */
   .categories-scroll-btn-web {
-    display: none;
+    display: flex;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    min-width: 28px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
   }
   
   .categories-panel-wrapper-web {
     width: 100%;
     max-width: 100%;
-    padding: 8px 0;
+    padding: 8px 4px;
     margin: 0 auto;
     position: sticky;
     top: 72px;
@@ -2817,17 +2825,21 @@ body {
     overflow: visible;
     left: 0;
     right: 0;
+    gap: 4px;
+    align-items: center;
   }
   
+  /* Контейнер скролла: ровно 5 категорий видно, остальные — листать влево/вправо */
   .categories-panel-web {
     padding-top: 8px;
     padding-bottom: 8px;
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 8px;
+    padding-right: 8px;
     border-radius: 16px;
-    gap: 8px;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
     width: 100%;
-    min-width: 100%;
     max-width: 100%;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -2835,7 +2847,7 @@ body {
     overflow-y: hidden;
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
-    /* Скрываем скроллбар */
+    touch-action: pan-x;
     scrollbar-width: none;
     -ms-overflow-style: none;
     display: flex;
@@ -2845,17 +2857,30 @@ body {
     display: none;
   }
   
+  /* Каждая кнопка категории: ровно 5 помещаются в ряд, остальные уезжают влево/вправо */
   .category-button-web {
     scroll-snap-align: start;
     flex-shrink: 0;
-    /* Ширина для показа 5 категорий: (100% - padding панели 24px - gap между кнопками 32px) / 5 */
-    /* padding панели: 12px слева + 12px справа = 24px */
-    /* gap между кнопками: 4 промежутка * 8px = 32px */
-    /* Итого: 24px + 32px = 56px */
-    min-width: calc((100% - 56px) / 5);
-    width: calc((100% - 56px) / 5);
-    max-width: calc((100% - 56px) / 5);
     box-sizing: border-box;
+    /* 5 штук видно: (100% контейнера - padding 16px - 4 промежутка по 6px) / 5 */
+    min-width: calc((100% - 16px - 24px) / 5);
+    width: calc((100% - 16px - 24px) / 5);
+    max-width: calc((100% - 16px - 24px) / 5);
+    padding: 6px 4px;
+    font-size: 0.7rem;
+  }
+  
+  .category-button-icon-web {
+    font-size: 1.25rem;
+  }
+  
+  .category-button-label-web {
+    font-size: 9px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
   
   .categories-panel-web::before,

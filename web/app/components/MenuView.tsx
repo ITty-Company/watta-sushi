@@ -1408,8 +1408,9 @@ export default function MenuView() {
       <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { 
         const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
         if(p) { 
-          // Прокручиваем на ширину одной категории + gap (85px) для планшета, или стандартно для других устройств
-          const scrollAmount = window.innerWidth >= 481 && window.innerWidth <= 1024 ? 85 : 200;
+          // Телефон: ~2 категории; планшет: 85px; десктоп: 200px
+          const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
+          const scrollAmount = w <= 480 ? (w - 80) / 5 * 2 : w <= 1024 ? 85 : 200;
           p.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); 
           setTimeout(() => checkScrollButtons(p), 300);
         } 
@@ -1490,8 +1491,8 @@ export default function MenuView() {
       <button className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { 
         const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
         if(p) { 
-          // Прокручиваем на ширину одной категории + gap (85px) для планшета, или стандартно для других устройств
-          const scrollAmount = window.innerWidth >= 481 && window.innerWidth <= 1024 ? 85 : 200;
+          const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
+          const scrollAmount = w <= 480 ? (w - 80) / 5 * 2 : w <= 1024 ? 85 : 200;
           p.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
           setTimeout(() => checkScrollButtons(p), 300);
         } 
