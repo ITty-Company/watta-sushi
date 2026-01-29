@@ -1729,9 +1729,11 @@ body {
   z-index: 100;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .full-page-header-web {
-    background: #ffffff;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 }
 
@@ -2739,13 +2741,45 @@ body {
   }
 }
 
+/* Верхняя панель на мобильном/планшете: без черты — один белый фон (0–768px) */
+@media (max-width: 768px) {
+  .app-header-web,
+  .app-header-web .header-content-web {
+    background: #ffffff !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    backdrop-filter: none !important;
+    outline: none;
+  }
+  .app-header-web::before {
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+  .app-header-web::after {
+    display: none !important;
+  }
+  .categories-panel-wrapper-web {
+    background: #ffffff !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+}
+
 @media (max-width: 480px) {
   /* Верхняя панель на мобильном: один фон (#ffffff), без перехода и линий */
   .app-header-web {
     padding: 12px 16px;
     position: relative;
     background: #ffffff !important;
+    border: none !important;
     border-bottom: none !important;
+    border-top: none !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
     outline: none;
@@ -2776,7 +2810,9 @@ body {
     top: 72px;
     z-index: 99;
     background: #ffffff !important;
+    border: none !important;
     border-bottom: none !important;
+    border-top: none !important;
     box-shadow: none !important;
     overflow: visible;
     left: 0;

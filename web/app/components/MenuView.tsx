@@ -638,6 +638,13 @@ export default function MenuView() {
   // ИСПОЛЬЗУЕМ getLocalized из контекста
   const { t, language, getLocalized } = useLanguage()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // --- ГОРОДА ДОСТАВКИ ---
   const [deliveryCities, setDeliveryCities] = useState<{id: number, name: string, name_nl?: string}[]>([])
@@ -1394,7 +1401,10 @@ export default function MenuView() {
   }, [])
 
   const CategoriesPanel = () => (
-    <div className="categories-panel-wrapper-web">
+    <div
+      className="categories-panel-wrapper-web"
+      style={isMobile ? { background: '#ffffff', border: 'none', borderBottom: 'none', boxShadow: 'none' } : undefined}
+    >
       <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={(e) => { 
         const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
         if(p) { 
@@ -1567,7 +1577,10 @@ export default function MenuView() {
   return (
     <div className="menu-page-web relative">
       <LogoBackground />
-      <header className="app-header-web relative z-10">
+      <header
+        className="app-header-web relative z-10"
+        style={isMobile ? { background: '#ffffff', border: 'none', borderBottom: 'none', boxShadow: 'none', outline: 'none' } : undefined}
+      >
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
             <div className="logo-icon-web"><Image src="/logo.png" alt="Logo" width={50} height={50} className="logo-image-web" priority style={{ objectFit: 'contain' }} /></div>
