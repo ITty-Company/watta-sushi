@@ -136,18 +136,7 @@ export default function MenuView() {
         setSelectedCityId(cityId)
       }
     }
-    useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch('/api/settings')
-        if (res.ok) {
-          const data = await res.json()
-          if (data.bannerInterval) setBannerInterval(data.bannerInterval)
-        }
-      } catch (e) { console.error('Error loading settings', e) }
-    }
-    fetchSettings()
-  }, [])
+    
 
 
     // Проверяем кэш для городов
@@ -205,6 +194,19 @@ export default function MenuView() {
         console.error('Ошибка загрузки городов:', err)
         setDeliveryCities([])
       })
+  }, [])
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.bannerInterval) setBannerInterval(data.bannerInterval)
+        }
+      } catch (e) { console.error('Error loading settings', e) }
+    }
+    fetchSettings()
   }, [])
 
   // --- ЗАГРУЗКА БАННЕРОВ ---
