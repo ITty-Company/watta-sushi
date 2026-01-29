@@ -2137,6 +2137,11 @@ body {
   margin-right: 0 !important;
 }
 
+.header-profile-btn-web {
+  position: relative;
+  overflow: hidden;
+}
+
 .header-icon-btn-web {
   width: 44px;
   height: 44px;
@@ -3508,11 +3513,17 @@ body {
     height: 16px !important;
   }
 
-  .header-menu-btn-web {
+  .header-menu-btn-web,
+  .header-profile-btn-web {
     width: 38px !important;
     height: 38px !important;
     min-width: 38px !important;
     border-radius: 10px !important;
+  }
+
+  .header-profile-icon-web {
+    width: 18px !important;
+    height: 18px !important;
   }
 
   .header-actions-web .header-lang-wrap-web button {
@@ -3588,11 +3599,17 @@ body {
     height: 40px !important;
   }
 
-  .header-menu-btn-web {
+  .header-menu-btn-web,
+  .header-profile-btn-web {
     width: 40px !important;
     height: 40px !important;
     min-width: 40px !important;
     border-radius: 10px !important;
+  }
+
+  .header-profile-icon-web {
+    width: 20px !important;
+    height: 20px !important;
   }
 
   .header-actions-web .header-lang-wrap-web button {

@@ -1660,6 +1660,28 @@ export default function MenuView() {
           </div>
           
           <div className="header-actions-web">
+            <button 
+              className="header-profile-btn-web"
+              onClick={() => openProfileTab('history')}
+              aria-label="Профіль"
+              style={{
+                width: '44px',
+                height: '44px',
+                minWidth: '44px',
+                borderRadius: '12px',
+                border: '2px solid #145142',
+                background: '#ffffff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)',
+                flexShrink: 0,
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              <User size={20} className="header-profile-icon-web" style={{ color: '#145142', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))', strokeWidth: 2.5 }} />
+            </button>
             <div className="location-section-web header-lang-wrap-web" style={{ display: 'flex', alignItems: 'center' }}>
               <LanguageSelector />
             </div>
