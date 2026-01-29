@@ -2555,38 +2555,38 @@ body {
   border-bottom: 1px solid #e5e5e5;
 }
 
-/* Вторая белая панель — категории, без обводки, фиксирована под хедером */
+/* Вторая белая панель — категории, только по ширине контента (не на всю ширину) */
 .categories-panel-wrapper-web {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   margin: 0 auto;
-  padding: 8px 0;
-  max-width: 1400px;
-  width: 100%;
+  padding: 8px 16px;
+  width: fit-content;
+  max-width: calc(100% - 24px);
   position: fixed;
   top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 99;
   background: #ffffff;
   border: none;
-  border-bottom: none;
-  box-shadow: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   min-height: 64px;
-  left: 0;
-  right: 0;
 }
 
 @media (max-width: 480px) {
   .categories-panel-wrapper-web {
     margin: 0 auto;
-    width: 100%;
+    width: fit-content;
+    max-width: calc(100% - 24px);
     gap: 4px;
     min-height: 52px;
-    padding: 6px 0;
+    padding: 6px 12px;
     top: 60px;
-    border-bottom: none;
-    box-shadow: none;
+    border-radius: 14px;
   }
 }
 
@@ -2594,10 +2594,11 @@ body {
   .categories-panel-wrapper-web {
     margin: 0 auto;
     width: fit-content;
+    max-width: calc(100% - 32px);
     gap: 6px;
     min-height: 60px;
     top: 72px;
-    padding: 8px 0;
+    padding: 8px 12px;
   }
 }
 
@@ -2670,9 +2671,9 @@ body {
   }
   
   .categories-panel-wrapper-web {
-    width: 100%;
-    max-width: 100%;
-    padding: 6px 4px;
+    width: fit-content;
+    max-width: calc(100% - 24px);
+    padding: 6px 8px;
     margin: 0 auto;
     gap: 4px;
     align-items: center;
@@ -2682,10 +2683,10 @@ body {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
-    width: 100%;
-    max-width: 100%;
+    width: fit-content;
+    max-width: min(400px, calc(100vw - 80px));
     padding: 6px 8px;
     gap: 6px;
   }
@@ -2694,10 +2695,9 @@ body {
     scroll-snap-align: start;
     flex-shrink: 0;
     flex-grow: 0;
-    /* ровно 4 видимых, остальные листать — переопределяем базовый min-width */
-    min-width: calc((100% - 16px - 18px) / 4) !important;
-    width: calc((100% - 16px - 18px) / 4) !important;
-    max-width: calc((100% - 16px - 18px) / 4) !important;
+    min-width: 64px;
+    width: 64px;
+    max-width: 64px;
     box-sizing: border-box;
   }
 }
@@ -2853,26 +2853,24 @@ body {
   }
   
   .categories-panel-wrapper-web {
-    width: 100%;
-    max-width: 100%;
-    padding: 6px 4px;
+    width: fit-content;
+    max-width: calc(100% - 24px);
+    padding: 6px 8px;
     margin: 0 auto;
     position: sticky;
     top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 99;
     background: #ffffff !important;
     border: none !important;
-    border-bottom: none !important;
-    border-top: none !important;
-    box-shadow: none !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
     overflow: visible;
-    left: 0;
-    right: 0;
     gap: 4px;
     align-items: center;
   }
   
-  /* Контейнер скролла: 4 категории видно, остальные — листать влево/вправо */
+  /* Контейнер скролла: только по ширине категорий */
   .categories-panel-web {
     padding-top: 6px;
     padding-bottom: 6px;
@@ -2880,10 +2878,10 @@ body {
     padding-right: 6px;
     border-radius: 12px;
     gap: 6px;
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
-    width: 100%;
-    max-width: 100%;
+    width: fit-content;
+    max-width: min(360px, calc(100vw - 70px));
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     overflow-x: auto;
@@ -2900,15 +2898,15 @@ body {
     display: none;
   }
   
-  /* Каждая кнопка категории: ровно 4 в ряд, остальные листать влево/вправо */
+  /* Кнопки категорий — фиксированный размер, панель по контенту */
   .category-button-web {
     scroll-snap-align: start;
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
-    min-width: calc((100% - 16px - 18px) / 4) !important;
-    width: calc((100% - 16px - 18px) / 4) !important;
-    max-width: calc((100% - 16px - 18px) / 4) !important;
+    min-width: 64px;
+    width: 64px;
+    max-width: 64px;
     padding: 6px 4px;
     font-size: 0.7rem;
   }
@@ -2939,10 +2937,12 @@ body {
   }
   
   .categories-panel-wrapper-web {
-    width: 100%;
-    max-width: 100%;
-    padding: 0 20px;
-    margin: 20px auto;
+    width: fit-content;
+    max-width: calc(100% - 32px);
+    padding: 0 12px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -2952,14 +2952,13 @@ body {
   .categories-panel-web {
     padding-top: 16px;
     padding-bottom: 16px;
-    padding-left: 40px;
-    padding-right: 40px;
+    padding-left: 24px;
+    padding-right: 24px;
     border-radius: 18px;
     gap: 10px;
-    /* Фиксированная ширина для показа ровно 8 категорий: 8 * 75px (кнопка) + 7 * 10px (gap) + 80px (padding) = 750px */
-    width: 750px;
-    min-width: 750px;
-    max-width: 750px;
+    width: fit-content;
+    min-width: 0;
+    max-width: min(680px, calc(100vw - 100px));
     scroll-snap-type: none !important;
     scroll-snap-align: none !important;
     -webkit-overflow-scrolling: touch;
