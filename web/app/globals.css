@@ -2528,7 +2528,7 @@ body {
   margin: 0 auto;
   padding: 12px 0;
   max-width: 1400px;
-  width: fit-content;
+  width: 100%;
   position: sticky;
   top: 86px;
   z-index: 99;
@@ -2537,6 +2537,8 @@ body {
   border-bottom: 1px solid rgba(0,0,0,0.06);
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
   min-height: 90px;
+  left: 0;
+  right: 0;
 }
 
 @media (max-width: 480px) {
@@ -2545,6 +2547,7 @@ body {
     width: 100%;
     gap: 4px;
     min-height: 70px;
+    padding: 8px 0;
   }
 }
 
@@ -2725,7 +2728,7 @@ body {
   .categories-panel-wrapper-web {
     width: 100%;
     max-width: 100%;
-    padding: 8px 12px;
+    padding: 8px 0;
     margin: 0 auto;
     position: sticky;
     top: 72px;
@@ -2758,6 +2761,7 @@ body {
     /* Скрываем скроллбар */
     scrollbar-width: none;
     -ms-overflow-style: none;
+    display: flex;
   }
   
   .categories-panel-web::-webkit-scrollbar {
@@ -2767,8 +2771,10 @@ body {
   .category-button-web {
     scroll-snap-align: start;
     flex-shrink: 0;
-    /* Ширина для показа 5 категорий: (100% - padding 24px - gap 32px) / 5 */
-    /* padding: 12px слева + 12px справа = 24px, gap: 4 * 8px = 32px */
+    /* Ширина для показа 5 категорий: (100% - padding панели 24px - gap между кнопками 32px) / 5 */
+    /* padding панели: 12px слева + 12px справа = 24px */
+    /* gap между кнопками: 4 промежутка * 8px = 32px */
+    /* Итого: 24px + 32px = 56px */
     min-width: calc((100% - 56px) / 5);
     width: calc((100% - 56px) / 5);
     max-width: calc((100% - 56px) / 5);
