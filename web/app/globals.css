@@ -1157,7 +1157,8 @@
 
 html {
   background-color: #ffffff !important;
-  overscroll-behavior: none;
+  height: 100%;
+  overflow: auto;
 }
 
 body {
@@ -1167,7 +1168,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #ffffff !important;
-  overscroll-behavior: none;
+  margin: 0;
+  min-height: 100%;
 }
 
 .app {
@@ -1805,13 +1807,19 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
   width: 100%;
+  max-width: 100%;
   background: #ffffff;
+  overflow: hidden;
 }
 
 .content-web {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: #ffffff;
   padding-bottom: 80px;
 }
@@ -2709,7 +2717,7 @@ body {
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   overscroll-behavior-x: contain;
   scroll-snap-type: none;
-  touch-action: pan-x;
+  touch-action: manipulation;
 }
 
 .categories-panel-web::before {
@@ -2787,10 +2795,11 @@ body {
 }
 
 @media (max-width: 480px) {
-  /* Верхняя панель на мобильном: один фон (#ffffff), без перехода и линий */
+  /* Верхняя панель на мобильном: sticky, один фон (#ffffff) */
   .app-header-web {
     padding: 12px 16px;
-    position: relative;
+    position: sticky;
+    top: 0;
     background: #ffffff !important;
     border: none !important;
     border-bottom: none !important;
@@ -2862,7 +2871,7 @@ body {
     overflow-y: hidden;
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
-    touch-action: pan-x;
+    touch-action: manipulation;
     scrollbar-width: none;
     -ms-overflow-style: none;
     display: flex;

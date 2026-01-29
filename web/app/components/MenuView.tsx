@@ -1321,73 +1321,37 @@ export default function MenuView() {
     }, 50)
   }, [checkScrollButtons])
   
-  // Постоянно отслеживаем и восстанавливаем позицию прокрутки
+  // Восстанавливаем позицию горизонтального скролла только после смены категории/меню (не мешаем ручному листанию)
   useEffect(() => {
     const panel = categoriesPanelRef.current
     if (!panel) return
 
     const savedPosition = scrollPositionRef.current
-    
-    // Функция для восстановления позиции (только если пользователь не прокручивает)
+
     const restorePosition = () => {
-      if (panel && savedPosition > 0 && !isUserScrollingRef.current) {
-        const currentScroll = panel.scrollLeft
-        // Восстанавливаем только если позиция сильно отличается
-        if (Math.abs(currentScroll - savedPosition) > 5) {
-          panel.scrollLeft = savedPosition
-        }
+      if (!panel) return
+      if (isUserScrollingRef.current) return
+      const currentScroll = panel.scrollLeft
+      if (savedPosition > 0 && Math.abs(currentScroll - savedPosition) > 5) {
+        panel.scrollLeft = savedPosition
       }
     }
 
-    // Отменяем предыдущий таймаут восстановления
     if (restorePositionTimeoutRef.current) {
       clearTimeout(restorePositionTimeoutRef.current)
     }
-
-    // Восстанавливаем позицию после небольшой задержки (чтобы дать время на рендер)
-    restorePositionTimeoutRef.current = setTimeout(() => {
-      restorePosition()
-    }, 50)
-    
-    // Восстанавливаем после рендера
-    requestAnimationFrame(() => {
-      setTimeout(restorePosition, 10)
-    })
-    
-    // Восстанавливаем с дополнительными задержками для надёжности
-    const timeout1 = setTimeout(restorePosition, 100)
-    const timeout2 = setTimeout(restorePosition, 200)
-    const timeout3 = setTimeout(restorePosition, 500)
-
-    // Отслеживаем изменения в DOM
-    const observer = new MutationObserver(() => {
-      if (!isUserScrollingRef.current) {
-        restorePosition()
-      }
-    })
-    
-    observer.observe(panel, {
-      childList: true,
-      subtree: true,
-      attributes: true
-    })
-
-    // Постоянно восстанавливаем позицию при любых изменениях (но только если пользователь не прокручивает)
-    const interval = setInterval(() => {
-      if (!isUserScrollingRef.current) {
-        restorePosition()
-      }
-    }, 300)
+    restorePositionTimeoutRef.current = setTimeout(restorePosition, 50)
+    const t1 = setTimeout(restorePosition, 100)
+    const t2 = setTimeout(restorePosition, 250)
+    const t3 = setTimeout(restorePosition, 500)
 
     return () => {
       if (restorePositionTimeoutRef.current) {
         clearTimeout(restorePositionTimeoutRef.current)
       }
-      clearTimeout(timeout1)
-      clearTimeout(timeout2)
-      clearTimeout(timeout3)
-      clearInterval(interval)
-      observer.disconnect()
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
     }
   }, [selectedCategory, menuCategories])
 
@@ -1400,14 +1364,19 @@ export default function MenuView() {
     }
   }, [])
 
-  // Начальная проверка стрелок при монтировании и при смене категорий/списка
+  // Начальная проверка стрелок и при изменении размера панели
   useEffect(() => {
     const panel = categoriesPanelRef.current
-    if (panel) {
-      checkScrollButtons(panel)
-      const t1 = setTimeout(() => checkScrollButtons(panel), 100)
-      const t2 = setTimeout(() => checkScrollButtons(panel), 400)
-      return () => { clearTimeout(t1); clearTimeout(t2) }
+    if (!panel) return
+    checkScrollButtons(panel)
+    const t1 = setTimeout(() => checkScrollButtons(panel), 100)
+    const t2 = setTimeout(() => checkScrollButtons(panel), 400)
+    const ro = new ResizeObserver(() => checkScrollButtons(panel))
+    ro.observe(panel)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      ro.disconnect()
     }
   }, [menuCategories.length, selectedCategory, checkScrollButtons])
 
