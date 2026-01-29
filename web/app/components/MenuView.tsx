@@ -951,85 +951,85 @@ export default function MenuView() {
     ;[150, 350, 550].forEach((ms) => setTimeout(() => checkScrollButtons(panel), ms))
   }
 
-  const CategoriesPanel = () => (
-    <div className="categories-panel-wrapper-web">
-      <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={() => scrollPanelBy('left')}>‹</button>
-      <div 
-        ref={categoriesPanelRef}
-        className="categories-panel-web" 
-        onScroll={handleScroll}
-      >
-        {menuCategories.map(category => (
-          <button 
-            key={category.key} 
-            className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`} 
-            onClick={(e) => { 
-              e.preventDefault();
-              e.stopPropagation();
+  // const CategoriesPanel = () => (
+  //   <div className="categories-panel-wrapper-web">
+  //     <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={() => scrollPanelBy('left')}>‹</button>
+  //     <div 
+  //       ref={categoriesPanelRef}
+  //       className="categories-panel-web" 
+  //       onScroll={handleScroll}
+  //     >
+  //       {menuCategories.map(category => (
+  //         <button 
+  //           key={category.key} 
+  //           className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`} 
+  //           onClick={(e) => { 
+  //             e.preventDefault();
+  //             e.stopPropagation();
               
-              // Сохраняем текущую позицию прокрутки перед изменением состояния
-              if (categoriesPanelRef.current) {
-                scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-              }
+  //             // Сохраняем текущую позицию прокрутки перед изменением состояния
+  //             if (categoriesPanelRef.current) {
+  //               scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+  //             }
               
-              // Устанавливаем выбранную категорию
-              const newCategoryKey = category.key
-              console.log('Выбрана категория:', newCategoryKey, 'Категория:', category.name, 'Slug:', category.slug || category.key)
+  //             // Устанавливаем выбранную категорию
+  //             const newCategoryKey = category.key
+  //             console.log('Выбрана категория:', newCategoryKey, 'Категория:', category.name, 'Slug:', category.slug || category.key)
               
-              // Убеждаемся, что категория устанавливается
-              setSelectedCategory(newCategoryKey); 
-              setShowSubmenu(category.subcategories.length > 0); 
-              setSelectedSubcategory(null);
+  //             // Убеждаемся, что категория устанавливается
+  //             setSelectedCategory(newCategoryKey); 
+  //             setShowSubmenu(category.subcategories.length > 0); 
+  //             setSelectedSubcategory(null);
               
-              // Прокручиваем к началу списка товаров при смене категории
-              if (scrollContainerRef.current) {
-                scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-              }
+  //             // Прокручиваем к началу списка товаров при смене категории
+  //             if (scrollContainerRef.current) {
+  //               scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+  //             }
               
-              // Немедленно восстанавливаем позицию прокрутки несколькими способами для надёжности
-              const savedPosition = scrollPositionRef.current
-              if (categoriesPanelRef.current) {
-                requestAnimationFrame(() => {
-                  if (categoriesPanelRef.current) {
-                    categoriesPanelRef.current.scrollLeft = savedPosition
-                  }
-                })
-                setTimeout(() => {
-                  if (categoriesPanelRef.current) {
-                    categoriesPanelRef.current.scrollLeft = savedPosition
-                  }
-                }, 0)
-                setTimeout(() => {
-                  if (categoriesPanelRef.current) {
-                    categoriesPanelRef.current.scrollLeft = savedPosition
-                  }
-                }, 10)
-              }
-            }}
-            onMouseDown={(e) => {
-              // Предотвращаем случайное выделение текста при клике
-              e.preventDefault()
-              // Сохраняем позицию прокрутки перед любыми действиями
-              if (categoriesPanelRef.current) {
-                scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-              }
-            }}
-            onFocus={(e) => {
-              // Предотвращаем автоматическую прокрутку при фокусе
-              e.preventDefault();
-              e.currentTarget.blur();
-            }}
-            tabIndex={-1}
-            style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
-          >
-            <div className="category-button-icon-web">{category.emoji}</div>
-            <span className="category-button-label-web">{category.name}</span>
-          </button>
-        ))}
-      </div>
-      <button className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={() => scrollPanelBy('right')}>›</button>
-    </div>
-  )
+  //             // Немедленно восстанавливаем позицию прокрутки несколькими способами для надёжности
+  //             const savedPosition = scrollPositionRef.current
+  //             if (categoriesPanelRef.current) {
+  //               requestAnimationFrame(() => {
+  //                 if (categoriesPanelRef.current) {
+  //                   categoriesPanelRef.current.scrollLeft = savedPosition
+  //                 }
+  //               })
+  //               setTimeout(() => {
+  //                 if (categoriesPanelRef.current) {
+  //                   categoriesPanelRef.current.scrollLeft = savedPosition
+  //                 }
+  //               }, 0)
+  //               setTimeout(() => {
+  //                 if (categoriesPanelRef.current) {
+  //                   categoriesPanelRef.current.scrollLeft = savedPosition
+  //                 }
+  //               }, 10)
+  //             }
+  //           }}
+  //           onMouseDown={(e) => {
+  //             // Предотвращаем случайное выделение текста при клике
+  //             e.preventDefault()
+  //             // Сохраняем позицию прокрутки перед любыми действиями
+  //             if (categoriesPanelRef.current) {
+  //               scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+  //             }
+  //           }}
+  //           onFocus={(e) => {
+  //             // Предотвращаем автоматическую прокрутку при фокусе
+  //             e.preventDefault();
+  //             e.currentTarget.blur();
+  //           }}
+  //           tabIndex={-1}
+  //           style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
+  //         >
+  //           <div className="category-button-icon-web">{category.emoji}</div>
+  //           <span className="category-button-label-web">{category.name}</span>
+  //         </button>
+  //       ))}
+  //     </div>
+  //     <button className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={() => scrollPanelBy('right')}>›</button>
+  //   </div>
+  // )
 
   // ============================================
   // ОТРИСОВКА СТРАНИЦ (PAGES)
@@ -1312,7 +1312,72 @@ export default function MenuView() {
       </header>
       <div className="app-header-spacer-web" aria-hidden />
 
-      <CategoriesPanel />
+      <div className="categories-panel-wrapper-web relative py-2">
+            <button 
+              className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} 
+              onClick={(e) => { e.preventDefault(); scrollPanelBy('left'); }}
+            >
+              ‹
+            </button>
+            
+            <div 
+              ref={categoriesPanelRef}
+              className="categories-panel-web" 
+              onScroll={handleScroll}
+            >
+              {menuCategories.map(category => (
+                <button 
+                  key={category.key} 
+                  className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`} 
+                  onClick={(e) => { 
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (categoriesPanelRef.current) {
+                      scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+                    }
+                    
+                    const newCategoryKey = category.key
+                    setSelectedCategory(newCategoryKey); 
+                    setShowSubmenu(category.subcategories.length > 0); 
+                    setSelectedSubcategory(null);
+                    
+                    if (scrollContainerRef.current) {
+                      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+                    }
+                    
+                    const savedPosition = scrollPositionRef.current
+                    requestAnimationFrame(() => {
+                      if (categoriesPanelRef.current) categoriesPanelRef.current.scrollLeft = savedPosition
+                    })
+                    setTimeout(() => {
+                      if (categoriesPanelRef.current) categoriesPanelRef.current.scrollLeft = savedPosition
+                    }, 10)
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    if (categoriesPanelRef.current) scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+                  }}
+                  onFocus={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }}
+                  tabIndex={-1}
+                  style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
+                >
+                  <div className="category-button-icon-web">{category.emoji}</div>
+                  <span className="category-button-label-web">{category.name}</span>
+                </button>
+              ))}
+            </div>
+
+            <button 
+              className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} 
+              onClick={(e) => { e.preventDefault(); scrollPanelBy('right'); }}
+            >
+              ›
+            </button>
+          </div>
       </div>
 
       <div className="h-[140px] md:h-[160px] w-full bg-transparent" aria-hidden="true" />
