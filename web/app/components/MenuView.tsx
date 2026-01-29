@@ -1410,7 +1410,7 @@ export default function MenuView() {
         if(p) { 
           // Телефон: ~2 категории; планшет: 85px; десктоп: 200px
           const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
-          const scrollAmount = w <= 480 ? (w - 80) / 4 * 2 : w <= 1024 ? 85 : 200;
+          const scrollAmount = w <= 768 ? (w - 80) / 4 * 2 : w <= 1024 ? 85 : 200;
           p.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); 
           setTimeout(() => checkScrollButtons(p), 300);
         } 
@@ -1492,7 +1492,7 @@ export default function MenuView() {
         const p = e.currentTarget.closest('.categories-panel-wrapper-web')?.querySelector('.categories-panel-web') as HTMLElement;
         if(p) { 
           const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
-          const scrollAmount = w <= 480 ? (w - 80) / 4 * 2 : w <= 1024 ? 85 : 200;
+          const scrollAmount = w <= 768 ? (w - 80) / 4 * 2 : w <= 1024 ? 85 : 200;
           p.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
           setTimeout(() => checkScrollButtons(p), 300);
         } 
