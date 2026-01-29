@@ -2673,10 +2673,13 @@ body {
   .categories-panel-wrapper-web {
     width: fit-content;
     max-width: calc(100% - 24px);
-    padding: 6px 8px;
+    padding: 8px 10px;
     margin: 0 auto;
-    gap: 4px;
+    gap: 6px;
     align-items: center;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    background: #ffffff !important;
   }
   
   .categories-panel-web {
@@ -2685,18 +2688,22 @@ body {
     overscroll-behavior-x: contain;
     flex: 0 1 auto;
     min-width: 0;
-    width: fit-content;
-    max-width: min(400px, calc(100vw - 80px));
-    padding: 6px 8px;
+    /* Ровно 4 категории видно, остальные — листать */
+    width: min(298px, calc(100vw - 70px));
+    padding: 8px 10px;
     gap: 6px;
+    border-radius: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
   
   .category-button-web {
     scroll-snap-align: start;
     flex-shrink: 0;
     flex-grow: 0;
-    min-width: 64px;
-    width: 64px;
+    /* 4 кнопки в ряд: (ширина панели − отступы − 3*gap) / 4 */
+    min-width: min(64px, calc((100vw - 112px) / 4));
+    width: min(64px, calc((100vw - 112px) / 4));
     max-width: 64px;
     box-sizing: border-box;
   }
@@ -2808,8 +2815,7 @@ body {
     border: none !important;
     border-top: none !important;
     border-bottom: none !important;
-    box-shadow: none !important;
-    -webkit-box-shadow: none !important;
+    /* тень оставляем для панели «Скотти» на мобильной — не сбрасываем */
   }
 }
 
@@ -2852,10 +2858,11 @@ body {
     box-shadow: 0 1px 4px rgba(0,0,0,0.12);
   }
   
+  /* Мобильная панель категорий — как у Скотти: скругление, тень, 4 категории видно, остальные листать */
   .categories-panel-wrapper-web {
     width: fit-content;
-    max-width: calc(100% - 24px);
-    padding: 6px 8px;
+    max-width: calc(100vw - 24px);
+    padding: 8px 10px;
     margin: 0 auto;
     position: sticky;
     top: 60px;
@@ -2864,24 +2871,21 @@ body {
     z-index: 99;
     background: #ffffff !important;
     border: none !important;
+    border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
     overflow: visible;
-    gap: 4px;
+    gap: 6px;
     align-items: center;
   }
   
-  /* Контейнер скролла: только по ширине категорий */
+  /* Контейнер: ровно 4 категории в видимой области, остальные — горизонтальный скролл */
   .categories-panel-web {
-    padding-top: 6px;
-    padding-bottom: 6px;
-    padding-left: 6px;
-    padding-right: 6px;
-    border-radius: 12px;
+    padding: 8px 10px;
+    border-radius: 14px;
     gap: 6px;
     flex: 0 1 auto;
     min-width: 0;
-    width: fit-content;
-    max-width: min(360px, calc(100vw - 70px));
+    width: min(298px, calc(100vw - 70px));
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     overflow-x: auto;
@@ -2898,16 +2902,16 @@ body {
     display: none;
   }
   
-  /* Кнопки категорий — фиксированный размер, панель по контенту */
+  /* Кнопки: 4 в ряд видны, размер подстраивается под узкие экраны */
   .category-button-web {
     scroll-snap-align: start;
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
-    min-width: 64px;
-    width: 64px;
+    min-width: 48px;
+    width: min(64px, calc((100vw - 112px) / 4));
     max-width: 64px;
-    padding: 6px 4px;
+    padding: 8px 4px;
     font-size: 0.7rem;
   }
   
