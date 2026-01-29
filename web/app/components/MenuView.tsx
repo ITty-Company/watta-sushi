@@ -1754,9 +1754,6 @@ export default function MenuView() {
       </header>
       <div className="app-header-spacer-web" aria-hidden />
 
-      <CategoriesPanel />
-      <div className="categories-panel-spacer-web" aria-hidden />
-
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">
           <div className="submenu-header-web"><h3>{currentCategory.name}</h3><button className="submenu-close-btn-web" onClick={() => setShowSubmenu(false)}>×</button></div>
