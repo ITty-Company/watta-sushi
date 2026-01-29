@@ -1711,7 +1711,7 @@ body {
 /* Полноэкранные страницы */
 .full-page-web {
   min-height: 100vh;
-  background: #f8f8f8;
+  background: #ffffff;
   padding-bottom: 80px;
 }
 
