@@ -1731,7 +1731,7 @@ body {
 
 @media (max-width: 480px) {
   .full-page-header-web {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: #ffffff;
   }
 }
 
@@ -2740,11 +2740,11 @@ body {
 }
 
 @media (max-width: 480px) {
-  /* Верхняя панель на мобильном: фон идентичен hero-banner-web — тот же градиент */
+  /* Верхняя панель и панель категорий на мобильном: белый фон без анимации */
   .app-header-web {
     padding: 12px 16px;
     position: relative;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: #ffffff;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
   
@@ -2755,7 +2755,7 @@ body {
     left: 0;
     right: 0;
     height: 200vh;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: #ffffff;
     z-index: 99;
     pointer-events: none;
   }
@@ -2772,7 +2772,7 @@ body {
     position: sticky;
     top: 72px;
     z-index: 99;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    background: #ffffff;
     border-bottom: 1px solid rgba(0,0,0,0.06);
     box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     overflow: visible;
