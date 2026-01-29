@@ -1156,7 +1156,8 @@
 }
 
 html {
-  background-color: #ffffff;
+  background-color: #ffffff !important;
+  overscroll-behavior: none;
 }
 
 body {
@@ -1165,7 +1166,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffffff;
+  background-color: #ffffff !important;
+  overscroll-behavior: none;
 }
 
 .app {
