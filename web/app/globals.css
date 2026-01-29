@@ -3975,13 +3975,13 @@ body {
   }
 }
 
-/* Мобильный: баннер сразу под панелью категорий, без лишнего отступа сверху */
+/* Мобильный: небольшой отступ от панели категорий до баннера */
 @media (max-width: 480px) {
   .hero-banner-web {
     margin: 0 12px 12px;
     margin-left: 12px;
     margin-right: 12px;
-    margin-top: 0;
+    margin-top: 6px;
     padding: 20px 12px;
     min-height: 160px;
     border-radius: 16px;
