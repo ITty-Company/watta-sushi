@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   },
 }
 
+const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
 export default function RootLayout({
   children,
 }: {
@@ -18,8 +20,8 @@ export default function RootLayout({
   return (
     <html lang="uk">
       <head>
-        <link rel="preconnect" href="http://localhost:3001" />
-        <link rel="dns-prefetch" href="http://localhost:3001" />
+        <link rel="preconnect" href={apiOrigin} />
+        <link rel="dns-prefetch" href={apiOrigin} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#ffffff" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

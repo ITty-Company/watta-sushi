@@ -732,21 +732,50 @@ export default function MenuView() {
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
   
-  const loadBanners = () => {
+  const loadBanners = useCallback(() => {
+    const cacheKey = 'banners'
+    const CACHE_TTL = 5 * 60 * 1000 // 5 минут
+    if (typeof sessionStorage !== 'undefined') {
+      const cached = sessionStorage.getItem(cacheKey)
+      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
+      const now = Date.now()
+      if (cached && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_TTL) {
+        try {
+          const data = JSON.parse(cached) as Banner[]
+          if (Array.isArray(data)) {
+            setBanners(data)
+            if (data.length > 0) setCurrentBannerIndex(0)
+            // Фоновое обновление
+            fetch('/api/banners')
+              .then(res => res.json())
+              .then(fresh => {
+                sessionStorage.setItem(cacheKey, JSON.stringify(fresh))
+                sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+                setBanners(fresh)
+                if (fresh.length > 0) setCurrentBannerIndex(0)
+              })
+              .catch(() => {})
+            return
+          }
+        } catch (_) { /* кэш повреждён */ }
+      }
+    }
     fetch('/api/banners')
       .then(res => res.json())
       .then(data => {
         setBanners(data)
-        if (data.length > 0) {
-          setCurrentBannerIndex(0)
+        if (data.length > 0) setCurrentBannerIndex(0)
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data))
+          sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
         }
       })
       .catch(err => console.error('Ошибка загрузки баннеров:', err))
-  }
-  
+  }, [])
+
   useEffect(() => {
     loadBanners()
-  }, [])
+  }, [loadBanners])
   
   // Слушаем событие обновления баннеров из админ-панели
   useEffect(() => {
@@ -858,45 +887,55 @@ export default function MenuView() {
   // --- ЗАГРУЗКА МЕНЮ С СЕРВЕРА ---
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   
+  const mapProductsToItems = useCallback((data: any[]) => {
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      name: getLocalized(p, 'name'),
+      description: getLocalized(p, 'description') || '',
+      price: p.price,
+      category: getLocalized(p.category, 'name') || 'Роллы',
+      categorySlug: p.category?.slug || 'rolls',
+      categoryId: p.categoryId,
+      emoji: '🍣',
+      imageUrl: p.imageUrl,
+      isTop: p.isPopular
+    }))
+  }, [getLocalized])
+
   const loadMenuItems = useCallback(() => {
-    // Если город не выбран, используем первый доступный или загружаем все товары
     const cityIdToUse = selectedCityId || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
     const url = cityIdToUse ? `/api/products?cityId=${cityIdToUse}` : '/api/products'
-    
-    // Проверяем кэш
     const cacheKey = `menu_items_${cityIdToUse}_${language}`
-    const cached = sessionStorage.getItem(cacheKey)
-    const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
+    const CACHE_TTL = 5 * 60 * 1000 // 5 минут
+    const cached = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
+    const cacheTime = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`${cacheKey}_time`) : null
     const now = Date.now()
-    
-    if (cached && cacheTime && (now - parseInt(cacheTime)) < 2 * 60 * 1000) {
-      // Используем кэш если он свежий (менее 2 минут)
+
+    // Сразу показываем кэш (даже устаревший) — быстрая отрисовка
+    if (cached && cacheTime) {
       try {
         const data = JSON.parse(cached)
-        const realItems = (data || []).map((p: any) => ({
-          id: p.id,
-          name: getLocalized(p, 'name'), 
-          description: getLocalized(p, 'description') || '',
-          price: p.price,
-          category: getLocalized(p.category, 'name') || 'Роллы',
-          categorySlug: p.category?.slug || 'rolls',
-          categoryId: p.categoryId,
-          emoji: '🍣',
-          imageUrl: p.imageUrl,
-          isTop: p.isPopular
-        }));
-        setMenuItems(realItems);
-        return
-      } catch (e) {
-        // Если кэш поврежден, загружаем заново
-      }
+        if (Array.isArray(data)) {
+          setMenuItems(mapProductsToItems(data))
+          // Если кэш свежий — только фоновое обновление
+          if ((now - parseInt(cacheTime, 10)) < CACHE_TTL) {
+            fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
+              .then(res => (res.ok ? res.json() : []))
+              .then(data => {
+                if (typeof sessionStorage !== 'undefined') {
+                  sessionStorage.setItem(cacheKey, JSON.stringify(data))
+                  sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+                }
+                setMenuItems(mapProductsToItems(data))
+              })
+              .catch(() => {})
+            return
+          }
+        }
+      } catch (_) { /* кэш повреждён */ }
     }
-    
-    fetch(url, {
-      headers: {
-        'Cache-Control': 'max-age=120' // 2 минуты кэша
-      }
-    })
+
+    fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
       .then(res => {
         if (!res.ok) {
           console.error('Ошибка загрузки товаров:', res.status, res.statusText)
@@ -905,29 +944,17 @@ export default function MenuView() {
         return res.json()
       })
       .then(data => {
-        // Сохраняем в кэш
-        sessionStorage.setItem(cacheKey, JSON.stringify(data))
-        sessionStorage.setItem(`${cacheKey}_time`, now.toString())
-        
-        const realItems = (data || []).map((p: any) => ({
-          id: p.id,
-          name: getLocalized(p, 'name'), 
-          description: getLocalized(p, 'description') || '',
-          price: p.price,
-          category: getLocalized(p.category, 'name') || 'Роллы',
-          categorySlug: p.category?.slug || 'rolls',
-          categoryId: p.categoryId,
-          emoji: '🍣',
-          imageUrl: p.imageUrl,
-          isTop: p.isPopular
-        }));
-        setMenuItems(realItems);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(cacheKey, JSON.stringify(data))
+          sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+        }
+        setMenuItems(mapProductsToItems(data))
       })
       .catch(err => {
         console.error('Ошибка загрузки меню:', err)
         setMenuItems([])
-      });
-  }, [selectedCityId, deliveryCities, language, getLocalized])
+      })
+  }, [selectedCityId, deliveryCities, language, getLocalized, mapProductsToItems])
   
   useEffect(() => {
     loadMenuItems()
@@ -1011,25 +1038,69 @@ export default function MenuView() {
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([])
   
   const loadCategories = useCallback(() => {
-    // Загружаем категории из API
+    const cacheKey = `menu_categories_${language}`
+    const cached = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
+    const cacheTime = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`${cacheKey}_time`) : null
+    const now = Date.now()
+    const CACHE_TTL = 5 * 60 * 1000 // 5 минут
+
+    const applyCategories = (categories: MenuCategory[]) => {
+      setMenuCategories(categories)
+      setSelectedCategory((prev) => {
+        if (categories.length > 0) {
+          const currentCategoryExists = categories.find((c: MenuCategory) => c.key === prev)
+          if (!currentCategoryExists || !prev) return categories[0].key
+        }
+        return prev || (categories.length > 0 ? categories[0].key : '')
+      })
+    }
+
+    // Сразу показываем кэш, если есть — быстрая отрисовка
+    if (cached && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_TTL) {
+      try {
+        const categories = JSON.parse(cached) as MenuCategory[]
+        if (Array.isArray(categories) && categories.length > 0) {
+          applyCategories(categories)
+          // Фоновое обновление (revalidate)
+          fetch('/api/products/categories')
+            .then(res => res.json())
+            .then(data => {
+              const next = data
+                .filter((cat: any) => cat.isActive !== false)
+                .map((cat: any) => ({
+                  id: cat.id.toString(),
+                  key: cat.slug,
+                  slug: cat.slug,
+                  name: language === 'uk' && cat.name_ua ? cat.name_ua : language === 'en' && cat.name_en ? cat.name_en : language === 'nl' && cat.name_nl ? cat.name_nl : cat.name_ru,
+                  emoji: cat.emoji || '🍣',
+                  subcategories: []
+                }))
+                .sort((a: any, b: any) => {
+                  const catA = data.find((c: any) => c.slug === a.key)
+                  const catB = data.find((c: any) => c.slug === b.key)
+                  return (catA?.order || 0) - (catB?.order || 0)
+                })
+              sessionStorage.setItem(cacheKey, JSON.stringify(next))
+              sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+              applyCategories(next)
+            })
+            .catch(() => {})
+          return
+        }
+      } catch (_) { /* кэш повреждён — грузим ниже */ }
+    }
+
+    // Нет кэша или устарел — загружаем
     fetch('/api/products/categories')
       .then(res => res.json())
       .then(data => {
-        console.log('Загружены категории из БД:', data)
-        // Преобразуем данные из БД в формат MenuCategory
         const categories = data
-          .filter((cat: any) => cat.isActive !== false) // Показываем только активные
+          .filter((cat: any) => cat.isActive !== false)
           .map((cat: any) => ({
             id: cat.id.toString(),
             key: cat.slug,
-            slug: cat.slug, // Сохраняем slug для фильтрации
-            name: language === 'uk' && cat.name_ua 
-              ? cat.name_ua 
-              : language === 'en' && cat.name_en
-              ? cat.name_en
-              : language === 'nl' && cat.name_nl
-              ? cat.name_nl
-              : cat.name_ru,
+            slug: cat.slug,
+            name: language === 'uk' && cat.name_ua ? cat.name_ua : language === 'en' && cat.name_en ? cat.name_en : language === 'nl' && cat.name_nl ? cat.name_nl : cat.name_ru,
             emoji: cat.emoji || '🍣',
             subcategories: []
           }))
@@ -1038,24 +1109,14 @@ export default function MenuView() {
             const catB = data.find((c: any) => c.slug === b.key)
             return (catA?.order || 0) - (catB?.order || 0)
           })
-        console.log('Обработанные категории:', categories)
-        setMenuCategories(categories)
-        // Устанавливаем первую категорию как выбранную, если еще не выбрана или если текущая категория не найдена
-        setSelectedCategory((prev) => {
-          if (categories.length > 0) {
-            const currentCategoryExists = categories.find((c: MenuCategory) => c.key === prev)
-            if (!currentCategoryExists || !prev) {
-              const firstCategoryKey = categories[0].key
-              console.log('Устанавливаем первую категорию:', firstCategoryKey)
-              return firstCategoryKey
-            }
-          }
-          return prev || (categories.length > 0 ? categories[0].key : '')
-        })
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(cacheKey, JSON.stringify(categories))
+          sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+        }
+        applyCategories(categories)
       })
       .catch(err => {
         console.error('Ошибка загрузки категорий:', err)
-        // Fallback на статические категории при ошибке
         const updatedCategories = defaultCategories.map(cat => ({
           ...cat,
           name: t.categories[cat.key as keyof typeof t.categories] || cat.name
@@ -1390,10 +1451,7 @@ export default function MenuView() {
   }
 
   const CategoriesPanel = () => (
-    <div
-      className="categories-panel-wrapper-web"
-      style={isMobile ? { background: '#ffffff', border: 'none', borderBottom: 'none', boxShadow: 'none' } : undefined}
-    >
+    <div className="categories-panel-wrapper-web">
       <button className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} onClick={() => scrollPanelBy('left')}>‹</button>
       <div 
         ref={categoriesPanelRef}
@@ -1550,10 +1608,7 @@ export default function MenuView() {
   return (
     <div className="menu-page-web relative">
       <LogoBackground />
-      <header
-        className="app-header-web relative z-10"
-        style={isMobile ? { background: '#ffffff', border: 'none', borderBottom: 'none', boxShadow: 'none', outline: 'none' } : undefined}
-      >
+      <header className="app-header-web relative z-10">
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
             <div className="logo-icon-web"><Image src="/logo.png" alt="Logo" width={50} height={50} className="logo-image-web" priority style={{ objectFit: 'contain' }} /></div>
@@ -1753,6 +1808,9 @@ export default function MenuView() {
         </div>
       </header>
       <div className="app-header-spacer-web" aria-hidden />
+
+      <CategoriesPanel />
+      <div className="categories-panel-spacer-web" aria-hidden />
 
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">
