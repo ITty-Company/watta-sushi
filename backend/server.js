@@ -53,6 +53,7 @@ import bannerRoutes from './routes/banner.routes.ts';
 import countryRoutes from './routes/country.routes.ts';
 import deliveryZoneRoutes from './routes/deliveryZone.routes.ts';
 import teamRoutes from './routes/team.routes.ts';
+import settingsRoutes from './routes/settings.routes.ts'
 
 const app = express();
 const prisma = new PrismaClient();
@@ -95,6 +96,7 @@ app.use('/api/countries', countryRoutes); // Страны: /api/countries
 app.use('/api/delivery-zones', deliveryZoneRoutes); // Зоны доставки: /api/delivery-zones
 app.use('/api/banners', bannerRoutes); // Баннеры: /api/banners
 app.use('/api/team', teamRoutes); // Команда: /api/team
+app.use('/api/settings', settingsRoutes)
 
 // 4. Тестовый маршрут
 app.get('/', (req, res) => {
