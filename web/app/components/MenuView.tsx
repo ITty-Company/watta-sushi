@@ -1754,6 +1754,7 @@ export default function MenuView() {
       </header>
 
       <CategoriesPanel />
+      <div className="categories-panel-spacer-web" aria-hidden />
 
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">

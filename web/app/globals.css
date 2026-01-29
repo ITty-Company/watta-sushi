@@ -1821,7 +1821,7 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: #ffffff;
-  padding-bottom: 80px;
+  padding-bottom: 24px;
 }
 
 /* Header Web — всегда сверху при скролле */
@@ -2551,7 +2551,7 @@ body {
   border-bottom: 1px solid #e5e5e5;
 }
 
-/* Обертка для панели категорий с кнопками прокрутки — всегда под хедером при скролле */
+/* Обертка для панели категорий — фиксирована под хедером, не уезжает при скролле вниз */
 .categories-panel-wrapper-web {
   display: flex;
   align-items: center;
@@ -2561,13 +2561,13 @@ body {
   padding: 8px 0;
   max-width: 1400px;
   width: 100%;
-  position: sticky;
+  position: fixed;
   top: 72px;
   z-index: 99;
   background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 100%);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border-bottom: none;
+  box-shadow: none;
   min-height: 64px;
   left: 0;
   right: 0;
@@ -2581,6 +2581,8 @@ body {
     min-height: 52px;
     padding: 6px 0;
     top: 60px;
+    border-bottom: none;
+    box-shadow: none;
   }
 }
 
@@ -2592,6 +2594,22 @@ body {
     min-height: 60px;
     top: 72px;
     padding: 8px 0;
+  }
+}
+
+/* Отступ под фиксированной панелью категорий, чтобы контент не заходил под неё */
+.categories-panel-spacer-web {
+  flex-shrink: 0;
+  height: 80px;
+}
+@media (max-width: 480px) {
+  .categories-panel-spacer-web {
+    height: 64px;
+  }
+}
+@media (min-width: 481px) and (max-width: 1024px) {
+  .categories-panel-spacer-web {
+    height: 76px;
   }
 }
 
@@ -5198,20 +5216,9 @@ body {
   font-weight: 500;
 }
 
-/* Нижняя навигация */
+/* Нижняя навигация — скрыта по запросу */
 .bottom-navigation-web {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  border-top: 1px solid #e5e5e5;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 8px 0;
-  z-index: 1000;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  display: none !important;
 }
 
 .bottom-nav-item-web {
