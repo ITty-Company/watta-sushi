@@ -2588,6 +2588,7 @@ body {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 8px 16px !important;
+    transform: none !important; /* сбрасываем translateX(-50%), чтобы контент центрировался через flex */
     gap: 6px;
     min-height: 52px;
     border-radius: 0;
@@ -2869,6 +2870,7 @@ body {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 8px 16px !important;
+    transform: none !important;
     z-index: 99;
     background: #ffffff !important;
     border: none !important;
