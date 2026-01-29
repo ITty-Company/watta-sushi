@@ -1567,14 +1567,7 @@ export default function MenuView() {
   return (
     <div className="menu-page-web relative">
       <LogoBackground />
-      <header className="app-header-web relative z-10" style={{
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(250,252,251,0.98) 100%)',
-        backdropFilter: 'blur(30px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 4px 16px rgba(20,81,66,0.08), inset 0 1px 0 rgba(255,255,255,0.95)',
-        borderBottom: '2px solid rgba(20,81,66,0.1)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
+      <header className="app-header-web relative z-10">
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
             <div className="logo-icon-web"><Image src="/logo.png" alt="Logo" width={50} height={50} className="logo-image-web" priority style={{ objectFit: 'contain' }} /></div>

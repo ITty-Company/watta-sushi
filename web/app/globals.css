@@ -2740,14 +2740,15 @@ body {
 }
 
 @media (max-width: 480px) {
-  /* Верхняя панель на мобильном: тот же цвет, что подложка сайта (#ffffff), без перехода */
+  /* Верхняя панель на мобильном: один фон (#ffffff), без перехода и линий */
   .app-header-web {
     padding: 12px 16px;
     position: relative;
-    background: #ffffff;
-    border-bottom: none;
-    box-shadow: none;
-    backdrop-filter: none;
+    background: #ffffff !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    outline: none;
   }
   
   .app-header-web::before {
@@ -2774,9 +2775,9 @@ body {
     position: sticky;
     top: 72px;
     z-index: 99;
-    background: #ffffff;
-    border-bottom: none;
-    box-shadow: none;
+    background: #ffffff !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
     overflow: visible;
     left: 0;
     right: 0;
