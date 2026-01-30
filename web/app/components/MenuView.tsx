@@ -31,7 +31,9 @@ import {
   Truck,
   Info,
   X,
-  Sparkles
+  Sparkles,
+  ChevronLeft, 
+  ChevronRight
 } from 'lucide-react'
 
 // --- ТИПЫ ДАННЫХ ---
@@ -225,9 +227,29 @@ export default function MenuView() {
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
   
+  // Функции переключения (НОВОЕ)
+  const nextBanner = useCallback(() => {
+    setBanners(currentBanners => {
+      if (currentBanners.length === 0) return currentBanners
+      setCurrentBannerIndex(prev => (prev + 1) % currentBanners.length)
+      return currentBanners
+    })
+  }, [])
+
+  const prevBanner = useCallback(() => {
+    setBanners(currentBanners => {
+      if (currentBanners.length === 0) return currentBanners
+      setCurrentBannerIndex(prev => (prev - 1 + currentBanners.length) % currentBanners.length)
+      return currentBanners
+    })
+  }, [])
+
+  // Функция загрузки данных
   const loadBanners = useCallback(() => {
     const cacheKey = 'banners'
-    const CACHE_TTL = 5 * 60 * 1000 // 5 минут
+    const CACHE_TTL = 5 * 60 * 1000
+    
+    // Проверка кэша
     if (typeof sessionStorage !== 'undefined') {
       const cached = sessionStorage.getItem(cacheKey)
       const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
@@ -237,27 +259,17 @@ export default function MenuView() {
           const data = JSON.parse(cached) as Banner[]
           if (Array.isArray(data)) {
             setBanners(data)
-            if (data.length > 0) setCurrentBannerIndex(0)
-            // Фоновое обновление
-            fetch('/api/banners')
-              .then(res => res.json())
-              .then(fresh => {
-                sessionStorage.setItem(cacheKey, JSON.stringify(fresh))
-                sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
-                setBanners(fresh)
-                if (fresh.length > 0) setCurrentBannerIndex(0)
-              })
-              .catch(() => {})
             return
           }
-        } catch (_) { /* кэш повреждён */ }
+        } catch (_) { }
       }
     }
+
+    // Запрос к API
     fetch('/api/banners')
       .then(res => res.json())
       .then(data => {
         setBanners(data)
-        if (data.length > 0) setCurrentBannerIndex(0)
         if (typeof sessionStorage !== 'undefined') {
           sessionStorage.setItem(cacheKey, JSON.stringify(data))
           sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
@@ -266,128 +278,60 @@ export default function MenuView() {
       .catch(err => console.error('Ошибка загрузки баннеров:', err))
   }, [])
 
+  // Эффект загрузки
   useEffect(() => {
     loadBanners()
   }, [loadBanners])
   
-  // Слушаем событие обновления баннеров из админ-панели
+  // Слушатель обновлений
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const handleBannersUpdate = () => {
-        loadBanners()
-      }
+      const handleBannersUpdate = () => loadBanners()
       window.addEventListener('bannersUpdated', handleBannersUpdate)
       return () => window.removeEventListener('bannersUpdated', handleBannersUpdate)
     }
   }, [])
+
+  // Таймер авто-переключения (С УЧЕТОМ РУЧНОГО ЛИСТАНИЯ)
   useEffect(() => {
     if (banners.length <= 1) return
-    
+
     const interval = setInterval(() => {
-      if (!isSwipingRef.current) {
-        setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
-      }
-    }, bannerInterval) // Используем переменную из стейта
-    
+        nextBanner()
+    }, bannerInterval)
+
     return () => clearInterval(interval)
-  }, [banners.length, bannerInterval])
-  
-  // Используем useRef для хранения значений свайпа
+  }, [banners.length, bannerInterval, currentBannerIndex, nextBanner])
+
+  // --- ЛОГИКА СВАЙПОВ (Touch) ---
   const touchStartRef = useRef<number | null>(null)
-  const touchEndRef = useRef<number | null>(null)
-  const isSwipingRef = useRef<boolean>(false)
-  
-  // Минимальное расстояние для свайпа (в пикселях)
   const minSwipeDistance = 50
-  
-  // Обработка свайпа (работает на мобильных и десктопе)
+
   const onTouchStart = (e: React.TouchEvent) => {
-    isSwipingRef.current = true
-    touchEndRef.current = null
     touchStartRef.current = e.targetTouches[0].clientX
   }
-  
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (touchStartRef.current !== null && isSwipingRef.current) {
-      touchEndRef.current = e.targetTouches[0].clientX
-    }
-  }
-  
-  const onTouchEnd = () => {
-    if (touchStartRef.current === null || touchEndRef.current === null) {
-      touchStartRef.current = null
-      touchEndRef.current = null
-      isSwipingRef.current = false
-      return
-    }
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
     
-    const distance = touchStartRef.current - touchEndRef.current
+    const touchEnd = e.changedTouches[0].clientX
+    const distance = touchStartRef.current - touchEnd
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
-    
-    if (isLeftSwipe && banners.length > 0) {
-      setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
-    }
-    if (isRightSwipe && banners.length > 0) {
-      setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length)
+
+    if (isLeftSwipe) {
+      nextBanner()
+    } else if (isRightSwipe) {
+      prevBanner()
     }
     
     touchStartRef.current = null
-    touchEndRef.current = null
-    isSwipingRef.current = false
   }
   
-  // Обработка свайпа мышью для десктопа (простое перетаскивание)
-  const onMouseDown = (e: React.MouseEvent) => {
-    isSwipingRef.current = true
-    touchEndRef.current = null
-    touchStartRef.current = e.clientX
-  }
-  
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (touchStartRef.current !== null && isSwipingRef.current) {
-      touchEndRef.current = e.clientX
-    }
-  }
-  
-  const onMouseUp = () => {
-    if (touchStartRef.current === null || touchEndRef.current === null) {
-      touchStartRef.current = null
-      touchEndRef.current = null
-      isSwipingRef.current = false
-      return
-    }
-    
-    const distance = touchStartRef.current - touchEndRef.current
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-    
-    if (isLeftSwipe && banners.length > 0) {
-      setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
-    }
-    if (isRightSwipe && banners.length > 0) {
-      setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length)
-    }
-    
-    touchStartRef.current = null
-    touchEndRef.current = null
-    isSwipingRef.current = false
-  }
-
-  // Автоматическая смена баннеров (отключается во время свайпа)
-  useEffect(() => {
-    if (banners.length <= 1) return
-    
-    const interval = setInterval(() => {
-      // Не меняем автоматически, если пользователь свайпает
-      if (!isSwipingRef.current) {
-        setCurrentBannerIndex((prev) => (prev + 1) % banners.length)
-      }
-    }, 5000) // Меняем каждые 5 секунд
-    
-    return () => clearInterval(interval)
-  }, [banners.length])
-
+  // Мы убрали onMouseDown/Move/Up, так как на ПК теперь есть стрелки
+  const onMouseDown = (e: React.MouseEvent) => {} 
+  const onMouseMove = (e: React.MouseEvent) => {}
+  const onMouseUp = () => {}
   // --- ЗАГРУЗКА МЕНЮ С СЕРВЕРА ---
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   
@@ -1143,7 +1087,7 @@ export default function MenuView() {
     <div className="menu-page-web relative">
       <LogoBackground />
 
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#F3F4F6] shadow-sm">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-[#F3F4F6] shadow-sm">
       <header className="app-header-web relative z-10">
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
@@ -1427,36 +1371,52 @@ export default function MenuView() {
 
       {banners.length > 0 ? (
         <div 
-          className="hero-banner-web rounded-none sm:rounded-2xl overflow-hidden relative group"
+          className="hero-banner-web max-w-7xl mx-auto rounded-none sm:rounded-2xl overflow-hidden relative group"
+          // Добавляем обработчики свайпа для мобильных
           onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
           style={{ 
-            cursor: 'grab', 
-            userSelect: 'none', 
-            touchAction: 'pan-x pan-y',
             backgroundImage: `url(${banners[currentBannerIndex].imageUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             position: 'relative'
-            
           }}
         >
+          {/* Затемнение для читаемости (опционально, если нужно) */}
+          <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/5 pointer-events-none" />
+
+          {/* Контент баннера */}
           <div 
             className="hero-content-web"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            style={{ pointerEvents: 'auto', position: 'relative', zIndex: 2, minHeight: '100%' }}
+            style={{ pointerEvents: 'none', position: 'relative', zIndex: 2, minHeight: '100%' }}
           />
+
+          {/* --- ЛЕВАЯ СТРЕЛКА (Только ПК) --- */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              prevBanner();
+            }}
+            className="hidden md:flex absolute top-0 left-0 bottom-0 w-16 items-center justify-center text-white/50 hover:text-white hover:bg-black/10 transition-all z-10 opacity-0 group-hover:opacity-100"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft size={48} strokeWidth={1.5} />
+          </button>
+
+          {/* --- ПРАВАЯ СТРЕЛКА (Только ПК) --- */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              nextBanner();
+            }}
+            className="hidden md:flex absolute top-0 right-0 bottom-0 w-16 items-center justify-center text-white/50 hover:text-white hover:bg-black/10 transition-all z-10 opacity-0 group-hover:opacity-100"
+            aria-label="Next slide"
+          >
+            <ChevronRight size={48} strokeWidth={1.5} />
+          </button>
+
+          {/* Точки (Dots) */}
           <div className="hero-dots-web" style={{ position: 'relative', zIndex: 3 }}>
             {banners.map((_, i) => (
               <span 
@@ -1469,13 +1429,17 @@ export default function MenuView() {
           </div>
         </div>
       ) : (
+        // Блок else (заглушка) оставляем без изменений
         <div className="hero-banner-web max-w-7xl mx-auto rounded-none sm:rounded-2xl">
           <div className="hero-content-web">
-            {/* Используем t.hero.title для перевода заголовка (fallback) */}
             <div className="hero-text-web"><h1 className="hero-title-web" style={{whiteSpace: 'pre-line'}}>{t.hero.title.replace(/ /g, '\n')}</h1></div>
-            <div className="hero-images-web"><div className="hero-image-item-web hero-image-1"><div className="hero-image-placeholder-web">🍜</div></div><div className="hero-image-item-web hero-image-2"><div className="hero-image-placeholder-web">🍲</div></div><div className="hero-image-item-web hero-image-3"><div className="hero-image-placeholder-web">🥘</div></div></div>
+            <div className="hero-images-web">
+                <div className="hero-image-item-web hero-image-1"><div className="hero-image-placeholder-web">🍜</div></div>
+                <div className="hero-image-item-web hero-image-2"><div className="hero-image-placeholder-web">🍲</div></div>
+                <div className="hero-image-item-web hero-image-3"><div className="hero-image-placeholder-web">🥘</div></div>
+            </div>
           </div>
-          <div className="hero-dots-web">{[1, 2, 3, 4, 5, 6, 7, 8].map((_, i) => <span key={i} className={`hero-dot-web ${i === 0 ? 'active' : ''}`}></span>)}</div>
+          <div className="hero-dots-web">{[1, 2, 3].map((_, i) => <span key={i} className={`hero-dot-web ${i === 0 ? 'active' : ''}`}></span>)}</div>
         </div>
       )}
 
