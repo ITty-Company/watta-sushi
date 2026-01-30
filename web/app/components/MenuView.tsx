@@ -1084,10 +1084,11 @@ export default function MenuView() {
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
   return (
-    <div className="menu-page-web relative">
+    <div className="menu-page-web relative min-h-screen bg-[#F3F4F6]">
       <LogoBackground />
 
-      <div className="absolute top-0 left-0 right-0 z-50 bg-[#F3F4F6] shadow-sm">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#F3F4F6] shadow-sm transition-transform duration-300">
+
       <header className="app-header-web relative z-10">
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
@@ -1417,7 +1418,10 @@ export default function MenuView() {
           </button>
 
           {/* Точки (Dots) */}
-          <div className="hero-dots-web" style={{ position: 'relative', zIndex: 3 }}>
+          <div 
+            className="hero-dots-web absolute bottom-3 left-0 right-0 flex justify-center gap-2" 
+            style={{ zIndex: 3 }}
+          >
             {banners.map((_, i) => (
               <span 
                 key={i} 
