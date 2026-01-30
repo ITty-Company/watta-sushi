@@ -334,6 +334,7 @@ export default function MenuView() {
   const onMouseUp = () => {}
   // --- ЗАГРУЗКА МЕНЮ С СЕРВЕРА ---
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [favorites, setFavorites] = useState<number[]>([]) // Храним ID лайкнутых товаров
   
   const mapProductsToItems = useCallback((data: any[]) => {
     return (data || []).map((p: any) => ({
@@ -747,6 +748,62 @@ export default function MenuView() {
     setMenuCategories(menuCategories.map(cat => cat.id === categoryId ? { ...cat, subcategories: [...cat.subcategories, newSubcategory] } : cat))
   }
 
+  useEffect(() => {
+  const loadFavorites = async () => {
+    if (typeof window === 'undefined') return
+    const userStr = localStorage.getItem('currentUser')
+    if (!userStr) return
+
+    try {
+      const user = JSON.parse(userStr)
+      // Передаем ID пользователя в заголовке (как мы договорились в бэкенде)
+      const res = await fetch('/api/favorites', {
+        headers: { 'x-user-id': user.id.toString() }
+      })
+      if (res.ok) {
+        const ids = await res.json()
+        setFavorites(ids)
+      }
+    } catch (e) { console.error(e) }
+  }
+  loadFavorites()
+}, [])
+  const toggleFavorite = async (e: React.MouseEvent, productId: number) => {
+  e.stopPropagation() // Чтобы не открывалась карточка товара (если будет клик по ней)
+  e.preventDefault()
+
+  if (typeof window === 'undefined') return
+  const userStr = localStorage.getItem('currentUser')
+
+  if (!userStr) {
+    alert('Увійдіть, щоб додавати в обране') // Или t.auth.required
+    return
+  }
+
+  const user = JSON.parse(userStr)
+
+  // Оптимистичное обновление интерфейса (сразу меняем цвет, не ждем сервер)
+  const isLiked = favorites.includes(productId)
+  if (isLiked) {
+    setFavorites(prev => prev.filter(id => id !== productId))
+  } else {
+    setFavorites(prev => [...prev, productId])
+  }
+
+  try {
+    await fetch('/api/favorites/toggle', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-user-id': user.id.toString()
+      },
+      body: JSON.stringify({ productId })
+    })
+  } catch (err) {
+    // Если ошибка - откатываем (можно добавить логику)
+    console.error('Ошибка лайка')
+  }
+}
   // --- ДОБАВЛЕНИЕ В КОРЗИНУ ---
   const addToCart = (item: MenuItem) => {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -1454,7 +1511,17 @@ export default function MenuView() {
             filteredItems.map(item => (
               <div key={item.id} className="menu-item-card-web bg-white rounded-xl shadow-sm">
                 {item.isTop && <div className="top-badge-web"><span className="badge-icon-web">⚡</span><span className="badge-text-web">{t.popular || 'Топ'}</span></div>}
-                <div className="item-image-web">{item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.emoji}</div>
+                <div className="item-image-web">{item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.emoji}
+                  <button
+                    onClick={(e) => toggleFavorite(e, item.id)}
+                    className="absolute top-2 right-2 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-sm hover:scale-110 active:scale-95 transition-all z-10 group"
+                    aria-label="В избранное"
+                  >
+                    <Heart 
+                      size={20} 
+                      className={`transition-colors duration-300 ${favorites.includes(item.id) ? 'fill-[#ff6b35] text-[#ff6b35]' : 'text-gray-400 group-hover:text-[#ff6b35]'}`}
+                    />
+                  </button></div>
                 <div className="item-info-web"><h4 className="item-name-web">{item.name}</h4><p className="item-description-web">{item.description}</p><div className="item-footer-web"><span className="item-price-web">{item.price} ₴</span><button className="add-btn-web" onClick={() => addToCart(item)}>+</button></div></div>
               </div>
             ))
