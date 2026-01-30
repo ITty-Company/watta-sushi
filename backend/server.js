@@ -55,6 +55,7 @@ import deliveryZoneRoutes from './routes/deliveryZone.routes.ts';
 import teamRoutes from './routes/team.routes.ts';
 import settingsRoutes from './routes/settings.routes.ts'
 import promotionsRoutes from './routes/promotions.routes.ts'
+import newsletterRoutes from './routes/newsletter.routes';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -99,6 +100,7 @@ app.use('/api/banners', bannerRoutes); // Баннеры: /api/banners
 app.use('/api/team', teamRoutes); // Команда: /api/team
 app.use('/api/settings', settingsRoutes);
 app.use('/api/promotions', promotionsRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 // 4. Тестовый маршрут
 app.get('/', (req, res) => {

@@ -26,7 +26,8 @@ import {
   Sparkles,
   Users,
   Settings, 
-  Save
+  Save,
+  Mail
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import CityMapPicker from './CityMapPicker'
@@ -170,7 +171,7 @@ interface SiteSettings {
 
 export default function AdminView({ onBack }: AdminViewProps) {
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'>('dashboard')
   
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -2805,7 +2806,71 @@ export default function AdminView({ onBack }: AdminViewProps) {
               </div>
             </div>
           )}
+          {/* Вкладка РАССЫЛКА */}
+          {!isRightPanelOpen && activeTab === 'newsletter' && (
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white p-8 rounded-[24px] shadow-lg">
+                <h2 className="text-3xl font-bold text-[#145142] mb-2">Email Рассылка</h2>
+                <p className="text-gray-500 mb-8">Отправка писем всем зарегистрированным пользователям</p>
 
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if(!confirm('Отправить это письмо всем пользователям?')) return;
+                  
+                  const form = e.target as HTMLFormElement;
+                  const data = {
+                    subject: (form.elements.namedItem('subject') as HTMLInputElement).value,
+                    message: (form.elements.namedItem('message') as HTMLTextAreaElement).value,
+                    promoCode: (form.elements.namedItem('promoCode') as HTMLInputElement).value,
+                  };
+
+                  try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch('/api/newsletter/send', {
+                      method: 'POST',
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                      },
+                      body: JSON.stringify(data)
+                    });
+                    const json = await res.json();
+                    if(res.ok) {
+                      alert(`Успешно отправлено ${json.count} пользователям!`);
+                      form.reset();
+                    } else {
+                      alert('Ошибка: ' + json.message);
+                    }
+                  } catch(err) {
+                    alert('Ошибка сети');
+                  }
+                }} className="space-y-6">
+                  
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-2">Тема письма</label>
+                    <input name="subject" required className="w-full p-4 border rounded-xl focus:border-[#155044] outline-none" placeholder="Например: Скидки на роллы!"/>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-2">Текст сообщения</label>
+                    <textarea name="message" required rows={6} className="w-full p-4 border rounded-xl focus:border-[#155044] outline-none" placeholder="Введите текст рассылки..."/>
+                  </div>
+
+                  <div className="bg-orange-50 p-6 rounded-xl border border-orange-100">
+                    <label className="block font-bold text-orange-800 mb-2">🎁 Промокод (опционально)</label>
+                    <input name="promoCode" className="w-full p-4 border border-orange-200 rounded-xl focus:border-orange-500 outline-none" placeholder="Например: PROMO2025"/>
+                    <p className="text-xs text-orange-600 mt-2">Будет выделен в письме крупным шрифтом</p>
+                  </div>
+
+                  <button type="submit" className="w-full py-4 bg-[#155044] text-white font-bold rounded-xl hover:bg-[#103d34] transition flex items-center justify-center gap-2 text-lg">
+                    <Mail size={24} />
+                    Отправить рассылку
+                  </button>
+
+                </form>
+              </div>
+            </div>
+          )}
           {/* === Вкладка: КОМАНДА === */}
           {activeTab === 'team' && (
             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
