@@ -65,4 +65,30 @@ router.post('/toggle', async (req: any, res: any) => {
   }
 });
 
+router.get('/list', async (req: any, res: any) => {
+  try {
+    const userId = Number(req.headers['x-user-id']); 
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const favorites = await prisma.favorite.findMany({
+      where: { userId },
+      include: {
+        product: {
+          include: {
+            category: true // Если нужно название категории
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Возвращаем чистый массив продуктов
+    const products = favorites.map(f => f.product);
+    res.json(products);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error fetching favorites list' });
+  }
+});
+
 export default router;
