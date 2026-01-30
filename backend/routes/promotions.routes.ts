@@ -3,11 +3,16 @@ import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url'; // 1. Импортируем утилиту
+
+// 2. Создаем __dirname вручную для ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 const router = Router();
 
-// Папка для загрузки картинок (в публичную папку фронтенда)
+// Папка для загрузки картинок (теперь __dirname работает корректно)
 const uploadDir = path.join(__dirname, '../../web/public/uploads');
 
 // Создаем папку, если её нет
@@ -17,10 +22,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // Настройка Multer
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
+    destination: (req: any, file: any, cb: any) => {
         cb(null, uploadDir);
     },
-    filename: (req, file, cb) => {
+    filename: (req: any, file: any, cb: any) => {
         // Убираем спецсимволы
         const sanitized = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
         cb(null, `promo-${Date.now()}-${sanitized}`);
