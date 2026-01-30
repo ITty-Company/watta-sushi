@@ -10,19 +10,25 @@ datasource db {
 // --- ПОЛЬЗОВАТЕЛИ ---
 model User {
   id       Int     @id @default(autoincrement())
-  email    String  @unique
-  password String
+  email    String  @unique // Логин
+  password String // Пароль
+  phone    String  @unique // Уникальный телефон (защита от абуза)
   name     String?
-  role     String  @default("USER") // "USER" или "ADMIN"
-  phone    String?
+  role     String  @default("USER")
 
-  orders Order[] // История заказов пользователя
+  // Статусы верификации
+  isPhoneVerified  Boolean @default(false) // Главный флаг подтверждения
+  verificationCode String? // Сюда пишем код из SMS
 
-  isVerified        Boolean  @default(false)
-  verificationCode  String?
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Связи
+  orders         Order[]
+  promoUsages    UserPromoUsage[]
+  personalPromos PersonalPromo[]
+
+  dateOfBirth DateTime?
 }
 
 // --- ТОВАРЫ ---
@@ -149,13 +155,6 @@ model OrderItem {
   price     Float
 }
 
-model PromoCode {
-  id       Int     @id @default(autoincrement())
-  code     String  @unique // Сам код (например, "WATTA10")
-  discount Int // Процент скидки (например, 10)
-  isActive Boolean @default(true)
-}
-
 // --- БАННЕРЫ ---
 model Banner {
   id        Int      @id @default(autoincrement())
@@ -201,9 +200,60 @@ model Promo {
   id          Int      @id @default(autoincrement())
   title       String
   description String
-  content     String?  // Полный текст
+  content     String? // Полный текст
   imageUrl    String?
   isHit       Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Типы промокодов
+enum PromoType {
+  WELCOME // Стартовый
+  BIRTHDAY // ДР
+  REACTIVATION // Возвращение клиента
+  GENERAL // Обычный (реклама)
+}
+
+model PromoCode {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique // Сам код, например "WATTASUSHI" или "BDAY2025"
+  description String
+  discount    Int // Процент или сумма
+  isFixed     Boolean @default(false) // false = %, true = грн
+  minOrder    Int     @default(0)
+
+  type     PromoType
+  isActive Boolean   @default(true)
+
+  usages UserPromoUsage[]
+}
+
+// Таблица выданных личных промокодов (генерируем уникальные)
+model PersonalPromo {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique // Уникальный код, например "START-8492"
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  type      PromoType
+  discount  Int
+  expiresAt DateTime
+  isUsed    Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+// История использования (чтобы не юзали дважды)
+model UserPromoUsage {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  // Ссылка либо на общий промокод, либо на личный (можно упростить логику)
+  promoCodeId Int?
+  promoCode   PromoCode? @relation(fields: [promoCodeId], references: [id])
+
+  personalPromoId Int? // Если использовали личный код
+
+  usedAt DateTime @default(now())
 }
