@@ -312,7 +312,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
         fetch('/api/promo', { headers }),
         fetch('/api/banners/all', { headers }),
         fetch('/api/auth/users', { headers }),
-        fetch('/api/team/all', { headers })
+        fetch('/api/team/all', { headers }),
+        fetch('/api/promotions').then(r => r.json()).then(setNewsItems)
       ])
       if (ordersRes.ok) setOrders(await ordersRes.json())
       if (prodRes.ok) setProducts(await prodRes.json())
@@ -564,6 +565,42 @@ export default function AdminView({ onBack }: AdminViewProps) {
       setCityMapSearchLoading(false)
     }
   }, [newCityName, newCityNameUa, newCityNameEn, newCityNameNl, newCityCountryId, countries])
+
+  // --- БЛОК НОВОСТЕЙ (NEWS SYSTEM) ---
+  interface NewsItem {
+    id: number; title: string; description: string; content: string; imageUrl: string; isHit: boolean;
+  }
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([])
+  const [isNewsModalOpen, setIsNewsModalOpen] = useState(false)
+  const [editingNews, setEditingNews] = useState<NewsItem | null>(null)
+
+  const handleSaveNews = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const form = e.target as HTMLFormElement
+    const formData = new FormData(form)
+    const isHitInput = form.querySelector('[name="isHit"]') as HTMLInputElement
+    formData.set('isHit', String(isHitInput?.checked || false))
+    
+    const url = editingNews ? `/api/promotions/${editingNews.id}` : '/api/promotions'
+    const method = editingNews ? 'PUT' : 'POST'
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData })
+      if (res.ok) {
+        alert('Сохранено'); setIsNewsModalOpen(false); setEditingNews(null);
+        fetch('/api/promotions').then(r => r.json()).then(setNewsItems)
+      } else alert('Ошибка')
+    } catch (e) { alert('Ошибка сети') }
+  }
+
+  const handleDeleteNews = async (id: number) => {
+    if (!confirm('Удалить?')) return
+    try {
+      const token = localStorage.getItem('token')
+      await fetch(`/api/promotions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
+      setNewsItems(newsItems.filter(p => p.id !== id))
+    } catch { alert('Ошибка') }
+  }
 
   // --- ЛОГИКА ТОВАРОВ (ФОРМА) ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -1957,7 +1994,33 @@ export default function AdminView({ onBack }: AdminViewProps) {
               )}
             </div>
           )}
-          
+          {/* ВКЛАДКА НОВОСТИ */}
+          {!isRightPanelOpen && activeTab === 'promos' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow">
+                <h2 className="text-2xl font-bold">Новости</h2>
+                <button onClick={() => { setEditingNews(null); setIsNewsModalOpen(true) }} className="bg-[#155044] text-white px-4 py-2 rounded-lg">
+                  + Добавить
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {newsItems.map(item => (
+                    <div key={item.id} className="bg-white rounded-xl shadow overflow-hidden">
+                      <div className="h-40 bg-gray-200 relative">
+                        {item.imageUrl && <img src={item.imageUrl} className="w-full h-full object-cover"/>}
+                      </div>
+                      <div className="p-4">
+                          <h3 className="font-bold">{item.title}</h3>
+                          <div className="flex gap-2 mt-4">
+                            <button onClick={() => { setEditingNews(item); setIsNewsModalOpen(true) }} className="flex-1 bg-blue-50 text-blue-600 py-2 rounded">Ред.</button>
+                            <button onClick={() => handleDeleteNews(item.id)} className="px-4 bg-red-50 text-red-600 rounded">Уд.</button>
+                          </div>
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </div>
+          )}
           {/* === Вкладка: ТОВАРЫ === */}
           {activeTab === 'products' && (
              <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
@@ -3530,6 +3593,25 @@ export default function AdminView({ onBack }: AdminViewProps) {
               >
                 {editingTeamId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* МОДАЛКА НОВОСТЕЙ */}
+      {isNewsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">{editingNews ? 'Редактировать' : 'Новая новость'}</h2>
+            <form onSubmit={handleSaveNews} className="space-y-4">
+              <input name="title" defaultValue={editingNews?.title} placeholder="Заголовок" required className="w-full p-3 border rounded-lg"/>
+              <textarea name="description" defaultValue={editingNews?.description} placeholder="Краткое описание" required className="w-full p-3 border rounded-lg"/>
+              <textarea name="content" defaultValue={editingNews?.content} placeholder="Полный текст" rows={5} className="w-full p-3 border rounded-lg"/>
+              <input type="file" name="image" accept="image/*" />
+              <label className="flex items-center gap-2"><input type="checkbox" name="isHit" defaultChecked={editingNews?.isHit}/> Хит продаж</label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setIsNewsModalOpen(false)} className="flex-1 py-3 bg-gray-100 rounded-lg">Отмена</button>
+                <button type="submit" className="flex-1 py-3 bg-[#155044] text-white rounded-lg">Сохранить</button>
+              </div>
             </form>
           </div>
         </div>

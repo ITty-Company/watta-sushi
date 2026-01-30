@@ -17,6 +17,7 @@ import PromotionsView from './PromotionsView'
 import AboutView from './AboutView'
 import AuthView from './AuthView'
 import CartView from './CartView'
+import PromotionsDetailView from './PromotionsDetailView'
 import { 
   Menu,       
   Phone,      
@@ -120,7 +121,7 @@ export default function MenuView() {
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
-
+  const [selectedPromoId, setSelectedPromoId] = useState<number | null>(null)
   // --- ГОРОДА ДОСТАВКИ ---
   const [deliveryCities, setDeliveryCities] = useState<{id: number, name: string, name_nl?: string}[]>([])
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
@@ -1087,7 +1088,37 @@ export default function MenuView() {
     )
   }
   if (activePage === 'delivery') return <div className="full-page-web"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">{t.delivery}</h1></div><div className="full-page-content-web"><DeliveryView /></div></div>
-  if (activePage === 'promotions') return <div className="full-page-web"><PromotionsView onBack={handleClosePage} onMenuClick={toggleSidebar} /></div>
+  if (activePage === 'promotions') {
+  if (selectedPromoId) {
+    return (
+      <div className="full-page-web">
+        <PromotionsDetailView 
+          id={selectedPromoId}
+          onBack={() => setSelectedPromoId(null)}
+          onMenuClick={toggleSidebar}
+          onOpenPhone={() => handlePageOpen('phone')}
+          onOpenNotifications={() => handlePageOpen('notifications')}
+          onOpenFavorites={() => openProfileTab('favorites')}
+          onOpenProfile={() => openProfileTab('history')}
+        />
+      </div>
+    )
+  }
+  return (
+    <div className="full-page-web">
+      <PromotionsView 
+        onBack={handleClosePage} 
+        onMenuClick={toggleSidebar}
+        // Передаем функцию открытия детальной страницы
+        onOpenDetail={(id) => setSelectedPromoId(id)}
+        onOpenPhone={() => handlePageOpen('phone')}
+        onOpenNotifications={() => handlePageOpen('notifications')}
+        onOpenFavorites={() => openProfileTab('favorites')}
+        onOpenProfile={() => openProfileTab('history')}
+      />
+    </div>
+  )
+}
   if (activePage === 'about') return <div className="full-page-web"><AboutView onBack={handleClosePage} onMenuClick={toggleSidebar} /></div>
 
   if (activePage === 'cart') {
