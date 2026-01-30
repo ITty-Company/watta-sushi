@@ -18,10 +18,12 @@ async function main() {
       role: 'ADMIN'
     },
     create: {
-      email: adminEmail,
-      password: hashedPassword,
+      email: 'admin@sushi.com',
+      phone: '+380000000000', // <--- ДОБАВЬТЕ ЭТУ СТРОКУ (Любой номер)
       name: 'Администратор',
-      role: 'ADMIN'
+      password: hashedPassword,
+      role: 'ADMIN',
+      isPhoneVerified: true
     }
   })
   console.log('✅ Admin user created:', adminEmail)
