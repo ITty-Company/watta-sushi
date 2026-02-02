@@ -3158,16 +3158,30 @@ body {
 }
 
 @media (max-width: 768px) {
-  /* Убираем серый фон у панели категорий */
+  /* 1. Делаем прозрачным главный контейнер категорий */
   .categories-panel-wrapper-web {
     background: transparent !important;
     background-color: transparent !important;
-    box-shadow: none !important; /* Если есть тень, её тоже лучше убрать для "чистоты" */
+    box-shadow: none !important;
+    border: none !important;
   }
-  
-  /* Если фон задан самому списку */
+
+  /* 2. Делаем прозрачным внутренний скролл-контейнер */
   .categories-panel-web {
     background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* 3. Если вдруг кнопки прокрутки (стрелки) имеют фон */
+  .categories-scroll-btn-web {
+    background: rgba(255, 255, 255, 0.8) !important; /* Или transparent, если хотите скрыть фон стрелок */
+    box-shadow: none !important;
+  }
+  
+  /* 4. Убираем отступы, если они создают видимость "плашки" */
+  .menu-page-web .categories-panel-wrapper-web {
+     padding-top: 5px !important;
+     padding-bottom: 5px !important;
   }
 }
 
@@ -3532,7 +3546,6 @@ body {
   gap: 8px;
   justify-content: center;
   margin-top: 32px;
-  position: relative;
   z-index: 2;
 }
 

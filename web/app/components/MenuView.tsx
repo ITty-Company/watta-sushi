@@ -1490,7 +1490,7 @@ export default function MenuView() {
 
           {/* Точки (Dots) */}
           <div 
-              className="hero-dots-web absolute bottom-4 left-0 right-0 flex justify-center gap-2" 
+              className="hero-dots-web absolute !bottom-[-20px] left-0 right-0 flex justify-center gap-2" 
               style={{ zIndex: 3 }}
             >
             {banners.map((_, i) => (
