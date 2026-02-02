@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -8,6 +8,14 @@ export const metadata: Metadata = {
     icon: '/logo.png',
     apple: '/logo.png',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Запрещает масштабирование пальцами
+  themeColor: '#ffffff', // Опционально: цвет системного бара
 }
 
 const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'

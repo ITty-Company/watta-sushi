@@ -3157,6 +3157,20 @@ body {
   animation: activePulse 2s ease-in-out infinite;
 }
 
+@media (max-width: 768px) {
+  /* Убираем серый фон у панели категорий */
+  .categories-panel-wrapper-web {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important; /* Если есть тень, её тоже лучше убрать для "чистоты" */
+  }
+  
+  /* Если фон задан самому списку */
+  .categories-panel-web {
+    background: transparent !important;
+  }
+}
+
 @keyframes activePulse {
   0%, 100% {
     box-shadow: 

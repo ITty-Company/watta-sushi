@@ -130,6 +130,10 @@ export default function MenuView() {
 
   const [bannerInterval, setBannerInterval] = useState(5000)
 
+  const [isExpanded, setIsExpanded] = useState(false)
+
+
+  
   useEffect(() => {
     // Проверяем сохранённый город из localStorage
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -669,6 +673,10 @@ export default function MenuView() {
     return filtered
   }, [menuItems, selectedCategory, selectedSubcategory, currentCategory, menuCategories])
   
+  useEffect(() => {
+    setIsExpanded(false)
+  }, [selectedCategory, selectedSubcategory])
+
   // Отладочный эффект для отслеживания изменений
   useEffect(() => {
     console.log('Состояние фильтрации обновлено:', {
@@ -704,6 +712,12 @@ export default function MenuView() {
     setIsSidebarOpen(!isSidebarOpen)
     if (activePage) setActivePage(null)
   }
+
+
+  const initialLimit = isMobile ? 5 : 8
+
+  const displayedItems = isExpanded ? filteredItems : filteredItems.slice(0, initialLimit)
+  const showExpandButton = !isExpanded && filteredItems.length > initialLimit
 
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
@@ -1476,9 +1490,9 @@ export default function MenuView() {
 
           {/* Точки (Dots) */}
           <div 
-            className="hero-dots-web absolute bottom-3 left-0 right-0 flex justify-center gap-2" 
-            style={{ zIndex: 3 }}
-          >
+              className="hero-dots-web absolute bottom-4 left-0 right-0 flex justify-center gap-2" 
+              style={{ zIndex: 3 }}
+            >
             {banners.map((_, i) => (
               <span 
                 key={i} 
@@ -1507,9 +1521,9 @@ export default function MenuView() {
       <div className="menu-section-web max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
         <h3 className="category-title-web pl-2 sm:pl-0 mt-6 mb-4">{t.categories[selectedCategory as keyof typeof t.categories] || menuCategories.find(c => c.key === selectedCategory)?.name || ''}</h3>
         <div className="menu-items-grid-web bg-transparent">
-          {filteredItems.length > 0 ? (
-            filteredItems.map(item => (
-              <div key={item.id} className="menu-item-card-web bg-white rounded-xl shadow-sm">
+          {displayedItems.length > 0 ? (
+            displayedItems.map(item => (
+              <div key={item.id} className="menu-item-card-web bg-white rounded-xl shadow-sm relative">
                 {item.isTop && <div className="top-badge-web"><span className="badge-icon-web">⚡</span><span className="badge-text-web">{t.popular || 'Топ'}</span></div>}
                 <div className="item-image-web">{item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.emoji}
                   <button
@@ -1550,7 +1564,19 @@ export default function MenuView() {
           )}
         </div>
       </div>
-
+      {showExpandButton && (
+          <div className="w-full flex justify-center mt-8 mb-12">
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="px-8 py-3 bg-white border-2 border-[#145142] text-[#145142] font-bold rounded-xl hover:bg-[#145142] hover:text-white transition-colors shadow-sm flex items-center gap-2 text-base sm:text-lg active:scale-95 duration-200"
+            >
+              <span>Посмотреть все</span>
+              <span className="bg-[#145142]/10 px-2 py-0.5 rounded-full text-xs font-extrabold ml-1 group-hover:bg-white/20">
+                {filteredItems.length - initialLimit}+
+              </span>
+            </button>
+          </div>
+        )}
       {showCategoryAdmin && (
         <div className="admin-category-overlay-web" onClick={() => setShowCategoryAdmin(false)}>
           <div className="admin-category-panel-web" onClick={(e) => e.stopPropagation()}>
