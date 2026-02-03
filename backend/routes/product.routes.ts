@@ -169,7 +169,7 @@ router.post('/', async (req: Request, res: Response) => {
         name_en: name_en || name_ru,
         name_nl: name_nl || name_ru,
         
-        price: parseFloat(price),
+        price: Number(price),
         
         // Описания
         description_ru: description_ru || "", 
@@ -224,7 +224,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         name_en,
         name_nl,
         
-        price: parseFloat(price),
+        price: Number(price),
         
         description_ru,
         description_ua,
@@ -295,6 +295,43 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     console.error('Ошибка получения товара:', error);
     res.status(500).json({ message: 'Ошибка получения товара' });
+  }
+});
+
+router.get('/recommendations', async (req: any, res: any) => {
+  try {
+    const count = await prisma.product.count();
+    const skip = Math.max(0, Math.floor(Math.random() * (count - 4)));
+    
+    const recommendations = await prisma.product.findMany({
+      take: 4,
+      skip: skip,
+      include: { category: true }
+    });
+    
+    res.json(recommendations);
+  } catch (e) {
+    res.status(500).json({ error: 'Error fetching recommendations' });
+  }
+});
+
+// GET /api/products/:id - Один товар
+router.get('/:id', async (req: any, res: any) => {
+  const { id } = req.params;
+  try {
+    // Если id не число (например, favicon.ico), пропускаем
+    if (isNaN(Number(id))) return res.status(400).json({ error: 'Invalid ID' });
+
+    const product = await prisma.product.findUnique({
+      where: { id: Number(id) },
+      include: { category: true } // + сюда можно добавить include: { ingredients: true } если есть модель ингредиентов
+    });
+
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error fetching product' });
   }
 });
 

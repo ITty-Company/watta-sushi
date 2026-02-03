@@ -18,6 +18,7 @@ import AboutView from './AboutView'
 import AuthView from './AuthView'
 import CartView from './CartView'
 import PromotionsDetailView from './PromotionsDetailView'
+import Link from 'next/link'
 import { 
   Menu,       
   Phone,      
@@ -1535,7 +1536,15 @@ export default function MenuView() {
                       size={20} 
                       className={`transition-colors duration-300 ${favorites.includes(item.id) ? 'fill-[#ff6b35] text-[#ff6b35]' : 'text-gray-400 group-hover:text-[#ff6b35]'}`}
                     />
-                  </button></div>
+                  </button>
+                  <Link href={`/product/${item.id}`} className="block w-full h-full cursor-pointer">
+                    {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+                    ) : (
+                        <div className="text-4xl">{item.emoji}</div>
+                    )}
+                </Link>
+                </div>
                 <div className="item-info-web"><h4 className="item-name-web">{item.name}</h4><p className="item-description-web">{item.description}</p><div className="item-footer-web"><span className="item-price-web">{item.price} ₴</span><button className="add-btn-web" onClick={() => addToCart(item)}>+</button></div></div>
               </div>
             ))
