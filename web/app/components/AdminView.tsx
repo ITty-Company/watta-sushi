@@ -71,6 +71,9 @@ interface Order {
   address: string
   comment?: string
   items: OrderItem[]
+
+  paymentMethod: 'CASH' | 'CARD' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'IDEAL'
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED'
 }
 
 interface PromoCode {
@@ -225,7 +228,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
     order: 0,
     isActive: true
   })
-  
+  //Состояния для создания ингредиентов
+  const [ingredients, setIngredients] = useState<any[]>([]);
   // Состояния для создания ПРОМОКОДА
   const [newPromoCode, setNewPromoCode] = useState('')
   const [newPromoDiscount, setNewPromoDiscount] = useState('')
@@ -237,7 +241,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
     description_ru: '', description_ua: '', description_en: '', description_nl: '',
     categoryId: '',
     imageUrl: '',
-    cityIds: [] as number[] // Города для товара
+    cityIds: [] as number[],
+    ingredientIds: [] as number[] // Города для товара
   })
 
   // Состояния для управления городами
@@ -305,6 +310,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       
       const headers = { 'Authorization': `Bearer ${token}` }
       const [ordersRes, prodRes, catRes, citiesRes, countriesRes, promosRes, bannersRes, usersRes, teamRes] = await Promise.all([
+        fetch('/api/ingredients', { headers }),
         fetch('/api/orders', { headers }),
         fetch('/api/products', { headers }),
         fetch('/api/products/categories', { headers }),
@@ -634,7 +640,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
       price: '', 
       description_ru: '', description_ua: '', description_en: '', description_nl: '',
       categoryId: '', imageUrl: '',
-      cityIds: []
+      cityIds: [],
+      ingredientIds: []   
     })
     setIsModalOpen(true)
   }
@@ -667,7 +674,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
         
         categoryId: product.categoryId.toString(),
         imageUrl: product.imageUrl || '',
-        cityIds: productData.cities?.map((pc: any) => pc.cityId) || []
+        cityIds: productData.cities?.map((pc: any) => pc.cityId) || [],
+        ingredientIds: []
       })
     } else {
       setFormData({
@@ -685,7 +693,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
         
         categoryId: product.categoryId.toString(),
         imageUrl: product.imageUrl || '',
-        cityIds: []
+        cityIds: [],
+        ingredientIds: []
       })
     }
     setIsModalOpen(true)
@@ -1964,7 +1973,36 @@ export default function AdminView({ onBack }: AdminViewProps) {
                          )}
                       </div>
                     </div>
+                    {/* --- БЛОК ОПЛАТЫ (НОВЫЙ) --- */}
+                    <div className="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-100">
+                      <div className="flex items-center gap-2">
+                        {/* Иконка метода */}
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-lg">
+                          {order.paymentMethod === 'CASH' ? '💵' : 
+                          order.paymentMethod === 'CARD' ? '💳' : 
+                          order.paymentMethod === 'APPLE_PAY' ? '' : 
+                          order.paymentMethod === 'GOOGLE_PAY' ? 'G' : '🏦'}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-500 uppercase">Оплата</span>
+                          <span className="text-xs font-bold text-[#145142]">
+                              {order.paymentMethod === 'CASH' ? 'Наличные' : 'Онлайн'}
+                          </span>
+                        </div>
+                      </div>
 
+                      {/* Статус оплаты */}
+                      <div className={`px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 ${
+                          order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 
+                          order.paymentStatus === 'FAILED' ? 'bg-red-100 text-red-700' : 
+                          'bg-yellow-100 text-yellow-700'
+                      }`}>
+                          {order.paymentStatus === 'PAID' ? <Check size={12}/> : null}
+                          {order.paymentStatus === 'PAID' ? 'ОПЛАЧЕНО' : 
+                          order.paymentStatus === 'FAILED' ? 'ОШИБКА' : 'ОЖИДАЕТ'}
+                      </div>
+                    </div>
+                    {/* --------------------------- */}
                     {/* Товары */}
                     <div className="flex flex-col gap-3">
                       {order.items.map((item, idx) => (
@@ -3199,7 +3237,39 @@ export default function AdminView({ onBack }: AdminViewProps) {
                    <textarea name="description_nl" value={formData.description_nl} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="NL: Rijst..." />
                 </div>
               </div>
-
+              {/* --- ВЫБОР ИНГРЕДИЕНТОВ --- */}
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-[#145142]/70 mb-2">
+                  Ингредиенты (Состав)
+                </label>
+                
+                {/* Сетка ингредиентов */}
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-2 border rounded-xl bg-gray-50">
+                  {ingredients.map(ing => {
+                    // Проверяем, выбран ли ингредиент
+                    const isSelected = (formData as any).ingredientIds?.includes(ing.id);
+                    
+                    return (
+                      <div 
+                        key={ing.id}
+                        onClick={() => {
+                          const currentIds = (formData as any).ingredientIds || [];
+                          const newIds = isSelected 
+                            ? currentIds.filter((id: number) => id !== ing.id) // Убрать
+                            : [...currentIds, ing.id]; // Добавить
+                          setFormData(prev => ({ ...prev, ingredientIds: newIds }));
+                        }}
+                        className={`cursor-pointer rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all ${
+                          isSelected ? 'border-[#145142] bg-[#145142]/10' : 'border-transparent bg-white hover:shadow-md'
+                        }`}
+                      >
+                        <img src={ing.imageUrl} className="w-8 h-8 object-contain" alt={ing.name_ru} />
+                        <span className="text-[10px] text-center font-bold leading-tight">{ing.name_ru}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
               <button 
                 type="submit" 
                 className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-lg mt-2 text-sm sm:text-base"

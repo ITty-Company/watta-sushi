@@ -115,6 +115,8 @@ model Product {
   cities     ProductCity[]
   orderItems OrderItem[]
   favorites  Favorite[]
+
+  ingredients Ingredient[]
 }
 
 model ProductCity {
@@ -269,4 +271,25 @@ model Favorite {
   createdAt DateTime @default(now())
 
   @@id([userId, productId]) // Составной ключ: один юзер не может дважды лайкнуть один товар
+}
+
+
+enum PaymentMethod {
+  CASH
+  CARD        // Обычный ввод карты
+  APPLE_PAY
+  GOOGLE_PAY
+  IDEAL       // Для Голландии это мастхэв, добавим на будущее
+}
+
+
+model Ingredient {
+  id        Int     @id @default(autoincrement())
+  name_ru   String
+  name_ua   String?
+  name_en   String?
+  name_nl   String?
+  imageUrl  String  // Ссылка на фото ингредиента (лосось, рис и т.д.)
+  
+  products  Product[]
 }

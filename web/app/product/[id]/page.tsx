@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Minus, Plus, ShoppingBag, Edit } from 'lucide-react'
-import { Header } from '../../Header'
-import { useLanguage } from '../../context/LanguageContext' // Импорт языка
+// 1. Добавили недостающие иконки (Edit, Minus, Plus)
+import { ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu, X, Edit, Minus, Plus } from 'lucide-react'
+import { useLanguage } from '../../context/LanguageContext'
+// 2. Исправили путь к LogoBackground (нужно выйти из папок [id] и product)
+import LogoBackground from '../../components/LogoBackground'
 
-// Расширенный тип продукта с переводами
 interface Product {
   id: number
   name_ru: string
@@ -22,6 +23,15 @@ interface Product {
   imageUrl?: string
   categoryId: number
   category?: { name_ru: string }
+
+  ingredients?: { 
+    id: number; 
+    name_ru: string; 
+    imageUrl: string
+    name_ua?: string // Сделал опциональными на всякий случай
+    name_en?: string
+    name_nl?: string
+  }[] 
 }
 
 const AVAILABLE_EXTRAS = [
@@ -38,24 +48,29 @@ const REMOVABLE_INGREDIENTS = [
 export default function ProductPage() {
   const params = useParams()
   const router = useRouter()
-  const { language } = useLanguage() // Получаем текущий язык ('ru', 'ua', 'en', 'nl')
+  const { language } = useLanguage()
   
   const [product, setProduct] = useState<Product | null>(null)
   const [recommendations, setRecommendations] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [cartCount, setCartCount] = useState(0)
-  const [isAdmin, setIsAdmin] = useState(false) // Проверка на админа
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const [extras, setExtras] = useState<number[]>([]) 
   const [removed, setRemoved] = useState<string[]>([]) 
 
   const productId = params.id
 
-  // Хелпер для перевода
+  // 3. Объявляем функции навигации, которых не хватало
+  const onBack = () => router.back()
+  const onOpenPhone = () => alert('Phone modal') // Или ваша логика
+  const onOpenNotifications = () => alert('Notifications') // Или ваша логика
+  const onOpenFavorites = () => alert('Favorites') // Или ваша логика
+  const onOpenProfile = () => router.push('/profile') // Редирект на профиль
+  const onMenuClick = () => router.push('/') // Редирект на главную или открытие меню
+
   const t = (field: 'name' | 'description', item: Product) => {
-    // Формируем ключ, например name_ua
     const key = `${field}_${language}` as keyof Product;
-    // Если перевода нет, откатываемся на RU
     return (item[key] as string) || item[`${field}_ru`] || '';
   }
 
@@ -88,7 +103,6 @@ export default function ProductPage() {
     setRemoved([])
     updateCartCount()
     
-    // Проверяем админа
     const user = JSON.parse(localStorage.getItem('currentUser') || '{}')
     setIsAdmin(user.role === 'ADMIN')
 
@@ -132,23 +146,57 @@ export default function ProductPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-[#145142]">Loading...</div>
   if (!product) return <div className="min-h-screen flex items-center justify-center">Product not found</div>
 
+  const Header = () => (
+    <div className="fixed top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-[1000]">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={onBack}>
+        <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+        <img src="/1.jpg" alt="Watta Sushi" className="h-6 w-auto object-contain" />
+      </div>
+
+      <div className="flex items-center gap-3 md:gap-6 text-gray-700">
+        <button onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full transition"><Phone size={24} /></button>
+        <button onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full transition"><Bell size={24} /></button>
+        <button onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full transition"><Heart size={24} /></button>
+        <button className="hover:bg-gray-100 p-2 rounded-full text-[#145142] relative">
+            <ShoppingBag size={24} />
+            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{cartCount}</span>}
+        </button>
+        <button onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full transition"><User size={24} /></button>
+        <button onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition"><Menu size={24} /></button>
+      </div>
+    </div>
+  )
+
   return (
     <div className="min-h-screen bg-[#F9FAFB] pb-20">
-      <Header cartCount={cartCount} onOpenCart={() => router.push('/')} />
+      <LogoBackground />
+      <Header />
       <div className="h-[100px]"></div>
 
+      <div className="mb-8 px-4">
+           {/* 4. Убрали проверку isCheckoutMode, оставили просто onBack */}
+           <button 
+              onClick={onBack}
+              className="bg-white px-6 py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-gray-50 transition w-fit"
+            >
+              <ArrowLeft size={20} /> Назад
+            </button>
+      </div>
+        
       <div className="fixed top-24 left-4 z-40 flex gap-2">
-        <button 
-          onClick={() => router.back()}
+        {/* Дублирующая кнопка назад (можно убрать одну из них, если мешает) */}
+        {/* <button 
+          onClick={onBack}
           className="bg-white p-3 rounded-xl shadow-md text-[#145142] hover:bg-gray-50 transition-all flex items-center gap-2 font-bold"
         >
           <ArrowLeft size={20} />
-        </button>
+        </button> 
+        */}
         
         {/* Кнопка РЕДАКТИРОВАТЬ (для админа) */}
         {isAdmin && (
            <Link 
-             href={`/?adminMode=true&editProduct=${product.id}`} // Ссылка на главную с параметрами
+             href={`/?adminMode=true&editProduct=${product.id}`}
              className="bg-[#145142] p-3 rounded-xl shadow-md text-white hover:bg-[#104034] transition-all flex items-center gap-2 font-bold"
            >
              <Edit size={20} /> Ред.
@@ -181,19 +229,35 @@ export default function ProductPage() {
                     <Minus size={18} className="text-red-500" /> Прибрати
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                    {REMOVABLE_INGREDIENTS.map(ing => (
-                        <button
-                            key={ing}
-                            onClick={() => toggleRemove(ing)}
-                            className={`px-3 py-1.5 rounded-lg border transition-all text-sm font-medium ${
-                                removed.includes(ing) 
-                                ? 'bg-red-50 border-red-200 text-red-500 line-through decoration-red-500' 
-                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
-                            }`}
-                        >
-                            {ing}
-                        </button>
-                    ))}
+                    {/* Блок "СКЛАД" (Состав) как у Ninja Sushi */}
+                    {product.ingredients && product.ingredients.length > 0 && (
+                      <div className="mb-8">
+                        <h3 className="text-[#145142] font-bold mb-3 text-lg">Склад:</h3>
+                        
+                        <div className="flex gap-2 overflow-x-auto pb-4 snap-x scrollbar-hide">
+                          {product.ingredients.map((ing: any) => (
+                            <div 
+                              key={ing.id} 
+                              className="flex-shrink-0 w-24 sm:w-28 bg-white rounded-xl p-3 flex flex-col items-center justify-center gap-2 shadow-sm border border-gray-100 snap-start"
+                            >
+                              {/* Картинка ингредиента */}
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 relative">
+                                <img 
+                                  src={ing.imageUrl} 
+                                  alt={ing[`name_${language}`] || ing.name_ru} 
+                                  className="w-full h-full object-contain drop-shadow-sm"
+                                />
+                              </div>
+                              
+                              {/* Название */}
+                              <span className="text-xs sm:text-sm font-medium text-center text-gray-700 leading-tight">
+                                {ing[`name_${language}`] || ing.name_ru}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                 </div>
             </div>
 
@@ -231,7 +295,7 @@ export default function ProductPage() {
                         <Link href={`/product/${rec.id}`} key={rec.id} className="block group">
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
                                 <div className="h-32 bg-gray-100 relative overflow-hidden">
-                                     {rec.imageUrl ? <img src={rec.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : null}
+                                     {rec.imageUrl ? <img src={rec.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={t('name', rec)} /> : null}
                                 </div>
                                 <div className="p-3">
                                     <h4 className="font-bold text-[#145142] text-sm line-clamp-1">{t('name', rec)}</h4>

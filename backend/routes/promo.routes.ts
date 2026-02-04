@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, PromoType } from '@prisma/client'; // Импортируем PromoType
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -18,13 +18,15 @@ router.post('/check', async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Промокод не найден или неактивен' });
       return;
     }
-    res.json({ success: true, discount: promo.discount, code: promo.code });
+    // Тут можно добавить логику проверки minOrder
+    
+    res.json({ success: true, discount: promo.discount, code: promo.code, isFixed: promo.isFixed });
   } catch (error) {
     res.status(500).json({ message: 'Ошибка проверки' });
   }
 });
 
-// 2. Получить ВСЕ коды (для Админа) - НОВОЕ
+// 2. Получить ВСЕ коды (для Админа)
 router.get('/', async (req, res) => {
   try {
     const promos = await prisma.promoCode.findMany({ orderBy: { id: 'desc' } });
@@ -38,20 +40,29 @@ router.get('/', async (req, res) => {
 router.post('/create', async (req: Request, res: Response) => {
   try {
     const { code, discount } = req.body;
+    
     const newPromo = await prisma.promoCode.create({
       data: { 
         code: code.toUpperCase(), 
         discount: parseInt(discount),
-        isActive: true
+        isActive: true,
+        description: 'Створено адміністратором', // Заглушка описания
+        
+        // ИСПРАВЛЕНИЕ: Используем GENERAL, так как PERCENTAGE не существует в вашем Enum
+        type: PromoType.GENERAL, 
+        
+        // Указываем, что это проценты (isFixed = false)
+        isFixed: false 
       }
     });
     res.json(newPromo);
   } catch (e) {
+    console.error(e); // Полезно видеть ошибку в консоли
     res.status(500).json({ error: 'Код уже существует или ошибка' });
   }
 });
 
-// 4. Удалить код (для Админа) - НОВОЕ
+// 4. Удалить код (для Админа)
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

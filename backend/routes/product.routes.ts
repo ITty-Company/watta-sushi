@@ -14,7 +14,8 @@ router.get('/', async (req, res) => {
         category: true,
         cities: {
           include: { city: true }
-        }
+        },
+        ingredients: true // <-- Добавили, чтобы сразу видеть ингредиенты
       },
       where: cityId ? {
         cities: {
@@ -52,29 +53,21 @@ router.post('/categories', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Название категории (name_ru) обязательно' });
     }
     
-    // Генерируем slug если не указан
     let categorySlug = slug || name_ru.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    
-    // Проверяем уникальность slug и добавляем суффикс если нужно
     let finalSlug = categorySlug;
     let counter = 1;
-    const maxAttempts = 100; // Защита от бесконечного цикла
+    const maxAttempts = 100;
     
     while (counter <= maxAttempts) {
       const existing = await prisma.category.findUnique({
         where: { slug: finalSlug }
       });
-      if (!existing) {
-        break; // Slug уникален
-      }
+      if (!existing) break;
       finalSlug = `${categorySlug}-${counter}`;
       counter++;
     }
     
-    if (counter > maxAttempts) {
-      // Если не удалось найти уникальный slug за 100 попыток, добавляем timestamp
-      finalSlug = `${categorySlug}-${Date.now()}`;
-    }
+    if (counter > maxAttempts) finalSlug = `${categorySlug}-${Date.now()}`;
     
     const category = await prisma.category.create({
       data: {
@@ -106,16 +99,7 @@ router.put('/categories/:id', async (req: Request, res: Response) => {
     
     const category = await prisma.category.update({
       where: { id },
-      data: {
-        name_ru,
-        name_ua,
-        name_en,
-        name_nl,
-        slug,
-        emoji,
-        order,
-        isActive
-      }
+      data: { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive }
     });
     res.json(category);
   } catch (error) {
@@ -128,21 +112,13 @@ router.put('/categories/:id', async (req: Request, res: Response) => {
 router.delete('/categories/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    
-    // Проверяем, есть ли товары в этой категории
-    const productsCount = await prisma.product.count({
-      where: { categoryId: id }
-    });
+    const productsCount = await prisma.product.count({ where: { categoryId: id } });
     
     if (productsCount > 0) {
-      return res.status(400).json({ 
-        error: 'Нельзя удалить категорию, в которой есть товары. Сначала удалите или переместите товары.' 
-      });
+      return res.status(400).json({ error: 'Нельзя удалить категорию с товарами.' });
     }
     
-    await prisma.category.delete({
-      where: { id }
-    });
+    await prisma.category.delete({ where: { id } });
     res.json({ message: 'Категория удалена' });
   } catch (error) {
     console.error('Ошибка удаления категории:', error);
@@ -158,38 +134,39 @@ router.post('/', async (req: Request, res: Response) => {
       price, 
       description_ru, description_ua, description_en, description_nl,
       categoryId, imageUrl,
-      cityIds // массив ID городов
+      cityIds, // массив ID городов
+      ingredientIds // массив ID ингредиентов
     } = req.body;
 
     const product = await prisma.product.create({
       data: {
-        // Названия
         name_ru,
         name_ua: name_ua || name_ru,
         name_en: name_en || name_ru,
         name_nl: name_nl || name_ru,
-        
         price: Number(price),
-        
-        // Описания
         description_ru: description_ru || "", 
         description_ua: description_ua || description_ru || "",
         description_en: description_en || description_ru || "",
         description_nl: description_nl || description_ru || "",
-        
-        categoryId: parseInt(categoryId),
+        categoryId: parseInt(categoryId as string), // Исправили ошибку типов
         imageUrl,
+        
         // Связь с городами
         cities: cityIds && Array.isArray(cityIds) && cityIds.length > 0 ? {
-          create: cityIds.map((cityId: number) => ({
+          create: cityIds.map((cityId: any) => ({
             cityId: parseInt(cityId)
           }))
+        } : undefined,
+
+        // Связь с ингредиентами
+        ingredients: ingredientIds && Array.isArray(ingredientIds) && ingredientIds.length > 0 ? {
+            connect: ingredientIds.map((id: any) => ({ id: Number(id) }))
         } : undefined
       },
       include: {
-        cities: {
-          include: { city: true }
-        }
+        cities: { include: { city: true } },
+        ingredients: true
       }
     });
     res.json(product);
@@ -208,42 +185,43 @@ router.put('/:id', async (req: Request, res: Response) => {
       price, 
       description_ru, description_ua, description_en, description_nl,
       imageUrl, categoryId,
-      cityIds // массив ID городов
+      cityIds,
+      ingredientIds // массив ID ингредиентов
     } = req.body;
 
-    // Сначала удаляем все связи с городами
+    // Сначала удаляем все связи с городами (старый метод)
     await prisma.productCity.deleteMany({
       where: { productId: parseInt(id) }
     });
 
+    // Для ингредиентов проще использовать set: [] внутри update, Prisma сама разберется
+
     const updatedProduct = await prisma.product.update({
       where: { id: parseInt(id) },
       data: {
-        name_ru,
-        name_ua,
-        name_en,
-        name_nl,
-        
+        name_ru, name_ua, name_en, name_nl,
         price: Number(price),
-        
-        description_ru,
-        description_ua,
-        description_en,
-        description_nl,
-
+        description_ru, description_ua, description_en, description_nl,
         imageUrl: imageUrl || '',
-        category: { connect: { id: parseInt(categoryId) } },
+        category: { connect: { id: parseInt(categoryId as string) } },
+        
         // Обновляем связи с городами
         cities: cityIds && Array.isArray(cityIds) && cityIds.length > 0 ? {
-          create: cityIds.map((cityId: number) => ({
+          create: cityIds.map((cityId: any) => ({
             cityId: parseInt(cityId)
           }))
-        } : undefined
+        } : undefined,
+
+        // Обновляем ингредиенты (перезаписываем список)
+        ingredients: {
+            set: ingredientIds && Array.isArray(ingredientIds) 
+                 ? ingredientIds.map((ingId: any) => ({ id: Number(ingId) }))
+                 : []
+        }
       },
       include: {
-        cities: {
-          include: { city: true }
-        }
+        cities: { include: { city: true } },
+        ingredients: true
       }
     });
 
@@ -267,30 +245,22 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 6. Получить один товар по ID (ВАЖНО: должен быть ПОСЛЕ всех специфичных роутов)
+// 6. Получить один товар по ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // Проверяем, что это не запрос к категориям
-    if (id === 'categories') {
-      return res.status(404).json({ message: 'Используйте /api/products/categories для получения категорий' });
-    }
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({ message: 'Неверный ID товара' });
-    }
-    const productId = parseInt(id);
+    if (id === 'categories') return res.status(404).json({ message: 'Use /categories endpoint' });
+    if (!id || isNaN(parseInt(id))) return res.status(400).json({ message: 'Invalid ID' });
+    
     const product = await prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: parseInt(id) },
       include: {
         category: true,
-        cities: {
-          include: { city: true }
-        }
+        cities: { include: { city: true } },
+        ingredients: true // <-- Добавили
       }
     });
-    if (!product) {
-      return res.status(404).json({ message: 'Товар не найден' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (error) {
     console.error('Ошибка получения товара:', error);
@@ -312,26 +282,6 @@ router.get('/recommendations', async (req: any, res: any) => {
     res.json(recommendations);
   } catch (e) {
     res.status(500).json({ error: 'Error fetching recommendations' });
-  }
-});
-
-// GET /api/products/:id - Один товар
-router.get('/:id', async (req: any, res: any) => {
-  const { id } = req.params;
-  try {
-    // Если id не число (например, favicon.ico), пропускаем
-    if (isNaN(Number(id))) return res.status(400).json({ error: 'Invalid ID' });
-
-    const product = await prisma.product.findUnique({
-      where: { id: Number(id) },
-      include: { category: true } // + сюда можно добавить include: { ingredients: true } если есть модель ингредиентов
-    });
-
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json(product);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error fetching product' });
   }
 });
 

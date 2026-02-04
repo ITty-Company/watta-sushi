@@ -57,6 +57,7 @@ import settingsRoutes from './routes/settings.routes.ts'
 import promotionsRoutes from './routes/promotions.routes.ts'
 import newsletterRoutes from './routes/newsletter.routes';
 import favoriteRoutes from './routes/favorite.routes';
+import ingredientRoutes from './routes/ingredients.routes';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -103,6 +104,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/promotions', promotionsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/favorites', favoriteRoutes);
+app.use('/api/ingredients', ingredientRoutes);
 
 // 4. Тестовый маршрут
 app.get('/', (req, res) => {
