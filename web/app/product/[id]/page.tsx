@@ -146,23 +146,58 @@ export default function ProductPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-[#145142]">Loading...</div>
   if (!product) return <div className="min-h-screen flex items-center justify-center">Product not found</div>
 
+  // --- ЛОГИКА ДЛЯ ХЕДЕРА ---
+  const handlePhone = () => window.location.href = 'tel:+380930000000' // Замените на ваш номер
+  const handleProfile = () => router.push('/profile') // Или открытие модалки
+  const handleFavorites = () => router.push('/favorites') 
+  const handleCartClick = () => {
+    // Если мы уже в корзине, ничего не делаем или скроллим вверх
+    // Если на странице товара - переходим в корзину (или открываем дровер)
+    router.push('/cart') 
+  }
+  const handleMenuClick = () => {
+     // Логика открытия меню (если есть стейт isMenuOpen)
+     console.log('Open Menu') 
+  }
+
+  // --- ОБНОВЛЕННЫЙ ХЕДЕР ---
   const Header = () => (
-    <div className="fixed top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-[1000]">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={onBack}>
+    <div className="absolute top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-[1000]">
+      {/* Логотип возвращает на главную */}
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
         <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
         <img src="/1.jpg" alt="Watta Sushi" className="h-6 w-auto object-contain" />
       </div>
 
       <div className="flex items-center gap-3 md:gap-6 text-gray-700">
-        <button onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full transition"><Phone size={24} /></button>
-        <button onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full transition"><Bell size={24} /></button>
-        <button onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full transition"><Heart size={24} /></button>
-        <button className="hover:bg-gray-100 p-2 rounded-full text-[#145142] relative">
-            <ShoppingBag size={24} />
-            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{cartCount}</span>}
+        <button onClick={handlePhone} className="hover:bg-gray-100 p-2 rounded-full transition" title="Позвонить">
+            <Phone size={24} />
         </button>
-        <button onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full transition"><User size={24} /></button>
-        <button onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition"><Menu size={24} /></button>
+        <button className="hover:bg-gray-100 p-2 rounded-full transition relative" title="Уведомления">
+            <Bell size={24} />
+            {/* Пример точки уведомлений */}
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+        <button onClick={handleFavorites} className="hover:bg-gray-100 p-2 rounded-full transition" title="Избранное">
+            <Heart size={24} />
+        </button>
+        
+        {/* Кнопка Корзины */}
+        <button onClick={handleCartClick} className="hover:bg-gray-100 p-2 rounded-full text-[#145142] relative transition" title="Корзина">
+            <ShoppingBag size={24} />
+            {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white">
+                    {cartCount}
+                </span>
+            )}
+        </button>
+        
+        <button onClick={handleProfile} className="hover:bg-gray-100 p-2 rounded-full transition" title="Профиль">
+            <User size={24} />
+        </button>
+        <button onClick={handleMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition" title="Меню">
+            <Menu size={24} />
+        </button>
       </div>
     </div>
   )
@@ -171,40 +206,32 @@ export default function ProductPage() {
     <div className="min-h-screen bg-[#F9FAFB] pb-20">
       <LogoBackground />
       <Header />
+      {/* Отступ под хедер */}
       <div className="h-[100px]"></div>
 
-      <div className="mb-8 px-4">
-           {/* 4. Убрали проверку isCheckoutMode, оставили просто onBack */}
+      {/* --- БЛОК КНОПОК (НАЗАД + РЕДАКТИРОВАТЬ) --- */}
+      <div className="mb-8 px-4 max-w-4xl mx-auto flex items-center gap-3">
+           {/* Кнопка НАЗАД */}
            <button 
               onClick={onBack}
-              className="bg-white px-6 py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-gray-50 transition w-fit"
+              className="bg-white px-6 py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-gray-50 transition hover:shadow-md border border-transparent hover:border-[#145142]/10"
             >
               <ArrowLeft size={20} /> Назад
             </button>
-      </div>
-        
-      <div className="fixed top-24 left-4 z-40 flex gap-2">
-        {/* Дублирующая кнопка назад (можно убрать одну из них, если мешает) */}
-        {/* <button 
-          onClick={onBack}
-          className="bg-white p-3 rounded-xl shadow-md text-[#145142] hover:bg-gray-50 transition-all flex items-center gap-2 font-bold"
-        >
-          <ArrowLeft size={20} />
-        </button> 
-        */}
-        
-        {/* Кнопка РЕДАКТИРОВАТЬ (для админа) */}
-        {isAdmin && (
-           <Link 
-             href={`/?adminMode=true&editProduct=${product.id}`}
-             className="bg-[#145142] p-3 rounded-xl shadow-md text-white hover:bg-[#104034] transition-all flex items-center gap-2 font-bold"
-           >
-             <Edit size={20} /> Ред.
-           </Link>
-        )}
-      </div>
 
-      <div className="max-w-4xl mx-auto bg-white min-h-screen shadow-xl overflow-hidden relative rounded-t-3xl mt-4">
+            {/* Кнопка РЕДАКТИРОВАТЬ (Только для админа) */}
+            {isAdmin && (
+              <Link 
+                href={`/?adminMode=true&editProduct=${product.id}`}
+                className="bg-[#145142] px-6 py-3 rounded-[15px] flex items-center gap-2 text-white font-bold shadow-sm hover:bg-[#104034] transition hover:shadow-md"
+              >
+                <Edit size={20} /> Редактировать
+              </Link>
+            )}
+      </div>
+        
+      {/* Основная карточка товара */}
+      <div className="max-w-4xl mx-auto bg-white min-h-screen shadow-xl overflow-hidden relative rounded-t-3xl">
         <div className="w-full h-[300px] sm:h-[450px] relative bg-gray-100">
            {product.imageUrl ? (
              <img src={product.imageUrl} className="w-full h-full object-cover" alt={t('name', product)} />

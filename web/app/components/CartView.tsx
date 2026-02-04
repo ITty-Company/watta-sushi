@@ -293,8 +293,9 @@ export default function CartView({
   return (
     <div className="min-h-screen bg-[#D9D9D9] font-sans pt-[120px] pb-20 overflow-x-hidden relative">
       <LogoBackground />
+      <Header />
       <div className="relative z-10">
-        <Header />
+      
 
         <div className="max-w-[1600px] mx-auto px-4">
         
