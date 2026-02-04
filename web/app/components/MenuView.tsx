@@ -1151,6 +1151,12 @@ export default function MenuView() {
       </div>
     )
   }
+  const getTranslated = (item: any, field: 'name' | 'description') => {
+  // Пытаемся найти поле с нужным языком, например name_ua
+  const val = item[`${field}_${language}`];
+  // Если пусто, берем русский (фоллбэк)
+  return val || item[`${field}_ru`] || '';
+};
 
   // ============================================
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
@@ -1525,8 +1531,11 @@ export default function MenuView() {
           {displayedItems.length > 0 ? (
             displayedItems.map(item => (
               <div key={item.id} className="menu-item-card-web bg-white rounded-xl shadow-sm relative">
-                {item.isTop && <div className="top-badge-web"><span className="badge-icon-web">⚡</span><span className="badge-text-web">{t.popular || 'Топ'}</span></div>}
-                <div className="item-image-web">{item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.emoji}
+                
+                {/* --- БЛОК КАРТИНКИ --- */}
+                <div className="item-image-web relative"> {/* Добавил relative, чтобы позиционировать кнопку лайка */}
+                  
+                  {/* Кнопка Лайка (поверх картинки) */}
                   <button
                     onClick={(e) => toggleFavorite(e, item.id)}
                     className="absolute top-2 right-2 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-sm hover:scale-110 active:scale-95 transition-all z-10 group"
@@ -1537,15 +1546,45 @@ export default function MenuView() {
                       className={`transition-colors duration-300 ${favorites.includes(item.id) ? 'fill-[#ff6b35] text-[#ff6b35]' : 'text-gray-400 group-hover:text-[#ff6b35]'}`}
                     />
                   </button>
+
+                  {/* Ссылка с Картинкой (Кликабельная область) */}
                   <Link href={`/product/${item.id}`} className="block w-full h-full cursor-pointer">
                     {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+                      <img 
+                        src={item.imageUrl} 
+                        alt={getTranslated(item, 'name')} 
+                        className="w-full h-full object-cover rounded-lg" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
                     ) : (
-                        <div className="text-4xl">{item.emoji}</div>
+                      <div className="text-4xl w-full h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                        {item.emoji}
+                      </div>
                     )}
-                </Link>
+                  </Link>
                 </div>
-                <div className="item-info-web"><h4 className="item-name-web">{item.name}</h4><p className="item-description-web">{item.description}</p><div className="item-footer-web"><span className="item-price-web">{item.price} ₴</span><button className="add-btn-web" onClick={() => addToCart(item)}>+</button></div></div>
+
+                {/* --- БЛОК ИНФОРМАЦИИ --- */}
+                <div className="item-info-web">
+                  {/* Название (Переведенное + Ссылка) */}
+                  <Link href={`/product/${item.id}`}>
+                    <h4 className="item-name-web hover:text-[#ff6b35] transition-colors cursor-pointer">
+                      {getTranslated(item, 'name')}
+                    </h4>
+                  </Link>
+
+                  {/* Описание (Переведенное) */}
+                  <p className="item-description-web">
+                    {getTranslated(item, 'description')}
+                  </p>
+
+                  {/* Футер карточки (Цена и кнопка +) */}
+                  <div className="item-footer-web">
+                    <span className="item-price-web">{item.price} ₴</span>
+                    <button className="add-btn-web" onClick={() => addToCart(item)}>+</button>
+                  </div>
+                </div>
+
               </div>
             ))
           ) : (

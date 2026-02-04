@@ -602,6 +602,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       setNewsItems(newsItems.filter(p => p.id !== id))
     } catch { alert('Ошибка') }
   }
+  const [editorLang, setEditorLang] = useState<'ru' | 'ua' | 'en' | 'nl'>('ru');
 
   // --- ЛОГИКА ТОВАРОВ (ФОРМА) ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -3079,24 +3080,49 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 </label>
               </div>
 
-              {/* НАЗВАНИЯ (Сетка 2x2) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-[#145142]/5 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-[#145142]/10">
-                <div>
-                  <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Название (RU)</label>
-                  <input name="name_ru" value={formData.name_ru} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm" placeholder="Лосось" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Назва (UA)</label>
-                  <input name="name_ua" value={formData.name_ua} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm" placeholder="Лосось" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Name (EN)</label>
-                  <input name="name_en" value={formData.name_en} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm" placeholder="Salmon" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Naam (NL)</label>
-                  <input name="name_nl" value={formData.name_nl} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm" placeholder="Zalm" />
-                </div>
+              {/* --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ --- */}
+              <div className="flex p-1 bg-gray-100 rounded-lg mb-4">
+                {['ru', 'ua', 'en', 'nl'].map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setEditorLang(lang as any)}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                      editorLang === lang 
+                        ? 'bg-white text-[#145142] shadow-sm' 
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {lang.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              {/* --- ПОЛЕ НАЗВАНИЯ (Меняется в зависимости от вкладки) --- */}
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Название товара ({editorLang.toUpperCase()})
+                </label>
+                <input
+                  type="text"
+                  value={editForm[`name_${editorLang}` as keyof typeof editForm] || ''}
+                  onChange={(e) => setEditForm({ ...editForm, [`name_${editorLang}`]: e.target.value })}
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#145142] outline-none"
+                  placeholder={`Например: Филадельфия (${editorLang})`}
+                />
+              </div>
+
+              {/* --- ПОЛЕ ОПИСАНИЯ (Меняется в зависимости от вкладки) --- */}
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Описание ({editorLang.toUpperCase()})
+                </label>
+                <textarea
+                  value={editForm[`description_${editorLang}` as keyof typeof editForm] || ''}
+                  onChange={(e) => setEditForm({ ...editForm, [`description_${editorLang}`]: e.target.value })}
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#145142] outline-none h-24 resize-none"
+                  placeholder={`Состав, вес, особенности... (${editorLang})`}
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
