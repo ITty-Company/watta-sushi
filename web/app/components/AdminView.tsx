@@ -3105,9 +3105,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 </label>
                 <input
                   type="text"
-                  value={editForm[`name_${editorLang}` as keyof typeof editForm] || ''}
-                  onChange={(e) => setEditForm({ ...editForm, [`name_${editorLang}`]: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#145142] outline-none"
+                  value={(formData as any)[`name_${editorLang}`] || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [`name_${editorLang}`]: e.target.value }))}
+                  className="w-full p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-xl outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]"
                   placeholder={`Например: Филадельфия (${editorLang})`}
                 />
               </div>
@@ -3118,9 +3118,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   Описание ({editorLang.toUpperCase()})
                 </label>
                 <textarea
-                  value={editForm[`description_${editorLang}` as keyof typeof editForm] || ''}
-                  onChange={(e) => setEditForm({ ...editForm, [`description_${editorLang}`]: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#145142] outline-none h-24 resize-none"
+                  value={(formData as any)[`description_${editorLang}`] || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [`description_${editorLang}`]: e.target.value }))}
+                  className="w-full p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-xl outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] h-24 resize-none"
                   placeholder={`Состав, вес, особенности... (${editorLang})`}
                 />
               </div>
