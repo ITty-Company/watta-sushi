@@ -174,7 +174,7 @@ interface SiteSettings {
 
 export default function AdminView({ onBack }: AdminViewProps) {
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'| 'ingredients'>('dashboard')
   
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -1508,6 +1508,70 @@ export default function AdminView({ onBack }: AdminViewProps) {
     }
   }
 
+  const [newIngName, setNewIngName] = useState('')
+  const [newIngImage, setNewIngImage] = useState('')
+  const [ingLoading, setIngLoading] = useState(false)
+
+  const handleIngImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setNewIngImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleCreateIngredient = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newIngName || !newIngImage) return alert('Нужно название и фото')
+    
+    setIngLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/ingredients', {
+        method: 'POST',
+        headers: { 
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+            name_ru: newIngName, 
+            imageUrl: newIngImage 
+        })
+      })
+      if (res.ok) {
+        setNewIngName('')
+        setNewIngImage('')
+        // Обновляем список (вызывайте fetchAll или отдельный запрос)
+        const newIng = await res.json()
+        setIngredients(prev => [...prev, newIng])
+        alert('Ингредиент добавлен!')
+      } else {
+        alert('Ошибка создания')
+      }
+    } catch (e) {
+      alert('Ошибка')
+    } finally {
+      setIngLoading(false)
+    }
+  }
+
+  const handleDeleteIngredient = async (id: number) => {
+      if(!confirm('Удалить этот ингредиент?')) return;
+      // Логика удаления (fetch DELETE /api/ingredients/id)
+      // ... допишите если нужно, или просто скройте
+      try {
+          const token = localStorage.getItem('token')
+          await fetch(`/api/ingredients/${id}`, { 
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+          })
+          setIngredients(prev => prev.filter(i => i.id !== id))
+      } catch (e) { alert('Ошибка') }
+  }
+
   // --- ЛОГИКА КАТЕГОРИЙ МЕНЮ ---
   const openCreateCategoryModal = () => {
     setEditingCategoryId(null)
@@ -1891,6 +1955,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     { id: 'users' as const, label: '👥 Пользователи', desc: 'Користувачі' },
                     { id: 'team' as const, label: '👨‍👩‍👧‍👦 Команда', desc: 'Команда' },
                     { id: 'settings' as const, label: '⚙️ Настройки', desc: 'Сайт и баннеры' },
+                    { id: 'ingredients' as const, label: '🥑 Ингредиенты' },
                   ].map(({ id, label, desc }) => (
                     <button
                       key={id}
@@ -2127,7 +2192,67 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 </div>
              </div>
           )}
+          {/* === Вкладка: ИНГРЕДИЕНТЫ === */}
+            {activeTab === 'ingredients' && (
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold text-[#145142] mb-6">Библиотека ингредиентов</h2>
+                
+                {/* Форма добавления */}
+                <div className="bg-white p-6 rounded-2xl shadow-lg mb-8 border border-gray-100">
+                  <h3 className="font-bold mb-4">Добавить новый</h3>
+                  <form onSubmit={handleCreateIngredient} className="flex flex-col sm:flex-row gap-4 items-end">
+                    
+                    {/* Загрузка фото */}
+                    <div className="w-24 h-24 flex-shrink-0 relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden hover:border-[#145142] transition cursor-pointer group">
+                      <input type="file" onChange={handleIngImageUpload} className="absolute inset-0 opacity-0 z-10 cursor-pointer" accept="image/*" />
+                      {newIngImage ? (
+                        <img src={newIngImage} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <Upload size={24} />
+                        </div>
+                      )}
+                    </div>
 
+                    {/* Название */}
+                    <div className="flex-1 w-full">
+                        <label className="block text-xs font-bold text-gray-500 mb-1">Название (RU)</label>
+                        <input 
+                          type="text" 
+                          value={newIngName}
+                          onChange={e => setNewIngName(e.target.value)}
+                          className="w-full p-3 border rounded-xl outline-none focus:border-[#145142]"
+                          placeholder="Например: Лосось"
+                        />
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={ingLoading}
+                      className="h-[50px] px-6 bg-[#145142] text-white rounded-xl font-bold hover:bg-[#103d34] transition"
+                    >
+                      {ingLoading ? '...' : 'Добавить'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Список существующих */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                  {ingredients.map(ing => (
+                    <div key={ing.id} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center relative group">
+                        <button 
+                          onClick={() => handleDeleteIngredient(ing.id)}
+                          className="absolute top-1 right-1 p-1 bg-red-100 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                        <img src={ing.imageUrl} className="w-12 h-12 object-contain mb-2" />
+                        <span className="text-xs font-bold text-center">{ing.name_ru}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           {/* === Вкладка: СТРАНЫ И ГОРОДА === */}
           {activeTab === 'cities' && (
             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
