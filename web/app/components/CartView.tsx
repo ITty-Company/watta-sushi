@@ -357,53 +357,112 @@ export default function CartView({
                   )}
                 </div>
 
-                {/* ПРАВАЯ КОЛОНКА КОРЗИНЫ (Только сумма и промокод) */}
-                <div className="w-full xl:w-[455px] bg-white rounded-[30px] p-8 h-auto flex flex-col justify-between sticky top-[120px]">
-                    <div>
-                       <h2 className="text-[36px] font-medium text-black mb-6">Итого</h2>
-                       <div className="flex justify-between items-center mb-4">
-                          <span className="text-[24px] font-medium text-black">стоимость товаров</span>
-                          <span className="text-[24px] font-medium text-black">{basePrice} ₴</span>
-                       </div>
-                       {appliedPromo && (
-                         <div className="flex justify-between items-center mb-4 text-[#145142]">
-                            <span className="text-[20px] font-bold">Скидка ({appliedPromo.code})</span>
-                            <span className="text-[20px] font-bold">-{discountAmount} ₴</span>
-                         </div>
-                       )}
-                       {/* Промокод инпут (код остается) */}
-                       <div className="flex flex-col mb-8">
-                         {/* ... */}
-                         <div className="flex items-center justify-between">
-                            <div className="relative w-[211px] h-[52px] flex items-center justify-center">
-                              <PromoInputBg />
-                              <input 
-                                type="text" 
-                                placeholder="промокод"
-                                value={promoCode}
-                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                                className="relative z-10 w-full bg-transparent border-none outline-none text-[20px] font-medium text-[#7C7C7C] placeholder-[#7C7C7C] text-center pb-1 uppercase"
-                              />
-                            </div>
-                            <button type="button" onClick={handleApplyPromo} className="text-[20px] font-medium text-black hover:text-[#145142] transition">применить</button>
-                         </div>
-                         {promoError && <span className="text-red-500 text-sm mt-1 text-center">{promoError}</span>}
-                       </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-end mb-6 border-t pt-4">
-                          <span className="text-[36px] font-medium text-black leading-none">К оплате</span>
-                          <span className="text-[36px] font-medium text-black leading-none">{finalPrice} ₴</span>
+                {/* ПРАВАЯ КОЛОНКА (Оплата и Сумма) */}
+             <div className="w-full xl:w-[455px] flex flex-col gap-6 sticky top-[120px]">
+                
+                {/* 1. Блок Оплаты */}
+                <div className="bg-white rounded-[30px] p-8 shadow-sm">
+                   <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Способ оплаты</h2>
+                   
+                   <div className="flex flex-col gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod('APPLE_PAY')}
+                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                            paymentMethod === 'APPLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-black text-white opacity-90'
+                          }`}
+                        >
+                          <span className="font-bold"> Pay</span>
+                          {paymentMethod === 'APPLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod('GOOGLE_PAY')}
+                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all border ${
+                            paymentMethod === 'GOOGLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-white text-gray-800 border-gray-300'
+                          }`}
+                        >
+                          <span className="font-bold"><span className="text-blue-500">G</span> Pay</span>
+                          {paymentMethod === 'GOOGLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => setIsCheckoutMode(true)}
-                        className="w-full h-[60px] bg-[#145142] rounded-[15px] text-white text-[24px] font-bold flex items-center justify-center hover:bg-[#0f3d32] transition shadow-lg"
-                      >
-                        Оформить заказ
-                      </button>
-                    </div>
+
+                      <div className="relative py-2 flex items-center">
+                        <span className="w-full border-t border-gray-200"></span>
+                        <span className="px-2 text-xs text-gray-400 bg-white uppercase">или</span>
+                        <span className="w-full border-t border-gray-200"></span>
+                      </div>
+
+                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CASH' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CASH' ? 'border-[#145142]' : 'border-gray-300'}`}>
+                            {paymentMethod === 'CASH' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
+                         </div>
+                         <span className="font-bold text-gray-700">Наличными</span>
+                         <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
+                      </label>
+
+                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CARD' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CARD' ? 'border-[#145142]' : 'border-gray-300'}`}>
+                            {paymentMethod === 'CARD' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
+                         </div>
+                         <span className="font-bold text-gray-700">Картой онлайн</span>
+                         <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} />
+                      </label>
+                      
+                      {paymentMethod === 'CARD' && (
+                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2">
+                            <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-3 border rounded-lg mb-3 outline-none focus:border-[#145142]" />
+                            <div className="flex gap-3">
+                               <input type="text" placeholder="MM/YY" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
+                               <input type="text" placeholder="CVC" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
+                            </div>
+                         </div>
+                      )}
+                   </div>
                 </div>
+
+                {/* 2. Блок Итого (ОТДЕЛЬНЫЙ КОНТЕЙНЕР) */}
+                <div className="bg-white rounded-[30px] p-8 shadow-sm flex flex-col gap-4">
+                   <div className="flex justify-between items-center text-gray-500 text-lg">
+                      <span>Сумма заказа</span>
+                      <span>{basePrice} ₴</span>
+                   </div>
+                   
+                   {/* Если есть скидка */}
+                   {appliedPromo && (
+                     <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
+                        <span>Скидка ({appliedPromo.code})</span>
+                        <span>-{discountAmount} ₴</span>
+                     </div>
+                   )}
+
+                   <div className="flex justify-between items-center text-gray-500 text-lg">
+                      <span>Доставка</span>
+                      <span>{deliveryPrice} ₴</span>
+                   </div>
+                   
+                   <div className="w-full h-px bg-gray-200 my-2"></div>
+
+                   <div className="flex justify-between items-end mb-2">
+                      <span className="text-[24px] font-bold text-black">К оплате</span>
+                      <span className="text-[32px] font-bold text-[#145142]">{finalPrice + deliveryPrice} ₴</span>
+                   </div>
+                   
+                   <button 
+                     onClick={handleOrder}
+                     disabled={isLoading}
+                     className="w-full h-[60px] bg-[#145142] rounded-[15px] text-white text-[20px] font-bold hover:bg-[#0f3d32] transition shadow-lg disabled:opacity-70 flex items-center justify-center gap-2 mt-2"
+                   >
+                     {isLoading ? 'Обработка...' : 'Подтвердить заказ'}
+                   </button>
+                   
+                   <p className="text-center text-xs text-gray-400 mt-2 px-2 leading-tight">
+                      Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
+                   </p>
+                </div>
+
+             </div>
               </div>
             )}
           </>
