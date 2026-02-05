@@ -78,3 +78,6 @@ ios/*.xcodeproj/xcuserdata/
 # Temporary files
 *.tmp
 *.temp
+
+
+google-service-account.json.json

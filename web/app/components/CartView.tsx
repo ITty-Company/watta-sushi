@@ -718,7 +718,7 @@ export default function CartView({
           </div>
         )}
         </div>
-      </div>
+      </div>  
   )
 }
 

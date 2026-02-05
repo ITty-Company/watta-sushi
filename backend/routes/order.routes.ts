@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 // import { checkAdmin } from '../authMiddleware'; // Если нужно будет в будущем
 import axios from 'axios';
 import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
+import { sendTelegramNotification } from '../services/telegram.service';
+import { addOrderToSheet } from '../services/sheets.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -110,42 +112,49 @@ router.get('/user/:userId', async (req, res) => {
 // ==========================================
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { cartItems, totalPrice, customer, userId } = req.body;
-    console.log('📌 БЭКЕНД ВИДИТ ЗАКАЗ. User ID:', userId);
-    
-    if (!cartItems || cartItems.length === 0) {
-      res.status(400).json({ message: 'Корзина пуста' });
-      return;
-    }
+    // Получаем данные с фронтенда (там они называются name, phone, totalAmount)
+    const { name, phone, address, paymentMethod, comment, items, totalAmount } = req.body;
 
-    const newOrder = await prisma.order.create({
+    // 1. Сохраняем в БД (Используем поля из ВАШЕЙ схемы Prisma)
+    const order = await prisma.order.create({
       data: {
-        totalPrice: parseFloat(totalPrice),
+        customerName: name,      // Было userName, стало customerName
+        phone: phone,            // Было userPhone, стало phone
+        address: address,
+        paymentMethod: paymentMethod, 
+        comment: comment,
+        totalPrice: Number(totalAmount), // Было totalAmount, стало totalPrice
         status: 'PENDING',
-        customerName: customer?.name || 'Гость',
-        phone: customer?.phone || '',
-        address: customer?.address || '',
-        paymentMethod: customer?.paymentMethod || 'CASH',
-        comment: customer?.comment || '',
         
-        userId: userId ? parseInt(userId) : null,
-
+        // Создаем связанные товары
         items: {
-          create: cartItems.map((item: any) => ({
-            productId: item.product.id,
+          create: items.map((item: any) => ({
+            productId: item.id,
             quantity: item.quantity,
-            price: item.product.price 
+            price: item.price
           }))
         }
       },
-      include: { items: { include: { product: true } } }
+      include: {
+        items: {
+          include: { product: true } // Подгружаем названия продуктов для уведомлений
+        }
+      }
     });
 
-    sendToTelegram(newOrder, newOrder.items);
-    res.status(201).json(newOrder);
+    // 2. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЯ
+    // order.items теперь существует, так как мы добавили include выше
+    Promise.allSettled([
+        sendTelegramNotification(order, order.items),
+        addOrderToSheet(order, order.items)
+    ]).then(() => console.log('Notifications processed'));
+
+    // 3. Отвечаем клиенту
+    res.json(order);
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Ошибка создания заказа' });
+    console.error('Ошибка создания заказа:', error);
+    res.status(500).json({ message: 'Ошибка при создании заказа' });
   }
 });
 
