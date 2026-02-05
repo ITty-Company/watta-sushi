@@ -46,12 +46,14 @@ router.post('/register', async (req: any, res: any) => {
     });
 
     // Отправляем SMS
-    const smsSent = await sendSms(cleanPhone, `Код подтверждения Watta Sushi: ${verificationCode}`);
-    
-    if (!smsSent) {
-       // Если SMS не ушло (нет денег/ошибка), можно логировать, но пользователя мы уже создали
-       console.error('Не удалось отправить SMS');
-    }
+    try {
+    // Пытаемся отправить СМС
+    await sendSms(phone, `Код подтверждения Watta Sushi: ${verificationCode}`);
+  } catch (smsError) {
+    // Если не вышло - не страшно, просто пишем в лог
+    console.error('Ошибка отправки СМС (игнорируем):', smsError);
+    console.log('>>> ВАШ КОД ПОДТВЕРЖДЕНИЯ (СМС не ушло):', verificationCode, '<<<');
+  }
 
     res.status(201).json({ message: 'Код подтверждения отправлен в SMS' });
   } catch (error) {
