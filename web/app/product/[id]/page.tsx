@@ -148,20 +148,17 @@ export default function ProductPage() {
 
   // --- ЛОГИКА ДЛЯ ХЕДЕРА ---
   const handlePhone = () => window.location.href = 'tel:+380930000000' // Замените на ваш номер
-  const handleProfile = () => router.push('/profile') // Или открытие модалки
-  const handleFavorites = () => router.push('/favorites') 
+  const handleNotifications = () => router.push('/notifications')
+  const handleFavorites = () => router.push('/favorites')
+  const handleProfile = () => router.push('/profile')
+  const handleMenuClick = () => router.push('/menu')
   const handleCartClick = () => {
-    // Если мы уже в корзине, ничего не делаем или скроллим вверх
-    // Если на странице товара - переходим в корзину (или открываем дровер)
-    router.push('/cart') 
-  }
-  const handleMenuClick = () => {
-     // Логика открытия меню (если есть стейт isMenuOpen)
-     console.log('Open Menu') 
-  }
+  router.push('/cart') 
+}
 
   // --- ОБНОВЛЕННЫЙ ХЕДЕР ---
   const Header = () => (
+    
     <div className="absolute top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-[1000]">
       {/* Логотип возвращает на главную */}
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
