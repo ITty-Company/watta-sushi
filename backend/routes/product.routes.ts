@@ -245,33 +245,12 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 6. Получить один товар по ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (id === 'categories') return res.status(404).json({ message: 'Use /categories endpoint' });
-    if (!id || isNaN(parseInt(id))) return res.status(400).json({ message: 'Invalid ID' });
-    
-    const product = await prisma.product.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        category: true,
-        cities: { include: { city: true } },
-        ingredients: true // <-- Добавили
-      }
-    });
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json(product);
-  } catch (error) {
-    console.error('Ошибка получения товара:', error);
-    res.status(500).json({ message: 'Ошибка получения товара' });
-  }
-});
-
 router.get('/recommendations', async (req: any, res: any) => {
   try {
     const count = await prisma.product.count();
-    const skip = Math.max(0, Math.floor(Math.random() * (count - 4)));
+    // Если товаров мало, skip может уйти в минус, защитимся
+    const maxSkip = Math.max(0, count - 4);
+    const skip = Math.floor(Math.random() * maxSkip);
     
     const recommendations = await prisma.product.findMany({
       take: 4,
@@ -281,7 +260,38 @@ router.get('/recommendations', async (req: any, res: any) => {
     
     res.json(recommendations);
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: 'Error fetching recommendations' });
+  }
+});
+
+// ============================================
+// ПОТОМ динамические маршруты (:id)
+// ============================================
+
+// 6. Получить один товар по ID
+router.get('/:id', async (req: any, res: any) => {
+  const { id } = req.params;
+  try {
+    // Проверка на категории, если вдруг запрос пролетел
+    if (id === 'categories' || id === 'recommendations') return res.status(404).json({ error: 'Not found here' });
+    
+    if (isNaN(Number(id))) return res.status(400).json({ error: 'Invalid ID' });
+
+    const product = await prisma.product.findUnique({
+      where: { id: Number(id) },
+      include: { 
+        category: true,
+        cities: { include: { city: true } },
+        ingredients: true // Не забудьте это, если нужны ингредиенты
+      } 
+    });
+
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error fetching product' });
   }
 });
 

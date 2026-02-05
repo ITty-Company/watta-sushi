@@ -243,7 +243,7 @@ export default function CartView({
   }
   // --- КОМПОНЕНТЫ UI ---
   const Header = () => (
-    <div className="absolute top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-[1000]">
+    <div className="fixed top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-2 cursor-pointer" onClick={onBack}>
         <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
         <img src="/1.jpg" alt="Watta Sushi" className="h-6 w-auto object-contain" />
@@ -253,7 +253,10 @@ export default function CartView({
         <button onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full transition"><Phone size={24} /></button>
         <button onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full transition"><Bell size={24} /></button>
         <button onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full transition"><Heart size={24} /></button>
-        <button className="hover:bg-gray-100 p-2 rounded-full text-[#145142]"><ShoppingBag size={24} /></button>
+        <button className="hover:bg-gray-100 p-2 rounded-full text-[#145142] relative">
+            <ShoppingBag size={24} />
+            {cartItems.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
+        </button>
         <button onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full transition"><User size={24} /></button>
         <button onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition"><Menu size={24} /></button>
       </div>
@@ -261,51 +264,74 @@ export default function CartView({
   )
 
   const MinusIcon = () => (
+
     <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+
       <rect width="36" height="36" rx="5" fill="#194A38"/>
+
       <path d="M12 18H24M33 18C33 26.2843 26.2843 33 18 33C9.71573 33 3 26.2843 3 18C3 9.71573 9.71573 3 18 3C26.2843 3 33 9.71573 33 18Z" stroke="#D9D9D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
     </svg>
+
   )
+
   const PlusIcon = () => (
+
     <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+
       <rect width="36" height="36" rx="5" fill="#145142"/>
+
       <path d="M12 18H24M18 12V24M33 18C33 26.2843 26.2843 33 18 33C9.71573 33 3 26.2843 3 18C3 9.71573 9.71573 3 18 3C26.2843 3 33 9.71573 33 18Z" stroke="#C4C4C4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
     </svg>
+
   )
+
   const TrashIcon = () => (
+
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+
       <rect width="24" height="24" rx="5" fill="#194A38"/>
+
       <path d="M10 11V17M14 11V17M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M3 6H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="#D9D9D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+
     </svg>
+
   )
+
+
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-[#D9D9D9] flex flex-col items-center justify-center text-center p-8">
+      <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center text-center p-8 font-sans">
         <div className="text-6xl mb-4">🎉</div>
-        <h2 className="text-2xl font-bold mb-2 text-[#194A38]">Спасибо за заказ!</h2>
-        <button className="bg-[#145142] text-white px-6 py-3 rounded-xl font-bold mt-4" onClick={onBack}>Вернуться в меню</button>
+        <h2 className="text-3xl font-bold mb-2 text-[#194A38]">Дякуємо за замовлення!</h2>
+        <p className="text-gray-500 mb-6">Менеджер зв'яжеться з вами найближчим часом.</p>
+        <button className="bg-[#145142] text-white px-8 py-4 rounded-[20px] font-bold text-lg shadow-xl hover:bg-[#103d34] transition" onClick={onBack}>
+            Повернутися в меню
+        </button>
       </div>
     )
   }
 
-  // --- ВОТ ТЕПЕРЬ ТВОЙ RETURN НЕ БУДЕТ ВЫДАВАТЬ ОШИБОК ---
   return (
-    <div className="min-h-screen bg-[#D9D9D9] font-sans pt-[120px] pb-20 overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#F5F5F7] font-sans pb-20 overflow-x-hidden relative">
       <LogoBackground />
       <Header />
-      <div className="relative z-10">
       
+      {/* ПРОСТРАНСТВО ПОД ФИКСИРОВАННЫЙ ХЕДЕР */}
+      <div className="h-[120px] w-full"></div>
 
-        <div className="max-w-[1600px] mx-auto px-4">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-4">
         
+        {/* КНОПКА НАЗАД */}
         <div className="mb-8">
            <button 
-              onClick={isCheckoutMode ? () => setIsCheckoutMode(false) : onBack}
-              className="bg-white px-6 py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-gray-50 transition w-fit"
-            >
-              <ArrowLeft size={20} /> Назад
-            </button>
+             onClick={isCheckoutMode ? () => setIsCheckoutMode(false) : onBack}
+             className="bg-white px-6 py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-white/80 transition w-fit"
+           >
+             <ArrowLeft size={20} /> Назад
+           </button>
         </div>
 
         {!isCheckoutMode ? (
@@ -693,7 +719,6 @@ export default function CartView({
         )}
         </div>
       </div>
-    </div>
   )
 }
 
