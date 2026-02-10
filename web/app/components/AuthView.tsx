@@ -86,20 +86,21 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Мы берем телефон из формы, которую юзер только что заполнил
     if (!formData.phone) {
-        alert('Ошибка: Телефон потерян. Попробуйте снова.')
+        alert('Помилка: Телефон втрачено. Спробуйте ще раз.')
         setIsVerifying(false)
         return
     }
 
     setIsLoading(true)
+    setError(null) // Очищаємо попередні помилки
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            phone: formData.phone, // <--- ВАЖНО: Отправляем телефон!
+            phone: formData.phone,
             code: verificationCode 
         })
       })
@@ -112,12 +113,14 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
         }
         onLoginSuccess() 
       } else {
-        alert(data.message || 'Неверный код')
+        alert(data.message || 'Невірний код')
+        setVerificationCode('') // Очищаємо поле, щоб юзер міг ввести знову
       }
     } catch (err) {
-      alert('Ошибка проверки кода')
+      alert('Помилка перевірки коду')
+      setVerificationCode('')
     } finally {
-      setIsLoading(false)
+      setIsLoading(false) // Гарантовано знімаємо спінер
     }
   }
 
@@ -155,6 +158,20 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
     } else {
       handleLogin(e)
     }
+  }
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Залишаємо тільки цифри
+    let val = e.target.value.replace(/\D/g, '')
+    
+    // Якщо користувач починає вводити, додаємо 380, якщо його немає
+    if (val.length > 0 && !val.startsWith('380')) {
+        val = '380' + val;
+    }
+    
+    // Обмежуємо довжину (380 + 9 цифр = 12 символів)
+    if (val.length > 12) val = val.slice(0, 12)
+    
+    setFormData({ ...formData, phone: val ? `+${val}` : '' })
   }
 
   // --- UI: ЭКРАН ВВОДА КОДА ---
@@ -252,6 +269,7 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
                       type="text" 
                       placeholder={t.auth.name}
                       required
+                      maxLength={50}
                       value={formData.name}
                       onChange={e => setFormData({...formData, name: e.target.value})}
                       className="w-full bg-white/10 h-[56px] rounded-[30px] pl-16 pr-4 text-white placeholder-white/70 border-2 border-transparent focus:border-white/50 outline-none transition-all"
@@ -266,8 +284,9 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
                       type="tel" 
                       placeholder={t.auth.phone || "Телефон (+380...)"}
                       required
+                      maxLength={13}
                       value={formData.phone}
-                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                      onChange={handlePhoneChange}
                       className="w-full bg-white/10 h-[56px] rounded-[30px] pl-16 pr-4 text-white placeholder-white/70 border-2 border-transparent focus:border-white/50 outline-none transition-all"
                     />
                   </div>

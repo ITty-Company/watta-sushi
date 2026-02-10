@@ -178,7 +178,6 @@ export default function AdminView({ onBack }: AdminViewProps) {
   
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<{id: number, name_ru: string}[]>([])
   const [promos, setPromos] = useState<PromoCode[]>([]) // Промокоды
   const [cities, setCities] = useState<City[]>([]) // Города
   const [countries, setCountries] = useState<any[]>([]) // Страны
@@ -324,7 +323,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       ])
       if (ordersRes.ok) setOrders(await ordersRes.json())
       if (prodRes.ok) setProducts(await prodRes.json())
-      if (catRes.ok) { const c = await catRes.json(); setCategories(c); setMenuCategories(c); }
+      if (catRes.ok) { const c = await catRes.json(); setMenuCategories(c); }
       if (citiesRes.ok) setCities(await citiesRes.json())
       if (countriesRes.ok) setCountries(await countriesRes.json())
       if (promosRes.ok) setPromos(await promosRes.json())
@@ -2165,7 +2164,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                          <div className="mt-auto pt-2 border-t border-[#145142]/10 flex justify-between items-center text-xs text-gray-400">
                             <div className="flex gap-2">
                               <span>ID: {product.id}</span>
-                              <span className="hidden sm:inline">| {categories.find(c => c.id === product.categoryId)?.name_ru}</span>
+                              <span className="hidden sm:inline">| {menuCategories.find(c => c.id === product.categoryId)?.name_ru}</span>
                             </div>
 
                             {/* КНОПКИ ДЕЙСТВИЙ */}
@@ -3311,7 +3310,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     className="w-full p-2 sm:p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[8px] sm:rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm"
                   >
                     <option value="">Выберите...</option>
-                    {categories.map(cat => (
+                    {menuCategories.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name_ru}</option>
                     ))}
                   </select>

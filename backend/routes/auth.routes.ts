@@ -15,33 +15,73 @@ router.post('/register', async (req: any, res: any) => {
   try {
     const cleanPhone = phone.replace(/\D/g, ''); 
 
-    // Проверка Email
-    const existingEmail = await prisma.user.findUnique({ where: { email } });
-    if (existingEmail) {
+    // 1. Ищем, есть ли уже записи с таким Email или Телефоном
+    const existingEmailUser = await prisma.user.findUnique({ where: { email } });
+    const existingPhoneUser = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+
+    // 2. Если есть ПОДТВЕРЖДЕННЫЙ пользователь с таким Email — ошибка
+    if (existingEmailUser && existingEmailUser.isPhoneVerified) {
       return res.status(400).json({ message: 'Этот email уже используется' });
     }
 
-    // Проверка Телефона
-    const existingPhone = await prisma.user.findUnique({ where: { phone: cleanPhone } });
-    if (existingPhone) {
+    // 3. Если есть ПОДТВЕРЖДЕННЫЙ пользователь с таким Телефоном — ошибка
+    if (existingPhoneUser && existingPhoneUser.isPhoneVerified) {
       return res.status(400).json({ message: 'Этот номер телефона уже зарегистрирован' });
     }
 
+    // Подготовка данных
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-    await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        phone: cleanPhone, // Сохраняем очищенный
-        verificationCode,
-        isPhoneVerified: false 
-      },
-    });
+    // Логика обработки "черновиков" (неподтвержденных пользователей)
+    let userToUpdate = null;
 
-    // Отправка СМС (Try/Catch чтобы не падало)
+    // Если нашли неподтвержденного по email
+    if (existingEmailUser && !existingEmailUser.isPhoneVerified) {
+        userToUpdate = existingEmailUser;
+    }
+    
+    // Если нашли неподтвержденного по телефону
+    if (existingPhoneUser && !existingPhoneUser.isPhoneVerified) {
+        // Сценарий конфликта: нашли двух разных неподтвержденных (одного по email, другого по phone)
+        if (userToUpdate && userToUpdate.id !== existingPhoneUser.id) {
+             // Удаляем того, кого нашли по телефону, чтобы освободить номер для обновления основного аккаунта
+             await prisma.user.delete({ where: { id: existingPhoneUser.id } });
+        } else if (!userToUpdate) {
+             // Если по email никого не нашли, берем этого пользователя для обновления
+             userToUpdate = existingPhoneUser;
+        }
+    }
+
+    if (userToUpdate) {
+        // ОБНОВЛЯЕМ существующую неподтвержденную запись
+        // Это позволяет "перезапустить" регистрацию для того же email/телефона
+        await prisma.user.update({
+            where: { id: userToUpdate.id },
+            data: {
+                email, 
+                phone: cleanPhone, 
+                password: hashedPassword,
+                name,
+                verificationCode,
+                // isPhoneVerified оставляем false (или можно явно указать false)
+            }
+        });
+    } else {
+        // СОЗДАЕМ новую запись, если совпадений не найдено
+        await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                name,
+                phone: cleanPhone,
+                verificationCode,
+                isPhoneVerified: false 
+            },
+        });
+    }
+
+    // Отправка СМС
     try {
       await sendSms(phone, `Код подтверждения Watta Sushi: ${verificationCode}`);
     } catch (smsError) {

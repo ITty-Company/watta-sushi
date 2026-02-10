@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-  ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu, X
+  ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu, X, MapPin, MessageSquare, Users
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 
@@ -47,7 +47,17 @@ export default function CartView({
   const [isLoading, setIsLoading] = useState(false)
   
   const [formData, setFormData] = useState({ 
-    name: '', phone: '', address: '', comment: '', paymentMethod: 'CASH' 
+    name: '',
+    phone: '', 
+    address: '', 
+    comment: '', 
+    entrance: '',    // Подъезд
+    floor: '',       // Этаж
+    apartment: '',   // Квартира
+    intercom: '',    // Домофон
+    persons: 1,      // Кол-во персон
+    sticks: 0,       // Кол-во палочек
+    paymentMethod: 'CASH' 
   })
 
   //---Оплата---
@@ -123,6 +133,12 @@ export default function CartView({
   }
 
   const addItem = (item: MenuItem) => {
+    const currentQty = cartItems.filter(i => i.id === item.id).length;
+    if (currentQty >= 99) {
+        alert("Максимальна кількість товару - 99 шт.");
+        return;
+    }
+    
     const newItem = { ...item } 
     updateCart([...cartItems, newItem])
   }
@@ -349,40 +365,172 @@ export default function CartView({
               <div className="flex flex-col xl:flex-row gap-8 items-start">
                 
                 {/* ЛЕВАЯ КОЛОНКА (Товары) */}
-                <div className="w-full xl:max-w-[1035px] flex flex-col gap-8">
-                  <div className="bg-white rounded-[20px] p-6 flex flex-col gap-4 min-h-[392px]">
-                    {uniqueItems.map((item) => (
-                      <div key={item.id} className="w-full bg-[#D9D9D9] rounded-[20px] p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0" style={{ minHeight: '104px' }}>
-                          <div className="flex items-center gap-6 w-full md:w-auto">
-                             <div className="w-[72px] h-[72px] bg-black rounded-[10px] overflow-hidden shrink-0">
-                                {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">{item.emoji}</div>}
-                             </div>
-                             <div>
-                                <div className="text-[24px] md:text-[36px] font-bold text-[#194A38] leading-none mb-1">{item.name}</div>
-                                <div className="text-[18px] md:text-[24px] font-medium text-[#194A38] opacity-70 line-clamp-1">{item.description || 'состав'}</div>
-                             </div>
-                          </div>
-
-                          <div className="flex items-center gap-6">
-                             <div className="flex items-center gap-3">
-                                <button onClick={() => removeItem(item.id)}><MinusIcon /></button>
-                                <button onClick={() => addItem(item)}><PlusIcon /></button>
-                             </div>
-                             <button onClick={() => removeAllItem(item.id)}><TrashIcon /></button>
-                             <div className="text-[24px] font-normal text-black w-[100px] text-right whitespace-nowrap">
-                                {item.price * (item.quantity || 1)} ₴
-                             </div>
-                          </div>
+                <div className="w-full flex-1 flex flex-col gap-6">
+                
+                {/* 1. КОНТАКТНЫЕ ДАННЫЕ */}
+                <div className="bg-white rounded-[30px] p-8 shadow-sm border border-gray-100">
+                   <h2 className="text-[24px] font-bold text-[#194A38] mb-6 flex items-center gap-2">
+                      <User size={24} /> Контактні дані
+                   </h2>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Ваше ім'я</label>
+                        <input 
+                            type="text" 
+                            placeholder="Введіть ім'я" 
+                            maxLength={50} // Fix BUG-002
+                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
+                            value={formData.name} 
+                            onChange={e => setFormData({...formData, name: e.target.value})} 
+                            required 
+                        />
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Рекомендации (код остается) */}
-                  {filteredRecommendations.length > 0 && (
-                    /* ... ваш код рекомендаций ... */
-                    <div>...</div> 
-                  )}
+                      <div>
+                        <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Телефон</label>
+                        <input 
+                            type="tel" 
+                            placeholder="+380..." 
+                            maxLength={13} // Fix BUG-002 & BUG-005
+                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
+                            value={formData.phone} 
+                            onChange={e => {
+                                // Простая маска ввода
+                                let val = e.target.value.replace(/[^\d+]/g, '');
+                                if (val.length > 13) val = val.slice(0, 13);
+                                setFormData({...formData, phone: val})
+                            }} 
+                            required 
+                        />
+                      </div>
+                   </div>
                 </div>
+
+                {/* 2. АДРЕСА ДОСТАВКИ */}
+                <div className="bg-white rounded-[30px] p-8 shadow-sm border border-gray-100">
+                   <h2 className="text-[24px] font-bold text-[#194A38] mb-6 flex items-center gap-2">
+                      <MapPin size={24} /> Адреса доставки
+                   </h2>
+                   
+                   <div className="mb-4">
+                      <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Вулиця та номер будинку</label>
+                      <input 
+                          type="text" 
+                          placeholder="Наприклад: вул. Хрещатик, 1" 
+                          maxLength={100} // Fix BUG-002
+                          className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
+                          value={formData.address} 
+                          onChange={e => setFormData({...formData, address: e.target.value})} 
+                          required 
+                      />
+                   </div>
+
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <input 
+                            type="text" 
+                            placeholder="Під'їзд" 
+                            maxLength={5} 
+                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
+                            value={formData.entrance}
+                            onChange={e => setFormData({...formData, entrance: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        {/* Fix BUG-002: type number + max limit */}
+                        <input 
+                            type="number" 
+                            placeholder="Поверх" 
+                            min={-5} max={200}
+                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
+                            value={formData.floor}
+                            onChange={e => {
+                                if (Number(e.target.value) > 200) return;
+                                setFormData({...formData, floor: e.target.value})
+                            }}
+                        />
+                      </div>
+                      <div>
+                        <input 
+                            type="text" 
+                            placeholder="Квартира" 
+                            maxLength={10}
+                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
+                            value={formData.apartment}
+                            onChange={e => setFormData({...formData, apartment: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <input 
+                            type="text" 
+                            placeholder="Домофон" 
+                            maxLength={10}
+                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
+                            value={formData.intercom}
+                            onChange={e => setFormData({...formData, intercom: e.target.value})}
+                        />
+                      </div>
+                   </div>
+                </div>
+
+                {/* 3. ДЕТАЛІ ЗАМОВЛЕННЯ (Коментар, прибори) */}
+                <div className="bg-white rounded-[30px] p-8 shadow-sm border border-gray-100">
+                   <h2 className="text-[24px] font-bold text-[#194A38] mb-6 flex items-center gap-2">
+                      <MessageSquare size={24} /> Деталі
+                   </h2>
+                   
+                   <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div>
+                         <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Кількість персон</label>
+                         {/* Fix BUG-002: limit max persons */}
+                         <div className="relative">
+                            <input 
+                                type="number" 
+                                min={1} max={50} 
+                                value={formData.persons} 
+                                onChange={e => {
+                                    const val = parseInt(e.target.value);
+                                    if (val > 50) return;
+                                    setFormData({...formData, persons: val || 1})
+                                }}
+                                className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none font-bold text-[#194A38]" 
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <Users size={20} />
+                            </div>
+                         </div>
+                      </div>
+                      <div>
+                         <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Навчальні палички</label>
+                         <div className="relative">
+                            <select 
+                                value={formData.sticks}
+                                onChange={e => setFormData({...formData, sticks: parseInt(e.target.value)})}
+                                className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none font-bold text-[#194A38] appearance-none cursor-pointer"
+                            >
+                                <option value="0">Не потрібно</option>
+                                <option value="1">1 набір</option>
+                                <option value="2">2 набори</option>
+                                <option value="3">3 набори</option>
+                                <option value="4">4 набори</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                ▼
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                   
+                   <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Коментар до замовлення</label>
+                   <textarea 
+                      placeholder="Напишіть тут ваші побажання (наприклад: не дзвонити у двері, код від хвіртки)" 
+                      maxLength={500} // Fix BUG-002
+                      className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none h-32 resize-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
+                      value={formData.comment} 
+                      onChange={e => setFormData({...formData, comment: e.target.value})} 
+                   />
+                </div>
+
+             </div>
 
                 {/* ПРАВАЯ КОЛОНКА (Оплата и Сумма) */}
              <div className="w-full xl:w-[455px] flex flex-col gap-6 sticky top-[120px]">
