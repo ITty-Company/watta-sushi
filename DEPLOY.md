@@ -1,0 +1,70 @@
+# Деплой на Render
+
+## Важно: Порядок создания ресурсов
+
+1. **Сначала создайте базу данных** в Render Dashboard:
+   - **New** → **PostgreSQL**
+   - Имя: `watta-sushi-db`
+   - План: Free
+   - Регион: выберите тот же регион, где будет бэкенд
+
+2. **Затем создайте сервисы** через Blueprint (render.yaml) или вручную
+
+## ⚠️ ВАЖНО: Создание базы данных ПЕРЕД деплоем
+
+**Проблема:** Если база данных не создана, переменная `DATABASE_URL` не будет установлена автоматически через `render.yaml`.
+
+### Решение 1: Создать базу данных вручную (РЕКОМЕНДУЕТСЯ)
+
+1. **Render Dashboard** → **New** → **PostgreSQL**
+2. Заполните форму:
+   - **Name:** `watta-sushi-db` (ВАЖНО: точно такое же имя!)
+   - **Database:** `watta_sushi`
+   - **User:** `watta_sushi_user`
+   - **Plan:** Free
+   - **Region:** выберите тот же регион, где будет бэкенд
+3. **Create Database**
+4. После создания базы данных:
+   - **Render Dashboard** → **PostgreSQL** (`watta-sushi-db`) → **Info**
+   - Скопируйте **Internal Database URL** (для сервисов в том же регионе)
+5. **Render Dashboard** → **Web Service** (`watta-sushi-backend`) → **Environment**
+6. Добавьте переменную:
+   - **Key:** `DATABASE_URL`
+   - **Value:** вставьте скопированный URL
+7. **Save Changes** → сервис автоматически перезапустится
+
+### Решение 2: Использовать Blueprint (если база еще не создана)
+
+Если база данных еще не создана, Render может создать её автоматически через Blueprint, но это работает только при первом деплое Blueprint. Если база уже существует с другим именем, нужно либо удалить старую, либо использовать её имя в `render.yaml`.
+
+**Важно:** Убедитесь, что имя базы данных в `render.yaml` (`watta-sushi-db`) точно совпадает с именем в Render Dashboard!
+
+## JWT_SECRET
+
+В **watta-sushi-backend** → **Environment** добавьте:
+
+- **Key:** `JWT_SECRET`
+- **Value:** любая случайная строка (например, `openssl rand -base64 32`)
+
+**Важно:** Эта переменная обязательна для работы аутентификации!
+
+## Проверка
+
+- Бэкенд: `https://watta-sushi-9qfh.onrender.com` → «🍣 Sushi API is running cleanly!»
+- Фронтенд: `https://watta-sushi-web.onrender.com`
+- Логин: `admin@sushi.com` / `admin123` (после успешного seed)
+
+## Устранение проблем
+
+### Ошибка: "Environment variable not found: DATABASE_URL"
+
+1. Проверьте, что база данных `watta-sushi-db` создана в Render Dashboard
+2. Убедитесь, что имя базы данных точно совпадает с именем в `render.yaml`
+3. Проверьте, что сервис `watta-sushi-backend` находится в том же регионе, что и база данных
+4. Если переменная не установилась автоматически, добавьте её вручную (см. выше)
+
+### Ошибка: "NEXT_PUBLIC_API_URL не установлен в production"
+
+1. Проверьте, что переменная `NEXT_PUBLIC_API_URL` установлена в сервисе `watta-sushi-web`
+2. Убедитесь, что значение равно `https://watta-sushi-9qfh.onrender.com`
+3. Перезапустите сервис после изменения переменных окружения

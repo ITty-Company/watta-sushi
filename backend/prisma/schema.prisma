@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ПОЛЬЗОВАТЕЛИ ---
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique // Логин
+  password String // Пароль
+  phone    String  @unique // Уникальный телефон (защита от абуза)
+  name     String?
+  role     String  @default("USER")
+
+  // Статусы верификации
+  isPhoneVerified  Boolean @default(false) // Главный флаг подтверждения
+  verificationCode String? // Сюда пишем код из SMS
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  orders         Order[]
+  promoUsages    UserPromoUsage[]
+  personalPromos PersonalPromo[]
+
+  dateOfBirth DateTime?
+  favorites   Favorite[]
+}
+
+// --- ТОВАРЫ ---
+model Category {
+  id       Int       @id @default(autoincrement())
+  name_ru  String
+  name_en  String?
+  name_ua  String?
+  name_nl  String?
+  slug     String    @unique
+  emoji    String?   @default("🍣") // Эмодзи для категории
+  order    Int       @default(0) // Порядок отображения
+  isActive Boolean   @default(true) // Активна ли категория
+  products Product[]
+}
+
+model Country {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // Название страны (например, "Нидерланды")
+  name_ua   String? // Украинское название
+  name_en   String? // Английское название
+  name_nl   String? // Нидерландское название
+  flag      String? // Эмодзи флага (например, "🇳🇱")
+  code      String   @unique // Код страны (например, "NL")
+  isActive  Boolean  @default(true)
+  cities    City[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model City {
+  id            Int            @id @default(autoincrement())
+  name          String
+  name_nl       String? // Нидерландское название
+  name_en       String? // Английское название
+  countryId     Int
+  country       Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  latitude      Float? // Широта для карты
+  longitude     Float? // Долгота для карты
+  zoom          Int            @default(12) // Уровень зума карты
+  isActive      Boolean        @default(true)
+  products      ProductCity[]
+  deliveryZones DeliveryZone[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([name, countryId])
+}
+
+model DeliveryZone {
+  id          Int      @id @default(autoincrement())
+  name        String // Название зоны (например, "Центр")
+  color       String   @default("#4ade80") // Цвет зоны на карте
+  cityId      Int
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  coordinates String // JSON строка с координатами полигона [{lat, lng}, ...]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id Int @id @default(autoincrement())
+
+  // Названия
+  name_ru String
+  name_ua String? @default("")
+  name_en String? @default("")
+  name_nl String? @default("")
+
+  // Описания
+  description_ru String?
+  description_ua String? @default("")
+  description_en String? @default("")
+  description_nl String? @default("")
+
+  price     Float
+  imageUrl  String?
+  isPopular Boolean @default(false)
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+
+  cities     ProductCity[]
+  orderItems OrderItem[]
+  favorites  Favorite[]
+
+  ingredients Ingredient[]
+}
+
+model ProductCity {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  cityId    Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  city      City    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, cityId])
+}
+
+// --- ЗАКАЗЫ ---
+model Order {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+  status     String   @default("PENDING") // PENDING, CONFIRMED, DELIVERED, CANCELLED
+  totalPrice Float
+
+  customerName  String  @default("Гость")
+  phone         String  @default("")
+  address       String  @default("")
+  paymentMethod String  @default("CASH")
+  comment       String?
+
+  // Связь с пользователем (опционально, так как заказ может сделать гость)
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+}
+
+// --- БАННЕРЫ ---
+model Banner {
+  id        Int      @id @default(autoincrement())
+  title_ru  String // Заголовок на русском
+  title_ua  String? // Заголовок на украинском
+  title_en  String? // Заголовок на английском
+  title_nl  String? // Заголовок на нидерландском
+  imageUrl  String // URL изображения баннера
+  order     Int      @default(0) // Порядок отображения
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSetting {
+  id             Int @id @default(1) // Всегда ID=1 (синглтон)
+  bannerInterval Int @default(5000) // Интервал в миллисекундах (по умолчанию 5 сек)
+}
+
+// --- КОМАНДА ---
+model TeamMember {
+  id          Int      @id @default(autoincrement())
+  name_ru     String // Имя на русском
+  name_ua     String? // Имя на украинском
+  name_en     String? // Имя на английском
+  name_nl     String? // Имя на нидерландском
+  position_ru String // Должность на русском
+  position_ua String? // Должность на украинском
+  position_en String? // Должность на английском
+  position_nl String? // Должность на нидерландском
+  imageUrl    String? // URL фото сотрудника
+  bio_ru      String? // Биография на русском
+  bio_ua      String? // Биография на украинском
+  bio_en      String? // Биография на английском
+  bio_nl      String? // Биография на нидерландском
+  order       Int      @default(0) // Порядок отображения
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Promo {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  content     String? // Полный текст
+  imageUrl    String?
+  isHit       Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Типы промокодов
+enum PromoType {
+  WELCOME // Стартовый
+  BIRTHDAY // ДР
+  REACTIVATION // Возвращение клиента
+  GENERAL // Обычный (реклама)
+}
+
+model PromoCode {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique // Сам код, например "WATTASUSHI" или "BDAY2025"
+  description String
+  discount    Int // Процент или сумма
+  isFixed     Boolean @default(false) // false = %, true = грн
+  minOrder    Int     @default(0)
+
+  type     PromoType
+  isActive Boolean   @default(true)
+
+  usages UserPromoUsage[]
+}
+
+// Таблица выданных личных промокодов (генерируем уникальные)
+model PersonalPromo {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique // Уникальный код, например "START-8492"
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  type      PromoType
+  discount  Int
+  expiresAt DateTime
+  isUsed    Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+// История использования (чтобы не юзали дважды)
+model UserPromoUsage {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  // Ссылка либо на общий промокод, либо на личный (можно упростить логику)
+  promoCodeId Int?
+  promoCode   PromoCode? @relation(fields: [promoCodeId], references: [id])
+
+  personalPromoId Int? // Если использовали личный код
+
+  usedAt DateTime @default(now())
+}
+
+model Favorite {
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, productId]) // Составной ключ: один юзер не может дважды лайкнуть один товар
+}
+
+
+enum PaymentMethod {
+  CASH
+  CARD        // Обычный ввод карты
+  APPLE_PAY
+  GOOGLE_PAY
+  IDEAL       // Для Голландии это мастхэв, добавим на будущее
+}
+
+
+model Ingredient {
+  id        Int     @id @default(autoincrement())
+  name_ru   String
+  name_ua   String?
+  name_en   String?
+  name_nl   String?
+  imageUrl  String  // Ссылка на фото ингредиента (лосось, рис и т.д.)
+  
+  products  Product[]
+}

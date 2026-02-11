@@ -1,0 +1,42 @@
+databases:
+  - name: watta-sushi-db
+    databaseName: watta_sushi
+    user: watta_sushi_user
+    plan: free
+
+services:
+  - type: web
+    name: watta-sushi-backend
+    env: node
+    plan: free
+    rootDir: backend
+    # Важно: миграции в репо начинались со SQLite, поэтому на Postgres надёжнее
+    # синхронизировать схему через db push при деплое/старте.
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm run start:single
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        fromDatabase:
+          name: watta-sushi-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+
+  - type: web
+    name: watta-sushi-web
+    env: node
+    plan: free
+    rootDir: web
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        value: https://watta-sushi-9qfh.onrender.com
