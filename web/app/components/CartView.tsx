@@ -330,6 +330,31 @@ export default function CartView({
     )
   }
 
+    const PromoInputBg = () => (
+    <div className="absolute inset-0 pointer-events-none">
+      <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 211 52" fill="none" preserveAspectRatio="none">
+        <defs>
+          <filter id="filter0_d_5331_178" x="0" y="0" width="210.399" height="51.4036" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+            <feOffset dy="4"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feComposite in2="hardAlpha" operator="out"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/>
+            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_5331_178"/>
+            <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_5331_178" result="shape"/>
+          </filter>
+          <g id="stroke0_5331_178">
+            <path d="M215.495 344.52C216.451 344.52 217.233 345.303 217.233 346.26C217.233 347.217 216.451 348 215.495 348C214.539 348 213.757 347.217 213.757 346.26C213.757 345.303 214.539 344.52 215.495 344.52ZM106.01 341.04C106.01 339.765 106.531 339.243 107.169 339.88C107.805 340.518 107.805 341.562 107.169 342.2C106.531 342.837 106.01 342.315 106.01 341.04Z" fill="#155044"/>
+            <rect width="2" height="2" fill="#155044" /> 
+          </g>
+        </defs>
+        <g filter="url(#filter0_d_5331_178)">
+          <path d="M5.69336 1.70386H204.693V41.7039H5.69336V1.70386Z" fill="white"/>
+        </g>
+      </svg>
+    </div>
+  )
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-sans pb-20 overflow-x-hidden relative">
       <LogoBackground />
@@ -351,7 +376,6 @@ export default function CartView({
         </div>
 
         {!isCheckoutMode ? (
-          /* --- РЕЖИМ 1: КОРЗИНА (Оставляем как было, но убираем виджет оплаты отсюда) --- */
           <>
             <h1 className="text-[48px] font-bold text-[#194A38] mb-8 leading-tight tracking-tight">
               Ваш заказ ({cartItems.length} товара)
@@ -367,45 +391,82 @@ export default function CartView({
                 {/* ЛЕВАЯ КОЛОНКА (Товары) */}
                 <div className="w-full flex-1 flex flex-col gap-6">
                 {/* --- СПИСОК ТОВАРОВ  --- */}
-                <div className="flex flex-col gap-4 mb-8">
+                
+                <div className="bg-white rounded-[20px] p-6 flex flex-col gap-4 min-h-[392px]">
                   {uniqueItems.map((item) => (
-                    <div key={item.id} className="bg-white rounded-[20px] p-4 flex gap-4 items-center shadow-sm border border-gray-100">
-                      {/* Картинка */}
-                      <div className="w-[100px] h-[100px] bg-gray-100 rounded-[15px] overflow-hidden flex-shrink-0 relative">
-                        {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-4xl flex items-center justify-center h-full w-full">{item.emoji}</span>
-                        )}
+                    <div key={item.id} className="w-full bg-[#D9D9D9] rounded-[20px] p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0" style={{ minHeight: '104px' }}>
+                      
+                      {/* Фото и Название */}
+                      <div className="flex items-center gap-6 w-full md:w-auto">
+                        <div className="w-[72px] h-[72px] bg-black rounded-[10px] overflow-hidden shrink-0">
+                          {item.imageUrl ? (
+                              <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.name} />
+                          ) : (
+                              <div className="w-full h-full flex items-center justify-center text-2xl">{item.emoji}</div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-[24px] md:text-[36px] font-bold text-[#194A38] leading-none mb-1">
+                              {/* Исправлено: item.name */}
+                              {item.name}
+                          </div>
+                          <div className="text-[18px] md:text-[24px] font-medium text-[#194A38] opacity-70 line-clamp-1">
+                              {/* Исправлено: item.description */}
+                              {item.description || 'состав'}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Описание */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-bold text-[#194A38] text-lg leading-tight mb-1 truncate pr-2">{item.name}</h3>
-                          <button onClick={() => removeAllItem(item.id)} className="text-gray-300 hover:text-red-500 transition">
-                            <X size={20} />
-                          </button>
+                      {/* Кнопки управления */}
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => removeItem(item.id)} className="hover:opacity-70 transition"><MinusIcon /></button>
+                          <button onClick={() => addItem(item)} className="hover:opacity-70 transition"><PlusIcon /></button>
                         </div>
-                        <p className="text-gray-400 text-sm mb-3 line-clamp-1">{item.description}</p>
-                        
-                        {/* Цена и управление */}
-                        <div className="flex items-center justify-between">
-                          <div className="font-bold text-[18px] text-black whitespace-nowrap">
-                            {item.price * (item.quantity || 1)} ₴
-                          </div>
-                          
-                          <div className="flex items-center gap-2 bg-[#F5F5F7] rounded-[12px] p-1">
-                            <button onClick={() => removeItem(item.id)} className="p-1 hover:opacity-70 transition"><MinusIcon /></button>
-                            <span className="font-bold text-[#194A38] w-6 text-center">{item.quantity}</span>
-                            <button onClick={() => addItem(item)} className="p-1 hover:opacity-70 transition"><PlusIcon /></button>
-                          </div>
+                        <button onClick={() => removeAllItem(item.id)} className="hover:opacity-70 transition"><TrashIcon /></button>
+                        <div className="text-[24px] font-normal text-black w-[100px] text-right whitespace-nowrap">
+                          {item.price * (item.quantity || 1)} ₴
                         </div>
                       </div>
+
                     </div>
                   ))}
                 </div>
-             </div>
+
+                {/* 1. БЛОК РЕКОМЕНДАЦИЙ (Добавлен) */}
+                {filteredRecommendations.length > 0 && (
+                  <div>
+                    <h2 className="text-[40px] font-bold text-[#145142] mb-6">Добавьте к заказу</h2>
+                    <div className="bg-white rounded-[20px] p-6 flex gap-4 overflow-x-auto scrollbar-hide items-stretch">
+                      {filteredRecommendations.map(item => (
+                        <div 
+                          key={item.id} 
+                          onClick={() => handleAddRecommendation(item)}
+                          className="flex items-center gap-4 shrink-0 min-w-[220px] bg-gray-50 hover:bg-gray-100 p-3 rounded-[15px] cursor-pointer transition border border-transparent hover:border-[#145142]/20"
+                        >
+                          <div className="w-[72px] h-[61px] bg-black rounded-[10px] overflow-hidden shrink-0">
+                            {item.imageUrl ? (
+                              <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.name}/>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-2xl">{item.emoji}</div>
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            {/* Исправлено: item.name вместо safeLocalized */}
+                            <span className="text-[18px] font-bold text-[#194A38] leading-tight line-clamp-2">{item.name}</span>
+                            <span className="text-[14px] font-bold text-[#145142] mt-1">{item.price} ₴</span>
+                          </div>
+                          <div className="ml-auto text-[#145142]">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                </div>
 
                 {/* ПРАВАЯ КОЛОНКА (Оплата и Сумма) */}
              <div className="w-full xl:w-[455px] flex flex-col gap-6 sticky top-[120px]">
@@ -435,7 +496,7 @@ export default function CartView({
                 <div className="bg-white rounded-[30px] p-8 shadow-sm">
                    <div className="flex justify-between items-center mb-6">
                       <h2 className="text-[28px] font-bold text-[#194A38]">Доставка</h2>
-                      <span className="text-[#FF6B00] font-medium cursor-pointer flex items-center gap-1">Зона доставки ⓘ</span>
+                      <span className="text-[#145142] font-medium cursor-pointer flex items-center gap-1">Зона доставки ⓘ</span>
                    </div>
                    
                    {/* Выбор города */}
@@ -444,7 +505,7 @@ export default function CartView({
                          <button 
                            key={city}
                            type="button"
-                           className={`px-6 py-2 rounded-xl font-bold transition ${city === 'Киев' ? 'bg-[#FF6B00] text-white' : 'bg-[#F3F4F6] text-gray-500'}`}
+                           className={`px-6 py-2 rounded-xl font-bold transition ${city === 'Киев' ? 'bg-[#145142] text-white' : 'bg-[#F3F4F6] text-gray-500'}`}
                          >
                            {city}
                          </button>
@@ -525,8 +586,6 @@ export default function CartView({
                       onChange={e => setFormData({...formData, comment: e.target.value})} 
                    />
                 </div>
-                {/* ПРАВАЯ КОЛОНКА (Оплата, Промокод и Сумма) */}
-                <div className="w-full xl:w-[455px] flex flex-col gap-6 sticky top-[120px]">
                   
                   {/* 5. Блок Оплаты */}
                   <div className="bg-white rounded-[30px] p-8 shadow-sm">
@@ -672,49 +731,15 @@ export default function CartView({
                     </div>
                   </div>
                   
-                  {/* Удален отдельный блок промокода, который был здесь раньше */}
-                  
                 </div>
                 
-             </div>
-             </div>
-           )}
-         </>
-       ) : (
-         // Сюда попадаем, если isCheckoutMode === true.
-         // Поскольку вы, похоже, перенесли форму внутрь корзины,
-         // здесь можно вернуть null или заглушку, чтобы исправить ошибку.
-         null
-       )}
+              </div>
+            )}
+          </>
+        ) : (
+          null
+        )}
+      </div>
     </div>
   )
-  </div>
-  )
 }
-
-const PromoInputBg = () => (
-  <div className="absolute inset-0 pointer-events-none">
-    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 211 52" fill="none" preserveAspectRatio="none">
-      <defs>
-        <filter id="filter0_d_5331_178" x="0" y="0" width="210.399" height="51.4036" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-          <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-          <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-          <feOffset dy="4"/>
-          <feGaussianBlur stdDeviation="2"/>
-          <feComposite in2="hardAlpha" operator="out"/>
-          <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/>
-          <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_5331_178"/>
-          <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_5331_178" result="shape"/>
-        </filter>
-        <g id="stroke0_5331_178">
-          <path d="M215.495 344.52C216.451 344.52 217.233 345.303 217.233 346.26C217.233 347.217 216.451 348 215.495 348C214.539 348 213.757 347.217 213.757 346.26C213.757 345.303 214.539 344.52 215.495 344.52ZM106.01 341.04C106.01 339.765 106.531 339.243 107.169 339.88C107.805 340.518 107.805 341.562 107.169 342.2C106.531 342.837 106.01 342.315 106.01 341.04Z" fill="#155044"/>
-          <rect width="2" height="2" fill="#155044" /> 
-        </g>
-      </defs>
-      <g filter="url(#filter0_d_5331_178)">
-        <path d="M5.69336 1.70386H204.693V41.7039H5.69336V1.70386Z" fill="white"/>
-        <rect x="5.69" y="1.7" width="199" height="40" stroke="#155044" strokeWidth="3" fill="none" strokeDasharray="5 2" />
-      </g>
-    </svg>
-  </div>
-)
