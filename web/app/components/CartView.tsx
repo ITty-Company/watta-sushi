@@ -366,277 +366,50 @@ export default function CartView({
                 
                 {/* ЛЕВАЯ КОЛОНКА (Товары) */}
                 <div className="w-full flex-1 flex flex-col gap-6">
-                
-                1. КОНТАКТНЫЕ ДАННЫЕ
-                <div className="bg-white rounded-[30px] p-8 shadow-sm border border-gray-100">
-                   <h2 className="text-[24px] font-bold text-[#194A38] mb-6 flex items-center gap-2">
-                      <User size={24} /> Контактні дані
-                   </h2>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Ваше ім'я</label>
-                        <input 
-                            type="text" 
-                            placeholder="Введіть ім'я" 
-                            maxLength={50} // Fix BUG-002
-                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
-                            value={formData.name} 
-                            onChange={e => setFormData({...formData, name: e.target.value})} 
-                            required 
-                        />
+                {/* --- СПИСОК ТОВАРОВ  --- */}
+                <div className="flex flex-col gap-4 mb-8">
+                  {uniqueItems.map((item) => (
+                    <div key={item.id} className="bg-white rounded-[20px] p-4 flex gap-4 items-center shadow-sm border border-gray-100">
+                      {/* Картинка */}
+                      <div className="w-[100px] h-[100px] bg-gray-100 rounded-[15px] overflow-hidden flex-shrink-0 relative">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-4xl flex items-center justify-center h-full w-full">{item.emoji}</span>
+                        )}
                       </div>
-                      <div>
-                        <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Телефон</label>
-                        <input 
-                            type="tel" 
-                            placeholder="+380..." 
-                            maxLength={13} // Fix BUG-002 & BUG-005
-                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
-                            value={formData.phone} 
-                            onChange={e => {
-                                // Простая маска ввода
-                                let val = e.target.value.replace(/[^\d+]/g, '');
-                                if (val.length > 13) val = val.slice(0, 13);
-                                setFormData({...formData, phone: val})
-                            }} 
-                            required 
-                        />
+
+                      {/* Описание */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-bold text-[#194A38] text-lg leading-tight mb-1 truncate pr-2">{item.name}</h3>
+                          <button onClick={() => removeAllItem(item.id)} className="text-gray-300 hover:text-red-500 transition">
+                            <X size={20} />
+                          </button>
+                        </div>
+                        <p className="text-gray-400 text-sm mb-3 line-clamp-1">{item.description}</p>
+                        
+                        {/* Цена и управление */}
+                        <div className="flex items-center justify-between">
+                          <div className="font-bold text-[18px] text-black whitespace-nowrap">
+                            {item.price * (item.quantity || 1)} ₴
+                          </div>
+                          
+                          <div className="flex items-center gap-2 bg-[#F5F5F7] rounded-[12px] p-1">
+                            <button onClick={() => removeItem(item.id)} className="p-1 hover:opacity-70 transition"><MinusIcon /></button>
+                            <span className="font-bold text-[#194A38] w-6 text-center">{item.quantity}</span>
+                            <button onClick={() => addItem(item)} className="p-1 hover:opacity-70 transition"><PlusIcon /></button>
+                          </div>
+                        </div>
                       </div>
-                   </div>
+                    </div>
+                  ))}
                 </div>
-
-                {/* 2. АДРЕСА ДОСТАВКИ */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm border border-gray-100">
-                   <h2 className="text-[24px] font-bold text-[#194A38] mb-6 flex items-center gap-2">
-                      <MapPin size={24} /> Адреса доставки
-                   </h2>
-                   
-                   <div className="mb-4">
-                      <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Вулиця та номер будинку</label>
-                      <input 
-                          type="text" 
-                          placeholder="Наприклад: вул. Хрещатик, 1" 
-                          maxLength={100} // Fix BUG-002
-                          className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
-                          value={formData.address} 
-                          onChange={e => setFormData({...formData, address: e.target.value})} 
-                          required 
-                      />
-                   </div>
-
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <input 
-                            type="text" 
-                            placeholder="Під'їзд" 
-                            maxLength={5} 
-                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
-                            value={formData.entrance}
-                            onChange={e => setFormData({...formData, entrance: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        {/* Fix BUG-002: type number + max limit */}
-                        <input 
-                            type="number" 
-                            placeholder="Поверх" 
-                            min={-5} max={200}
-                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
-                            value={formData.floor}
-                            onChange={e => {
-                                if (Number(e.target.value) > 200) return;
-                                setFormData({...formData, floor: e.target.value})
-                            }}
-                        />
-                      </div>
-                      <div>
-                        <input 
-                            type="text" 
-                            placeholder="Квартира" 
-                            maxLength={10}
-                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
-                            value={formData.apartment}
-                            onChange={e => setFormData({...formData, apartment: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        <input 
-                            type="text" 
-                            placeholder="Домофон" 
-                            maxLength={10}
-                            className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none focus:ring-2 focus:ring-[#145142] font-medium text-[#194A38]"
-                            value={formData.intercom}
-                            onChange={e => setFormData({...formData, intercom: e.target.value})}
-                        />
-                      </div>
-                   </div>
-                </div>
-
-                {/* 3. ДЕТАЛІ ЗАМОВЛЕННЯ (Коментар, прибори) */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm border border-gray-100">
-                   <h2 className="text-[24px] font-bold text-[#194A38] mb-6 flex items-center gap-2">
-                      <MessageSquare size={24} /> Деталі
-                   </h2>
-                   
-                   <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div>
-                         <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Кількість персон</label>
-                         {/* Fix BUG-002: limit max persons */}
-                         <div className="relative">
-                            <input 
-                                type="number" 
-                                min={1} max={50} 
-                                value={formData.persons} 
-                                onChange={e => {
-                                    const val = parseInt(e.target.value);
-                                    if (val > 50) return;
-                                    setFormData({...formData, persons: val || 1})
-                                }}
-                                className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none font-bold text-[#194A38]" 
-                            />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                <Users size={20} />
-                            </div>
-                         </div>
-                      </div>
-                      <div>
-                         <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Навчальні палички</label>
-                         <div className="relative">
-                            <select 
-                                value={formData.sticks}
-                                onChange={e => setFormData({...formData, sticks: parseInt(e.target.value)})}
-                                className="w-full p-4 bg-[#F5F5F7] rounded-[15px] outline-none font-bold text-[#194A38] appearance-none cursor-pointer"
-                            >
-                                <option value="0">Не потрібно</option>
-                                <option value="1">1 набір</option>
-                                <option value="2">2 набори</option>
-                                <option value="3">3 набори</option>
-                                <option value="4">4 набори</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                ▼
-                            </div>
-                         </div>
-                      </div>
-                   </div>
-                   
-                   <label className="text-sm text-gray-400 font-bold ml-4 mb-1 block">Коментар до замовлення</label>
-                   <textarea 
-                      placeholder="Напишіть тут ваші побажання (наприклад: не дзвонити у двері, код від хвіртки)" 
-                      maxLength={500} // Fix BUG-002
-                      className="w-full p-4 bg-[#F5F5F7] rounded-[15px] text-lg outline-none h-32 resize-none focus:ring-2 focus:ring-[#145142] transition-all font-medium text-[#194A38]" 
-                      value={formData.comment} 
-                      onChange={e => setFormData({...formData, comment: e.target.value})} 
-                   />
-                </div>
-
              </div>
 
                 {/* ПРАВАЯ КОЛОНКА (Оплата и Сумма) */}
              <div className="w-full xl:w-[455px] flex flex-col gap-6 sticky top-[120px]">
-                
-                {/* 1. Блок Оплаты */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm">
-                   <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Способ оплаты</h2>
-                   
-                   <div className="flex flex-col gap-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod('APPLE_PAY')}
-                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                            paymentMethod === 'APPLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-black text-white opacity-90'
-                          }`}
-                        >
-                          <span className="font-bold"> Pay</span>
-                          {paymentMethod === 'APPLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod('GOOGLE_PAY')}
-                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all border ${
-                            paymentMethod === 'GOOGLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-white text-gray-800 border-gray-300'
-                          }`}
-                        >
-                          <span className="font-bold"><span className="text-blue-500">G</span> Pay</span>
-                          {paymentMethod === 'GOOGLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
-                        </button>
-                      </div>
-
-                      <div className="relative py-2 flex items-center">
-                        <span className="w-full border-t border-gray-200"></span>
-                        <span className="px-2 text-xs text-gray-400 bg-white uppercase">или</span>
-                        <span className="w-full border-t border-gray-200"></span>
-                      </div>
-
-                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CASH' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
-                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CASH' ? 'border-[#145142]' : 'border-gray-300'}`}>
-                            {paymentMethod === 'CASH' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
-                         </div>
-                         <span className="font-bold text-gray-700">Наличными</span>
-                         <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
-                      </label>
-
-                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CARD' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
-                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CARD' ? 'border-[#145142]' : 'border-gray-300'}`}>
-                            {paymentMethod === 'CARD' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
-                         </div>
-                         <span className="font-bold text-gray-700">Картой онлайн</span>
-                         <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} />
-                      </label>
-                      
-                      {paymentMethod === 'CARD' && (
-                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2">
-                            <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-3 border rounded-lg mb-3 outline-none focus:border-[#145142]" />
-                            <div className="flex gap-3">
-                               <input type="text" placeholder="MM/YY" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
-                               <input type="text" placeholder="CVC" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
-                            </div>
-                         </div>
-                      )}
-                   </div>
-                </div>
-                
-                {/* 2. Блок Итого (ОТДЕЛЬНЫЙ КОНТЕЙНЕР) */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm flex flex-col gap-4">
-                   <div className="flex justify-between items-center text-gray-500 text-lg">
-                      <span>Сумма заказа</span>
-                      <span>{basePrice} ₴</span>
-                   </div>
-                   
-                   {/* Если есть скидка */}
-                   {appliedPromo && (
-                     <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
-                        <span>Скидка ({appliedPromo.code})</span>
-                        <span>-{discountAmount} ₴</span>
-                     </div>
-                   )}
-
-                   <div className="flex justify-between items-center text-gray-500 text-lg">
-                      <span>Доставка</span>
-                      <span>{deliveryPrice} ₴</span>
-                   </div>
-                   
-                   <div className="w-full h-px bg-gray-200 my-2"></div>
-
-                   <div className="flex justify-between items-end mb-2">
-                      <span className="text-[24px] font-bold text-black">К оплате</span>
-                      <span className="text-[32px] font-bold text-[#145142]">{finalPrice + deliveryPrice} ₴</span>
-                   </div>
-                   
-                   <button 
-                     onClick={handleOrder}
-                     disabled={isLoading}
-                     className="w-full h-[60px] bg-[#145142] rounded-[15px] text-white text-[20px] font-bold hover:bg-[#0f3d32] transition shadow-lg disabled:opacity-70 flex items-center justify-center gap-2 mt-2"
-                   >
-                     {isLoading ? 'Обработка...' : 'Подтвердить заказ'}
-                   </button>
-                   
-                   <p className="text-center text-xs text-gray-400 mt-2 px-2 leading-tight">
-                      Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
-                   </p>
-                </div>
-                   {/* 1. Контактные данные */}
+                {/* 1. Контактные данные */}
                 <div className="bg-white rounded-[30px] p-8 shadow-sm">
                    <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Контактные данные</h2>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -753,6 +526,154 @@ export default function CartView({
                       onChange={e => setFormData({...formData, comment: e.target.value})} 
                    />
                 </div>
+
+                {/* 5. Блок Оплаты */}
+                  <div className="bg-white rounded-[30px] p-8 shadow-sm">
+                    <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Способ оплаты</h2>
+                    
+                    <div className="flex flex-col gap-3">
+                      {/* Кнопки Apple/Google Pay */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod('APPLE_PAY')}
+                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                            paymentMethod === 'APPLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-black text-white opacity-90'
+                          }`}
+                        >
+                          <span className="font-bold"> Pay</span>
+                          {paymentMethod === 'APPLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod('GOOGLE_PAY')}
+                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all border ${
+                            paymentMethod === 'GOOGLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-white text-gray-800 border-gray-300'
+                          }`}
+                        >
+                          <span className="font-bold"><span className="text-blue-500">G</span> Pay</span>
+                          {paymentMethod === 'GOOGLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
+                        </button>
+                      </div>
+
+                      <div className="relative py-2 flex items-center">
+                        <span className="w-full border-t border-gray-200"></span>
+                        <span className="px-2 text-xs text-gray-400 bg-white uppercase">или</span>
+                        <span className="w-full border-t border-gray-200"></span>
+                      </div>
+
+                      {/* Наличные */}
+                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CASH' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CASH' ? 'border-[#145142]' : 'border-gray-300'}`}>
+                          {paymentMethod === 'CASH' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
+                        </div>
+                        <span className="font-bold text-gray-700">Наличными</span>
+                        <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
+                      </label>
+
+                      {/* Картой онлайн */}
+                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CARD' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CARD' ? 'border-[#145142]' : 'border-gray-300'}`}>
+                          {paymentMethod === 'CARD' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
+                        </div>
+                        <span className="font-bold text-gray-700">Картой онлайн</span>
+                        <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} />
+                      </label>
+                      
+                      {paymentMethod === 'CARD' && (
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2">
+                            <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-3 border rounded-lg mb-3 outline-none focus:border-[#145142]" />
+                            <div className="flex gap-3">
+                              <input type="text" placeholder="MM/YY" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
+                              <input type="text" placeholder="CVC" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
+                            </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* 6. Блок Итого (Объединенный с Промокодом) */}
+                  <div className="bg-white rounded-[30px] p-8 shadow-sm flex flex-col gap-6">
+                    
+                    {/* --- СЕКЦИЯ ПРОМОКОДА (ПЕРЕНЕСЕНА СЮДА) --- */}
+                    <div className="relative overflow-hidden rounded-[20px] p-4"> {/* Контейнер для "плашки" */}
+                        <div className="relative z-10">
+                          <h3 className="font-bold text-[#194A38] mb-3 text-lg">Промокод</h3>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Введіть код"
+                              className="flex-1 bg-[#F5F5F7] rounded-[15px] px-4 py-3 outline-none focus:ring-2 focus:ring-[#145142] font-bold text-[#194A38] uppercase placeholder:font-normal placeholder:normal-case"
+                              value={promoCode}
+                              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                            />
+                            <button
+                              onClick={handleApplyPromo}
+                              className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center"
+                            >
+                              OK
+                            </button>
+                          </div>
+                          
+                          {promoError && (
+                            <p className="text-red-500 text-sm mt-2 font-medium bg-red-50 p-2 rounded-lg text-center">
+                              {promoError}
+                            </p>
+                          )}
+                          {appliedPromo && (
+                            <div className="mt-3 flex items-center gap-2 text-[#145142] font-bold bg-[#145142]/10 p-2 rounded-lg justify-center">
+                              <span>🎉 Код {appliedPromo.code} застосовано!</span>
+                            </div>
+                          )}
+                        </div>
+                        <PromoInputBg /> {/* Фон-билетик */}
+                    </div>
+
+                    <div className="w-full h-px bg-gray-200"></div>
+
+                    {/* --- РАСЧЕТ ЦЕНЫ --- */}
+                    <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center text-gray-500 text-lg">
+                          <span>Сумма заказа</span>
+                          <span>{basePrice} ₴</span>
+                        </div>
+                        
+                        {appliedPromo && (
+                          <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
+                            <span>Скидка ({appliedPromo.code})</span>
+                            <span>-{discountAmount} ₴</span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center text-gray-500 text-lg">
+                          <span>Доставка</span>
+                          <span>{deliveryPrice} ₴</span>
+                        </div>
+                        
+                        <div className="w-full h-px bg-gray-200 my-2"></div>
+
+                        <div className="flex justify-between items-end">
+                          <span className="text-[24px] font-bold text-black">К оплате</span>
+                          <span className="text-[32px] font-bold text-[#145142]">{finalPrice + deliveryPrice} ₴</span>
+                        </div>
+                        
+                        <button 
+                          onClick={handleOrder}
+                          disabled={isLoading}
+                          className="w-full h-[60px] bg-[#145142] rounded-[15px] text-white text-[20px] font-bold hover:bg-[#0f3d32] transition shadow-lg disabled:opacity-70 flex items-center justify-center gap-2 mt-2"
+                        >
+                          {isLoading ? 'Обработка...' : 'Подтвердить заказ'}
+                        </button>
+                        
+                        <p className="text-center text-xs text-gray-400 px-2 leading-tight">
+                          Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
+                        </p>
+                    </div>
+                  </div>
+                  
+                  {/* Удален отдельный блок промокода, который был здесь раньше */}
+                  
+                </div>
              </div>
              </div>
            )}
@@ -768,6 +689,7 @@ export default function CartView({
   </div>
   )
 }
+
 const PromoInputBg = () => (
   <div className="absolute inset-0 pointer-events-none">
     <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 211 52" fill="none" preserveAspectRatio="none">
