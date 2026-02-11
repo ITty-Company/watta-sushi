@@ -2179,6 +2179,16 @@ body {
   height: 14px !important;
 }
 
+.header-actions-web .header-lang-wrap-web button:hover {
+  background: #145142 !important;
+  box-shadow: 0 6px 16px rgba(20,81,66,0.3) !important;
+  color: #ffffff !important;
+}
+
+.header-actions-web .header-lang-wrap-web button:hover svg {
+  color: #ffffff !important;
+}
+
 .header-actions-web .header-lang-wrap-web {
   margin-left: 0 !important;
   margin-right: 0 !important;
@@ -2187,6 +2197,49 @@ body {
 .header-profile-btn-web {
   position: relative;
   overflow: hidden;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.header-profile-btn-web:hover {
+  background: #145142 !important;
+  border-color: #145142 !important;
+  box-shadow: 0 6px 16px rgba(20,81,66,0.3) !important;
+}
+
+.header-profile-btn-web:hover .header-profile-icon-web,
+.header-profile-btn-web:hover svg {
+  color: #ffffff !important;
+}
+
+.header-menu-btn-web {
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.header-menu-btn-web:hover {
+  background: #145142 !important;
+  border-color: #145142 !important;
+  box-shadow: 0 6px 16px rgba(20,81,66,0.3) !important;
+}
+
+.header-menu-btn-web:hover .header-menu-icon-web,
+.header-menu-btn-web:hover svg {
+  color: #ffffff !important;
+}
+
+.header-cart-btn-text-web {
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.header-cart-btn-text-web:hover {
+  background: #145142 !important;
+  border-color: #145142 !important;
+  box-shadow: 0 6px 16px rgba(20,81,66,0.3) !important;
+  color: #ffffff !important;
+}
+
+.header-cart-btn-text-web:hover .header-cart-icon-web,
+.header-cart-btn-text-web:hover .header-cart-label-web {
+  color: #ffffff !important;
 }
 
 .header-icon-btn-web {
