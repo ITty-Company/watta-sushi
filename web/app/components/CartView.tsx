@@ -386,10 +386,10 @@ export default function CartView({
                  <span className="text-2xl text-gray-400 font-bold">Корзина пуста</span>
                </div>
             ) : (
-              <div className="flex flex-col lg:flex-row gap-8 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_455px] gap-8 items-start">
                 
                 {/* ЛЕВАЯ КОЛОНКА (Товары) */}
-                <div className="w-full flex-1 flex flex-col gap-6">
+                <div className="flex-1 flex flex-col gap-6">
                 {/* --- СПИСОК ТОВАРОВ  --- */}
                 
                 <div className="bg-white rounded-[20px] p-6 flex flex-col gap-4 min-h-[392px]">
@@ -469,7 +469,7 @@ export default function CartView({
                 </div>
 
                 {/* ПРАВАЯ КОЛОНКА (Оплата и Сумма) */}
-             <div className="w-full lg:w-[455px] flex flex-col gap-6 sticky top-[120px]">
+             <div className="lg:w-[455px] flex flex-col gap-6 sticky top-[120px]">
                 {/* 1. Контактные данные */}
                 <div className="bg-white rounded-[30px] p-8 shadow-sm">
                    <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Контактные данные</h2>
