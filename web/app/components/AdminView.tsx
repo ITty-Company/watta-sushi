@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import CityMapPicker from './CityMapPicker'
+import { useLanguage } from '../context/LanguageContext'
 
 // --- ТИПЫ ДАННЫХ (ИСПРАВЛЕНО ПОД 4 ЯЗЫКА) ---
 interface Product {
@@ -171,7 +172,7 @@ interface TeamMember {
 interface SiteSettings {
   bannerInterval: number
 }
-
+const { t } = useLanguage()
 export default function AdminView({ onBack }: AdminViewProps) {
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'| 'ingredients'>('dashboard')
@@ -356,7 +357,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         try {
           const parsed = JSON.parse(savedUser)
           if (parsed.role !== 'ADMIN') {
-            alert('Доступ запрещен. Только администраторы могут использовать админ панель.')
+            alert(t.adminPage.auth.adminOnly)
             onBack()
             return
           }
@@ -593,10 +594,10 @@ export default function AdminView({ onBack }: AdminViewProps) {
       const token = localStorage.getItem('token')
       const res = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData })
       if (res.ok) {
-        alert('Сохранено'); setIsNewsModalOpen(false); setEditingNews(null);
+        alert(t.adminPage.common.saveSuccess); setIsNewsModalOpen(false); setEditingNews(null);
         fetch('/api/promotions').then(r => r.json()).then(setNewsItems)
-      } else alert('Ошибка')
-    } catch (e) { alert('Ошибка сети') }
+      } else alert(t.adminPage.common.updateError)
+    } catch (e) { alert(t.adminPage.common.networkError) }
   }
 
   const handleDeleteNews = async (id: number) => {
@@ -700,11 +701,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
   }
 
   const handleDeleteProduct = async (id: number) => {
-    if (!confirm('Вы уверены, что хотите удалить этот товар?')) return
+    if (!confirm(t.adminPage.products.deleteConfirm)) return
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        alert(t.adminPage.auth.notAuthorized)
         return
       }
       const res = await fetch(`/api/products/${id}`, {
@@ -717,7 +718,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('productsUpdated'))
         }
-        alert('Товар успешно удален!')
+        alert(t.adminPage.products.deleted)
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -740,7 +741,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        alert(t.adminPage.auth.notAuthorized)
         return
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -767,7 +768,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('productsUpdated'))
         }
-        alert('Товар успешно сохранен!')
+        alert(t.adminPage.products.saved)
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -787,11 +788,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
   // --- ЛОГИКА ЗАКАЗОВ (СТАТУСЫ) ---
   const updateStatus = async (orderId: number, newStatus: string) => {
-    if (!confirm(`Сменить статус на "${newStatus}"?`)) return
+    if (!confirm(`${t.adminPage.orders.changeStatusConfirm} "${newStatus}"?`)) return
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        alert(t.adminPage.auth.notAuthorized)
         return
       }
       const res = await fetch(`/api/orders/${orderId}/status`, {
@@ -804,9 +805,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       if (res.ok) {
         fetchData() // Обновляем список
-        alert('Статус успешно обновлен!')
+        alert(t.adminPage.common.statusUpdated)
       } else {
-        let errorMessage = 'Ошибка обновления'
+        let errorMessage = t.adminPage.common.updateError
         try {
           const error = await res.json()
           errorMessage = error.message || error.error || `Ошибка ${res.status}: ${res.statusText}`
@@ -865,7 +866,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const handleCreateCity = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCityName || !newCityCountryId) {
-      alert('Название города и страна обязательны')
+      alert(t.adminPage.cities.required)
       return
     }
     if (!newCityLatitude || !newCityLongitude) {
@@ -898,7 +899,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (res.ok) {
         resetCityForm()
         fetchData()
-        alert('Город успешно создан!')
+        alert(t.adminPage.cities.created)
       } else {
         let errorMessage = 'Ошибка создания города'
         try {
@@ -919,13 +920,13 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const handleCreateCountry = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCountryName) {
-      alert('Название страны обязательно')
+      alert(t.adminPage.countries.required)
       return
     }
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        alert(t.adminPage.auth.notAuthorized)
         return
       }
       
@@ -984,9 +985,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setNewCountryCode('')
         setNewCountryFlag('🌍')
         fetchData()
-        alert('Страна успешно создана!')
+        alert(t.adminPage.countries.created)
       } else {
-        let errorMessage = 'Ошибка создания страны'
+        let errorMessage = t.adminPage.common.error
         try {
           const error = await res.json()
           errorMessage = error.message || error.error || `Ошибка ${res.status}: ${res.statusText}`
