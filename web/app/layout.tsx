@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import ClientOnly from './components/ClientOnly';
 import LanguageProviderWrapper from './components/LanguageProviderWrapper';
 import { Toaster } from 'sonner';
 
@@ -69,10 +70,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <LanguageProviderWrapper>
-          {children}
-          <Toaster position="top-center" richColors />
-        </LanguageProviderWrapper>
+        <ClientOnly>
+          <LanguageProviderWrapper>
+            {children}
+            <Toaster position="top-center" richColors />
+          </LanguageProviderWrapper>
+        </ClientOnly>
       </body>
     </html>
   );
