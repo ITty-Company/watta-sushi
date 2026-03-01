@@ -79,6 +79,10 @@ interface Translations {
       generic: string
     }
   }
+  deliveryPage: Record<string, string>
+  promotionsPage: Record<string, string>
+  profilePage: Record<string, string>
+  notifications: Record<string, string>
 }
 
 const translations: Record<Language, Translations> = {
@@ -133,7 +137,11 @@ const translations: Record<Language, Translations> = {
         timeout: 'Перевищено час очікування. Перевірте підключення до інтернету',
         generic: 'Сталася помилка'
       }
-    }
+    },
+    deliveryPage: {},
+    promotionsPage: {},
+    profilePage: {},
+    notifications: {}
   },
   ru: {
     menu: "Меню",
@@ -186,7 +194,11 @@ const translations: Record<Language, Translations> = {
         timeout: 'Превышено время ожидания. Проверьте подключение к интернету',
         generic: 'Произошла ошибка'
       }
-    }
+    },
+    deliveryPage: {},
+    promotionsPage: {},
+    profilePage: {},
+    notifications: {}
   },
   en: {
     menu: "Menu",
@@ -239,7 +251,11 @@ const translations: Record<Language, Translations> = {
         timeout: 'Request timeout. Check your internet connection',
         generic: 'An error occurred'
       }
-    }
+    },
+    deliveryPage: {},
+    promotionsPage: {},
+    profilePage: {},
+    notifications: {}
   },
   nl: {
     menu: "Menu",
@@ -292,7 +308,11 @@ const translations: Record<Language, Translations> = {
         timeout: 'Verzoek time-out. Controleer uw internetverbinding',
         generic: 'Er is een fout opgetreden'
       }
-    }
+    },
+    deliveryPage: {},
+    promotionsPage: {},
+    profilePage: {},
+    notifications: {}
   }
 }
 
