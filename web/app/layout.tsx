@@ -1,13 +1,39 @@
 import type { Metadata } from 'next';
+import nextDynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import ClientOnly from './components/ClientOnly';
-import LanguageProviderWrapper from './components/LanguageProviderWrapper';
-import { Toaster } from 'sonner';
 
 export const dynamic = 'force-dynamic';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
+
+const AppClient = nextDynamic(
+  () => import('./AppClient'),
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#fff',
+        gap: 12,
+      }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          border: '3px solid #145142',
+          borderTopColor: 'transparent',
+          borderRadius: '50%',
+          animation: 'clientOnlySpin 0.8s linear infinite',
+        }} />
+        <span style={{ color: '#145142', fontSize: 16 }}>Загрузка...</span>
+      </div>
+    ),
+  }
+);
 
 // 1. SEO CONFIGURATION
 export const metadata: Metadata = {
@@ -70,12 +96,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <ClientOnly>
-          <LanguageProviderWrapper>
-            {children}
-            <Toaster position="top-center" richColors />
-          </LanguageProviderWrapper>
-        </ClientOnly>
+        <AppClient>{children}</AppClient>
       </body>
     </html>
   );
