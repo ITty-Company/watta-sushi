@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import MenuView from './components/MenuView'
 import CartView from './components/CartView'
 import ProfileView from './components/ProfileView'
-import { LanguageProvider } from './context/LanguageContext'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState(0)
@@ -114,9 +113,8 @@ export default function Home() {
   }, [handleSwitchTab])
 
   return (
-    <LanguageProvider>
-      <div className="app-web" suppressHydrationWarning>
-        <div className="content-web">
+    <div className="app-web" suppressHydrationWarning>
+      <div className="content-web">
         {activeTab === 0 && <MenuView />}
         {activeTab === 1 && (
           <CartView 
@@ -128,20 +126,19 @@ export default function Home() {
             onMenuClick={handleMenuClick}
           />
         )}
-          {activeTab === 2 && (
-            <ProfileView 
-              onBack={handleProfileBack}
-              onMenuClick={handleMenuClick}
-              onOpenPhone={handleOpenPhone}
-              onOpenNotifications={handleOpenNotifications}
-              onOpenFavorites={handleOpenFavorites}
-              onOpenCart={handleOpenCart}
-              onSelectCategory={handleSelectCategory}
-              onOpenAdmin={handleOpenAdmin}
-            />
-          )}
+        {activeTab === 2 && (
+          <ProfileView 
+            onBack={handleProfileBack}
+            onMenuClick={handleMenuClick}
+            onOpenPhone={handleOpenPhone}
+            onOpenNotifications={handleOpenNotifications}
+            onOpenFavorites={handleOpenFavorites}
+            onOpenCart={handleOpenCart}
+            onSelectCategory={handleSelectCategory}
+            onOpenAdmin={handleOpenAdmin}
+          />
+        )}
       </div>
     </div>
-    </LanguageProvider>
   )
 }

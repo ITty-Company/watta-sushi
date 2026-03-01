@@ -726,10 +726,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   )
 }
 
+const defaultContextValue: LanguageContextType = {
+  language: 'uk',
+  setLanguage: () => {},
+  t: translations.uk,
+  getLocalized: (obj: any, field: string) => (obj ? (obj[`${field}_ua`] || obj[`${field}_uk`] || obj[`${field}_ru`] || '') : ''),
+}
+
 export function useLanguage() {
   const context = useContext(LanguageContext)
-  if (!context) {
-    throw new Error('useLanguage must be used within LanguageProvider')
-  }
-  return context
+  return context ?? defaultContextValue
 }
