@@ -13,6 +13,10 @@
   display: none;
 }
 
+@keyframes clientOnlySpin {
+  to { transform: rotate(360deg); }
+}
+
 /* Анимации для панели входа/регистрации */
 @keyframes panelSlideIn {
   0% {
