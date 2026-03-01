@@ -79,10 +79,95 @@ interface Translations {
       generic: string
     }
   }
-  deliveryPage: Record<string, string>
-  promotionsPage: Record<string, string>
-  profilePage: Record<string, string>
-  notifications: Record<string, string>
+  aboutPage: {
+    title: string
+    subtitle: string
+    description: string
+    whyUs: string
+    team: string
+    stats: {
+      clients: string
+      experience: string
+      delivery: string
+      quality: string
+    }
+    features: {
+      freshTitle: string
+      freshText: string
+      fastTitle: string
+      fastText: string
+      qualityTitle: string
+      qualityText: string
+      missionTitle: string
+      missionText: string
+    }
+    contacts: {
+      address: string
+      workTime: string
+      contact: string
+    }
+  }
+  deliveryPage: {
+    title: string
+    description: string
+    workingHours: string
+    payment: string
+  }
+  promotionsPage: {
+    title: string
+    description: string
+  }
+  profilePage: {
+    title: string
+    logout: string
+    orderHistory: string
+  }
+  adminPage: {
+    auth: {
+      notAuthorized: string
+      accessDenied: string
+      adminOnly: string
+      accessCheckError: string
+    }
+    common: {
+      error: string
+      networkError: string
+      connectionError: string
+      deleteConfirm: string
+      saveSuccess: string
+      deleteSuccess: string
+      statusUpdated: string
+      updateError: string
+    }
+    products: {
+      deleteConfirm: string
+      deleted: string
+      saved: string
+      saveError: string
+    }
+    orders: {
+      changeStatusConfirm: string
+    }
+    cities: {
+      required: string
+      chooseFromMap: string
+      created: string
+      createError: string
+    }
+    countries: {
+      required: string
+      created: string
+      createError: string
+    }
+    news: {
+      saved: string
+      deleteConfirm: string
+    }
+  }
+  notifications: {
+    title: string
+    empty: string
+  }
 }
 
 const translations: Record<Language, Translations> = {
@@ -138,10 +223,80 @@ const translations: Record<Language, Translations> = {
         generic: 'Сталася помилка'
       }
     },
-    deliveryPage: {},
-    promotionsPage: {},
-    profilePage: {},
-    notifications: {}
+    aboutPage: {
+      title: "Про нас",
+      subtitle: "Доставка японської кухні нового покоління",
+      description: "Ми готуємо суші та роли тільки зі свіжішої риби, використовуємо справжній рис та не шкодуємо начинки.",
+      whyUs: "Чому обирають нас?",
+      team: "Наша команда",
+      stats: {
+        clients: "Задоволених клієнтів",
+        experience: "Років досвіду",
+        delivery: "Хвилин доставка",
+        quality: "Якість"
+      },
+      features: {
+        freshTitle: "Свіжі інгредієнти",
+        freshText: "Використовуємо тільки найсвіжішу рибу та найкращі продукти для наших страв",
+        fastTitle: "Швидка доставка",
+        fastText: "Доставляємо ваші улюблені страви в найкоротші терміни",
+        qualityTitle: "Висока якість",
+        qualityText: "Кожна страва готується з любов'ю та увагою до деталей",
+        missionTitle: "Наша місія",
+        missionText: "Зробити смачну їжу доступною та швидкою для кожного"
+      },
+      contacts: {
+        address: "Адреса",
+        workTime: "Режим роботи",
+        contact: "Контакти"
+      }
+    },
+    deliveryPage: { title: "Доставка", description: "Доставка суші у Києві", workingHours: "Режим роботи", payment: "Оплата" },
+    promotionsPage: { title: "Акції", description: "Спеціальні пропозиції" },
+    profilePage: { title: "Профіль", logout: "Вийти", orderHistory: "Історія замовлень" },
+    notifications: { title: "Сповіщення", empty: "Немає сповіщень" },
+    adminPage: {
+      auth: {
+        notAuthorized: "Ви не авторизовані",
+        accessDenied: "Доступ заборонено",
+        adminOnly: "Доступ заборонено. Тільки адміністратори можуть використовувати адмін-панель.",
+        accessCheckError: "Помилка перевірки прав доступу"
+      },
+      common: {
+        error: "Помилка",
+        networkError: "Помилка мережі",
+        connectionError: "Не вдалося підключитися до сервера. Перевірте, чи запущено backend сервер.",
+        deleteConfirm: "Видалити?",
+        saveSuccess: "Збережено",
+        deleteSuccess: "Успішно видалено",
+        statusUpdated: "Статус успішно оновлено!",
+        updateError: "Помилка оновлення"
+      },
+      products: {
+        deleteConfirm: "Ви впевнені, що хочете видалити цей товар?",
+        deleted: "Товар успішно видалено!",
+        saved: "Товар успішно збережено!",
+        saveError: "Помилка при збереженні"
+      },
+      orders: {
+        changeStatusConfirm: "Змінити статус на"
+      },
+      cities: {
+        required: "Назва міста та країна є обов'язковими",
+        chooseFromMap: "Спочатку виберіть місто на мапі",
+        created: "Місто успішно створено!",
+        createError: "Помилка створення міста"
+      },
+      countries: {
+        required: "Назва країни є обов'язковою",
+        created: "Країна успішно створена!",
+        createError: "Помилка створення країни"
+      },
+      news: {
+        saved: "Збережено",
+        deleteConfirm: "Видалити?"
+      }
+    }
   },
   ru: {
     menu: "Меню",
@@ -195,10 +350,80 @@ const translations: Record<Language, Translations> = {
         generic: 'Произошла ошибка'
       }
     },
-    deliveryPage: {},
-    promotionsPage: {},
-    profilePage: {},
-    notifications: {}
+    aboutPage: {
+      title: "О нас",
+      subtitle: "Доставка японской кухни нового поколения",
+      description: "Мы готовим суши и роллы только из свежей рыбы, используем настоящий рис и не экономим на начинке.",
+      whyUs: "Почему выбирают нас?",
+      team: "Наша команда",
+      stats: {
+        clients: "Довольных клиентов",
+        experience: "Лет опыта",
+        delivery: "Минут доставка",
+        quality: "Качество"
+      },
+      features: {
+        freshTitle: "Свежие ингредиенты",
+        freshText: "Используем только свежайшую рыбу и лучшие продукты для наших блюд",
+        fastTitle: "Быстрая доставка",
+        fastText: "Доставляем ваши любимые блюда в кратчайшие сроки",
+        qualityTitle: "Высокое качество",
+        qualityText: "Каждое блюдо готовится с любовью и вниманием к деталям",
+        missionTitle: "Наша миссия",
+        missionText: "Сделать вкусную еду доступной и быстрой для каждого"
+      },
+      contacts: {
+        address: "Адрес",
+        workTime: "Режим работы",
+        contact: "Контакты"
+      }
+    },
+    deliveryPage: { title: "Доставка", description: "Доставка суши в Киеве", workingHours: "Режим работы", payment: "Оплата" },
+    promotionsPage: { title: "Акции", description: "Специальные предложения" },
+    profilePage: { title: "Профиль", logout: "Выйти", orderHistory: "История заказов" },
+    notifications: { title: "Уведомления", empty: "Нет уведомлений" },
+    adminPage: {
+      auth: {
+        notAuthorized: "Вы не авторизованы",
+        accessDenied: "Доступ запрещен",
+        adminOnly: "Доступ запрещен. Только администраторы могут использовать админ панель.",
+        accessCheckError: "Ошибка проверки прав доступа"
+      },
+      common: {
+        error: "Ошибка",
+        networkError: "Ошибка сети",
+        connectionError: "Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.",
+        deleteConfirm: "Удалить?",
+        saveSuccess: "Сохранено",
+        deleteSuccess: "Успешно удалено",
+        statusUpdated: "Статус успешно обновлен!",
+        updateError: "Ошибка обновления"
+      },
+      products: {
+        deleteConfirm: "Вы уверены, что хотите удалить этот товар?",
+        deleted: "Товар успешно удален!",
+        saved: "Товар успешно сохранен!",
+        saveError: "Ошибка при сохранении"
+      },
+      orders: {
+        changeStatusConfirm: "Сменить статус на"
+      },
+      cities: {
+        required: "Название города и страна обязательны",
+        chooseFromMap: "Сначала выберите город на карте",
+        created: "Город успешно создан!",
+        createError: "Ошибка создания города"
+      },
+      countries: {
+        required: "Название страны обязательно",
+        created: "Страна успешно создана!",
+        createError: "Ошибка создания страны"
+      },
+      news: {
+        saved: "Сохранено",
+        deleteConfirm: "Удалить?"
+      }
+    }
   },
   en: {
     menu: "Menu",
@@ -252,10 +477,80 @@ const translations: Record<Language, Translations> = {
         generic: 'An error occurred'
       }
     },
-    deliveryPage: {},
-    promotionsPage: {},
-    profilePage: {},
-    notifications: {}
+    aboutPage: {
+      title: "About Us",
+      subtitle: "Next generation Japanese food delivery",
+      description: "We prepare sushi and rolls only from fresh fish, use authentic rice and never save on fillings.",
+      whyUs: "Why choose us?",
+      team: "Our Team",
+      stats: {
+        clients: "Happy clients",
+        experience: "Years of experience",
+        delivery: "Minutes delivery",
+        quality: "Quality"
+      },
+      features: {
+        freshTitle: "Fresh ingredients",
+        freshText: "We use only the freshest fish and best products for our dishes",
+        fastTitle: "Fast delivery",
+        fastText: "We deliver your favorite dishes as quickly as possible",
+        qualityTitle: "High quality",
+        qualityText: "Each dish is prepared with love and attention to detail",
+        missionTitle: "Our mission",
+        missionText: "To make delicious food accessible and fast for everyone"
+      },
+      contacts: {
+        address: "Address",
+        workTime: "Working hours",
+        contact: "Contacts"
+      }
+    },
+    deliveryPage: { title: "Delivery", description: "Sushi delivery in Kyiv", workingHours: "Working hours", payment: "Payment" },
+    promotionsPage: { title: "Promotions", description: "Special offers" },
+    profilePage: { title: "Profile", logout: "Log out", orderHistory: "Order history" },
+    notifications: { title: "Notifications", empty: "No notifications" },
+    adminPage: {
+      auth: {
+        notAuthorized: "You are not authorized",
+        accessDenied: "Access denied",
+        adminOnly: "Access denied. Only administrators can use the admin panel.",
+        accessCheckError: "Access rights check error"
+      },
+      common: {
+        error: "Error",
+        networkError: "Network error",
+        connectionError: "Failed to connect to the server. Check if the backend server is running.",
+        deleteConfirm: "Delete?",
+        saveSuccess: "Saved",
+        deleteSuccess: "Successfully deleted",
+        statusUpdated: "Status successfully updated!",
+        updateError: "Update error"
+      },
+      products: {
+        deleteConfirm: "Are you sure you want to delete this product?",
+        deleted: "Product successfully deleted!",
+        saved: "Product successfully saved!",
+        saveError: "Error while saving"
+      },
+      orders: {
+        changeStatusConfirm: "Change status to"
+      },
+      cities: {
+        required: "City name and country are required",
+        chooseFromMap: "Select a city on the map first",
+        created: "City successfully created!",
+        createError: "Error creating city"
+      },
+      countries: {
+        required: "Country name is required",
+        created: "Country successfully created!",
+        createError: "Error creating country"
+      },
+      news: {
+        saved: "Saved",
+        deleteConfirm: "Delete?"
+      }
+    }
   },
   nl: {
     menu: "Menu",
@@ -309,10 +604,80 @@ const translations: Record<Language, Translations> = {
         generic: 'Er is een fout opgetreden'
       }
     },
-    deliveryPage: {},
-    promotionsPage: {},
-    profilePage: {},
-    notifications: {}
+    aboutPage: {
+      title: "Over ons",
+      subtitle: "Japanse bezorging van de nieuwe generatie",
+      description: "Wij bereiden sushi en rollen alleen van verse vis, gebruiken authentieke rijst en besparen niet op vulling.",
+      whyUs: "Waarom kiezen voor ons?",
+      team: "Ons team",
+      stats: {
+        clients: "Tevreden klanten",
+        experience: "Jaar ervaring",
+        delivery: "Minuten bezorging",
+        quality: "Kwaliteit"
+      },
+      features: {
+        freshTitle: "Verse ingrediënten",
+        freshText: "Wij gebruiken alleen de meest verse vis en beste producten voor onze gerechten",
+        fastTitle: "Snelle bezorging",
+        fastText: "Wij bezorgen uw favoriete gerechten zo snel mogelijk",
+        qualityTitle: "Hoge kwaliteit",
+        qualityText: "Elk gerecht wordt met liefde en aandacht bereid",
+        missionTitle: "Onze missie",
+        missionText: "Heerlijk eten toegankelijk en snel maken voor iedereen"
+      },
+      contacts: {
+        address: "Adres",
+        workTime: "Openingstijden",
+        contact: "Contact"
+      }
+    },
+    deliveryPage: { title: "Bezorging", description: "Sushi bezorging in Kiev", workingHours: "Openingstijden", payment: "Betaling" },
+    promotionsPage: { title: "Aanbiedingen", description: "Speciale aanbiedingen" },
+    profilePage: { title: "Profiel", logout: "Uitloggen", orderHistory: "Bestelgeschiedenis" },
+    notifications: { title: "Meldingen", empty: "Geen meldingen" },
+    adminPage: {
+      auth: {
+        notAuthorized: "U bent niet ingelogd",
+        accessDenied: "Toegang geweigerd",
+        adminOnly: "Toegang geweigerd. Alleen beheerders kunnen het adminpaneel gebruiken.",
+        accessCheckError: "Fout bij controleren toegangsrechten"
+      },
+      common: {
+        error: "Fout",
+        networkError: "Netwerkfout",
+        connectionError: "Kan geen verbinding maken met de server. Controleer of de backend server draait.",
+        deleteConfirm: "Verwijderen?",
+        saveSuccess: "Opgeslagen",
+        deleteSuccess: "Succesvol verwijderd",
+        statusUpdated: "Status succesvol bijgewerkt!",
+        updateError: "Updatefout"
+      },
+      products: {
+        deleteConfirm: "Weet u zeker dat u dit product wilt verwijderen?",
+        deleted: "Product succesvol verwijderd!",
+        saved: "Product succesvol opgeslagen!",
+        saveError: "Fout bij opslaan"
+      },
+      orders: {
+        changeStatusConfirm: "Status wijzigen naar"
+      },
+      cities: {
+        required: "Stadsnaam en land zijn verplicht",
+        chooseFromMap: "Selecteer eerst een stad op de kaart",
+        created: "Stad succesvol aangemaakt!",
+        createError: "Fout bij aanmaken stad"
+      },
+      countries: {
+        required: "Landsnaam is verplicht",
+        created: "Land succesvol aangemaakt!",
+        createError: "Fout bij aanmaken land"
+      },
+      news: {
+        saved: "Opgeslagen",
+        deleteConfirm: "Verwijderen?"
+      }
+    }
   }
 }
 
