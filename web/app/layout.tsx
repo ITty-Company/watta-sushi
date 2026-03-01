@@ -1,92 +1,79 @@
-// import type { Metadata, Viewport } from 'next'
-// import './globals.css'
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import LanguageProviderWrapper from './components/LanguageProviderWrapper';
+import { Toaster } from 'sonner';
 
-// export const metadata: Metadata = {
-//   title: 'WATTA SUSHI - Доставка суші у Києві',
-//   description: 'Доставка суші, ролів та азіатської кухні у Києві',
-//   icons: {
-//     icon: '/logo.png',
-//     apple: '/logo.png',
-//   },
-// }
+export const dynamic = 'force-dynamic';
 
-// export const viewport: Viewport = {
-//   width: 'device-width',
-//   initialScale: 1,
-//   maximumScale: 1,
-//   userScalable: false, // Запрещает масштабирование пальцами
-//   themeColor: '#ffffff', // Опционально: цвет системного бара
-// }
+const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
-// const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-
-// export default function RootLayout({
-//   children,
-// }: {
-//   children: React.ReactNode
-// }) {
-//   return (
-//     <html lang="uk">
-//       <head>
-//         <link rel="preconnect" href={apiOrigin} />
-//         <link rel="dns-prefetch" href={apiOrigin} />
-//         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-//         <meta name="theme-color" content="#ffffff" />
-//         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-//         <meta name="apple-mobile-web-app-capable" content="yes" />
-//         <meta name="mobile-web-app-capable" content="yes" />
-//       </head>
-//       <body>{children}</body>
-//     </html>
-//   )
-// }
-
-import type { Metadata, Viewport } from 'next'
-import './globals.css'
-// 1. Импортируем провайдер контекста
-import { LanguageProvider } from './context/LanguageContext'
-
+// 1. SEO CONFIGURATION
 export const metadata: Metadata = {
-  title: 'WATTA SUSHI - Доставка суші у Києві',
-  description: 'Доставка суші, ролів та азіатської кухні у Києві',
-  icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+  metadataBase: new URL('https://wattasushi.com.ua'), // Замените на ваш реальный домен
+  title: {
+    default: 'Watta Sushi | Доставка суши и роллов',
+    template: '%s | Watta Sushi',
   },
-}
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#ffffff',
-}
-
-const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+  description: 'Самые вкусные суши и роллы в вашем городе. Быстрая доставка, свежие ингредиенты и лучшие рецепты.',
+  keywords: ['суши', 'роллы', 'доставка еды', 'Watta Sushi', 'японская кухня'],
+  authors: [{ name: 'Watta Sushi Team' }],
+  openGraph: {
+    title: 'Watta Sushi — Вкусно и быстро',
+    description: 'Заказывайте любимые суши с доставкой на дом.',
+    url: 'https://wattasushi.com.ua',
+    siteName: 'Watta Sushi',
+    images: [
+      {
+        url: '/watta-sushi.jpg', // Убедитесь, что эта картинка есть в public
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'ru_RU',
+    type: 'website',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/logo.png', // Иконка для iPhone
+  },
+  manifest: '/site.webmanifest', // Нужно создать этот файл в public
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
+  // 2. JSON-LD (Структурированные данные для Google)
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Restaurant',
+    name: 'Watta Sushi',
+    image: 'https://wattasushi.com.ua/watta-sushi.jpg',
+    description: 'Лучшая доставка суши в городе',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Улица Центральная 1', // Заменить на реальный адрес
+      addressLocality: 'Чернигов',
+      addressCountry: 'UA',
+    },
+    priceRange: '$$',
+    telephone: '+380000000000',
+  };
+
   return (
-    <html lang="uk">
-      <head>
-        <link rel="preconnect" href={apiOrigin} />
-        <link rel="dns-prefetch" href={apiOrigin} />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <meta name="theme-color" content="#ffffff" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="mobile-web-app-capable" content="yes" />
-      </head>
-      <body>
-        {/* 2. Оборачиваем все приложение в провайдер */}
-        <LanguageProvider>
+    <html lang="ru">
+      <body className={inter.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <LanguageProviderWrapper>
           {children}
-        </LanguageProvider>
+          <Toaster position="top-center" richColors />
+        </LanguageProviderWrapper>
       </body>
     </html>
-  )
+  );
 }

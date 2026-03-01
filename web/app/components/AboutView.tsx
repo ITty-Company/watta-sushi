@@ -11,7 +11,7 @@ const LogoBackground = dynamic(() => import('./LogoBackground'), {
   ssr: false,
   loading: () => null
 })
-
+const { getLocalized, t } = useLanguage()
 interface TeamMember {
   id: number
   name_ru: string
@@ -254,25 +254,25 @@ function AboutView({ onBack, onMenuClick }: { onBack: () => void, onMenuClick: (
   
   // Мемоизированные данные для статистики
   const stats = useMemo(() => [
-    { icon: Users, value: '10K+', label: 'Довольних клієнтів', delay: 0 },
-    { icon: Award, value: '5+', label: 'Років досвіду', delay: 0.1 },
-    { icon: Zap, value: '30', label: 'Хвилин доставка', delay: 0.2 },
-    { icon: Heart, value: '100%', label: 'Якість', delay: 0.3 }
+    { icon: Users, value: '10K+', label: t.aboutPage.stats.clients, delay: 0 },
+    { icon: Award, value: '5+', label: t.aboutPage.stats.experience, delay: 0.1 },
+    { icon: Zap, value: '30', label: t.aboutPage.stats.delivery, delay: 0.2 },
+    { icon: Heart, value: '100%', label: t.aboutPage.stats.quality, delay: 0.3 }
   ], [])
   
   // Мемоизированные данные для особенностей
   const features = useMemo(() => [
-    { icon: Star, title: 'Свіжі інгредієнти', text: 'Використовуємо тільки найсвіжішу рибу та найкращі продукти для наших страв', delay: 0 },
-    { icon: Zap, title: 'Швидка доставка', text: 'Доставляємо ваші улюблені страви в найкоротші терміни', delay: 0.15 },
-    { icon: Award, title: 'Висока якість', text: 'Кожна страва готується з любов\'ю та увагою до деталей', delay: 0.3 },
-    { icon: Heart, title: 'Наша місія', text: 'Зробити смачну їжу доступною та швидкою для кожного', delay: 0.45 }
+    { icon: Star, title:  t.aboutPage.features.freshTitle, text: t.aboutPage.features.freshText, delay: 0 },
+    { icon: Zap, title: t.aboutPage.features.fastTitle, text: t.aboutPage.features.fastText, delay: 0.15 },
+    { icon: Award, title: t.aboutPage.features.qualityTitle, text: t.aboutPage.features.qualityText, delay: 0.3 },
+    { icon: Heart, title: t.aboutPage.features.missionTitle, text: t.aboutPage.features.missionText, delay: 0.45 }
   ], [])
   
   // Мемоизированные данные для контактов
   const contacts = useMemo(() => [
-    { icon: MapPin, title: 'Адреса', text: 'м. Амстердам, Нидерланды', delay: 0 },
-    { icon: Clock, title: 'Режим роботи', text: 'Пн-Нд: 14:00 - 21:00', delay: 0.2 },
-    { icon: Phone, title: 'Контакти', text: '+38 (067) 436 61 27', delay: 0.4 }
+    { icon: MapPin, title: t.aboutPage.contacts.address, text: 'м. Амстердам, Нидерланды', delay: 0 },
+    { icon: Clock, title: t.aboutPage.contacts.workTime, text: 'Пн-Нд: 14:00 - 21:00', delay: 0.2 },
+    { icon: Phone, title: t.aboutPage.contacts.contact, text: '+38 (067) 436 61 27', delay: 0.4 }
   ], [])
 
   return (
@@ -313,7 +313,7 @@ function AboutView({ onBack, onMenuClick }: { onBack: () => void, onMenuClick: (
                 letterSpacing: '-0.5px'
               }}
             >
-              Про нас
+              {t.aboutPage.title}
             </h1>
           </div>
           
@@ -372,11 +372,11 @@ function AboutView({ onBack, onMenuClick }: { onBack: () => void, onMenuClick: (
             </h2>
             <p className="text-xl font-bold text-gray-700 mb-2" style={{
               animation: 'slideInRight 0.8s ease-out 0.8s both'
-            }}>Доставка японской кухни нового поколения</p>
+            }}>{t.aboutPage.subtitle}</p>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto" style={{
               animation: 'fadeInUp 0.8s ease-out 1s both'
             }}>
-              Ми готуємо суші та роли тільки зі свіжішої риби, використовуємо справжній рис та не шкодуємо начинки.
+              {t.aboutPage.description}
             </p>
           </div>
 
@@ -395,7 +395,7 @@ function AboutView({ onBack, onMenuClick }: { onBack: () => void, onMenuClick: (
                 animation: 'fadeInDown 0.8s ease-out'
               }}
             >
-              Чому обирають нас?
+              {t.aboutPage.whyUs}
             </h3>
             <div className="grid sm:grid-cols-2 gap-4">
               {features.map((feature, index) => (
@@ -413,7 +413,7 @@ function AboutView({ onBack, onMenuClick }: { onBack: () => void, onMenuClick: (
                   animation: 'fadeInDown 0.8s ease-out 0.5s both'
                 }}
               >
-                Наша команда
+                {t.aboutPage.team}
               </h3>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {teamMembers.map((member, index) => (
