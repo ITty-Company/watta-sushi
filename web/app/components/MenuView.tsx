@@ -1368,7 +1368,7 @@ export default function MenuView() {
       </header>
       <div className="app-header-spacer-web" aria-hidden />
 
-      <div className="categories-panel-wrapper-web relative py-2">
+      <div className="categories-panel-wrapper-web relative">
             <button 
               className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} 
               onClick={(e) => { e.preventDefault(); scrollPanelBy('left'); }}
