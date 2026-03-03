@@ -1,39 +1,11 @@
 import type { Metadata } from 'next';
-import nextDynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
+import AppClient from './AppClient';
 import './globals.css';
 
 export const dynamic = 'force-dynamic';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
-
-const AppClient = nextDynamic(
-  () => import('./AppClient'),
-  {
-    ssr: true,
-    loading: () => (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#fff',
-        gap: 12,
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          border: '3px solid #145142',
-          borderTopColor: 'transparent',
-          borderRadius: '50%',
-          animation: 'clientOnlySpin 0.8s linear infinite',
-        }} />
-        <span style={{ color: '#145142', fontSize: 16 }}>Загрузка...</span>
-      </div>
-    ),
-  }
-);
 
 // 1. SEO CONFIGURATION
 export const metadata: Metadata = {

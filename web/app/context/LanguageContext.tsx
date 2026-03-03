@@ -734,6 +734,10 @@ const defaultContextValue: LanguageContextType = {
 }
 
 export function useLanguage() {
-  const context = useContext(LanguageContext)
-  return context ?? defaultContextValue
+  try {
+    const context = useContext(LanguageContext)
+    return context ?? defaultContextValue
+  } catch {
+    return defaultContextValue
+  }
 }
