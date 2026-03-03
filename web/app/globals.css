@@ -1896,8 +1896,8 @@ body {
   }
   
   .categories-panel-wrapper-web {
-    top: 74px;
-    padding: 8px 0;
+    top: 90px;
+    padding: 16px 0;
   }
 }
 
@@ -2619,11 +2619,11 @@ body {
   justify-content: center;
   gap: 6px;
   margin: 0 auto;
-  padding: 8px 16px;
+  padding: 16px 16px; /* сверху и снизу одинаковый отступ */
   width: fit-content;
   max-width: calc(100% - 24px);
   position: fixed;
-  top: 74px;
+  top: 90px; /* отступ от верхней панели как снизу (74 + 16) */
   left: 50%;
   transform: translateX(-50%);
   z-index: 99;
@@ -2640,11 +2640,11 @@ body {
     position: fixed !important;
     left: 8px !important;
     right: 8px !important;
-    top: 68px !important;
+    top: 84px !important; /* отступ от шапки как снизу (68 + 16) */
     width: auto !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 10px 10px !important;
+    padding: 16px 10px !important;
     transform: none !important;
     gap: 10px;
     min-height: 64px;
@@ -2666,25 +2666,25 @@ body {
     max-width: calc(100% - 32px);
     gap: 6px;
     min-height: 60px;
-    top: 72px;
-    padding: 8px 12px;
+    top: 88px; /* отступ от шапки как снизу (72 + 16) */
+    padding: 16px 12px;
   }
 }
 
 /* Отступ под фиксированной панелью категорий, чтобы контент не заходил под неё */
 .categories-panel-spacer-web {
   flex-shrink: 0;
-  height: 80px;
+  height: 96px; /* панель опущена на 16px — резерв под неё увеличен */
 }
 @media (max-width: 480px) {
-  /* Ровно под панелью категорий (68 + ~84px) */
+  /* Ровно под панелью категорий (84 + ~84px) */
   .categories-panel-spacer-web {
-    height: 152px;
+    height: 168px;
   }
 }
 @media (min-width: 481px) and (max-width: 1024px) {
   .categories-panel-spacer-web {
-    height: 76px;
+    height: 92px;
   }
 }
 
@@ -2934,11 +2934,11 @@ body {
     position: fixed !important;
     left: 8px !important;
     right: 8px !important;
-    top: 68px !important;
+    top: 84px !important;
     width: auto !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 10px 10px !important;
+    padding: 16px 10px !important;
     transform: none !important;
     min-height: 64px !important;
     z-index: 99;
