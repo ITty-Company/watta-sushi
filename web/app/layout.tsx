@@ -1,11 +1,42 @@
 import type { Metadata } from 'next';
+import nextDynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
-import AppClient from './AppClient';
 import './globals.css';
 
 export const dynamic = 'force-dynamic';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
+
+// Не рендерить AppClient на сервере — иначе подтягивается LanguageContext и падает useContext при SSR
+const AppClient = nextDynamic(() => import('./AppClient'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f5f5f5',
+      }}
+    >
+      <div style={{ textAlign: 'center', color: '#145142' }}>
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            margin: '0 auto 12px',
+            border: '3px solid #145142',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            animation: 'clientOnlySpin 0.8s linear infinite',
+          }}
+        />
+        <span style={{ fontSize: 16 }}>Загрузка...</span>
+      </div>
+    </div>
+  ),
+});
 
 // 1. SEO CONFIGURATION
 export const metadata: Metadata = {
