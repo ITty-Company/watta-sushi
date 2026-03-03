@@ -2623,7 +2623,7 @@ body {
   width: fit-content;
   max-width: calc(100% - 24px);
   position: fixed;
-  top: 100px; /* чуть ниже основной шапки, чтобы был зазор над белой панелью */
+  top: 90px; /* базовый отступ от верхней панели */
   left: 50%;
   transform: translateX(-50%);
   z-index: 99;
@@ -2640,7 +2640,7 @@ body {
     position: fixed !important;
     left: 8px !important;
     right: 8px !important;
-    top: 94px !important; /* опускаем панель ниже шапки, добавляя зазор */
+    top: 84px !important; /* базовый отступ от шапки */
     width: auto !important;
     max-width: none !important;
     margin: 0 !important;
@@ -2666,7 +2666,7 @@ body {
     max-width: calc(100% - 32px);
     gap: 6px;
     min-height: 60px;
-    top: 98px; /* немного больше отступ от шапки, как просили */
+    top: 88px; /* базовый отступ от шапки */
     padding: 16px 12px;
   }
 }
@@ -2674,17 +2674,17 @@ body {
 /* Отступ под фиксированной панелью категорий, чтобы контент не заходил под неё */
 .categories-panel-spacer-web {
   flex-shrink: 0;
-  height: 106px; /* увеличили резерв под панель, чтобы учесть новый отступ сверху */
+  height: 96px; /* резерв под панель */
 }
 @media (max-width: 480px) {
   /* Ровно под панелью категорий (84 + ~84px) */
   .categories-panel-spacer-web {
-    height: 178px;
+    height: 168px;
   }
 }
 @media (min-width: 481px) and (max-width: 1024px) {
   .categories-panel-spacer-web {
-    height: 102px;
+    height: 92px;
   }
 }
 
