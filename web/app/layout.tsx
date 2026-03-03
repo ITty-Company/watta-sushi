@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 const AppClient = nextDynamic(
   () => import('./AppClient'),
   {
-    ssr: false,
+    ssr: true,
     loading: () => (
       <div style={{
         minHeight: '100vh',
