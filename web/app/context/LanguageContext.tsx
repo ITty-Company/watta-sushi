@@ -164,9 +164,75 @@ interface Translations {
       deleteConfirm: string
     }
   }
+  adminPanel: {
+    header: {
+      title: string;
+      subtitle: string;
+    };
+    sidebar: {
+      selectSection: string;
+      dashboard: string;
+      dashboardDesc: string;
+      orders: string;
+      ordersDesc: string;
+      products: string;
+      productsDesc: string;
+      promos: string;
+      promosDesc: string;
+      cities: string;
+      citiesDesc: string;
+      banners: string;
+      bannersDesc: string;
+      categories: string;
+      categoriesDesc: string;
+      users: string;
+      usersDesc: string;
+      team: string;
+      teamDesc: string;
+      settings: string;
+      settingsDesc: string;
+      ingredients: string;
+    };
+    dashboard: {
+      loading: string;
+      revenue: string;
+      orders: string;
+      products: string;
+      cities: string;
+      statusTitle: string;
+      statusPending: string;
+      statusCooking: string;
+      statusDelivering: string;
+      statusCompleted: string;
+      promos: string;
+      categories: string;
+      users: string;
+    };
+    actions: {
+      add: string;
+      edit: string;
+      delete: string;
+      save: string;
+      cancel: string;
+    };
+  }
   notifications: {
     title: string
     empty: string
+  }
+  // Додайте це до інтерфейсу Translations:
+  menuView: {
+    itemsCount: string
+    emptyCategoryTitle: string
+    emptyCategoryDesc: string
+    seeAll: string
+  }
+  adminCategory: {
+    manageTitle: string
+    addCategory: string
+    subcategoriesCount: string
+    enterNewName: string
+    addSubcategory: string
   }
 }
 
@@ -251,6 +317,19 @@ const translations: Record<Language, Translations> = {
         contact: "Контакти"
       }
     },
+    menuView: {
+    itemsCount: 'страв',
+    emptyCategoryTitle: 'Товарів у цій категорії поки немає',
+    emptyCategoryDesc: 'Додайте товари через адмін-панель',
+    seeAll: 'Подивитися всі'
+  },
+  adminCategory: {
+    manageTitle: 'Управління категоріями меню',
+    addCategory: '➕ Додати категорію',
+    subcategoriesCount: 'підкатегорій',
+    enterNewName: 'Введіть нову назву:',
+    addSubcategory: '➕ Підкатегорія'
+  },
     deliveryPage: { title: "Доставка", description: "Доставка суші у Києві", workingHours: "Режим роботи", payment: "Оплата" },
     promotionsPage: { title: "Акції", description: "Спеціальні пропозиції" },
     profilePage: { title: "Профіль", logout: "Вийти", orderHistory: "Історія замовлень" },
@@ -296,6 +375,12 @@ const translations: Record<Language, Translations> = {
         saved: "Збережено",
         deleteConfirm: "Видалити?"
       }
+    },
+    adminPanel: {
+      header: { title: "Адмін-панель", subtitle: "Статистика замовлень, товарів і доставок у одному місці." },
+      sidebar: { selectSection: "Оберіть розділ", dashboard: "📊 Дашборд", dashboardDesc: "Статистика та огляд", orders: "📦 Замовлення", ordersDesc: "Управління замовленнями", products: "🍣 Товари", productsDesc: "Меню та позиції", promos: "🏷️ Промокоди", promosDesc: "Знижки", cities: "🏙️ Міста", citiesDesc: "Міста та країни", banners: "🎨 Банери", bannersDesc: "Банери", categories: "📋 Категорії", categoriesDesc: "Категорії меню", users: "👥 Користувачі", usersDesc: "Список клієнтів", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Співробітники", settings: "⚙️ Налаштування", settingsDesc: "Сайт і банери", ingredients: "🥑 Інгредієнти" },
+      dashboard: { loading: "Завантаження...", revenue: "Виручка (виконані)", orders: "Замовлень", products: "Товарів", cities: "Міст", statusTitle: "Замовлення за статусами", statusPending: "Очікують", statusCooking: "Готуються", statusDelivering: "В доставці", statusCompleted: "Виконані", promos: "Промокодів", categories: "Категорій", users: "Користувачів" },
+      actions: { add: "+ Додати", edit: "Редагувати", delete: "Видалити", save: "Зберегти", cancel: "Скасувати" }
     }
   },
   ru: {
@@ -378,6 +463,19 @@ const translations: Record<Language, Translations> = {
         contact: "Контакты"
       }
     },
+    menuView: {
+    itemsCount: 'блюд',
+    emptyCategoryTitle: 'Товаров в этой категории пока нет',
+    emptyCategoryDesc: 'Добавьте товары через админ-панель',
+    seeAll: 'Посмотреть все'
+  },
+  adminCategory: {
+    manageTitle: 'Управление категориями меню',
+    addCategory: '➕ Добавить категорию',
+    subcategoriesCount: 'подкатегорий',
+    enterNewName: 'Введите новое название:',
+    addSubcategory: '➕ Подкатегория'
+  },
     deliveryPage: { title: "Доставка", description: "Доставка суши в Киеве", workingHours: "Режим работы", payment: "Оплата" },
     promotionsPage: { title: "Акции", description: "Специальные предложения" },
     profilePage: { title: "Профиль", logout: "Выйти", orderHistory: "История заказов" },
@@ -423,6 +521,12 @@ const translations: Record<Language, Translations> = {
         saved: "Сохранено",
         deleteConfirm: "Удалить?"
       }
+    },
+    adminPanel: {
+      header: { title: "Админ-панель", subtitle: "Статистика заказов, товаров и доставок в одном месте." },
+      sidebar: { selectSection: "Выберите раздел", dashboard: "📊 Дашборд", dashboardDesc: "Статистика и обзор", orders: "📦 Заказы", ordersDesc: "Управление заказами", products: "🍣 Товары", productsDesc: "Меню и позиции", promos: "🏷️ Промокоды", promosDesc: "Скидки", cities: "🏙️ Города", citiesDesc: "Города и страны", banners: "🎨 Баннеры", bannersDesc: "Баннеры", categories: "📋 Категории", categoriesDesc: "Категории меню", users: "👥 Пользователи", usersDesc: "Список клиентов", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Сотрудники", settings: "⚙️ Настройки", settingsDesc: "Сайт и баннеры", ingredients: "🥑 Ингредиенты" },
+      dashboard: { loading: "Загрузка...", revenue: "Выручка (выполнены)", orders: "Заказов", products: "Товаров", cities: "Городов", statusTitle: "Заказы по статусам", statusPending: "Ожидают", statusCooking: "Готовятся", statusDelivering: "В доставке", statusCompleted: "Выполнены", promos: "Промокодов", categories: "Категорий", users: "Пользователей" },
+      actions: { add: "+ Добавить", edit: "Редактировать", delete: "Удалить", save: "Сохранить", cancel: "Отмена" }
     }
   },
   en: {
@@ -505,6 +609,19 @@ const translations: Record<Language, Translations> = {
         contact: "Contacts"
       }
     },
+    menuView: {
+    itemsCount: 'dishes',
+    emptyCategoryTitle: 'No items in this category yet',
+    emptyCategoryDesc: 'Add items through the admin panel',
+    seeAll: 'See all'
+  },
+  adminCategory: {
+    manageTitle: 'Menu Categories Management',
+    addCategory: '➕ Add category',
+    subcategoriesCount: 'subcategories',
+    enterNewName: 'Enter new name:',
+    addSubcategory: '➕ Subcategory'
+  },
     deliveryPage: { title: "Delivery", description: "Sushi delivery in Kyiv", workingHours: "Working hours", payment: "Payment" },
     promotionsPage: { title: "Promotions", description: "Special offers" },
     profilePage: { title: "Profile", logout: "Log out", orderHistory: "Order history" },
@@ -550,6 +667,12 @@ const translations: Record<Language, Translations> = {
         saved: "Saved",
         deleteConfirm: "Delete?"
       }
+    },
+    adminPanel: {
+      header: { title: "Admin Panel", subtitle: "Order statistics, products, and deliveries in one place." },
+      sidebar: { selectSection: "Select section", dashboard: "📊 Dashboard", dashboardDesc: "Stats & overview", orders: "📦 Orders", ordersDesc: "Manage orders", products: "🍣 Products", productsDesc: "Menu items", promos: "🏷️ Promo codes", promosDesc: "Discounts", cities: "🏙️ Cities", citiesDesc: "Cities & countries", banners: "🎨 Banners", bannersDesc: "Banners", categories: "📋 Categories", categoriesDesc: "Menu categories", users: "👥 Users", usersDesc: "Client list", team: "👨‍👩‍👧‍👦 Team", teamDesc: "Employees", settings: "⚙️ Settings", settingsDesc: "Site & banners", ingredients: "🥑 Ingredients" },
+      dashboard: { loading: "Loading...", revenue: "Revenue (completed)", orders: "Orders", products: "Products", cities: "Cities", statusTitle: "Orders by status", statusPending: "Pending", statusCooking: "Cooking", statusDelivering: "Delivering", statusCompleted: "Completed", promos: "Promo codes", categories: "Categories", users: "Users" },
+      actions: { add: "+ Add", edit: "Edit", delete: "Delete", save: "Save", cancel: "Cancel" }
     }
   },
   nl: {
@@ -632,6 +755,19 @@ const translations: Record<Language, Translations> = {
         contact: "Contact"
       }
     },
+    menuView: {
+    itemsCount: 'gerechten',
+    emptyCategoryTitle: 'Nog geen items in deze categorie',
+    emptyCategoryDesc: 'Voeg items toe via het adminpaneel',
+    seeAll: 'Bekijk alles'
+  },
+  adminCategory: {
+    manageTitle: 'Menu Categorieën Beheer',
+    addCategory: '➕ Categorie toevoegen',
+    subcategoriesCount: 'subcategorieën',
+    enterNewName: 'Voer nieuwe naam in:',
+    addSubcategory: '➕ Subcategorie'
+  },
     deliveryPage: { title: "Bezorging", description: "Sushi bezorging in Kiev", workingHours: "Openingstijden", payment: "Betaling" },
     promotionsPage: { title: "Aanbiedingen", description: "Speciale aanbiedingen" },
     profilePage: { title: "Profiel", logout: "Uitloggen", orderHistory: "Bestelgeschiedenis" },
@@ -677,6 +813,12 @@ const translations: Record<Language, Translations> = {
         saved: "Opgeslagen",
         deleteConfirm: "Verwijderen?"
       }
+    },
+    adminPanel: {
+      header: { title: "Adminpaneel", subtitle: "Bestelstatistieken, producten en leveringen op één plek." },
+      sidebar: { selectSection: "Selecteer sectie", dashboard: "📊 Dashboard", dashboardDesc: "Statistieken & overzicht", orders: "📦 Bestellingen", ordersDesc: "Beheer bestellingen", products: "🍣 Producten", productsDesc: "Menu-items", promos: "🏷️ Promocodes", promosDesc: "Kortingen", cities: "🏙️ Steden", citiesDesc: "Steden & landen", banners: "🎨 Banners", bannersDesc: "Banners", categories: "📋 Categorieën", categoriesDesc: "Menucategorieën", users: "👥 Gebruikers", usersDesc: "Klantenlijst", team: "👨‍👩‍👧‍👦 Team", teamDesc: "Medewerkers", settings: "⚙️ Instellingen", settingsDesc: "Site & banners", ingredients: "🥑 Ingrediënten" },
+      dashboard: { loading: "Laden...", revenue: "Omzet (voltooid)", orders: "Bestellingen", products: "Producten", cities: "Steden", statusTitle: "Bestellingen per status", statusPending: "In afwachting", statusCooking: "Wordt bereid", statusDelivering: "Onderweg", statusCompleted: "Voltooid", promos: "Promocodes", categories: "Categorieën", users: "Gebruikers" },
+      actions: { add: "+ Toevoegen", edit: "Bewerken", delete: "Verwijderen", save: "Opslaan", cancel: "Annuleren" }
     }
   }
 }
