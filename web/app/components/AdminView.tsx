@@ -1751,11 +1751,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <BarChart2 size={18} className="sm:w-5 sm:h-5 text-white" strokeWidth={2.5} />
                   </div>
                   <h1 className="text-lg sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#0d3d34] bg-clip-text text-transparent tracking-tight">
-                    Адмін-панель
+                    {t.adminPanel.header.title}
                   </h1>
                 </div>
                 <p className="text-xs sm:text-sm text-[#145142]/60 font-medium pl-11 sm:pl-12">
-                  Статистика замовлень, товарів і доставок у одному місці.
+                  {t.adminPanel.header.subtitle}
                 </p>
               </div>
             </div>
@@ -1798,7 +1798,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 <div className="flex items-center justify-center py-16">
                   <div className="flex flex-col items-center gap-3">
                     <RefreshCw size={32} className="text-[#145142]/50 animate-spin" />
-                    <p className="text-[#145142]/60 font-medium">Загрузка...</p>
+                    <p className="text-[#145142]/60 font-medium">{t.adminPanel.dashboard.loading}</p>
                   </div>
                 </div>
               ) : (
@@ -1811,7 +1811,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           <TrendingUp size={20} className="text-white" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">Виручка (виконані)</p>
+                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.revenue}</p>
                           <p className="text-xl sm:text-2xl font-black text-[#145142]">
                             {orders.filter(o => o.status === 'COMPLETED').reduce((s, o) => s + (o.totalPrice || 0), 0)} ₴
                           </p>
@@ -1825,7 +1825,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           <Package size={20} className="text-[#145142]" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">Замовлень</p>
+                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.orders}</p>
                           <p className="text-xl sm:text-2xl font-black text-[#145142]">{orders.length}</p>
                         </div>
                       </div>
@@ -1837,7 +1837,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           <ShoppingBag size={20} className="text-[#145142]" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">Товарів</p>
+                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.products}</p>
                           <p className="text-xl sm:text-2xl font-black text-[#145142]">{products.length}</p>
                         </div>
                       </div>
@@ -1849,7 +1849,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           <MapPin size={20} className="text-[#145142]" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">Міст</p>
+                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.cities}</p>
                           <p className="text-xl sm:text-2xl font-black text-[#145142]">{cities.length}</p>
                         </div>
                       </div>
@@ -1857,13 +1857,13 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-bold text-[#145142]/70 uppercase tracking-widest mb-3 sm:mb-4">Замовлення по статусах</h3>
+                    <h3 className="text-sm font-bold text-[#145142]/70 uppercase tracking-widest mb-3 sm:mb-4">{t.adminPanel.dashboard.statusTitle}</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                       {[
-                        { status: 'PENDING', label: 'Очікують', color: 'yellow', count: orders.filter(o => o.status === 'PENDING').length },
-                        { status: 'COOKING', label: 'Готуються', color: 'orange', count: orders.filter(o => o.status === 'COOKING').length },
-                        { status: 'DELIVERING', label: 'В доставці', color: 'blue', count: orders.filter(o => o.status === 'DELIVERING').length },
-                        { status: 'COMPLETED', label: 'Виконані', color: 'green', count: orders.filter(o => o.status === 'COMPLETED').length },
+                        { status: 'PENDING', label: t.adminPanel.dashboard.statusPending, color: 'yellow', count: orders.filter(o => o.status === 'PENDING').length },
+                        { status: 'COOKING', label: t.adminPanel.dashboard.statusCooking, color: 'orange', count: orders.filter(o => o.status === 'COOKING').length },
+                        { status: 'DELIVERING', label: t.adminPanel.dashboard.statusDelivering, color: 'blue', count: orders.filter(o => o.status === 'DELIVERING').length },
+                        { status: 'COMPLETED', label: t.adminPanel.dashboard.statusCompleted, color: 'green', count: orders.filter(o => o.status === 'COMPLETED').length },
                       ].map(({ label, color, count }) => (
                         <div
                           key={label}
@@ -1891,7 +1891,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         <Tag size={18} className="text-[#145142]" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">Промокодів</p>
+                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.promos}</p>
                         <p className="text-xl font-black text-[#145142]">{promos.length}</p>
                       </div>
                     </div>
@@ -1900,7 +1900,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         <Layers size={18} className="text-[#145142]" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">Категорій</p>
+                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.categories}</p>
                         <p className="text-xl font-black text-[#145142]">{menuCategories.length}</p>
                       </div>
                     </div>
@@ -1909,7 +1909,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         <User size={18} className="text-[#145142]" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">Користувачів</p>
+                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.users}</p>
                         <p className="text-xl font-black text-[#145142]">{users.length}</p>
                       </div>
                     </div>
@@ -1933,7 +1933,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
                       <Menu size={18} className="text-white" />
                     </div>
-                    <span className="text-lg font-bold text-white">Оберіть розділ</span>
+                    <span className="text-lg font-bold text-white">{t.adminPanel.sidebar.selectSection}</span>
                   </div>
                   <button 
                     onClick={() => setIsRightPanelOpen(false)} 
@@ -1945,17 +1945,17 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 </div>
                 <div className="flex-1 p-4 sm:p-5 flex flex-col gap-2">
                   {[
-                    { id: 'dashboard' as const, label: '📊 Дашборд', desc: 'Статистика та огляди' },
-                    { id: 'orders' as const, label: '📦 Заказы', desc: 'Замовлення' },
-                    { id: 'products' as const, label: '🍣 Товары', desc: 'Меню та позиції' },
-                    { id: 'promos' as const, label: '🏷️ Промокоды', desc: 'Знижки' },
-                    { id: 'cities' as const, label: '🏙️ Города', desc: 'Міста та країни' },
-                    { id: 'banners' as const, label: '🎨 Баннеры', desc: 'Баннери' },
-                    { id: 'menuCategories' as const, label: '📋 Категории', desc: 'Категорії меню' },
-                    { id: 'users' as const, label: '👥 Пользователи', desc: 'Користувачі' },
-                    { id: 'team' as const, label: '👨‍👩‍👧‍👦 Команда', desc: 'Команда' },
-                    { id: 'settings' as const, label: '⚙️ Настройки', desc: 'Сайт и баннеры' },
-                    { id: 'ingredients' as const, label: '🥑 Ингредиенты' },
+                    { id: 'dashboard' as const, label: t.adminPanel.sidebar.dashboard, desc: t.adminPanel.sidebar.dashboardDesc },
+                    { id: 'orders' as const, label: t.adminPanel.sidebar.orders, desc: t.adminPanel.sidebar.ordersDesc },
+                    { id: 'products' as const, label: t.adminPanel.sidebar.products, desc: t.adminPanel.sidebar.productsDesc },
+                    { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
+                    { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
+                    { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
+                    { id: 'menuCategories' as const, label: t.adminPanel.sidebar.categories, desc: t.adminPanel.sidebar.categoriesDesc },
+                    { id: 'users' as const, label: t.adminPanel.sidebar.users, desc: t.adminPanel.sidebar.usersDesc },
+                    { id: 'team' as const, label: t.adminPanel.sidebar.team, desc: t.adminPanel.sidebar.teamDesc },
+                    { id: 'settings' as const, label: t.adminPanel.sidebar.settings, desc: t.adminPanel.sidebar.settingsDesc },
+                    { id: 'ingredients' as const, label: t.adminPanel.sidebar.ingredients, desc: '' },
                   ].map(({ id, label, desc }) => (
                     <button
                       key={id}
@@ -1993,7 +1993,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
           {activeTab === 'orders' && (
             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 items-center">
               {isLoading && orders.length === 0 ? (
-                 <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">Загрузка...</div>
+                 <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">{t.adminPanel.dashboard.loading}</div>
               ) : orders.length === 0 ? (
                  <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">Нет активных заказов</div>
               ) : (

@@ -1240,7 +1240,7 @@ export default function MenuView() {
                 borderRadius: '6px'
               }}
             >
-              Новини
+              {t.navigation.promotions}
             </button>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => handlePageOpen('phone')}>
@@ -1444,7 +1444,7 @@ export default function MenuView() {
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">
           <div className="submenu-header-web"><h3>{currentCategory.name}</h3><button className="submenu-close-btn-web" onClick={() => setShowSubmenu(false)}>×</button></div>
-          <div className="submenu-content-web">{currentCategory.subcategories.map(sub => (<button key={sub.id} className={`submenu-item-web ${selectedSubcategory === sub.id ? 'submenu-item-active-web' : ''}`} onClick={() => setSelectedSubcategory(sub.id)}><span className="submenu-item-name-web">{sub.name}</span><span className="submenu-item-count-web">{sub.items.length} страв</span></button>))}</div>
+          <div className="submenu-content-web">{currentCategory.subcategories.map(sub => (<button key={sub.id} className={`submenu-item-web ${selectedSubcategory === sub.id ? 'submenu-item-active-web' : ''}`} onClick={() => setSelectedSubcategory(sub.id)}><span className="submenu-item-name-web">{sub.name}</span><span className="submenu-item-count-web">{sub.items.length}{t.menuView.itemsCount}</span></button>))}</div>
         </div>
       )}
 
@@ -1597,16 +1597,10 @@ export default function MenuView() {
             }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>🍣</div>
               <p style={{ margin: 0, fontWeight: '500' }}>
-                {language === 'uk' ? 'Товарів у цій категорії поки немає' : 
-                 language === 'en' ? 'No items in this category yet' :
-                 language === 'nl' ? 'Nog geen items in deze categorie' :
-                 'Товаров в этой категории пока нет'}
+                {t.menuView.emptyCategoryTitle}
               </p>
               <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.7 }}>
-                {language === 'uk' ? 'Додайте товари через адмін-панель' :
-                 language === 'en' ? 'Add items through the admin panel' :
-                 language === 'nl' ? 'Voeg items toe via het adminpaneel' :
-                 'Добавьте товары через админ-панель'}
+                {t.menuView.emptyCategoryDesc}
               </p>
             </div>
           )}
@@ -1618,7 +1612,7 @@ export default function MenuView() {
               onClick={() => setIsExpanded(true)}
               className="px-8 py-3 bg-white border-2 border-[#145142] text-[#145142] font-bold rounded-xl hover:bg-[#145142] hover:text-white transition-colors shadow-sm flex items-center gap-2 text-base sm:text-lg active:scale-95 duration-200"
             >
-              <span>Посмотреть все</span>
+              <span>{t.menuView.seeAll}</span>
               <span className="bg-[#145142]/10 px-2 py-0.5 rounded-full text-xs font-extrabold ml-1 group-hover:bg-white/20">
                 {filteredItems.length - initialLimit}+
               </span>
@@ -1628,10 +1622,10 @@ export default function MenuView() {
       {showCategoryAdmin && (
         <div className="admin-category-overlay-web" onClick={() => setShowCategoryAdmin(false)}>
           <div className="admin-category-panel-web" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-category-header-web"><h3>Управління категоріями меню</h3><button className="admin-category-close-btn-web" onClick={() => setShowCategoryAdmin(false)}>×</button></div>
+            <div className="admin-category-header-web"><h3>{t.adminCategory.manageTitle}</h3><button className="admin-category-close-btn-web" onClick={() => setShowCategoryAdmin(false)}>×</button></div>
             <div className="admin-category-content-web">
-              <button className="add-category-btn-web" onClick={handleAddCategory}>➕ Додати категорію</button>
-              <div className="admin-category-list-web">{menuCategories.map(cat => (<div key={cat.id} className="admin-category-item-web"><div className="admin-category-info-web"><span className="admin-category-emoji-web">{cat.emoji}</span><span className="admin-category-name-web">{cat.name}</span><span className="admin-category-subcount-web">({cat.subcategories.length} підкатегорій)</span></div><div className="admin-category-actions-web"><button className="admin-edit-btn-web" onClick={() => { setEditingCategory(cat); const name = prompt('Введіть нову назву:', cat.name); if (name) handleEditCategory({ ...cat, name }) }}>✏️</button><button className="admin-add-sub-btn-web" onClick={() => handleAddSubcategory(cat.id)}>➕ Підкатегорія</button><button className="admin-delete-btn-web" onClick={() => handleDeleteCategory(cat.id)}>🗑️</button></div></div>))}</div>
+              <button className="add-category-btn-web" onClick={handleAddCategory}>{t.adminCategory.addCategory}</button>
+              <div className="admin-category-list-web">{menuCategories.map(cat => (<div key={cat.id} className="admin-category-item-web"><div className="admin-category-info-web"><span className="admin-category-emoji-web">{cat.emoji}</span><span className="admin-category-name-web">{cat.name}</span><span className="admin-category-subcount-web">({cat.subcategories.length} {t.adminCategory.subcategoriesCount})</span></div><div className="admin-category-actions-web"><button className="admin-edit-btn-web" onClick={() => { setEditingCategory(cat); const name = prompt(t.adminCategory.enterNewName, cat.name); if (name) handleEditCategory({ ...cat, name }) }}>✏️</button><button className="admin-add-sub-btn-web" onClick={() => handleAddSubcategory(cat.id)}>{t.adminCategory.addSubcategory}</button><button className="admin-delete-btn-web" onClick={() => handleDeleteCategory(cat.id)}>🗑️</button></div></div>))}</div>
             </div>
           </div>
         </div>
