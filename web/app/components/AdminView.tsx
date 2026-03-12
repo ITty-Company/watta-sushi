@@ -1987,7 +1987,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#145142]/10 hover:bg-[#145142]/20 text-[#145142] font-semibold transition-all"
                 >
                   <Menu size={18} />
-                  <span>Меню / змінити розділ</span>
+                  <span>{t.adminPanel.common.menuChangeSection}</span>
                 </button>
               </div>
           {activeTab === 'orders' && (
@@ -1995,7 +1995,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
               {isLoading && orders.length === 0 ? (
                  <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">{t.adminPanel.dashboard.loading}</div>
               ) : orders.length === 0 ? (
-                 <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">Нет активных заказов</div>
+                 <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">{t.adminPanel.common.emptyOrders}</div>
               ) : (
                 orders.map((order) => (
                   <div 
@@ -2034,7 +2034,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                               📝 {order.comment}
                             </div>
                          ) : (
-                            <div className="text-gray-400 text-sm italic">Без комментария</div>
+                            <div className="text-gray-400 text-sm italic">{t.adminPanel.orders.noComment}</div>
                          )}
                       </div>
                     </div>
@@ -2049,9 +2049,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           order.paymentMethod === 'GOOGLE_PAY' ? 'G' : '🏦'}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-500 uppercase">Оплата</span>
+                          <span className="text-xs font-bold text-gray-500 uppercase">{t.adminPanel.orders.payment}</span>
                           <span className="text-xs font-bold text-[#145142]">
-                              {order.paymentMethod === 'CASH' ? 'Наличные' : 'Онлайн'}
+                              {order.paymentMethod === 'CASH' ? t.adminPanel.orders.cash : t.adminPanel.orders.online}
                           </span>
                         </div>
                       </div>
@@ -2063,8 +2063,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           'bg-yellow-100 text-yellow-700'
                       }`}>
                           {order.paymentStatus === 'PAID' ? <Check size={12}/> : null}
-                          {order.paymentStatus === 'PAID' ? 'ОПЛАЧЕНО' : 
-                          order.paymentStatus === 'FAILED' ? 'ОШИБКА' : 'ОЖИДАЕТ'}
+                          {order.paymentStatus === 'PAID' ? t.adminPanel.orders.paid : 
+                          order.paymentStatus === 'FAILED' ? t.adminPanel.orders.error : t.adminPanel.orders.waiting}
                       </div>
                     </div>
                     {/* --------------------------- */}
@@ -2083,11 +2083,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       
                       {/* Кнопки смены статуса */}
                       <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto">
-                         <button onClick={() => updateStatus(order.id, 'COOKING')} className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100" title="Готовится"><ChefHat/></button>
-                         <button onClick={() => updateStatus(order.id, 'DELIVERING')} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title="В доставке"><Truck/></button>
-                         <button onClick={() => updateStatus(order.id, 'COMPLETED')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100" title="Выполнен"><Check/></button>
+                         <button onClick={() => updateStatus(order.id, 'COOKING')} className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100" title={t.adminPanel.orders.hintCooking}><ChefHat/></button>
+                         <button onClick={() => updateStatus(order.id, 'DELIVERING')} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title={t.adminPanel.orders.hintDelivering}><Truck/></button>
+                         <button onClick={() => updateStatus(order.id, 'COMPLETED')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100" title={t.adminPanel.orders.hintCompleted}><Check/></button>
                          <div className="w-px bg-[#145142]/20 mx-2"></div>
-                         <button onClick={() => updateStatus(order.id, 'CANCELLED')} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100" title="Отменить"><XCircle/></button>
+                         <button onClick={() => updateStatus(order.id, 'CANCELLED')} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100" title={t.adminPanel.orders.hintCancel}><XCircle/></button>
                       </div>
 
                       <div className="text-[#194A38] text-[28px] font-bold">
@@ -2103,9 +2103,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
           {!isRightPanelOpen && activeTab === 'promos' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow">
-                <h2 className="text-2xl font-bold">Новости</h2>
+                <h2 className="text-2xl font-bold">{t.adminPanel.news.title}</h2>
                 <button onClick={() => { setEditingNews(null); setIsNewsModalOpen(true) }} className="bg-[#155044] text-white px-4 py-2 rounded-lg">
-                  + Добавить
+                  {t.adminPanel.news.addBtn}
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -2117,8 +2117,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       <div className="p-4">
                           <h3 className="font-bold">{item.title}</h3>
                           <div className="flex gap-2 mt-4">
-                            <button onClick={() => { setEditingNews(item); setIsNewsModalOpen(true) }} className="flex-1 bg-blue-50 text-blue-600 py-2 rounded">Ред.</button>
-                            <button onClick={() => handleDeleteNews(item.id)} className="px-4 bg-red-50 text-red-600 rounded">Уд.</button>
+                            <button onClick={() => { setEditingNews(item); setIsNewsModalOpen(true) }} className="flex-1 bg-blue-50 text-blue-600 py-2 rounded">{t.adminPanel.actions.editShort}</button>
+                            <button onClick={() => handleDeleteNews(item.id)} className="px-4 bg-red-50 text-red-600 rounded"><Trash2 size={16}/></button>
                           </div>
                       </div>
                     </div>
@@ -2133,7 +2133,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   onClick={openCreateModal}
                   className="w-full h-14 sm:h-16 md:h-[77px] bg-[#155044] rounded-[12px] sm:rounded-[15px] flex items-center justify-center text-white text-base sm:text-xl md:text-[24px] font-bold hover:bg-[#103d34] transition shadow-md px-4"
                 >
-                  + Добавить товар
+                  {t.adminPanel.products.addBtn}
                 </button>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -2149,7 +2149,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                            </div>
                          )}
                          {product.isPopular && (
-                           <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">ХИТ</span>
+                           <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">{t.adminPanel.products.hit}</span>
                          )}
                        </div>
                        
@@ -2173,14 +2173,14 @@ export default function AdminView({ onBack }: AdminViewProps) {
                               <button 
                                 onClick={() => openEditModal(product)}
                                 className="p-1.5 text-[#145142]/50 hover:text-[#145142] hover:bg-[#145142]/10 rounded-lg transition"
-                                title="Редактировать"
+                                title={t.adminPanel.actions.edit}
                               >
                                 <Pencil size={18} />
                               </button>
                               <button 
                                 onClick={() => handleDeleteProduct(product.id)}
                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                title="Удалить"
+                                title={t.adminPanel.actions.delete}
                               >
                                 <Trash2 size={18} />
                               </button>
@@ -2195,11 +2195,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
           {/* === Вкладка: ИНГРЕДИЕНТЫ === */}
             {activeTab === 'ingredients' && (
               <div className="max-w-4xl mx-auto">
-                <h2 className="text-2xl font-bold text-[#145142] mb-6">Библиотека ингредиентов</h2>
+                <h2 className="text-2xl font-bold text-[#145142] mb-6">{t.adminPanel.ingredients.title}</h2>
                 
                 {/* Форма добавления */}
                 <div className="bg-white p-6 rounded-2xl shadow-lg mb-8 border border-gray-100">
-                  <h3 className="font-bold mb-4">Добавить новый</h3>
+                  <h3 className="font-bold mb-4">{t.adminPanel.ingredients.addNew}</h3>
                   <form onSubmit={handleCreateIngredient} className="flex flex-col sm:flex-row gap-4 items-end">
                     
                     {/* Загрузка фото */}
@@ -2216,22 +2216,22 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
                     {/* Название */}
                     <div className="flex-1 w-full">
-                        <label className="block text-xs font-bold text-gray-500 mb-1">Название (RU)</label>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">{t.adminPanel.ingredients.nameRu}</label>
                         <input 
                           type="text" 
                           value={newIngName}
                           onChange={e => setNewIngName(e.target.value)}
                           className="w-full p-3 border rounded-xl outline-none focus:border-[#145142]"
-                          placeholder="Например: Лосось"
+                          placeholder={t.adminPanel.ingredients.namePlaceholder}
                         />
                     </div>
 
-                    <button 
+                    <button   
                       type="submit" 
                       disabled={ingLoading}
                       className="h-[50px] px-6 bg-[#145142] text-white rounded-xl font-bold hover:bg-[#103d34] transition"
                     >
-                      {ingLoading ? '...' : 'Добавить'}
+                      {ingLoading ? '...' : t.adminPanel.ingredients.addBtn}
                     </button>
                   </form>
                 </div>
