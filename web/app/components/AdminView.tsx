@@ -2265,14 +2265,14 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 <div className="relative z-10">
                   <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#145142] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
                     <span className="text-2xl sm:text-3xl md:text-4xl">🌍</span>
-                    <span>Додати нову країну</span>
+                    <span>{t.adminPanel.cities.addCountry}</span>
                   </h2>
                   <form onSubmit={handleCreateCountry} className="space-y-4 sm:space-y-6">
                     {/* Названия на разных языках */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       <div className="relative">
                         <label className="block text-xs font-semibold text-[#145142] mb-2 uppercase tracking-wide">
-                          Назва (RU) *
+                          Название (RU) *
                         </label>
                         <input 
                           type="text" 
@@ -2326,7 +2326,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <div className="grid grid-cols-1 gap-3 sm:gap-4">
                       <div className="relative flag-picker-container">
                         <label className="block text-xs sm:text-sm font-semibold text-[#145142] mb-2 uppercase tracking-wide">
-                          Стикер країни (прапор)
+                          {t.adminPanel.cities.sticker}
                         </label>
                         <div className="relative inline-block">
                           <button
@@ -2368,7 +2368,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       type="submit"
                       className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#145142] to-[#1a6b58] text-white font-bold rounded-[14px] sm:rounded-[16px] hover:from-[#103d34] hover:to-[#145142] transition-all shadow-lg shadow-[#145142]/30 hover:shadow-xl hover:shadow-[#145142]/40 transform hover:scale-[1.02] text-sm sm:text-base md:text-lg"
                     >
-                      ✨ Додати країну
+                      {t.adminPanel.cities.addCountryBtn}
                     </button>
                   </form>
                 </div>
@@ -2442,23 +2442,23 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     {/* Поиск города на карте — RU/UA/EN/NL, адрес, индекс, код */}
                     <div className="relative city-map-search-container">
                       <label className="block text-xs font-semibold text-[#145142] mb-2 uppercase tracking-wide">
-                        📍 Пошук міста на карті
+                        {t.adminPanel.cities.searchMapLabel}
                       </label>
                       <p className="text-xs text-gray-500 mb-2">
-                        Шукайте будь-якою мовою (RU/UA/EN/NL), за адресою, індексом або кодом. Нижче — карта: введіть пошук, зʼявляться маркери. Оберіть у списку (Вибрати) або клікніть по маркеру на карті — координати підставляться. {editingCityId ? 'При редагуванні: можна залишити поточну локацію або обрати нову через пошук.' : 'Обовʼязково для додавання міста.'}
+                        {t.adminPanel.cities.searchMapDesc} {editingCityId ? 'При редагуванні: можна залишити поточну локацію або обрати нову через пошук.' : 'Обовʼязково для додавання міста.'}
                       </p>
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-2">
                         <div className="relative flex-1">
                           <input
                             type="text"
-                            placeholder="Назва RU/UA/EN/NL, адреса, індекс, поштовий код… Напр.: Київ, 02000, вул. Хрещатик 1..."
+                            placeholder={t.adminPanel.cities.searchMapPlaceholder}
                             value={cityMapSearchQuery}
                             onChange={e => setCityMapSearchQuery(e.target.value)}
                             onFocus={() => cityMapSearchResults.length > 0 && setCityMapSearchOpen(true)}
                             className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-[16px] outline-none border-2 border-[#145142]/20 font-semibold text-sm sm:text-base transition-all focus:border-[#145142] focus:bg-white/90 focus:shadow-lg focus:shadow-[#145142]/10"
                           />
                           {cityMapSearchLoading && (
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">пошук…</span>
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">{t.adminPanel.common.searching}</span>
                           )}
                         </div>
                         <button
@@ -2466,7 +2466,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           onClick={handleSearchCityByNames}
                           className="shrink-0 px-4 py-3 bg-[#145142]/15 text-[#145142] font-semibold rounded-[16px] border-2 border-[#145142]/30 hover:bg-[#145142]/25 transition"
                         >
-                          Шукати за назвами (RU/UA/EN/NL)
+                          {t.adminPanel.cities.searchMapBtn}
                         </button>
                       </div>
                       {cityMapSearchOpen && cityMapSearchResults.length > 0 && (
@@ -2479,14 +2479,14 @@ export default function AdminView({ onBack }: AdminViewProps) {
                               className="w-full px-4 py-3 text-left hover:bg-[#145142]/10 transition flex items-center justify-between gap-2 border-b border-[#145142]/10 last:border-b-0"
                             >
                               <span className="text-sm font-medium text-gray-800 truncate flex-1">{r.display_name}</span>
-                              <span className="text-xs text-[#145142] font-semibold shrink-0">Вибрати</span>
+                              <span className="text-xs text-[#145142] font-semibold shrink-0">{t.adminPanel.common.choose}</span>
                             </button>
                           ))}
                         </div>
                       )}
                       {cityMapSearchOpen && !cityMapSearchLoading && cityMapSearchResults.length === 0 && (
                         <div className="mt-2 bg-white/90 backdrop-blur-xl rounded-[14px] border-2 border-[#145142]/20 shadow-xl px-4 py-3 z-[200] text-sm text-[#145142]/60">
-                          Нічого не знайдено. Спробуйте інший запит, кнопку «Шукати за назвами» або іншу мову (RU/UA/EN/NL).
+                          {t.adminPanel.common.notFound}
                         </div>
                       )}
 
@@ -2503,7 +2503,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       <div className="relative">
                         <label className="block text-xs font-semibold text-[#145142] mb-2 uppercase tracking-wide">
-                          Країна *
+                          {t.adminPanel.cities.countryLabel}
                         </label>
                         <select
                           value={newCityCountryId || ''}
@@ -2511,7 +2511,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-[16px] outline-none border-2 border-[#145142]/20 font-semibold text-sm sm:text-base transition-all focus:border-[#145142] focus:bg-white/90 focus:shadow-lg focus:shadow-[#145142]/10"
                           required
                         >
-                          <option value="">Оберіть країну</option>
+                          <option value="">{t.adminPanel.cities.selectCountry}</option>
                           {countries.map(country => (
                             <option key={country.id} value={country.id}>
                               {country.flag || '🌍'} {country.name}
@@ -2528,7 +2528,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                               onChange={e => setNewCityIsActive(e.target.checked)}
                               className="w-4 h-4 rounded border-[#145142]/30 text-[#145142] focus:ring-[#145142]"
                             />
-                            <span className="text-sm font-semibold text-[#145142]">Активне місто</span>
+                            <span className="text-sm font-semibold text-[#145142]">{t.adminPanel.cities.activeCity}</span>
                           </label>
                         </div>
                       )}
@@ -2547,7 +2547,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           onClick={handleCancelEditCity}
                           className="px-6 sm:px-8 py-3 sm:py-4 bg-white/80 backdrop-blur-sm text-[#145142] font-semibold rounded-[14px] sm:rounded-[16px] border-2 border-[#145142]/20 hover:bg-[#145142]/10 hover:border-[#145142]/30 transition text-sm sm:text-base"
                         >
-                          Скасувати редагування
+                         {t.adminPanel.cities.cancelEdit}
                         </button>
                       )}
                     </div>
@@ -2565,7 +2565,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   <div className="relative z-10">
                     <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#145142] mb-4 sm:mb-6 flex items-center gap-2">
                       <span className="text-2xl sm:text-3xl">🌍</span>
-                      <span>Країни</span>
+                      <span>{t.adminPanel.cities.countriesTitle}</span>
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {countries.map(country => (
@@ -2603,7 +2603,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                 id={`country-edit-code-${country.id}`}
                               />
                               <div className="relative edit-flag-picker-container">
-                                <label className="block text-xs font-semibold text-[#145142] mb-1 uppercase">Стикер</label>
+                                <label className="block text-xs font-semibold text-[#145142] mb-1 uppercase">{t.adminPanel.cities.sticker}</label>
                                 <button
                                   type="button"
                                   onClick={() => setIsEditFlagPickerOpen(!isEditFlagPickerOpen)}
@@ -2639,7 +2639,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                   id={`country-edit-active-${country.id}`}
                                   className="rounded border-[#145142]/30 text-[#145142] focus:ring-[#145142]"
                                 />
-                                <span>Активна</span>
+                                <span>{t.adminPanel.common.activeLabel}</span>
                               </label>
                               <div className="flex gap-2 pt-1">
                                 <button
@@ -2659,7 +2659,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                   }}
                                   className="flex-1 px-3 py-2 bg-[#155044] text-white rounded-[10px] hover:bg-[#103d34] transition text-sm font-medium"
                                 >
-                                  Зберегти
+                                  {t.adminPanel.actions.save}
                                 </button>
                                 <button
                                   type="button"
@@ -2669,7 +2669,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                   }}
                                   className="px-3 py-2 bg-white/80 backdrop-blur-sm rounded-[10px] border border-[#145142]/20 hover:bg-[#145142]/10 transition text-sm text-[#145142] font-medium"
                                 >
-                                  Скасувати
+                                  {t.adminPanel.actions.cancel}
                                 </button>
                               </div>
                             </div>
@@ -2690,7 +2690,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                 </span>
                               </div>
                               {country.cities && country.cities.length > 0 && (
-                                <p className="text-xs text-gray-500 mt-2">Міст: {country.cities.length}</p>
+                                <p className="text-xs text-gray-500 mt-2">{t.adminPanel.cities.citiesTitle} {country.cities.length}</p>
                               )}
                               <div className="flex gap-2 mt-2 pt-2 border-t border-[#145142]/10">
                                 <button
@@ -2703,8 +2703,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                   className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-[8px] sm:rounded-[10px] hover:bg-blue-100 transition flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm"
                                 >
                                   <Pencil size={14} className="sm:w-4 sm:h-4" />
-                                  <span className="hidden sm:inline">Редактировать</span>
-                                  <span className="sm:hidden">Изменить</span>
+                                    <span className="hidden sm:inline">{t.adminPanel.actions.edit}</span>
+                                  <span className="sm:hidden">{t.adminPanel.actions.editShort}</span>
                                 </button>
                                 <button
                                   type="button"
@@ -2732,7 +2732,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 <div className="relative z-10">
                   <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#145142] mb-4 sm:mb-6 flex items-center gap-2">
                     <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
-                    <span>Міста</span>
+                    <span>{t.adminPanel.cities.citiesTitle}</span>
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                   {cities.map(city => (
@@ -2764,7 +2764,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           </div>
                           {city.deliveryZones && city.deliveryZones.length > 0 && (
                             <div className="text-xs text-gray-500">
-                              Зон доставки: {city.deliveryZones.length}
+                              {t.adminPanel.cities.deliveryZones} {city.deliveryZones.length}
                             </div>
                           )}
                           <div className="flex gap-2 pt-2 border-t border-[#145142]/10">
@@ -2773,7 +2773,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                               onClick={() => handleStartEditCity(city)}
                               className="flex-1 px-3 sm:px-4 py-2 bg-blue-50 text-blue-600 rounded-[8px] sm:rounded-[10px] hover:bg-blue-100 transition flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm"
                             >
-                              <Pencil size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Редагувати</span><span className="sm:hidden">Змінити</span>
+                              <Pencil size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t.adminPanel.actions.edit}</span><span className="sm:hidden">{t.adminPanel.actions.editShort}</span>
                             </button>
                             <button
                               type="button"
@@ -2786,7 +2786,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         </>
                     </div>
                   ))}
-                  {cities.length === 0 && <div className="text-gray-400 col-span-full text-center py-8">Городов пока нет</div>}
+                  {cities.length === 0 && <div className="text-gray-400 col-span-full text-center py-8">{t.adminPanel.common.emptyCities}</div>}
                 </div>
               </div>
             </div>
@@ -2800,7 +2800,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 onClick={openCreateBannerModal}
                 className="w-full h-[77px] bg-[#155044] rounded-[15px] flex items-center justify-center text-white text-[24px] font-bold hover:bg-[#103d34] transition shadow-md"
               >
-                + Добавить баннер
+                {t.adminPanel.banners.addBtn}
               </button>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2821,20 +2821,20 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       )}
                       {!banner.isActive && (
                         <div className="absolute top-2 right-2 bg-[#145142]/80 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
-                          Неактивен
+                          {t.adminPanel.common.inactiveLabel}
                         </div>
                       )}
                     </div>
                     <div className="flex flex-col gap-2">
                       <h3 className="font-bold text-lg">{banner.title_ru}</h3>
-                      <p className="text-sm text-gray-500">Порядок: {banner.order}</p>
+                      <p className="text-sm text-gray-500">{t.adminPanel.common.orderIndex} {banner.order}</p>
                     </div>
                     <div className="flex gap-2 pt-2 border-t border-[#145142]/10">
                       <button
                         onClick={() => openEditBannerModal(banner)}
                         className="flex-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-[10px] hover:bg-blue-100 transition flex items-center justify-center gap-2"
                       >
-                        <Pencil size={16} /> Редактировать
+                        <Pencil size={16} /> {t.adminPanel.actions.edit}
                       </button>
                       <button
                         onClick={() => handleDeleteBanner(banner.id)}
@@ -2845,7 +2845,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     </div>
                   </div>
                 ))}
-                {banners.length === 0 && <div className="text-gray-400 col-span-3 text-center">Баннеров пока нет</div>}
+                {banners.length === 0 && <div className="text-gray-400 col-span-3 text-center">{t.adminPanel.common.emptyBanners}</div>}
               </div>
             </div>
           )}

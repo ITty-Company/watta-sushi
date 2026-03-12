@@ -209,7 +209,7 @@ interface Translations {
       title: string; addNew: string; nameRu: string; namePlaceholder: string; addBtn: string;
     }
     cities: {
-      addCountry: string; nameRu: string; sticker: string; addCountryBtn: string; countriesTitle: string;
+      addCountry: string; nameRu: string;  sticker: string; addCountryBtn: string; countriesTitle: string;
       editCity: string; addCity: string; cityNameRu: string; searchMapLabel: string;
       searchMapDesc: string; searchMapPlaceholder: string; searchMapBtn: string;
       countryLabel: string; selectCountry: string; activeCity: string; saveChanges: string;
