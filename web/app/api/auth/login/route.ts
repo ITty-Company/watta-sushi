@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // URL бэкенда из переменной окружения
 // В production должен быть установлен NEXT_PUBLIC_API_URL в render.yaml
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 // Проверка доступности переменной окружения
 if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === 'production') {

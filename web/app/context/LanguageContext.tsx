@@ -40,6 +40,18 @@ interface Translations {
     empty: string
     total: string
     order: string
+    proceedCheckout: string
+    fulfillmentDelivery: string
+    fulfillmentPickup: string
+    pickupAtRestaurant: string
+    pickupSubtitle: string
+    deliveryFree: string
+    deliveryUnlockHint: string
+    invalidPhone: string
+    checkoutSuccessTitle: string
+    checkoutSuccessSubtitle: string
+    checkoutOrderNumber: string
+    checkoutBackToMenu: string
   }
   navigation: {
     home: string
@@ -194,6 +206,7 @@ interface Translations {
       orderNum: string; noComment: string; payment: string; cash: string; online: string;
       paid: string; error: string; waiting: string; hintCooking: string; hintDelivering: string; 
       hintCompleted: string; hintCancel: string;
+      fulfillmentDelivery: string; fulfillmentPickup: string; deliveryFeeAdmin: string;
     }
     news: {
       title: string; addBtn: string; editTitle: string; newTitle: string;
@@ -275,7 +288,23 @@ const translations: Record<Language, Translations> = {
     categories: { rolls: 'Роли', sushi: 'Суші', sets: 'Сети', soups: 'Супи', bowls: 'Боули', snacks: 'Закуски', drinks: 'Напої', sauces: 'Соуси' },
     hero: { title: 'Користь азіатських супів' },
     section: { title: 'Доставка суші у Києві', description: 'В асортименті Watta Sushi представлені роли, суші, сети і напої на будь-який смак. Ми рекомендуємо обов\'язково спробувати топ позиції нашого меню!' },
-    cartSection: { empty: 'Корзина пуста', total: 'Всього', order: 'Оформити замовлення' },
+    cartSection: {
+      empty: 'Корзина пуста',
+      total: 'Всього',
+      order: 'Оформити замовлення',
+      proceedCheckout: 'Перейти до оформлення',
+      fulfillmentDelivery: 'Доставка',
+      fulfillmentPickup: 'Самовивіз',
+      pickupAtRestaurant: 'Заберіть замовлення за адресою:',
+      pickupSubtitle: 'Заберіть замовлення у зазначений час.',
+      deliveryFree: 'Безкоштовно',
+      deliveryUnlockHint: 'Безкоштовна доставка від {{amount}} ₴',
+      invalidPhone: 'Невірний формат телефону',
+      checkoutSuccessTitle: 'Дякуємо за замовлення!',
+      checkoutSuccessSubtitle: 'Ми отримали ваше замовлення. Менеджер зв\'яжеться з вами найближчим часом.',
+      checkoutOrderNumber: 'Замовлення №',
+      checkoutBackToMenu: 'Повернутися в меню'
+    },
     navigation: {
       home: 'Головна',
       menu: 'Меню',
@@ -407,7 +436,7 @@ const translations: Record<Language, Translations> = {
       dashboard: { loading: "Завантаження...", revenue: "Виручка (виконані)", orders: "Замовлень", products: "Товарів", cities: "Міст", statusTitle: "Замовлення за статусами", statusPending: "Очікують", statusCooking: "Готуються", statusDelivering: "В доставці", statusCompleted: "Виконані", promos: "Промокодів", categories: "Категорій", users: "Користувачів" },
       actions: { add: "+ Додати", edit: "Редагувати", editShort: "Змінити", delete: "Видалити", save: "Зберегти", saveChanges: "Зберегти зміни", cancel: "Скасувати" },
       common: { menuChangeSection: "Меню / змінити розділ", emptyOrders: "Немає активних замовлень", emptyCities: "Міст поки немає", emptyBanners: "Банерів поки немає", emptyCategories: "Категорій поки немає", emptyUsers: "Користувачів поки немає", emptyTeam: "Членів команди поки немає", emptyPromos: "Промокодів поки немає", clickToUpload: "Натисніть, щоб завантажити фото", changeFile: "Змінити", selectFromList: "Вибрати зі списку", activeLabel: "Активно", inactiveLabel: "Неактивно", yes: "Так", no: "Ні", orderIndex: "Порядок відображення", choose: "Вибрати", notFound: "Нічого не знайдено. Спробуйте інший запит.", searching: "пошук..." },
-      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати" },
+      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовивіз", deliveryFeeAdmin: "Доставка:" },
       news: { title: "Новини", addBtn: "+ Додати", editTitle: "Редагувати", newTitle: "Нова новина", titlePlaceholder: "Заголовок", descPlaceholder: "Короткий опис", textPlaceholder: "Повний текст", isHit: "Хіт продажу" },
       products: { addBtn: "+ Додати товар", hit: "ХІТ", editTitle: "Редагувати страву", newTitle: "Нова страва", nameLabel: "Назва товару", namePlaceholder: "Наприклад: Філадельфія", descLabel: "Опис", descPlaceholder: "Склад, вага, особливості...", priceLabel: "Ціна (₴)", categoryLabel: "Категорія", selectCategory: "Оберіть...", deliveryCities: "Міста доставки *", addCitiesFirst: "Спочатку додайте міста у вкладці 'Міста'", descComposition: "Описи (Склад)", ingComposition: "Інгредієнти (Склад)" },
       ingredients: { title: "Бібліотека інгредієнтів", addNew: "Додати новий", nameRu: "Назва", namePlaceholder: "Наприклад: Лосось", addBtn: "Додати" },
@@ -434,7 +463,23 @@ const translations: Record<Language, Translations> = {
     categories: { rolls: 'Роллы', sushi: 'Суши', sets: 'Сеты', soups: 'Супы', bowls: 'Боулы', snacks: 'Закуски', drinks: 'Напитки', sauces: 'Соусы' },
     hero: { title: 'Польза азиатских супов' },
     section: { title: 'Доставка суши в Киеве', description: 'В ассортименте Watta Sushi представлены роллы, суши, сеты и напитки на любой вкус. Мы рекомендуем обязательно попробовать топ позиции нашего меню!' },
-    cartSection: { empty: 'Корзина пуста', total: 'Итого', order: 'Оформить заказ' },
+    cartSection: {
+      empty: 'Корзина пуста',
+      total: 'Итого',
+      order: 'Оформить заказ',
+      proceedCheckout: 'Перейти к оформлению',
+      fulfillmentDelivery: 'Доставка',
+      fulfillmentPickup: 'Самовывоз',
+      pickupAtRestaurant: 'Заберите заказ по адресу:',
+      pickupSubtitle: 'Заберите заказ в указанное время.',
+      deliveryFree: 'Бесплатно',
+      deliveryUnlockHint: 'Бесплатная доставка от {{amount}} ₴',
+      invalidPhone: 'Неверный формат телефона',
+      checkoutSuccessTitle: 'Спасибо за заказ!',
+      checkoutSuccessSubtitle: 'Мы получили ваш заказ. Менеджер свяжется с вами в ближайшее время.',
+      checkoutOrderNumber: 'Заказ №',
+      checkoutBackToMenu: 'Вернуться в меню'
+    },
     navigation: {
       home: 'Главная',
       menu: 'Меню',
@@ -566,7 +611,7 @@ const translations: Record<Language, Translations> = {
       dashboard: { loading: "Загрузка...", revenue: "Выручка (выполнены)", orders: "Заказов", products: "Товаров", cities: "Городов", statusTitle: "Заказы по статусам", statusPending: "Ожидают", statusCooking: "Готовятся", statusDelivering: "В доставке", statusCompleted: "Выполнены", promos: "Промокодов", categories: "Категорий", users: "Пользователей" },
       actions: { add: "+ Добавить", edit: "Редактировать", editShort: "Изменить", delete: "Удалить", save: "Сохранить", saveChanges: "Сохранить изменения", cancel: "Отмена" },
       common: { menuChangeSection: "Меню / изменить раздел", emptyOrders: "Нет активных заказов", emptyCities: "Городов пока нет", emptyBanners: "Баннеров пока нет", emptyCategories: "Категорий пока нет", emptyUsers: "Пользователей пока нет", emptyTeam: "Членов команды пока нет", emptyPromos: "Промокодов пока нет", clickToUpload: "Нажмите, чтобы загрузить фото", changeFile: "Изменить", selectFromList: "Выбрать из списка", activeLabel: "Активен", inactiveLabel: "Неактивен", yes: "Да", no: "Нет", orderIndex: "Порядок отображения", choose: "Выбрать", notFound: "Ничего не найдено. Попробуйте другой запрос.", searching: "поиск..." },
-      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить" },
+      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовывоз", deliveryFeeAdmin: "Доставка:" },
       news: { title: "Новости", addBtn: "+ Добавить", editTitle: "Редактировать", newTitle: "Новая новость", titlePlaceholder: "Заголовок", descPlaceholder: "Краткое описание", textPlaceholder: "Полный текст", isHit: "Хит продаж" },
       products: { addBtn: "+ Добавить товар", hit: "ХИТ", editTitle: "Редактировать блюдо", newTitle: "Новое блюдо", nameLabel: "Название товара", namePlaceholder: "Например: Филадельфия", descLabel: "Описание", descPlaceholder: "Состав, вес, особенности...", priceLabel: "Цена (₴)", categoryLabel: "Категория", selectCategory: "Выберите...", deliveryCities: "Города доставки *", addCitiesFirst: "Сначала добавьте города во вкладке 'Города'", descComposition: "Описания (Состав)", ingComposition: "Ингредиенты (Состав)" },
       ingredients: { title: "Библиотека ингредиентов", addNew: "Добавить новый", nameRu: "Название", namePlaceholder: "Например: Лосось", addBtn: "Добавить" },
@@ -593,7 +638,23 @@ const translations: Record<Language, Translations> = {
     categories: { rolls: 'Rolls', sushi: 'Sushi', sets: 'Sets', soups: 'Soups', bowls: 'Bowls', snacks: 'Snacks', drinks: 'Drinks', sauces: 'Sauces' },
     hero: { title: 'Benefits of Asian Soups' },
     section: { title: 'Sushi Delivery in Kyiv', description: 'Watta Sushi offers rolls, sushi, sets, and drinks for every taste. We highly recommend trying our top menu items!' },
-    cartSection: { empty: 'Cart is empty', total: 'Total', order: 'Place order' },
+    cartSection: {
+      empty: 'Cart is empty',
+      total: 'Total',
+      order: 'Place order',
+      proceedCheckout: 'Proceed to checkout',
+      fulfillmentDelivery: 'Delivery',
+      fulfillmentPickup: 'Pickup',
+      pickupAtRestaurant: 'Pick up your order at:',
+      pickupSubtitle: 'Pick up your order at the chosen time.',
+      deliveryFree: 'Free',
+      deliveryUnlockHint: 'Free delivery on orders over {{amount}} ₴',
+      invalidPhone: 'Invalid phone format',
+      checkoutSuccessTitle: 'Thank you for your order!',
+      checkoutSuccessSubtitle: 'We have received your order. A manager will contact you shortly.',
+      checkoutOrderNumber: 'Order #',
+      checkoutBackToMenu: 'Back to Menu'
+    },
     navigation: {
       home: 'Home',
       menu: 'Menu',
@@ -725,7 +786,7 @@ const translations: Record<Language, Translations> = {
       dashboard: { loading: "Loading...", revenue: "Revenue (completed)", orders: "Orders", products: "Products", cities: "Cities", statusTitle: "Orders by status", statusPending: "Pending", statusCooking: "Cooking", statusDelivering: "Delivering", statusCompleted: "Completed", promos: "Promo codes", categories: "Categories", users: "Users" },
       actions: { add: "+ Add", edit: "Edit", editShort: "Edit", delete: "Delete", save: "Save", saveChanges: "Save changes", cancel: "Cancel" },
       common: { menuChangeSection: "Menu / change section", emptyOrders: "No active orders", emptyCities: "No cities yet", emptyBanners: "No banners yet", emptyCategories: "No categories yet", emptyUsers: "No users yet", emptyTeam: "No team members yet", emptyPromos: "No promos yet", clickToUpload: "Click to upload photo", changeFile: "Change", selectFromList: "Select from list", activeLabel: "Active", inactiveLabel: "Inactive", yes: "Yes", no: "No", orderIndex: "Display order", choose: "Choose", notFound: "Nothing found. Try another query.", searching: "searching..." },
-      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel" },
+      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel", fulfillmentDelivery: "Delivery", fulfillmentPickup: "Pickup", deliveryFeeAdmin: "Delivery fee:" },
       news: { title: "News", addBtn: "+ Add", editTitle: "Edit", newTitle: "New news", titlePlaceholder: "Title", descPlaceholder: "Short description", textPlaceholder: "Full text", isHit: "Bestseller" },
       products: { addBtn: "+ Add product", hit: "HOT", editTitle: "Edit dish", newTitle: "New dish", nameLabel: "Product name", namePlaceholder: "e.g.: Philadelphia", descLabel: "Description", descPlaceholder: "Ingredients, weight, features...", priceLabel: "Price (₴)", categoryLabel: "Category", selectCategory: "Select...", deliveryCities: "Delivery cities *", addCitiesFirst: "Add cities in the 'Cities' tab first", descComposition: "Descriptions (Composition)", ingComposition: "Ingredients (Composition)" },
       ingredients: { title: "Ingredients Library", addNew: "Add new", nameRu: "Name", namePlaceholder: "e.g.: Salmon", addBtn: "Add" },
@@ -752,7 +813,23 @@ const translations: Record<Language, Translations> = {
     categories: { rolls: 'Rollen', sushi: 'Sushi', sets: 'Sets', soups: 'Soepen', bowls: 'Bowls', snacks: 'Snacks', drinks: 'Dranken', sauces: 'Sauzen' },
     hero: { title: 'Voordelen van Aziatische soepen' },
     section: { title: 'Sushi bezorging in Kiev', description: 'Watta Sushi biedt rollen, sushi, sets en drankjes voor elke smaak. We raden ten zeerste aan om onze topmenu-items te proberen!' },
-    cartSection: { empty: 'Winkelwagen is leeg', total: 'Totaal', order: 'Bestelling plaatsen' },
+    cartSection: {
+      empty: 'Winkelwagen is leeg',
+      total: 'Totaal',
+      order: 'Bestelling plaatsen',
+      proceedCheckout: 'Naar afrekenen',
+      fulfillmentDelivery: 'Bezorging',
+      fulfillmentPickup: 'Afhalen',
+      pickupAtRestaurant: 'Haal je bestelling op bij:',
+      pickupSubtitle: 'Haal je bestelling op op het gekozen tijdstip.',
+      deliveryFree: 'Gratis',
+      deliveryUnlockHint: 'Gratis bezorging vanaf {{amount}} ₴',
+      invalidPhone: 'Ongeldig telefoonnummer',
+      checkoutSuccessTitle: 'Bedankt voor je bestelling!',
+      checkoutSuccessSubtitle: 'We hebben je bestelling ontvangen. Een medewerker neemt snel contact met je op.',
+      checkoutOrderNumber: 'Bestelling #',
+      checkoutBackToMenu: 'Terug naar menu'
+    },
     navigation: {
       home: 'Home',
       menu: 'Menu',
@@ -884,7 +961,7 @@ const translations: Record<Language, Translations> = {
       dashboard: { loading: "Laden...", revenue: "Omzet (voltooid)", orders: "Bestellingen", products: "Producten", cities: "Steden", statusTitle: "Bestellingen per status", statusPending: "In afwachting", statusCooking: "Wordt bereid", statusDelivering: "Onderweg", statusCompleted: "Voltooid", promos: "Promocodes", categories: "Categorieën", users: "Gebruikers" },
       actions: { add: "+ Toevoegen", edit: "Bewerken", editShort: "Wijzig", delete: "Verwijderen", save: "Opslaan", saveChanges: "Wijzigingen opslaan", cancel: "Annuleren" },
       common: { menuChangeSection: "Menu / sectie wijzigen", emptyOrders: "Geen actieve bestellingen", emptyCities: "Nog geen steden", emptyBanners: "Nog geen banners", emptyCategories: "Nog geen categorieën", emptyUsers: "Nog geen gebruikers", emptyTeam: "Nog geen teamleden", emptyPromos: "Nog geen promo's", clickToUpload: "Klik om foto te uploaden", changeFile: "Wijzig", selectFromList: "Selecteer uit lijst", activeLabel: "Actief", inactiveLabel: "Inactief", yes: "Ja", no: "Nee", orderIndex: "Weergavevolgorde", choose: "Kiezen", notFound: "Niets gevonden. Probeer een andere zoekopdracht.", searching: "zoeken..." },
-      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren" },
+      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren", fulfillmentDelivery: "Bezorging", fulfillmentPickup: "Afhalen", deliveryFeeAdmin: "Bezorgkosten:" },
       news: { title: "Nieuws", addBtn: "+ Toevoegen", editTitle: "Bewerken", newTitle: "Nieuw nieuws", titlePlaceholder: "Titel", descPlaceholder: "Korte beschrijving", textPlaceholder: "Volledige tekst", isHit: "Bestseller" },
       products: { addBtn: "+ Product toevoegen", hit: "HOT", editTitle: "Gerecht bewerken", newTitle: "Nieuw gerecht", nameLabel: "Productnaam", namePlaceholder: "bijv.: Philadelphia", descLabel: "Beschrijving", descPlaceholder: "Ingrediënten, gewicht, kenmerken...", priceLabel: "Prijs (₴)", categoryLabel: "Categorie", selectCategory: "Selecteer...", deliveryCities: "Bezorgsteden *", addCitiesFirst: "Voeg eerst steden toe op het tabblad 'Steden'", descComposition: "Beschrijvingen (Samenstelling)", ingComposition: "Ingrediënten (Samenstelling)" },
       ingredients: { title: "Ingrediëntenbibliotheek", addNew: "Nieuwe toevoegen", nameRu: "Naam", namePlaceholder: "bijv.: Zalm", addBtn: "Toevoegen" },

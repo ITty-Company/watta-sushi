@@ -139,8 +139,16 @@ model Order {
   customerName  String  @default("Гость")
   phone         String  @default("")
   address       String  @default("")
+  fulfillmentType String @default("DELIVERY") // DELIVERY | PICKUP
+  deliveryFee   Float   @default(0) // UAH charged for delivery on this order (0 if free or pickup)
   paymentMethod String  @default("CASH")
+  paymentStatus PaymentStatus @default(UNPAID)
+  stripeCheckoutSessionId String?
+  paidAt       DateTime?
   comment       String?
+
+  noCallbackConfirm Boolean @default(false) // не перезванивать для подтверждения
+  noDoorbellRing    Boolean @default(false) // не звонить в дверь
 
   // Связь с пользователем (опционально, так как заказ может сделать гость)
   userId Int?
@@ -176,6 +184,13 @@ model Banner {
 model SiteSetting {
   id             Int @id @default(1) // Всегда ID=1 (синглтон)
   bannerInterval Int @default(5000) // Интервал в миллисекундах (по умолчанию 5 сек)
+
+  telegramUrl             String @default("")
+  whatsappUrl             String @default("")
+  instagramUrl            String @default("")
+  restaurantPickupAddress String @default("")
+  freeDeliveryThreshold   Float  @default(1000) // merchandise total >= this => free delivery
+  deliveryFee             Float  @default(50) // fixed fee if below threshold
 }
 
 // --- КОМАНДА ---
@@ -280,6 +295,13 @@ enum PaymentMethod {
   APPLE_PAY
   GOOGLE_PAY
   IDEAL       // Для Голландии это мастхэв, добавим на будущее
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
 }
 
 

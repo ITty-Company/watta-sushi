@@ -5,6 +5,7 @@ import { ArrowLeft, Mail, Lock, User, Check, Eye, EyeOff, Phone } from 'lucide-r
 // @ts-ignore
 import LogoBackground from './LogoBackground'
 import { useLanguage } from '../context/LanguageContext'
+import { getApiUrl } from '@/lib/utils'
 
 interface AuthViewProps {
   onBack: () => void
@@ -61,7 +62,7 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
     setError(null)
     
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+      const res = await fetch(getApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, phone })
@@ -96,7 +97,7 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
     setError(null) // Очищаємо попередні помилки
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
+      const res = await fetch(getApiUrl('/api/auth/verify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

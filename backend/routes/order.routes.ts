@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 // import { checkAdmin } from '../authMiddleware'; // Если нужно будет в будущем
-import axios from 'axios';
 import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
@@ -9,36 +8,6 @@ import { addOrderToSheet } from '../services/sheets.service';
 const router = Router();
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || 'secret-key'; // <--- КЛЮЧ ДЛЯ РАСШИФРОВКИ
-
-// Функция отправки в Telegram
-const sendToTelegram = async (order: any, items: any[]) => {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.ADMIN_TELEGRAM_CHAT_ID;
-  if (!botToken || !chatId) return;
-
-  const itemsList = items
-    .map((item, index) => `${index + 1}. ${item.product.name_ru} x${item.quantity}`)
-    .join('\n');
-
-  const message = `
-🔥 <b>НОВЫЙ ЗАКАЗ #${order.id}</b>
-👤 ${order.customerName}
-📞 ${order.phone}
-📍 ${order.address}
-💳 ${order.paymentMethod === 'CARD' ? 'Картой' : 'Наличными'}
-💬 ${order.comment || 'Без комментария'}
-💰 <b>Сумма: ${order.totalPrice} ₴</b>
-
-📦 <b>Состав:</b>
-${itemsList}
-`;
-
-  try {
-    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      chat_id: chatId, text: message, parse_mode: 'HTML'
-    });
-  } catch (e) { console.error('Ошибка Telegram:', e); }
-};
 
 // ==========================================
 // 1. Получить МОИ заказы (по Токену) - НОВОЕ
@@ -112,34 +81,94 @@ router.get('/user/:userId', async (req, res) => {
 // ==========================================
 router.post('/', async (req: Request, res: Response) => {
   try {
-    // Получаем данные с фронтенда (там они называются name, phone, totalAmount)
-    const { name, phone, address, paymentMethod, comment, items, totalAmount } = req.body;
+    const {
+      name,
+      customerName,
+      phone,
+      address,
+      paymentMethod,
+      comment,
+      items,
+      totalAmount,
+      fulfillmentType,
+      merchandiseTotal,
+      userId,
+      noCallbackConfirm,
+      noDoorbellRing,
+    } = req.body;
 
-    // 1. Сохраняем в БД (Используем поля из ВАШЕЙ схемы Prisma)
+    const clientItems = Array.isArray(items) ? items : [];
+    const lineSubtotal = clientItems.reduce(
+      (s: number, item: any) => s + Number(item.price) * Number(item.quantity ?? 1),
+      0
+    );
+    const merchParsed = merchandiseTotal != null ? Number(merchandiseTotal) : NaN;
+    const merchandise =
+      Number.isFinite(merchParsed) && merchParsed >= 0 ? merchParsed : lineSubtotal;
+
+    let siteSettings = await prisma.siteSetting.findUnique({ where: { id: 1 } });
+    if (!siteSettings) {
+      siteSettings = await prisma.siteSetting.create({
+        data: {
+          id: 1,
+          bannerInterval: 5000,
+          telegramUrl: '',
+          whatsappUrl: '',
+          instagramUrl: '',
+          restaurantPickupAddress: '',
+          freeDeliveryThreshold: 1000,
+          deliveryFee: 50,
+        },
+      });
+    }
+
+    const threshold = siteSettings.freeDeliveryThreshold;
+    const fixedFee = siteSettings.deliveryFee;
+    const fulfillment = fulfillmentType === 'PICKUP' ? 'PICKUP' : 'DELIVERY';
+
+    let deliveryFeeApplied = 0;
+    if (fulfillment === 'DELIVERY' && merchandise < threshold) {
+      deliveryFeeApplied = fixedFee;
+    }
+
+    const totalPrice = Math.round((merchandise + deliveryFeeApplied) * 100) / 100;
+
+    const clientTotal = totalAmount != null ? Number(totalAmount) : NaN;
+    if (Number.isFinite(clientTotal) && Math.abs(clientTotal - totalPrice) > 2) {
+      console.warn(
+        `Order total mismatch: client ${clientTotal}, server ${totalPrice} (merchandise ${merchandise}, delivery ${deliveryFeeApplied})`
+      );
+    }
+
+    const parsedUserId = userId != null && userId !== '' ? parseInt(String(userId), 10) : NaN;
+
     const order = await prisma.order.create({
       data: {
-        customerName: name,      // Было userName, стало customerName
-        phone: phone,            // Было userPhone, стало phone
-        address: address,
-        paymentMethod: paymentMethod, 
-        comment: comment,
-        totalPrice: Number(totalAmount), // Было totalAmount, стало totalPrice
+        customerName: String(name || customerName || 'Гость'),
+        phone: String(phone || ''),
+        address: String(address || ''),
+        fulfillmentType: fulfillment,
+        deliveryFee: deliveryFeeApplied,
+        paymentMethod: paymentMethod || 'CASH',
+        comment: comment || null,
+        noCallbackConfirm: Boolean(noCallbackConfirm),
+        noDoorbellRing: Boolean(noDoorbellRing),
+        totalPrice,
         status: 'PENDING',
-        
-        // Создаем связанные товары
+        userId: Number.isFinite(parsedUserId) ? parsedUserId : null,
         items: {
-          create: items.map((item: any) => ({
+          create: clientItems.map((item: any) => ({
             productId: item.id,
-            quantity: item.quantity,
-            price: item.price
-          }))
-        }
+            quantity: Number(item.quantity ?? 1),
+            price: Number(item.price),
+          })),
+        },
       },
       include: {
         items: {
-          include: { product: true } // Подгружаем названия продуктов для уведомлений
-        }
-      }
+          include: { product: true },
+        },
+      },
     });
 
     // 2. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЯ
