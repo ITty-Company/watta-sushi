@@ -13,18 +13,12 @@ import {
 
 const CHECKOUT_INPUT_CLASS =
   'w-full min-w-0 p-4 bg-[#F3F4F6] rounded-xl text-base text-gray-600 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#145142] border border-transparent focus:border-[#ff6b35]/40'
-const CARD_FIELD_CLASS =
-  'w-full min-w-0 p-3 rounded-xl bg-[#F3F4F6] text-gray-600 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#145142] border border-transparent focus:border-[#ff6b35]/40'
-const UA_PHONE_MAX_LEN = 17
+const UA_PHONE_MAX_LEN = 15
 /** Під'їзд / поверх / кв.: лише цифри, до 1000 символів кожне */
-const DIGIT_ADDR_MAX = 1000
-const STREET_MAX = 100
-const BUILDING_BLOCK_MAX = 1000
+const DIGIT_ADDR_MAX = 4
+const STREET_MAX = 4
+const BUILDING_BLOCK_MAX = 4
 const COMMENT_MAX = 500
-
-function digitsOnly(value: string, maxLen: number) {
-  return value.replace(/\D/g, '').slice(0, maxLen)
-}
 
 function normalizeUaPhoneInput(value: string) {
   return value.replace(/[\s\-().]/g, '')
@@ -62,6 +56,13 @@ interface MenuItem {
   isTop?: boolean
 }
 
+interface CityOption {
+  id: number
+  name: string
+  name_ua?: string | null
+  name_en?: string | null
+}
+
 // Пропсы для навигации
 interface CartViewProps {
   onBack: () => void
@@ -87,7 +88,6 @@ export default function CartView({
   
   // Состояния для оформления
   const [isCheckoutMode, setIsCheckoutMode] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   
   const [formData, setFormData] = useState({ 
@@ -95,6 +95,7 @@ export default function CartView({
     phone: '', 
     address: '', 
     comment: '', 
+    needChangeFrom: '',
     entrance: '',
     floor: '',
     apartment: '',
@@ -107,15 +108,12 @@ export default function CartView({
   })
 
   //---Оплата---
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'APPLE_PAY' | 'GOOGLE_PAY'>('CARD');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CARD');
   const [fulfillment, setFulfillment] = useState<'delivery' | 'pickup'>('delivery')
   const [selectedCity, setSelectedCity] = useState('Киев')
+  const [cities, setCities] = useState<string[]>(['Киев'])
   const [deliveryDay, setDeliveryDay] = useState<DeliveryDay>('today')
   const [deliverySlot, setDeliverySlot] = useState('asap')
-  const [cardNumber, setCardNumber] = useState('')
-  const [cardMonth, setCardMonth] = useState('')
-  const [cardYear, setCardYear] = useState('')
-  const [cardCvc, setCardCvc] = useState('')
   // --- ЛОГИКА ПРОМОКОДОВ ---
   // Добавляем эти переменные, чтобы не было ошибок в return
   const [promoCode, setPromoCode] = useState('')
@@ -175,6 +173,24 @@ export default function CartView({
       .catch(err => console.error('Ошибка загрузки рекомендаций:', err))
   }, [])
 
+  useEffect(() => {
+    fetch('/api/cities')
+      .then((res) => res.json())
+      .then((data: CityOption[]) => {
+        const loadedCities = Array.isArray(data)
+          ? data
+              .map((city) => String(city.name_ua || city.name || city.name_en || '').trim())
+              .filter(Boolean)
+          : []
+
+        if (loadedCities.length > 0) {
+          setCities(loadedCities)
+          setSelectedCity((prev) => (loadedCities.includes(prev) ? prev : loadedCities[0]))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   // --- ВЫЧИСЛЕНИЯ ---
   const uniqueItems = Array.from(new Set(cartItems.map(i => i.id)))
     .map(id => {
@@ -205,13 +221,27 @@ export default function CartView({
     [deliveryDay]
   )
 
-  const amsterdamYear = useMemo(() => {
-    const y = new Intl.DateTimeFormat('en', {
-      timeZone: 'Europe/Amsterdam',
-      year: 'numeric',
-    }).format(new Date())
-    return parseInt(y, 10)
-  }, [])
+  const submitLiqPayCheckout = (data: string, signature: string) => {
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = 'https://www.liqpay.ua/api/3/checkout'
+    form.acceptCharset = 'utf-8'
+
+    const dataInput = document.createElement('input')
+    dataInput.type = 'hidden'
+    dataInput.name = 'data'
+    dataInput.value = data
+    form.appendChild(dataInput)
+
+    const signatureInput = document.createElement('input')
+    signatureInput.type = 'hidden'
+    signatureInput.name = 'signature'
+    signatureInput.value = signature
+    form.appendChild(signatureInput)
+
+    document.body.appendChild(form)
+    form.submit()
+  }
 
   useEffect(() => {
     if (amsterdamSlots.some((s) => s.value === deliverySlot)) return
@@ -306,8 +336,12 @@ export default function CartView({
           ? 'Якнайшвидше'
           : amsterdamSlots.find((s) => s.value === deliverySlot)?.label ?? deliverySlot
       const timePart = `[Час (${dayLabel}): ${slotLabel}]`
+      const changePart =
+        paymentMethod === 'CASH' && formData.needChangeFrom.trim()
+          ? `[Нужна сдача с: ${formData.needChangeFrom.trim()} ₴]`
+          : ''
       const fullComment =
-        `${fulfillmentPart} ${timePart} ${formData.comment} ${appliedPromo ? promoPart : ''}`.trim()
+        `${changePart} ${fulfillmentPart} ${timePart} ${formData.comment} ${appliedPromo ? promoPart : ''}`.trim()
 
       const addrDetails: string[] = []
       if (formData.buildingBlock.trim())
@@ -348,51 +382,51 @@ export default function CartView({
         }),
       })
 
-      if (!response.ok) throw new Error('Ошибка заказа')
+      if (!response.ok) throw new Error('Ошибка заказа');
 
-      // 2. Получаем данные созданного заказа (ID и т.д.)
-      const orderData = await response.json() // <-- ВОТ ЧЕГО НЕ ХВАТАЛО
+      // 2. Получаем данные созданного заказа
+      const orderData = await response.json(); // Наша переменная называется orderData
 
-      // 3. Логика оплаты
-      if (['CARD', 'APPLE_PAY', 'GOOGLE_PAY', 'IDEAL'].includes(paymentMethod)) {
-            
-            // Запрашиваем ссылку на оплату
-            const payRes = await fetch('/api/payment/create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: orderData.id }) // Теперь orderData существует
-            });
-            const payData = await payRes.json();
-            
-            if (payData.paymentUrl) {
-                // Чистим корзину перед уходом
-                localStorage.removeItem('cart');
-                window.dispatchEvent(new CustomEvent('cartUpdated'));
-                
-                // Переходим на "Банк"
-                window.location.href = payData.paymentUrl;
-                return; // Прерываем функцию, так как уходим со страницы
-            }
+      // 3. LiqPay redirect flow (hosted checkout)
+      if (paymentMethod === 'CARD' && orderData.liqpay) {
+        // Создаем скрытую форму для отправки клиента на шлюз ПриватБанка
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://www.liqpay.ua/api/3/checkout';
+
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'data';
+        dataInput.value = orderData.liqpay.data; // Используем orderData!
+
+        const signatureInput = document.createElement('input');
+        signatureInput.type = 'hidden';
+        signatureInput.name = 'signature';
+        signatureInput.value = orderData.liqpay.signature; // Используем orderData!
+
+        form.appendChild(dataInput);
+        form.appendChild(signatureInput);
+        document.body.appendChild(form);
+        
+        // Автоматически нажимаем "Отправить"
+        form.submit();
+        return; // Важно! Останавливаем функцию, ждем переадресации LiqPay
       }
 
-      // Если дошли сюда — значит это Наличные (или ошибка получения ссылки)
-      
-      // Очистка для наличных
-      setIsSuccess(true)
-      localStorage.removeItem('cart')
-      setCartItems([])
-      setAppliedPromo(null)
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
-      
-      alert('Заказ принят! Оплата наличными.')
+      // === Если Наличные: сразу на страницу успешного заказа ===
+      // (Твой родной, рабочий код очистки)
+      localStorage.removeItem('cart');
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      window.location.href = `/checkout/success?orderId=${orderData.id}`;
+      return;
 
     } catch (error) { 
         console.error(error); 
-        alert('Не удалось оформить заказ.') 
+        alert('Не удалось оформить заказ.'); 
     } finally { 
-        setIsLoading(false) 
+        setIsLoading(false);
     }
-  }
+}
   // --- КОМПОНЕНТЫ UI ---
   const Header = () => (
     <div className="fixed top-3 sm:top-4 left-0 right-0 w-[min(95%,1800px)] min-h-[72px] sm:h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2 sm:py-0 z-50 border border-[#145142]/10">
@@ -453,19 +487,6 @@ export default function CartView({
 
 
 
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center text-center p-8 font-sans">
-        <div className="text-6xl mb-4">🎉</div>
-        <h2 className="text-3xl font-bold mb-2 text-[#194A38]">Дякуємо за замовлення!</h2>
-        <p className="text-gray-500 mb-6">Менеджер зв'яжеться з вами найближчим часом.</p>
-        <button className="bg-[#145142] text-white px-8 py-4 rounded-[20px] font-bold text-lg shadow-xl hover:bg-[#103d34] transition" onClick={onBack}>
-            Повернутися в меню
-        </button>
-      </div>
-    )
-  }
-
     const PromoInputBg = () => (
     <div className="absolute inset-0 pointer-events-none">
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 211 52" fill="none" preserveAspectRatio="none">
@@ -492,7 +513,7 @@ export default function CartView({
     </div>
   )
   return (
-    <div className="min-h-screen bg-[#F5F5F7] font-sans pb-20 overflow-x-hidden relative">
+    <div className="h-screen overflow-y-auto bg-[#F5F5F7] font-sans pb-20 overflow-x-hidden relative">
       <LogoBackground />
       <Header />
       
@@ -626,17 +647,16 @@ export default function CartView({
                       <div className="flex flex-col gap-1 min-w-0">
                         <input 
                           type="tel" 
-                          placeholder="+380501234567 або 0501234567" 
-                          autoComplete="tel"
+                          placeholder="+380501234567 або 0501234567"
+                          className={CHECKOUT_INPUT_CLASS} 
                           maxLength={UA_PHONE_MAX_LEN}
-                          inputMode="tel"
+                          value={formData.phone}
                           aria-invalid={phoneInvalidHint}
-                          className={`${CHECKOUT_INPUT_CLASS} ${
-                            phoneInvalidHint
-                              ? 'ring-2 ring-red-500 focus:ring-red-500'
-                              : ''
-                          }`}
-                          value={formData.phone} 
+                          // className={`${CHECKOUT_INPUT_CLASS} ${
+                          //   phoneInvalidHint
+                          //     ? 'ring-2 ring-red-500 focus:ring-red-500'
+                          //     : ''
+                          // }`} 
                           onChange={e =>
                             setFormData({
                               ...formData,
@@ -696,7 +716,7 @@ export default function CartView({
                    {fulfillment === 'delivery' ? (
                      <>
                        <div className="flex gap-2 mb-4 flex-wrap" role="group" aria-label="Місто">
-                          {['Киев', 'Днепр', 'Львов'].map(city => (
+                          {cities.map(city => (
                              <button 
                                key={city}
                                type="button"
@@ -728,66 +748,59 @@ export default function CartView({
                           autoComplete="street-address"
                        />
 
-                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                        <input
+                        type="number"
+                        placeholder="Подъезд (лише цифри)"
+                        className={CHECKOUT_INPUT_CLASS}
+                        value={formData.entrance}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          setFormData({ ...formData, entrance: val });
+                        }}
+                      />
                           <input
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            placeholder="Подъезд (лише цифри)"
-                            className={CHECKOUT_INPUT_CLASS}
-                            maxLength={DIGIT_ADDR_MAX}
-                            value={formData.entrance}
-                            onChange={e =>
-                              setFormData({
-                                ...formData,
-                                entrance: digitsOnly(e.target.value, DIGIT_ADDR_MAX),
-                              })
-                            }
-                          />
-                          <input
-                            type="text"
+                            type="number"
                             inputMode="numeric"
                             pattern="[0-9]*"
                             placeholder="Этаж (лише цифри)"
                             className={CHECKOUT_INPUT_CLASS}
-                            maxLength={DIGIT_ADDR_MAX}
+                            min={0}
+                            max={9999}
+                            maxLength={4}
                             value={formData.floor}
-                            onChange={e =>
-                              setFormData({
-                                ...formData,
-                                floor: digitsOnly(e.target.value, DIGIT_ADDR_MAX),
-                              })
-                            }
+                            onChange={e => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                              setFormData({ ...formData, floor: val });
+                            }}
                           />
                           <input
-                            type="text"
+                            type="number"
                             inputMode="numeric"
                             pattern="[0-9]*"
                             placeholder="Квартира (лише цифри)"
                             className={CHECKOUT_INPUT_CLASS}
-                            maxLength={DIGIT_ADDR_MAX}
+                            min={0}
+                            max={9999}
+                            maxLength={4}
                             value={formData.apartment}
-                            onChange={e =>
-                              setFormData({
-                                ...formData,
-                                apartment: digitsOnly(e.target.value, DIGIT_ADDR_MAX),
-                              })
-                            }
+                            onChange={e => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                              setFormData({ ...formData, apartment: val });
+                            }}
                           />
                           <input
                             type="text"
                             placeholder="Корпус / блок"
                             className={CHECKOUT_INPUT_CLASS}
-                            maxLength={BUILDING_BLOCK_MAX}
                             value={formData.buildingBlock}
-                            onChange={e =>
-                              setFormData({
-                                ...formData,
-                                buildingBlock: e.target.value.slice(0, BUILDING_BLOCK_MAX),
-                              })
-                            }
+                            onChange={e => {
+                              // Здесь оставляем текст, но ограничиваем длину 4 символами
+                              const val = e.target.value.slice(0, 4);
+                              setFormData({ ...formData, buildingBlock: val });
+                            }}
                           />
-                       </div>
+                        </div>
 
                        <div className="flex flex-col gap-3">
                           <label className="flex items-start gap-3 cursor-pointer group">
@@ -951,45 +964,6 @@ export default function CartView({
                     <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-6">Способ оплаты</h2>
                     
                     <div className="flex flex-col gap-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod('APPLE_PAY')}
-                          className={`relative h-12 rounded-xl flex items-center justify-center gap-2 transition-all ${
-                            paymentMethod === 'APPLE_PAY'
-                              ? 'bg-black text-white ring-2 ring-[#145142] ring-offset-2 ring-offset-white shadow-md'
-                              : 'bg-black text-white opacity-90 hover:ring-2 hover:ring-[#ff6b35]/35'
-                          }`}
-                        >
-                          <span className="font-bold"> Pay</span>
-                          {paymentMethod === 'APPLE_PAY' && (
-                            <div className="absolute top-1 right-1 w-2 h-2 bg-[#ff6b35] rounded-full" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod('GOOGLE_PAY')}
-                          className={`relative h-12 rounded-xl flex items-center justify-center gap-2 transition-all border ${
-                            paymentMethod === 'GOOGLE_PAY'
-                              ? 'bg-black text-white ring-2 ring-[#145142] ring-offset-2 ring-offset-white border-transparent'
-                              : 'bg-white text-gray-800 border-gray-200 hover:border-[#ff6b35]/40'
-                          }`}
-                        >
-                          <span className="font-bold">
-                            <span className="text-blue-500">G</span> Pay
-                          </span>
-                          {paymentMethod === 'GOOGLE_PAY' && (
-                            <div className="absolute top-1 right-1 w-2 h-2 bg-[#ff6b35] rounded-full" />
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="relative py-2 flex items-center">
-                        <span className="w-full border-t border-gray-200"></span>
-                        <span className="px-2 text-xs text-gray-400 bg-white uppercase">или</span>
-                        <span className="w-full border-t border-gray-200"></span>
-                      </div>
-
                       <label
                         className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
                           paymentMethod === 'CASH'
@@ -1015,9 +989,24 @@ export default function CartView({
                           onChange={() => setPaymentMethod('CASH')}
                         />
                       </label>
+                      {paymentMethod === 'CASH' && (
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="Сдача с какой суммы? (например: 1000)"
+                          className={CHECKOUT_INPUT_CLASS}
+                          value={formData.needChangeFrom}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              needChangeFrom: e.target.value.replace(/\D/g, '').slice(0, 4),
+                            })
+                          }
+                        />
+                      )}
 
                       <label
-                        className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+                        className={`flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition ${
                           paymentMethod === 'CARD'
                             ? 'border-[#145142] bg-[#145142]/5 ring-2 ring-[#ff6b35]/35'
                             : 'border-gray-200 hover:bg-gray-50 hover:border-[#145142]/25'
@@ -1032,7 +1021,10 @@ export default function CartView({
                             <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
                           )}
                         </div>
-                        <span className="font-bold text-gray-700">Картой онлайн</span>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-700">Картой онлайн</span>
+                          <span className="text-xs text-gray-500">LiqPay, Apple Pay, Google Pay</span>
+                        </div>
                         <input
                           type="radio"
                           name="payment"
@@ -1041,73 +1033,6 @@ export default function CartView({
                           onChange={() => setPaymentMethod('CARD')}
                         />
                       </label>
-                      
-                      {paymentMethod === 'CARD' && (
-                        <div className="p-4 rounded-xl border border-[#145142]/15 bg-[#F3F4F6]/80 space-y-3">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            autoComplete="cc-number"
-                            placeholder="0000 0000 0000 0000"
-                            className={CARD_FIELD_CLASS}
-                            value={cardNumber}
-                            onChange={(e) => {
-                              const d = e.target.value.replace(/\D/g, '').slice(0, 19)
-                              const spaced = d.replace(/(\d{4})(?=\d)/g, '$1 ').trim()
-                              setCardNumber(spaced)
-                            }}
-                          />
-                          <div className="flex flex-col sm:flex-row gap-3 min-w-0">
-                            <div className="flex gap-2 flex-1 min-w-0">
-                              <select
-                                aria-label="Місяць (MM)"
-                                className={`${CARD_FIELD_CLASS} flex-1 min-w-0 cursor-pointer font-medium text-gray-600`}
-                                value={cardMonth}
-                                onChange={(e) => setCardMonth(e.target.value)}
-                              >
-                                <option value="">MM</option>
-                                {Array.from({ length: 12 }, (_, i) => {
-                                  const m = String(i + 1).padStart(2, '0')
-                                  return (
-                                    <option key={m} value={m}>
-                                      {m}
-                                    </option>
-                                  )
-                                })}
-                              </select>
-                              <select
-                                aria-label="Рік (YY)"
-                                className={`${CARD_FIELD_CLASS} flex-1 min-w-0 cursor-pointer font-medium text-gray-600`}
-                                value={cardYear}
-                                onChange={(e) => setCardYear(e.target.value)}
-                              >
-                                <option value="">YY</option>
-                                {Array.from({ length: 16 }, (_, i) => {
-                                  const y = amsterdamYear + i
-                                  const short = String(y).slice(-2)
-                                  return (
-                                    <option key={y} value={short}>
-                                      {short}
-                                    </option>
-                                  )
-                                })}
-                              </select>
-                            </div>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              autoComplete="cc-csc"
-                              placeholder="CVC"
-                              maxLength={4}
-                              className={`${CARD_FIELD_CLASS} sm:w-36 font-medium`}
-                              value={cardCvc}
-                              onChange={(e) =>
-                                setCardCvc(digitsOnly(e.target.value, 4))
-                              }
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                   

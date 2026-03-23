@@ -4,11 +4,42 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
+import crypto from 'crypto';
 
 const router = Router();
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || 'secret-key'; // <--- КЛЮЧ ДЛЯ РАСШИФРОВКИ
 
+function buildLiqPayPayload(orderId: number, amount: number) {
+  const publicKey = process.env.LIQPAY_PUBLIC_KEY;
+  const privateKey = process.env.LIQPAY_PRIVATE_KEY;
+  
+  if (!publicKey || !privateKey) {
+    throw new Error('LiqPay keys are not configured');
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  
+  // 1. Формируем параметры (обязательно добавляем public_key)
+  const params = {
+    public_key: publicKey,
+    action: 'pay',
+    amount: Number(amount).toFixed(2),
+    currency: 'UAH',
+    description: `Order #${orderId}`,
+    order_id: String(orderId),
+    result_url: `${frontendUrl}/checkout/success?orderId=${orderId}`,
+    version: '3',
+  };
+// 2. Кодируем данные в Base64
+const data = Buffer.from(JSON.stringify(params)).toString('base64');
+
+// 3. Создаем подпись: base64(sha1(private_key + data + private_key))
+const signString = privateKey + data + privateKey;
+const signature = crypto.createHash('sha1').update(signString).digest('base64');
+
+return { data, signature };
+}
 // ==========================================
 // 1. Получить МОИ заказы (по Токену) - НОВОЕ
 // ==========================================
@@ -178,7 +209,13 @@ router.post('/', async (req: Request, res: Response) => {
         addOrderToSheet(order, order.items)
     ]).then(() => console.log('Notifications processed'));
 
-    // 3. Отвечаем клиенту
+    // 3. Отвечаем клиенту (+ LiqPay hosted checkout payload для оплаты картой)
+    if (paymentMethod === 'CARD') {
+      const liqpay = buildLiqPayPayload(order.id, totalPrice);
+      res.json({ ...order, liqpay });
+      return;
+    }
+
     res.json(order);
 
   } catch (error) {
@@ -195,7 +232,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
     const updatedOrder = await prisma.order.update({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(String(id)) },
       data: { status }
     });
     res.json(updatedOrder);

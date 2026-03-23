@@ -8,9 +8,11 @@ import { Toaster } from 'sonner'
 export default function AppClient({ children }: { children: ReactNode }) {
   return (
     <LanguageProviderWrapper>
-      {children}
-      <FloatingContactButtons />
-      <Toaster position="top-center" richColors />
+      <div className="app-container">
+        {children}
+        <FloatingContactButtons />
+        <Toaster position="top-center" richColors />
+      </div>
     </LanguageProviderWrapper>
   )
 }
