@@ -173,6 +173,7 @@ import {
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import { useLanguage } from '../context/LanguageContext'
+import { getApiUrl } from '@/lib/utils'
 
 interface ProductViewProps {
   productId: string
@@ -232,7 +233,7 @@ export default function ProductView({
   const fetchProductData = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${productId}`)
+      const res = await fetch(getApiUrl(`/api/products/${productId}`))
       if (res.ok) {
         const data = await res.json()
         setProduct(data)
@@ -247,7 +248,7 @@ export default function ProductView({
   const fetchRecommendations = async () => {
     try {
       // Загружаем все товары и берем случайные 4 (или по категории)
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`)
+      const res = await fetch(getApiUrl('/api/products'))
       if (res.ok) {
         const all = await res.json()
         // Фильтруем текущий товар

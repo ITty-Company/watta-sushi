@@ -72,6 +72,8 @@ interface Order {
   address: string
   comment?: string
   items: OrderItem[]
+  fulfillmentType?: string
+  deliveryFee?: number
 
   paymentMethod: 'CASH' | 'CARD' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'IDEAL'
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED'
@@ -171,6 +173,22 @@ interface TeamMember {
 }
 interface SiteSettings {
   bannerInterval: number
+  telegramUrl: string
+  whatsappUrl: string
+  instagramUrl: string
+  restaurantPickupAddress: string
+  freeDeliveryThreshold: number
+  deliveryFee: number
+}
+
+const defaultSiteSettings: SiteSettings = {
+  bannerInterval: 5000,
+  telegramUrl: '',
+  whatsappUrl: '',
+  instagramUrl: '',
+  restaurantPickupAddress: '',
+  freeDeliveryThreshold: 1000,
+  deliveryFee: 50,
 }
 const { t } = useLanguage()
 export default function AdminView({ onBack }: AdminViewProps) {
@@ -193,7 +211,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   
-  const [settings, setSettings] = useState<SiteSettings>({ bannerInterval: 5000 })
+  const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings)
   const [settingsLoading, setSettingsLoading] = useState(false)
 
   // Состояния для модального окна БАННЕРОВ
@@ -309,7 +327,18 @@ export default function AdminView({ onBack }: AdminViewProps) {
       }
       
       const headers = { 'Authorization': `Bearer ${token}` }
-      const [ordersRes, prodRes, catRes, citiesRes, countriesRes, promosRes, bannersRes, usersRes, teamRes] = await Promise.all([
+      const [
+        ingredientsRes,
+        ordersRes,
+        prodRes,
+        catRes,
+        citiesRes,
+        countriesRes,
+        promosRes,
+        bannersRes,
+        usersRes,
+        teamRes,
+      ] = await Promise.all([
         fetch('/api/ingredients', { headers }),
         fetch('/api/orders', { headers }),
         fetch('/api/products', { headers }),
@@ -320,10 +349,13 @@ export default function AdminView({ onBack }: AdminViewProps) {
         fetch('/api/banners/all', { headers }),
         fetch('/api/auth/users', { headers }),
         fetch('/api/team/all', { headers }),
-        fetch('/api/promotions').then(r => r.json()).then(setNewsItems)
       ])
+      fetch('/api/promotions')
+        .then((r) => r.json())
+        .then(setNewsItems)
+        .catch(() => {})
+      if (ingredientsRes.ok) setIngredients(await ingredientsRes.json())
       if (ordersRes.ok) setOrders(await ordersRes.json())
-      if (prodRes.ok) setProducts(await prodRes.json())
       if (catRes.ok) { const c = await catRes.json(); setMenuCategories(c); }
       if (citiesRes.ok) setCities(await citiesRes.json())
       if (countriesRes.ok) setCountries(await countriesRes.json())
@@ -331,14 +363,15 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (bannersRes.ok) setBanners(await bannersRes.json())
       if (usersRes.ok) setUsers(await usersRes.json())
       if (teamRes.ok) setTeamMembers(await teamRes.json())
-      if ([ordersRes, prodRes, countriesRes].some(r => r.status === 401 || r.status === 403)) {
+      if ([ingredientsRes, ordersRes, prodRes, countriesRes].some(r => r.status === 401 || r.status === 403)) {
         alert('Доступ запрещен. Пожалуйста, войдите как администратор.')
         onBack()
       }
       const settingsRes = await fetch('/api/settings', { headers })
-        if (settingsRes.ok) {
-            setSettings(await settingsRes.json())
-        }
+      if (settingsRes.ok) {
+        const raw = await settingsRes.json()
+        setSettings({ ...defaultSiteSettings, ...raw })
+      }
     } catch (e) {
       console.error(e)
       alert('Ошибка при загрузке данных')
@@ -2004,11 +2037,32 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   >
                     {/* Хедер заказа */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
-                      <div className="text-lg sm:text-xl md:text-[24px] font-bold text-black">
-                        Заказ №{order.id}
-                        <span className="text-gray-400 text-xs sm:text-sm font-normal ml-2 sm:ml-3 block sm:inline">
-                          {new Date(order.createdAt).toLocaleString()}
-                        </span>
+                      <div className="flex flex-col gap-2">
+                        <div className="text-lg sm:text-xl md:text-[24px] font-bold text-black">
+                          Заказ №{order.id}
+                          <span className="text-gray-400 text-xs sm:text-sm font-normal ml-2 sm:ml-3 block sm:inline">
+                            {new Date(order.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              order.fulfillmentType === 'PICKUP'
+                                ? 'bg-violet-100 text-violet-800 border border-violet-200'
+                                : 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                            }`}
+                          >
+                            {order.fulfillmentType === 'PICKUP'
+                              ? t.adminPanel.orders.fulfillmentPickup
+                              : t.adminPanel.orders.fulfillmentDelivery}
+                          </span>
+                          {order.fulfillmentType !== 'PICKUP' && typeof order.deliveryFee === 'number' && (
+                            <span className="text-xs font-semibold text-gray-600">
+                              {t.adminPanel.orders.deliveryFeeAdmin}{' '}
+                              {order.deliveryFee > 0 ? `${order.deliveryFee} ₴` : '0 ₴'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold uppercase ${
                         order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
@@ -2857,7 +2911,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 onClick={openCreateCategoryModal}
                 className="w-full h-14 sm:h-16 md:h-[77px] bg-[#155044] rounded-[12px] sm:rounded-[15px] flex items-center justify-center text-white text-base sm:text-xl md:text-[24px] font-bold hover:bg-[#103d34] transition shadow-md px-4"
               >
-                + Добавить категорию
+                {t.adminPanel.categories.addBtn}
               </button>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -2869,7 +2923,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-base sm:text-lg truncate">{category.name_ru}</h3>
-                        <p className="text-xs sm:text-sm text-gray-500 truncate">Slug: {category.slug}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 truncate">{t.adminPanel.categories.slug}: {category.slug}</p>
                         <p className="text-xs sm:text-sm text-gray-500">Порядок: {category.order}</p>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
@@ -3189,6 +3243,86 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         </div>
                         <p className="text-xs text-gray-400 mt-2">
                            Вкажіть час, через який слайди на головній сторінці будуть автоматично перемикатися.
+                        </p>
+                     </div>
+
+                     <div className="border-t border-gray-200 pt-6 space-y-4">
+                        <h3 className="text-sm font-bold text-[#145142] uppercase tracking-wide">Соцмережі та адреса</h3>
+                        <div>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">Telegram (повне посилання)</label>
+                          <input
+                            type="url"
+                            value={settings.telegramUrl}
+                            onChange={(e) => setSettings({ ...settings, telegramUrl: e.target.value })}
+                            placeholder="https://t.me/..."
+                            className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-medium focus:border-[#145142]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">WhatsApp (повне посилання)</label>
+                          <input
+                            type="url"
+                            value={settings.whatsappUrl}
+                            onChange={(e) => setSettings({ ...settings, whatsappUrl: e.target.value })}
+                            placeholder="https://wa.me/380..."
+                            className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-medium focus:border-[#145142]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">Instagram (повне посилання)</label>
+                          <input
+                            type="url"
+                            value={settings.instagramUrl}
+                            onChange={(e) => setSettings({ ...settings, instagramUrl: e.target.value })}
+                            placeholder="https://instagram.com/..."
+                            className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-medium focus:border-[#145142]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">Адреса самовивозу</label>
+                          <textarea
+                            value={settings.restaurantPickupAddress}
+                            onChange={(e) => setSettings({ ...settings, restaurantPickupAddress: e.target.value })}
+                            rows={3}
+                            placeholder="Показується клієнтам при виборі самовивозу"
+                            className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-medium focus:border-[#145142] resize-y min-h-[88px]"
+                          />
+                        </div>
+                     </div>
+
+                     <div className="border-t border-gray-200 pt-6 space-y-4">
+                        <h3 className="text-sm font-bold text-[#145142] uppercase tracking-wide">Доставка (фіксована)</h3>
+                        <div>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">Безкоштовна доставка від (₴)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={settings.freeDeliveryThreshold}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                freeDeliveryThreshold: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-bold text-lg focus:border-[#145142]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">Фіксована вартість доставки (₴)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={settings.deliveryFee}
+                            onChange={(e) =>
+                              setSettings({ ...settings, deliveryFee: parseFloat(e.target.value) || 0 })
+                            }
+                            className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-bold text-lg focus:border-[#145142]"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Якщо сума товарів (з урахуванням знижки) нижче порогу — додається ця сума. Самовивіз без доставки.
                         </p>
                      </div>
 

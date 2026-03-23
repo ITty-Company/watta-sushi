@@ -1368,6 +1368,45 @@ export default function MenuView() {
       </header>
       <div className="app-header-spacer-web" aria-hidden />
 
+      {cartCount > 0 && activePage === null && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 20,
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '0 16px 0 max(16px, env(safe-area-inset-right))'
+          }}
+        >
+          <button
+            type="button"
+            onClick={openCart}
+            className="flex items-center justify-center gap-3"
+            style={{
+              background: 'linear-gradient(135deg, #145142 0%, #1a6b58 55%, #145142 100%)',
+              color: '#fff',
+              border: '2px solid rgba(255,255,255,0.35)',
+              borderRadius: 18,
+              minHeight: 58,
+              padding: '0 28px',
+              fontWeight: 800,
+              fontSize: 17,
+              letterSpacing: 0.2,
+              boxShadow:
+                '0 14px 40px rgba(20,81,66,0.35), 0 0 0 1px rgba(255,107,53,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+              cursor: 'pointer',
+              width: 'min(720px, 100%)'
+            }}
+          >
+            <ShoppingBag size={22} style={{ flexShrink: 0, opacity: 0.95 }} />
+            <span style={{ textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>{t.cartSection.proceedCheckout}</span>
+          </button>
+        </div>
+      )}
+
       <div className="categories-panel-wrapper-web relative">
             <button 
               className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} 

@@ -1,10 +1,53 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
-  ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu, X, MapPin, MessageSquare, Users
+  ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu, MapPin, Truck, Store
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
+import { useLanguage } from '../context/LanguageContext'
+import {
+  buildAmsterdamSlots,
+  type DeliveryDay,
+} from '@/lib/deliverySlotsAmsterdam'
+
+const CHECKOUT_INPUT_CLASS =
+  'w-full min-w-0 p-4 bg-[#F3F4F6] rounded-xl text-base text-gray-600 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#145142] border border-transparent focus:border-[#ff6b35]/40'
+const CARD_FIELD_CLASS =
+  'w-full min-w-0 p-3 rounded-xl bg-[#F3F4F6] text-gray-600 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#145142] border border-transparent focus:border-[#ff6b35]/40'
+const UA_PHONE_MAX_LEN = 17
+/** Під'їзд / поверх / кв.: лише цифри, до 1000 символів кожне */
+const DIGIT_ADDR_MAX = 1000
+const STREET_MAX = 100
+const BUILDING_BLOCK_MAX = 1000
+const COMMENT_MAX = 500
+
+function digitsOnly(value: string, maxLen: number) {
+  return value.replace(/\D/g, '').slice(0, maxLen)
+}
+
+function normalizeUaPhoneInput(value: string) {
+  return value.replace(/[\s\-().]/g, '')
+}
+
+/** Ukrainian mobile: +380 + 9 digits, or 0 + 9 digits (10 total). */
+function isValidUaPhone(value: string): boolean {
+  const n = normalizeUaPhoneInput(value)
+  if (!n) return false
+  return /^\+380\d{9}$/.test(n) || /^0\d{9}$/.test(n)
+}
+
+interface CheckoutSiteSettings {
+  freeDeliveryThreshold: number
+  deliveryFee: number
+  restaurantPickupAddress: string
+}
+
+const defaultCheckoutSettings: CheckoutSiteSettings = {
+  freeDeliveryThreshold: 1000,
+  deliveryFee: 50,
+  restaurantPickupAddress: '',
+}
 
 // --- ТИПЫ ДАННЫХ ---
 interface MenuItem {
@@ -37,7 +80,8 @@ export default function CartView({
   onOpenNotifications, 
   onMenuClick 
 }: CartViewProps) {
-  
+  const { t } = useLanguage()
+
   const [cartItems, setCartItems] = useState<MenuItem[]>([])
   const [recommendations, setRecommendations] = useState<MenuItem[]>([])
   
@@ -51,24 +95,48 @@ export default function CartView({
     phone: '', 
     address: '', 
     comment: '', 
-    entrance: '',    // Подъезд
-    floor: '',       // Этаж
-    apartment: '',   // Квартира
-    intercom: '',    // Домофон
-    persons: 1,      // Кол-во персон
-    sticks: 0,       // Кол-во палочек
-    paymentMethod: 'CASH' 
+    entrance: '',
+    floor: '',
+    apartment: '',
+    intercom: '',
+    buildingBlock: '',
+    persons: 1,
+    sticks: 0,
+    noCallbackConfirm: false,
+    noDoorbellRing: false,
   })
 
   //---Оплата---
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'APPLE_PAY' | 'GOOGLE_PAY'>('CARD');
+  const [fulfillment, setFulfillment] = useState<'delivery' | 'pickup'>('delivery')
+  const [selectedCity, setSelectedCity] = useState('Киев')
+  const [deliveryDay, setDeliveryDay] = useState<DeliveryDay>('today')
+  const [deliverySlot, setDeliverySlot] = useState('asap')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardMonth, setCardMonth] = useState('')
+  const [cardYear, setCardYear] = useState('')
+  const [cardCvc, setCardCvc] = useState('')
   // --- ЛОГИКА ПРОМОКОДОВ ---
   // Добавляем эти переменные, чтобы не было ошибок в return
   const [promoCode, setPromoCode] = useState('')
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null)
   const [promoError, setPromoError] = useState<string | null>(null)
+  const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSiteSettings>(defaultCheckoutSettings)
 
   // --- ЗАГРУЗКА ДАННЫХ ---
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then((data) => {
+        setCheckoutSettings({
+          freeDeliveryThreshold: Number(data.freeDeliveryThreshold) || defaultCheckoutSettings.freeDeliveryThreshold,
+          deliveryFee: Number(data.deliveryFee) || defaultCheckoutSettings.deliveryFee,
+          restaurantPickupAddress: String(data.restaurantPickupAddress ?? '').trim(),
+        })
+      })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
       const cart = JSON.parse(localStorage.getItem('cart') || '[]')
@@ -123,7 +191,37 @@ export default function CartView({
   const basePrice = cartItems.reduce((sum, item) => sum + item.price, 0)
   const discountAmount = appliedPromo ? Math.round((basePrice * appliedPromo.discount) / 100) : 0
   const finalPrice = basePrice - discountAmount
-  const deliveryPrice = 0 
+  const { freeDeliveryThreshold, deliveryFee, restaurantPickupAddress } = checkoutSettings
+  const deliveryPrice = useMemo(() => {
+    if (fulfillment === 'pickup') return 0
+    if (finalPrice >= freeDeliveryThreshold) return 0
+    return deliveryFee
+  }, [fulfillment, finalPrice, freeDeliveryThreshold, deliveryFee])
+
+  const pickupAddressDisplay = restaurantPickupAddress || '—'
+
+  const amsterdamSlots = useMemo(
+    () => buildAmsterdamSlots(deliveryDay),
+    [deliveryDay]
+  )
+
+  const amsterdamYear = useMemo(() => {
+    const y = new Intl.DateTimeFormat('en', {
+      timeZone: 'Europe/Amsterdam',
+      year: 'numeric',
+    }).format(new Date())
+    return parseInt(y, 10)
+  }, [])
+
+  useEffect(() => {
+    if (amsterdamSlots.some((s) => s.value === deliverySlot)) return
+    setDeliverySlot('asap')
+  }, [deliveryDay, amsterdamSlots, deliverySlot])
+
+  const phoneInvalidHint =
+    formData.phone.trim() !== '' && !isValidUaPhone(formData.phone)
+  const phoneValid = isValidUaPhone(formData.phone)
+  const canSubmitOrder = phoneValid
 
   // --- ФУНКЦИИ КОРЗИНЫ ---
   const updateCart = (newCart: MenuItem[]) => {
@@ -191,24 +289,62 @@ export default function CartView({
   // --- ОФОРМЛЕНИЕ ЗАКАЗА ---
  const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (fulfillment === 'delivery' && !formData.address.trim()) {
+      alert('Вкажіть адресу доставки')
+      return
+    }
     setIsLoading(true)
     try {
       const userId = localStorage.getItem('userId')
-      const fullComment = `${formData.comment} ${appliedPromo ? `(ПРОМОКОД: ${appliedPromo.code} -${appliedPromo.discount}%)` : ''}`.trim()
+      const promoPart = appliedPromo ? `(ПРОМОКОД: ${appliedPromo.code} -${appliedPromo.discount}%)` : ''
+      const fulfillmentPart =
+        fulfillment === 'pickup' ? `[${t.cartSection.fulfillmentPickup}]` : `[${t.cartSection.fulfillmentDelivery}]`
+      const dayLabel =
+        deliveryDay === 'today' ? 'Сьогодні (Амстердам)' : 'Завтра (Амстердам)'
+      const slotLabel =
+        deliverySlot === 'asap'
+          ? 'Якнайшвидше'
+          : amsterdamSlots.find((s) => s.value === deliverySlot)?.label ?? deliverySlot
+      const timePart = `[Час (${dayLabel}): ${slotLabel}]`
+      const fullComment =
+        `${fulfillmentPart} ${timePart} ${formData.comment} ${appliedPromo ? promoPart : ''}`.trim()
+
+      const addrDetails: string[] = []
+      if (formData.buildingBlock.trim())
+        addrDetails.push(`корп./блок: ${formData.buildingBlock.trim()}`)
+      if (formData.entrance) addrDetails.push(`під'їзд: ${formData.entrance}`)
+      if (formData.floor) addrDetails.push(`поверх: ${formData.floor}`)
+      if (formData.apartment) addrDetails.push(`кв.: ${formData.apartment}`)
+      if (formData.intercom) addrDetails.push(`домофон: ${formData.intercom}`)
+
+      const orderAddress =
+        fulfillment === 'pickup'
+          ? `${t.cartSection.fulfillmentPickup}: ${pickupAddressDisplay}`
+          : [
+              `${selectedCity}, ${formData.address.trim()}`,
+              addrDetails.length ? addrDetails.join('; ') : '',
+            ]
+              .filter(Boolean)
+              .join('. ')
 
       // 1. Создаем заказ
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            items: cartItems, // Убедитесь, что тут правильное название переменной (cart или cartItems)
+            items: uniqueItems,
+            name: formData.name,
             customerName: formData.name,
             phone: formData.phone,
-            address: formData.address,
+            address: orderAddress,
             comment: fullComment,
             userId: userId,
-            paymentMethod: paymentMethod, // <-- ВАЖНО: передаем метод оплаты на сервер
-            totalPrice: finalPrice
+            paymentMethod: paymentMethod,
+            totalAmount: finalPrice + deliveryPrice,
+            merchandiseTotal: finalPrice,
+            fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY',
+            noCallbackConfirm: formData.noCallbackConfirm,
+            noDoorbellRing: formData.noDoorbellRing,
         }),
       })
 
@@ -259,22 +395,22 @@ export default function CartView({
   }
   // --- КОМПОНЕНТЫ UI ---
   const Header = () => (
-    <div className="fixed top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-6 z-50">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={onBack}>
-        <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
-        <img src="/1.jpg" alt="Watta Sushi" className="h-6 w-auto object-contain" />
+    <div className="fixed top-3 sm:top-4 left-0 right-0 w-[min(95%,1800px)] min-h-[72px] sm:h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2 sm:py-0 z-50 border border-[#145142]/10">
+      <div className="flex items-center gap-2 cursor-pointer min-w-0" onClick={onBack}>
+        <img src="/logo.png" alt="Logo" className="h-9 w-9 sm:h-10 sm:w-10 object-contain shrink-0" />
+        <img src="/1.jpg" alt="Watta Sushi" className="h-5 sm:h-6 w-auto max-w-[120px] sm:max-w-none object-contain" />
       </div>
 
-      <div className="flex items-center gap-3 md:gap-6 text-gray-700">
-        <button onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full transition"><Phone size={24} /></button>
-        <button onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full transition"><Bell size={24} /></button>
-        <button onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full transition"><Heart size={24} /></button>
-        <button className="hover:bg-gray-100 p-2 rounded-full text-[#145142] relative">
-            <ShoppingBag size={24} />
-            {cartItems.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
+      <div className="flex items-center gap-1.5 sm:gap-3 md:gap-6 text-gray-700 shrink-0">
+        <button type="button" onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full transition text-[#145142] hover:ring-2 hover:ring-[#ff6b35]/30"><Phone size={22} className="sm:w-6 sm:h-6" /></button>
+        <button type="button" onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><Bell size={22} className="sm:w-6 sm:h-6" /></button>
+        <button type="button" onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><Heart size={22} className="sm:w-6 sm:h-6" /></button>
+        <button type="button" className="hover:bg-gray-100 p-2 rounded-full text-[#145142] relative ring-2 ring-transparent hover:ring-[#ff6b35]/30">
+            <ShoppingBag size={22} className="sm:w-6 sm:h-6" />
+            {cartItems.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-[#ff6b35] rounded-full border-2 border-white"></span>}
         </button>
-        <button onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full transition"><User size={24} /></button>
-        <button onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition"><Menu size={24} /></button>
+        <button type="button" onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><User size={22} className="sm:w-6 sm:h-6" /></button>
+        <button type="button" onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><Menu size={22} className="sm:w-6 sm:h-6" /></button>
       </div>
     </div>
   )
@@ -363,7 +499,7 @@ export default function CartView({
       {/* ПРОСТРАНСТВО ПОД ФИКСИРОВАННЫЙ ХЕДЕР */}
       <div className="h-[120px] w-full"></div>
 
-      <div className="relative z-10 max-w-[1600px] mx-auto px-4">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-3 sm:px-4 min-w-0">
         
         {/* КНОПКА НАЗАД */}
         <div className="mb-8">
@@ -377,7 +513,7 @@ export default function CartView({
 
         {!isCheckoutMode ? (
           <>
-            <h1 className="text-[48px] font-bold text-[#194A38] mb-8 leading-tight tracking-tight">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-[#194A38] mb-6 sm:mb-8 leading-tight tracking-tight break-words">
               Ваш заказ ({cartItems.length} товара)
             </h1>
 
@@ -386,15 +522,15 @@ export default function CartView({
                  <span className="text-2xl text-gray-400 font-bold">Корзина пуста</span>
                </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_455px] gap-8 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,28rem)] gap-6 lg:gap-8 items-start w-full min-w-0">
                 
                 {/* ЛЕВАЯ КОЛОНКА (Товары) */}
-                <div className="flex-1 flex flex-col gap-6">
+                <div className="flex-1 flex flex-col gap-6 min-w-0">
                 {/* --- СПИСОК ТОВАРОВ  --- */}
                 
-                <div className="bg-white rounded-[20px] p-6 flex flex-col gap-4 min-h-[392px]">
+                <div className="bg-white rounded-[20px] p-4 sm:p-6 flex flex-col gap-4 min-h-[392px] min-w-0 border border-[#145142]/10">
                   {uniqueItems.map((item) => (
-                    <div key={item.id} className="w-full bg-[#D9D9D9] rounded-[20px] p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0" style={{ minHeight: '104px' }}>
+                    <div key={item.id} className="w-full min-w-0 bg-[#D9D9D9] rounded-[20px] p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0" style={{ minHeight: '104px' }}>
                       
                       {/* Фото и Название */}
                       <div className="flex items-center gap-6 w-full md:w-auto">
@@ -469,150 +605,382 @@ export default function CartView({
                 </div>
 
                 {/* ПРАВАЯ КОЛОНКА (Оплата и Сумма) */}
-             <div className="lg:w-[455px] flex flex-col gap-6 sticky top-[120px]">
+             <div className="w-full min-w-0 flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start z-20">
+                <form
+                  className="flex flex-col gap-6 min-w-0"
+                  onSubmit={handleOrder}
+                  noValidate
+                >
                 {/* 1. Контактные данные */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm">
-                   <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Контактные данные</h2>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
+                   <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-6">Контактные данные</h2>
+                   <div className="flex flex-col gap-4">
                       <input 
                         type="text" 
                         placeholder="Ваше имя *" 
-                        className="w-full p-4 bg-[#F3F4F6] rounded-xl text-lg outline-none focus:ring-2 focus:ring-[#145142]" 
+                        className={CHECKOUT_INPUT_CLASS}
                         value={formData.name} 
                         onChange={e => setFormData({...formData, name: e.target.value})} 
                         required 
                       />
-                      <input 
-                        type="tel" 
-                        placeholder="Телефон *" 
-                        className="w-full p-4 bg-[#F3F4F6] rounded-xl text-lg outline-none focus:ring-2 focus:ring-[#145142]" 
-                        value={formData.phone} 
-                        onChange={e => setFormData({...formData, phone: e.target.value})} 
-                        required 
-                      />
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <input 
+                          type="tel" 
+                          placeholder="+380501234567 або 0501234567" 
+                          autoComplete="tel"
+                          maxLength={UA_PHONE_MAX_LEN}
+                          inputMode="tel"
+                          aria-invalid={phoneInvalidHint}
+                          className={`${CHECKOUT_INPUT_CLASS} ${
+                            phoneInvalidHint
+                              ? 'ring-2 ring-red-500 focus:ring-red-500'
+                              : ''
+                          }`}
+                          value={formData.phone} 
+                          onChange={e =>
+                            setFormData({
+                              ...formData,
+                              phone: e.target.value.slice(0, UA_PHONE_MAX_LEN),
+                            })
+                          }
+                          required 
+                        />
+                        {phoneInvalidHint ? (
+                          <p className="text-sm font-medium text-red-600 pl-1">{t.cartSection.invalidPhone}</p>
+                        ) : null}
+                      </div>
                    </div>
                 </div>
-                {/* 2. Доставка */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm">
-                   <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-[28px] font-bold text-[#194A38]">Доставка</h2>
-                      <span className="text-[#145142] font-medium cursor-pointer flex items-center gap-1">Зона доставки ⓘ</span>
-                   </div>
-                   
-                   {/* Выбор города */}
-                   <div className="flex gap-2 mb-4">
-                      {['Киев', 'Днепр', 'Львов'].map(city => (
-                         <button 
-                           key={city}
-                           type="button"
-                           className={`px-6 py-2 rounded-xl font-bold transition ${city === 'Киев' ? 'bg-[#145142] text-white' : 'bg-[#F3F4F6] text-gray-500'}`}
-                         >
-                           {city}
-                         </button>
-                      ))}
+                {/* 2. Доставка / самовивіз */}
+                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10 relative z-10">
+                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                      <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38]">{t.delivery}</h2>
+                      {fulfillment === 'delivery' && (
+                        <span className="text-[#145142] font-semibold text-sm sm:text-base cursor-pointer flex items-center gap-1 shrink-0">
+                          Зона доставки ⓘ
+                        </span>
+                      )}
                    </div>
 
-                   <input 
-                      type="text" 
-                      placeholder="Улица и номер дома *" 
-                      className="w-full p-4 bg-[#F3F4F6] rounded-xl text-lg outline-none focus:ring-2 focus:ring-[#145142] mb-4" 
-                      value={formData.address} 
-                      onChange={e => setFormData({...formData, address: e.target.value})} 
-                      required 
-                   />
-
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <input type="text" placeholder="Подъезд" className="p-4 bg-[#F3F4F6] rounded-xl outline-none" />
-                      <input type="text" placeholder="Этаж" className="p-4 bg-[#F3F4F6] rounded-xl outline-none" />
-                      <input type="text" placeholder="Квартира" className="p-4 bg-[#F3F4F6] rounded-xl outline-none" />
-                      <input type="text" placeholder="Корпус" className="p-4 bg-[#F3F4F6] rounded-xl outline-none" />
+                   <div
+                     className="mb-6 flex w-full min-w-0 rounded-2xl bg-[#F3F4F6] p-1.5 shadow-inner border border-[#145142]/10"
+                     role="group"
+                     aria-label={`${t.cartSection.fulfillmentDelivery} / ${t.cartSection.fulfillmentPickup}`}
+                   >
+                     <button
+                       type="button"
+                       onClick={() => setFulfillment('delivery')}
+                       className={`relative z-10 flex flex-1 min-w-0 items-center justify-center gap-2 rounded-xl py-3 px-2 text-sm font-bold transition-all md:text-base cursor-pointer ${
+                         fulfillment === 'delivery'
+                           ? 'bg-white text-[#145142] shadow-md ring-2 ring-[#ff6b35]/50'
+                           : 'text-gray-500 hover:text-[#145142]'
+                       }`}
+                     >
+                       <Truck className="h-5 w-5 shrink-0" />
+                       {t.cartSection.fulfillmentDelivery}
+                     </button>
+                     <button
+                       type="button"
+                       onClick={() => setFulfillment('pickup')}
+                       className={`relative z-10 flex flex-1 min-w-0 items-center justify-center gap-2 rounded-xl py-3 px-2 text-sm font-bold transition-all md:text-base cursor-pointer ${
+                         fulfillment === 'pickup'
+                           ? 'bg-white text-[#145142] shadow-md ring-2 ring-[#ff6b35]/50'
+                           : 'text-gray-500 hover:text-[#145142]'
+                       }`}
+                     >
+                       <Store className="h-5 w-5 shrink-0" />
+                       {t.cartSection.fulfillmentPickup}
+                     </button>
                    </div>
 
-                   <div className="flex flex-col gap-2">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                         <input type="checkbox" className="w-5 h-5 accent-[#145142]" />
-                         <span className="text-gray-600">Не перезванивать для подтверждения</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                         <input type="checkbox" className="w-5 h-5 accent-[#145142]" />
-                         <span className="text-gray-600">Не звонить в дверь</span>
-                      </label>
-                   </div>
+                   {fulfillment === 'delivery' ? (
+                     <>
+                       <div className="flex gap-2 mb-4 flex-wrap" role="group" aria-label="Місто">
+                          {['Киев', 'Днепр', 'Львов'].map(city => (
+                             <button 
+                               key={city}
+                               type="button"
+                               onClick={() => setSelectedCity(city)}
+                               className={`px-4 sm:px-6 py-2 rounded-xl font-bold transition border cursor-pointer ${
+                                 selectedCity === city
+                                   ? 'bg-[#145142] text-white shadow-sm border-[#ff6b35]/50 ring-2 ring-[#ff6b35]/40'
+                                   : 'bg-[#F3F4F6] text-gray-600 border-transparent hover:bg-[#145142]/10 hover:text-[#145142]'
+                               }`}
+                             >
+                               {city}
+                             </button>
+                          ))}
+                       </div>
+
+                       <input 
+                          type="text" 
+                          placeholder="Улица и номер дома *" 
+                          className={`${CHECKOUT_INPUT_CLASS} mb-4`}
+                          maxLength={STREET_MAX}
+                          value={formData.address} 
+                          onChange={e =>
+                            setFormData({
+                              ...formData,
+                              address: e.target.value.slice(0, STREET_MAX),
+                            })
+                          }
+                          required 
+                          autoComplete="street-address"
+                       />
+
+                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Подъезд (лише цифри)"
+                            className={CHECKOUT_INPUT_CLASS}
+                            maxLength={DIGIT_ADDR_MAX}
+                            value={formData.entrance}
+                            onChange={e =>
+                              setFormData({
+                                ...formData,
+                                entrance: digitsOnly(e.target.value, DIGIT_ADDR_MAX),
+                              })
+                            }
+                          />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Этаж (лише цифри)"
+                            className={CHECKOUT_INPUT_CLASS}
+                            maxLength={DIGIT_ADDR_MAX}
+                            value={formData.floor}
+                            onChange={e =>
+                              setFormData({
+                                ...formData,
+                                floor: digitsOnly(e.target.value, DIGIT_ADDR_MAX),
+                              })
+                            }
+                          />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Квартира (лише цифри)"
+                            className={CHECKOUT_INPUT_CLASS}
+                            maxLength={DIGIT_ADDR_MAX}
+                            value={formData.apartment}
+                            onChange={e =>
+                              setFormData({
+                                ...formData,
+                                apartment: digitsOnly(e.target.value, DIGIT_ADDR_MAX),
+                              })
+                            }
+                          />
+                          <input
+                            type="text"
+                            placeholder="Корпус / блок"
+                            className={CHECKOUT_INPUT_CLASS}
+                            maxLength={BUILDING_BLOCK_MAX}
+                            value={formData.buildingBlock}
+                            onChange={e =>
+                              setFormData({
+                                ...formData,
+                                buildingBlock: e.target.value.slice(0, BUILDING_BLOCK_MAX),
+                              })
+                            }
+                          />
+                       </div>
+
+                       <div className="flex flex-col gap-3">
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                             <input
+                               type="checkbox"
+                               className="mt-0.5 w-5 h-5 shrink-0 accent-[#145142] rounded border-[#145142]/40 focus:ring-2 focus:ring-[#ff6b35]/50"
+                               checked={formData.noCallbackConfirm}
+                               onChange={e =>
+                                 setFormData({
+                                   ...formData,
+                                   noCallbackConfirm: e.target.checked,
+                                 })
+                               }
+                             />
+                             <span className="text-gray-600 group-hover:text-[#145142]">Не перезванивать для подтверждения</span>
+                          </label>
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                             <input
+                               type="checkbox"
+                               className="mt-0.5 w-5 h-5 shrink-0 accent-[#145142] rounded border-[#145142]/40 focus:ring-2 focus:ring-[#ff6b35]/50"
+                               checked={formData.noDoorbellRing}
+                               onChange={e =>
+                                 setFormData({
+                                   ...formData,
+                                   noDoorbellRing: e.target.checked,
+                                 })
+                               }
+                             />
+                             <span className="text-gray-600 group-hover:text-[#145142]">Не звонить в дверь</span>
+                          </label>
+                       </div>
+                     </>
+                   ) : (
+                     <div className="rounded-2xl border border-[#145142]/15 bg-gradient-to-br from-[#145142]/[0.07] via-white to-[#ff6b35]/10 p-6 shadow-sm">
+                       <p className="text-sm font-semibold uppercase tracking-wide text-[#145142]/80 mb-3">
+                         {t.cartSection.pickupAtRestaurant}
+                       </p>
+                       <div className="flex gap-4 items-start">
+                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#145142] text-white shadow-lg shadow-[#145142]/30">
+                           <MapPin className="h-6 w-6" />
+                         </div>
+                         <div>
+                           <p className="text-lg font-bold text-[#194A38] leading-snug">{pickupAddressDisplay}</p>
+                           <p className="mt-2 text-sm text-gray-600">{t.cartSection.pickupSubtitle}</p>
+                         </div>
+                       </div>
+                     </div>
+                   )}
                 </div>
 
-                {/* 3. Время доставки */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm">
-                   <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Время доставки</h2>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div>
+                {/* 3. Время доставки (Europe/Amsterdam) */}
+                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
+                   <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-2">Время доставки</h2>
+                   <p className="text-xs text-gray-500 mb-6">Інтервали за часом Амстердама (CET/CEST). Минулий час недоступний.</p>
+                   <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+                      <div className="min-w-0">
                          <label className="block text-gray-400 text-sm mb-1">День</label>
-                         <select className="w-full p-4 bg-[#F3F4F6] rounded-xl outline-none font-bold">
-                            <option>Сегодня</option>
-                            <option>Завтра</option>
+                         <select
+                           className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
+                           value={deliveryDay}
+                           onChange={(e) =>
+                             setDeliveryDay(e.target.value as DeliveryDay)
+                           }
+                         >
+                            <option value="today">Сьогодні</option>
+                            <option value="tomorrow">Завтра</option>
                          </select>
                       </div>
-                      <div>
-                         <label className="block text-gray-400 text-sm mb-1">Время</label>
-                         <select className="w-full p-4 bg-[#F3F4F6] rounded-xl outline-none font-bold">
-                            <option>Как можно скорее</option>
-                            <option>18:00 - 18:30</option>
-                            <option>19:00 - 19:30</option>
+                      <div className="min-w-0">
+                         <label className="block text-gray-400 text-sm mb-1">Час</label>
+                         <select
+                           className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
+                           value={deliverySlot}
+                           onChange={(e) => setDeliverySlot(e.target.value)}
+                         >
+                            {amsterdamSlots.map((s) => (
+                              <option key={s.value} value={s.value}>
+                                {s.label}
+                              </option>
+                            ))}
                          </select>
                       </div>
                    </div>
                 </div>
 
                 {/* 4. Комментарий и приборы */}
-                <div className="bg-white rounded-[30px] p-8 shadow-sm">
-                   <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Детали</h2>
-                   <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
+                   <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-6">Детали</h2>
+                   <div className="flex flex-col gap-4 mb-4">
                       <div>
-                         <label className="block text-gray-400 text-sm mb-1">Кол-во людей</label>
-                         <input type="number" defaultValue={1} className="w-full p-4 bg-[#F3F4F6] rounded-xl outline-none font-bold" />
+                         <label className="block text-gray-400 text-sm mb-1">Кол-во людей (1–99)</label>
+                         <div className="flex flex-col gap-2">
+                           <input
+                             type="range"
+                             min={1}
+                             max={99}
+                             value={Math.min(99, Math.max(1, formData.persons))}
+                             onChange={(e) =>
+                               setFormData({
+                                 ...formData,
+                                 persons: Number(e.target.value),
+                               })
+                             }
+                             className="w-full accent-[#145142] h-2 rounded-full"
+                           />
+                           <input
+                             type="number"
+                             min={1}
+                             max={99}
+                             className={CHECKOUT_INPUT_CLASS + ' font-semibold'}
+                             value={formData.persons}
+                             onChange={(e) => {
+                               const raw = parseInt(e.target.value, 10)
+                               const v = Number.isFinite(raw)
+                                 ? Math.min(99, Math.max(1, raw))
+                                 : 1
+                               setFormData({ ...formData, persons: v })
+                             }}
+                           />
+                         </div>
                       </div>
                       <div>
                          <label className="block text-gray-400 text-sm mb-1">Учебные палочки</label>
-                         <select className="w-full p-4 bg-[#F3F4F6] rounded-xl outline-none font-bold">
-                            <option>0</option>
-                            <option>1</option>
-                            <option>2</option>
+                         <select
+                           className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
+                           value={formData.sticks}
+                           onChange={(e) =>
+                             setFormData({
+                               ...formData,
+                               sticks: Number(e.target.value),
+                             })
+                           }
+                         >
+                            {Array.from({ length: 21 }, (_, i) => (
+                              <option key={i} value={i}>
+                                {i}
+                              </option>
+                            ))}
                          </select>
                       </div>
                    </div>
                    <textarea 
                       placeholder="Комментарий к заказу" 
-                      className="w-full p-4 bg-[#F3F4F6] rounded-xl text-lg outline-none h-32 resize-none" 
+                      className={`${CHECKOUT_INPUT_CLASS} h-32 resize-none min-h-[8rem]`}
+                      maxLength={COMMENT_MAX}
                       value={formData.comment} 
-                      onChange={e => setFormData({...formData, comment: e.target.value})} 
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          comment: e.target.value.slice(0, COMMENT_MAX),
+                        })
+                      }
                    />
+                   <p className="text-xs text-gray-400 mt-1 text-right">
+                     {formData.comment.length}/{COMMENT_MAX}
+                   </p>
                 </div>
                   
                   {/* 5. Блок Оплаты */}
-                  <div className="bg-white rounded-[30px] p-8 shadow-sm">
-                    <h2 className="text-[28px] font-bold text-[#194A38] mb-6">Способ оплаты</h2>
+                  <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
+                    <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-6">Способ оплаты</h2>
                     
                     <div className="flex flex-col gap-3">
-                      {/* Кнопки Apple/Google Pay */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('APPLE_PAY')}
-                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all ${
-                            paymentMethod === 'APPLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-black text-white opacity-90'
+                          className={`relative h-12 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                            paymentMethod === 'APPLE_PAY'
+                              ? 'bg-black text-white ring-2 ring-[#145142] ring-offset-2 ring-offset-white shadow-md'
+                              : 'bg-black text-white opacity-90 hover:ring-2 hover:ring-[#ff6b35]/35'
                           }`}
                         >
                           <span className="font-bold"> Pay</span>
-                          {paymentMethod === 'APPLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
+                          {paymentMethod === 'APPLE_PAY' && (
+                            <div className="absolute top-1 right-1 w-2 h-2 bg-[#ff6b35] rounded-full" />
+                          )}
                         </button>
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('GOOGLE_PAY')}
-                          className={`relative h-12 rounded-lg flex items-center justify-center gap-2 transition-all border ${
-                            paymentMethod === 'GOOGLE_PAY' ? 'bg-black text-white ring-2 ring-[#145142]' : 'bg-white text-gray-800 border-gray-300'
+                          className={`relative h-12 rounded-xl flex items-center justify-center gap-2 transition-all border ${
+                            paymentMethod === 'GOOGLE_PAY'
+                              ? 'bg-black text-white ring-2 ring-[#145142] ring-offset-2 ring-offset-white border-transparent'
+                              : 'bg-white text-gray-800 border-gray-200 hover:border-[#ff6b35]/40'
                           }`}
                         >
-                          <span className="font-bold"><span className="text-blue-500">G</span> Pay</span>
-                          {paymentMethod === 'GOOGLE_PAY' && <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>}
+                          <span className="font-bold">
+                            <span className="text-blue-500">G</span> Pay
+                          </span>
+                          {paymentMethod === 'GOOGLE_PAY' && (
+                            <div className="absolute top-1 right-1 w-2 h-2 bg-[#ff6b35] rounded-full" />
+                          )}
                         </button>
                       </div>
 
@@ -622,38 +990,129 @@ export default function CartView({
                         <span className="w-full border-t border-gray-200"></span>
                       </div>
 
-                      {/* Наличные */}
-                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CASH' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CASH' ? 'border-[#145142]' : 'border-gray-300'}`}>
-                          {paymentMethod === 'CASH' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
+                      <label
+                        className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+                          paymentMethod === 'CASH'
+                            ? 'border-[#145142] bg-[#145142]/5 ring-2 ring-[#ff6b35]/35'
+                            : 'border-gray-200 hover:bg-gray-50 hover:border-[#145142]/25'
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            paymentMethod === 'CASH' ? 'border-[#145142]' : 'border-gray-300'
+                          }`}
+                        >
+                          {paymentMethod === 'CASH' && (
+                            <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
+                          )}
                         </div>
                         <span className="font-bold text-gray-700">Наличными</span>
-                        <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
+                        <input
+                          type="radio"
+                          name="payment"
+                          className="hidden"
+                          checked={paymentMethod === 'CASH'}
+                          onChange={() => setPaymentMethod('CASH')}
+                        />
                       </label>
 
-                      {/* Картой онлайн */}
-                      <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${paymentMethod === 'CARD' ? 'border-[#145142] bg-[#145142]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'CARD' ? 'border-[#145142]' : 'border-gray-300'}`}>
-                          {paymentMethod === 'CARD' && <div className="w-2.5 h-2.5 bg-[#145142] rounded-full"></div>}
+                      <label
+                        className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+                          paymentMethod === 'CARD'
+                            ? 'border-[#145142] bg-[#145142]/5 ring-2 ring-[#ff6b35]/35'
+                            : 'border-gray-200 hover:bg-gray-50 hover:border-[#145142]/25'
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            paymentMethod === 'CARD' ? 'border-[#145142]' : 'border-gray-300'
+                          }`}
+                        >
+                          {paymentMethod === 'CARD' && (
+                            <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
+                          )}
                         </div>
                         <span className="font-bold text-gray-700">Картой онлайн</span>
-                        <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} />
+                        <input
+                          type="radio"
+                          name="payment"
+                          className="hidden"
+                          checked={paymentMethod === 'CARD'}
+                          onChange={() => setPaymentMethod('CARD')}
+                        />
                       </label>
                       
                       {paymentMethod === 'CARD' && (
-                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2">
-                            <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-3 border rounded-lg mb-3 outline-none focus:border-[#145142]" />
-                            <div className="flex gap-3">
-                              <input type="text" placeholder="MM/YY" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
-                              <input type="text" placeholder="CVC" className="w-1/2 p-3 border rounded-lg outline-none focus:border-[#145142]" />
+                        <div className="p-4 rounded-xl border border-[#145142]/15 bg-[#F3F4F6]/80 space-y-3">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="cc-number"
+                            placeholder="0000 0000 0000 0000"
+                            className={CARD_FIELD_CLASS}
+                            value={cardNumber}
+                            onChange={(e) => {
+                              const d = e.target.value.replace(/\D/g, '').slice(0, 19)
+                              const spaced = d.replace(/(\d{4})(?=\d)/g, '$1 ').trim()
+                              setCardNumber(spaced)
+                            }}
+                          />
+                          <div className="flex flex-col sm:flex-row gap-3 min-w-0">
+                            <div className="flex gap-2 flex-1 min-w-0">
+                              <select
+                                aria-label="Місяць (MM)"
+                                className={`${CARD_FIELD_CLASS} flex-1 min-w-0 cursor-pointer font-medium text-gray-600`}
+                                value={cardMonth}
+                                onChange={(e) => setCardMonth(e.target.value)}
+                              >
+                                <option value="">MM</option>
+                                {Array.from({ length: 12 }, (_, i) => {
+                                  const m = String(i + 1).padStart(2, '0')
+                                  return (
+                                    <option key={m} value={m}>
+                                      {m}
+                                    </option>
+                                  )
+                                })}
+                              </select>
+                              <select
+                                aria-label="Рік (YY)"
+                                className={`${CARD_FIELD_CLASS} flex-1 min-w-0 cursor-pointer font-medium text-gray-600`}
+                                value={cardYear}
+                                onChange={(e) => setCardYear(e.target.value)}
+                              >
+                                <option value="">YY</option>
+                                {Array.from({ length: 16 }, (_, i) => {
+                                  const y = amsterdamYear + i
+                                  const short = String(y).slice(-2)
+                                  return (
+                                    <option key={y} value={short}>
+                                      {short}
+                                    </option>
+                                  )
+                                })}
+                              </select>
                             </div>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="cc-csc"
+                              placeholder="CVC"
+                              maxLength={4}
+                              className={`${CARD_FIELD_CLASS} sm:w-36 font-medium`}
+                              value={cardCvc}
+                              onChange={(e) =>
+                                setCardCvc(digitsOnly(e.target.value, 4))
+                              }
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
                   
                   {/* 6. Блок Итого (Объединенный с Промокодом) */}
-                  <div className="bg-white rounded-[30px] p-8 shadow-sm flex flex-col gap-6">
+                  <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm flex flex-col gap-6 border border-[#145142]/10">
                     
                     {/* --- СЕКЦИЯ ПРОМОКОДА (ПЕРЕНЕСЕНА СЮДА) --- */}
                     <div className="relative overflow-hidden rounded-[20px] p-4"> {/* Контейнер для "плашки" */}
@@ -668,8 +1127,9 @@ export default function CartView({
                               onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                             />
                             <button
+                              type="button"
                               onClick={handleApplyPromo}
-                              className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center"
+                              className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center shrink-0 border border-[#ff6b35]/30 hover:border-[#ff6b35]/60"
                             >
                               OK
                             </button>
@@ -705,10 +1165,34 @@ export default function CartView({
                           </div>
                         )}
 
-                        <div className="flex justify-between items-center text-gray-500 text-lg">
-                          <span>Доставка</span>
-                          <span>{deliveryPrice} ₴</span>
+                        <div className="flex justify-between items-center text-gray-500 text-lg gap-3">
+                          <span>
+                            {fulfillment === 'pickup'
+                              ? t.cartSection.fulfillmentPickup
+                              : t.delivery}
+                          </span>
+                          <span
+                            className={`text-right font-semibold ${
+                              fulfillment === 'delivery' && deliveryPrice === 0
+                                ? 'text-[#145142]'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            {fulfillment === 'pickup'
+                              ? '—'
+                              : deliveryPrice === 0
+                                ? t.cartSection.deliveryFree
+                                : `${deliveryPrice} ₴`}
+                          </span>
                         </div>
+                        {fulfillment === 'delivery' && deliveryPrice > 0 && (
+                          <p className="text-xs text-gray-500 -mt-2">
+                            {t.cartSection.deliveryUnlockHint.replace(
+                              '{{amount}}',
+                              String(freeDeliveryThreshold)
+                            )}
+                          </p>
+                        )}
                         
                         <div className="w-full h-px bg-gray-200 my-2"></div>
 
@@ -718,9 +1202,9 @@ export default function CartView({
                         </div>
                         
                         <button 
-                          onClick={handleOrder}
-                          disabled={isLoading}
-                          className="w-full h-[60px] bg-[#145142] rounded-[15px] text-white text-[20px] font-bold hover:bg-[#0f3d32] transition shadow-lg disabled:opacity-70 flex items-center justify-center gap-2 mt-2"
+                          disabled={isLoading || !canSubmitOrder}
+                          type="submit"
+                          className="w-full h-[60px] rounded-[15px] text-white text-[20px] font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 border border-[#ff6b35]/35 bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] hover:brightness-105 active:scale-[0.99] ring-2 ring-[#ff6b35]/30 focus-visible:outline-none focus-visible:ring-[#ff6b35]/60"
                         >
                           {isLoading ? 'Обработка...' : 'Подтвердить заказ'}
                         </button>
@@ -730,6 +1214,8 @@ export default function CartView({
                         </p>
                     </div>
                   </div>
+
+                </form>
                   
                 </div>
                 

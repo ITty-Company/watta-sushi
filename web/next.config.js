@@ -24,17 +24,18 @@ const nextConfig = {
   // },
   
   async rewrites() {
-    // Используем переменную окружения для URL API, или localhost для разработки
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    
+    // Proxy /api and /uploads to Express. Override with NEXT_PUBLIC_API_URL (no trailing slash).
+    const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = String(raw).replace(/\/$/, '');
+
     return [
       {
         source: '/api/:path*',
-        destination: `${apiUrl}/api/:path*`, // Адрес Express бэкенда
+        destination: `${apiUrl}/api/:path*`,
       },
       {
         source: '/uploads/:path*',
-        destination: `${apiUrl}/uploads/:path*`, // Для картинок
+        destination: `${apiUrl}/uploads/:path*`,
       },
     ];
   },

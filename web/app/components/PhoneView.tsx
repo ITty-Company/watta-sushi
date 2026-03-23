@@ -23,13 +23,57 @@ export default function PhoneView() {
           </div>
         </div>
         <div className="contact-item-web">
+          <div className="contact-icon-web">💬</div>
+          <div className="contact-info-web">
+            <h3>Telegram</h3>
+            <a
+              href="https://t.me/example"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#145142', fontWeight: 700 }}
+            >
+              t.me/example
+            </a>
+          </div>
+        </div>
+        <div className="contact-item-web">
+          <div className="contact-icon-web">🟢</div>
+          <div className="contact-info-web">
+            <h3>WhatsApp</h3>
+            <a
+              href="https://wa.me/12345"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#145142', fontWeight: 700 }}
+            >
+              wa.me/12345
+            </a>
+          </div>
+        </div>
+        <div className="contact-item-web">
+          <div className="contact-icon-web">📸</div>
+          <div className="contact-info-web">
+            <h3>Instagram</h3>
+            <a
+              href="https://instagram.com/example"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#145142', fontWeight: 700 }}
+            >
+              instagram.com/example
+            </a>
+          </div>
+        </div>
+        <div className="contact-item-web">
           <div className="contact-icon-web">✉️</div>
           <div className="contact-info-web">
             <h3>Email</h3>
             <p>info@wattasushi.com</p>
           </div>
         </div>
-        <button className="contact-call-btn-web">Позвонить</button>
+        <a className="contact-call-btn-web" href="tel:+380501234567">
+          Позвонить
+        </a>
       </div>
       </div>
     </div>
