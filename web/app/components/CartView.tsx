@@ -1015,135 +1015,111 @@ export default function CartView({
                         <div
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             paymentMethod === 'CARD' ? 'border-[#145142]' : 'border-gray-300'
-                          }`}
-                        >
-                          {paymentMethod === 'CARD' && (
-                            <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-gray-700">Картой онлайн</span>
-                          <span className="text-xs text-gray-500">LiqPay, Apple Pay, Google Pay</span>
-                        </div>
-                        <input
-                          type="radio"
-                          name="payment"
-                          className="hidden"
-                          checked={paymentMethod === 'CARD'}
-                          onChange={() => setPaymentMethod('CARD')}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  
-                  {/* 6. Блок Итого (Объединенный с Промокодом) */}
-                  <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm flex flex-col gap-6 border border-[#145142]/10">
-                    
-                    {/* --- СЕКЦИЯ ПРОМОКОДА (ПЕРЕНЕСЕНА СЮДА) --- */}
-                    <div className="relative overflow-hidden rounded-[20px] p-4"> {/* Контейнер для "плашки" */}
-                        <div className="relative z-10">
-                          <h3 className="font-bold text-[#194A38] mb-3 text-lg">Промокод</h3>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="Введіть код"
-                              className="flex-1 bg-[#F5F5F7] rounded-[15px] px-4 py-3 outline-none focus:ring-2 focus:ring-[#145142] font-bold text-[#194A38] uppercase placeholder:font-normal placeholder:normal-case"
-                              value={promoCode}
-                              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                            />
-                            <button
-                              type="button"
-                              onClick={handleApplyPromo}
-                              className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center shrink-0 border border-[#ff6b35]/30 hover:border-[#ff6b35]/60"
-                            >
-                              OK
-                            </button>
+                          }`}>
+                            {paymentMethod === 'CARD' && (
+                              <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
+                            )}
                           </div>
-                          
-                          {promoError && (
-                            <p className="text-red-500 text-sm mt-2 font-medium bg-red-50 p-2 rounded-lg text-center">
-                              {promoError}
-                            </p>
-                          )}
+                          <div className="flex flex-col">
+                            <span className="font-bold text-gray-700">Картой онлайн</span>
+                            <span className="text-xs text-gray-500">LiqPay, Apple Pay, Google Pay</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                    {/* 6. Блок Итого (Объединенный с Промокодом) */}
+                    <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm flex flex-col gap-6 border border-[#145142]/10">
+                      <div className="relative overflow-hidden rounded-[20px] p-4">
+                          <div className="relative z-10">
+                            <h3 className="font-bold text-[#194A38] mb-3 text-lg">Промокод</h3>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Введіть код"
+                                className="flex-1 bg-[#F5F5F7] rounded-[15px] px-4 py-3 outline-none focus:ring-2 focus:ring-[#145142] font-bold text-[#194A38] uppercase placeholder:font-normal placeholder:normal-case"
+                                value={promoCode}
+                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                              />
+                              <button
+                                type="button"
+                                onClick={handleApplyPromo}
+                                className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center shrink-0 border border-[#ff6b35]/30 hover:border-[#ff6b35]/60"
+                              >
+                                OK
+                              </button>
+                            </div>
+                            {promoError && (
+                              <p className="text-red-500 text-sm mt-2 font-medium bg-red-50 p-2 rounded-lg text-center">
+                                {promoError}
+                              </p>
+                            )}
+                            {appliedPromo && (
+                              <div className="mt-3 flex items-center gap-2 text-[#145142] font-bold bg-[#145142]/10 p-2 rounded-lg justify-center">
+                                <span>🎉 Код {appliedPromo.code} застосовано!</span>
+                              </div>
+                            )}
+                          </div>
+                          <PromoInputBg />
+                      </div>
+                      <div className="w-full h-px bg-gray-200"></div>
+                      <div className="flex flex-col gap-4">
+                          <div className="flex justify-between items-center text-gray-500 text-lg">
+                            <span>Сумма заказа</span>
+                            <span>{basePrice} ₴</span>
+                          </div>
                           {appliedPromo && (
-                            <div className="mt-3 flex items-center gap-2 text-[#145142] font-bold bg-[#145142]/10 p-2 rounded-lg justify-center">
-                              <span>🎉 Код {appliedPromo.code} застосовано!</span>
+                            <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
+                              <span>Скидка ({appliedPromo.code})</span>
+                              <span>-{discountAmount} ₴</span>
                             </div>
                           )}
-                        </div>
-                        <PromoInputBg /> {/* Фон-билетик */}
-                    </div>
-
-                    <div className="w-full h-px bg-gray-200"></div>
-
-                    {/* --- РАСЧЕТ ЦЕНЫ --- */}
-                    <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-center text-gray-500 text-lg">
-                          <span>Сумма заказа</span>
-                          <span>{basePrice} ₴</span>
-                        </div>
-                        
-                        {appliedPromo && (
-                          <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
-                            <span>Скидка ({appliedPromo.code})</span>
-                            <span>-{discountAmount} ₴</span>
+                          <div className="flex justify-between items-center text-gray-500 text-lg gap-3">
+                            <span>
+                              {fulfillment === 'pickup'
+                                ? t.cartSection.fulfillmentPickup
+                                : t.delivery}
+                            </span>
+                            <span
+                              className={`text-right font-semibold ${
+                                fulfillment === 'delivery' && deliveryPrice === 0
+                                  ? 'text-[#145142]'
+                                  : 'text-gray-700'
+                              }`}
+                            >
+                              {fulfillment === 'pickup'
+                                ? '—'
+                                : deliveryPrice === 0
+                                  ? t.cartSection.deliveryFree
+                                  : `${deliveryPrice} ₴`}
+                            </span>
                           </div>
-                        )}
-
-                        <div className="flex justify-between items-center text-gray-500 text-lg gap-3">
-                          <span>
-                            {fulfillment === 'pickup'
-                              ? t.cartSection.fulfillmentPickup
-                              : t.delivery}
-                          </span>
-                          <span
-                            className={`text-right font-semibold ${
-                              fulfillment === 'delivery' && deliveryPrice === 0
-                                ? 'text-[#145142]'
-                                : 'text-gray-700'
-                            }`}
+                          {fulfillment === 'delivery' && deliveryPrice > 0 && (
+                            <p className="text-xs text-gray-500 -mt-2">
+                              {t.cartSection.deliveryUnlockHint.replace(
+                                '{{amount}}',
+                                String(freeDeliveryThreshold)
+                              )}
+                            </p>
+                          )}
+                          <div className="w-full h-px bg-gray-200 my-2"></div>
+                          <div className="flex justify-between items-end">
+                            <span className="text-[24px] font-bold text-black">К оплате</span>
+                            <span className="text-[32px] font-bold text-[#145142]">{finalPrice + deliveryPrice} ₴</span>
+                          </div>
+                          <button
+                            disabled={isLoading || !canSubmitOrder}
+                            type="submit"
+                            className="w-full h-[60px] rounded-[15px] text-white text-[20px] font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 border border-[#ff6b35]/35 bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] hover:brightness-105 active:scale-[0.99] ring-2 ring-[#ff6b35]/30 focus-visible:outline-none focus-visible:ring-[#ff6b35]/60"
                           >
-                            {fulfillment === 'pickup'
-                              ? '—'
-                              : deliveryPrice === 0
-                                ? t.cartSection.deliveryFree
-                                : `${deliveryPrice} ₴`}
-                          </span>
-                        </div>
-                        {fulfillment === 'delivery' && deliveryPrice > 0 && (
-                          <p className="text-xs text-gray-500 -mt-2">
-                            {t.cartSection.deliveryUnlockHint.replace(
-                              '{{amount}}',
-                              String(freeDeliveryThreshold)
-                            )}
+                            {isLoading ? 'Обработка...' : 'Подтвердить заказ'}
+                          </button>
+                          <p className="text-center text-xs text-gray-400 px-2 leading-tight">
+                            Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
                           </p>
-                        )}
-                        
-                        <div className="w-full h-px bg-gray-200 my-2"></div>
-
-                        <div className="flex justify-between items-end">
-                          <span className="text-[24px] font-bold text-black">К оплате</span>
-                          <span className="text-[32px] font-bold text-[#145142]">{finalPrice + deliveryPrice} ₴</span>
-                        </div>
-                        
-                        <button 
-                          disabled={isLoading || !canSubmitOrder}
-                          type="submit"
-                          className="w-full h-[60px] rounded-[15px] text-white text-[20px] font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 border border-[#ff6b35]/35 bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] hover:brightness-105 active:scale-[0.99] ring-2 ring-[#ff6b35]/30 focus-visible:outline-none focus-visible:ring-[#ff6b35]/60"
-                        >
-                          {isLoading ? 'Обработка...' : 'Подтвердить заказ'}
-                        </button>
-                        
-                        <p className="text-center text-xs text-gray-400 px-2 leading-tight">
-                          Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
-                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                </form>
-                  
+                  </form>
                 </div>
-                
               </div>
             )}
           </>
