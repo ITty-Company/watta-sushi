@@ -233,21 +233,24 @@ export default function MenuView() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
   
   // Функции переключения (НОВОЕ)
-  const nextBanner = useCallback(() => {
-    setBanners(currentBanners => {
-      if (currentBanners.length === 0) return currentBanners
-      setCurrentBannerIndex(prev => (prev + 1) % currentBanners.length)
-      return currentBanners
-    })
-  }, [])
+  const nextBanner = () => {
+    if (banners.length <= 1) return;
+    setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+  };
 
-  const prevBanner = useCallback(() => {
-    setBanners(currentBanners => {
-      if (currentBanners.length === 0) return currentBanners
-      setCurrentBannerIndex(prev => (prev - 1 + currentBanners.length) % currentBanners.length)
-      return currentBanners
-    })
-  }, [])
+  const prevBanner = () => {
+    if (banners.length <= 1) return;
+    setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
+  };
+
+  // 2. Возвращаем авто-таймер (листает каждые 5 секунд)
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => {
+      nextBanner();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [banners.length, nextBanner]);
 
   // Функция загрузки данных
   const loadBanners = useCallback(() => {
