@@ -112,6 +112,7 @@ export default function RootLayout({
         <Toaster
           position="top-center"
           reverseOrder={false}
+          containerStyle={{ zIndex: 99999 }}
           toastOptions={{
             style: { borderRadius: '0.75rem' },
             success: { iconTheme: { primary: '#145142', secondary: '#ffffff' } },

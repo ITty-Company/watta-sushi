@@ -44,6 +44,7 @@ console.log('✅ DATABASE_URL найден');
 
 // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
 const app = express();
+app.set('trust proxy', 1);
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000; // Обычно бэкенд на 5000 или 3001
 

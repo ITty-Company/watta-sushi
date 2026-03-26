@@ -341,8 +341,11 @@ export default function CartView({
         paymentMethod === 'CASH' && formData.needChangeFrom.trim()
           ? `[Нужна сдача с: ${formData.needChangeFrom.trim()} ₴]`
           : ''
+      const sticksPart = `[Приборы: ${formData.sticks} шт, Персоны: ${formData.persons}]`
+      const cbPart = formData.noCallbackConfirm ? '[Не перезванивать]' : ''
+      const dbPart = formData.noDoorbellRing ? '[Не звонить в дверь]' : ''
       const fullComment =
-        `${changePart} ${fulfillmentPart} ${timePart} ${formData.comment} ${appliedPromo ? promoPart : ''}`.trim()
+        `${changePart} ${fulfillmentPart} ${timePart} ${sticksPart} ${cbPart} ${dbPart} ${formData.comment} ${appliedPromo ? promoPart : ''}`.trim()
 
       const addrDetails: string[] = []
       if (formData.buildingBlock.trim())
@@ -365,8 +368,8 @@ export default function CartView({
       const totalAmountNumber = Number(finalPrice + deliveryPrice)
       const merchandiseTotalNumber = Number(finalPrice)
       const deliveryPriceNumber = Number(deliveryPrice)
-      const needChangeFromValue =
-        formData.needChangeFrom.trim() === '' ? null : Number(formData.needChangeFrom)
+      // const needChangeFromValue =
+      //   formData.needChangeFrom.trim() === '' ? null : Number(formData.needChangeFrom)
 
       // 1. Создаем заказ
       const response = await fetch('/api/orders', {
@@ -374,7 +377,7 @@ export default function CartView({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             items: uniqueItems,
-            name: formData.name,
+            // name: formData.name,
             customerName: formData.name,
             phone: formData.phone,
             address: orderAddress,
@@ -384,10 +387,10 @@ export default function CartView({
             totalAmount: totalAmountNumber,
             merchandiseTotal: merchandiseTotalNumber,
             deliveryPrice: deliveryPriceNumber,
-            needChangeFrom: needChangeFromValue,
+            // needChangeFrom: needChangeFromValue,
             fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY',
-            noCallbackConfirm: formData.noCallbackConfirm,
-            noDoorbellRing: formData.noDoorbellRing,
+            // noCallbackConfirm: formData.noCallbackConfirm,
+            // noDoorbellRing: formData.noDoorbellRing,
         }),
       })
 
@@ -760,7 +763,9 @@ export default function CartView({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
                         <input
-                        type="number"
+                        type="text" 
+                        inputMode="numeric" 
+                        pattern="[0-9]*"
                         placeholder="Подъезд (лише цифри)"
                         className={CHECKOUT_INPUT_CLASS}
                         value={formData.entrance}
