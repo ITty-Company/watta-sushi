@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import { 
   ArrowLeft, 
   RefreshCw, 
@@ -311,6 +312,14 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const [newZoneColor, setNewZoneColor] = useState('#4ade80')
   const [newZoneCoordinates, setNewZoneCoordinates] = useState('')
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false)
+  const toastStyle = { borderRadius: '0.75rem' }
+  const notifySuccess = (message: string) =>
+    toast.success(message, {
+      style: toastStyle,
+      iconTheme: { primary: '#145142', secondary: '#ffffff' },
+    })
+  const notifyError = (message: string) => toast.error(message, { style: toastStyle })
+  const alert = (message: string) => notifyError(String(message))
 
   // --- ЗАГРУЗКА ДАННЫХ ---
   const fetchAll = async () => {
@@ -319,7 +328,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы. Пожалуйста, войдите в систему.')
+        notifyError('Вы не авторизованы. Пожалуйста, войдите в систему.')
         onBack()
         return
 
@@ -356,6 +365,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         .catch(() => {})
       if (ingredientsRes.ok) setIngredients(await ingredientsRes.json())
       if (ordersRes.ok) setOrders(await ordersRes.json())
+      if (prodRes.ok) {
+        const productsData = await prodRes.json()
+        setProducts(Array.isArray(productsData) ? productsData : [])
+      } else {
+        setProducts([])
+      }
       if (catRes.ok) { const c = await catRes.json(); setMenuCategories(c); }
       if (citiesRes.ok) setCities(await citiesRes.json())
       if (countriesRes.ok) setCountries(await countriesRes.json())
@@ -364,7 +379,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (usersRes.ok) setUsers(await usersRes.json())
       if (teamRes.ok) setTeamMembers(await teamRes.json())
       if ([ingredientsRes, ordersRes, prodRes, countriesRes].some(r => r.status === 401 || r.status === 403)) {
-        alert('Доступ запрещен. Пожалуйста, войдите как администратор.')
+        notifyError('Доступ запрещен. Пожалуйста, войдите как администратор.')
         onBack()
       }
       const settingsRes = await fetch('/api/settings', { headers })
@@ -374,7 +389,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       }
     } catch (e) {
       console.error(e)
-      alert('Ошибка при загрузке данных')
+      notifyError('Ошибка при загрузке данных')
     } finally {
       setIsLoading(false)
     }
@@ -390,17 +405,17 @@ export default function AdminView({ onBack }: AdminViewProps) {
         try {
           const parsed = JSON.parse(savedUser)
           if (parsed.role !== 'ADMIN') {
-            alert(t.adminPage.auth.adminOnly)
+            notifyError(t.adminPage.auth.adminOnly)
             onBack()
             return
           }
         } catch (e) {
-          alert('Ошибка проверки прав доступа')
+          notifyError('Ошибка проверки прав доступа')
           onBack()
           return
         }
       } else {
-        alert('Вы не авторизованы. Пожалуйста, войдите в систему.')
+        notifyError('Вы не авторизованы. Пожалуйста, войдите в систему.')
         onBack()
         return
       }
@@ -738,7 +753,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert(t.adminPage.auth.notAuthorized)
+        notifyError(t.adminPage.auth.notAuthorized)
         return
       }
       const res = await fetch(`/api/products/${id}`, {
@@ -751,7 +766,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('productsUpdated'))
         }
-        alert(t.adminPage.products.deleted)
+        notifySuccess(t.adminPage.products.deleted)
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -760,12 +775,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        notifyError(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка удаления товара:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      notifyError(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -774,7 +789,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert(t.adminPage.auth.notAuthorized)
+        notifyError(t.adminPage.auth.notAuthorized)
         return
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -801,7 +816,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('productsUpdated'))
         }
-        alert(t.adminPage.products.saved)
+        notifySuccess(t.adminPage.products.saved)
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -810,12 +825,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        notifyError(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка сохранения товара:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      notifyError(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -825,7 +840,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert(t.adminPage.auth.notAuthorized)
+        notifyError(t.adminPage.auth.notAuthorized)
         return
       }
       const res = await fetch(`/api/orders/${orderId}/status`, {
@@ -838,7 +853,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       if (res.ok) {
         fetchData() // Обновляем список
-        alert(t.adminPage.common.statusUpdated)
+        notifySuccess(t.adminPage.common.statusUpdated)
       } else {
         let errorMessage = t.adminPage.common.updateError
         try {
@@ -847,12 +862,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        notifyError(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка обновления статуса:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      notifyError(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1677,7 +1692,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
             window.dispatchEvent(new CustomEvent('categoriesUpdated'))
           }, 200)
         }
-        alert('Категория успешно сохранена!')
+        notifySuccess('Категория успешно сохранена!')
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -1686,12 +1701,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        notifyError(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка сохранения категории:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      notifyError(`Ошибка соединения: ${errorMessage}`)
     }
   }
   
@@ -1700,7 +1715,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        notifyError('Вы не авторизованы')
         return
       }
       const res = await fetch(`/api/products/categories/${id}`, {
@@ -1715,7 +1730,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
             window.dispatchEvent(new CustomEvent('categoriesUpdated'))
           }, 100)
         }
-        alert('Категория успешно удалена!')
+        notifySuccess('Категория успешно удалена!')
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -1724,12 +1739,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        notifyError(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка удаления категории:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      notifyError(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1748,17 +1763,17 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       
       if (res.ok) {
-        alert('Настройки сохранены!')
+        notifySuccess('Настройки сохранены!')
         // Отправляем событие, чтобы MenuView обновился без перезагрузки (если открыт в другой вкладке)
         if (typeof window !== 'undefined') {
              window.localStorage.setItem('bannerInterval', settings.bannerInterval.toString())
         }
       } else {
-        alert('Ошибка сохранения настроек')
+        notifyError('Ошибка сохранения настроек')
       }
     } catch (e) {
       console.error(e)
-      alert('Ошибка соединения')
+      notifyError('Ошибка соединения')
     } finally {
       setSettingsLoading(false)
     }
@@ -1815,7 +1830,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
   }
 
   return (
-    <div className="min-h-screen font-sans relative overflow-x-hidden">
+    <div className="min-h-screen w-full max-w-[100vw] font-sans relative overflow-x-hidden">
       <LogoBackground />
       <div className="relative z-10 min-h-screen">
         <Header />
@@ -2028,7 +2043,10 @@ export default function AdminView({ onBack }: AdminViewProps) {
               {isLoading && orders.length === 0 ? (
                  <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">{t.adminPanel.dashboard.loading}</div>
               ) : orders.length === 0 ? (
-                 <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">{t.adminPanel.common.emptyOrders}</div>
+                 <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10 text-center">
+                   {t.adminPanel.common.emptyOrders}
+                   <div className="text-sm mt-2">No orders found</div>
+                 </div>
               ) : (
                 orders.map((order) => (
                   <div 
@@ -2190,7 +2208,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   {t.adminPanel.products.addBtn}
                 </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="overflow-x-auto w-full overflow-y-hidden">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-[900px]">
                   {products.map(product => (
                     <div key={product.id} className="bg-white/85 backdrop-blur-xl rounded-[16px] sm:rounded-[20px] md:rounded-[25px] p-4 sm:p-5 shadow-xl shadow-[#145142]/10 border border-white/60 flex flex-col gap-3 sm:gap-4 hover:shadow-2xl hover:border-[#145142]/20 transition">
                        {/* Картинка */}
@@ -2244,6 +2263,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     </div>
                   ))}
                 </div>
+                </div>
+                {products.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-gray-500">
+                    No products found
+                  </div>
+                )}
              </div>
           )}
           {/* === Вкладка: ИНГРЕДИЕНТЫ === */}
@@ -2951,7 +2976,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     </div>
                   </div>
                 ))}
-                {menuCategories.length === 0 && <div className="text-gray-400 col-span-full text-center py-8">Категорий пока нет</div>}
+                {menuCategories.length === 0 && (
+                  <div className="text-gray-400 col-span-full text-center py-8">
+                    Категорий пока нет
+                    <div className="text-sm mt-2">No categories found</div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -3054,13 +3084,13 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     });
                     const json = await res.json();
                     if(res.ok) {
-                      alert(`Успешно отправлено ${json.count} пользователям!`);
+                      notifySuccess(`Успешно отправлено ${json.count} пользователям!`);
                       form.reset();
                     } else {
-                      alert('Ошибка: ' + json.message);
+                      notifyError('Ошибка: ' + json.message);
                     }
                   } catch(err) {
-                    alert('Ошибка сети');
+                    notifyError('Ошибка сети');
                   }
                 }} className="space-y-6">
                   
@@ -3344,8 +3374,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
         {/* МОДАЛЬНОЕ ОКНО (С ИСПРАВЛЕННЫМИ ПОЛЯМИ ПОД 4 ЯЗЫКА) */}
         {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-2 sm:p-4">
-          <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[25px] w-full max-w-2xl p-4 sm:p-6 md:p-8 shadow-2xl shadow-[#145142]/20 border-2 border-white/70 relative animate-in fade-in zoom-in duration-200 h-auto max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <button 
               onClick={() => setIsModalOpen(false)}
               className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
@@ -3544,8 +3574,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КАТЕГОРИЙ МЕНЮ */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-2 sm:p-4">
-          <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[25px] w-full max-w-2xl p-4 sm:p-8 shadow-2xl shadow-[#145142]/20 border-2 border-white/70 relative animate-in fade-in zoom-in duration-200 h-auto max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             {/* Продолжение тени и фона при прокрутке */}
             <div className="sticky bottom-0 left-0 right-0 h-8 -mb-8 bg-gradient-to-b from-white/80 via-white/80 to-transparent pointer-events-none z-10"></div>
             <button 
@@ -3720,8 +3750,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ БАННЕРОВ */}
       {isBannerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-2 sm:p-4">
-          <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[25px] w-full max-w-2xl p-4 sm:p-6 md:p-8 shadow-2xl shadow-[#145142]/20 border-2 border-white/70 relative animate-in fade-in zoom-in duration-200 h-auto max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <button 
               onClick={() => setIsBannerModalOpen(false)}
               className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
@@ -3851,8 +3881,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
       
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КОМАНДЫ */}
       {isTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-2 sm:p-4">
-          <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[25px] w-full max-w-2xl p-4 sm:p-6 md:p-8 shadow-2xl shadow-[#145142]/20 border-2 border-white/70 relative animate-in fade-in zoom-in duration-200 h-auto max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <button 
               onClick={() => setIsTeamModalOpen(false)}
               className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
@@ -3989,8 +4019,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
       )}
       {/* Модальное окно КОМАНДЫ */}
       {isTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-2 sm:p-4">
-          <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[25px] w-full max-w-2xl p-4 sm:p-6 md:p-8 shadow-2xl shadow-[#145142]/20 border-2 border-white/70 relative animate-in fade-in zoom-in duration-200 h-auto max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <button 
               onClick={() => setIsTeamModalOpen(false)}
               className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
@@ -4019,8 +4049,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
       )}
       {/* МОДАЛКА НОВОСТЕЙ */}
       {isNewsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <h2 className="text-xl font-bold mb-4">{editingNews ? 'Редактировать' : 'Новая новость'}</h2>
             <form onSubmit={handleSaveNews} className="space-y-4">
               <input name="title" defaultValue={editingNews?.title} placeholder="Заголовок" required className="w-full p-3 border rounded-lg"/>

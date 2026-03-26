@@ -205,7 +205,7 @@ export default function ProfileView({
 
 
   const Header = () => (
-    <div className="fixed top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[100px] mx-auto bg-gradient-to-r from-white via-white to-[#f8faf9] rounded-[28px] shadow-2xl shadow-[#145142]/15 border-2 border-white/90 backdrop-blur-2xl flex items-center justify-between px-8 z-[1000] overflow-hidden">
+    <div className="fixed top-4 left-2 right-2 w-auto max-w-[100vw] h-[100px] mx-auto bg-gradient-to-r from-white via-white to-[#f8faf9] rounded-[28px] shadow-2xl shadow-[#145142]/15 border-2 border-white/90 backdrop-blur-2xl flex items-center justify-between px-8 z-[1000] overflow-hidden">
       {/* Декоративные элементы */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#145142]/8 via-transparent to-transparent opacity-60"></div>
       <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#145142]/15 via-[#1a6b58]/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -290,7 +290,7 @@ export default function ProfileView({
   )
 
   return (
-    <div className="menu-page-web relative min-h-screen font-sans pt-[140px] pb-20 overflow-x-hidden">
+    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] font-sans pt-[140px] pb-20 overflow-x-hidden">
       <LogoBackground />
       <div className="relative z-10">
         <Header />
@@ -493,7 +493,9 @@ export default function ProfileView({
 
         {/* ПРАВАЯ КОЛОНКА - КОНТЕНТ */}
         <div className="flex-1">
-          <div className="bg-gradient-to-br from-white via-white to-[#f8faf9] rounded-[36px] p-8 md:p-12 shadow-2xl shadow-[#145142]/10 border-2 border-white/90 backdrop-blur-2xl min-h-[600px] relative overflow-hidden">
+          <div className={`bg-gradient-to-br from-white via-white to-[#f8faf9] rounded-[36px] p-8 md:p-12 shadow-2xl shadow-[#145142]/10 border-2 border-white/90 backdrop-blur-2xl min-h-[600px] relative ${
+            activeTab === 'favorites' ? 'overflow-visible' : 'overflow-hidden'
+          }`}>
             {/* Декоративные элементы */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-[#145142]/8 via-[#1a6b58]/5 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 animate-pulse-slow"></div>
             <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#1a6b58]/8 via-transparent to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>

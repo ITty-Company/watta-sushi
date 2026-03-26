@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import nextDynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
 export const dynamic = 'force-dynamic';
@@ -10,29 +11,38 @@ const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 // Не рендерить AppClient на сервере — иначе подтягивается LanguageContext и падает useContext при SSR
 const AppClient = nextDynamic(() => import('./AppClient'), {
   ssr: false,
+  // loading: () => (
+  //   <div
+  //     style={{
+  //       minHeight: '100vh',
+  //       display: 'flex',
+  //       alignItems: 'center',
+  //       justifyContent: 'center',
+  //       background: '#f5f5f5',
+  //     }}
+  //   >
+  //     <div style={{ textAlign: 'center', color: '#145142' }}>
+  //       <div
+  //         style={{
+  //           width: 48,
+  //           height: 48,
+  //           margin: '0 auto 12px',
+  //           border: '3px solid #145142',
+  //           borderTopColor: 'transparent',
+  //           borderRadius: '50%',
+  //           animation: 'clientOnlySpin 0.8s linear infinite',
+  //         }}
+  //       />
+  //       <span style={{ fontSize: 16 }}>Загрузка...</span>
+  //     </div>
+  //   </div>
+  // ),
   loading: () => (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f5f5f5',
-      }}
-    >
-      <div style={{ textAlign: 'center', color: '#145142' }}>
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            margin: '0 auto 12px',
-            border: '3px solid #145142',
-            borderTopColor: 'transparent',
-            borderRadius: '50%',
-            animation: 'clientOnlySpin 0.8s linear infinite',
-          }}
-        />
-        <span style={{ fontSize: 16 }}>Загрузка...</span>
+    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5]">
+      <div className="text-center">
+        {/* Заменяем сложный инлайновый стиль на простой Tailwind */}
+        <div className="w-12 h-12 border-4 border-[#145142] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <span className="text-lg text-[#145142]">Загрузка...</span>
       </div>
     </div>
   ),
@@ -99,8 +109,17 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <Toaster
+          position="top-center"
+          reverseOrder={false}
+          toastOptions={{
+            style: { borderRadius: '0.75rem' },
+            success: { iconTheme: { primary: '#145142', secondary: '#ffffff' } },
+          }}
+        />
         <AppClient>{children}</AppClient>
       </body>
     </html>
   );
 }
+
