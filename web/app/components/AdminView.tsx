@@ -319,7 +319,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       iconTheme: { primary: '#145142', secondary: '#ffffff' },
     })
   const notifyError = (message: string) => toast.error(message, { style: toastStyle })
-  const alert = (message: string) => notifyError(String(message))
+  // const alert = (message: string) => notifyError(String(message))
 
   // --- ЗАГРУЗКА ДАННЫХ ---
   const fetchAll = async () => {
@@ -379,7 +379,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (usersRes.ok) setUsers(await usersRes.json())
       if (teamRes.ok) setTeamMembers(await teamRes.json())
       if ([ingredientsRes, ordersRes, prodRes, countriesRes].some(r => r.status === 401 || r.status === 403)) {
-        notifyError('Доступ запрещен. Пожалуйста, войдите как администратор.')
+        toast.error('Доступ запрещен. Пожалуйста, войдите как администратор.')
         onBack()
       }
       const settingsRes = await fetch('/api/settings', { headers })
@@ -389,7 +389,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       }
     } catch (e) {
       console.error(e)
-      notifyError('Ошибка при загрузке данных')
+      toast.error('Ошибка при загрузке данных')
     } finally {
       setIsLoading(false)
     }
@@ -405,17 +405,17 @@ export default function AdminView({ onBack }: AdminViewProps) {
         try {
           const parsed = JSON.parse(savedUser)
           if (parsed.role !== 'ADMIN') {
-            notifyError(t.adminPage.auth.adminOnly)
+            toast.error(t.adminPage.auth.adminOnly)
             onBack()
             return
           }
         } catch (e) {
-          notifyError('Ошибка проверки прав доступа')
+          toast.error('Ошибка проверки прав доступа')
           onBack()
           return
         }
       } else {
-        notifyError('Вы не авторизованы. Пожалуйста, войдите в систему.')
+        toast.error('Вы не авторизованы. Пожалуйста, войдите в систему.')
         onBack()
         return
       }
@@ -586,7 +586,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     const parts = [newCityName, newCityNameUa, newCityNameEn, newCityNameNl].filter(Boolean).map((s) => s.trim())
     const names = Array.from(new Set(parts))
     if (!names.length) {
-      alert('Введіть назву міста хоча б в одній мові (RU, UA, EN або NL).')
+      toast.error('Введіть назву міста хоча б в одній мові (RU, UA, EN або NL).')
       return
     }
     const sel = countries.find((c: { id: number; name?: string; code?: string }) => c.id === newCityCountryId)
@@ -642,10 +642,10 @@ export default function AdminView({ onBack }: AdminViewProps) {
       const token = localStorage.getItem('token')
       const res = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData })
       if (res.ok) {
-        alert(t.adminPage.common.saveSuccess); setIsNewsModalOpen(false); setEditingNews(null);
+        toast.success(t.adminPage.common.saveSuccess); setIsNewsModalOpen(false); setEditingNews(null);
         fetch('/api/promotions').then(r => r.json()).then(setNewsItems)
-      } else alert(t.adminPage.common.updateError)
-    } catch (e) { alert(t.adminPage.common.networkError) }
+      } else toast.error(t.adminPage.common.updateError)
+    } catch (e) { toast.error(t.adminPage.common.networkError) }
   }
 
   const handleDeleteNews = async (id: number) => {
@@ -654,7 +654,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       const token = localStorage.getItem('token')
       await fetch(`/api/promotions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
       setNewsItems(newsItems.filter(p => p.id !== id))
-    } catch { alert('Ошибка') }
+    } catch { toast.error('Ошибка') }
   }
   const [editorLang, setEditorLang] = useState<'ru' | 'ua' | 'en' | 'nl'>('ru');
 
@@ -753,7 +753,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        notifyError(t.adminPage.auth.notAuthorized)
+        toast.error(t.adminPage.auth.notAuthorized)
         return
       }
       const res = await fetch(`/api/products/${id}`, {
@@ -766,7 +766,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('productsUpdated'))
         }
-        notifySuccess(t.adminPage.products.deleted)
+        toast.success(t.adminPage.products.deleted)
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -775,12 +775,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        notifyError(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка удаления товара:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      notifyError(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -789,7 +789,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        notifyError(t.adminPage.auth.notAuthorized)
+        toast.error(t.adminPage.auth.notAuthorized)
         return
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -816,7 +816,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('productsUpdated'))
         }
-        notifySuccess(t.adminPage.products.saved)
+        toast.success(t.adminPage.products.saved)
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -825,12 +825,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        notifyError(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка сохранения товара:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      notifyError(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -853,7 +853,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       if (res.ok) {
         fetchData() // Обновляем список
-        notifySuccess(t.adminPage.common.statusUpdated)
+        toast.success(t.adminPage.common.statusUpdated)
       } else {
         let errorMessage = t.adminPage.common.updateError
         try {
@@ -862,12 +862,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        notifyError(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка обновления статуса:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      notifyError(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -892,7 +892,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     setNewCityName(city.name)
     setNewCityNameUa(city.name_ua || city.name)
     setNewCityNameEn(city.name_en || city.name)
-    setNewCityNameNl(city.name_nl || city.name)
+    setNewCityNameNl(city.name_nl || city.name)   
     setNewCityCountryId(city.countryId ?? null)
     setNewCityLatitude(city.latitude != null ? String(city.latitude) : '')
     setNewCityLongitude(city.longitude != null ? String(city.longitude) : '')
@@ -914,17 +914,17 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const handleCreateCity = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCityName || !newCityCountryId) {
-      alert(t.adminPage.cities.required)
+      toast.error(t.adminPage.cities.required)
       return
     }
     if (!newCityLatitude || !newCityLongitude) {
-      alert('Спочатку оберіть місто з пошуку на карті (введіть назву й натисніть «Вибрати»)')
+      toast.error('Спочатку оберіть місто з пошуку на карті (введіть назву й натисніть «Вибрати»)')
       return
     }
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch('/api/cities', {
@@ -947,7 +947,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (res.ok) {
         resetCityForm()
         fetchData()
-        alert(t.adminPage.cities.created)
+        toast.success(t.adminPage.cities.created)
       } else {
         let errorMessage = 'Ошибка создания города'
         try {
@@ -956,25 +956,25 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) {
       console.error('Ошибка создания города:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
   
   const handleCreateCountry = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCountryName) {
-      alert(t.adminPage.countries.required)
+      toast.error(t.adminPage.countries.required)
       return
     }
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert(t.adminPage.auth.notAuthorized)
+        toast.error(t.adminPage.auth.notAuthorized)
         return
       }
       
@@ -1033,7 +1033,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setNewCountryCode('')
         setNewCountryFlag('🌍')
         fetchData()
-        alert(t.adminPage.countries.created)
+        toast.success(t.adminPage.countries.created)
       } else {
         let errorMessage = t.adminPage.common.error
         try {
@@ -1042,29 +1042,29 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) {
       console.error('Ошибка создания страны:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
   const handleUpdateCityFromForm = async () => {
     if (!editingCityId) return
     if (!newCityName || !newCityCountryId) {
-      alert('Назва міста та країна обовʼязкові')
+      toast.error('Назва міста та країна обовʼязкові')
       return
     }
     if (!newCityLatitude || !newCityLongitude) {
-      alert('Спочатку оберіть локацію на карті (пошук → Вибрати або клік по маркеру)')
+      toast.error('Спочатку оберіть локацію на карті (пошук → Вибрати або клік по маркеру)')
       return
     }
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Ви не авторизовані')
+        toast.error('Ви не авторизовані')
         return
       }
       const res = await fetch(`/api/cities/${editingCityId}`, {
@@ -1089,7 +1089,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setEditingCityId(null)
         resetCityForm()
         fetchData()
-        alert('Місто успішно оновлено!')
+        toast.success('Місто успішно оновлено!')
       } else {
         let errorMessage = 'Помилка оновлення міста'
         try {
@@ -1098,11 +1098,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Помилка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) {
       console.error('Ошибка обновления города:', error)
-      alert(error?.message || 'Не вдалося підключитися до сервера. Перевірте, чи запущений backend.')
+      toast.error(error?.message || 'Не вдалося підключитися до сервера. Перевірте, чи запущений backend.')
     }
   }
 
@@ -1111,7 +1111,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch(`/api/cities/${id}`, { 
@@ -1120,7 +1120,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       if (res.ok) {
         fetchData()
-        alert('Город успешно удален!')
+        toast.success('Город успешно удален!')
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -1129,12 +1129,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) {
       console.error('Ошибка удаления города:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1151,11 +1151,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       if (!name.trim()) {
-        alert('Название страны обязательно')
+        toast.error('Название страны обязательно')
         return
       }
       const res = await fetch(`/api/countries/${id}`, {
@@ -1178,7 +1178,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setEditingCountryId(null)
         setIsEditFlagPickerOpen(false)
         fetchData()
-        alert('Страна успешно обновлена!')
+        toast.success('Страна успешно обновлена!')
       } else {
         let errorMessage = 'Ошибка обновления страны'
         try {
@@ -1187,11 +1187,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) {
       console.error('Ошибка обновления страны:', error)
-      alert(`Ошибка соединения: ${error?.message || 'Проверьте, запущен ли backend.'}`)
+      toast.error(`Ошибка соединения: ${error?.message || 'Проверьте, запущен ли backend.'}`)
     }
   }
 
@@ -1200,7 +1200,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch(`/api/countries/${id}`, {
@@ -1211,7 +1211,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setEditingCountryId(null)
         setIsEditFlagPickerOpen(false)
         fetchData()
-        alert('Страна успешно удалена!')
+        toast.success('Страна успешно удалена!')
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -1220,11 +1220,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) {
       console.error('Ошибка удаления страны:', error)
-      alert(`Ошибка соединения: ${error?.message || 'Проверьте, запущен ли backend.'}`)
+      toast.error(`Ошибка соединения: ${error?.message || 'Проверьте, запущен ли backend.'}`)
     }
   }
 
@@ -1245,7 +1245,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch('/api/promo/create', {
@@ -1260,7 +1260,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setNewPromoCode('')
         setNewPromoDiscount('')
         fetchData()
-        alert('Промокод успешно создан!')
+        toast.success('Промокод успешно создан!')
       } else {
         let errorMessage = 'Ошибка создания промокода'
         try {
@@ -1269,12 +1269,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка создания промокода:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1283,7 +1283,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch(`/api/promo/${id}`, { 
@@ -1292,7 +1292,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       if (res.ok) {
         fetchData()
-        alert('Промокод успешно удален!')
+        toast.success('Промокод успешно удален!')
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -1301,12 +1301,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка удаления промокода:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1352,7 +1352,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -1379,7 +1379,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('bannersUpdated'))
         }
-        alert('Баннер успешно сохранен!')
+        toast.success('Баннер успешно сохранен!')
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -1388,12 +1388,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка сохранения баннера:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1402,7 +1402,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch(`/api/banners/${id}`, {
@@ -1415,7 +1415,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('bannersUpdated'))
         }
-        alert('Баннер успешно удален!')
+        toast.success('Баннер успешно удален!')
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -1424,12 +1424,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка удаления баннера:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      alert(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1485,7 +1485,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -1508,7 +1508,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (res.ok) {
         setIsTeamModalOpen(false)
         fetchData()
-        alert('Член команды успешно сохранен!')
+        toast.success('Член команды успешно сохранен!')
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -1517,11 +1517,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка сохранения члена команды:', error)
-      alert('Ошибка соединения')
+      toast.error('Ошибка соединения')
     }
   }
 
@@ -1530,7 +1530,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch(`/api/team/${id}`, { 
@@ -1539,7 +1539,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       if (res.ok) {
         fetchData()
-        alert('Член команды успешно удален!')
+        toast.success('Член команды успешно удален!')
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -1548,11 +1548,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        alert(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка удаления члена команды:', error)
-      alert('Ошибка соединения')
+      toast.error('Ошибка соединения')
     }
   }
 
@@ -1573,7 +1573,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
   const handleCreateIngredient = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newIngName || !newIngImage) return alert('Нужно название и фото')
+    if (!newIngName || !newIngImage) return toast.error('Нужно название и фото')
     
     setIngLoading(true)
     try {
@@ -1595,12 +1595,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         // Обновляем список (вызывайте fetchAll или отдельный запрос)
         const newIng = await res.json()
         setIngredients(prev => [...prev, newIng])
-        alert('Ингредиент добавлен!')
+        toast.success('Ингредиент добавлен!')
       } else {
-        alert('Ошибка создания')
+        toast.error('Ошибка создания')
       }
     } catch (e) {
-      alert('Ошибка')
+      toast.error('Ошибка')
     } finally {
       setIngLoading(false)
     }
@@ -1617,7 +1617,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
               headers: { 'Authorization': `Bearer ${token}` }
           })
           setIngredients(prev => prev.filter(i => i.id !== id))
-      } catch (e) { alert('Ошибка') }
+      } catch (e) { toast.error('Ошибка') }
   }
 
   // --- ЛОГИКА КАТЕГОРИЙ МЕНЮ ---
@@ -1655,7 +1655,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -1692,7 +1692,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
             window.dispatchEvent(new CustomEvent('categoriesUpdated'))
           }, 200)
         }
-        notifySuccess('Категория успешно сохранена!')
+        toast.success('Категория успешно сохранена!')
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -1701,12 +1701,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        notifyError(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка сохранения категории:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      notifyError(`Ошибка соединения: ${errorMessage}`)
+        toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
   
@@ -1715,7 +1715,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        notifyError('Вы не авторизованы')
+        toast.error('Вы не авторизованы')
         return
       }
       const res = await fetch(`/api/products/categories/${id}`, {
@@ -1730,7 +1730,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
             window.dispatchEvent(new CustomEvent('categoriesUpdated'))
           }, 100)
         }
-        notifySuccess('Категория успешно удалена!')
+        toast.success('Категория успешно удалена!')
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
@@ -1739,12 +1739,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
-        notifyError(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка удаления категории:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
-      notifyError(`Ошибка соединения: ${errorMessage}`)
+      toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
 
@@ -1763,17 +1763,17 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       
       if (res.ok) {
-        notifySuccess('Настройки сохранены!')
+        toast.success('Настройки сохранены!')
         // Отправляем событие, чтобы MenuView обновился без перезагрузки (если открыт в другой вкладке)
         if (typeof window !== 'undefined') {
              window.localStorage.setItem('bannerInterval', settings.bannerInterval.toString())
         }
       } else {
-        notifyError('Ошибка сохранения настроек')
+        toast.error('Ошибка сохранения настроек')
       }
     } catch (e) {
       console.error(e)
-      notifyError('Ошибка соединения')
+        toast.error('Ошибка соединения')  
     } finally {
       setSettingsLoading(false)
     }
@@ -2731,7 +2731,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                     const code = (document.getElementById(`country-edit-code-${country.id}`) as HTMLInputElement)?.value?.trim() ?? ''
                                     const isActive = (document.getElementById(`country-edit-active-${country.id}`) as HTMLInputElement)?.checked ?? true
                                     if (!name) {
-                                      alert('Название страны обязательно')
+                                      toast.error('Название страны обязательно')
                                       return
                                     }
                                     handleUpdateCountry(country.id, name, name_ua, name_en, name_nl, editCountryFlag, code, isActive)

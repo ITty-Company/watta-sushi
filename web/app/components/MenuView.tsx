@@ -18,6 +18,7 @@ import AboutView from './AboutView'
 import AuthView from './AuthView'
 import CartView from './CartView'
 import PromotionsDetailView from './PromotionsDetailView'
+import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { 
   Menu,       
@@ -794,7 +795,7 @@ export default function MenuView() {
   const userStr = localStorage.getItem('currentUser')
 
   if (!userStr) {
-    alert('Увійдіть, щоб додавати в обране') // Или t.auth.required
+    toast.error('Увійдіть, щоб додавати в обране') // Или t.auth.required
     return
   }
 
@@ -830,7 +831,7 @@ export default function MenuView() {
       localStorage.setItem('cart', JSON.stringify(cart))
       const event = new CustomEvent('cartUpdated')
       window.dispatchEvent(event)
-      alert(t.addToCart || 'Добавлено!')
+      toast.success(t.addToCart || 'Добавлено!')
     }
   }
   

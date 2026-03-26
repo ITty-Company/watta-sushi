@@ -6,7 +6,7 @@ import { ArrowLeft, Mail, Lock, User, Check, Eye, EyeOff, Phone } from 'lucide-r
 import LogoBackground from './LogoBackground'
 import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
-
+import toast from 'react-hot-toast'
 interface AuthViewProps {
   onBack: () => void
   onLoginSuccess: () => void
@@ -54,7 +54,7 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
     const { email, password, confirmPassword, name, phone } = formData
 
     if (password !== confirmPassword) {
-      alert('Пароли не совпадают') // Упростили для читаемости
+        toast.error('Пароли не совпадают') // Упростили для читаемости
       return
     }
     
@@ -74,10 +74,10 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
         // УСПЕХ: Нам не нужен ID, мы будем подтверждать по телефону, который уже в formData
         setIsVerifying(true) 
       } else {
-        alert(data.message || 'Ошибка регистрации')
+        toast.error(data.message || 'Ошибка регистрации')
       }
     } catch (err) {
-      alert('Ошибка сети')
+      toast.error('Ошибка сети')
     } finally {
       setIsLoading(false)
     }
@@ -88,7 +88,7 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
     e.preventDefault()
 
     if (!formData.phone) {
-        alert('Помилка: Телефон втрачено. Спробуйте ще раз.')
+        toast.error('Помилка: Телефон втрачено. Спробуйте ще раз.')
         setIsVerifying(false)
         return
     }
@@ -114,11 +114,11 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
         }
         onLoginSuccess() 
       } else {
-        alert(data.message || 'Невірний код')
+        toast.error(data.message || 'Невірний код')
         setVerificationCode('') // Очищаємо поле, щоб юзер міг ввести знову
       }
     } catch (err) {
-      alert('Помилка перевірки коду')
+      toast.error('Помилка перевірки коду')
       setVerificationCode('')
     } finally {
       setIsLoading(false) // Гарантовано знімаємо спінер
