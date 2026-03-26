@@ -10,13 +10,14 @@ import {
   buildAmsterdamSlots,
   type DeliveryDay,
 } from '@/lib/deliverySlotsAmsterdam'
+import toast from 'react-hot-toast'
 
 const CHECKOUT_INPUT_CLASS =
   'w-full min-w-0 p-4 bg-[#F3F4F6] rounded-xl text-base text-gray-600 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#145142] border border-transparent focus:border-[#ff6b35]/40'
 const UA_PHONE_MAX_LEN = 15
 /** Під'їзд / поверх / кв.: лише цифри, до 1000 символів кожне */
 const DIGIT_ADDR_MAX = 4
-const STREET_MAX = 4
+const STREET_MAX = 100
 const BUILDING_BLOCK_MAX = 4
 const COMMENT_MAX = 500
 
@@ -263,7 +264,7 @@ export default function CartView({
   const addItem = (item: MenuItem) => {
     const currentQty = cartItems.filter(i => i.id === item.id).length;
     if (currentQty >= 99) {
-        alert("Максимальна кількість товару - 99 шт.");
+        toast.error('Максимальна кількість товару - 99 шт.')
         return;
     }
     
@@ -305,7 +306,7 @@ export default function CartView({
       if (res.ok && data.success) {
         setAppliedPromo({ code: data.code, discount: data.discount })
         setPromoCode('') 
-        alert(`Промокод ${data.code} успешно применен!`)
+        toast.success(`Промокод ${data.code} успешно применен!`)
       } else {
         setPromoError(data.message || 'Неверный код')
         setAppliedPromo(null)
@@ -320,7 +321,7 @@ export default function CartView({
  const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     if (fulfillment === 'delivery' && !formData.address.trim()) {
-      alert('Вкажіть адресу доставки')
+      toast.error('Вкажіть адресу доставки')
       return
     }
     setIsLoading(true)
@@ -361,6 +362,12 @@ export default function CartView({
               .filter(Boolean)
               .join('. ')
 
+      const totalAmountNumber = Number(finalPrice + deliveryPrice)
+      const merchandiseTotalNumber = Number(finalPrice)
+      const deliveryPriceNumber = Number(deliveryPrice)
+      const needChangeFromValue =
+        formData.needChangeFrom.trim() === '' ? null : Number(formData.needChangeFrom)
+
       // 1. Создаем заказ
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -374,8 +381,10 @@ export default function CartView({
             comment: fullComment,
             userId: userId,
             paymentMethod: paymentMethod,
-            totalAmount: finalPrice + deliveryPrice,
-            merchandiseTotal: finalPrice,
+            totalAmount: totalAmountNumber,
+            merchandiseTotal: merchandiseTotalNumber,
+            deliveryPrice: deliveryPriceNumber,
+            needChangeFrom: needChangeFromValue,
             fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY',
             noCallbackConfirm: formData.noCallbackConfirm,
             noDoorbellRing: formData.noDoorbellRing,
@@ -422,14 +431,14 @@ export default function CartView({
 
     } catch (error) { 
         console.error(error); 
-        alert('Не удалось оформить заказ.'); 
+        toast.error('Не удалось оформить заказ.'); 
     } finally { 
         setIsLoading(false);
     }
 }
   // --- КОМПОНЕНТЫ UI ---
   const Header = () => (
-    <div className="fixed top-3 sm:top-4 left-0 right-0 w-[min(95%,1800px)] min-h-[72px] sm:h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2 sm:py-0 z-50 border border-[#145142]/10">
+    <div className="fixed top-3 sm:top-4 left-2 right-2 w-auto max-w-[100vw] min-h-[72px] sm:h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2 sm:py-0 z-50 border border-[#145142]/10">
       <div className="flex items-center gap-2 cursor-pointer min-w-0" onClick={onBack}>
         <img src="/logo.png" alt="Logo" className="h-9 w-9 sm:h-10 sm:w-10 object-contain shrink-0" />
         <img src="/1.jpg" alt="Watta Sushi" className="h-5 sm:h-6 w-auto max-w-[120px] sm:max-w-none object-contain" />
@@ -513,7 +522,7 @@ export default function CartView({
     </div>
   )
   return (
-    <div className="h-screen overflow-y-auto bg-[#F5F5F7] font-sans pb-20 overflow-x-hidden relative">
+    <div className="h-screen w-full max-w-[100vw] overflow-y-auto bg-[#F5F5F7] font-sans pb-20 overflow-x-hidden relative">
       <LogoBackground />
       <Header />
       
@@ -640,6 +649,7 @@ export default function CartView({
                         type="text" 
                         placeholder="Ваше имя *" 
                         className={CHECKOUT_INPUT_CLASS}
+                        maxLength={100}
                         value={formData.name} 
                         onChange={e => setFormData({...formData, name: e.target.value})} 
                         required 
@@ -741,7 +751,7 @@ export default function CartView({
                           onChange={e =>
                             setFormData({
                               ...formData,
-                              address: e.target.value.slice(0, STREET_MAX),
+                              address: e.target.value,
                             })
                           }
                           required 
@@ -1024,6 +1034,13 @@ export default function CartView({
                             <span className="font-bold text-gray-700">Картой онлайн</span>
                             <span className="text-xs text-gray-500">LiqPay, Apple Pay, Google Pay</span>
                           </div>
+                          <input
+                            type="radio"
+                            name="payment"
+                            className="hidden"
+                            checked={paymentMethod === 'CARD'}
+                            onChange={() => setPaymentMethod('CARD')}
+                          />
                         </label>
                       </div>
                     </div>
@@ -1032,7 +1049,7 @@ export default function CartView({
                       <div className="relative overflow-hidden rounded-[20px] p-4">
                           <div className="relative z-10">
                             <h3 className="font-bold text-[#194A38] mb-3 text-lg">Промокод</h3>
-                            <div className="flex gap-2">
+                            <div className="flex w-full gap-2 items-center">
                               <input
                                 type="text"
                                 placeholder="Введіть код"
@@ -1043,7 +1060,7 @@ export default function CartView({
                               <button
                                 type="button"
                                 onClick={handleApplyPromo}
-                                className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center shrink-0 border border-[#ff6b35]/30 hover:border-[#ff6b35]/60"
+                                className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center shrink-0 min-w-fit whitespace-nowrap border border-[#ff6b35]/30 hover:border-[#ff6b35]/60"
                               >
                                 OK
                               </button>

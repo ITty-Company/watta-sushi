@@ -1165,12 +1165,12 @@ export default function MenuView() {
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
   return (
-    <div className="menu-page-web relative min-h-screen bg-[#F3F4F6]">
+    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#F3F4F6]">
       <LogoBackground />
 
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[#F3F4F6] shadow-sm transition-transform duration-300">
+      <div className="fixed top-0 left-0 right-0 px-2 z-50 bg-[#F3F4F6] shadow-sm transition-transform duration-300">
 
-      <header className="app-header-web relative z-10">
+      <header className="app-header-web relative z-10 max-w-[100vw]">
         <div className="header-content-web">
           <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
             <div className="logo-icon-web"><Image src="/logo.png" alt="Logo" width={50} height={50} className="logo-image-web" priority style={{ objectFit: 'contain' }} /></div>

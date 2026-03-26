@@ -3,7 +3,6 @@
 import { ReactNode } from 'react'
 import LanguageProviderWrapper from './components/LanguageProviderWrapper'
 import FloatingContactButtons from './components/FloatingContactButtons'
-import { Toaster } from 'sonner'
 
 export default function AppClient({ children }: { children: ReactNode }) {
   return (
@@ -11,7 +10,6 @@ export default function AppClient({ children }: { children: ReactNode }) {
       <div className="app-container">
         {children}
         <FloatingContactButtons />
-        <Toaster position="top-center" richColors />
       </div>
     </LanguageProviderWrapper>
   )
