@@ -6,6 +6,7 @@ import {
   MapPin, Clock, Settings, LogOut, Package, Shield, Mail, X
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
+import toast from 'react-hot-toast'
 
 // --- ТИПЫ ДАННЫХ ---
 interface OrderItem {
@@ -199,7 +200,7 @@ export default function ProfileView({
     // Обновляем глобальное состояние (если нужно)
     window.dispatchEvent(new Event('favoritesUpdated')) 
   } catch (e) {
-    alert('Ошибка удаления')
+    toast.error('Ошибка удаления')
   }
 }
 

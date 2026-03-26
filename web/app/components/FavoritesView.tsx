@@ -5,6 +5,7 @@ import {
   ArrowLeft, Heart, ShoppingBag, Plus, Trash2
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
+import toast from 'react-hot-toast'
 
 interface FavoritesViewProps {
   onBack: () => void
@@ -55,7 +56,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
     cart.push(cartItem)
     localStorage.setItem('cart', JSON.stringify(cart))
     window.dispatchEvent(new CustomEvent('cartUpdated'))
-    alert('Добавлено в корзину!')
+    toast.success('Добавлено в корзину!')
   }
 
   // --- ХЕДЕР (Как в Профиле) ---

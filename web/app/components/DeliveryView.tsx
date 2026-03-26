@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import LogoBackground from './LogoBackground'
-
+import toast from 'react-hot-toast'
 interface City {
   id: string
   name: string
@@ -193,7 +193,7 @@ export default function DeliveryView() {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы как администратор')
+        toast.error('Вы не авторизованы как администратор')
         return
       }
 
@@ -234,13 +234,13 @@ export default function DeliveryView() {
             setSelectedCity(updatedCity)
           }
         }
-        alert('Зона доставки успешно создана!')
+        toast.success('Зона доставки успешно создана!')
       } else {
-        alert('Ошибка создания зоны доставки')
+        toast.error('Ошибка создания зоны доставки')
       }
     } catch (error) {
       console.error('Ошибка создания зоны доставки:', error)
-      alert('Не удалось создать зону доставки')
+      toast.error('Не удалось создать зону доставки')
     }
   }
 
@@ -251,7 +251,7 @@ export default function DeliveryView() {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Вы не авторизованы как администратор')
+        toast.error('Вы не авторизованы как администратор')
         return
       }
 
@@ -285,13 +285,13 @@ export default function DeliveryView() {
             setSelectedCity(updatedCity)
           }
         }
-        alert('Зона доставки успешно удалена!')
+        toast.success('Зона доставки успешно удалена!')
       } else {
-        alert('Ошибка удаления зоны доставки')
+        toast.error('Ошибка удаления зоны доставки')
       }
     } catch (error) {
       console.error('Ошибка удаления зоны доставки:', error)
-      alert('Не удалось удалить зону доставки')
+      toast.error('Не удалось удалить зону доставки')
     }
   }
 

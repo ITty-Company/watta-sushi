@@ -376,22 +376,18 @@ export default function CartView({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            items: uniqueItems,
-            // name: formData.name,
-            customerName: formData.name,
-            phone: formData.phone,
-            address: orderAddress,
-            comment: fullComment,
-            userId: userId,
-            paymentMethod: paymentMethod,
-            totalAmount: totalAmountNumber,
-            merchandiseTotal: merchandiseTotalNumber,
-            deliveryPrice: deliveryPriceNumber,
-            // needChangeFrom: needChangeFromValue,
-            fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY',
-            // noCallbackConfirm: formData.noCallbackConfirm,
-            // noDoorbellRing: formData.noDoorbellRing,
-        }),
+          items: uniqueItems,
+          customerName: formData.name,
+          phone: formData.phone,
+          address: orderAddress,
+          comment: fullComment,
+          userId: userId,
+          paymentMethod: paymentMethod,
+          totalAmount: totalAmountNumber,
+          merchandiseTotal: merchandiseTotalNumber,
+          deliveryPrice: deliveryPriceNumber,
+          fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY'
+      }),
       })
 
       if (!response.ok) throw new Error('Ошибка заказа');
@@ -980,6 +976,7 @@ export default function CartView({
                     
                     <div className="flex flex-col gap-3">
                       <label
+                        onClick={() => setPaymentMethod('CASH')}
                         className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
                           paymentMethod === 'CASH'
                             ? 'border-[#145142] bg-[#145142]/5 ring-2 ring-[#ff6b35]/35'
@@ -1021,6 +1018,7 @@ export default function CartView({
                       )}
 
                       <label
+                        onClick={() => setPaymentMethod('CARD')}
                         className={`flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition ${
                           paymentMethod === 'CARD'
                             ? 'border-[#145142] bg-[#145142]/5 ring-2 ring-[#ff6b35]/35'
