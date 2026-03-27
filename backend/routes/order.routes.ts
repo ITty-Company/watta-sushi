@@ -4,7 +4,8 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
-import crypto from 'crypto';
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -209,10 +210,35 @@ router.post('/', async (req: Request, res: Response) => {
         addOrderToSheet(order, order.items)
     ]).then(() => console.log('Notifications processed'));
 
-    // 3. Отвечаем клиенту (+ LiqPay hosted checkout payload для оплаты картой)
     if (paymentMethod === 'CARD') {
-      const liqpay = buildLiqPayPayload(order.id, totalPrice);
-      res.json({ ...order, liqpay });
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: order.items.map((item: any) => ({
+          price_data: {
+            currency: 'uah', // Валюта
+            product_data: { 
+              name: item.product?.name_ru || 'Товар из Watta Sushi' 
+            },
+            unit_amount: Math.round(item.price * 100), // Stripe принимает сумму в копейках
+          },
+          quantity: item.quantity,
+        })),
+        mode: 'payment',
+        success_url: `${frontendUrl}/checkout/success?orderId=${order.id}`,
+        cancel_url: `${frontendUrl}/cart`,
+        client_reference_id: String(order.id),
+      });
+
+      // Сохраняем ID сессии Stripe в заказ (у тебя уже есть это поле в Prisma)
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { stripeCheckoutSessionId: session.id }
+      });
+
+      // Возвращаем клиенту ссылку на оплату
+      res.json({ ...order, stripeUrl: session.url });
       return;
     }
 
