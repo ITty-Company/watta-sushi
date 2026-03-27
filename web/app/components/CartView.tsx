@@ -397,7 +397,8 @@ export default function CartView({
 
       // 3. LiqPay redirect flow (hosted checkout)
       if (paymentMethod === 'CARD' && orderData.stripeUrl) {
-        window.location.href = orderData.stripeUrl;
+        setIsLoading(false); 
+        window.location.assign(orderData.stripeUrl);
         return;
       }
 

@@ -3,6 +3,7 @@
 import { ReactNode } from 'react'
 import LanguageProviderWrapper from './components/LanguageProviderWrapper'
 import FloatingContactButtons from './components/FloatingContactButtons'
+import Footer from './components/Footer';
 
 export default function AppClient({ children }: { children: ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function AppClient({ children }: { children: ReactNode }) {
         {children}
         <FloatingContactButtons />
       </div>
+      <Footer />
     </LanguageProviderWrapper>
   )
 }

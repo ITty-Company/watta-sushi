@@ -205,10 +205,12 @@ router.post('/', async (req: Request, res: Response) => {
 
     // 2. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЯ
     // order.items теперь существует, так как мы добавили include выше
-    Promise.allSettled([
-        sendTelegramNotification(order, order.items),
-        addOrderToSheet(order, order.items)
-    ]).then(() => console.log('Notifications processed'));
+    if (paymentMethod === 'CASH') {
+      Promise.allSettled([
+          sendTelegramNotification(order, order.items),
+          addOrderToSheet(order, order.items)
+      ]).then(() => console.log('Notifications processed'));
+    }
 
     if (paymentMethod === 'CARD') {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
