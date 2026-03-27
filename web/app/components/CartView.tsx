@@ -396,29 +396,9 @@ export default function CartView({
       const orderData = await response.json(); // Наша переменная называется orderData
 
       // 3. LiqPay redirect flow (hosted checkout)
-      if (paymentMethod === 'CARD' && orderData.liqpay) {
-        // Создаем скрытую форму для отправки клиента на шлюз ПриватБанка
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'https://www.liqpay.ua/api/3/checkout';
-
-        const dataInput = document.createElement('input');
-        dataInput.type = 'hidden';
-        dataInput.name = 'data';
-        dataInput.value = orderData.liqpay.data; // Используем orderData!
-
-        const signatureInput = document.createElement('input');
-        signatureInput.type = 'hidden';
-        signatureInput.name = 'signature';
-        signatureInput.value = orderData.liqpay.signature; // Используем orderData!
-
-        form.appendChild(dataInput);
-        form.appendChild(signatureInput);
-        document.body.appendChild(form);
-        
-        // Автоматически нажимаем "Отправить"
-        form.submit();
-        return; // Важно! Останавливаем функцию, ждем переадресации LiqPay
+      if (paymentMethod === 'CARD' && orderData.stripeUrl) {
+        window.location.href = orderData.stripeUrl;
+        return;
       }
 
       // === Если Наличные: сразу на страницу успешного заказа ===
