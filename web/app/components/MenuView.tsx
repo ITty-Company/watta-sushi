@@ -18,6 +18,7 @@ import AboutView from './AboutView'
 import AuthView from './AuthView'
 import CartView from './CartView'
 import PromotionsDetailView from './PromotionsDetailView'
+import Footer from './Footer';
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { 
@@ -2319,6 +2320,7 @@ export default function MenuView() {
         isOpen={isNotificationsOpen} 
         onClose={() => setIsNotificationsOpen(false)} 
       />
+      <Footer />
     </div>
   )
 }
