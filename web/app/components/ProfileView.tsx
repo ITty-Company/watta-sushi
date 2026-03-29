@@ -6,6 +6,7 @@ import {
   MapPin, Clock, Settings, LogOut, Package, Shield, Mail, X
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
+import Footer from './Footer'
 import toast from 'react-hot-toast'
 
 // --- ТИПЫ ДАННЫХ ---
@@ -782,5 +783,7 @@ export default function ProfileView({
       </div>
       </div>
     </div>
+    <Footer />
+    </>
   )
 }

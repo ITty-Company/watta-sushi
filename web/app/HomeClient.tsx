@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import MenuView from './components/MenuView'
 import CartView from './components/CartView'
 import ProfileView from './components/ProfileView'
-import Footer from './components/Footer'
 
 export default function HomeClient() {
   const [activeTab, setActiveTab] = useState(0)
@@ -91,7 +90,6 @@ export default function HomeClient() {
             onOpenAdmin={handleOpenAdmin}
           />
         )}
-        <Footer />
       </div>
     </div>
   )

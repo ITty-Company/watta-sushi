@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import { useLanguage } from '../context/LanguageContext'
+import Footer from './Footer'
 import {
   buildAmsterdamSlots,
   type DeliveryDay,
@@ -413,7 +414,7 @@ export default function CartView({
   const phoneValid = isValidUaPhone(formData.phone)
   const canSubmitOrder = phoneValid && !isCalculatingDistance
 
-  
+
   const upsellItems = upsellCandidates.length > 0 ? upsellCandidates : mockUpsellItems
   const isUpsellQualified = finalPrice >= UPSELL_THRESHOLD && upsellItems.length > 0
 
@@ -1540,6 +1541,7 @@ export default function CartView({
           </div>
         </div>
       )}
+      <Footer />
     </div>
   )
 }
