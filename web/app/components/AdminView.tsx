@@ -87,6 +87,19 @@ interface PromoCode {
   isActive: boolean
 }
 
+interface BlogPost {
+  id: number
+  title: string
+  slug: string
+  content: string
+  imageUrl?: string | null
+  videoUrl?: string | null
+  author: string
+  isPublished: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 interface AdminViewProps {
   onBack: () => void
 }
@@ -98,6 +111,7 @@ interface City {
   name_nl?: string
   name_en?: string
   countryId?: number
+  pricePerKm?: number
   latitude?: number
   longitude?: number
   zoom?: number
@@ -154,6 +168,18 @@ interface User {
   }
 }
 
+interface CrmUser {
+  id: number
+  name: string | null
+  email: string
+  phone: string | null
+  bonusBalance: number
+  createdAt: string
+  _count?: {
+    orders: number
+  }
+}
+
 interface TeamMember {
   id: number
   name_ru: string
@@ -194,16 +220,18 @@ const defaultSiteSettings: SiteSettings = {
 const { t } = useLanguage()
 export default function AdminView({ onBack }: AdminViewProps) {
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'| 'ingredients'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'blog' | 'crm' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'| 'ingredients'>('dashboard')
   
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [promos, setPromos] = useState<PromoCode[]>([]) // Промокоды
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
   const [cities, setCities] = useState<City[]>([]) // Города
   const [countries, setCountries] = useState<any[]>([]) // Страны
   const [banners, setBanners] = useState<Banner[]>([]) // Баннеры
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]) // Категории меню
   const [users, setUsers] = useState<User[]>([]) // Пользователи
+  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]) // Команда
   
   const [isLoading, setIsLoading] = useState(false)
@@ -252,6 +280,21 @@ export default function AdminView({ onBack }: AdminViewProps) {
   // Состояния для создания ПРОМОКОДА
   const [newPromoCode, setNewPromoCode] = useState('')
   const [newPromoDiscount, setNewPromoDiscount] = useState('')
+  const [blogForm, setBlogForm] = useState({
+    id: null as number | null,
+    title: '',
+    slug: '',
+    imageUrl: '',
+    videoUrl: '',
+    content: '',
+    author: 'Шеф Watta Sushi',
+    isPublished: true,
+  })
+  const [crmMailing, setCrmMailing] = useState({
+    channel: 'email' as 'email' | 'sms',
+    subject: '',
+    message: '',
+  })
 
   // Единое состояние формы товара (ОБНОВЛЕНО)
   const [formData, setFormData] = useState({
@@ -273,6 +316,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const [newCityLatitude, setNewCityLatitude] = useState('')
   const [newCityLongitude, setNewCityLongitude] = useState('')
   const [newCityZoom, setNewCityZoom] = useState('12')
+  const [newCityPricePerKm, setNewCityPricePerKm] = useState('10')
   const [newCityIsActive, setNewCityIsActive] = useState(true)
   const [editingCityId, setEditingCityId] = useState<number | null>(null)
   const [cityMapSearchQuery, setCityMapSearchQuery] = useState('')
@@ -344,6 +388,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
         citiesRes,
         countriesRes,
         promosRes,
+        blogRes,
+        crmUsersRes,
         bannersRes,
         usersRes,
         teamRes,
@@ -355,6 +401,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
         fetch('/api/cities/all', { headers }),
         fetch('/api/countries/all', { headers }),
         fetch('/api/promo', { headers }),
+        fetch('/api/blog/all', { headers }),
+        fetch('/api/crm/users', { headers }),
         fetch('/api/banners/all', { headers }),
         fetch('/api/auth/users', { headers }),
         fetch('/api/team/all', { headers }),
@@ -375,6 +423,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (citiesRes.ok) setCities(await citiesRes.json())
       if (countriesRes.ok) setCountries(await countriesRes.json())
       if (promosRes.ok) setPromos(await promosRes.json())
+      if (blogRes.ok) setBlogPosts(await blogRes.json())
+      if (crmUsersRes.ok) setCrmUsers(await crmUsersRes.json())
       if (bannersRes.ok) setBanners(await bannersRes.json())
       if (usersRes.ok) setUsers(await usersRes.json())
       if (teamRes.ok) setTeamMembers(await teamRes.json())
@@ -881,6 +931,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     setNewCityLatitude('')
     setNewCityLongitude('')
     setNewCityZoom('12')
+    setNewCityPricePerKm('10')
     setNewCityIsActive(true)
     setCityMapSearchQuery('')
     setCityMapSearchResults([])
@@ -897,6 +948,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
     setNewCityLatitude(city.latitude != null ? String(city.latitude) : '')
     setNewCityLongitude(city.longitude != null ? String(city.longitude) : '')
     setNewCityZoom(city.zoom != null ? String(city.zoom) : '12')
+    setNewCityPricePerKm(
+      city.pricePerKm != null && Number.isFinite(city.pricePerKm) ? String(city.pricePerKm) : '10'
+    )
     setNewCityIsActive(city.isActive)
     const currentOnMap = [city.name, city.country?.name].filter(Boolean).join(', ') || '📍 поточна локація'
     setCityMapSearchQuery(currentOnMap)
@@ -941,7 +995,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
           countryId: newCityCountryId,
           latitude: newCityLatitude ? parseFloat(newCityLatitude) : null,
           longitude: newCityLongitude ? parseFloat(newCityLongitude) : null,
-          zoom: newCityZoom ? parseInt(newCityZoom) : 12
+          zoom: newCityZoom ? parseInt(newCityZoom) : 12,
+          pricePerKm: newCityPricePerKm ? parseFloat(newCityPricePerKm) : 10,
         })
       })
       if (res.ok) {
@@ -1082,6 +1137,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
           latitude: newCityLatitude ? parseFloat(newCityLatitude) : null,
           longitude: newCityLongitude ? parseFloat(newCityLongitude) : null,
           zoom: newCityZoom ? parseInt(newCityZoom) : 12,
+          pricePerKm: newCityPricePerKm ? parseFloat(newCityPricePerKm) : 10,
           isActive: newCityIsActive
         })
       })
@@ -1307,6 +1363,138 @@ export default function AdminView({ onBack }: AdminViewProps) {
       console.error('Ошибка удаления промокода:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
       toast.error(`Ошибка соединения: ${errorMessage}`)
+    }
+  }
+
+  const resetBlogForm = () => {
+    setBlogForm({
+      id: null,
+      title: '',
+      slug: '',
+      imageUrl: '',
+      videoUrl: '',
+      content: '',
+      author: 'Шеф Watta Sushi',
+      isPublished: true,
+    })
+  }
+
+  const handleEditBlogPost = (post: BlogPost) => {
+    setBlogForm({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      imageUrl: post.imageUrl || '',
+      videoUrl: post.videoUrl || '',
+      content: post.content,
+      author: post.author || 'Шеф Watta Sushi',
+      isPublished: post.isPublished,
+    })
+  }
+
+  const handleSaveBlogPost = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!blogForm.title.trim() || !blogForm.slug.trim() || !blogForm.content.trim()) {
+      toast.error('Заполните title, slug и content')
+      return
+    }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.error('Вы не авторизованы')
+        return
+      }
+      const method = blogForm.id ? 'PUT' : 'POST'
+      const url = blogForm.id ? `/api/blog/${blogForm.id}` : '/api/blog'
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: blogForm.title,
+          slug: blogForm.slug,
+          imageUrl: blogForm.imageUrl || null,
+          videoUrl: blogForm.videoUrl || null,
+          content: blogForm.content,
+          author: blogForm.author || 'Шеф Watta Sushi',
+          isPublished: blogForm.isPublished,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || 'Ошибка сохранения статьи')
+      }
+      toast.success(blogForm.id ? 'Статья обновлена' : 'Статья создана')
+      resetBlogForm()
+      fetchData()
+    } catch (error: any) {
+      toast.error(error?.message || 'Ошибка сохранения статьи')
+    }
+  }
+
+  const handleDeleteBlogPost = async (id: number) => {
+    if (!confirm('Удалить эту статью?')) return
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.error('Вы не авторизованы')
+        return
+      }
+      const res = await fetch(`/api/blog/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || 'Ошибка удаления статьи')
+      }
+      toast.success('Статья удалена')
+      if (blogForm.id === id) resetBlogForm()
+      fetchData()
+    } catch (error: any) {
+      toast.error(error?.message || 'Ошибка удаления статьи')
+    }
+  }
+
+  const handleSendCrmPromo = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!crmMailing.message.trim()) {
+      toast.error('Введите текст сообщения')
+      return
+    }
+    if (crmMailing.channel === 'email' && !crmMailing.subject.trim()) {
+      toast.error('Введите тему письма')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.error('Вы не авторизованы')
+        return
+      }
+      const res = await fetch('/api/crm/send-promo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          channel: crmMailing.channel,
+          subject: crmMailing.subject,
+          message: crmMailing.message,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.message || 'Ошибка запуска рассылки')
+      }
+      toast.success('Рассылка успешно запущена!')
+      setCrmMailing((prev) => ({ ...prev, subject: '', message: '' }))
+    } catch (error: any) {
+      toast.error(error?.message || 'Ошибка запуска рассылки')
     }
   }
 
@@ -1997,6 +2185,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     { id: 'orders' as const, label: t.adminPanel.sidebar.orders, desc: t.adminPanel.sidebar.ordersDesc },
                     { id: 'products' as const, label: t.adminPanel.sidebar.products, desc: t.adminPanel.sidebar.productsDesc },
                     { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
+                    { id: 'blog' as const, label: 'Блог / Рецепты', desc: 'SEO статьи и рецепты шефа' },
+                    { id: 'crm' as const, label: 'CRM / Рассылки', desc: 'Пользователи и массовые рассылки' },
                     { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
                     { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
                     { id: 'menuCategories' as const, label: t.adminPanel.sidebar.categories, desc: t.adminPanel.sidebar.categoriesDesc },
@@ -2582,6 +2772,19 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       <div className="relative">
                         <label className="block text-xs font-semibold text-[#145142] mb-2 uppercase tracking-wide">
+                          Цена за 1 км (₴/€)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          value={newCityPricePerKm}
+                          onChange={(e) => setNewCityPricePerKm(e.target.value)}
+                          className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-[16px] outline-none border-2 border-[#145142]/20 font-semibold text-sm sm:text-base transition-all focus:border-[#145142] focus:bg-white/90 focus:shadow-lg focus:shadow-[#145142]/10"
+                        />
+                      </div>
+                      <div className="relative">
+                        <label className="block text-xs font-semibold text-[#145142] mb-2 uppercase tracking-wide">
                           {t.adminPanel.cities.countryLabel}
                         </label>
                         <select
@@ -2834,6 +3037,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
                                   📍 {city.latitude.toFixed(4)}, {city.longitude.toFixed(4)}
                                 </p>
                               )}
+                              <p className="text-xs text-[#145142] mt-1 font-semibold">
+                                Цена за 1 км: {Number(city.pricePerKm ?? 10).toFixed(2)}
+                              </p>
                             </div>
                             <span className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
                               city.isActive ? 'bg-green-100 text-green-700' : 'bg-[#145142]/10 text-[#145142]/70'
@@ -3178,6 +3384,188 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     Членів команди поки немає
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* === Вкладка: ПРОМОКОДЫ === */}
+          {activeTab === 'blog' && (
+            <div className="flex flex-col gap-6">
+              <div className="bg-white/80 backdrop-blur-2xl rounded-[24px] p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70">
+                <h2 className="text-2xl font-bold text-[#145142] mb-5">Блог / Рецепты</h2>
+                <form onSubmit={handleSaveBlogPost} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Title"
+                    value={blogForm.title}
+                    onChange={(e) => setBlogForm((prev) => ({ ...prev, title: e.target.value }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Slug (e.g. sushi-secrets)"
+                    value={blogForm.slug}
+                    onChange={(e) => setBlogForm((prev) => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+                    required
+                  />
+                  <input
+                    type="url"
+                    placeholder="Image URL"
+                    value={blogForm.imageUrl}
+                    onChange={(e) => setBlogForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+                  />
+                  <input
+                    type="url"
+                    placeholder="Video URL (optional)"
+                    value={blogForm.videoUrl}
+                    onChange={(e) => setBlogForm((prev) => ({ ...prev, videoUrl: e.target.value }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Author"
+                    value={blogForm.author}
+                    onChange={(e) => setBlogForm((prev) => ({ ...prev, author: e.target.value }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] md:col-span-2"
+                  />
+                  <textarea
+                    placeholder="Content"
+                    value={blogForm.content}
+                    onChange={(e) => setBlogForm((prev) => ({ ...prev, content: e.target.value }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] md:col-span-2 min-h-[180px]"
+                    required
+                  />
+                  <label className="md:col-span-2 flex items-center gap-3 text-[#145142] font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={blogForm.isPublished}
+                      onChange={(e) => setBlogForm((prev) => ({ ...prev, isPublished: e.target.checked }))}
+                      className="w-5 h-5 accent-[#145142]"
+                    />
+                    Is Published
+                  </label>
+                  <div className="md:col-span-2 flex gap-3">
+                    <button className="px-6 py-3 rounded-xl bg-[#145142] text-white font-bold hover:bg-[#0f3d34] transition">
+                      {blogForm.id ? 'Обновить' : 'Создать'}
+                    </button>
+                    {blogForm.id && (
+                      <button type="button" onClick={resetBlogForm} className="px-6 py-3 rounded-xl border border-[#145142]/30 text-[#145142] font-semibold">
+                        Отмена
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {blogPosts.map((post) => (
+                  <div key={post.id} className="bg-white/80 rounded-2xl p-5 border border-[#145142]/15">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-[#145142]">{post.title}</h3>
+                        <p className="text-sm text-gray-500">/{post.slug}</p>
+                        <p className="text-xs mt-1 text-gray-500">{post.isPublished ? 'Опубликовано' : 'Черновик'}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEditBlogPost(post)} className="p-2 rounded-lg bg-[#145142]/10 text-[#145142]"><Pencil size={16} /></button>
+                        <button onClick={() => handleDeleteBlogPost(post.id)} className="p-2 rounded-lg bg-red-50 text-red-600"><Trash2 size={16} /></button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-3 line-clamp-3">{post.content}</p>
+                  </div>
+                ))}
+                {blogPosts.length === 0 && (
+                  <div className="col-span-full text-center text-gray-400 py-10">Постов пока нет</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'crm' && (
+            <div className="flex flex-col gap-6">
+              <div className="bg-white/80 backdrop-blur-2xl rounded-[24px] p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70">
+                <h2 className="text-2xl font-bold text-[#145142] mb-4">Создать рассылку</h2>
+                <form onSubmit={handleSendCrmPromo} className="grid grid-cols-1 gap-4">
+                  <div className="inline-flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCrmMailing((prev) => ({ ...prev, channel: 'email' }))}
+                      className={`px-4 py-2 rounded-xl font-semibold transition ${
+                        crmMailing.channel === 'email'
+                          ? 'bg-[#145142] text-white'
+                          : 'bg-[#145142]/10 text-[#145142]'
+                      }`}
+                    >
+                      Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCrmMailing((prev) => ({ ...prev, channel: 'sms' }))}
+                      className={`px-4 py-2 rounded-xl font-semibold transition ${
+                        crmMailing.channel === 'sms'
+                          ? 'bg-[#145142] text-white'
+                          : 'bg-[#145142]/10 text-[#145142]'
+                      }`}
+                    >
+                      SMS
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Тема письма"
+                    value={crmMailing.subject}
+                    onChange={(e) => setCrmMailing((prev) => ({ ...prev, subject: e.target.value }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+                    disabled={crmMailing.channel === 'sms'}
+                  />
+                  <textarea
+                    placeholder="Текст сообщения / HTML"
+                    value={crmMailing.message}
+                    onChange={(e) => setCrmMailing((prev) => ({ ...prev, message: e.target.value }))}
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] min-h-[150px]"
+                    required
+                  />
+                  <button className="w-fit px-6 py-3 rounded-xl bg-[#145142] text-white font-bold hover:bg-[#0f3d34] transition">
+                    Отправить всем
+                  </button>
+                </form>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-2xl rounded-[24px] p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70 overflow-x-auto">
+                <h3 className="text-xl font-bold text-[#145142] mb-4">Пользователи CRM</h3>
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[#145142]/80 border-b border-[#145142]/15">
+                      <th className="py-3 pr-4">Имя</th>
+                      <th className="py-3 pr-4">Email</th>
+                      <th className="py-3 pr-4">Телефон</th>
+                      <th className="py-3 pr-4">Заказы</th>
+                      <th className="py-3 pr-4">Бонусы</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {crmUsers.map((u) => (
+                      <tr key={u.id} className="border-b border-[#145142]/10 text-gray-700">
+                        <td className="py-3 pr-4 font-semibold">{u.name || '—'}</td>
+                        <td className="py-3 pr-4">{u.email || '—'}</td>
+                        <td className="py-3 pr-4">{u.phone || '—'}</td>
+                        <td className="py-3 pr-4">{u._count?.orders ?? 0}</td>
+                        <td className="py-3 pr-4 text-[#145142] font-bold">{Number(u.bonusBalance || 0).toFixed(2)} ₴</td>
+                      </tr>
+                    ))}
+                    {crmUsers.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-gray-400">
+                          Пользователей пока нет
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

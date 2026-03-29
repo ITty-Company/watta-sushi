@@ -4,12 +4,27 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
+import { sendOrderReceipt } from '../services/email.service';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 const router = Router();
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || 'secret-key'; // <--- КЛЮЧ ДЛЯ РАСШИФРОВКИ
+
+function getAuthUserId(req: Request): number | null {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return null;
+    const token = authHeader.split(' ')[1];
+    if (!token) return null;
+    const decoded = jwt.verify(token, SECRET_KEY) as { userId?: string | number };
+    const parsed = Number(decoded.userId);
+    return Number.isFinite(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 function buildLiqPayPayload(orderId: number, amount: number) {
   const publicKey = process.env.LIQPAY_PUBLIC_KEY;
@@ -76,6 +91,24 @@ router.get('/my', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/bonus', async (req: Request, res: Response) => {
+  try {
+    const userId = getAuthUserId(req);
+    if (!userId) {
+      res.status(401).json({ message: 'Нет токена авторизации' });
+      return;
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { bonusBalance: true },
+    });
+    res.json({ bonusBalance: Number(user?.bonusBalance ?? 0) });
+  } catch (error) {
+    console.error('Ошибка получения бонусов:', error);
+    res.status(500).json({ message: 'Ошибка получения бонусов' });
+  }
+});
+
 // ==========================================
 // 2. Получить все заказы (Админ)
 // ==========================================
@@ -124,6 +157,8 @@ router.post('/', async (req: Request, res: Response) => {
       totalAmount,
       fulfillmentType,
       merchandiseTotal,
+      deliveryPrice,
+      usedBonuses,
       userId,
       noCallbackConfirm,
       noDoorbellRing,
@@ -154,13 +189,15 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    const threshold = siteSettings.freeDeliveryThreshold;
-    const fixedFee = siteSettings.deliveryFee;
     const fulfillment = fulfillmentType === 'PICKUP' ? 'PICKUP' : 'DELIVERY';
 
     let deliveryFeeApplied = 0;
-    if (fulfillment === 'DELIVERY' && merchandise < threshold) {
-      deliveryFeeApplied = fixedFee;
+    if (fulfillment === 'DELIVERY') {
+      const clientDelivery = Number(deliveryPrice)
+      deliveryFeeApplied =
+        Number.isFinite(clientDelivery) && clientDelivery >= 0
+          ? Math.round(clientDelivery * 100) / 100
+          : 0
     }
 
     const totalPrice = Math.round((merchandise + deliveryFeeApplied) * 100) / 100;
@@ -173,34 +210,69 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const parsedUserId = userId != null && userId !== '' ? parseInt(String(userId), 10) : NaN;
+    const authUserId = getAuthUserId(req);
+    const effectiveUserId = Number.isFinite(parsedUserId)
+      ? parsedUserId
+      : authUserId ?? null;
+    const requestedBonuses = Number(usedBonuses);
+    const safeUsedBonuses =
+      Number.isFinite(requestedBonuses) && requestedBonuses > 0 ? requestedBonuses : 0;
 
-    const order = await prisma.order.create({
-      data: {
-        customerName: String(name || customerName || 'Гость'),
-        phone: String(phone || ''),
-        address: String(address || ''),
-        fulfillmentType: fulfillment,
-        deliveryFee: deliveryFeeApplied,
-        paymentMethod: paymentMethod || 'CASH',
-        comment: comment || null,
-        noCallbackConfirm: Boolean(noCallbackConfirm),
-        noDoorbellRing: Boolean(noDoorbellRing),
-        totalPrice,
-        status: 'PENDING',
-        userId: Number.isFinite(parsedUserId) ? parsedUserId : null,
-        items: {
-          create: clientItems.map((item: any) => ({
-            productId: item.id,
-            quantity: Number(item.quantity ?? 1),
-            price: Number(item.price),
-          })),
+    let totalWithBonuses = totalPrice;
+    if (safeUsedBonuses > 0) {
+      if (!effectiveUserId) {
+        res.status(400).json({ message: 'Списывать бонусы можно только авторизованному пользователю' });
+        return;
+      }
+      const userForBonus = await prisma.user.findUnique({
+        where: { id: effectiveUserId },
+        select: { bonusBalance: true },
+      });
+      const currentBonus = Number(userForBonus?.bonusBalance ?? 0);
+      if (safeUsedBonuses > currentBonus) {
+        res.status(400).json({ message: 'Недостаточно бонусов на балансе' });
+        return;
+      }
+      totalWithBonuses = Math.max(0, Math.round((totalPrice - safeUsedBonuses) * 100) / 100);
+    }
+
+    const order = await prisma.$transaction(async (tx) => {
+      if (safeUsedBonuses > 0 && effectiveUserId) {
+        await tx.user.update({
+          where: { id: effectiveUserId },
+          data: { bonusBalance: { decrement: safeUsedBonuses } },
+        });
+      }
+
+      return tx.order.create({
+        data: {
+          customerName: String(name || customerName || 'Гость'),
+          phone: String(phone || ''),
+          address: String(address || ''),
+          fulfillmentType: fulfillment,
+          deliveryFee: deliveryFeeApplied,
+          paymentMethod: paymentMethod || 'CASH',
+          comment: comment || null,
+          noCallbackConfirm: Boolean(noCallbackConfirm),
+          noDoorbellRing: Boolean(noDoorbellRing),
+          totalPrice: totalWithBonuses,
+          usedBonuses: safeUsedBonuses,
+          status: 'PENDING',
+          userId: effectiveUserId,
+          items: {
+            create: clientItems.map((item: any) => ({
+              productId: item.id,
+              quantity: Number(item.quantity ?? 1),
+              price: Number(item.price),
+            })),
+          },
         },
-      },
-      include: {
-        items: {
-          include: { product: true },
+        include: {
+          items: {
+            include: { product: true },
+          },
         },
-      },
+      });
     });
 
     // 2. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЯ
@@ -210,6 +282,18 @@ router.post('/', async (req: Request, res: Response) => {
           sendTelegramNotification(order, order.items),
           addOrderToSheet(order, order.items)
       ]).then(() => console.log('Notifications processed'));
+
+      if (effectiveUserId) {
+        const user = await prisma.user.findUnique({
+          where: { id: effectiveUserId },
+          select: { email: true },
+        });
+        if (user?.email) {
+          sendOrderReceipt(order as any, user.email).catch((e) =>
+            console.error('Failed to send CASH receipt:', e)
+          );
+        }
+      }
     }
 
     if (paymentMethod === 'CARD') {
@@ -258,11 +342,54 @@ router.post('/', async (req: Request, res: Response) => {
 router.patch('/:id/status', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, paymentStatus } = req.body;
     const updatedOrder = await prisma.order.update({
       where: { id: parseInt(String(id)) },
-      data: { status }
+      data: {
+        ...(status !== undefined ? { status } : {}),
+        ...(paymentStatus !== undefined ? { paymentStatus } : {}),
+      },
+      include: {
+        items: { include: { product: true } },
+      },
     });
+
+    if ((status === 'DELIVERED' || status === 'COMPLETED') && updatedOrder.userId) {
+      const orderItems = await prisma.orderItem.findMany({
+        where: { orderId: updatedOrder.id },
+        select: { price: true, quantity: true },
+      });
+      const merchandiseTotal = orderItems.reduce(
+        (sum, item) => sum + Number(item.price) * Number(item.quantity),
+        0
+      );
+      const cashback = Math.round(merchandiseTotal * 0.05 * 100) / 100;
+      if (cashback > 0) {
+        await prisma.user.update({
+          where: { id: updatedOrder.userId },
+          data: { bonusBalance: { increment: cashback } },
+        });
+      }
+    }
+
+    if (updatedOrder.userId) {
+      const shouldSendCardReceipt =
+        updatedOrder.paymentMethod === 'CARD' &&
+        (paymentStatus === 'PAID' || status === 'DELIVERED' || status === 'COMPLETED');
+
+      if (shouldSendCardReceipt) {
+        const user = await prisma.user.findUnique({
+          where: { id: updatedOrder.userId },
+          select: { email: true },
+        });
+        if (user?.email) {
+          sendOrderReceipt(updatedOrder as any, user.email).catch((e) =>
+            console.error('Failed to send CARD receipt:', e)
+          );
+        }
+      }
+    }
+
     res.json(updatedOrder);
   } catch (error) {
     res.status(500).json({ message: 'Ошибка обновления' });

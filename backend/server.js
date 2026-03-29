@@ -23,6 +23,8 @@ import newsletterRoutes from './routes/newsletter.routes.ts'; // Добавил 
 import favoriteRoutes from './routes/favorite.routes.ts'; // Добавил .ts для единообразия
 import ingredientRoutes from './routes/ingredients.routes.ts'; // Добавил .ts для единообразия
 import paymentRoutes from './routes/payment.routes.ts';
+import blogRoutes from './routes/blog.routes.ts';
+import crmRoutes from './routes/crm.routes.ts';
 
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
 const dotenvResult = dotenv.config({ override: false });
@@ -110,6 +112,8 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/ingredients', ingredientRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/crm', crmRoutes);
 
 // Тестовый маршрут
 app.get('/', (req, res) => {
