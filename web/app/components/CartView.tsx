@@ -283,9 +283,6 @@ export default function CartView({
     },
   ]), [])
 
-  const upsellItems = upsellCandidates.length > 0 ? upsellCandidates : mockUpsellItems
-  const isUpsellQualified = finalPrice >= UPSELL_THRESHOLD && upsellItems.length > 0
-
   // --- РАСЧЕТ ЦЕНЫ (ВОТ ЭТО ВАЖНО ДЛЯ ОШИБОК) ---
   const basePrice = cartItems.reduce((sum, item) => sum + item.price, 0)
   const discountAmount = appliedPromo ? Math.round((basePrice * appliedPromo.discount) / 100) : 0
@@ -415,6 +412,140 @@ export default function CartView({
     formData.phone.trim() !== '' && !isValidUaPhone(formData.phone)
   const phoneValid = isValidUaPhone(formData.phone)
   const canSubmitOrder = phoneValid && !isCalculatingDistance
+
+  
+  const upsellItems = upsellCandidates.length > 0 ? upsellCandidates : mockUpsellItems
+  const isUpsellQualified = finalPrice >= UPSELL_THRESHOLD && upsellItems.length > 0
+
+  // // --- РАСЧЕТ ЦЕНЫ (ВОТ ЭТО ВАЖНО ДЛЯ ОШИБОК) ---
+  // const basePrice = cartItems.reduce((sum, item) => sum + item.price, 0)
+  // const discountAmount = appliedPromo ? Math.round((basePrice * appliedPromo.discount) / 100) : 0
+  // const finalPrice = basePrice - discountAmount
+  // const { restaurantPickupAddress } = checkoutSettings
+  // const selectedCityInfo = useMemo(
+  //   () => cities.find((city) => city.name === selectedCity) ?? null,
+  //   [cities, selectedCity]
+  // )
+  // const selectedCityPricePerKm = Number(selectedCityInfo?.pricePerKm ?? 10)
+  // const deliveryPrice = useMemo(() => {
+  //   if (fulfillment === 'pickup') return 0
+  //   if (distanceKm == null) return 0
+  //   return Math.round(distanceKm * selectedCityPricePerKm * 100) / 100
+  // }, [fulfillment, distanceKm, selectedCityPricePerKm])
+  // const subtotalWithDelivery = finalPrice + deliveryPrice
+  // const appliedBonuses = useBonuses ? Math.min(bonusBalance, subtotalWithDelivery) : 0
+  // const totalToPay = Math.max(0, subtotalWithDelivery - appliedBonuses)
+
+  // const pickupAddressDisplay = restaurantPickupAddress || '—'
+
+  // const estimateDistanceFromAddressMock = (from: string, to: string): number => {
+  //   const combined = `${from}|${to}`.trim().toLowerCase()
+  //   const hash = Array.from(combined).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+  //   return Math.max(1.5, Math.min(25, (hash % 220) / 10))
+  // }
+
+  // const getDistanceKm = async (origin: string, destination: string): Promise<number> => {
+  //   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  //   if (!apiKey) {
+  //     return estimateDistanceFromAddressMock(origin, destination)
+  //   }
+
+  //   try {
+  //     const url =
+  //       `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}` +
+  //       `&destinations=${encodeURIComponent(destination)}&units=metric&key=${encodeURIComponent(apiKey)}`
+  //     const response = await fetch(url)
+  //     if (!response.ok) throw new Error('Distance Matrix request failed')
+  //     const data = await response.json()
+  //     const meters = data?.rows?.[0]?.elements?.[0]?.distance?.value
+  //     if (typeof meters !== 'number' || !Number.isFinite(meters)) {
+  //       throw new Error('Distance Matrix response missing distance')
+  //     }
+  //     return Math.round((meters / 1000) * 100) / 100
+  //   } catch {
+  //     return estimateDistanceFromAddressMock(origin, destination)
+  //   }
+  // }
+
+  // const amsterdamSlots = useMemo(
+  //   () => buildAmsterdamSlots(deliveryDay),
+  //   [deliveryDay]
+  // )
+
+  // const submitLiqPayCheckout = (data: string, signature: string) => {
+  //   const form = document.createElement('form')
+  //   form.method = 'POST'
+  //   form.action = 'https://www.liqpay.ua/api/3/checkout'
+  //   form.acceptCharset = 'utf-8'
+
+  //   const dataInput = document.createElement('input')
+  //   dataInput.type = 'hidden'
+  //   dataInput.name = 'data'
+  //   dataInput.value = data
+  //   form.appendChild(dataInput)
+
+  //   const signatureInput = document.createElement('input')
+  //   signatureInput.type = 'hidden'
+  //   signatureInput.name = 'signature'
+  //   signatureInput.value = signature
+  //   form.appendChild(signatureInput)
+
+  //   document.body.appendChild(form)
+  //   form.submit()
+  // }
+
+  // useEffect(() => {
+  //   if (amsterdamSlots.some((s) => s.value === deliverySlot)) return
+  //   setDeliverySlot('asap')
+  // }, [deliveryDay, amsterdamSlots, deliverySlot])
+
+  // useEffect(() => {
+  //   if (fulfillment !== 'delivery') {
+  //     setDistanceKm(null)
+  //     setDistanceError(null)
+  //     setIsCalculatingDistance(false)
+  //     return
+  //   }
+
+  //   const destinationAddress = formData.address.trim()
+  //   const originAddress = pickupAddressDisplay.trim()
+
+  //   if (!destinationAddress || !originAddress || originAddress === '—') {
+  //     setDistanceKm(null)
+  //     setDistanceError(null)
+  //     setIsCalculatingDistance(false)
+  //     return
+  //   }
+
+  //   let cancelled = false
+  //   setIsCalculatingDistance(true)
+  //   setDistanceError(null)
+
+  //   const timer = setTimeout(async () => {
+  //     try {
+  //       const destination = `${selectedCity}, ${destinationAddress}`.trim()
+  //       const km = await getDistanceKm(originAddress, destination)
+  //       if (!cancelled) setDistanceKm(km)
+  //     } catch {
+  //       if (!cancelled) {
+  //         setDistanceKm(null)
+  //         setDistanceError('Не удалось рассчитать дистанцию')
+  //       }
+  //     } finally {
+  //       if (!cancelled) setIsCalculatingDistance(false)
+  //     }
+  //   }, 450)
+
+  //   return () => {
+  //     cancelled = true
+  //     clearTimeout(timer)
+  //   }
+  // }, [fulfillment, formData.address, selectedCity, pickupAddressDisplay])
+
+  // const phoneInvalidHint =
+  //   formData.phone.trim() !== '' && !isValidUaPhone(formData.phone)
+  // const phoneValid = isValidUaPhone(formData.phone)
+  // const canSubmitOrder = phoneValid && !isCalculatingDistance
 
   // --- ФУНКЦИИ КОРЗИНЫ ---
   const updateCart = (newCart: MenuItem[]) => {
