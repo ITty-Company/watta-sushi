@@ -15,6 +15,7 @@ model User {
   phone    String  @unique // Уникальный телефон (защита от абуза)
   name     String?
   role     String  @default("USER")
+  bonusBalance Float @default(0)
 
   // Статусы верификации
   isPhoneVerified  Boolean @default(false) // Главный флаг подтверждения
@@ -65,6 +66,7 @@ model City {
   name          String
   name_nl       String? // Нидерландское название
   name_en       String? // Английское название
+  pricePerKm    Float          @default(10)
   countryId     Int
   country       Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
   latitude      Float? // Широта для карты
@@ -135,6 +137,7 @@ model Order {
   createdAt  DateTime @default(now())
   status     String   @default("PENDING") // PENDING, CONFIRMED, DELIVERED, CANCELLED
   totalPrice Float
+  usedBonuses Float   @default(0)
 
   customerName  String  @default("Гость")
   phone         String  @default("")
@@ -222,6 +225,19 @@ model Promo {
   content     String? // Полный текст
   imageUrl    String?
   isHit       Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  content     String
+  imageUrl    String?
+  videoUrl    String?
+  author      String   @default("Шеф Watta Sushi")
+  isPublished Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

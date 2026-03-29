@@ -57,11 +57,15 @@ interface MenuItem {
   isTop?: boolean
 }
 
+const UPSELL_THRESHOLD = 300
+const UPSELL_DISCOUNT_PERCENT = 15
+
 interface CityOption {
   id: number
   name: string
   name_ua?: string | null
   name_en?: string | null
+  pricePerKm?: number | null
 }
 
 // Пропсы для навигации
@@ -86,6 +90,8 @@ export default function CartView({
 
   const [cartItems, setCartItems] = useState<MenuItem[]>([])
   const [recommendations, setRecommendations] = useState<MenuItem[]>([])
+  const [isUpsellModalOpen, setIsUpsellModalOpen] = useState(false)
+  const [isBypassingUpsell, setIsBypassingUpsell] = useState(false)
   
   // Состояния для оформления
   const [isCheckoutMode, setIsCheckoutMode] = useState(false)
@@ -112,7 +118,12 @@ export default function CartView({
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CARD');
   const [fulfillment, setFulfillment] = useState<'delivery' | 'pickup'>('delivery')
   const [selectedCity, setSelectedCity] = useState('Киев')
-  const [cities, setCities] = useState<string[]>(['Киев'])
+  const [cities, setCities] = useState<CityOption[]>([
+    { id: 1, name: 'Киев', pricePerKm: 10 },
+  ])
+  const [distanceKm, setDistanceKm] = useState<number | null>(null)
+  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false)
+  const [distanceError, setDistanceError] = useState<string | null>(null)
   const [deliveryDay, setDeliveryDay] = useState<DeliveryDay>('today')
   const [deliverySlot, setDeliverySlot] = useState('asap')
   // --- ЛОГИКА ПРОМОКОДОВ ---
@@ -121,6 +132,8 @@ export default function CartView({
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null)
   const [promoError, setPromoError] = useState<string | null>(null)
   const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSiteSettings>(defaultCheckoutSettings)
+  const [bonusBalance, setBonusBalance] = useState(0)
+  const [useBonuses, setUseBonuses] = useState(false)
 
   // --- ЗАГРУЗКА ДАННЫХ ---
   useEffect(() => {
@@ -180,16 +193,40 @@ export default function CartView({
       .then((data: CityOption[]) => {
         const loadedCities = Array.isArray(data)
           ? data
-              .map((city) => String(city.name_ua || city.name || city.name_en || '').trim())
-              .filter(Boolean)
+              .map((city) => ({
+                id: Number(city.id),
+                name: String(city.name_ua || city.name || city.name_en || '').trim(),
+                name_ua: city.name_ua,
+                name_en: city.name_en,
+                pricePerKm: Number(city.pricePerKm ?? 10),
+              }))
+              .filter((city) => Boolean(city.name))
           : []
 
         if (loadedCities.length > 0) {
           setCities(loadedCities)
-          setSelectedCity((prev) => (loadedCities.includes(prev) ? prev : loadedCities[0]))
+          setSelectedCity((prev) =>
+            loadedCities.some((city) => city.name === prev) ? prev : loadedCities[0].name
+          )
         }
       })
       .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    if (!token) {
+      setBonusBalance(0)
+      return
+    }
+    fetch('/api/orders/bonus', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setBonusBalance(Number(data?.bonusBalance ?? 0))
+      })
+      .catch(() => setBonusBalance(0))
   }, [])
 
   // --- ВЫЧИСЛЕНИЯ ---
@@ -204,18 +241,100 @@ export default function CartView({
     .filter(rec => !cartItems.some(cartItem => cartItem.id === rec.id))
     .slice(0, 10)
 
+  const upsellCandidates = useMemo(() => {
+    const byCategory = recommendations.filter((item) => {
+      const category = item.category.toLowerCase()
+      return (
+        category.includes('нап') ||
+        category.includes('drink') ||
+        category.includes('соус') ||
+        category.includes('sauce') ||
+        category.includes('рол')
+      )
+    })
+    const source = byCategory.length > 0 ? byCategory : filteredRecommendations
+    return source.filter(item => !cartItems.some(cartItem => cartItem.id === item.id)).slice(0, 3)
+  }, [recommendations, filteredRecommendations, cartItems])
+
+  const mockUpsellItems: MenuItem[] = useMemo(() => ([
+    {
+      id: -101,
+      name: 'Кола 0.5',
+      description: 'Освежающий напиток',
+      price: 65,
+      category: 'Напитки',
+      emoji: '🥤',
+    },
+    {
+      id: -102,
+      name: 'Спайси соус',
+      description: 'Идеально к роллам',
+      price: 35,
+      category: 'Соусы',
+      emoji: '🧴',
+    },
+    {
+      id: -103,
+      name: 'Мини-ролл с лососем',
+      description: 'Легкий перекус со скидкой',
+      price: 119,
+      category: 'Роллы',
+      emoji: '🍣',
+    },
+  ]), [])
+
+  const upsellItems = upsellCandidates.length > 0 ? upsellCandidates : mockUpsellItems
+  const isUpsellQualified = finalPrice >= UPSELL_THRESHOLD && upsellItems.length > 0
+
   // --- РАСЧЕТ ЦЕНЫ (ВОТ ЭТО ВАЖНО ДЛЯ ОШИБОК) ---
   const basePrice = cartItems.reduce((sum, item) => sum + item.price, 0)
   const discountAmount = appliedPromo ? Math.round((basePrice * appliedPromo.discount) / 100) : 0
   const finalPrice = basePrice - discountAmount
-  const { freeDeliveryThreshold, deliveryFee, restaurantPickupAddress } = checkoutSettings
+  const { restaurantPickupAddress } = checkoutSettings
+  const selectedCityInfo = useMemo(
+    () => cities.find((city) => city.name === selectedCity) ?? null,
+    [cities, selectedCity]
+  )
+  const selectedCityPricePerKm = Number(selectedCityInfo?.pricePerKm ?? 10)
   const deliveryPrice = useMemo(() => {
     if (fulfillment === 'pickup') return 0
-    if (finalPrice >= freeDeliveryThreshold) return 0
-    return deliveryFee
-  }, [fulfillment, finalPrice, freeDeliveryThreshold, deliveryFee])
+    if (distanceKm == null) return 0
+    return Math.round(distanceKm * selectedCityPricePerKm * 100) / 100
+  }, [fulfillment, distanceKm, selectedCityPricePerKm])
+  const subtotalWithDelivery = finalPrice + deliveryPrice
+  const appliedBonuses = useBonuses ? Math.min(bonusBalance, subtotalWithDelivery) : 0
+  const totalToPay = Math.max(0, subtotalWithDelivery - appliedBonuses)
 
   const pickupAddressDisplay = restaurantPickupAddress || '—'
+
+  const estimateDistanceFromAddressMock = (from: string, to: string): number => {
+    const combined = `${from}|${to}`.trim().toLowerCase()
+    const hash = Array.from(combined).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+    return Math.max(1.5, Math.min(25, (hash % 220) / 10))
+  }
+
+  const getDistanceKm = async (origin: string, destination: string): Promise<number> => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    if (!apiKey) {
+      return estimateDistanceFromAddressMock(origin, destination)
+    }
+
+    try {
+      const url =
+        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}` +
+        `&destinations=${encodeURIComponent(destination)}&units=metric&key=${encodeURIComponent(apiKey)}`
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Distance Matrix request failed')
+      const data = await response.json()
+      const meters = data?.rows?.[0]?.elements?.[0]?.distance?.value
+      if (typeof meters !== 'number' || !Number.isFinite(meters)) {
+        throw new Error('Distance Matrix response missing distance')
+      }
+      return Math.round((meters / 1000) * 100) / 100
+    } catch {
+      return estimateDistanceFromAddressMock(origin, destination)
+    }
+  }
 
   const amsterdamSlots = useMemo(
     () => buildAmsterdamSlots(deliveryDay),
@@ -249,10 +368,53 @@ export default function CartView({
     setDeliverySlot('asap')
   }, [deliveryDay, amsterdamSlots, deliverySlot])
 
+  useEffect(() => {
+    if (fulfillment !== 'delivery') {
+      setDistanceKm(null)
+      setDistanceError(null)
+      setIsCalculatingDistance(false)
+      return
+    }
+
+    const destinationAddress = formData.address.trim()
+    const originAddress = pickupAddressDisplay.trim()
+
+    if (!destinationAddress || !originAddress || originAddress === '—') {
+      setDistanceKm(null)
+      setDistanceError(null)
+      setIsCalculatingDistance(false)
+      return
+    }
+
+    let cancelled = false
+    setIsCalculatingDistance(true)
+    setDistanceError(null)
+
+    const timer = setTimeout(async () => {
+      try {
+        const destination = `${selectedCity}, ${destinationAddress}`.trim()
+        const km = await getDistanceKm(originAddress, destination)
+        if (!cancelled) setDistanceKm(km)
+      } catch {
+        if (!cancelled) {
+          setDistanceKm(null)
+          setDistanceError('Не удалось рассчитать дистанцию')
+        }
+      } finally {
+        if (!cancelled) setIsCalculatingDistance(false)
+      }
+    }, 450)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [fulfillment, formData.address, selectedCity, pickupAddressDisplay])
+
   const phoneInvalidHint =
     formData.phone.trim() !== '' && !isValidUaPhone(formData.phone)
   const phoneValid = isValidUaPhone(formData.phone)
-  const canSubmitOrder = phoneValid
+  const canSubmitOrder = phoneValid && !isCalculatingDistance
 
   // --- ФУНКЦИИ КОРЗИНЫ ---
   const updateCart = (newCart: MenuItem[]) => {
@@ -317,9 +479,18 @@ export default function CartView({
     }
   }
 
+  const getDiscountedUpsellItem = (item: MenuItem): MenuItem => ({
+    ...item,
+    price: Math.max(1, Math.round(item.price * (1 - UPSELL_DISCOUNT_PERCENT / 100))),
+  })
+
+  const handleAddUpsell = (item: MenuItem) => {
+    addItem(getDiscountedUpsellItem(item))
+    toast.success(`${item.name} додано зі знижкою ${UPSELL_DISCOUNT_PERCENT}%`)
+  }
+
   // --- ОФОРМЛЕНИЕ ЗАКАЗА ---
- const handleOrder = async (e: React.FormEvent) => {
-    e.preventDefault()
+ const handleOrder = async () => {
     if (fulfillment === 'delivery' && !formData.address.trim()) {
       toast.error('Вкажіть адресу доставки')
       return
@@ -365,9 +536,10 @@ export default function CartView({
               .filter(Boolean)
               .join('. ')
 
-      const totalAmountNumber = Number(finalPrice + deliveryPrice)
+      const totalAmountNumber = Number(totalToPay)
       const merchandiseTotalNumber = Number(finalPrice)
       const deliveryPriceNumber = Number(deliveryPrice)
+      const usedBonusesNumber = Number(appliedBonuses)
       // const needChangeFromValue =
       //   formData.needChangeFrom.trim() === '' ? null : Number(formData.needChangeFrom)
 
@@ -386,6 +558,7 @@ export default function CartView({
           totalAmount: totalAmountNumber,
           merchandiseTotal: merchandiseTotalNumber,
           deliveryPrice: deliveryPriceNumber,
+          usedBonuses: usedBonusesNumber,
           fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY'
       }),
       })
@@ -416,6 +589,31 @@ export default function CartView({
         setIsLoading(false);
     }
 }
+
+  const handleCheckoutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (isBypassingUpsell) {
+      await handleOrder()
+      return
+    }
+
+    if (isUpsellQualified) {
+      setIsUpsellModalOpen(true)
+      return
+    }
+
+    await handleOrder()
+  }
+
+  const handleContinueCheckout = async () => {
+    setIsUpsellModalOpen(false)
+    setIsBypassingUpsell(true)
+    try {
+      await handleOrder()
+    } finally {
+      setIsBypassingUpsell(false)
+    }
+  }
   // --- КОМПОНЕНТЫ UI ---
   const Header = () => (
     <div className="fixed top-3 sm:top-4 left-2 right-2 w-auto max-w-[100vw] min-h-[72px] sm:h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2 sm:py-0 z-50 border border-[#145142]/10">
@@ -618,7 +816,7 @@ export default function CartView({
              <div className="w-full min-w-0 flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start z-20">
                 <form
                   className="flex flex-col gap-6 min-w-0"
-                  onSubmit={handleOrder}
+                  onSubmit={handleCheckoutSubmit}
                   noValidate
                 >
                 {/* 1. Контактные данные */}
@@ -706,18 +904,18 @@ export default function CartView({
                    {fulfillment === 'delivery' ? (
                      <>
                        <div className="flex gap-2 mb-4 flex-wrap" role="group" aria-label="Місто">
-                          {cities.map(city => (
+                         {cities.map(city => (
                              <button 
-                               key={city}
+                               key={city.id}
                                type="button"
-                               onClick={() => setSelectedCity(city)}
+                               onClick={() => setSelectedCity(city.name)}
                                className={`px-4 sm:px-6 py-2 rounded-xl font-bold transition border cursor-pointer ${
-                                 selectedCity === city
+                                 selectedCity === city.name
                                    ? 'bg-[#145142] text-white shadow-sm border-[#ff6b35]/50 ring-2 ring-[#ff6b35]/40'
                                    : 'bg-[#F3F4F6] text-gray-600 border-transparent hover:bg-[#145142]/10 hover:text-[#145142]'
                                }`}
                              >
-                               {city}
+                               {city.name}
                              </button>
                           ))}
                        </div>
@@ -1094,25 +1292,55 @@ export default function CartView({
                                   : `${deliveryPrice} ₴`}
                             </span>
                           </div>
-                          {fulfillment === 'delivery' && deliveryPrice > 0 && (
-                            <p className="text-xs text-gray-500 -mt-2">
-                              {t.cartSection.deliveryUnlockHint.replace(
-                                '{{amount}}',
-                                String(freeDeliveryThreshold)
+                          {fulfillment === 'delivery' && (
+                            <div className="text-xs -mt-2">
+                              {isCalculatingDistance ? (
+                                <p className="text-gray-500">Рассчитываем расстояние доставки...</p>
+                              ) : distanceKm != null ? (
+                                <p className="text-[#145142]">
+                                  Расстояние: {distanceKm.toFixed(2)} км x {selectedCityPricePerKm.toFixed(2)} = {deliveryPrice.toFixed(2)} ₴
+                                </p>
+                              ) : (
+                                <p className="text-gray-500">Введите адрес доставки для расчета стоимости</p>
                               )}
-                            </p>
+                              {distanceError ? <p className="text-red-500">{distanceError}</p> : null}
+                            </div>
+                          )}
+                          {bonusBalance > 0 && (
+                            <div className="rounded-xl border border-[#145142]/20 bg-[#145142]/5 p-3">
+                              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                                <span className="text-sm font-semibold text-[#145142]">
+                                  Списать бонусы (Доступно: {bonusBalance.toFixed(2)} ₴)
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={useBonuses}
+                                  onChange={(e) => setUseBonuses(e.target.checked)}
+                                  className="w-5 h-5 accent-[#145142]"
+                                />
+                              </label>
+                              {useBonuses && (
+                                <p className="text-sm text-[#145142] mt-2">Будет списано: {appliedBonuses.toFixed(2)} ₴</p>
+                              )}
+                            </div>
+                          )}
+                          {useBonuses && appliedBonuses > 0 && (
+                            <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
+                              <span>Списано бонусами</span>
+                              <span>-{appliedBonuses.toFixed(2)} ₴</span>
+                            </div>
                           )}
                           <div className="w-full h-px bg-gray-200 my-2"></div>
                           <div className="flex justify-between items-end">
                             <span className="text-[24px] font-bold text-black">К оплате</span>
-                            <span className="text-[32px] font-bold text-[#145142]">{finalPrice + deliveryPrice} ₴</span>
+                            <span className="text-[32px] font-bold text-[#145142]">{totalToPay.toFixed(2)} ₴</span>
                           </div>
                           <button
                             disabled={isLoading || !canSubmitOrder}
                             type="submit"
                             className="w-full h-[60px] rounded-[15px] text-white text-[20px] font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 border border-[#ff6b35]/35 bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] hover:brightness-105 active:scale-[0.99] ring-2 ring-[#ff6b35]/30 focus-visible:outline-none focus-visible:ring-[#ff6b35]/60"
                           >
-                            {isLoading ? 'Обработка...' : 'Подтвердить заказ'}
+                            {isLoading ? 'Обработка...' : 'Оформить заказ'}
                           </button>
                           <p className="text-center text-xs text-gray-400 px-2 leading-tight">
                             Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
@@ -1128,6 +1356,59 @@ export default function CartView({
           null
         )}
       </div>
+      {isUpsellModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-[#145142]/15 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#145142] to-[#1a6b58] px-6 py-5 text-white">
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Добавьте к заказу со скидкой!</h3>
+              <p className="mt-1 text-sm sm:text-base text-white/90">
+                Вы уже на сумме от {UPSELL_THRESHOLD} ₴ - поймайте спецпредложение перед оплатой.
+              </p>
+            </div>
+
+            <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {upsellItems.map((item) => {
+                const discounted = getDiscountedUpsellItem(item)
+                return (
+                  <div key={item.id} className="rounded-2xl border border-[#145142]/15 p-4 bg-[#F9FAFB] flex flex-col">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-2xl">{item.emoji}</div>
+                      <span className="text-xs font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#ff6b35]/15 text-[#ff6b35]">
+                        -{UPSELL_DISCOUNT_PERCENT}%
+                      </span>
+                    </div>
+                    <h4 className="mt-3 text-lg font-bold text-[#194A38] leading-tight">{item.name}</h4>
+                    <p className="mt-1 text-sm text-gray-500 min-h-[40px]">{item.description || 'Специальное предложение'}</p>
+                    <div className="mt-3 flex items-end justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-extrabold text-[#145142]">{discounted.price} ₴</span>
+                        <span className="text-sm text-gray-400 line-through">{item.price} ₴</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAddUpsell(item)}
+                      className="mt-4 h-11 rounded-xl bg-[#145142] text-white font-bold hover:bg-[#0f3d34] transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="px-5 sm:px-6 pb-6 pt-2">
+              <button
+                type="button"
+                onClick={handleContinueCheckout}
+                className="w-full h-14 rounded-2xl text-white text-lg sm:text-xl font-extrabold shadow-lg border border-[#ff6b35]/35 bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] hover:brightness-105 active:scale-[0.99] transition"
+              >
+                Продолжить оформление
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

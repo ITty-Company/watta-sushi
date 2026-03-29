@@ -14,6 +14,7 @@ export default function Footer() {
           <div className="flex gap-6 text-sm text-gray-600 font-medium">
             <Link href="/menu" className="hover:text-[#ff6b35] transition">Меню</Link>
             <Link href="/delivery" className="hover:text-[#ff6b35] transition">Доставка</Link>
+            <Link href="/blog" className="hover:text-[#ff6b35] transition">Блог</Link>
             <Link href="/about" className="hover:text-[#ff6b35] transition">Про нас</Link>
           </div>
 

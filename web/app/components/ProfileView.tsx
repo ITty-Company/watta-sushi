@@ -13,8 +13,10 @@ interface OrderItem {
   id: number
   quantity: number
   price: number
+  productId?: number
   product: {
     name_ru: string
+    description_ru?: string
     imageUrl?: string
   }
 }
@@ -65,6 +67,7 @@ export default function ProfileView({
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [bonusBalance, setBonusBalance] = useState(0)
 
   const [favoriteItems, setFavoriteItems] = useState<any[]>([])
   const [favLoading, setFavLoading] = useState(false)
@@ -102,6 +105,14 @@ export default function ProfileView({
         }
 
         try {
+          const bonusRes = await fetch('/api/orders/bonus', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          if (bonusRes.ok) {
+            const bonusData = await bonusRes.json()
+            setBonusBalance(Number(bonusData?.bonusBalance ?? 0))
+          }
+
           const res = await fetch('/api/orders/my', {
             headers: { 'Authorization': `Bearer ${token}` }
           })
@@ -120,6 +131,27 @@ export default function ProfileView({
       fetchOrders()
     }
   }, [])
+
+  const handleReorder = (order: Order) => {
+    const reorderedItems = order.items.flatMap((item) => {
+      const itemId = Number(item.productId ?? item.id)
+      const qty = Math.max(1, Number(item.quantity || 1))
+      const cartItem = {
+        id: itemId,
+        name: item.product?.name_ru || 'Товар',
+        description: item.product?.description_ru || '',
+        price: Number(item.price || 0),
+        category: 'Повторный заказ',
+        emoji: '🍣',
+        imageUrl: item.product?.imageUrl,
+      }
+      return Array.from({ length: qty }, () => ({ ...cartItem }))
+    })
+
+    localStorage.setItem('cart', JSON.stringify(reorderedItems))
+    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    window.location.href = '/cart'
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -345,6 +377,10 @@ export default function ProfileView({
                 <h2 className="text-4xl font-extrabold bg-gradient-to-r from-[#194A38] via-[#145142] to-[#1a6b58] bg-clip-text text-transparent mb-3 drop-shadow-md">
                   {user?.name || 'Гість'}
                 </h2>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#145142]/10 border border-[#145142]/20 mb-3">
+                  <span className="text-sm font-semibold text-[#145142]">Ваши бонусы:</span>
+                  <span className="text-lg font-extrabold text-[#145142]">{bonusBalance.toFixed(2)} ₴</span>
+                </div>
                 <div className="flex items-center justify-center gap-2.5 text-gray-700 mb-2">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-md border border-gray-200/50">
                     <Phone size={16} className="text-[#145142]" />
@@ -507,6 +543,10 @@ export default function ProfileView({
             {activeTab === 'history' && (
               <div className="animate-in fade-in">
                 <h2 className="text-3xl font-bold text-[#194A38] mb-6">Історія замовлень</h2>
+                <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#145142]/10 to-[#1a6b58]/10 border border-[#145142]/20">
+                  <p className="text-sm text-[#145142]/80 font-semibold">Ваши бонусы</p>
+                  <p className="text-3xl font-extrabold text-[#145142]">{bonusBalance.toFixed(2)} ₴</p>
+                </div>
                 {loading ? <div className="text-center py-20 text-gray-400">Завантаження...</div> : 
                  orders.length === 0 ? (
                   <div className="text-center py-20">
@@ -574,9 +614,18 @@ export default function ProfileView({
                               <span className="w-2 h-2 bg-[#145142] rounded-full"></span>
                               Загальна сума:
                             </span>
-                            <span className="text-4xl font-extrabold bg-gradient-to-r from-[#194A38] via-[#145142] to-[#1a6b58] bg-clip-text text-transparent drop-shadow-sm">
-                              {order.totalPrice} ₴
-                            </span>
+                            <div className="flex items-center gap-4">
+                              <span className="text-4xl font-extrabold bg-gradient-to-r from-[#194A38] via-[#145142] to-[#1a6b58] bg-clip-text text-transparent drop-shadow-sm">
+                                {order.totalPrice} ₴
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleReorder(order)}
+                                className="px-4 py-2 rounded-xl bg-[#145142] text-white font-bold hover:bg-[#0f3d34] transition"
+                              >
+                                Повторить заказ
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
