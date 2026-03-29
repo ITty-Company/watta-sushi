@@ -186,24 +186,24 @@ export default function ProfileView({
   }
 
   const loadFavoritesList = async () => {
-  setFavLoading(true)
-  try {
-    const userStr = localStorage.getItem('currentUser')
-    if (userStr) {
-      const user = JSON.parse(userStr)
-      const res = await fetch('/api/favorites/list', {
-        headers: { 'x-user-id': user.id.toString() }
-      })
-      if (res.ok) {
-        setFavoriteItems(await res.json())
+    setFavLoading(true)
+    try {
+      const userStr = localStorage.getItem('currentUser')
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        const res = await fetch('/api/favorites/list', {
+          headers: { 'x-user-id': user.id.toString() }
+        })
+        if (res.ok) {
+          setFavoriteItems(await res.json())
+        }
       }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setFavLoading(false)
     }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    setFavLoading(false)
-    }
-  }  
+  }
 
   // Загружаем, когда открывается вкладка 'favorites'
   useEffect(() => {
@@ -213,29 +213,29 @@ export default function ProfileView({
   }, [activeTab])
 
   const removeFavorite = async (productId: number) => {
-  try {
-    const userStr = localStorage.getItem('currentUser')
-    if (!userStr) return
-    const user = JSON.parse(userStr)
+    try {
+      const userStr = localStorage.getItem('currentUser')
+      if (!userStr) return
+      const user = JSON.parse(userStr)
 
-    await fetch('/api/favorites/toggle', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-user-id': user.id.toString()
-      },
-      body: JSON.stringify({ productId })
-    })
+      await fetch('/api/favorites/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id.toString()
+        },
+        body: JSON.stringify({ productId })
+      })
 
-    // Убираем из списка визуально
-    setFavoriteItems(prev => prev.filter(item => item.id !== productId))
+      // Убираем из списка визуально
+      setFavoriteItems(prev => prev.filter(item => item.id !== productId))
 
-    // Обновляем глобальное состояние (если нужно)
-    window.dispatchEvent(new Event('favoritesUpdated')) 
-  } catch (e) {
-    toast.error('Ошибка удаления')
+      // Обновляем глобальное состояние (если нужно)
+      window.dispatchEvent(new Event('favoritesUpdated'))
+    } catch (e) {
+      toast.error('Ошибка удаления')
+    }
   }
-}
 
 
   const Header = () => (
@@ -782,8 +782,7 @@ export default function ProfileView({
         </div>
       </div>
       </div>
+      <Footer />
     </div>
-    <Footer />
-    </>
-  )
+   )
 }
