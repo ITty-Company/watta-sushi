@@ -379,7 +379,7 @@ export default function ProfileView({
                 </h2>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#145142]/10 border border-[#145142]/20 mb-3">
                   <span className="text-sm font-semibold text-[#145142]">Ваши бонусы:</span>
-                  <span className="text-lg font-extrabold text-[#145142]">{bonusBalance.toFixed(2)} ₴</span>
+                  <span className="text-lg font-extrabold text-[#145142]">{bonusBalance.toFixed(2)} €</span>
                 </div>
                 <div className="flex items-center justify-center gap-2.5 text-gray-700 mb-2">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 shadow-md border border-gray-200/50">
@@ -545,7 +545,7 @@ export default function ProfileView({
                 <h2 className="text-3xl font-bold text-[#194A38] mb-6">Історія замовлень</h2>
                 <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#145142]/10 to-[#1a6b58]/10 border border-[#145142]/20">
                   <p className="text-sm text-[#145142]/80 font-semibold">Ваши бонусы</p>
-                  <p className="text-3xl font-extrabold text-[#145142]">{bonusBalance.toFixed(2)} ₴</p>
+                  <p className="text-3xl font-extrabold text-[#145142]">{bonusBalance.toFixed(2)} €</p>
                 </div>
                 {loading ? <div className="text-center py-20 text-gray-400">Завантаження...</div> : 
                  orders.length === 0 ? (
@@ -602,7 +602,7 @@ export default function ProfileView({
                                 <div className="flex items-center gap-4">
                                   <span className="text-gray-500 text-sm font-medium bg-gray-100 px-2 py-1 rounded-md">x{item.quantity}</span>
                                   <span className="text-[#145142] font-bold text-lg min-w-[80px] text-right">
-                                    {item.price * item.quantity} ₴
+                                    {item.price * item.quantity} €
                                   </span>
                                 </div>
                               </div>
@@ -616,7 +616,7 @@ export default function ProfileView({
                             </span>
                             <div className="flex items-center gap-4">
                               <span className="text-4xl font-extrabold bg-gradient-to-r from-[#194A38] via-[#145142] to-[#1a6b58] bg-clip-text text-transparent drop-shadow-sm">
-                                {order.totalPrice} ₴
+                                {order.totalPrice} €
                               </span>
                               <button
                                 type="button"
@@ -657,7 +657,7 @@ export default function ProfileView({
                     <div className="flex-1">
                       <h3 className="font-bold text-[#145142] line-clamp-1">{item.name}</h3>
                       <p className="text-sm text-gray-500 line-clamp-1">{item.description}</p>
-                      <div className="mt-2 font-bold text-[#ff6b35]">{item.price} ₴</div>
+                      <div className="mt-2 font-bold text-[#ff6b35]">{item.price} €</div>
                     </div>
 
                     {/* Кнопка удаления (крестик) */}

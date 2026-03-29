@@ -145,7 +145,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
 
                   {/* Цена и кнопка */}
                   <div className="flex items-center justify-between mt-auto">
-                    <span className="text-2xl font-bold text-black">{item.price} ₴</span>
+                    <span className="text-2xl font-bold text-black">{item.price} €</span>
                     <button 
                       onClick={() => addToCart(item)}
                       className="bg-[#145142] text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-[#0f3d32] transition shadow-lg shadow-green-900/20 active:scale-95"

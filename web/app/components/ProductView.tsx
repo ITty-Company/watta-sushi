@@ -133,7 +133,7 @@
 //                  <div className="flex justify-between items-start mb-4">
 //                      <h1 className="text-3xl sm:text-4xl font-extrabold text-[#145142]">{product.name_ru}</h1>
 //                      <div className="bg-[#ff6b35] text-white px-4 py-2 rounded-2xl text-xl font-bold shadow-lg shadow-orange-200">
-//                          {product.price} ₴
+//                          {product.price} €
 //                      </div>
 //                  </div>
 
@@ -382,7 +382,7 @@ export default function ProductView({
                             {getName(product)}
                         </h1>
                         <div className="text-2xl sm:text-3xl font-bold text-[#145142] whitespace-nowrap">
-                            {product.price} ₴
+                            {product.price} €
                         </div>
                     </div>
 
@@ -450,7 +450,7 @@ export default function ProductView({
                                     <>
                                         <span>У кошик</span>
                                         <span className="bg-white/20 px-2 py-0.5 rounded-lg text-sm">
-                                            {product.price * quantity} ₴
+                                            {product.price * quantity} €
                                         </span>
                                     </>
                                 )}
@@ -482,7 +482,7 @@ export default function ProductView({
                              </div>
                              <h3 className="font-bold text-[#194A38] truncate">{getName(rec)}</h3>
                              <p className="text-gray-400 text-xs line-clamp-1 mb-2">{getDesc(rec)}</p>
-                             <div className="font-bold text-black">{rec.price} ₴</div>
+                             <div className="font-bold text-black">{rec.price} €</div>
                          </div>
                      ))}
                  </div>

@@ -1623,7 +1623,7 @@ export default function MenuView() {
 
                   {/* Футер карточки (Цена и кнопка +) */}
                   <div className="item-footer-web">
-                    <span className="item-price-web">{item.price} ₴</span>
+                    <span className="item-price-web">{item.price} €</span>
                     <button className="add-btn-web" onClick={() => addToCart(item)}>+</button>
                   </div>
                 </div>

@@ -404,7 +404,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         fetch('/api/blog/all', { headers }),
         fetch('/api/crm/users', { headers }),
         fetch('/api/banners/all', { headers }),
-        fetch('/api/auth/users', { headers }),
+        fetch('/api/crm/users', { headers }),
         fetch('/api/team/all', { headers }),
       ])
       fetch('/api/promotions')
@@ -2049,7 +2049,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         <div>
                           <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.revenue}</p>
                           <p className="text-xl sm:text-2xl font-black text-[#145142]">
-                            {orders.filter(o => o.status === 'COMPLETED').reduce((s, o) => s + (o.totalPrice || 0), 0)} ₴
+                            {orders.filter(o => o.status === 'COMPLETED').reduce((s, o) => s + (o.totalPrice || 0), 0)} €
                           </p>
                         </div>
                       </div>
@@ -2267,7 +2267,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           {order.fulfillmentType !== 'PICKUP' && typeof order.deliveryFee === 'number' && (
                             <span className="text-xs font-semibold text-gray-600">
                               {t.adminPanel.orders.deliveryFeeAdmin}{' '}
-                              {order.deliveryFee > 0 ? `${order.deliveryFee} ₴` : '0 ₴'}
+                              {order.deliveryFee > 0 ? `${order.deliveryFee} €` : '0 €'}
                             </span>
                           )}
                         </div>
@@ -2353,7 +2353,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       </div>
 
                       <div className="text-[#194A38] text-[28px] font-bold">
-                        {order.totalPrice} ₴
+                        {order.totalPrice} €
                       </div>
                     </div>
                   </div>
@@ -2420,7 +2420,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                        <div className="flex flex-col flex-1">
                          <div className="flex justify-between items-start mb-2 gap-2">
                            <h3 className="text-base sm:text-lg md:text-[20px] font-bold text-black leading-tight flex-1">{product.name_ru}</h3>
-                           <span className="text-base sm:text-lg md:text-[20px] font-bold text-[#194A38] whitespace-nowrap">{product.price} ₴</span>
+                           <span className="text-base sm:text-lg md:text-[20px] font-bold text-[#194A38] whitespace-nowrap">{product.price} €</span>
                          </div>
                          <p className="text-xs sm:text-sm md:text-[14px] text-[#7C7C7C] line-clamp-2 mb-3 sm:mb-4 min-h-[32px] sm:min-h-[42px]">{product.description_ru}</p>
                          
@@ -2772,7 +2772,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       <div className="relative">
                         <label className="block text-xs font-semibold text-[#145142] mb-2 uppercase tracking-wide">
-                          Цена за 1 км (₴/€)
+                          Цена за 1 км (€)
                         </label>
                         <input
                           type="number"
@@ -3554,7 +3554,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         <td className="py-3 pr-4">{u.email || '—'}</td>
                         <td className="py-3 pr-4">{u.phone || '—'}</td>
                         <td className="py-3 pr-4">{u._count?.orders ?? 0}</td>
-                        <td className="py-3 pr-4 text-[#145142] font-bold">{Number(u.bonusBalance || 0).toFixed(2)} ₴</td>
+                        <td className="py-3 pr-4 text-[#145142] font-bold">{Number(u.bonusBalance || 0).toFixed(2)} €</td>
                       </tr>
                     ))}
                     {crmUsers.length === 0 && (
@@ -3711,7 +3711,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                      <div className="border-t border-gray-200 pt-6 space-y-4">
                         <h3 className="text-sm font-bold text-[#145142] uppercase tracking-wide">Доставка (фіксована)</h3>
                         <div>
-                          <label className="block text-sm font-bold text-[#145142] mb-2">Безкоштовна доставка від (₴)</label>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">Безкоштовна доставка від (€)</label>
                           <input
                             type="number"
                             min={0}
@@ -3727,7 +3727,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-[#145142] mb-2">Фіксована вартість доставки (₴)</label>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">Фіксована вартість доставки (€)</label>
                           <input
                             type="number"
                             min={0}
@@ -3842,7 +3842,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Цена (₴)</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Цена (€)</label>
                   <input 
                     name="price" 
                     type="number" 

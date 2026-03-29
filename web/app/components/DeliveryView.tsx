@@ -455,7 +455,7 @@ export default function DeliveryView() {
           <div className="delivery-conditions-text-web">
             <h3 className="delivery-conditions-title-web">Умови доставки</h3>
             <p className="delivery-conditions-desc-web">
-              Мінімальна сума замовлення 700 грн.
+              Мінімальна сума замовлення 700 €.
             </p>
             <p className="delivery-conditions-desc-web">
               Подробиці доставки до віддалених районів уточнюйте в оператора.
