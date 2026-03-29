@@ -641,7 +641,7 @@ export default function CartView({
       const timePart = `[Час (${dayLabel}): ${slotLabel}]`
       const changePart =
         paymentMethod === 'CASH' && formData.needChangeFrom.trim()
-          ? `[Нужна сдача с: ${formData.needChangeFrom.trim()} ₴]`
+          ? `[Нужна сдача с: ${formData.needChangeFrom.trim()} €]`
           : ''
       const sticksPart = `[Приборы: ${formData.sticks} шт, Персоны: ${formData.persons}]`
       const cbPart = formData.noCallbackConfirm ? '[Не перезванивать]' : ''
@@ -900,7 +900,7 @@ export default function CartView({
                         </div>
                         <button onClick={() => removeAllItem(item.id)} className="hover:opacity-70 transition"><TrashIcon /></button>
                         <div className="text-[24px] font-normal text-black w-[100px] text-right whitespace-nowrap">
-                          {item.price * (item.quantity || 1)} ₴
+                          {item.price * (item.quantity || 1)} €
                         </div>
                       </div>
 
@@ -929,7 +929,7 @@ export default function CartView({
                           <div className="flex flex-col">
                             {/* Исправлено: item.name вместо safeLocalized */}
                             <span className="text-[18px] font-bold text-[#194A38] leading-tight line-clamp-2">{item.name}</span>
-                            <span className="text-[14px] font-bold text-[#145142] mt-1">{item.price} ₴</span>
+                            <span className="text-[14px] font-bold text-[#145142] mt-1">{item.price} €</span>
                           </div>
                           <div className="ml-auto text-[#145142]">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -1395,12 +1395,12 @@ export default function CartView({
                       <div className="flex flex-col gap-4">
                           <div className="flex justify-between items-center text-gray-500 text-lg">
                             <span>Сумма заказа</span>
-                            <span>{basePrice} ₴</span>
+                            <span>{basePrice} €</span>
                           </div>
                           {appliedPromo && (
                             <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
                               <span>Скидка ({appliedPromo.code})</span>
-                              <span>-{discountAmount} ₴</span>
+                              <span>-{discountAmount} €</span>
                             </div>
                           )}
                           <div className="flex justify-between items-center text-gray-500 text-lg gap-3">
@@ -1420,7 +1420,7 @@ export default function CartView({
                                 ? '—'
                                 : deliveryPrice === 0
                                   ? t.cartSection.deliveryFree
-                                  : `${deliveryPrice} ₴`}
+                                  : `${deliveryPrice} €`}
                             </span>
                           </div>
                           {fulfillment === 'delivery' && (
@@ -1429,7 +1429,7 @@ export default function CartView({
                                 <p className="text-gray-500">Рассчитываем расстояние доставки...</p>
                               ) : distanceKm != null ? (
                                 <p className="text-[#145142]">
-                                  Расстояние: {distanceKm.toFixed(2)} км x {selectedCityPricePerKm.toFixed(2)} = {deliveryPrice.toFixed(2)} ₴
+                                  Расстояние: {distanceKm.toFixed(2)} км x {selectedCityPricePerKm.toFixed(2)} = {deliveryPrice.toFixed(2)} €
                                 </p>
                               ) : (
                                 <p className="text-gray-500">Введите адрес доставки для расчета стоимости</p>
@@ -1441,7 +1441,7 @@ export default function CartView({
                             <div className="rounded-xl border border-[#145142]/20 bg-[#145142]/5 p-3">
                               <label className="flex items-center justify-between gap-3 cursor-pointer">
                                 <span className="text-sm font-semibold text-[#145142]">
-                                  Списать бонусы (Доступно: {bonusBalance.toFixed(2)} ₴)
+                                  Списать бонусы (Доступно: {bonusBalance.toFixed(2)} €)
                                 </span>
                                 <input
                                   type="checkbox"
@@ -1451,20 +1451,20 @@ export default function CartView({
                                 />
                               </label>
                               {useBonuses && (
-                                <p className="text-sm text-[#145142] mt-2">Будет списано: {appliedBonuses.toFixed(2)} ₴</p>
+                                <p className="text-sm text-[#145142] mt-2">Будет списано: {appliedBonuses.toFixed(2)} €</p>
                               )}
                             </div>
                           )}
                           {useBonuses && appliedBonuses > 0 && (
                             <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
                               <span>Списано бонусами</span>
-                              <span>-{appliedBonuses.toFixed(2)} ₴</span>
+                              <span>-{appliedBonuses.toFixed(2)} €</span>
                             </div>
                           )}
                           <div className="w-full h-px bg-gray-200 my-2"></div>
                           <div className="flex justify-between items-end">
                             <span className="text-[24px] font-bold text-black">К оплате</span>
-                            <span className="text-[32px] font-bold text-[#145142]">{totalToPay.toFixed(2)} ₴</span>
+                            <span className="text-[32px] font-bold text-[#145142]">{totalToPay.toFixed(2)} €</span>
                           </div>
                           <button
                             disabled={isLoading || !canSubmitOrder}
@@ -1493,7 +1493,7 @@ export default function CartView({
             <div className="bg-gradient-to-r from-[#145142] to-[#1a6b58] px-6 py-5 text-white">
               <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Добавьте к заказу со скидкой!</h3>
               <p className="mt-1 text-sm sm:text-base text-white/90">
-                Вы уже на сумме от {UPSELL_THRESHOLD} ₴ - поймайте спецпредложение перед оплатой.
+                Вы уже на сумме от {UPSELL_THRESHOLD} € - поймайте спецпредложение перед оплатой.
               </p>
             </div>
 
@@ -1512,8 +1512,8 @@ export default function CartView({
                     <p className="mt-1 text-sm text-gray-500 min-h-[40px]">{item.description || 'Специальное предложение'}</p>
                     <div className="mt-3 flex items-end justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl font-extrabold text-[#145142]">{discounted.price} ₴</span>
-                        <span className="text-sm text-gray-400 line-through">{item.price} ₴</span>
+                        <span className="text-xl font-extrabold text-[#145142]">{discounted.price} €</span>
+                        <span className="text-sm text-gray-400 line-through">{item.price} €</span>
                       </div>
                     </div>
                     <button
