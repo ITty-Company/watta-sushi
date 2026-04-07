@@ -1,12 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import MenuView from './components/MenuView'
 import CartView from './components/CartView'
 import ProfileView from './components/ProfileView'
+import MenuView from './components/MenuView'
 
 export default function HomeClient() {
+  /** Після гідратації — уникнення mismatch (динамічні віджети / розширення / dev-оверлеї) */
+  const [hydrated, setHydrated] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   const handleSwitchTab = useCallback((tab: number) => {
     if (tab >= 0 && tab <= 2) {
@@ -53,7 +59,7 @@ export default function HomeClient() {
     }
     window.addEventListener('storage', handleStorageChange)
     handleStorageChange()
-    const intervalId = setInterval(handleStorageChange, 25)
+    const intervalId = setInterval(handleStorageChange, 400)
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('cartUpdated', handleCartUpdate)
@@ -64,9 +70,17 @@ export default function HomeClient() {
     }
   }, [handleSwitchTab])
 
+  if (!hydrated) {
+    return (
+      <div className="app-web min-h-[100dvh] bg-[#f2f5f3]" suppressHydrationWarning>
+        <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden" />
+      </div>
+    )
+  }
+
   return (
     <div className="app-web" suppressHydrationWarning>
-      <div className="content-web">
+      <div className="content-web content-web--watta-craft">
         {activeTab === 0 && <MenuView />}
         {activeTab === 1 && (
           <CartView

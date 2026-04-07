@@ -13,7 +13,7 @@ export default function AppClient({ children }: { children: ReactNode }) {
   return (
     <LanguageProviderWrapper>
       {/* Главный контейнер на весь экран */}
-      <div className="flex flex-col min-h-screen bg-[#F3F4F6] overflow-x-hidden">
+      <div className="flex flex-col min-h-screen bg-[#f2f5f3] overflow-x-hidden">
         
         {/* Контент растягивается и выталкивает футер вниз */}
         <main className="flex-1 w-full max-w-[100vw]">

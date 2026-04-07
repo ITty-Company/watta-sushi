@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
 
 interface BlogPost {
   id: number
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 
 async function getPosts(): Promise<BlogPost[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/blog`, {
+    const res = await fetch(`${serverApiBaseUrl()}/api/blog`, {
       cache: 'no-store',
     })
     if (!res.ok) return []
@@ -32,7 +33,7 @@ export default async function BlogPage() {
   const posts = await getPosts()
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] py-14 px-4">
+    <main className="watta-public-page-shell min-h-screen py-14 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-10">
           <h1 className="text-4xl md:text-5xl font-extrabold text-[#145142]">Блог и рецепты шефа</h1>

@@ -16,6 +16,7 @@ import cityRoutes from './routes/city.routes.ts';
 import bannerRoutes from './routes/banner.routes.ts';
 import countryRoutes from './routes/country.routes.ts';
 import deliveryZoneRoutes from './routes/deliveryZone.routes.ts';
+import deliveryCheckRoutes from './routes/deliveryCheck.routes.ts';
 import teamRoutes from './routes/team.routes.ts';
 import settingsRoutes from './routes/settings.routes.ts';
 import promotionsRoutes from './routes/promotions.routes.ts';
@@ -48,7 +49,7 @@ console.log('✅ DATABASE_URL найден');
 const app = express();
 app.set('trust proxy', 1);
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 5000; // Обычно бэкенд на 5000 или 3001
+const PORT = process.env.PORT ? Number(process.env.PORT) : 5050; // 5000 на macOS часто зайнятий AirPlay
 
 // --- 1. БЕЗОПАСНОСТЬ (Security Middleware) ---
 app.use(helmet()); // Заголовки безопасности
@@ -56,32 +57,37 @@ app.use(helmet()); // Заголовки безопасности
 // Настройка CORS
 const whitelist = [
   'http://localhost:3000',
+  'http://127.0.0.1:3000',
   'https://watta-sushi-web.onrender.com',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Разрешаем запросы без origin (например, curl) и из белого списка
-    if (!origin || whitelist.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('Blocked by CORS:', origin);
-      callback(new Error('Not allowed by CORS'));
+const isProd = process.env.NODE_ENV === 'production';
+const corsOptions = isProd
+  ? {
+      origin(origin, callback) {
+        if (!origin || whitelist.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          console.log('Blocked by CORS:', origin);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
     }
-  },
-  credentials: true, // Разрешить куки/токены
-};
+  : { origin: true, credentials: true };
 
 app.use(cors(corsOptions));
 
-// Лимит запросов (Rate Limiting)
+// Лимит запросов: в dev админка дергает десятки эндпоинтов подряд — 200/15мин даёт 429
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 минут
-  max: 200, // Увеличил до 200, чтобы не блокировало картинки при загрузке меню
+  windowMs: 15 * 60 * 1000,
+  max: isProd ? 200 : 8000,
   message: 'Слишком много запросов, попробуйте позже',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () =>
+    process.env.DISABLE_RATE_LIMIT === '1' || process.env.DISABLE_RATE_LIMIT === 'true',
 });
 app.use('/api/', limiter);
 
@@ -104,6 +110,7 @@ app.use('/api/promo', promoRoutes);
 app.use('/api/cities', cityRoutes);
 app.use('/api/countries', countryRoutes);
 app.use('/api/delivery-zones', deliveryZoneRoutes);
+app.use('/api/delivery', deliveryCheckRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/settings', settingsRoutes);
@@ -154,8 +161,8 @@ async function startServer() {
       }
     }
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Сервер запущен: http://localhost:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Сервер запущен: http://localhost:${PORT} (0.0.0.0:${PORT})`);
     });
 
   } catch (error) {

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const SECRET_KEY = process.env.JWT_SECRET || 'secret'; // Тот же ключ, что при логине!
+const SECRET_KEY = process.env.JWT_SECRET || 'secret-key'; // як у routes/auth.routes.ts та order.routes.ts
 
 // Расширяем тип Request, чтобы TS не ругался (если используешь TypeScript)
 export interface AuthRequest extends Request {
@@ -22,9 +22,13 @@ export const checkAdmin = async (req: AuthRequest, res: Response, next: NextFunc
 
     // 2. Проверяем токен
     const decoded: any = jwt.verify(token, SECRET_KEY);
-    
+    const uid = Number(decoded.userId);
+    if (!Number.isFinite(uid)) {
+      return res.status(403).json({ message: 'Неверный токен' });
+    }
+
     // 3. Ищем юзера в базе и проверяем роль
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const user = await prisma.user.findUnique({ where: { id: uid } });
 
     if (!user) {
       return res.status(401).json({ message: 'Пользователь не найден' });

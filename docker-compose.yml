@@ -1,0 +1,26 @@
+# Локальная PostgreSQL для полного стека (API + меню + города).
+# Запуск из корня репозитория: docker compose up -d
+# Данные в томе watta_pg_data сохраняются между перезапусками. Не используйте `docker compose down -v`, если не нужно стереть БД.
+#
+# Порт на хості: 55432→5432 у контейнері (рідко зайнятий; 5432/5433 часто зайняті на Mac).
+# Якщо «address already in use» — змініть ліве число, напр. '55433:5432', і той самий порт у backend/.env.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: watta
+      POSTGRES_PASSWORD: watta
+      POSTGRES_DB: watta_sushi
+    ports:
+      - '55432:5432'
+    volumes:
+      - watta_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U watta -d watta_sushi']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  watta_pg_data:

@@ -1,5 +1,5 @@
-import HomeClientLoader from './HomeClientLoader'
+import HomeClient from './HomeClient'
 
 export default function Home() {
-  return <HomeClientLoader />
+  return <HomeClient />
 }

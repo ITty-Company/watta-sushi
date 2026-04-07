@@ -1,3 +1,4 @@
+import { execSync } from 'child_process'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
@@ -215,6 +216,12 @@ async function main() {
   }
 
   console.log('✅ Full Menu created!')
+
+  try {
+    execSync('npx tsx scripts/seed-countries.ts', { stdio: 'inherit' })
+  } catch (e) {
+    console.warn('⚠️ seed-countries:', e?.message || e)
+  }
 }
 
 main()

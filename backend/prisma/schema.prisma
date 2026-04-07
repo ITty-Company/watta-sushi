@@ -64,6 +64,7 @@ model Country {
 model City {
   id            Int            @id @default(autoincrement())
   name          String
+  name_ua       String? // Українська назва
   name_nl       String? // Нидерландское название
   name_en       String? // Английское название
   pricePerKm    Float          @default(10)
@@ -88,6 +89,10 @@ model DeliveryZone {
   cityId      Int
   city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
   coordinates String // JSON строка с координатами полигона [{lat, lng}, ...]
+  /// Безкоштовна доставка в межах цієї зони
+  isFreeDelivery Boolean @default(false)
+  /// Фіксована вартість доставки (€); якщо null і не isFreeDelivery — діє база сайту + €/км міста
+  flatDeliveryFee Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -178,6 +183,9 @@ model Banner {
   title_en  String? // Заголовок на английском
   title_nl  String? // Заголовок на нидерландском
   imageUrl  String // URL изображения баннера
+  /// Фокус кадра для background-size: cover (в процентах, 0..100)
+  focalX   Float    @default(50)
+  focalY   Float    @default(50)
   order     Int      @default(0) // Порядок отображения
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())

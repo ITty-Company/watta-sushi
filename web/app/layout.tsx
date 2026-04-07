@@ -1,51 +1,33 @@
-import type { Metadata } from 'next';
-import nextDynamic from 'next/dynamic';
-import { Inter } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Cormorant_Garamond, Inter, Marck_Script, Playfair_Display } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
+import AppClient from './AppClient';
+import DevNoiseCleanup from './components/DevNoiseCleanup';
 import './globals.css';
 
 export const dynamic = 'force-dynamic';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
-// Не рендерить AppClient на сервере — иначе подтягивается LanguageContext и падает useContext при SSR
-const AppClient = nextDynamic(() => import('./AppClient'), {
-  ssr: false,
-  // loading: () => (
-  //   <div
-  //     style={{
-  //       minHeight: '100vh',
-  //       display: 'flex',
-  //       alignItems: 'center',
-  //       justifyContent: 'center',
-  //       background: '#f5f5f5',
-  //     }}
-  //   >
-  //     <div style={{ textAlign: 'center', color: '#145142' }}>
-  //       <div
-  //         style={{
-  //           width: 48,
-  //           height: 48,
-  //           margin: '0 auto 12px',
-  //           border: '3px solid #145142',
-  //           borderTopColor: 'transparent',
-  //           borderRadius: '50%',
-  //           animation: 'clientOnlySpin 0.8s linear infinite',
-  //         }}
-  //       />
-  //       <span style={{ fontSize: 16 }}>Загрузка...</span>
-  //     </div>
-  //   </div>
-  // ),
-  loading: () => (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5]">
-      <div className="text-center">
-        {/* Заменяем сложный инлайновый стиль на простой Tailwind */}
-        <div className="w-12 h-12 border-4 border-[#145142] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <span className="text-lg text-[#145142]">Загрузка...</span>
-      </div>
-    </div>
-  ),
+const fontCormorant = Cormorant_Garamond({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-brand-cormorant',
+  display: 'swap',
+});
+
+const fontPlayfair = Playfair_Display({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '600', '700'],
+  variable: '--font-brand-playfair',
+  display: 'swap',
+});
+
+const fontMarck = Marck_Script({
+  weight: '400',
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-brand-marck',
+  display: 'swap',
 });
 
 // 1. SEO CONFIGURATION
@@ -80,6 +62,12 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest', // Нужно создать этот файл в public
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -103,8 +91,12 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="ru">
-      <body className={inter.className}>
+    <html lang="ru" suppressHydrationWarning>
+      <body
+        className={`${inter.className} ${fontCormorant.variable} ${fontPlayfair.variable} ${fontMarck.variable}`}
+        suppressHydrationWarning
+      >
+        <DevNoiseCleanup />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -123,4 +115,3 @@ export default function RootLayout({
     </html>
   );
 }
-

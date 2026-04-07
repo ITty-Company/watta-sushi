@@ -178,7 +178,7 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
   // --- UI: ЭКРАН ВВОДА КОДА ---
   if (isVerifying) {
     return (
-      <div className="h-screen font-sans flex flex-col items-center justify-center relative overflow-hidden bg-gray-900">
+      <div className="watta-public-page-shell h-screen font-sans flex flex-col items-center justify-center relative overflow-hidden">
         <LogoBackground />
         <div className="relative z-10 w-full px-4 flex justify-center">
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in duration-300">
@@ -224,7 +224,10 @@ export default function AuthView({ onBack, onLoginSuccess }: AuthViewProps) {
 
   // --- UI: ЭКРАН ВХОДА / РЕГИСТРАЦИИ ---
   return (
-    <div className="h-screen font-sans flex flex-col items-center justify-center relative overflow-hidden" style={{ maxHeight: '100vh', height: '100vh' }}>
+    <div
+      className="watta-public-page-shell h-screen font-sans flex flex-col items-center justify-center relative overflow-hidden"
+      style={{ maxHeight: '100vh', height: '100vh' }}
+    >
       <LogoBackground />
       <div className="relative z-10 w-full flex flex-col items-center justify-center h-full px-3 sm:px-4 md:px-6" style={{ maxHeight: '100vh', overflow: 'hidden' }}>
         

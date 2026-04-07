@@ -1,0 +1,12 @@
+#!/bin/sh
+# Remove IDE branding footer from commit messages (e.g. Made-with: ...)
+msgfile="$1"
+[ -z "$msgfile" ] || [ ! -f "$msgfile" ] && exit 0
+if grep -qE 'Made-with|Made with |Powered by ' "$msgfile" 2>/dev/null; then
+  if sed --version >/dev/null 2>&1; then
+    sed -i '/Made-with/d; /Made with /d; /Powered by /d' "$msgfile"
+  else
+    sed -i '' '/Made-with/d; /Made with /d; /Powered by /d' "$msgfile"
+  fi
+fi
+exit 0

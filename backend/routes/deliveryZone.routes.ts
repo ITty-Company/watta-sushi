@@ -29,18 +29,26 @@ router.get('/city/:cityId', async (req, res) => {
 // Создать зону доставки
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, color, cityId, coordinates } = req.body;
+    const { name, color, cityId, coordinates, isFreeDelivery, flatDeliveryFee } = req.body;
 
     if (!name || !cityId || !coordinates) {
       return res.status(400).json({ message: 'Название, город и координаты обязательны' });
     }
+
+    const free = Boolean(isFreeDelivery);
+    const flat =
+      flatDeliveryFee != null && flatDeliveryFee !== ''
+        ? parseFloat(String(flatDeliveryFee))
+        : null;
 
     const zone = await prisma.deliveryZone.create({
       data: {
         name,
         color: color || '#4ade80',
         cityId: parseInt(cityId),
-        coordinates: typeof coordinates === 'string' ? coordinates : JSON.stringify(coordinates)
+        coordinates: typeof coordinates === 'string' ? coordinates : JSON.stringify(coordinates),
+        isFreeDelivery: free,
+        flatDeliveryFee: free || flat == null || Number.isNaN(flat) ? null : flat,
       },
       include: {
         city: {
@@ -62,13 +70,31 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, color, coordinates } = req.body;
+    const { name, color, coordinates, isFreeDelivery, flatDeliveryFee } = req.body;
 
     const updateData: any = {};
     if (name) updateData.name = name;
     if (color) updateData.color = color;
     if (coordinates) {
       updateData.coordinates = typeof coordinates === 'string' ? coordinates : JSON.stringify(coordinates);
+    }
+    if (typeof isFreeDelivery === 'boolean') {
+      updateData.isFreeDelivery = isFreeDelivery;
+    }
+    if (flatDeliveryFee !== undefined) {
+      const flatParsed =
+        flatDeliveryFee != null && flatDeliveryFee !== ''
+          ? parseFloat(String(flatDeliveryFee))
+          : null;
+      const flatOk = flatParsed != null && !Number.isNaN(flatParsed) ? flatParsed : null;
+      if (updateData.isFreeDelivery === true) {
+        updateData.flatDeliveryFee = null;
+      } else {
+        updateData.flatDeliveryFee = flatOk;
+      }
+    }
+    if (updateData.isFreeDelivery === true) {
+      updateData.flatDeliveryFee = null;
     }
 
     const zone = await prisma.deliveryZone.update({

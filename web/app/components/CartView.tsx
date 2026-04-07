@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { getDeliveryOriginAddress } from '@/lib/deliveryOrigin'
 import {
   ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu, MapPin, Truck, Store
 } from 'lucide-react'
@@ -304,6 +305,7 @@ export default function CartView({
   const totalToPay = Math.max(0, subtotalWithDelivery - appliedBonuses)
 
   const pickupAddressDisplay = restaurantPickupAddress || '—'
+  const deliveryOriginAddress = useMemo(() => getDeliveryOriginAddress(), [])
 
   const estimateDistanceFromAddressMock = (from: string, to: string): number => {
     const combined = `${from}|${to}`.trim().toLowerCase()
@@ -375,9 +377,8 @@ export default function CartView({
     }
 
     const destinationAddress = formData.address.trim()
-    const originAddress = pickupAddressDisplay.trim()
 
-    if (!destinationAddress || !originAddress || originAddress === '—') {
+    if (!destinationAddress) {
       setDistanceKm(null)
       setDistanceError(null)
       setIsCalculatingDistance(false)
@@ -391,7 +392,7 @@ export default function CartView({
     const timer = setTimeout(async () => {
       try {
         const destination = `${selectedCity}, ${destinationAddress}`.trim()
-        const km = await getDistanceKm(originAddress, destination)
+        const km = await getDistanceKm(deliveryOriginAddress, destination)
         if (!cancelled) setDistanceKm(km)
       } catch {
         if (!cancelled) {
@@ -407,7 +408,7 @@ export default function CartView({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [fulfillment, formData.address, selectedCity, pickupAddressDisplay])
+  }, [fulfillment, formData.address, selectedCity, deliveryOriginAddress])
 
   const phoneInvalidHint =
     formData.phone.trim() !== '' && !isValidUaPhone(formData.phone)
@@ -832,7 +833,7 @@ export default function CartView({
     </div>
   )
   return (
-    <div className="h-screen w-full max-w-[100vw] overflow-y-auto bg-[#F5F5F7] font-sans pb-20 overflow-x-hidden relative">
+    <div className="watta-public-page-shell h-screen w-full max-w-[100vw] overflow-y-auto font-sans pb-20 overflow-x-hidden relative">
       <LogoBackground />
       <Header />
       

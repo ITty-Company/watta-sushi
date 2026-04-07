@@ -70,13 +70,18 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Название города и страна обязательны' });
     }
 
+    const countryIdNum = parseInt(String(countryId), 10);
+    if (Number.isNaN(countryIdNum)) {
+      return res.status(400).json({ message: 'Некорректный идентификатор страны' });
+    }
+
     const city = await prisma.city.create({
       data: {
         name,
         name_ua: name_ua || name,
         name_nl: name_nl || name,
         name_en: name_en || name,
-        countryId: parseInt(countryId),
+        countryId: countryIdNum,
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         zoom: zoom ? parseInt(zoom) : 12,
@@ -97,7 +102,19 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Город с таким названием уже существует в этой стране' });
     }
     console.error('Ошибка создания города:', error);
-    res.status(500).json({ message: 'Ошибка создания города' });
+    const raw = String(error.message ?? '');
+    const schemaMismatch =
+      raw.includes('name_ua') ||
+      raw.includes('pricePerKm') ||
+      raw.includes('does not exist') ||
+      raw.includes('Unknown arg');
+    const message = schemaMismatch
+      ? 'База даних не оновлена: на сервері API виконайте npx prisma migrate deploy (потрібні колонки City.name_ua та City.pricePerKm).'
+      : 'Ошибка создания города';
+    res.status(500).json({
+      message,
+      ...(process.env.NODE_ENV === 'development' && { detail: raw }),
+    });
   }
 });
 

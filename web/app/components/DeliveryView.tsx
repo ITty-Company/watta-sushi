@@ -1,14 +1,51 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import LogoBackground from './LogoBackground'
+import { DeliveryExperienceBlocks } from './DeliveryExperienceBlocks'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../context/LanguageContext'
+import {
+  MapPin,
+  Sparkles,
+  Timer,
+  Navigation,
+  Search,
+  Shield,
+  AlertCircle,
+  CheckCircle2,
+  Info,
+} from 'lucide-react'
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+const DeliveryZonesInteractiveMap = dynamic(() => import('./DeliveryZonesInteractiveMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full min-h-[320px] items-center justify-center rounded-[12px] bg-[#e8f0ed] text-sm font-semibold text-[#145142]/70">
+      Завантаження карти…
+    </div>
+  ),
+})
+
 interface City {
   id: string
   name: string
+  name_ua?: string
+  name_en?: string
+  name_nl?: string
   coordinates: { lat: number; lng: number }
   zoom: number
   deliveryZones: DeliveryZone[]
+  country?: { code: string; name: string }
+  pricePerKm?: number
 }
 
 interface DeliveryZone {
@@ -16,6 +53,8 @@ interface DeliveryZone {
   name: string
   color: string
   coordinates: { lat: number; lng: number }[]
+  isFreeDelivery?: boolean
+  flatDeliveryFee?: number | null
 }
 
 const defaultCities: City[] = [
@@ -28,69 +67,114 @@ const defaultCities: City[] = [
       {
         id: 'amsterdam-center',
         name: 'Центр',
-        color: '#4ade80',
+        color: '#145142',
+        isFreeDelivery: false,
+        flatDeliveryFee: null,
         coordinates: [
           { lat: 52.36, lng: 4.88 },
           { lat: 52.38, lng: 4.88 },
           { lat: 52.38, lng: 4.92 },
-          { lat: 52.36, lng: 4.92 }
-        ]
-      }
-    ]
+          { lat: 52.36, lng: 4.92 },
+        ],
+      },
+    ],
   },
-  {
-    id: 'rotterdam',
-    name: 'Роттердам',
-    coordinates: { lat: 51.9244, lng: 4.4777 },
-    zoom: 12,
-    deliveryZones: []
-  },
-  {
-    id: 'den-haag',
-    name: 'Гаага',
-    coordinates: { lat: 52.0705, lng: 4.3007 },
-    zoom: 12,
-    deliveryZones: []
-  },
-  {
-    id: 'utrecht',
-    name: 'Утрехт',
-    coordinates: { lat: 52.0907, lng: 5.1214 },
-    zoom: 12,
-    deliveryZones: []
-  },
-  {
-    id: 'eindhoven',
-    name: 'Эйндховен',
-    coordinates: { lat: 51.4416, lng: 5.4697 },
-    zoom: 12,
-    deliveryZones: []
-  }
 ]
 
-// Функция для генерации URL карты со всеми городами Нидерландов с маркерами
-const getNetherlandsMapUrl = (cities: City[]) => {
-  if (cities.length === 0) {
-    return `https://www.google.com/maps?q=Netherlands&output=embed&z=8`
-  }
-  
-  // Создаем маркеры в формате для Google Maps
-  // Формат: color:red|label:буква|lat,lng|color:red|label:буква|lat,lng|...
-  const markers = cities.map((city, index) => {
-    const { lat, lng } = city.coordinates
-    const label = String.fromCharCode(65 + (index % 26)) // A, B, C, D, E...
-    return `color:red|label:${label}|${lat},${lng}`
-  }).join('|')
-  
-  // URL с маркерами (один параметр markers со всеми маркерами)
-  return `https://www.google.com/maps?q=Netherlands&output=embed&z=8&markers=${encodeURIComponent(markers)}`
+function formatCitiesFromApi(citiesData: any[]): City[] {
+  return citiesData.map((c: any) => ({
+    id: c.id.toString(),
+    name: c.name,
+    name_ua: c.name_ua,
+    name_en: c.name_en,
+    name_nl: c.name_nl,
+    coordinates:
+      c.latitude && c.longitude
+        ? { lat: c.latitude, lng: c.longitude }
+        : { lat: 52.3676, lng: 4.9041 },
+    zoom: c.zoom || 12,
+    country: c.country
+      ? { code: String(c.country.code || '').slice(0, 4), name: String(c.country.name || '') }
+      : undefined,
+    pricePerKm: typeof c.pricePerKm === 'number' && !Number.isNaN(c.pricePerKm) ? c.pricePerKm : 10,
+    deliveryZones: c.deliveryZones
+      ? c.deliveryZones.map((z: any) => {
+          let coords: { lat: number; lng: number }[] = []
+          try {
+            const raw = typeof z.coordinates === 'string' ? JSON.parse(z.coordinates) : z.coordinates
+            coords = Array.isArray(raw) ? raw : []
+          } catch {
+            coords = []
+          }
+          return {
+            id: z.id.toString(),
+            name: z.name,
+            color: z.color || '#145142',
+            coordinates: coords,
+            isFreeDelivery: z.isFreeDelivery === true,
+            flatDeliveryFee:
+              z.flatDeliveryFee != null && !Number.isNaN(Number(z.flatDeliveryFee))
+                ? Number(z.flatDeliveryFee)
+                : null,
+          }
+        })
+      : [],
+  }))
 }
 
-// Функция для генерации URL карты для конкретного города (используем сохранённые lat/lng/zoom)
-const getCityMapUrl = (city: City) => {
+type DeliveryCheckStatus =
+  | 'inside'
+  | 'outside'
+  | 'no_zones'
+  | 'geocode_failed'
+  | 'bad_request'
+  | 'server_error'
+  | 'city_not_found'
+
+type DeliveryCheckResult = {
+  status: DeliveryCheckStatus
+  placeLabel?: string
+  zoneName?: string
+  zoneId?: number
+  zoneIsFreeDelivery?: boolean
+  zoneFlatDeliveryFee?: number | null
+  pricePerKm?: number
+  defaultDeliveryFee?: number
+  freeDeliveryThreshold?: number
+}
+
+function getAllCitiesMapUrl(cities: City[]) {
+  if (cities.length === 0) {
+    return 'https://www.google.com/maps?q=Europe&output=embed&z=4'
+  }
+  const valid = cities.filter(
+    (c) =>
+      c.coordinates &&
+      typeof c.coordinates.lat === 'number' &&
+      typeof c.coordinates.lng === 'number' &&
+      !Number.isNaN(c.coordinates.lat) &&
+      !Number.isNaN(c.coordinates.lng)
+  )
+  if (valid.length === 0) {
+    return 'https://www.google.com/maps?q=Europe&output=embed&z=4'
+  }
+  const markers = valid
+    .map((city, index) => {
+      const { lat, lng } = city.coordinates
+      const label = String.fromCharCode(65 + (index % 26))
+      return `color:green|label:${label}|${lat},${lng}`
+    })
+    .join('|')
+  const avgLat = valid.reduce((s, c) => s + c.coordinates.lat, 0) / valid.length
+  const avgLng = valid.reduce((s, c) => s + c.coordinates.lng, 0) / valid.length
+  const z = valid.length === 1 ? 11 : valid.length <= 3 ? 8 : valid.length <= 8 ? 7 : 6
+  return `https://www.google.com/maps?q=${avgLat},${avgLng}&output=embed&z=${z}&markers=${encodeURIComponent(markers)}`
+}
+
+function getCityMapUrl(city: City) {
   const { lat, lng } = city.coordinates
   const z = city.zoom || 12
-  if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+  if (typeof lat === 'number' && typeof lng === 'number' && !Number.isNaN(lat) && !Number.isNaN(lng)) {
     return `https://www.google.com/maps?q=${lat},${lng}&output=embed&z=${z}`
   }
   const cityName = encodeURIComponent(city.name)
@@ -98,413 +182,549 @@ const getCityMapUrl = (city: City) => {
 }
 
 export default function DeliveryView() {
+  const { t, getLocalized } = useLanguage()
+  const d = t.deliveryPage
+
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
   const [cities, setCities] = useState<City[]>([])
-  const [countries, setCountries] = useState<any[]>([])
-  const [showAllCities, setShowAllCities] = useState(true) // По умолчанию показываем все города
+  const [showAllCities, setShowAllCities] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [postalCode, setPostalCode] = useState('')
+  const [postalChecking, setPostalChecking] = useState(false)
+  const [postalResult, setPostalResult] = useState<DeliveryCheckResult | null>(null)
+  const [pickedCityId, setPickedCityId] = useState<string | null>(null)
+  const [siteTariff, setSiteTariff] = useState({ defaultDeliveryFee: 50, freeDeliveryThreshold: 1000 })
 
-  // Загрузка стран и городов из API
+  const cityLabel = useCallback((c: City) => getLocalized(c, 'name') || c.name, [getLocalized])
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((data: { deliveryFee?: number; freeDeliveryThreshold?: number }) => {
+        setSiteTariff({
+          defaultDeliveryFee: typeof data.deliveryFee === 'number' ? data.deliveryFee : 50,
+          freeDeliveryThreshold:
+            typeof data.freeDeliveryThreshold === 'number' ? data.freeDeliveryThreshold : 1000,
+        })
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const readPicked = () => {
+      try {
+        setPickedCityId(
+          typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('selectedCityId') : null
+        )
+      } catch {
+        setPickedCityId(null)
+      }
+    }
+    readPicked()
+    window.addEventListener('cityChanged', readPicked)
+    window.addEventListener('storage', readPicked)
+    return () => {
+      window.removeEventListener('cityChanged', readPicked)
+      window.removeEventListener('storage', readPicked)
+    }
+  }, [])
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [countriesRes, citiesRes] = await Promise.all([
-          fetch('/api/countries'),
-          fetch('/api/cities')
-        ])
-        
-        if (countriesRes.ok) {
-          const countriesData = await countriesRes.json()
-          setCountries(countriesData)
-        }
-        
+        const citiesRes = await fetch('/api/cities')
         if (citiesRes.ok) {
           const citiesData = await citiesRes.json()
-          // Преобразуем данные из API в формат City
-          const formattedCities: City[] = citiesData.map((c: any) => ({
-            id: c.id.toString(),
-            name: c.name,
-            coordinates: c.latitude && c.longitude ? { lat: c.latitude, lng: c.longitude } : { lat: 52.3676, lng: 4.9041 },
-            zoom: c.zoom || 12,
-            deliveryZones: c.deliveryZones ? c.deliveryZones.map((z: any) => ({
-              id: z.id.toString(),
-              name: z.name,
-              color: z.color,
-              coordinates: typeof z.coordinates === 'string' ? JSON.parse(z.coordinates) : z.coordinates
-            })) : []
-          }))
-          
+          const formattedCities = formatCitiesFromApi(citiesData)
           setCities(formattedCities)
-          if (formattedCities.length > 0 && !selectedCity) {
+          const saved =
+            typeof window !== 'undefined' && window.localStorage
+              ? localStorage.getItem('selectedCityId')
+              : null
+          const matched = saved ? formattedCities.find((c) => c.id === saved) : null
+          if (matched) {
+            setSelectedCity(matched)
+          } else if (saved) {
+            setSelectedCity(null)
+          } else if (formattedCities.length > 0) {
             setSelectedCity(formattedCities[0])
           }
         }
       } catch (error) {
         console.error('Ошибка загрузки данных доставки:', error)
-        // Fallback на дефолтные данные
         setCities(defaultCities)
-        setSelectedCity(defaultCities[0])
+        const saved =
+          typeof window !== 'undefined' && window.localStorage
+            ? localStorage.getItem('selectedCityId')
+            : null
+        const matched = saved ? defaultCities.find((c) => c.id === saved) : null
+        if (matched) {
+          setSelectedCity(matched)
+        } else if (saved) {
+          setSelectedCity(null)
+        } else {
+          setSelectedCity(defaultCities[0])
+        }
       } finally {
         setLoading(false)
       }
     }
-
     loadData()
   }, [])
 
-  // Загружаем сохраненный город из localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.localStorage && cities.length > 0) {
-      const savedCityId = localStorage.getItem('selectedCityId')
-      if (savedCityId) {
-        const city = cities.find(c => c.id === savedCityId)
-        if (city) {
-          setSelectedCity(city)
-        }
-      }
+  const syncCityFromStorage = useCallback(() => {
+    if (typeof window === 'undefined' || !window.localStorage || cities.length === 0) return
+    const savedCityId = localStorage.getItem('selectedCityId')
+    if (!savedCityId) {
+      setSelectedCity(cities[0] ?? null)
+      return
     }
+    const city = cities.find((c) => c.id === savedCityId)
+    setSelectedCity(city ?? null)
   }, [cities])
 
+  useEffect(() => {
+    syncCityFromStorage()
+  }, [syncCityFromStorage])
+
+  useEffect(() => {
+    const onCityChanged = () => {
+      syncCityFromStorage()
+      setPostalResult(null)
+    }
+    window.addEventListener('cityChanged', onCityChanged)
+    window.addEventListener('storage', onCityChanged)
+    return () => {
+      window.removeEventListener('cityChanged', onCityChanged)
+      window.removeEventListener('storage', onCityChanged)
+    }
+  }, [syncCityFromStorage])
+
   const handleCityChange = (cityId: string) => {
-    const city = cities.find(c => c.id === cityId)
+    const city = cities.find((c) => c.id === cityId)
     if (city) {
       setSelectedCity(city)
-      setShowAllCities(false) // При выборе города показываем только его карту
-      // Сохраняем выбранный город
+      setShowAllCities(false)
+      setPostalResult(null)
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem('selectedCityId', cityId)
+        window.dispatchEvent(new Event('cityChanged'))
       }
     }
   }
 
-  const handleShowAllCities = () => {
-    setShowAllCities(true)
-  }
-
-  const handleAddZone = async () => {
-    if (!selectedCity) return
-    
-    const zoneName = prompt('Введіть назву зони доставки:')
-    if (!zoneName) return
-
-    const colors = ['#4ade80', '#60a5fa', '#f59e0b', '#ef4444', '#a78bfa', '#ec4899']
-    const randomColor = colors[Math.floor(Math.random() * colors.length)]
-
+  const runPostalCheck = async () => {
+    if (!selectedCity) {
+      toast.error(d.postalBadRequest)
+      return
+    }
+    const pc = postalCode.trim()
+    if (!pc) {
+      toast.error(d.postalBadRequest)
+      return
+    }
+    setPostalChecking(true)
+    setPostalResult(null)
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        toast.error('Вы не авторизованы как администратор')
-        return
-      }
-
-      const res = await fetch('/api/delivery-zones', {
+      const res = await fetch('/api/delivery/check', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: zoneName,
-          color: randomColor,
-          cityId: parseInt(selectedCity.id),
-          coordinates: JSON.stringify([]) // Пустой массив координат, можно будет редактировать позже
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cityId: parseInt(selectedCity.id, 10), postalCode: pc }),
       })
-
-      if (res.ok) {
-        // Перезагружаем данные
-        const citiesRes = await fetch('/api/cities')
-        if (citiesRes.ok) {
-          const citiesData = await citiesRes.json()
-          const formattedCities: City[] = citiesData.map((c: any) => ({
-            id: c.id.toString(),
-            name: c.name,
-            coordinates: c.latitude && c.longitude ? { lat: c.latitude, lng: c.longitude } : { lat: 52.3676, lng: 4.9041 },
-            zoom: c.zoom || 12,
-            deliveryZones: c.deliveryZones ? c.deliveryZones.map((z: any) => ({
-              id: z.id.toString(),
-              name: z.name,
-              color: z.color,
-              coordinates: typeof z.coordinates === 'string' ? JSON.parse(z.coordinates) : z.coordinates
-            })) : []
-          }))
-          setCities(formattedCities)
-          const updatedCity = formattedCities.find(c => c.id === selectedCity.id)
-          if (updatedCity) {
-            setSelectedCity(updatedCity)
-          }
-        }
-        toast.success('Зона доставки успешно создана!')
-      } else {
-        toast.error('Ошибка создания зоны доставки')
-      }
-    } catch (error) {
-      console.error('Ошибка создания зоны доставки:', error)
-      toast.error('Не удалось создать зону доставки')
-    }
-  }
-
-  const handleDeleteZone = async (zoneId: string) => {
-    if (!selectedCity) return
-    if (!confirm('Ви впевнені, що хочете видалити цю зону?')) return
-
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        toast.error('Вы не авторизованы как администратор')
+      const data = (await res.json()) as DeliveryCheckResult & { status?: string }
+      if (!res.ok) {
+        setPostalResult({
+          status: (data.status as DeliveryCheckStatus) || 'server_error',
+        })
         return
       }
-
-      const res = await fetch(`/api/delivery-zones/${zoneId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      setPostalResult({
+        status: data.status as DeliveryCheckStatus,
+        placeLabel: data.placeLabel,
+        zoneName: data.zoneName,
+        zoneId: data.zoneId,
+        zoneIsFreeDelivery: data.zoneIsFreeDelivery,
+        zoneFlatDeliveryFee: data.zoneFlatDeliveryFee,
+        pricePerKm: data.pricePerKm,
+        defaultDeliveryFee: data.defaultDeliveryFee,
+        freeDeliveryThreshold: data.freeDeliveryThreshold,
       })
-
-      if (res.ok) {
-        // Перезагружаем данные
-        const citiesRes = await fetch('/api/cities')
-        if (citiesRes.ok) {
-          const citiesData = await citiesRes.json()
-          const formattedCities: City[] = citiesData.map((c: any) => ({
-            id: c.id.toString(),
-            name: c.name,
-            coordinates: c.latitude && c.longitude ? { lat: c.latitude, lng: c.longitude } : { lat: 52.3676, lng: 4.9041 },
-            zoom: c.zoom || 12,
-            deliveryZones: c.deliveryZones ? c.deliveryZones.map((z: any) => ({
-              id: z.id.toString(),
-              name: z.name,
-              color: z.color,
-              coordinates: typeof z.coordinates === 'string' ? JSON.parse(z.coordinates) : z.coordinates
-            })) : []
-          }))
-          setCities(formattedCities)
-          const updatedCity = formattedCities.find(c => c.id === selectedCity.id)
-          if (updatedCity) {
-            setSelectedCity(updatedCity)
-          }
-        }
-        toast.success('Зона доставки успешно удалена!')
-      } else {
-        toast.error('Ошибка удаления зоны доставки')
-      }
-    } catch (error) {
-      console.error('Ошибка удаления зоны доставки:', error)
-      toast.error('Не удалось удалить зону доставки')
+    } catch {
+      setPostalResult({ status: 'server_error' })
+    } finally {
+      setPostalChecking(false)
     }
   }
 
+  const buildZonePopupHtml = useCallback(
+    (zone: DeliveryZone) => {
+      const nameSafe = escapeHtml(zone.name || '')
+      if (zone.isFreeDelivery) {
+        return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-lead">${escapeHtml(d.zonePopupFree)}</p>`
+      }
+      if (zone.flatDeliveryFee != null && !Number.isNaN(zone.flatDeliveryFee)) {
+        const line = d.zonePopupFlat.replace('{{amount}}', String(zone.flatDeliveryFee))
+        return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-lead">${escapeHtml(line)}</p>`
+      }
+      const base = siteTariff.defaultDeliveryFee
+      const perKm = selectedCity?.pricePerKm ?? 10
+      const from = siteTariff.freeDeliveryThreshold
+      const ul = `<ul class="delivery-watta-zone-popup-list"><li>${escapeHtml(d.zonePopupStandardBase.replace('{{base}}', String(base)))}</li><li>${escapeHtml(d.zonePopupStandardPerKm.replace('{{perKm}}', String(perKm)))}</li><li>${escapeHtml(d.zonePopupStandardFreeFrom.replace('{{from}}', String(from)))}</li></ul>`
+      return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-muted">${escapeHtml(d.zonePopupStandardTitle)}</p>${ul}`
+    },
+    [d, selectedCity?.pricePerKm, siteTariff.defaultDeliveryFee, siteTariff.freeDeliveryThreshold]
+  )
+
+  const zoneFeeLine = useCallback(
+    (zone: DeliveryZone) => {
+      if (zone.isFreeDelivery) return d.zoneFeeFree
+      if (zone.flatDeliveryFee != null && !Number.isNaN(zone.flatDeliveryFee)) {
+        return d.zoneFeeFlat.replace('{{amount}}', String(zone.flatDeliveryFee))
+      }
+      return d.zoneFeeStandard
+    },
+    [d]
+  )
+
+  const showInteractiveZonesMap = Boolean(
+    selectedCity && !showAllCities && (selectedCity.deliveryZones?.length ?? 0) > 0
+  )
+
+  const mapSrc = useMemo(() => {
+    if (cities.length === 0) return ''
+    if (!selectedCity) {
+      return getAllCitiesMapUrl(cities)
+    }
+    return showAllCities ? getAllCitiesMapUrl(cities) : getCityMapUrl(selectedCity)
+  }, [selectedCity, showAllCities, cities])
+
+  const mapsLinkHref = useMemo(() => {
+    const hrefAllCities = () => {
+      const valid = cities.filter((c) => c.coordinates && !Number.isNaN(c.coordinates.lat))
+      if (valid.length === 0) return 'https://www.google.com/maps'
+      const avgLat = valid.reduce((s, c) => s + c.coordinates.lat, 0) / valid.length
+      const avgLng = valid.reduce((s, c) => s + c.coordinates.lng, 0) / valid.length
+      return `https://www.google.com/maps?q=${avgLat},${avgLng}`
+    }
+    if (!selectedCity) {
+      return cities.length > 0 ? hrefAllCities() : 'https://www.google.com/maps'
+    }
+    if (showAllCities) {
+      return hrefAllCities()
+    }
+    const { lat, lng } = selectedCity.coordinates
+    if (typeof lat === 'number' && typeof lng === 'number' && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+      return `https://www.google.com/maps?q=${lat},${lng}`
+    }
+    return `https://www.google.com/maps/search/${encodeURIComponent(selectedCity.name)}`
+  }, [selectedCity, showAllCities, cities])
+
+  const cityNotInDeliveryCatalog = Boolean(
+    pickedCityId && cities.length > 0 && !cities.some((c) => c.id === pickedCityId)
+  )
+  const selectedCityHasNoZones = Boolean(
+    selectedCity && (selectedCity.deliveryZones?.length ?? 0) === 0
+  )
+  const showNoDeliveryForCityBanner = cityNotInDeliveryCatalog || selectedCityHasNoZones
 
   return (
-    <div className="delivery-content-wrapper-web relative">
+    <div className="delivery-watta-page relative">
+      <div className="delivery-watta-noise" aria-hidden />
       <LogoBackground />
-      <div className="relative z-10">
-        {/* Заголовок страницы */}
-        <div className="delivery-header-section-web">
-          <h1 className="delivery-page-title-web">Всі наші міста де працює доставка</h1>
-        </div>
-
-      {loading ? (
-        <div className="text-center py-8 text-gray-500">Загрузка данных...</div>
-      ) : (
-        <>
-          {/* Выбор города */}
-          <div className="cities-selector-web">
-            {cities.map(city => (
-              <button
-                key={city.id}
-                className={`city-btn-web ${selectedCity?.id === city.id ? 'active' : ''}`}
-                onClick={() => handleCityChange(city.id)}
-              >
-                <span className="city-icon-web">📍</span>
-                <span className="city-name-web">{city.name}</span>
-                {city.deliveryZones && city.deliveryZones.length > 0 && (
-                  <span className="city-zones-badge-web">{city.deliveryZones.length}</span>
-                )}
-              </button>
-            ))}
+      <div className="relative z-[2]">
+        <header className="delivery-watta-hero">
+          <div className="delivery-watta-hero-top">
+            <span className="delivery-watta-kicker">{d.kicker}</span>
+            <span className="delivery-watta-kicker-script" style={{ fontFamily: 'var(--font-brand-marck), cursive' }}>
+              {d.kickerScript}
+            </span>
           </div>
-
-          {/* Карта доставки */}
-          <div className="delivery-map-container-web">
-        <div className="map-controls-web">
-          <button
-            className={`map-view-btn-web ${showAllCities ? 'active' : ''}`}
-            onClick={handleShowAllCities}
-          >
-            🗺️ Всі міста
-          </button>
-          {selectedCity && (
-            <button
-              className={`map-view-btn-web ${!showAllCities ? 'active' : ''}`}
-              onClick={() => {
-                setShowAllCities(false)
-              }}
-            >
-              📍 {selectedCity.name}
-            </button>
-          )}
-        </div>
-        <div className="delivery-map-web">
-          {selectedCity && (
-            <iframe
-              key={showAllCities ? 'all-cities' : selectedCity.id}
-              src={showAllCities ? getNetherlandsMapUrl(cities) : getCityMapUrl(selectedCity)}
-              width="100%"
-              height="600"
-              style={{ border: 0, borderRadius: '12px', display: 'block' }}
-              allowFullScreen={true}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title={showAllCities ? 'Карта доставки - Всі міста' : `Карта доставки - ${selectedCity.name}`}
-            ></iframe>
-          )}
-          {/* Fallback если карта не загрузилась */}
-          {selectedCity && (
-            <div className="map-fallback-web" style={{ display: 'none' }}>
-              <a 
-                href={showAllCities 
-                  ? 'https://www.google.com/maps/search/Netherlands'
-                  : (() => {
-                      const { lat, lng } = selectedCity.coordinates
-                      if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
-                        return `https://www.google.com/maps?q=${lat},${lng}`
-                      }
-                      return `https://www.google.com/maps/search/${encodeURIComponent(selectedCity.name)}`
-                    })()
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="map-link-web"
-              >
-                Відкрити карту в Google Maps
-              </a>
+          <h1 className="delivery-watta-display">
+            <span className="delivery-watta-display-line">{d.headlineLead}</span>{' '}
+            <span className="delivery-watta-mark">{d.headlineMark}</span>
+          </h1>
+          <p className="delivery-watta-trail" style={{ fontFamily: 'var(--font-brand-cormorant), serif' }}>
+            {d.headlineTrail}
+          </p>
+          <p className="delivery-watta-sub">{d.sub}</p>
+          <div className="delivery-watta-stats">
+            <div className="delivery-watta-stat">
+              <span className="delivery-watta-stat-ico-wrap" aria-hidden>
+                <Sparkles className="delivery-watta-stat-ico" strokeWidth={2} />
+              </span>
+              <span className="delivery-watta-stat-label">{d.statFresh}</span>
             </div>
-          )}
-          {/* Админ панель для управления зонами доставки */}
-          {selectedCity && (
-            <div className="admin-panel-overlay-web">
-              <div className="admin-panel-web">
-                <div className="admin-panel-header-web">
-                  <h3>Управління зонами доставки</h3>
-                </div>
-                <div className="admin-panel-content-web">
-                  <p>Місто: <strong>{selectedCity.name}</strong></p>
-                  <p>Зон доставки: <strong>{selectedCity.deliveryZones?.length || 0}</strong></p>
-                  <button 
-                    className="add-zone-btn-web"
-                    onClick={handleAddZone}
+            <div className="delivery-watta-stat">
+              <span className="delivery-watta-stat-ico-wrap" aria-hidden>
+                <Timer className="delivery-watta-stat-ico" strokeWidth={2} />
+              </span>
+              <span className="delivery-watta-stat-label">{d.statFast}</span>
+            </div>
+            <div className="delivery-watta-stat">
+              <span className="delivery-watta-stat-ico-wrap" aria-hidden>
+                <Navigation className="delivery-watta-stat-ico" strokeWidth={2} />
+              </span>
+              <span className="delivery-watta-stat-label">{d.statCity}</span>
+            </div>
+          </div>
+        </header>
+
+        {loading ? (
+          <div className="delivery-watta-loading">{d.loading}</div>
+        ) : (
+          <>
+            {showNoDeliveryForCityBanner && (
+              <div className="delivery-watta-no-delivery-banner" role="status">
+                <Info className="delivery-watta-no-delivery-ico" strokeWidth={2.25} aria-hidden />
+                <p>{d.cityNoDeliveryYet}</p>
+              </div>
+            )}
+            <section className="delivery-watta-section" aria-labelledby="delivery-cities-label">
+              <div className="delivery-watta-section-head">
+                <MapPin className="delivery-watta-section-ico" strokeWidth={2.25} />
+                <h2 id="delivery-cities-label" className="delivery-watta-section-title">
+                  {d.citiesLabel}
+                </h2>
+              </div>
+              <div className="delivery-watta-city-row">
+                {cities.map((city) => (
+                  <button
+                    key={city.id}
+                    type="button"
+                    className={`delivery-watta-city-chip ${selectedCity?.id === city.id ? 'delivery-watta-city-chip--on' : ''}`}
+                    onClick={() => handleCityChange(city.id)}
                   >
-                    ➕ Додати зону доставки
+                    <span className="delivery-watta-city-chip-pin" aria-hidden>
+                      📍
+                    </span>
+                    <span className="delivery-watta-city-chip-name">{cityLabel(city)}</span>
+                    {city.deliveryZones && city.deliveryZones.length > 0 && (
+                      <span className="delivery-watta-city-chip-badge">{city.deliveryZones.length}</span>
+                    )}
                   </button>
-                  {selectedCity.deliveryZones && selectedCity.deliveryZones.length > 0 && (
-                    <div className="admin-zone-list-web">
-                      {selectedCity.deliveryZones.map(zone => (
-                        <div key={zone.id} className="admin-zone-item-web">
-                          <div 
-                            className="zone-color-box-web" 
-                            style={{ backgroundColor: zone.color }}
-                          ></div>
-                          <span>{zone.name}</span>
-                          <button 
-                            className="delete-zone-btn-web"
-                            onClick={() => handleDeleteZone(zone.id)}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                ))}
+              </div>
+              {!showNoDeliveryForCityBanner && (
+                <p className="delivery-watta-sync-hint">{d.syncCityHint}</p>
+              )}
+            </section>
+
+            <div className="delivery-watta-policy-strip" role="note">
+              <Shield className="delivery-watta-policy-ico" strokeWidth={2} aria-hidden />
+              <p>{d.adminZonesNote}</p>
+            </div>
+
+            <section className="delivery-watta-postal" aria-labelledby="postal-heading">
+              <div className="delivery-watta-postal-inner">
+                <div className="delivery-watta-postal-head">
+                  <Search className="delivery-watta-postal-head-ico" strokeWidth={2.25} />
+                  <div>
+                    <h2 id="postal-heading" className="delivery-watta-postal-title">
+                      {d.postalTitle}
+                    </h2>
+                    <p className="delivery-watta-postal-desc">{d.postalDesc}</p>
+                  </div>
                 </div>
+                <div className="delivery-watta-postal-row">
+                  <label className="delivery-watta-postal-label" htmlFor="delivery-postal-input">
+                    {d.postalLabel}
+                  </label>
+                  <div className="delivery-watta-postal-controls">
+                    <input
+                      id="delivery-postal-input"
+                      type="text"
+                      inputMode="text"
+                      autoComplete="postal-code"
+                      className="delivery-watta-postal-input"
+                      placeholder={d.postalPlaceholder}
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void runPostalCheck()
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="delivery-watta-postal-btn"
+                      disabled={postalChecking}
+                      onClick={() => void runPostalCheck()}
+                    >
+                      {postalChecking ? d.postalChecking : d.postalButton}
+                    </button>
+                  </div>
+                </div>
+                {postalResult && (
+                  <div
+                    className={`delivery-watta-postal-result delivery-watta-postal-result--${postalResult.status}`}
+                  >
+                    {postalResult.status === 'inside' && (
+                      <>
+                        <CheckCircle2 className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <div>
+                          <p className="delivery-watta-postal-result-title">{d.postalInside}</p>
+                          {postalResult.zoneName && (
+                            <p className="delivery-watta-postal-result-meta">
+                              {d.postalZone}: <strong>{postalResult.zoneName}</strong>
+                            </p>
+                          )}
+                          {postalResult.placeLabel && (
+                            <p className="delivery-watta-postal-result-meta">
+                              {d.postalAddressFound}: {postalResult.placeLabel}
+                            </p>
+                          )}
+                          {postalResult.zoneIsFreeDelivery ? (
+                            <p className="delivery-watta-postal-result-meta delivery-watta-postal-zone-tariff">
+                              {d.postalZoneTariffFree}
+                            </p>
+                          ) : postalResult.zoneFlatDeliveryFee != null &&
+                            !Number.isNaN(postalResult.zoneFlatDeliveryFee) ? (
+                            <p className="delivery-watta-postal-result-meta delivery-watta-postal-zone-tariff">
+                              {d.postalZoneTariffFlat.replace(
+                                '{{amount}}',
+                                String(postalResult.zoneFlatDeliveryFee)
+                              )}
+                            </p>
+                          ) : (
+                            <p className="delivery-watta-postal-result-meta delivery-watta-postal-zone-tariff">
+                              {d.postalZoneTariffStandard}
+                            </p>
+                          )}
+                          <ul className="delivery-watta-tariff-list">
+                            <li>
+                              {d.tariffPerKm}: <strong>{postalResult.pricePerKm ?? selectedCity?.pricePerKm ?? 10} €</strong>
+                            </li>
+                            <li>
+                              {d.tariffBase}: <strong>{postalResult.defaultDeliveryFee ?? '—'} €</strong>
+                            </li>
+                            <li>
+                              {d.tariffFreeFrom}: <strong>{postalResult.freeDeliveryThreshold ?? '—'} €</strong>
+                            </li>
+                          </ul>
+                        </div>
+                      </>
+                    )}
+                    {postalResult.status === 'outside' && (
+                      <>
+                        <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <div>
+                          <p className="delivery-watta-postal-result-title">{d.postalOutside}</p>
+                          {postalResult.placeLabel && (
+                            <p className="delivery-watta-postal-result-meta">{postalResult.placeLabel}</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {(postalResult.status === 'no_zones' || postalResult.status === 'city_not_found') && (
+                      <>
+                        <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <p className="delivery-watta-postal-result-title">{d.postalNoZones}</p>
+                      </>
+                    )}
+                    {(postalResult.status === 'geocode_failed' || postalResult.status === 'bad_request') && (
+                      <>
+                        <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <p className="delivery-watta-postal-result-title">{d.postalGeocodeFail}</p>
+                      </>
+                    )}
+                    {postalResult.status === 'server_error' && (
+                      <>
+                        <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <p className="delivery-watta-postal-result-title">{d.postalGeocodeFail}</p>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-          </div>
-        </>
-      )}
+            </section>
 
-      {/* Информация о зонах доставки */}
-      {selectedCity && selectedCity.deliveryZones && selectedCity.deliveryZones.length > 0 && (
-        <div className="delivery-zones-info-web">
-          <h3 className="zones-info-title-web">Зони доставки в {selectedCity.name}</h3>
-          <div className="zones-grid-web">
-            {selectedCity.deliveryZones.map(zone => (
-              <div 
-                key={zone.id} 
-                className="zone-card-web"
-                style={{ borderLeftColor: zone.color }}
-              >
-                <div 
-                  className="zone-color-badge-web"
-                  style={{ backgroundColor: zone.color }}
-                ></div>
-                <h4>{zone.name}</h4>
-                <p>Доставка доступна</p>
+            <section className="delivery-watta-map-section" aria-label="Map">
+              {showInteractiveZonesMap && (
+                <p className="delivery-watta-map-zones-hint">{d.mapZonesHint}</p>
+              )}
+              <div className="delivery-watta-map-toolbar">
+                <button
+                  type="button"
+                  className={`delivery-watta-map-tab ${showAllCities || !selectedCity ? 'delivery-watta-map-tab--on' : ''}`}
+                  onClick={() => setShowAllCities(true)}
+                >
+                  {d.mapAll}
+                </button>
+                {selectedCity && (
+                  <button
+                    type="button"
+                    className={`delivery-watta-map-tab ${selectedCity && !showAllCities ? 'delivery-watta-map-tab--on' : ''}`}
+                    onClick={() => setShowAllCities(false)}
+                  >
+                    {d.mapFocus}: {cityLabel(selectedCity)}
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <div className="delivery-watta-map-frame">
+                <div className="delivery-watta-map-inner">
+                  {cities.length > 0 && showInteractiveZonesMap && selectedCity ? (
+                    <DeliveryZonesInteractiveMap
+                      zones={selectedCity.deliveryZones}
+                      centerLat={selectedCity.coordinates.lat}
+                      centerLng={selectedCity.coordinates.lng}
+                      zoom={selectedCity.zoom || 12}
+                      buildPopupHtml={buildZonePopupHtml}
+                      ariaLabel={d.mapInteractiveAria}
+                    />
+                  ) : cities.length > 0 && mapSrc ? (
+                    <iframe
+                      key={!selectedCity || showAllCities ? 'all-cities' : selectedCity!.id}
+                      src={mapSrc}
+                      width="100%"
+                      height="100%"
+                      className="delivery-watta-iframe"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title={!selectedCity || showAllCities ? d.mapAll : cityLabel(selectedCity!)}
+                    />
+                  ) : null}
+                </div>
+                <a
+                  href={mapsLinkHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="delivery-watta-maps-link"
+                >
+                  {d.openMaps} ↗
+                </a>
+              </div>
+            </section>
 
-      {/* Условия доставки */}
-      <div className="delivery-conditions-web">
-        <div className="delivery-conditions-content-web">
-          <div className="delivery-conditions-text-web">
-            <h3 className="delivery-conditions-title-web">Умови доставки</h3>
-            <p className="delivery-conditions-desc-web">
-              Мінімальна сума замовлення 700 €.
-            </p>
-            <p className="delivery-conditions-desc-web">
-              Подробиці доставки до віддалених районів уточнюйте в оператора.
-            </p>
-          </div>
-          <div className="delivery-working-hours-web">
-            <h3 className="working-hours-title-web">Час роботи:</h3>
-            <div className="working-hours-header-web">
-              <div className="working-hours-icon-web">🕐</div>
-              <span className="working-hours-time-web">з 11:00 до 22:30</span>
-            </div>
-          </div>
-        </div>
-      </div>
+            {selectedCity && selectedCity.deliveryZones && selectedCity.deliveryZones.length > 0 && (
+              <section className="delivery-watta-zones" aria-labelledby="zones-heading">
+                <h2 id="zones-heading" className="delivery-watta-zones-heading">
+                  {d.zonesTitle} · <em>{cityLabel(selectedCity)}</em>
+                </h2>
+                <div className="delivery-watta-zones-grid">
+                  {selectedCity.deliveryZones.map((zone) => (
+                    <article
+                      key={zone.id}
+                      className="delivery-watta-zone-card"
+                      style={{ borderLeftColor: zone.color }}
+                    >
+                      <div className="delivery-watta-zone-card-top">
+                        <span
+                          className="delivery-watta-zone-dot"
+                          style={{ backgroundColor: zone.color }}
+                        />
+                        <h3 className="delivery-watta-zone-name">{zone.name}</h3>
+                      </div>
+                      <p className="delivery-watta-zone-ok">{d.zoneAvailable}</p>
+                      <p className="delivery-watta-zone-fee">{zoneFeeLine(zone)}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
 
-      {/* Как сделать заказ */}
-      <div className="how-to-order-section-web">
-        <h2 className="how-to-order-title-web">Як зробити замовлення?</h2>
-        <div className="how-to-order-grid-web">
-          <div className="how-to-order-card-web">
-            <div className="how-to-order-icon-web">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              </svg>
-            </div>
-            <p className="how-to-order-text-web">На сайті</p>
-          </div>
-          
-          <div className="how-to-order-card-web">
-            <div className="how-to-order-icon-web">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" strokeWidth="2">
-                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                <line x1="12" y1="18" x2="12.01" y2="18"/>
-              </svg>
-            </div>
-            <p className="how-to-order-text-web">У мобільному застосунку</p>
-          </div>
-          
-          <div className="how-to-order-card-web">
-            <div className="how-to-order-icon-web">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" strokeWidth="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-            </div>
-            <p className="how-to-order-text-web">По телефону</p>
-          </div>
-        </div>
-      </div>
+            <DeliveryExperienceBlocks d={d} />
+          </>
+        )}
       </div>
     </div>
   )

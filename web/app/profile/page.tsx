@@ -40,7 +40,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] p-4 pt-8">
+    <div className="watta-public-page-shell min-h-screen p-4 pt-8">
       <div className="max-w-md mx-auto bg-white rounded-3xl p-6 shadow-xl min-h-[500px]">
         <button onClick={() => router.back()} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition">
           <ArrowLeft /> Назад

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import { useLanguage } from '../context/LanguageContext'
 import { LanguageSelector } from './LanguageSelector'
@@ -18,27 +18,22 @@ import AboutView from './AboutView'
 import AuthView from './AuthView'
 import CartView from './CartView'
 import PromotionsDetailView from './PromotionsDetailView'
-import Footer from './Footer';
+import Footer from './Footer'
+import NavigationSidebar from './NavigationSidebar'
+import { CinematicFooter } from '@/components/ui/motion-footer'
+import { WelcomeHeroBadge } from './WelcomeHeroBadge'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { 
   Menu,       
   Phone,      
-  Bell,       
   Heart,      
   User,       
   ShoppingBag,
   ArrowLeft,
-  Home,
-  Tag,
-  Truck,
-  Info,
-  X,
-  Sparkles,
   ChevronLeft, 
   ChevronRight
 } from 'lucide-react'
-
 // --- ТИПЫ ДАННЫХ ---
 interface City {
   id: string
@@ -126,6 +121,7 @@ export default function MenuView() {
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
+
   const [selectedPromoId, setSelectedPromoId] = useState<number | null>(null)
   // --- ГОРОДА ДОСТАВКИ ---
   const [deliveryCities, setDeliveryCities] = useState<{id: number, name: string, name_nl?: string}[]>([])
@@ -149,14 +145,21 @@ export default function MenuView() {
     
 
 
-    // Проверяем кэш для городов
+    // Кэш городов: session + localStorage — переживает перезагрузку вкладки и перезапуск браузера (тот же origin)
     const cacheKey = 'cities_cache'
-    const cached = sessionStorage.getItem(cacheKey)
-    const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
+    const persistKey = 'watta_cities_cache'
+    const persistTimeKey = 'watta_cities_cache_time'
+    const cached =
+      typeof window !== 'undefined'
+        ? sessionStorage.getItem(cacheKey) || localStorage.getItem(persistKey)
+        : null
+    const cacheTimeRaw =
+      typeof window !== 'undefined'
+        ? sessionStorage.getItem(`${cacheKey}_time`) || localStorage.getItem(persistTimeKey)
+        : null
     const now = Date.now()
-    
-    if (cached && cacheTime && (now - parseInt(cacheTime)) < 10 * 60 * 1000) {
-      // Используем кэш если он свежий (менее 10 минут)
+
+    if (cached && cacheTimeRaw && (now - parseInt(cacheTimeRaw, 10)) < 10 * 60 * 1000) {
       try {
         const data = JSON.parse(cached)
         setDeliveryCities(data || [])
@@ -169,10 +172,10 @@ export default function MenuView() {
         }
         return
       } catch (e) {
-        // Если кэш поврежден, загружаем заново
+        // кэш повреждён — грузим с сервера
       }
     }
-    
+
     fetch('/api/cities', {
       headers: {
         'Cache-Control': 'max-age=600' // 10 минут кэша
@@ -186,10 +189,16 @@ export default function MenuView() {
         return res.json()
       })
       .then(data => {
-        // Сохраняем в кэш
+        const t = Date.now().toString()
         sessionStorage.setItem(cacheKey, JSON.stringify(data))
-        sessionStorage.setItem(`${cacheKey}_time`, now.toString())
-        
+        sessionStorage.setItem(`${cacheKey}_time`, t)
+        try {
+          localStorage.setItem(persistKey, JSON.stringify(data))
+          localStorage.setItem(persistTimeKey, t)
+        } catch (_) {
+          /* quota */
+        }
+
         setDeliveryCities(data || [])
         // Если город не выбран и есть города, выбираем первый
         if ((data || []).length > 0 && !selectedCityId) {
@@ -202,6 +211,17 @@ export default function MenuView() {
       })
       .catch(err => {
         console.error('Ошибка загрузки городов:', err)
+        const fallback =
+          typeof window !== 'undefined' ? localStorage.getItem(persistKey) || sessionStorage.getItem(cacheKey) : null
+        if (fallback) {
+          try {
+            const data = JSON.parse(fallback)
+            setDeliveryCities(data || [])
+            return
+          } catch (_) {
+            /* ignore */
+          }
+        }
         setDeliveryCities([])
       })
   }, [])
@@ -229,6 +249,8 @@ export default function MenuView() {
     imageUrl: string
     order: number
     isActive: boolean
+    focalX?: number
+    focalY?: number
   }
   
   const [banners, setBanners] = useState<Banner[]>([])
@@ -256,36 +278,94 @@ export default function MenuView() {
 
   // Функция загрузки данных
   const loadBanners = useCallback(() => {
-    const cacheKey = 'banners'
+    const sessionKey = 'banners'
+    const persistKey = 'watta_banners_v1'
+    const persistTimeKey = 'watta_banners_v1_time'
     const CACHE_TTL = 5 * 60 * 1000
-    
-    // Проверка кэша
-    if (typeof sessionStorage !== 'undefined') {
-      const cached = sessionStorage.getItem(cacheKey)
-      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
-      const now = Date.now()
-      if (cached && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_TTL) {
-        try {
-          const data = JSON.parse(cached) as Banner[]
-          if (Array.isArray(data)) {
-            setBanners(data)
-            return
-          }
-        } catch (_) { }
+
+    const readPersisted = (): { data: Banner[]; time: number } | null => {
+      if (typeof window === 'undefined') return null
+      try {
+        const raw =
+          localStorage.getItem(persistKey) ||
+          sessionStorage.getItem(sessionKey) ||
+          ''
+        if (!raw) return null
+        const data = JSON.parse(raw) as Banner[]
+        if (!Array.isArray(data)) return null
+        const timeRaw =
+          localStorage.getItem(persistTimeKey) ||
+          sessionStorage.getItem(`${sessionKey}_time`) ||
+          '0'
+        const time = parseInt(timeRaw, 10) || 0
+        return { data, time }
+      } catch {
+        return null
       }
     }
 
-    // Запрос к API
+    const writePersisted = (data: Banner[]) => {
+      if (typeof window === 'undefined') return
+      const t = Date.now().toString()
+      try {
+        localStorage.setItem(persistKey, JSON.stringify(data))
+        localStorage.setItem(persistTimeKey, t)
+        sessionStorage.setItem(sessionKey, JSON.stringify(data))
+        sessionStorage.setItem(`${sessionKey}_time`, t)
+      } catch (_) {
+        /* quota / private mode */
+      }
+    }
+
+    const now = Date.now()
+    const persisted = readPersisted()
+
+    if (persisted && persisted.data.length > 0) {
+      setBanners(persisted.data)
+      if (now - persisted.time < CACHE_TTL) {
+        fetch('/api/banners')
+          .then(async (res) => {
+            if (!res.ok) {
+              const hint = await res.text().catch(() => '')
+              throw new Error(`Баннери: ${res.status} ${hint.slice(0, 120)}`)
+            }
+            return res.json()
+          })
+          .then((data) => {
+            if (!Array.isArray(data)) return
+            setBanners(data)
+            writePersisted(data)
+          })
+          .catch(() => {
+            /* залишаємо останній успішний кеш у state та localStorage */
+          })
+        return
+      }
+    }
+
     fetch('/api/banners')
-      .then(res => res.json())
-      .then(data => {
+      .then(async (res) => {
+        if (!res.ok) {
+          const hint = await res.text().catch(() => '')
+          throw new Error(`Баннери: ${res.status} ${hint.slice(0, 120)}`)
+        }
+        return res.json()
+      })
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          console.warn('Баннери: очікувався масив, отримано', data)
+          if (!persisted?.data.length) setBanners([])
+          return
+        }
         setBanners(data)
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(cacheKey, JSON.stringify(data))
-          sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+        writePersisted(data)
+      })
+      .catch((err) => {
+        console.error('Помилка завантаження банерів:', err)
+        if (persisted?.data.length) {
+          setBanners(persisted.data)
         }
       })
-      .catch(err => console.error('Ошибка загрузки баннеров:', err))
   }, [])
 
   // Эффект загрузки
@@ -300,7 +380,7 @@ export default function MenuView() {
       window.addEventListener('bannersUpdated', handleBannersUpdate)
       return () => window.removeEventListener('bannersUpdated', handleBannersUpdate)
     }
-  }, [])
+  }, [loadBanners])
 
   // Таймер авто-переключения (С УЧЕТОМ РУЧНОГО ЛИСТАНИЯ)
   useEffect(() => {
@@ -696,7 +776,8 @@ export default function MenuView() {
   // --- НАВИГАЦИЯ ---
   const [activePage, setActivePage] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  
+  const [sidebarStaggerKey, setSidebarStaggerKey] = useState(0)
+
   // НОВЫЙ СТЕЙТ: Какую вкладку открыть в профиле
   const [profileInitialTab, setProfileInitialTab] = useState<'history' | 'address' | 'favorites'>('history')
 
@@ -715,8 +796,14 @@ export default function MenuView() {
   }
   
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
-    if (activePage) setActivePage(null)
+    const opening = !isSidebarOpen
+    if (opening && activePage && activePage !== 'admin') {
+      setActivePage(null)
+    }
+    if (opening) {
+      setSidebarStaggerKey((k) => k + 1)
+    }
+    setIsSidebarOpen(opening)
   }
 
 
@@ -724,6 +811,61 @@ export default function MenuView() {
 
   const displayedItems = isExpanded ? filteredItems : filteredItems.slice(0, initialLimit)
   const showExpandButton = !isExpanded && filteredItems.length > initialLimit
+
+  const cinematicFooterPromoTeasers = useMemo(() => {
+    const fromProducts = menuItems
+      .filter((item) => item.isTop)
+      .map((item) => ({
+        id: item.id,
+        kind: 'product' as const,
+        label: (item.name || '').trim(),
+        categoryLabel: (item.category || '').trim(),
+        imageUrl: item.imageUrl || undefined,
+      }))
+      .filter((p) => p.label.length > 0 || (p.categoryLabel?.length ?? 0) > 0)
+      .slice(0, 24)
+
+    if (fromProducts.length > 0) return fromProducts
+
+    return [...banners]
+      .filter((b) => b.isActive !== false)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .slice(0, 8)
+      .map((b) => ({
+        id: b.id,
+        kind: 'banner' as const,
+        label: (getLocalized(b, 'title') || b.title_ru || '').trim(),
+        imageUrl: b.imageUrl || undefined,
+      }))
+      .filter((p) => p.label.length > 0)
+  }, [menuItems, banners, getLocalized])
+
+  const handleCinematicFooterPromoClick = useCallback(
+    (payload: { id: number; kind: 'product' | 'banner' }) => {
+      if (payload.kind === 'banner') {
+        const i = banners.findIndex((b) => b.id === payload.id)
+        if (i >= 0) setCurrentBannerIndex(i)
+        return
+      }
+
+      const item = menuItems.find((m) => m.id === payload.id)
+      if (item?.categorySlug) {
+        setSelectedSubcategory(null)
+        setShowSubmenu(false)
+        setSelectedCategory(item.categorySlug)
+      }
+      setIsExpanded(true)
+
+      const scrollToCard = () => {
+        const root = document.querySelector('.content-web')
+        const el = root?.querySelector(`[data-menu-product-id="${payload.id}"]`) as HTMLElement | null
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      requestAnimationFrame(() => requestAnimationFrame(scrollToCard))
+      window.setTimeout(scrollToCard, 450)
+    },
+    [banners, menuItems]
+  )
 
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
@@ -1059,8 +1201,8 @@ export default function MenuView() {
   // ОТРИСОВКА СТРАНИЦ (PAGES)
   // ============================================
 
-  if (activePage === 'phone') return <div className="full-page-web"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">{t.phone}</h1></div><div className="full-page-content-web"><PhoneView /></div></div>
-  if (activePage === 'notifications') return <div className="full-page-web"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">Уведомления</h1></div><div className="full-page-content-web"><NotificationsView 
+  if (activePage === 'phone') return <div className="full-page-web full-page-web--craft"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">{t.phone}</h1></div><div className="full-page-content-web"><PhoneView /></div></div>
+  if (activePage === 'notifications') return <div className="full-page-web full-page-web--craft"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">Уведомления</h1></div><div className="full-page-content-web"><NotificationsView 
   isOpen={isNotificationsOpen} 
   onClose={() => setIsNotificationsOpen(false)} 
 /></div></div>
@@ -1070,7 +1212,7 @@ export default function MenuView() {
     
     if (!isAuth) {
       return (
-        <div className="full-page-web">
+        <div className="full-page-web full-page-web--craft">
           <AuthView 
             // @ts-ignore
             onBack={handleClosePage}
@@ -1084,7 +1226,7 @@ export default function MenuView() {
     }
 
     return (
-      <div className="full-page-web profile-page-full-web">
+      <div className="full-page-web full-page-web--craft profile-page-full-web">
         <ProfileView 
           onBack={handleClosePage}
           onMenuClick={toggleSidebar}
@@ -1101,18 +1243,34 @@ export default function MenuView() {
     )
   }
 
- if (activePage === 'admin') {
+  if (activePage === 'admin') {
     return (
-      <div className="full-page-web">
-        <AdminView onBack={handleClosePage} />
-      </div>
+      <>
+        <div className="full-page-web full-page-web--craft">
+          <AdminView onBack={handleClosePage} onSiteMenuClick={toggleSidebar} />
+        </div>
+        <NavigationSidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          staggerKey={sidebarStaggerKey}
+          isAdmin={isAdmin}
+          onOpenProfileTab={openProfileTab}
+          onPageOpen={handlePageOpen}
+          onGoHome={handleClosePage}
+          onOpenNotifications={() => setIsNotificationsOpen(true)}
+        />
+        <NotificationsView
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+        />
+      </>
     )
   }
-  if (activePage === 'delivery') return <div className="full-page-web"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">{t.delivery}</h1></div><div className="full-page-content-web"><DeliveryView /></div></div>
+  if (activePage === 'delivery') return <div className="full-page-web full-page-web--craft"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">{t.delivery}</h1></div><div className="full-page-content-web"><DeliveryView /></div></div>
   if (activePage === 'promotions') {
   if (selectedPromoId) {
     return (
-      <div className="full-page-web">
+      <div className="full-page-web full-page-web--craft">
         <PromotionsDetailView 
           id={selectedPromoId}
           onBack={() => setSelectedPromoId(null)}
@@ -1126,7 +1284,7 @@ export default function MenuView() {
     )
   }
   return (
-    <div className="full-page-web">
+    <div className="full-page-web full-page-web--craft">
       <PromotionsView 
         onBack={handleClosePage} 
         onMenuClick={toggleSidebar}
@@ -1140,11 +1298,11 @@ export default function MenuView() {
     </div>
   )
 }
-  if (activePage === 'about') return <div className="full-page-web"><AboutView onBack={handleClosePage} onMenuClick={toggleSidebar} /></div>
+  if (activePage === 'about') return <div className="full-page-web full-page-web--craft"><AboutView onBack={handleClosePage} onMenuClick={toggleSidebar} /></div>
 
   if (activePage === 'cart') {
     return (
-      <div className="full-page-web">
+      <div className="full-page-web full-page-web--craft">
         <CartView 
           onBack={handleClosePage}
           onOpenProfile={() => openProfileTab('history')}
@@ -1170,7 +1328,13 @@ export default function MenuView() {
     <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#F3F4F6]">
       <LogoBackground />
 
-      <div className="fixed top-0 left-0 right-0 px-2 z-50 bg-[#F3F4F6] shadow-sm transition-transform duration-300">
+      <div
+        className="fixed top-0 left-0 right-0 z-50 bg-[#F3F4F6] shadow-sm transition-transform duration-300 menu-top-safe-web"
+        style={{
+          paddingLeft: 'max(8px, env(safe-area-inset-left, 0px))',
+          paddingRight: 'max(8px, env(safe-area-inset-right, 0px))',
+        }}
+      >
 
       <header className="app-header-web relative z-10 max-w-[100vw]">
         <div className="header-content-web">
@@ -1375,15 +1539,16 @@ export default function MenuView() {
 
       {cartCount > 0 && activePage === null && (
         <div
+          className="checkout-fab-wrap-web"
           style={{
             position: 'fixed',
             left: 0,
             right: 0,
-            bottom: 20,
+            bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
             zIndex: 9999,
             display: 'flex',
             justifyContent: 'center',
-            padding: '0 16px 0 max(16px, env(safe-area-inset-right))'
+            padding: '0 max(16px, env(safe-area-inset-left)) 0 max(16px, env(safe-area-inset-right))',
           }}
         >
           <button
@@ -1480,10 +1645,44 @@ export default function MenuView() {
           </div>
       </div>
 
-      <div className="h-[140px] md:h-[160px] w-full bg-transparent" aria-hidden="true" />
+      <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
 
 
       <div className="categories-panel-spacer-web" aria-hidden />
+
+      {/* Перша секція: повноекранне відео під шапкою; панель категорій — fixed поверх (z-index 99) */}
+      <section className="welcome-hero-section-web" aria-label="Welcome">
+        <div className="welcome-hero-video-fill-web">
+          <video
+            className="welcome-video-native-web"
+            src="/watta-sushi-2-hero.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            tabIndex={-1}
+            aria-hidden
+            onEnded={(e) => {
+              const el = e.currentTarget
+              el.currentTime = 0
+              void el.play()
+            }}
+          />
+        </div>
+        <div className="welcome-hero-vignette-web" aria-hidden />
+        <div className="welcome-hero-shimmer-web" aria-hidden />
+        <WelcomeHeroBadge ariaLabel={t.menuView.welcomeBadgeAria} />
+      </section>
+
+      <CinematicFooter
+        nextSectionId="hero-banners"
+        menuSectionId="menu-catalog"
+        promoTeasers={cinematicFooterPromoTeasers}
+        onPromoTeaserClick={handleCinematicFooterPromoClick}
+        promoFallbackCta={t.menuView.footerPromoSeeOffers}
+        promoRegionLabel={t.menuView.footerPromoAriaRegion}
+      />
 
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">
@@ -1492,22 +1691,87 @@ export default function MenuView() {
         </div>
       )}
 
+      <section
+        id="hero-banners"
+        className="home-brand-story-section-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw]"
+        aria-labelledby="home-brand-heading"
+      >
+        <div className="home-brand-story-bg-web" aria-hidden />
+        <div className="home-brand-story-grain-web" aria-hidden />
+        <div className="home-brand-story-orb-web home-brand-story-orb-web--tiffany" aria-hidden />
+        <div className="home-brand-inner-web relative z-[1] mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:px-8 md:pb-16 md:pt-14">
+          <div className="home-brand-editorial-web">
+            <header className="home-brand-editorial-head-web">
+              <h2 id="home-brand-heading" className="home-brand-kicker-serif-web">
+                {t.homeBrandSection.kicker}
+              </h2>
+              <p className="home-brand-kicker-script-web">{t.homeBrandSection.kickerScript}</p>
+            </header>
+            <div className="home-brand-pillars-web">
+              {(
+                [
+                  {
+                    label: t.homeBrandSection.pillar1Label,
+                    word: t.homeBrandSection.pillar1Word,
+                    variant: 'wide' as const,
+                  },
+                  {
+                    label: t.homeBrandSection.pillar2Label,
+                    word: t.homeBrandSection.pillar2Word,
+                    variant: 'sturdy' as const,
+                  },
+                  {
+                    label: t.homeBrandSection.pillar3Label,
+                    word: t.homeBrandSection.pillar3Word,
+                    variant: 'slender' as const,
+                  },
+                ] as const
+              ).map((pillar, i) => (
+                <article
+                  key={pillar.variant}
+                  className="home-brand-pillar-card-web"
+                  style={{ animationDelay: `${80 + i * 110}ms` }}
+                >
+                  <p className="home-brand-pillar-label-web">{pillar.label}</p>
+                  <p
+                    className={`home-brand-pillar-word-web home-brand-pillar-word-web--${pillar.variant}`}
+                  >
+                    {pillar.word}
+                  </p>
+                </article>
+              ))}
+            </div>
+            <p className="home-brand-footer-hint-web">{t.homeBrandSection.footerHint}</p>
+          </div>
+
+          <div className="home-brand-banner-shell-web">
       {banners.length > 0 ? (
         <div 
-          className="hero-banner-web max-w-7xl mx-auto rounded-none sm:rounded-2xl overflow-hidden relative group"
+          className="hero-banner-web hero-banner-image-bg-web max-w-7xl mx-auto rounded-none sm:rounded-2xl overflow-hidden relative group"
           // Добавляем обработчики свайпа для мобильных
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           style={{ 
             backgroundImage: `url(${banners[currentBannerIndex].imageUrl})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: (() => {
+              const b = banners[currentBannerIndex]
+              const fx =
+                typeof b.focalX === 'number'
+                  ? Math.max(0, Math.min(100, b.focalX))
+                  : 50
+              const fy =
+                typeof b.focalY === 'number'
+                  ? Math.max(0, Math.min(100, b.focalY))
+                  : 50
+              return `${fx}% ${fy}%`
+            })(),
             backgroundRepeat: 'no-repeat',
             position: 'relative'
           }}
         >
-          {/* Затемнение для читаемости (опционально, если нужно) */}
-          <div className="absolute inset-0 bg-black/10 transition-colors group-hover:bg-black/5 pointer-events-none" />
+          {/* Затемнение для читаемості; на планшеті слабше — фото яскравіше */}
+          <div className="hero-banner-dim-web pointer-events-none absolute inset-0" />
 
           {/* Контент баннера */}
           <div 
@@ -1540,9 +1804,8 @@ export default function MenuView() {
           </button>
 
           {/* Точки (Dots) */}
-          <div 
-              className="hero-dots-web absolute !bottom-[-20px] left-0 right-0 flex justify-center gap-2" 
-              style={{ zIndex: 3 }}
+          <div
+              className="hero-dots-web hero-dots-banner-image-web absolute bottom-3 left-0 right-0 z-[3] flex justify-center gap-2 md:bottom-4 min-[1025px]:!bottom-[-20px]"
             >
             {banners.map((_, i) => (
               <span 
@@ -1568,13 +1831,20 @@ export default function MenuView() {
           <div className="hero-dots-web">{[1, 2, 3].map((_, i) => <span key={i} className={`hero-dot-web ${i === 0 ? 'active' : ''}`}></span>)}</div>
         </div>
       )}
+          </div>
+        </div>
+      </section>
 
-      <div className="menu-section-web max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
+      <div id="menu-catalog" className="menu-section-web menu-after-welcome-web max-w-7xl mx-auto px-2 sm:px-4 md:px-6">
         <h3 className="category-title-web pl-2 sm:pl-0 mt-6 mb-4">{t.categories[selectedCategory as keyof typeof t.categories] || menuCategories.find(c => c.key === selectedCategory)?.name || ''}</h3>
         <div className="menu-items-grid-web bg-transparent">
           {displayedItems.length > 0 ? (
             displayedItems.map(item => (
-              <div key={item.id} className="menu-item-card-web bg-white rounded-xl shadow-sm relative">
+              <div
+                key={item.id}
+                className="menu-item-card-web bg-white rounded-xl shadow-sm relative"
+                data-menu-product-id={item.id}
+              >
                 
                 {/* --- БЛОК КАРТИНКИ --- */}
                 <div className="item-image-web relative"> {/* Добавил relative, чтобы позиционировать кнопку лайка */}
@@ -1675,647 +1945,16 @@ export default function MenuView() {
         </div>
       )}
 
-      {/* Overlay */}
-      <div 
-        className={`sidebar-overlay-web ${isSidebarOpen ? 'active' : ''}`} 
-        onClick={toggleSidebar}
-        style={{ 
-          zIndex: 9998, 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.6)', 
-          backdropFilter: 'blur(8px)', 
-          opacity: isSidebarOpen ? 1 : 0, 
-          visibility: isSidebarOpen ? 'visible' : 'hidden', 
-          transition: 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s' 
-        }}
+      <NavigationSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        staggerKey={sidebarStaggerKey}
+        isAdmin={isAdmin}
+        onOpenProfileTab={openProfileTab}
+        onPageOpen={handlePageOpen}
+        onGoHome={handleClosePage}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
       />
-      
-      {/* Sidebar */}
-      <div 
-        className={`sidebar-web ${isSidebarOpen ? 'open' : ''}`}
-        style={{ 
-          zIndex: 9999, 
-          position: 'fixed', 
-          top: 0, 
-          right: 0, 
-          height: '100%', 
-          width: 'min(260px, 80vw)', 
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(250,251,252,0.97) 50%, rgba(255,255,255,0.99) 100%)',
-          boxShadow: '-8px 0 32px rgba(0,0,0,0.12), -4px 0 16px rgba(0,0,0,0.08), inset 1px 0 0 rgba(255,255,255,0.9)',
-          backdropFilter: 'blur(24px)', 
-          borderLeft: '1px solid rgba(0,0,0,0.08)',
-          transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)', 
-          transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-          overflow: 'hidden',
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-        }}
-      >
-        <style jsx>{`
-          @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-          }
-          @keyframes pulse {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-          }
-          .menu-title {
-            font-family: 'Bebas Neue', 'Montserrat', 'Poppins', sans-serif;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: white !important;
-            text-shadow: 
-              0 2px 6px rgba(0,0,0,0.25),
-              0 4px 12px rgba(0,0,0,0.15);
-            font-size: 22px;
-            line-height: 1.3;
-            display: block;
-            visibility: visible;
-            opacity: 1;
-          }
-          .sidebar-web button span {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            position: relative;
-          }
-          .sidebar-content-web::-webkit-scrollbar {
-            width: 8px;
-          }
-          .sidebar-content-web::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.02);
-            border-radius: 10px;
-          }
-          .sidebar-content-web::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, rgba(20,81,66,0.3), rgba(20,81,66,0.2));
-            border-radius: 10px;
-            border: 2px solid transparent;
-            background-clip: padding-box;
-          }
-          .sidebar-content-web::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, rgba(20,81,66,0.5), rgba(20,81,66,0.4));
-            background-clip: padding-box;
-          }
-        `}</style>
-        {/* Header */}
-        <div 
-          className="sidebar-header-web"
-          style={{ 
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(250,251,252,0.97) 100%)',
-            padding: '20px 18px',
-            borderBottom: '1px solid rgba(0,0,0,0.08)',
-            position: 'relative',
-            backdropFilter: 'blur(24px)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.06), inset 0 -1px 0 rgba(0,0,0,0.04)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'relative', zIndex: 1, width: '100%' }}>
-            <button 
-              className="sidebar-close-btn-web" 
-              onClick={toggleSidebar}
-              style={{ 
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(250,251,252,0.97) 100%)', 
-                border: '1.5px solid rgba(0,0,0,0.08)', 
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                backdropFilter: 'blur(24px)',
-                flexShrink: 0,
-                boxShadow: '0 3px 10px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(20,81,66,0.12) 0%, rgba(20,81,66,0.08) 100%)'
-                e.currentTarget.style.borderColor = 'rgba(20,81,66,0.25)'
-                e.currentTarget.style.transform = 'rotate(90deg) scale(1.12)'
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(20,81,66,0.2), 0 3px 10px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(250,251,252,0.97) 100%)'
-                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'
-                e.currentTarget.style.transform = 'rotate(0deg) scale(1)'
-                e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)'
-              }}
-            >
-              <X size={18} style={{ color: '#333' }} />
-            </button>
-          </div>
-        </div>
-        
-        {/* Content */}
-        <div 
-          className="sidebar-content-web"
-          style={{ 
-            padding: '20px 16px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '12px',
-            overflowY: 'auto',
-            height: 'calc(100% - 85px)',
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#145142 transparent',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(250,251,252,0.97) 50%, rgba(255,255,255,0.99) 100%)'
-          }}
-        >
-          {/* Иконки вверху меню */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '8px',
-            marginBottom: '20px',
-            paddingBottom: '20px',
-            borderBottom: '1px solid rgba(0,0,0,0.08)'
-          }}>
-            <button 
-              className="sidebar-icon-btn-web"
-              onClick={(e) => { e.preventDefault(); toggleSidebar(); openProfileTab('history') }}
-              style={{
-                width: '100%',
-                aspectRatio: '1',
-                borderRadius: '10px',
-                border: '1px solid rgba(236,72,153,0.2)',
-                background: 'rgba(236,72,153,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                color: '#ec4899',
-                boxShadow: '0 1px 4px rgba(236,72,153,0.15)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(236,72,153,0.15)'
-                e.currentTarget.style.transform = 'scale(1.05)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(236,72,153,0.25)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(236,72,153,0.1)'
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = '0 1px 4px rgba(236,72,153,0.15)'
-              }}
-            >
-              <User size={18} />
-            </button>
-            
-            <button 
-              className="sidebar-icon-btn-web"
-              onClick={(e) => { e.preventDefault(); toggleSidebar(); handlePageOpen('phone') }}
-              style={{
-                width: '100%',
-                aspectRatio: '1',
-                borderRadius: '10px',
-                border: '1px solid rgba(0,0,0,0.08)',
-                background: 'rgba(255,255,255,0.6)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                color: '#333',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(20,81,66,0.08)'
-                e.currentTarget.style.transform = 'scale(1.05)'
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(20,81,66,0.15)'
-                e.currentTarget.style.color = '#145142'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.6)'
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'
-                e.currentTarget.style.color = '#333'
-              }}
-            >
-              <Phone size={18} />
-            </button>
-            
-            <button 
-              className="sidebar-icon-btn-web"
-              onClick={(e) => { e.preventDefault(); toggleSidebar(); setIsNotificationsOpen(true) }}
-              style={{
-                width: '100%',
-                aspectRatio: '1',
-                borderRadius: '14px',
-                border: '1px solid rgba(0,0,0,0.08)',
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                color: '#333',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(20,81,66,0.1) 0%, rgba(20,81,66,0.05) 100%)'
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(20,81,66,0.15)'
-                e.currentTarget.style.borderColor = 'rgba(20,81,66,0.2)'
-                e.currentTarget.style.color = '#145142'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)'
-                e.currentTarget.style.transform = 'translateY(0) scale(1)'
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04)'
-                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'
-                e.currentTarget.style.color = '#333'
-              }}
-            >
-              <Bell size={18} />
-            </button>
-            
-            <button 
-              className="sidebar-icon-btn-web"
-              onClick={(e) => { e.preventDefault(); toggleSidebar(); openProfileTab('favorites') }}
-              style={{
-                width: '100%',
-                aspectRatio: '1',
-                borderRadius: '14px',
-                border: '1px solid rgba(0,0,0,0.08)',
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                color: '#333',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(20,81,66,0.1) 0%, rgba(20,81,66,0.05) 100%)'
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(20,81,66,0.15)'
-                e.currentTarget.style.borderColor = 'rgba(20,81,66,0.2)'
-                e.currentTarget.style.color = '#145142'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)'
-                e.currentTarget.style.transform = 'translateY(0) scale(1)'
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04)'
-                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'
-                e.currentTarget.style.color = '#333'
-              }}
-            >
-              <Heart size={18} />
-            </button>
-          </div>
-          
-          {/* Menu Items */}
-          <button 
-            className="sidebar-item-web"
-            onClick={(e) => { e.preventDefault(); toggleSidebar(); handleClosePage() }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              border: '1px solid rgba(0,0,0,0.04)',
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(250,251,252,0.8) 100%)',
-              cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-              textAlign: 'left',
-              width: '100%',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#1f2937',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              boxShadow: '0 2px 6px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(20,81,66,0.08) 0%, rgba(20,81,66,0.05) 100%)'
-              e.currentTarget.style.borderColor = 'rgba(20,81,66,0.15)'
-              e.currentTarget.style.transform = 'translateX(4px) scale(1.02)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(20,81,66,0.12), 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(250,251,252,0.8) 100%)'
-              e.currentTarget.style.borderColor = 'rgba(0,0,0,0.04)'
-              e.currentTarget.style.transform = 'translateX(0) scale(1)'
-              e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)'
-            }}
-          >
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: '#145142',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 6px rgba(20,81,66,0.2)'
-            }}>
-              <Home size={18} style={{ color: 'white' }} />
-            </div>
-            <span>{t.navigation.home}</span>
-          </button>
-
-          <button 
-            className="sidebar-item-web"
-            onClick={(e) => { e.preventDefault(); toggleSidebar(); handleClosePage() }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-              textAlign: 'left',
-              width: '100%',
-              fontSize: '15px',
-              fontWeight: '500',
-              color: '#1f2937',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(236,72,153,0.05)'
-              e.currentTarget.style.transform = 'translateX(4px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.transform = 'translateX(0)'
-            }}
-          >
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: '#ec4899',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 6px rgba(236,72,153,0.2)'
-            }}>
-              <Menu size={18} style={{ color: 'white' }} />
-            </div>
-            <span>{t.menu}</span>
-          </button>
-
-          <button 
-            className="sidebar-item-web"
-            onClick={(e) => { e.preventDefault(); toggleSidebar(); handlePageOpen('promotions') }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-              textAlign: 'left',
-              width: '100%',
-              fontSize: '15px',
-              fontWeight: '500',
-              color: '#1f2937',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(245,158,11,0.05)'
-              e.currentTarget.style.transform = 'translateX(4px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.transform = 'translateX(0)'
-            }}
-          >
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: '#f59e0b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 6px rgba(245,158,11,0.2)'
-            }}>
-              <Tag size={18} style={{ color: 'white' }} />
-            </div>
-            <span>{t.navigation.promotions}</span>
-          </button>
-
-          <button 
-            className="sidebar-item-web"
-            onClick={(e) => { e.preventDefault(); toggleSidebar(); handlePageOpen('delivery') }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-              textAlign: 'left',
-              width: '100%',
-              fontSize: '15px',
-              fontWeight: '500',
-              color: '#1f2937',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(59,130,246,0.05)'
-              e.currentTarget.style.transform = 'translateX(4px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.transform = 'translateX(0)'
-            }}
-          >
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: '#3b82f6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 6px rgba(59,130,246,0.2)'
-            }}>
-              <Truck size={18} style={{ color: 'white' }} />
-            </div>
-            <span>{t.navigation.delivery}</span>
-          </button>
-          
-          <button 
-            className="sidebar-item-web"
-            onClick={(e) => { e.preventDefault(); toggleSidebar(); handlePageOpen('about') }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-              textAlign: 'left',
-              width: '100%',
-              fontSize: '15px',
-              fontWeight: '500',
-              color: '#1f2937',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(16,185,129,0.05)'
-              e.currentTarget.style.transform = 'translateX(4px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.transform = 'translateX(0)'
-            }}
-          >
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: '#10b981',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 6px rgba(16,185,129,0.2)'
-            }}>
-              <Info size={18} style={{ color: 'white' }} />
-            </div>
-            <span>{t.navigation.about}</span>
-          </button>
-
-          <button 
-            className="sidebar-item-web"
-            onClick={(e) => { e.preventDefault(); toggleSidebar(); handlePageOpen('phone') }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.25s ease',
-              textAlign: 'left',
-              width: '100%',
-              fontSize: '15px',
-              fontWeight: '500',
-              color: '#1f2937',
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(6,182,212,0.05)'
-              e.currentTarget.style.transform = 'translateX(4px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.transform = 'translateX(0)'
-            }}
-          >
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: '#06b6d4',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 2px 6px rgba(6,182,212,0.2)'
-            }}>
-              <Phone size={18} style={{ color: 'white' }} />
-            </div>
-            <span>{t.navigation.contacts}</span>
-          </button>
-          
-          {isAdmin && (
-            <div style={{ 
-              marginTop: '20px', 
-              paddingTop: '20px', 
-              borderTop: '1px solid rgba(229,231,235,0.6)',
-              position: 'relative'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '40px',
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, rgba(236,72,153,0.3), transparent)'
-              }} />
-              <button 
-                className="sidebar-item-web"
-                onClick={(e) => { e.preventDefault(); toggleSidebar(); handlePageOpen('admin'); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  padding: '16px 18px',
-                  borderRadius: '14px',
-                  border: '1.5px solid rgba(236,72,153,0.3)',
-                  background: 'linear-gradient(135deg, rgba(236,72,153,0.08) 0%, rgba(236,72,153,0.04) 100%)',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  textAlign: 'left',
-                  width: '100%',
-                  fontSize: '15px',
-                  fontWeight: '700',
-                  color: '#ec4899',
-                  boxShadow: '0 2px 8px rgba(236,72,153,0.1)',
-                  backdropFilter: 'blur(10px)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)'
-                  e.currentTarget.style.color = 'white'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(236,72,153,0.35)'
-                  e.currentTarget.style.borderColor = '#ec4899'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.08) 0%, rgba(236,72,153,0.04) 100%)'
-                  e.currentTarget.style.color = '#ec4899'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(236,72,153,0.1)'
-                  e.currentTarget.style.borderColor = 'rgba(236,72,153,0.3)'
-                }}
-              >
-                <div style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(236,72,153,0.3)',
-                  transition: 'all 0.25s ease'
-                }}>
-                  <Sparkles size={20} style={{ color: 'white' }} />
-                </div>
-                <span>{t.admin}</span>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
       <NotificationsView 
         isOpen={isNotificationsOpen} 
         onClose={() => setIsNotificationsOpen(false)} 

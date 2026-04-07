@@ -16,7 +16,7 @@ export default function MenuPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] p-4 pt-8">
+    <div className="watta-public-page-shell min-h-screen p-4 pt-8">
       <div className="max-w-md mx-auto">
         <div className="flex items-center gap-4 mb-8">
             <button onClick={() => router.back()} className="bg-white p-3 rounded-xl shadow-sm hover:bg-gray-50 transition">

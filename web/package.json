@@ -3,7 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0 -p 3000",
+    "dev:safe": "node ../scripts/kill-port.cjs 3000 && rm -rf .next node_modules/.cache && WATCHPACK_POLLING=true next dev -H 0.0.0.0 -p 3000",
+    "dev:lan": "next dev -H 0.0.0.0 -p 3000",
+    "dev:render": "node ../scripts/next-dev-render.cjs",
+    "dev:render:lan": "node ../scripts/next-dev-render.cjs",
+    "dev:clean": "rm -rf .next node_modules/.cache",
+    "dev:reset": "rm -rf .next node_modules/.cache && WATCHPACK_POLLING=true next dev -H 0.0.0.0 -p 3000",
+    "dev:mock": "USE_LOCAL_MOCK=1 NEXT_PUBLIC_API_URL= WATCHPACK_POLLING=true next dev -H 0.0.0.0 -p 3000",
+    "local:all": "cd .. && npm run local:all",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -13,6 +21,7 @@
     "autoprefixer": "^10.4.22",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.25",
+    "gsap": "^3.14.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.555.0",
     "next": "^14.0.0",
@@ -29,8 +38,8 @@
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.21",
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.0.0"
   }
