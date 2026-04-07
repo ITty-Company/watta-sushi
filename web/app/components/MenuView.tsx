@@ -161,6 +161,8 @@ const DEFAULT_HOME_BANNERS: Array<{
   },
 ]
 
+const HERO_VIDEO_SOURCES = ['/welcome.mp4', '/watta-sushi-2-hero.mp4'] as const
+
 export default function MenuView() {
   // ИСПОЛЬЗУЕМ getLocalized из контекста
   const { t, language, getLocalized } = useLanguage()
@@ -184,6 +186,46 @@ export default function MenuView() {
 
   /** Якщо mp4 немає на сервері — показуємо постер-зображення */
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
+  const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null)
+  const heroVideoSrc = HERO_VIDEO_SOURCES[heroVideoSourceIndex] || HERO_VIDEO_SOURCES[0]
+
+  useEffect(() => {
+    if (heroVideoFailed) return
+    const video = heroVideoRef.current
+    if (!video) return
+
+    const safePlay = () => {
+      const p = video.play()
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {
+          // Safari/iOS може тимчасово блокувати autoplay до canplay/pageshow.
+        })
+      }
+    }
+
+    if (video.readyState >= 2) safePlay()
+    const t = window.setTimeout(safePlay, 120)
+    const onCanPlay = () => safePlay()
+    const onLoadedData = () => safePlay()
+    const onPageShow = () => safePlay()
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') safePlay()
+    }
+
+    video.addEventListener('canplay', onCanPlay)
+    video.addEventListener('loadeddata', onLoadedData)
+    window.addEventListener('pageshow', onPageShow)
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      window.clearTimeout(t)
+      video.removeEventListener('canplay', onCanPlay)
+      video.removeEventListener('loadeddata', onLoadedData)
+      window.removeEventListener('pageshow', onPageShow)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [heroVideoSrc, heroVideoFailed])
 
   useEffect(() => {
     // Проверяем сохранённый город из localStorage
@@ -1724,17 +1766,25 @@ export default function MenuView() {
             />
           ) : (
             <video
+              key={heroVideoSrc}
+              ref={heroVideoRef}
               className="welcome-video-native-web"
-              src="/watta-sushi-2-hero.mp4"
+              src={heroVideoSrc}
               poster="/watta-sushi.jpg"
               autoPlay
               muted
               loop
               playsInline
-              preload="metadata"
+              preload="auto"
               tabIndex={-1}
               aria-hidden
-              onError={() => setHeroVideoFailed(true)}
+              onError={() => {
+                setHeroVideoSourceIndex((prev) => {
+                  if (prev < HERO_VIDEO_SOURCES.length - 1) return prev + 1
+                  setHeroVideoFailed(true)
+                  return prev
+                })
+              }}
               onEnded={(e) => {
                 const el = e.currentTarget
                 el.currentTime = 0
