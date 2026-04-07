@@ -4,11 +4,15 @@
 # Щоб прод як локально (відео в public/, меню з БД після seed):
 # 1) Закомітьте web/public/*.mp4 — вони мають потрапити в Git і в білд Next.
 # 2) Після зміни URL бекенду: Web → Clear build cache → Manual Deploy (NEXT_PUBLIC_* вшивається в білді).
+#    Додатково BACKEND_URL (те саме джерело, що API) — runtime для Route Handlers без залежності від інлайну.
 # 3) На бекенді за потреби: FRONTEND_URL = публічний URL фронту; CORS_ORIGINS = дод. домени через кому.
 #
 # Якщо сервіси вже створені вручну в Dashboard — звірте:
 # - У API: Root Directory = backend, міграції в build, DATABASE_URL з БД, без фіксованого PORT.
 # - У Web: Root Directory = web, NEXT_PUBLIC_API_URL = публічний URL API (https://…onrender.com).
+#
+# ВАЖЛИВО: URL бекенду (Express) і URL фронту (Next) — РІЗНІ сервіси. У логах «start:single --prefix backend»
+# це API; сайт у браузері відкривайте за URL сервісу watta-sushi-web (або вашим ім’ям Web Service).
 
 databases:
   - name: watta-sushi-db
@@ -40,6 +44,11 @@ services:
       # Додаткові Origin для CORS через кому (кастомний домен диплому тощо).
       - key: CORS_ORIGINS
         sync: false
+      # Google Sheets (опційно): JSON сервісного акаунта в один рядок; без цього замовлення в таблицю не пишуться.
+      - key: GOOGLE_CREDS
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
 
   - type: web
     name: watta-sushi-web
@@ -53,6 +62,12 @@ services:
         value: production
       # Публічна адреса API — підставляється з бекенд-сервісу під час білду.
       - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: watta-sushi-backend
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      # Той самий URL для server-side (rewrites + /app/api/auth/*); runtime, зручно після зміни API без кешу білду.
+      - key: BACKEND_URL
         fromService:
           name: watta-sushi-backend
           type: web

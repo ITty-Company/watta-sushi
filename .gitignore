@@ -82,3 +82,10 @@ ios/*.xcodeproj/xcuserdata/
 
 google-service-account.json.json
 watta-sushi/
+
+# Локальні завантаження банерів (бекенд пише в web/public/uploads)
+web/public/uploads/*
+!web/public/uploads/.gitkeep
+
+# Тимчасовий дубль великого JPG у корені (у репозиторії — web/public/location-picker-mascot.jpg)
+nanobananas-*.jpg

@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// URL бэкенда из переменной окружения
-// В production должен быть установлен NEXT_PUBLIC_API_URL в render.yaml
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050'
-
-// Проверка доступности переменной окружения
-if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === 'production') {
-  console.warn('⚠️ NEXT_PUBLIC_API_URL не установлен в production!')
-}
+import { backendBaseUrl } from '@/lib/backendBaseUrl'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const backendUrl = `${API_BASE_URL}/api/auth/register`
-    
-    console.log('Proxying register request to:', backendUrl)
-    console.log('API_BASE_URL:', API_BASE_URL)
+    const apiBase = backendBaseUrl()
+    const backendUrl = `${apiBase}/api/auth/register`
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Proxying register request to:', backendUrl)
+    }
     
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 секунд таймаут

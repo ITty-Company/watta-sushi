@@ -1281,7 +1281,7 @@ export default function MenuView() {
       clearTimeout(t2)
       ro.disconnect()
     }
-  }, [menuCategories.length, selectedCategory, checkScrollButtons])
+  }, [menuCategories.length, selectedCategory, checkScrollButtons, activePage])
 
   const scrollPanelBy = (direction: 'left' | 'right') => {
     const panel = categoriesPanelRef.current
@@ -1715,6 +1715,7 @@ export default function MenuView() {
         </div>
       </header>
       <div className="app-header-spacer-web" aria-hidden />
+      </div>
 
       {cartCount > 0 && (activePage === null || activePage === 'delivery') && (
         <div
@@ -1756,42 +1757,43 @@ export default function MenuView() {
         </div>
       )}
 
-      <div className="categories-panel-wrapper-web relative">
-            <button 
-              className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`} 
-              onClick={(e) => { e.preventDefault(); scrollPanelBy('left'); }}
+      {activePage !== 'delivery' && (
+        <>
+          <div className="categories-panel-wrapper-web relative">
+            <button
+              type="button"
+              className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`}
+              onClick={(e) => {
+                e.preventDefault()
+                scrollPanelBy('left')
+              }}
             >
               ‹
             </button>
-            
-            <div 
-              ref={categoriesPanelRef}
-              className="categories-panel-web" 
-              onScroll={handleScroll}
-            >
-              {menuCategories.map(category => (
-                <button 
-                  key={category.key} 
-                  className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`} 
-                  onClick={(e) => { 
-                    e.preventDefault();
-                    e.stopPropagation();
 
-                    if (activePage === 'delivery') handleClosePage();
-                    
+            <div ref={categoriesPanelRef} className="categories-panel-web" onScroll={handleScroll}>
+              {menuCategories.map((category) => (
+                <button
+                  key={category.key}
+                  type="button"
+                  className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+
                     if (categoriesPanelRef.current) {
                       scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
                     }
-                    
+
                     const newCategoryKey = category.key
-                    setSelectedCategory(newCategoryKey); 
-                    setShowSubmenu(category.subcategories.length > 0); 
-                    setSelectedSubcategory(null);
-                    
+                    setSelectedCategory(newCategoryKey)
+                    setShowSubmenu(category.subcategories.length > 0)
+                    setSelectedSubcategory(null)
+
                     if (scrollContainerRef.current) {
                       scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
                     }
-                    
+
                     const savedPosition = scrollPositionRef.current
                     requestAnimationFrame(() => {
                       if (categoriesPanelRef.current) categoriesPanelRef.current.scrollLeft = savedPosition
@@ -1805,8 +1807,8 @@ export default function MenuView() {
                     if (categoriesPanelRef.current) scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
                   }}
                   onFocus={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.blur();
+                    e.preventDefault()
+                    e.currentTarget.blur()
                   }}
                   tabIndex={-1}
                   style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
@@ -1817,19 +1819,24 @@ export default function MenuView() {
               ))}
             </div>
 
-            <button 
-              className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`} 
-              onClick={(e) => { e.preventDefault(); scrollPanelBy('right'); }}
+            <button
+              type="button"
+              className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`}
+              onClick={(e) => {
+                e.preventDefault()
+                scrollPanelBy('right')
+              }}
             >
               ›
             </button>
           </div>
-      </div>
 
-      <div className="categories-panel-spacer-web" aria-hidden />
+          <div className="categories-panel-spacer-web" aria-hidden />
+        </>
+      )}
 
       {activePage === 'delivery' ? (
-        <div className="menu-delivery-embed-web relative z-[1] w-full max-w-[100vw] pb-16">
+        <div className="menu-delivery-embed-web relative z-[1] w-full max-w-[100vw] pb-6 sm:pb-8">
           <DeliveryView embedInMenu />
         </div>
       ) : (

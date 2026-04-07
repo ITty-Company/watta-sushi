@@ -355,43 +355,45 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
         mounted &&
         createPortal(
           <div
-            className="location-picker-backdrop fixed inset-0 z-[999999] flex items-center justify-center overflow-auto bg-black/55 p-5 backdrop-blur-[6px]"
+            className="location-picker-backdrop fixed inset-0 z-[999999] flex items-center justify-center overflow-auto p-4 sm:p-5"
             style={{ isolation: 'isolate' }}
             onClick={handleClose}
             role="presentation"
           >
             <div
               ref={modalRef}
-              className="location-picker-modal relative mx-auto my-auto flex w-full max-w-[680px] flex-col overflow-hidden rounded-[28px] border-2 border-[#145142]/10 bg-gradient-to-br from-white/[0.99] via-[#fafcfb] to-[#f4f9f7] shadow-[0_30px_80px_rgba(0,0,0,0.28),0_15px_40px_rgba(20,81,66,0.22),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-[40px]"
-              style={{ maxHeight: '90vh' }}
+              className="location-picker-modal location-picker-modal--glass relative mx-auto my-auto flex w-full max-w-[min(720px,100%)] flex-col overflow-hidden rounded-[clamp(20px,4vw,32px)]"
+              style={{ maxHeight: 'min(90vh,880px)' }}
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
               aria-labelledby="location-picker-title"
             >
-              <div className="relative flex items-center justify-between border-b-2 border-[#145142]/[0.08] bg-gradient-to-br from-[#145142]/[0.08] to-[#145142]/[0.02] px-6 py-6 sm:px-8 sm:py-7">
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-60"
-                  style={{
-                    background:
-                      'linear-gradient(90deg, transparent 0%, rgba(20,81,66,0.05) 50%, transparent 100%)',
-                    animation: 'shimmer 3s infinite',
-                  }}
-                />
-                <div className="relative z-[1] flex items-center gap-3.5 sm:gap-3.5">
-                  <div className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] border-2 border-[#145142] bg-gradient-to-br from-white to-[#fafafa] shadow-[0_4px_12px_rgba(20,81,66,0.15),inset_0_1px_0_white,0_0_0_2px_rgba(20,81,66,0.08)]">
-                    <Image src="/logo.png" alt="" width={36} height={36} className="object-contain" />
+              <div className="location-picker-modal__ambient" aria-hidden />
+              <div className="location-picker-modal__header relative flex items-center justify-between gap-4 px-5 py-5 sm:px-8 sm:py-7">
+                <div className="location-picker-modal__header-shine pointer-events-none absolute inset-0" aria-hidden />
+                <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
+                  <div className="location-picker-modal__logo-ring location-picker-modal__mascot relative flex h-[76px] w-[76px] shrink-0 items-center justify-center sm:h-[88px] sm:w-[88px]">
+                    <span className="location-picker-modal__logo-glow absolute inset-[-8px] rounded-[22px] opacity-90" aria-hidden />
+                    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[18px] border border-white/85 bg-white shadow-[0_8px_28px_rgba(20,81,66,0.2)] sm:rounded-[20px]">
+                      <Image
+                        src="/location-picker-mascot.jpg"
+                        alt=""
+                        width={400}
+                        height={400}
+                        className="h-full w-full object-contain object-center"
+                        sizes="(max-width: 640px) 76px, 88px"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <h2
-                      id="location-picker-title"
-                      className="m-0 bg-gradient-to-br from-[#145142] to-[#1a6b58] bg-clip-text text-xl font-black tracking-tight text-transparent sm:text-2xl"
-                    >
+                  <div className="min-w-0">
+                    <p className="location-picker-modal__kicker m-0 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#145142]/75 sm:text-[11px]">
+                      Watta Sushi
+                    </p>
+                    <h2 id="location-picker-title" className="location-picker-modal__title m-0 mt-1">
                       {lp.title}
                     </h2>
-                    <p className="m-0 mt-1.5 text-[13px] font-semibold text-[#666]">
-                      {lp.subtitle}
-                    </p>
+                    <p className="location-picker-modal__subtitle m-0 mt-2 max-w-[42ch]">{lp.subtitle}</p>
                   </div>
                 </div>
                 <button
@@ -400,13 +402,13 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                   onClick={handleClose}
                   aria-label={lp.ariaClose}
                 >
-                  <X size={20} />
+                  <X size={20} strokeWidth={2.25} />
                 </button>
               </div>
 
-              <div className="min-h-[200px] flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#fafcfb] px-6 py-6 sm:px-7 sm:py-7">
+              <div className="location-picker-modal__body min-h-[200px] flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-8 sm:py-7">
                 {catalogRefreshing && (
-                  <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-dashed border-[#145142]/25 bg-[#145142]/[0.04] px-3 py-2 text-xs font-semibold text-[#145142]">
+                  <div className="location-picker-modal__refresh mb-4 flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-semibold">
                     <span
                       className="inline-block h-3.5 w-3.5 rounded-full border-2 border-[#145142]/25 border-t-[#145142]"
                       style={{ animation: 'countryCityModalSpin 0.75s linear infinite' }}
@@ -415,28 +417,26 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                   </div>
                 )}
 
-                <div className="mb-8 sm:mb-9">
-                  <div className="mb-4 flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#145142]/10 to-[#145142]/5">
-                      <MapPin size={16} className="text-[#145142]" />
-                    </div>
-                    <div className="text-lg font-extrabold tracking-tight text-[#145142]">
-                      {lp.country}
-                    </div>
+                <section className="location-picker-section">
+                  <div className="location-picker-section__head">
+                    <span className="location-picker-section__icon" aria-hidden>
+                      <MapPin size={17} strokeWidth={2.25} />
+                    </span>
+                    <span className="location-picker-section__label">{lp.country}</span>
                   </div>
                   {!filteredCountries || filteredCountries.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#145142]/20 bg-[#145142]/[0.03] px-5 py-10 text-center text-[#666]">
+                    <div className="location-picker-empty flex flex-col items-center gap-3 px-4 py-10 text-center">
                       <div className="text-5xl">🌍</div>
-                      <div className="text-lg font-bold text-[#145142]">{lp.noCountries}</div>
-                      <div className="max-w-md text-sm leading-relaxed opacity-90">
+                      <div className="location-picker-empty__title">{lp.noCountries}</div>
+                      <div className="location-picker-empty__text max-w-md">
                         {loadError ? lp.noCountriesDevHint : lp.noCountriesAdminHint}
                       </div>
                     </div>
                   ) : (
                     <div
-                      className="grid gap-2.5"
+                      className="location-picker-grid grid gap-2.5 sm:gap-3"
                       style={{
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
                       }}
                     >
                       {filteredCountries.map((country, i) => {
@@ -459,41 +459,37 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                       })}
                     </div>
                   )}
-                </div>
+                </section>
 
                 {selectedCountry && (
-                  <div className="mb-2">
-                    <div className="mb-4 flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#145142]/10 to-[#145142]/5">
-                        <MapPin size={16} className="text-[#145142]" />
-                      </div>
-                      <div className="text-lg font-extrabold tracking-tight text-[#145142]">
-                        {lp.city}
-                      </div>
+                  <section className="location-picker-section location-picker-section--city">
+                    <div className="location-picker-section__head">
+                      <span className="location-picker-section__icon" aria-hidden>
+                        <MapPin size={17} strokeWidth={2.25} />
+                      </span>
+                      <span className="location-picker-section__label">{lp.city}</span>
                     </div>
                     {filteredCities.length === 0 ? (
-                      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#145142]/20 bg-[#145142]/[0.03] px-5 py-10 text-center text-[#666]">
+                      <div className="location-picker-empty flex flex-col items-center gap-3 px-4 py-10 text-center">
                         {!selectedCountry.cities || selectedCountry.cities.length === 0 ? (
                           <>
                             <div className="text-5xl">🏙️</div>
-                            <div className="text-lg font-bold text-[#145142]">
-                              {lp.noCitiesInCountry}
-                            </div>
-                            <div className="max-w-md text-sm opacity-80">{lp.addCitiesAdmin}</div>
+                            <div className="location-picker-empty__title">{lp.noCitiesInCountry}</div>
+                            <div className="location-picker-empty__text max-w-md">{lp.addCitiesAdmin}</div>
                           </>
                         ) : (
                           <>
                             <div className="text-3xl">⚠️</div>
-                            <div className="text-base font-semibold">{lp.noActiveCities}</div>
-                            <div className="text-sm opacity-70">{lp.activateInAdmin}</div>
+                            <div className="location-picker-empty__title text-base">{lp.noActiveCities}</div>
+                            <div className="location-picker-empty__text text-sm">{lp.activateInAdmin}</div>
                           </>
                         )}
                       </div>
                     ) : (
                       <div
-                        className="grid gap-2.5"
+                        className="location-picker-grid grid gap-2.5 sm:gap-3"
                         style={{
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
                         }}
                       >
                         {filteredCities.map((city, i) => {
@@ -515,7 +511,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                         })}
                       </div>
                     )}
-                  </div>
+                  </section>
                 )}
               </div>
             </div>

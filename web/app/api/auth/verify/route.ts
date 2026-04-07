@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050'
+import { backendBaseUrl } from '@/lib/backendBaseUrl'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const backendUrl = `${API_BASE_URL}/api/auth/verify`
+    const apiBase = backendBaseUrl()
+    const backendUrl = `${apiBase}/api/auth/verify`
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 15000)

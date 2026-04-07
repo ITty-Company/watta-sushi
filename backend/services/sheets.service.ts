@@ -10,15 +10,23 @@ const SCOPES = [
 let creds: any; 
 
 if (process.env.GOOGLE_CREDS) {
-    // Если мы на Render, парсим строку JSON из переменных
-    creds = JSON.parse(process.env.GOOGLE_CREDS);
+    try {
+      creds = JSON.parse(process.env.GOOGLE_CREDS);
+    } catch {
+      console.warn(
+        'Google Sheets: GOOGLE_CREDS не є валідним JSON — експорт у таблицю вимкнено.'
+      );
+      creds = undefined;
+    }
 } else {
     // Фолбек для локального запуска
     try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         creds = require('../google-service-account.json');
-    } catch (e) {
-        console.error('CRITICAL: Google credentials not found! Check .env or json file.');
+    } catch {
+        console.warn(
+            'Google Sheets: немає облікових даних (GOOGLE_CREDS або backend/google-service-account.json). Експорт замовлень у таблицю вимкнено.'
+        );
     }
 }
 
