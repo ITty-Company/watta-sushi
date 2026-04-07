@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { sendMassPromo } from '../services/email.service';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.get('/users', async (_req: Request, res: Response) => {
+router.get('/users', checkAdmin, async (_req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
       select: {
@@ -13,8 +14,10 @@ router.get('/users', async (_req: Request, res: Response) => {
         name: true,
         email: true,
         phone: true,
+        role: true,
         bonusBalance: true,
         createdAt: true,
+        updatedAt: true,
         _count: { select: { orders: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -26,7 +29,7 @@ router.get('/users', async (_req: Request, res: Response) => {
   }
 });
 
-router.post('/send-promo', async (req: Request, res: Response) => {
+router.post('/send-promo', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { channel, subject, message } = req.body as {
       channel?: 'email' | 'sms';

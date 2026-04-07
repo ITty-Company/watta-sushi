@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { 
   ArrowLeft, 
@@ -28,11 +28,27 @@ import {
   Users,
   Settings, 
   Save,
-  Mail
+  Mail,
+  GripVertical,
+  Globe,
+  ListOrdered,
+  Eye,
+  LayoutTemplate,
+  ChevronDown,
+  Move,
+  Store,
+  BookOpen,
+  Receipt,
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import CityMapPicker from './CityMapPicker'
 import { useLanguage } from '../context/LanguageContext'
+
+function notifyCountriesCatalogUpdated() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('countriesCatalogUpdated'))
+  }
+}
 
 // --- ТИПЫ ДАННЫХ (ИСПРАВЛЕНО ПОД 4 ЯЗЫКА) ---
 interface Product {
@@ -61,6 +77,20 @@ interface OrderItem {
   product: Product
   quantity: number
   price: number
+}
+
+interface AdminOrderStats {
+  totalOrders: number
+  revenueCompleted: number
+  paymentPaidCount: number
+  byStatus: {
+    PENDING: number
+    COOKING: number
+    DELIVERING: number
+    COMPLETED: number
+    CANCELLED: number
+  }
+  rawStatusCounts?: Record<string, number>
 }
 
 interface Order {
@@ -102,6 +132,8 @@ interface BlogPost {
 
 interface AdminViewProps {
   onBack: () => void
+  /** Відкрити бокове меню головного сайту (доставка, меню, тощо) */
+  onSiteMenuClick?: () => void
 }
 
 interface City {
@@ -130,6 +162,8 @@ interface DeliveryZone {
   color: string
   cityId: number
   coordinates: string // JSON string
+  isFreeDelivery?: boolean
+  flatDeliveryFee?: number | null
 }
 
 interface Banner {
@@ -141,6 +175,8 @@ interface Banner {
   imageUrl: string
   order: number
   isActive: boolean
+  focalX?: number
+  focalY?: number
 }
 
 interface MenuCategory {
@@ -173,8 +209,10 @@ interface CrmUser {
   name: string | null
   email: string
   phone: string | null
+  role?: string
   bonusBalance: number
   createdAt: string
+  updatedAt?: string
   _count?: {
     orders: number
   }
@@ -217,8 +255,9 @@ const defaultSiteSettings: SiteSettings = {
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
 }
-const { t } = useLanguage()
-export default function AdminView({ onBack }: AdminViewProps) {
+
+export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
+  const { t, adminUiLanguage, setAdminUiLanguage } = useLanguage()
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'blog' | 'crm' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'| 'ingredients'>('dashboard')
   
@@ -233,7 +272,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const [users, setUsers] = useState<User[]>([]) // Пользователи
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]) // Команда
-  
+  const [orderStats, setOrderStats] = useState<AdminOrderStats | null>(null)
+
   const [isLoading, setIsLoading] = useState(false)
 
   // Состояния для модального окна ТОВАРОВ
@@ -250,8 +290,15 @@ export default function AdminView({ onBack }: AdminViewProps) {
     title_ru: '', title_ua: '', title_en: '', title_nl: '',
     imageUrl: '',
     order: 0,
-    isActive: true
+    isActive: true,
+    focalX: 50,
+    focalY: 50,
   })
+  const [draggedBannerId, setDraggedBannerId] = useState<number | null>(null)
+  const [bannerReorderBusy, setBannerReorderBusy] = useState(false)
+  const [bannerImageDropActive, setBannerImageDropActive] = useState(false)
+  const bannerUploadDragDepthRef = useRef(0)
+  const [bannerPreviewLocale, setBannerPreviewLocale] = useState<'ru' | 'ua' | 'en' | 'nl'>('ru')
   
   // Состояния для модального окна КАТЕГОРИЙ МЕНЮ
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
@@ -326,6 +373,47 @@ export default function AdminView({ onBack }: AdminViewProps) {
   const [cityMapSearchOpen, setCityMapSearchOpen] = useState(false)
   const cityMapSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const skipSearchOnceRef = useRef(false)
+  const [editorDeliveryZones, setEditorDeliveryZones] = useState<
+    { id: number; name: string; isFreeDelivery: boolean; flatDeliveryFee: number | null }[]
+  >([])
+  const [editorZonesLoading, setEditorZonesLoading] = useState(false)
+  const bannerFocalPreviewRef = useRef<HTMLDivElement>(null)
+  const bannerFocalDragRef = useRef<{
+    active: boolean
+    pointerId: number
+    startX: number
+    startY: number
+    startFx: number
+    startFy: number
+  } | null>(null)
+  /** Один раз ініціалізувати адмінку (уникаємо подвійного fetch/toast у React Strict Mode). */
+  const adminBootstrapOnceRef = useRef(false)
+
+  /** При вході в адмінку — завжди зверху (скрол основного контейнера додатку) */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const scrollAppToTop = () => {
+      const content = document.querySelector('.content-web')
+      if (content instanceof HTMLElement) {
+        content.scrollTop = 0
+        content.scrollLeft = 0
+      }
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+    scrollAppToTop()
+    requestAnimationFrame(scrollAppToTop)
+    const t = window.setTimeout(scrollAppToTop, 0)
+    return () => window.clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    if (!isBannerModalOpen) {
+      setBannerImageDropActive(false)
+      bannerUploadDragDepthRef.current = 0
+    }
+  }, [isBannerModalOpen])
   
   // Состояния для управления странами
   const [newCountryName, setNewCountryName] = useState('')
@@ -372,17 +460,16 @@ export default function AdminView({ onBack }: AdminViewProps) {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        notifyError('Вы не авторизованы. Пожалуйста, войдите в систему.')
+        toast.error('Вы не авторизованы. Пожалуйста, войдите в систему.', { id: 'admin-panel-auth' })
         onBack()
         return
-
-        
       }
       
       const headers = { 'Authorization': `Bearer ${token}` }
       const [
         ingredientsRes,
         ordersRes,
+        ordersStatsRes,
         prodRes,
         catRes,
         citiesRes,
@@ -391,11 +478,11 @@ export default function AdminView({ onBack }: AdminViewProps) {
         blogRes,
         crmUsersRes,
         bannersRes,
-        usersRes,
         teamRes,
       ] = await Promise.all([
         fetch('/api/ingredients', { headers }),
         fetch('/api/orders', { headers }),
+        fetch('/api/orders/stats', { headers }),
         fetch('/api/products', { headers }),
         fetch('/api/products/categories', { headers }),
         fetch('/api/cities/all', { headers }),
@@ -404,7 +491,6 @@ export default function AdminView({ onBack }: AdminViewProps) {
         fetch('/api/blog/all', { headers }),
         fetch('/api/crm/users', { headers }),
         fetch('/api/banners/all', { headers }),
-        fetch('/api/crm/users', { headers }),
         fetch('/api/team/all', { headers }),
       ])
       fetch('/api/promotions')
@@ -412,6 +498,15 @@ export default function AdminView({ onBack }: AdminViewProps) {
         .then(setNewsItems)
         .catch(() => {})
       if (ingredientsRes.ok) setIngredients(await ingredientsRes.json())
+      if (ordersStatsRes.ok) {
+        try {
+          setOrderStats(await ordersStatsRes.json())
+        } catch {
+          setOrderStats(null)
+        }
+      } else {
+        setOrderStats(null)
+      }
       if (ordersRes.ok) setOrders(await ordersRes.json())
       if (prodRes.ok) {
         const productsData = await prodRes.json()
@@ -424,12 +519,26 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (countriesRes.ok) setCountries(await countriesRes.json())
       if (promosRes.ok) setPromos(await promosRes.json())
       if (blogRes.ok) setBlogPosts(await blogRes.json())
-      if (crmUsersRes.ok) setCrmUsers(await crmUsersRes.json())
+      if (crmUsersRes.ok) {
+        const list = await crmUsersRes.json()
+        const arr = Array.isArray(list) ? list : []
+        setCrmUsers(arr)
+        setUsers(arr)
+      } else {
+        setCrmUsers([])
+        setUsers([])
+      }
       if (bannersRes.ok) setBanners(await bannersRes.json())
-      if (usersRes.ok) setUsers(await usersRes.json())
       if (teamRes.ok) setTeamMembers(await teamRes.json())
-      if ([ingredientsRes, ordersRes, prodRes, countriesRes].some(r => r.status === 401 || r.status === 403)) {
-        toast.error('Доступ запрещен. Пожалуйста, войдите как администратор.')
+      if (
+        [ingredientsRes, ordersRes, ordersStatsRes, prodRes, countriesRes, crmUsersRes].some(
+          (r) => r.status === 401 || r.status === 403
+        )
+      ) {
+        toast.error(
+          'Сервер отклонил доступ (401/403). Войдите снова как администратор или проверьте, что backend запущен и NEXT_PUBLIC_API_URL указывает на него.',
+          { id: 'admin-panel-auth' }
+        )
         onBack()
       }
       const settingsRes = await fetch('/api/settings', { headers })
@@ -447,33 +556,108 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
   const fetchData = fetchAll
 
-  // Проверка роли при монтировании компонента
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('currentUser')
-      if (savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser)
-          if (parsed.role !== 'ADMIN') {
-            toast.error(t.adminPage.auth.adminOnly)
-            onBack()
-            return
-          }
-        } catch (e) {
-          toast.error('Ошибка проверки прав доступа')
-          onBack()
+    if (!editingCityId) {
+      setEditorDeliveryZones([])
+      return
+    }
+    let cancelled = false
+    setEditorZonesLoading(true)
+    fetch(`/api/delivery-zones/city/${editingCityId}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => {
+        if (cancelled) return
+        if (!Array.isArray(rows)) {
+          setEditorDeliveryZones([])
           return
         }
-      } else {
-        toast.error('Вы не авторизованы. Пожалуйста, войдите в систему.')
+        setEditorDeliveryZones(
+          rows.map((z: { id: number; name: string; isFreeDelivery?: boolean; flatDeliveryFee?: unknown }) => ({
+            id: z.id,
+            name: z.name,
+            isFreeDelivery: z.isFreeDelivery === true,
+            flatDeliveryFee:
+              z.flatDeliveryFee != null && !Number.isNaN(Number(z.flatDeliveryFee))
+                ? Number(z.flatDeliveryFee)
+                : null,
+          }))
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setEditorDeliveryZones([])
+      })
+      .finally(() => {
+        if (!cancelled) setEditorZonesLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [editingCityId])
+
+  const saveEditorZoneTariff = useCallback(
+    async (zoneId: number, body: { isFreeDelivery: boolean; flatDeliveryFee: number | null }) => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.error('Ви не авторизовані')
+        return
+      }
+      try {
+        const res = await fetch(`/api/delivery-zones/${zoneId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            isFreeDelivery: body.isFreeDelivery,
+            flatDeliveryFee: body.isFreeDelivery ? null : body.flatDeliveryFee,
+          }),
+        })
+        if (res.ok) {
+          toast.success('Тариф зони збережено')
+          notifyCountriesCatalogUpdated()
+          fetchData()
+        } else {
+          const e = (await res.json().catch(() => ({}))) as { message?: string }
+          toast.error(e.message || 'Помилка збереження')
+        }
+      } catch {
+        toast.error('Помилка мережі')
+      }
+    },
+    [fetchData]
+  )
+
+  // Одна ініціалізація: роль у localStorage + лише тоді завантаження даних (без дубля тостів / fetch).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (adminBootstrapOnceRef.current) return
+    adminBootstrapOnceRef.current = true
+
+    const token = localStorage.getItem('token')
+    const savedUser = localStorage.getItem('currentUser')
+
+    if (!token || !savedUser) {
+      toast.error('Вы не авторизованы. Пожалуйста, войдите в систему.', { id: 'admin-panel-auth' })
+      onBack()
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(savedUser) as { role?: string }
+      if (parsed.role !== 'ADMIN') {
+        toast.error(t.adminPage.auth.adminOnly, { id: 'admin-panel-auth' })
         onBack()
         return
       }
+    } catch {
+      toast.error('Ошибка проверки прав доступа', { id: 'admin-panel-auth' })
+      onBack()
+      return
     }
-  }, [])
 
-  useEffect(() => {
-    fetchAll()
+    void fetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- старт адмінки один раз при відкритті
   }, [])
 
   // Закрытие селектора флагов и поиска города при клике вне
@@ -1002,6 +1186,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       if (res.ok) {
         resetCityForm()
         fetchData()
+        notifyCountriesCatalogUpdated()
         toast.success(t.adminPage.cities.created)
       } else {
         let errorMessage = 'Ошибка создания города'
@@ -1088,6 +1273,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setNewCountryCode('')
         setNewCountryFlag('🌍')
         fetchData()
+        notifyCountriesCatalogUpdated()
         toast.success(t.adminPage.countries.created)
       } else {
         let errorMessage = t.adminPage.common.error
@@ -1145,6 +1331,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setEditingCityId(null)
         resetCityForm()
         fetchData()
+        notifyCountriesCatalogUpdated()
         toast.success('Місто успішно оновлено!')
       } else {
         let errorMessage = 'Помилка оновлення міста'
@@ -1176,6 +1363,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       })
       if (res.ok) {
         fetchData()
+        notifyCountriesCatalogUpdated()
         toast.success('Город успешно удален!')
       } else {
         let errorMessage = 'Ошибка удаления'
@@ -1234,6 +1422,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setEditingCountryId(null)
         setIsEditFlagPickerOpen(false)
         fetchData()
+        notifyCountriesCatalogUpdated()
         toast.success('Страна успешно обновлена!')
       } else {
         let errorMessage = 'Ошибка обновления страны'
@@ -1267,6 +1456,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setEditingCountryId(null)
         setIsEditFlagPickerOpen(false)
         fetchData()
+        notifyCountriesCatalogUpdated()
         toast.success('Страна успешно удалена!')
       } else {
         let errorMessage = 'Ошибка удаления'
@@ -1499,13 +1689,59 @@ export default function AdminView({ onBack }: AdminViewProps) {
   }
 
   // --- ЛОГИКА БАННЕРОВ ---
+  const onBannerFocalPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!bannerFormData.imageUrl || e.button !== 0) return
+      e.preventDefault()
+      e.currentTarget.setPointerCapture(e.pointerId)
+      bannerFocalDragRef.current = {
+        active: true,
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startFx: bannerFormData.focalX,
+        startFy: bannerFormData.focalY,
+      }
+    },
+    [bannerFormData.imageUrl, bannerFormData.focalX, bannerFormData.focalY]
+  )
+
+  const onBannerFocalPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const d = bannerFocalDragRef.current
+    if (!d?.active || d.pointerId !== e.pointerId) return
+    const el = bannerFocalPreviewRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+    // 1:1 — зміщення на всю ширину/висоту прев’ю ≈ повний діапазон 0–100% (передбачуваний кадр як на сайті)
+    const kx = 100 / Math.max(rect.width, 1)
+    const ky = 100 / Math.max(rect.height, 1)
+    const nx = Math.max(0, Math.min(100, d.startFx - dx * kx))
+    const ny = Math.max(0, Math.min(100, d.startFy - dy * ky))
+    setBannerFormData((prev) => ({ ...prev, focalX: nx, focalY: ny }))
+  }, [])
+
+  const endBannerFocalDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const d = bannerFocalDragRef.current
+    if (!d || d.pointerId !== e.pointerId) return
+    bannerFocalDragRef.current = null
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
   const openCreateBannerModal = () => {
     setEditingBannerId(null)
     setBannerFormData({
       title_ru: '', title_ua: '', title_en: '', title_nl: '',
       imageUrl: '',
       order: banners.length,
-      isActive: true
+      isActive: true,
+      focalX: 50,
+      focalY: 50,
     })
     setIsBannerModalOpen(true)
   }
@@ -1519,20 +1755,72 @@ export default function AdminView({ onBack }: AdminViewProps) {
       title_nl: banner.title_nl || '',
       imageUrl: banner.imageUrl,
       order: banner.order,
-      isActive: banner.isActive
+      isActive: banner.isActive,
+      focalX:
+        typeof banner.focalX === 'number'
+          ? Math.max(0, Math.min(100, banner.focalX))
+          : 50,
+      focalY:
+        typeof banner.focalY === 'number'
+          ? Math.max(0, Math.min(100, banner.focalY))
+          : 50,
     })
     setIsBannerModalOpen(true)
   }
 
+  const applyBannerImageFile = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Нужен файл изображения (JPG, PNG, WebP…)')
+      return
+    }
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setBannerFormData((prev) => ({
+        ...prev,
+        imageUrl: reader.result as string,
+        focalX: 50,
+        focalY: 50,
+      }))
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
   const handleBannerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setBannerFormData(prev => ({ ...prev, imageUrl: reader.result as string }))
-      }
-      reader.readAsDataURL(file)
+    if (file) applyBannerImageFile(file)
+    e.target.value = ''
+  }
+
+  const onBannerUploadDragEnter = (ev: React.DragEvent) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+    bannerUploadDragDepthRef.current += 1
+    setBannerImageDropActive(true)
+  }
+
+  const onBannerUploadDragLeave = (ev: React.DragEvent) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+    bannerUploadDragDepthRef.current -= 1
+    if (bannerUploadDragDepthRef.current <= 0) {
+      bannerUploadDragDepthRef.current = 0
+      setBannerImageDropActive(false)
     }
+  }
+
+  const onBannerUploadDragOver = (ev: React.DragEvent) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+    ev.dataTransfer.dropEffect = 'copy'
+  }
+
+  const onBannerUploadDrop = (ev: React.DragEvent) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+    bannerUploadDragDepthRef.current = 0
+    setBannerImageDropActive(false)
+    const file = ev.dataTransfer.files?.[0]
+    if (file) applyBannerImageFile(file)
   }
 
   const handleSubmitBanner = async (e: React.FormEvent) => {
@@ -1620,6 +1908,106 @@ export default function AdminView({ onBack }: AdminViewProps) {
       toast.error(`Ошибка соединения: ${errorMessage}`)
     }
   }
+
+  const sortedBanners = useMemo(
+    () => [...banners].sort((a, b) => (a.order !== b.order ? a.order - b.order : a.id - b.id)),
+    [banners],
+  )
+
+  const handleBannerDragStart = useCallback(
+    (e: React.DragEvent, id: number) => {
+      if (bannerReorderBusy) return
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', String(id))
+      setDraggedBannerId(id)
+    },
+    [bannerReorderBusy],
+  )
+
+  const handleBannerDragEnd = useCallback(() => {
+    setDraggedBannerId(null)
+  }, [])
+
+  const handleBannerDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }, [])
+
+  const handleBannerDrop = useCallback(
+    async (e: React.DragEvent, targetId: number) => {
+      e.preventDefault()
+      setDraggedBannerId(null)
+      if (bannerReorderBusy) return
+      const sourceId = parseInt(e.dataTransfer.getData('text/plain'), 10)
+      if (!Number.isFinite(sourceId) || sourceId === targetId) return
+
+      const sorted = [...banners].sort((a, b) => a.order - b.order || a.id - b.id)
+      const fromIdx = sorted.findIndex((b) => b.id === sourceId)
+      const toIdx = sorted.findIndex((b) => b.id === targetId)
+      if (fromIdx < 0 || toIdx < 0) return
+
+      const next = [...sorted]
+      const [removed] = next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, removed)
+      const withNewOrder = next.map((b, i) => ({ ...b, order: i }))
+      setBanners(withNewOrder)
+
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.error('Вы не авторизованы')
+        fetchData()
+        return
+      }
+
+      setBannerReorderBusy(true)
+      try {
+        const results = await Promise.all(
+          withNewOrder.map((b) =>
+            fetch(`/api/banners/${b.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                title_ru: b.title_ru,
+                title_ua: b.title_ua ?? b.title_ru,
+                title_en: b.title_en ?? b.title_ru,
+                title_nl: b.title_nl ?? b.title_ru,
+                imageUrl: b.imageUrl,
+                order: b.order,
+                isActive: b.isActive,
+                focalX:
+                  typeof b.focalX === 'number'
+                    ? Math.max(0, Math.min(100, b.focalX))
+                    : 50,
+                focalY:
+                  typeof b.focalY === 'number'
+                    ? Math.max(0, Math.min(100, b.focalY))
+                    : 50,
+              }),
+            }),
+          ),
+        )
+        if (results.every((r) => r.ok)) {
+          toast.success(t.adminPanel.common.bannerOrderSaved)
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('bannersUpdated'))
+          }
+          fetchData()
+        } else {
+          toast.error(t.adminPanel.common.bannerOrderSaveError)
+          fetchData()
+        }
+      } catch {
+        toast.error(t.adminPanel.common.bannerOrderSaveError)
+        fetchData()
+      } finally {
+        setBannerReorderBusy(false)
+      }
+    },
+    [banners, bannerReorderBusy, fetchData, t],
+  )
 
   // --- ЛОГИКА КОМАНДЫ ---
   const openCreateTeamModal = () => {
@@ -1966,10 +2354,43 @@ export default function AdminView({ onBack }: AdminViewProps) {
       setSettingsLoading(false)
     }
   }
+  const dashboardMetrics = useMemo(() => {
+    const sumCompletedLocal = orders
+      .filter((o) => o.status === 'COMPLETED' || o.status === 'DELIVERED')
+      .reduce((s, o) => s + (Number(o.totalPrice) || 0), 0)
+    const cnt = (s: string) => orders.filter((o) => o.status === s).length
+    const paidLocal = orders.filter((o) => o.paymentStatus === 'PAID').length
+
+    if (orderStats) {
+      return {
+        revenue: orderStats.revenueCompleted,
+        totalOrders: orderStats.totalOrders,
+        paidOrders: orderStats.paymentPaidCount,
+        pending: orderStats.byStatus.PENDING,
+        cooking: orderStats.byStatus.COOKING,
+        delivering: orderStats.byStatus.DELIVERING,
+        completed: orderStats.byStatus.COMPLETED,
+        cancelled: orderStats.byStatus.CANCELLED,
+        fromDb: true as const,
+      }
+    }
+    return {
+      revenue: sumCompletedLocal,
+      totalOrders: orders.length,
+      paidOrders: paidLocal,
+      pending: cnt('PENDING'),
+      cooking: cnt('COOKING'),
+      delivering: cnt('DELIVERING'),
+      completed: cnt('COMPLETED') + cnt('DELIVERED'),
+      cancelled: cnt('CANCELLED'),
+      fromDb: false as const,
+    }
+  }, [orderStats, orders])
+
   // --- ХЕДЕР ---
   const Header = () => {
     return (
-      <header className="w-full sticky top-0 z-40">
+      <header className="admin-watta-header w-full sticky top-0 z-40">
         <div className="w-full relative bg-gradient-to-r from-white/95 via-white/90 to-[#145142]/5 backdrop-blur-2xl border-b border-[#145142]/10 shadow-[0_4px_30px_rgba(20,81,66,0.08)]">
           <div className="absolute inset-0 bg-[linear-gradient(105deg,transparent_0%,rgba(20,81,66,0.03)_50%,transparent_100%)] pointer-events-none" />
           <div className="relative w-full max-w-[1920px] mx-auto px-3 sm:px-5 md:px-6 h-16 sm:h-20 md:h-24 flex items-center justify-between">
@@ -1977,10 +2398,25 @@ export default function AdminView({ onBack }: AdminViewProps) {
               <button 
                 onClick={onBack}
                 className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-[#145142]/5 hover:bg-[#145142]/15 text-[#145142] transition-all duration-300 hover:scale-105 active:scale-95"
-                aria-label="Назад"
+                aria-label={t.adminPanel.header.backAria}
               >
                 <ArrowLeft size={22} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
               </button>
+              {onSiteMenuClick && (
+                <button
+                  type="button"
+                  onClick={onSiteMenuClick}
+                  className="group w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl border-2 border-[#145142]/20 bg-white/90 text-[#145142] shadow-sm transition-all duration-300 hover:border-[#ff6b35]/45 hover:bg-gradient-to-br hover:from-[#fff7ed] hover:to-white hover:shadow-md hover:shadow-[#ff6b35]/15 hover:scale-105 active:scale-95"
+                  title={t.adminPanel.header.siteMenu}
+                  aria-label={t.adminPanel.header.siteMenu}
+                >
+                  <Store
+                    size={20}
+                    className="sm:w-[22px] sm:h-[22px] transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110"
+                    strokeWidth={2.35}
+                  />
+                </button>
+              )}
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#145142] to-[#1a6b58] flex items-center justify-center shadow-lg shadow-[#145142]/25">
@@ -1996,17 +2432,46 @@ export default function AdminView({ onBack }: AdminViewProps) {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
+              <div
+                className="flex items-center rounded-2xl border border-[#145142]/18 bg-white/90 p-1 gap-0.5 shadow-sm shrink-0"
+                title={t.adminPanel.header.adminLangHint}
+                role="group"
+                aria-label={t.adminPanel.header.adminLangHint}
+              >
+                <button
+                  type="button"
+                  onClick={() => setAdminUiLanguage('uk')}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold tracking-wide transition-all ${
+                    adminUiLanguage === 'uk'
+                      ? 'bg-[#145142] text-white shadow-md shadow-[#145142]/25'
+                      : 'text-[#145142]/70 hover:bg-[#145142]/10 hover:text-[#145142]'
+                  }`}
+                >
+                  {t.adminPanel.header.adminLangUk}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminUiLanguage('ru')}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold tracking-wide transition-all ${
+                    adminUiLanguage === 'ru'
+                      ? 'bg-[#145142] text-white shadow-md shadow-[#145142]/25'
+                      : 'text-[#145142]/70 hover:bg-[#145142]/10 hover:text-[#145142]'
+                  }`}
+                >
+                  {t.adminPanel.header.adminLangRu}
+                </button>
+              </div>
               <button 
                 onClick={fetchAll}
                 className="group w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-[#145142]/5 hover:bg-[#145142] text-[#145142] hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#145142]/30 active:scale-95"
-                title="Оновити дані"
+                title={t.adminPanel.header.refreshTitle}
               >
                 <RefreshCw size={20} className="sm:w-5 sm:h-5 group-hover:rotate-180 transition-transform duration-500" />
               </button>
               <button 
                 onClick={() => setIsRightPanelOpen(true)}
                 className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#145142] to-[#1a6b58] text-white shadow-lg shadow-[#145142]/25 hover:shadow-xl hover:shadow-[#145142]/35 hover:scale-105 active:scale-95 transition-all duration-300"
-                title="Відкрити меню"
+                title={t.adminPanel.header.openMenuTitle}
               >
                 <Menu size={22} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
               </button>
@@ -2018,14 +2483,111 @@ export default function AdminView({ onBack }: AdminViewProps) {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] font-sans relative overflow-x-hidden">
+    <div className="admin-shell-watta-web min-h-screen w-full max-w-[100vw] font-sans relative overflow-x-hidden">
       <LogoBackground />
-      <div className="relative z-10 min-h-screen">
+      <div className="admin-watta-stack relative z-10 min-h-screen">
         <Header />
+
+        {/* Поза admin-watta-page-inner: інакше transform на батькові ламає position:fixed → панель «зрізається» */}
+        {isRightPanelOpen && (
+          <>
+            <div
+              className="admin-watta-overlay-backdrop fixed inset-0 z-[90] bg-[#0a1f1a]/55 backdrop-blur-[10px]"
+              onClick={() => setIsRightPanelOpen(false)}
+              aria-hidden="true"
+            />
+            <aside
+              className="admin-watta-drawer-shell admin-watta-drawer-enter fixed z-[100] flex flex-col overflow-hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admin-watta-drawer-title"
+            >
+              <div className="admin-watta-drawer-header shrink-0 bg-gradient-to-r from-[#145142] via-[#176b57] to-[#1a6b58] px-4 py-4 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.45)] sm:px-5 sm:py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/18 ring-1 ring-white/25 shadow-inner">
+                      <Menu size={20} className="text-white" strokeWidth={2.25} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/75">
+                        Watta Admin
+                      </p>
+                      <h2
+                        id="admin-watta-drawer-title"
+                        className="truncate text-lg font-extrabold tracking-tight text-white sm:text-xl"
+                      >
+                        {t.adminPanel.sidebar.selectSection}
+                      </h2>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsRightPanelOpen(false)}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/25 transition hover:bg-white/25 active:scale-95"
+                    aria-label={t.adminPanel.header.closeDrawerAria}
+                  >
+                    <X size={22} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+              <nav
+                className="admin-watta-drawer-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4 sm:py-5"
+                aria-label={t.adminPanel.sidebar.selectSection}
+              >
+                {[
+                  { id: 'dashboard' as const, label: t.adminPanel.sidebar.dashboard, desc: t.adminPanel.sidebar.dashboardDesc },
+                  { id: 'orders' as const, label: t.adminPanel.sidebar.orders, desc: t.adminPanel.sidebar.ordersDesc },
+                  { id: 'products' as const, label: t.adminPanel.sidebar.products, desc: t.adminPanel.sidebar.productsDesc },
+                  { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
+                  { id: 'blog' as const, label: 'Блог / Рецепты', desc: 'SEO статьи и рецепты шефа' },
+                  { id: 'crm' as const, label: 'CRM / Рассылки', desc: 'Пользователи и массовые рассылки' },
+                  { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
+                  { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
+                  { id: 'menuCategories' as const, label: t.adminPanel.sidebar.categories, desc: t.adminPanel.sidebar.categoriesDesc },
+                  { id: 'users' as const, label: t.adminPanel.sidebar.users, desc: t.adminPanel.sidebar.usersDesc },
+                  { id: 'team' as const, label: t.adminPanel.sidebar.team, desc: t.adminPanel.sidebar.teamDesc },
+                  { id: 'settings' as const, label: t.adminPanel.sidebar.settings, desc: t.adminPanel.sidebar.settingsDesc },
+                  { id: 'ingredients' as const, label: t.adminPanel.sidebar.ingredients, desc: '' },
+                ].map(({ id, label, desc }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(id)
+                      setIsRightPanelOpen(false)
+                    }}
+                    className={`admin-watta-drawer-item group w-full rounded-2xl border px-4 py-3.5 text-left transition duration-200 sm:py-4 ${
+                      activeTab === id
+                        ? 'border-[#145142]/25 bg-gradient-to-r from-[#145142] to-[#1a6b58] text-white shadow-lg shadow-[#145142]/25 ring-1 ring-white/15'
+                        : 'border-[#145142]/10 bg-white/90 shadow-sm shadow-[#145142]/[0.07] hover:border-[#145142]/22 hover:bg-white hover:shadow-md hover:shadow-[#145142]/12'
+                    }`}
+                  >
+                    <span
+                      className={`block text-[15px] font-bold leading-snug sm:text-base ${
+                        activeTab === id ? 'text-white' : 'text-[#145142]'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                    {desc ? (
+                      <span
+                        className={`mt-0.5 block text-xs leading-relaxed sm:text-[13px] ${
+                          activeTab === id ? 'text-white/85' : 'text-[#145142]/55 group-hover:text-[#145142]/70'
+                        }`}
+                      >
+                        {desc}
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </nav>
+            </aside>
+          </>
+        )}
 
         {/* ОСНОВНОЙ КОНТЕНТ — дашборд на главній, панель справа з вкладками */}
         <div className="w-full min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] md:min-h-[calc(100vh-128px)] pb-8 sm:pb-12 md:pb-20">
-          <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pt-4 sm:pt-6 md:pt-8">
+          <div className="admin-watta-page-inner max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pt-4 sm:pt-6 md:pt-8">
 
           {/* Головна: преміум-дашборд */}
           {!isRightPanelOpen && activeTab === 'dashboard' && (
@@ -2033,121 +2595,148 @@ export default function AdminView({ onBack }: AdminViewProps) {
               {isLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <div className="flex flex-col items-center gap-3">
-                    <RefreshCw size={32} className="text-[#145142]/50 animate-spin" />
-                    <p className="text-[#145142]/60 font-medium">{t.adminPanel.dashboard.loading}</p>
+                    <RefreshCw size={32} className="text-zinc-400 animate-spin" />
+                    <p className="text-zinc-500 font-medium">{t.adminPanel.dashboard.loading}</p>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="group relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-white/80 shadow-xl shadow-[#145142]/10 hover:shadow-2xl hover:shadow-[#145142]/20 hover:scale-[1.02] transition-all duration-300 overflow-hidden">
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#145142]/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-                      <div className="relative flex items-center gap-3">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[#145142] to-[#1a6b58] flex items-center justify-center shadow-lg shadow-[#145142]/20">
-                          <TrendingUp size={20} className="text-white" />
+                  <div className="rounded-lg border border-zinc-200 bg-zinc-100/80 px-3 py-2.5 sm:px-4 sm:py-3">
+                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+                      {t.adminPanel.dashboard.statsHint}
+                      {dashboardMetrics.fromDb ? (
+                        <span className="ml-1.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                          · orders/stats
+                        </span>
+                      ) : (
+                        <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800/90">
+                          · {t.adminPanel.dashboard.statsFallback}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
+                          <TrendingUp size={18} />
                         </div>
-                        <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.revenue}</p>
-                          <p className="text-xl sm:text-2xl font-black text-[#145142]">
-                            {orders.filter(o => o.status === 'COMPLETED').reduce((s, o) => s + (o.totalPrice || 0), 0)} €
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.revenue}</p>
+                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">
+                            {dashboardMetrics.revenue.toFixed(2)} €
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="group relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-white/80 shadow-xl shadow-[#145142]/10 hover:shadow-2xl hover:shadow-[#145142]/20 hover:scale-[1.02] transition-all duration-300 overflow-hidden">
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#145142]/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-                      <div className="relative flex items-center gap-3">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#145142]/10 flex items-center justify-center">
-                          <Package size={20} className="text-[#145142]" />
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
+                          <Package size={18} />
                         </div>
-                        <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.orders}</p>
-                          <p className="text-xl sm:text-2xl font-black text-[#145142]">{orders.length}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="group relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-white/80 shadow-xl shadow-[#145142]/10 hover:shadow-2xl hover:shadow-[#145142]/20 hover:scale-[1.02] transition-all duration-300 overflow-hidden">
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#145142]/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-                      <div className="relative flex items-center gap-3">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#145142]/10 flex items-center justify-center">
-                          <ShoppingBag size={20} className="text-[#145142]" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.products}</p>
-                          <p className="text-xl sm:text-2xl font-black text-[#145142]">{products.length}</p>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.orders}</p>
+                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{dashboardMetrics.totalOrders}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="group relative bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-white/80 shadow-xl shadow-[#145142]/10 hover:shadow-2xl hover:shadow-[#145142]/20 hover:scale-[1.02] transition-all duration-300 overflow-hidden col-span-2 lg:col-span-1">
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#145142]/20 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-                      <div className="relative flex items-center gap-3">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#145142]/10 flex items-center justify-center">
-                          <MapPin size={20} className="text-[#145142]" />
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
+                          <Receipt size={18} />
                         </div>
-                        <div>
-                          <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.cities}</p>
-                          <p className="text-xl sm:text-2xl font-black text-[#145142]">{cities.length}</p>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.paidOrders}</p>
+                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{dashboardMetrics.paidOrders}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
+                          <ShoppingBag size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.products}</p>
+                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{products.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
+                          <MapPin size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.cities}</p>
+                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{cities.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
+                          <Globe size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.countries}</p>
+                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{countries.length}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-bold text-[#145142]/70 uppercase tracking-widest mb-3 sm:mb-4">{t.adminPanel.dashboard.statusTitle}</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 sm:mb-3">
+                      {t.adminPanel.dashboard.statusTitle}
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                       {[
-                        { status: 'PENDING', label: t.adminPanel.dashboard.statusPending, color: 'yellow', count: orders.filter(o => o.status === 'PENDING').length },
-                        { status: 'COOKING', label: t.adminPanel.dashboard.statusCooking, color: 'orange', count: orders.filter(o => o.status === 'COOKING').length },
-                        { status: 'DELIVERING', label: t.adminPanel.dashboard.statusDelivering, color: 'blue', count: orders.filter(o => o.status === 'DELIVERING').length },
-                        { status: 'COMPLETED', label: t.adminPanel.dashboard.statusCompleted, color: 'green', count: orders.filter(o => o.status === 'COMPLETED').length },
-                      ].map(({ label, color, count }) => (
+                        { label: t.adminPanel.dashboard.statusPending, count: dashboardMetrics.pending, accent: 'border-l-amber-400' },
+                        { label: t.adminPanel.dashboard.statusCooking, count: dashboardMetrics.cooking, accent: 'border-l-orange-400' },
+                        { label: t.adminPanel.dashboard.statusDelivering, count: dashboardMetrics.delivering, accent: 'border-l-sky-400' },
+                        { label: t.adminPanel.dashboard.statusCompleted, count: dashboardMetrics.completed, accent: 'border-l-emerald-500' },
+                        { label: t.adminPanel.dashboard.statusCancelled, count: dashboardMetrics.cancelled, accent: 'border-l-red-400' },
+                      ].map(({ label, count, accent }) => (
                         <div
                           key={label}
-                          className={`group rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-white/80 backdrop-blur-xl shadow-xl hover:scale-[1.02] transition-all duration-300
-                            ${color === 'yellow' ? 'bg-amber-50/90 shadow-amber-200/20 hover:shadow-amber-200/30' : ''}
-                            ${color === 'orange' ? 'bg-orange-50/90 shadow-orange-200/20 hover:shadow-orange-200/30' : ''}
-                            ${color === 'blue' ? 'bg-blue-50/90 shadow-blue-200/20 hover:shadow-blue-200/30' : ''}
-                            ${color === 'green' ? 'bg-emerald-50/90 shadow-emerald-200/20 hover:shadow-emerald-200/30' : ''}
-                          `}
+                          className={`rounded-xl border border-zinc-200 bg-zinc-100/90 p-3 sm:p-4 shadow-sm border-l-4 ${accent}`}
                         >
-                          <p className={`text-xs font-bold uppercase tracking-wide ${
-                            color === 'yellow' ? 'text-amber-700' : color === 'orange' ? 'text-orange-700' : color === 'blue' ? 'text-blue-700' : 'text-emerald-700'
-                          }`}>{label}</p>
-                          <p className={`text-2xl sm:text-3xl font-black mt-1 ${
-                            color === 'yellow' ? 'text-amber-700' : color === 'orange' ? 'text-orange-700' : color === 'blue' ? 'text-blue-700' : 'text-emerald-700'
-                          }`}>{count}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">{label}</p>
+                          <p className="text-2xl sm:text-3xl font-black tabular-nums text-zinc-900 mt-0.5">{count}</p>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="rounded-2xl sm:rounded-3xl p-4 sm:p-5 bg-white/80 backdrop-blur-xl border border-white/80 shadow-lg shadow-[#145142]/10 hover:shadow-xl transition-all duration-300 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#145142]/10 flex items-center justify-center">
-                        <Tag size={18} className="text-[#145142]" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.promos}</p>
-                        <p className="text-xl font-black text-[#145142]">{promos.length}</p>
-                      </div>
-                    </div>
-                    <div className="rounded-2xl sm:rounded-3xl p-4 sm:p-5 bg-white/80 backdrop-blur-xl border border-white/80 shadow-lg shadow-[#145142]/10 hover:shadow-xl transition-all duration-300 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#145142]/10 flex items-center justify-center">
-                        <Layers size={18} className="text-[#145142]" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.categories}</p>
-                        <p className="text-xl font-black text-[#145142]">{menuCategories.length}</p>
-                      </div>
-                    </div>
-                    <div className="rounded-2xl sm:rounded-3xl p-4 sm:p-5 bg-white/80 backdrop-blur-xl border border-white/80 shadow-lg shadow-[#145142]/10 hover:shadow-xl transition-all duration-300 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#145142]/10 flex items-center justify-center">
-                        <User size={18} className="text-[#145142]" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-[#145142]/60 uppercase tracking-wide">{t.adminPanel.dashboard.users}</p>
-                        <p className="text-xl font-black text-[#145142]">{users.length}</p>
-                      </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 sm:mb-3">
+                      {t.adminPanel.dashboard.contentSection}
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-3">
+                      {[
+                        { icon: Tag, label: t.adminPanel.dashboard.promos, value: promos.length },
+                        { icon: Layers, label: t.adminPanel.dashboard.categories, value: menuCategories.length },
+                        { icon: User, label: t.adminPanel.dashboard.users, value: users.length },
+                        { icon: ImageIcon, label: t.adminPanel.dashboard.banners, value: banners.length },
+                        { icon: BookOpen, label: t.adminPanel.dashboard.blog, value: blogPosts.length },
+                        { icon: ListOrdered, label: t.adminPanel.dashboard.ingredients, value: ingredients.length },
+                        { icon: Users, label: t.adminPanel.dashboard.team, value: teamMembers.length },
+                      ].map(({ icon: Icon, label, value }) => (
+                        <div
+                          key={label}
+                          className="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm"
+                        >
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
+                            <Icon size={16} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">{label}</p>
+                            <p className="text-lg font-black tabular-nums text-zinc-900">{value}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </>
@@ -2155,74 +2744,14 @@ export default function AdminView({ onBack }: AdminViewProps) {
             </div>
           )}
 
-          {/* Оверлей + права панель */}
-          {isRightPanelOpen && (
-            <>
-              <div 
-                className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 animate-in fade-in duration-200"
-                onClick={() => setIsRightPanelOpen(false)}
-                aria-hidden="true"
-              />
-              <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-gradient-to-b from-white via-white to-[#f0f9f7] backdrop-blur-2xl shadow-[-8px_0_40px_rgba(20,81,66,0.15)] border-l border-[#145142]/10 z-50 overflow-y-auto flex flex-col animate-in slide-in-from-right duration-300">
-                <div className="sticky top-0 z-10 bg-gradient-to-r from-[#145142] to-[#1a6b58] px-4 sm:px-5 py-4 flex items-center justify-between shadow-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                      <Menu size={18} className="text-white" />
-                    </div>
-                    <span className="text-lg font-bold text-white">{t.adminPanel.sidebar.selectSection}</span>
-                  </div>
-                  <button 
-                    onClick={() => setIsRightPanelOpen(false)} 
-                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all duration-200 hover:scale-105 active:scale-95"
-                    aria-label="Закрити"
-                  >
-                    <X size={20} strokeWidth={2.5} />
-                  </button>
-                </div>
-                <div className="flex-1 p-4 sm:p-5 flex flex-col gap-2">
-                  {[
-                    { id: 'dashboard' as const, label: t.adminPanel.sidebar.dashboard, desc: t.adminPanel.sidebar.dashboardDesc },
-                    { id: 'orders' as const, label: t.adminPanel.sidebar.orders, desc: t.adminPanel.sidebar.ordersDesc },
-                    { id: 'products' as const, label: t.adminPanel.sidebar.products, desc: t.adminPanel.sidebar.productsDesc },
-                    { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
-                    { id: 'blog' as const, label: 'Блог / Рецепты', desc: 'SEO статьи и рецепты шефа' },
-                    { id: 'crm' as const, label: 'CRM / Рассылки', desc: 'Пользователи и массовые рассылки' },
-                    { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
-                    { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
-                    { id: 'menuCategories' as const, label: t.adminPanel.sidebar.categories, desc: t.adminPanel.sidebar.categoriesDesc },
-                    { id: 'users' as const, label: t.adminPanel.sidebar.users, desc: t.adminPanel.sidebar.usersDesc },
-                    { id: 'team' as const, label: t.adminPanel.sidebar.team, desc: t.adminPanel.sidebar.teamDesc },
-                    { id: 'settings' as const, label: t.adminPanel.sidebar.settings, desc: t.adminPanel.sidebar.settingsDesc },
-                    { id: 'ingredients' as const, label: t.adminPanel.sidebar.ingredients, desc: '' },
-                  ].map(({ id, label, desc }) => (
-                    <button
-                      key={id}
-                      onClick={() => {
-                        setActiveTab(id)
-                        setIsRightPanelOpen(false)
-                      }}
-                      className={`w-full text-left px-4 py-3 sm:py-4 rounded-2xl font-bold transition-all duration-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 ${
-                        activeTab === id
-                          ? 'bg-gradient-to-r from-[#145142] to-[#1a6b58] text-white shadow-lg shadow-[#145142]/30'
-                          : 'bg-white/80 hover:bg-[#145142]/10 text-[#145142] border border-[#145142]/10 hover:border-[#145142]/20'
-                      }`}
-                    >
-                      <span className="text-base sm:text-lg">{label}</span>
-                      <span className={`text-xs sm:text-sm ${activeTab === id ? 'text-white/80' : 'text-[#145142]/50'}`}>{desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
           {/* Контент розділів — на всю ширину, коли обрано не дашборд */}
           {!isRightPanelOpen && activeTab !== 'dashboard' && (
             <div className="w-full">
-              <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
+              <div className="admin-watta-tab-toolbar">
                 <button
+                  type="button"
                   onClick={() => setIsRightPanelOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#145142]/10 hover:bg-[#145142]/20 text-[#145142] font-semibold transition-all"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#145142]/12 to-[#1a6b58]/10 px-4 py-2.5 font-semibold text-[#145142] ring-1 ring-[#145142]/15 transition-all hover:from-[#145142]/18 hover:to-[#1a6b58]/14 hover:ring-[#145142]/25"
                 >
                   <Menu size={18} />
                   <span>{t.adminPanel.common.menuChangeSection}</span>
@@ -2241,7 +2770,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 orders.map((order) => (
                   <div 
                     key={order.id} 
-                    className="w-full bg-white/85 backdrop-blur-xl rounded-[16px] sm:rounded-[20px] md:rounded-[25px] p-4 sm:p-6 md:p-8 shadow-xl shadow-[#145142]/10 border border-white/60 flex flex-col gap-4 sm:gap-5 md:gap-6 relative"
+                    className="admin-watta-hover-lift relative flex w-full flex-col gap-4 border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-5 sm:rounded-[20px] sm:p-6 md:gap-6 md:rounded-[25px] md:p-8 rounded-[16px]"
                   >
                     {/* Хедер заказа */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
@@ -2276,8 +2805,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                         order.status === 'COOKING' ? 'bg-orange-100 text-orange-800' :
                         order.status === 'DELIVERING' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
+                        order.status === 'COMPLETED' || order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                        order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                        'bg-zinc-200 text-zinc-800'
                       }`}>
                         {order.status}
                       </span>
@@ -2364,15 +2894,15 @@ export default function AdminView({ onBack }: AdminViewProps) {
           {/* ВКЛАДКА НОВОСТИ */}
           {!isRightPanelOpen && activeTab === 'promos' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow">
-                <h2 className="text-2xl font-bold">{t.adminPanel.news.title}</h2>
-                <button onClick={() => { setEditingNews(null); setIsNewsModalOpen(true) }} className="bg-[#155044] text-white px-4 py-2 rounded-lg">
+              <div className="admin-watta-news-toolbar">
+                <h2 className="text-xl sm:text-2xl">{t.adminPanel.news.title}</h2>
+                <button type="button" className="admin-watta-add-btn" onClick={() => { setEditingNews(null); setIsNewsModalOpen(true) }}>
                   {t.adminPanel.news.addBtn}
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {newsItems.map(item => (
-                    <div key={item.id} className="bg-white rounded-xl shadow overflow-hidden">
+                    <div key={item.id} className="admin-watta-news-card">
                       <div className="h-40 bg-gray-200 relative">
                         {item.imageUrl && <img src={item.imageUrl} className="w-full h-full object-cover"/>}
                       </div>
@@ -2401,7 +2931,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 <div className="overflow-x-auto w-full overflow-y-hidden">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-[900px]">
                   {products.map(product => (
-                    <div key={product.id} className="bg-white/85 backdrop-blur-xl rounded-[16px] sm:rounded-[20px] md:rounded-[25px] p-4 sm:p-5 shadow-xl shadow-[#145142]/10 border border-white/60 flex flex-col gap-3 sm:gap-4 hover:shadow-2xl hover:border-[#145142]/20 transition">
+                    <div key={product.id} className="admin-watta-hover-lift flex flex-col gap-3 border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-4 sm:rounded-[20px] sm:p-5 md:rounded-[25px] rounded-[16px] hover:border-[#145142]/20 hover:shadow-2xl">
                        {/* Картинка */}
                        <div className="w-full h-[150px] sm:h-[180px] md:h-[200px] bg-[#145142]/5 rounded-[12px] sm:rounded-[15px] overflow-hidden relative border border-[#145142]/10">
                          {product.imageUrl ? (
@@ -2467,8 +2997,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 <h2 className="text-2xl font-bold text-[#145142] mb-6">{t.adminPanel.ingredients.title}</h2>
                 
                 {/* Форма добавления */}
-                <div className="bg-white p-6 rounded-2xl shadow-lg mb-8 border border-gray-100">
-                  <h3 className="font-bold mb-4">{t.adminPanel.ingredients.addNew}</h3>
+                <div className="mb-8 rounded-2xl border border-white/60 bg-white/85 p-6 shadow-xl shadow-[#145142]/10 backdrop-blur-xl">
+                  <h3 className="mb-4 font-bold text-[#145142]">{t.adminPanel.ingredients.addNew}</h3>
                   <form onSubmit={handleCreateIngredient} className="flex flex-col sm:flex-row gap-4 items-end">
                     
                     {/* Загрузка фото */}
@@ -2508,7 +3038,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 {/* Список существующих */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
                   {ingredients.map(ing => (
-                    <div key={ing.id} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center relative group">
+                    <div key={ing.id} className="admin-watta-hover-lift relative flex flex-col items-center rounded-xl border border-white/60 bg-white/85 p-3 shadow-md shadow-[#145142]/8 backdrop-blur-sm group">
                         <button 
                           onClick={() => handleDeleteIngredient(ing.id)}
                           className="absolute top-1 right-1 p-1 bg-red-100 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition"
@@ -2834,6 +3364,93 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       )}
                     </div>
                   </form>
+
+                  {editingCityId !== null && (
+                    <div className="mt-8 rounded-[16px] border-2 border-[#145142]/20 bg-[#f7fbf9] p-4 sm:p-5">
+                      <h3 className="text-base font-bold text-[#145142]">Тарифи зон доставки</h3>
+                      <p className="mt-1 text-xs text-gray-600">
+                        Полігони зберігаються в базі; тут можна задати <strong>безкоштовно</strong> або{' '}
+                        <strong>фікс €</strong> для кожної зони. Якщо обидва вимкнені — на сайті показується
+                        стандарт (база + €/км міста).
+                      </p>
+                      {editorZonesLoading ? (
+                        <p className="mt-3 text-sm text-gray-500">Завантаження зон…</p>
+                      ) : editorDeliveryZones.length === 0 ? (
+                        <p className="mt-3 text-sm text-gray-500">
+                          Для цього міста ще немає зон. Створіть зону через API{' '}
+                          <code className="rounded bg-white/80 px-1">POST /api/delivery-zones</code> (координати
+                          полігона JSON).
+                        </p>
+                      ) : (
+                        <ul className="mt-4 flex flex-col gap-3">
+                          {editorDeliveryZones.map((z) => (
+                            <li
+                              key={z.id}
+                              className="rounded-[14px] border border-[#145142]/15 bg-white/95 p-3 sm:p-4"
+                            >
+                              <div className="font-semibold text-[#155044]">{z.name}</div>
+                              <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={z.isFreeDelivery}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked
+                                    setEditorDeliveryZones((prev) =>
+                                      prev.map((x) =>
+                                        x.id === z.id
+                                          ? {
+                                              ...x,
+                                              isFreeDelivery: checked,
+                                              flatDeliveryFee: checked ? null : x.flatDeliveryFee,
+                                            }
+                                          : x
+                                      )
+                                    )
+                                  }}
+                                  className="rounded border-[#145142]/40 text-[#145142]"
+                                />
+                                Безкоштовна доставка в зоні
+                              </label>
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <span className="text-xs text-gray-500">Фіксована доставка (€)</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={0.5}
+                                  disabled={z.isFreeDelivery}
+                                  value={z.flatDeliveryFee ?? ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value
+                                    setEditorDeliveryZones((prev) =>
+                                      prev.map((x) => {
+                                        if (x.id !== z.id) return x
+                                        if (v === '') return { ...x, flatDeliveryFee: null }
+                                        const n = parseFloat(v)
+                                        return { ...x, flatDeliveryFee: Number.isNaN(n) ? null : n }
+                                      })
+                                    )
+                                  }}
+                                  className="w-28 rounded-[10px] border border-[#145142]/25 p-2 text-sm disabled:opacity-50"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void saveEditorZoneTariff(z.id, {
+                                      isFreeDelivery: z.isFreeDelivery,
+                                      flatDeliveryFee: z.flatDeliveryFee,
+                                    })
+                                  }
+                                  className="rounded-[10px] bg-[#145142] px-3 py-2 text-xs font-bold text-white hover:bg-[#103d34]"
+                                >
+                                  Зберегти тариф
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2851,7 +3468,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {countries.map(country => (
-                        <div key={country.id} className="bg-white/80 backdrop-blur-sm rounded-[14px] sm:rounded-[16px] p-3 sm:p-4 border-2 border-[#145142]/10 hover:border-[#145142]/30 transition-all hover:shadow-lg hover:shadow-[#145142]/10">
+                        <div key={country.id} className="admin-watta-hover-lift rounded-[14px] border-2 border-[#145142]/10 bg-white/80 p-3 backdrop-blur-sm sm:rounded-[16px] sm:p-4 hover:border-[#145142]/30 hover:shadow-lg hover:shadow-[#145142]/10">
                           {editingCountryId === country.id ? (
                             <div className="flex flex-col gap-2 sm:gap-3">
                               <input
@@ -3018,7 +3635,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                   {cities.map(city => (
-                    <div key={city.id} className={`bg-white/80 backdrop-blur-sm rounded-[14px] sm:rounded-[16px] md:rounded-[20px] p-3 sm:p-4 md:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 border-2 transition-all hover:shadow-lg hover:shadow-[#145142]/10 ${editingCityId === city.id ? 'border-[#145142] ring-2 ring-[#145142]/30' : 'border-[#145142]/10 hover:border-[#145142]/30'}`}>
+                    <div key={city.id} className={`admin-watta-hover-lift flex flex-col gap-3 rounded-[14px] border-2 bg-white/80 p-3 shadow-sm backdrop-blur-sm sm:gap-4 sm:rounded-[16px] sm:p-4 md:rounded-[20px] md:p-6 hover:shadow-lg hover:shadow-[#145142]/10 ${editingCityId === city.id ? 'border-[#145142] ring-2 ring-[#145142]/30' : 'border-[#145142]/10 hover:border-[#145142]/30'}`}>
                         <>
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-[#145142]/10 rounded-full flex items-center justify-center text-[#155044] flex-shrink-0">
@@ -3080,57 +3697,124 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
           {/* === Вкладка: БАННЕРЫ === */}
           {activeTab === 'banners' && (
-            <div className="flex flex-col gap-8">
-              <button 
+            <div className="admin-banners-tab-shell flex flex-col gap-6 sm:gap-8">
+              <div className="admin-banners-tab-hero rounded-[20px] border border-[#145142]/14 bg-gradient-to-br from-white via-[#f7fbf9] to-[#eaf4f0] p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
+                <div
+                  className="admin-banners-tab-hero-orb absolute -right-10 -top-12 h-40 w-40 rounded-full bg-[#145142]/12 blur-3xl"
+                  aria-hidden
+                />
+                <div
+                  className="admin-banners-tab-hero-orb admin-banners-tab-hero-orb--2 absolute -bottom-8 -left-6 h-36 w-52 rounded-full bg-[#1a6b56]/10 blur-3xl"
+                  aria-hidden
+                />
+                <div className="relative min-w-0">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-[#145142]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#145142]/85 ring-1 ring-[#145142]/15">
+                    <LayoutTemplate className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                    {t.adminPanel.sidebar.bannersDesc}
+                  </div>
+                  <h2 className="mt-3 text-xl font-bold tracking-tight text-[#155044] sm:text-2xl">
+                    {t.adminPanel.sidebar.banners}
+                  </h2>
+                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-[#145142]/75">
+                    {t.adminPanel.banners.tabSubtitle}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
                 onClick={openCreateBannerModal}
-                className="w-full h-[77px] bg-[#155044] rounded-[15px] flex items-center justify-center text-white text-[24px] font-bold hover:bg-[#103d34] transition shadow-md"
+                className="admin-banners-tab-cta relative flex h-[72px] w-full items-center justify-center rounded-[16px] border border-white/20 bg-[#155044] text-[18px] font-bold text-white sm:h-[77px] sm:rounded-[18px] sm:text-[22px] md:text-[24px]"
               >
-                {t.adminPanel.banners.addBtn}
+                <span className="relative z-[1] flex items-center justify-center gap-2">
+                  <Sparkles className="h-5 w-5 shrink-0 opacity-95 sm:h-6 sm:w-6" strokeWidth={2} aria-hidden />
+                  {t.adminPanel.banners.addBtn}
+                </span>
               </button>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {banners.map(banner => (
-                  <div key={banner.id} className="bg-white/85 backdrop-blur-xl rounded-[20px] p-6 shadow-xl shadow-[#145142]/10 flex flex-col gap-4 border border-white/60">
-                    <div className="w-full h-48 bg-[#145142]/5 rounded-[15px] overflow-hidden relative border border-[#145142]/10">
+              {sortedBanners.length > 0 && (
+                <p className="-mt-1 px-1 text-sm leading-snug text-[#145142]/70">{t.adminPanel.common.bannerDragHint}</p>
+              )}
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-6">
+                {sortedBanners.map((banner, bannerIndex) => (
+                  <div
+                    key={banner.id}
+                    draggable={!bannerReorderBusy}
+                    onDragStart={(e) => handleBannerDragStart(e, banner.id)}
+                    onDragEnd={handleBannerDragEnd}
+                    onDragOver={handleBannerDragOver}
+                    onDrop={(e) => handleBannerDrop(e, banner.id)}
+                    style={{ animationDelay: `${Math.min(bannerIndex, 12) * 55}ms` }}
+                    className={`admin-banner-card-web admin-banner-card-enter flex select-none flex-col gap-4 rounded-[20px] border border-white/70 bg-white/90 p-6 shadow-xl shadow-[#145142]/10 backdrop-blur-xl transition-opacity ${
+                      draggedBannerId === banner.id
+                        ? 'opacity-50 ring-2 ring-[#145142]/45 ring-offset-2'
+                        : ''
+                    } ${bannerReorderBusy ? 'pointer-events-none opacity-70' : 'cursor-grab active:cursor-grabbing'}`}
+                  >
+                    <div className="-mb-1 -mt-1 flex items-center gap-2 text-[#145142]/70">
+                      <GripVertical size={22} className="shrink-0" aria-hidden />
+                      <span className="text-xs font-medium uppercase tracking-wide">
+                        {t.adminPanel.common.orderIndex}: {banner.order}
+                      </span>
+                    </div>
+                    <div className="pointer-events-none relative h-48 w-full overflow-hidden rounded-[15px] border border-[#145142]/12 bg-[#0d2a22]/5 shadow-inner shadow-[#145142]/5">
                       {banner.imageUrl ? (
-                        <img 
-                          src={banner.imageUrl} 
-                          alt={banner.title_ru} 
-                          className="w-full h-full object-contain"
-                          style={{ objectFit: 'contain' }}
+                        <div
+                          className="h-full w-full bg-no-repeat"
+                          style={{
+                            backgroundImage: `url(${banner.imageUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: `${typeof banner.focalX === 'number' ? banner.focalX : 50}% ${typeof banner.focalY === 'number' ? banner.focalY : 50}%`,
+                          }}
+                          role="img"
+                          aria-label={banner.title_ru}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <div className="flex h-full w-full items-center justify-center text-gray-300">
                           <ImageIcon size={48} />
                         </div>
                       )}
                       {!banner.isActive && (
-                        <div className="absolute top-2 right-2 bg-[#145142]/80 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
+                        <div className="absolute right-2 top-2 rounded-full bg-[#145142]/88 px-2 py-1 text-xs text-white backdrop-blur-sm">
                           {t.adminPanel.common.inactiveLabel}
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <h3 className="font-bold text-lg">{banner.title_ru}</h3>
-                      <p className="text-sm text-gray-500">{t.adminPanel.common.orderIndex} {banner.order}</p>
+                    <div className="pointer-events-none flex flex-col gap-2">
+                      <h3 className="text-lg font-bold leading-snug text-[#155044]">{banner.title_ru}</h3>
                     </div>
-                    <div className="flex gap-2 pt-2 border-t border-[#145142]/10">
+                    <div className="flex gap-2 border-t border-[#145142]/10 pt-2">
                       <button
-                        onClick={() => openEditBannerModal(banner)}
-                        className="flex-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-[10px] hover:bg-blue-100 transition flex items-center justify-center gap-2"
+                        type="button"
+                        draggable={false}
+                        onClick={(ev) => {
+                          ev.stopPropagation()
+                          openEditBannerModal(banner)
+                        }}
+                        className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-[#145142]/10 px-4 py-2 text-[#145142] ring-1 ring-[#145142]/18 transition hover:bg-[#145142]/18 active:scale-[0.98]"
                       >
                         <Pencil size={16} /> {t.adminPanel.actions.edit}
                       </button>
                       <button
-                        onClick={() => handleDeleteBanner(banner.id)}
-                        className="px-4 py-2 bg-red-50 text-red-600 rounded-[10px] hover:bg-red-100 transition"
+                        type="button"
+                        draggable={false}
+                        onClick={(ev) => {
+                          ev.stopPropagation()
+                          handleDeleteBanner(banner.id)
+                        }}
+                        className="cursor-pointer rounded-[10px] bg-red-50 px-4 py-2 text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
                       >
                         <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                 ))}
-                {banners.length === 0 && <div className="text-gray-400 col-span-3 text-center">{t.adminPanel.common.emptyBanners}</div>}
+                {sortedBanners.length === 0 && (
+                  <div className="admin-banner-card-enter col-span-full rounded-[18px] border border-dashed border-[#145142]/25 bg-[#145142]/[0.04] py-14 text-center text-[#145142]/55">
+                    {t.adminPanel.common.emptyBanners}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -3147,7 +3831,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {menuCategories.map(category => (
-                  <div key={category.id} className="bg-white/85 backdrop-blur-xl rounded-[16px] sm:rounded-[20px] p-4 sm:p-6 shadow-xl shadow-[#145142]/10 flex flex-col gap-3 sm:gap-4 border border-white/60">
+                  <div key={category.id} className="admin-watta-hover-lift flex flex-col gap-3 rounded-[16px] border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-4 sm:rounded-[20px] sm:p-6">
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#145142]/10 rounded-[10px] sm:rounded-[12px] flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
                         {category.emoji || '🍣'}
@@ -3203,7 +3887,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {users.map(user => (
-                    <div key={user.id} className="bg-gradient-to-br from-white via-white to-[#f8faf9] rounded-[16px] sm:rounded-[20px] p-4 sm:p-6 shadow-lg shadow-[#145142]/10 flex flex-col gap-3 sm:gap-4 border border-[#145142]/10 hover:border-[#145142]/30 transition-all hover:shadow-xl hover:shadow-[#145142]/20">
+                    <div key={user.id} className="admin-watta-hover-lift flex flex-col gap-3 rounded-[16px] border border-[#145142]/10 bg-gradient-to-br from-white via-white to-[#f8faf9] p-4 shadow-lg shadow-[#145142]/10 sm:gap-4 sm:rounded-[20px] sm:p-6 hover:border-[#145142]/30 hover:shadow-xl hover:shadow-[#145142]/20">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
@@ -3263,8 +3947,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
           {/* Вкладка РАССЫЛКА */}
           {!isRightPanelOpen && activeTab === 'newsletter' && (
             <div className="max-w-4xl mx-auto">
-              <div className="bg-white p-8 rounded-[24px] shadow-lg">
-                <h2 className="text-3xl font-bold text-[#145142] mb-2">Email Рассылка</h2>
+              <div className="rounded-[24px] border-2 border-white/70 bg-white/85 p-8 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl">
+                <h2 className="mb-2 text-3xl font-bold text-[#145142]">Email Рассылка</h2>
                 <p className="text-gray-500 mb-8">Отправка писем всем зарегистрированным пользователям</p>
 
                 <form onSubmit={async (e) => {
@@ -3343,7 +4027,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {teamMembers.map(member => (
-                  <div key={member.id} className="bg-white/80 backdrop-blur-2xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg shadow-[#145142]/10 border-2 border-white/70 hover:shadow-xl hover:shadow-[#145142]/20 transition-all duration-300 relative overflow-hidden">
+                  <div key={member.id} className="admin-watta-hover-lift relative overflow-hidden rounded-2xl border-2 border-white/70 bg-white/80 p-4 shadow-lg shadow-[#145142]/10 backdrop-blur-2xl sm:rounded-3xl sm:p-6 hover:shadow-xl hover:shadow-[#145142]/20">
                     <div className="relative mb-4" style={{ width: '100%', paddingTop: '75%', background: 'linear-gradient(135deg, rgba(20,81,66,0.1) 0%, rgba(20,81,66,0.05) 100%)', borderRadius: '16px', overflow: 'hidden' }}>
                       {member.imageUrl ? (
                         <img src={member.imageUrl} alt={member.name_ru} className="absolute inset-0 w-full h-full object-cover" />
@@ -3391,8 +4075,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
           {/* === Вкладка: ПРОМОКОДЫ === */}
           {activeTab === 'blog' && (
             <div className="flex flex-col gap-6">
-              <div className="bg-white/80 backdrop-blur-2xl rounded-[24px] p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70">
-                <h2 className="text-2xl font-bold text-[#145142] mb-5">Блог / Рецепты</h2>
+              <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
+                <h2 className="mb-5 text-2xl font-bold text-[#145142]">Блог / Рецепты</h2>
                 <form onSubmit={handleSaveBlogPost} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
                     type="text"
@@ -3462,7 +4146,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {blogPosts.map((post) => (
-                  <div key={post.id} className="bg-white/80 rounded-2xl p-5 border border-[#145142]/15">
+                  <div key={post.id} className="admin-watta-hover-lift rounded-2xl border border-[#145142]/15 bg-white/80 p-5 shadow-md shadow-[#145142]/8 backdrop-blur-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-lg font-bold text-[#145142]">{post.title}</h3>
@@ -3486,8 +4170,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
           {activeTab === 'crm' && (
             <div className="flex flex-col gap-6">
-              <div className="bg-white/80 backdrop-blur-2xl rounded-[24px] p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70">
-                <h2 className="text-2xl font-bold text-[#145142] mb-4">Создать рассылку</h2>
+              <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
+                <h2 className="mb-4 text-2xl font-bold text-[#145142]">Создать рассылку</h2>
                 <form onSubmit={handleSendCrmPromo} className="grid grid-cols-1 gap-4">
                   <div className="inline-flex items-center gap-3">
                     <button
@@ -3535,8 +4219,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 </form>
               </div>
 
-              <div className="bg-white/80 backdrop-blur-2xl rounded-[24px] p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70 overflow-x-auto">
-                <h3 className="text-xl font-bold text-[#145142] mb-4">Пользователи CRM</h3>
+              <div className="overflow-x-auto rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
+                <h3 className="mb-4 text-xl font-bold text-[#145142]">Пользователи CRM</h3>
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-[#145142]/80 border-b border-[#145142]/15">
@@ -3611,7 +4295,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
               {/* Список */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                  {promos.map(promo => (
-                   <div key={promo.id} className="bg-white/80 backdrop-blur-sm rounded-[16px] sm:rounded-[20px] p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 border-2 border-[#145142]/10 hover:border-[#145142]/30 transition-all hover:shadow-lg hover:shadow-[#145142]/10">
+                   <div key={promo.id} className="admin-watta-hover-lift flex flex-col items-start justify-between gap-3 rounded-[16px] border-2 border-[#145142]/10 bg-white/80 p-4 shadow-sm backdrop-blur-sm sm:flex-row sm:items-center sm:gap-4 sm:rounded-[20px] sm:p-6 hover:border-[#145142]/30 hover:shadow-lg hover:shadow-[#145142]/10">
                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#145142]/10 to-[#1a6b58]/10 rounded-full flex items-center justify-center text-[#145142] flex-shrink-0">
                          <Tag size={20} className="sm:w-6 sm:h-6" />
@@ -3747,7 +4431,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                      <button 
                        type="submit" 
                        disabled={settingsLoading}
-                       className="w-full py-4 bg-[#155044] text-white font-bold rounded-[16px] hover:bg-[#103d34] transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                       className="w-full py-4 bg-[#155044] text-white font-bold rounded-[16px] hover:bg-[#103d34] transition shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
                      >
                         <Save size={20} />
                         {settingsLoading ? 'Збереження...' : 'Зберегти налаштування'}
@@ -3763,17 +4447,21 @@ export default function AdminView({ onBack }: AdminViewProps) {
         {/* МОДАЛЬНОЕ ОКНО (С ИСПРАВЛЕННЫМИ ПОЛЯМИ ПОД 4 ЯЗЫКА) */}
         {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
-            >
-              <X size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            
-            <h2 className="text-xl sm:text-2xl font-bold text-[#155044] mb-4 sm:mb-6 text-center">
-              {editingId ? 'Редактировать блюдо' : 'Новое блюдо'}
-            </h2>
+          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+              <div className="h-10 w-10 shrink-0" aria-hidden />
+              <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
+                {editingId ? 'Редактировать блюдо' : 'Новое блюдо'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-none hover:bg-red-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                aria-label="Закрыть"
+              >
+                <X size={22} strokeWidth={2.5} />
+              </button>
+            </div>
             
             <form onSubmit={handleSubmitProduct} className="space-y-3 sm:space-y-4">
               <div className="flex justify-center mb-3 sm:mb-4">
@@ -3949,7 +4637,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
               </div>
               <button 
                 type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-lg mt-2 text-sm sm:text-base"
+                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
               >
                 {editingId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
@@ -3963,19 +4651,23 @@ export default function AdminView({ onBack }: AdminViewProps) {
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КАТЕГОРИЙ МЕНЮ */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             {/* Продолжение тени и фона при прокрутке */}
             <div className="sticky bottom-0 left-0 right-0 h-8 -mb-8 bg-gradient-to-b from-white/80 via-white/80 to-transparent pointer-events-none z-10"></div>
-            <button 
-              onClick={() => setIsCategoryModalOpen(false)}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
-            >
-              <X size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            
-            <h2 className="text-xl sm:text-2xl font-bold text-[#155044] mb-4 sm:mb-6 text-center">
-              {editingCategoryId ? 'Редактировать категорию' : 'Новая категория'}
-            </h2>
+            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+              <div className="h-10 w-10 shrink-0" aria-hidden />
+              <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
+                {editingCategoryId ? 'Редактировать категорию' : 'Новая категория'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-none hover:bg-red-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                aria-label="Закрыть"
+              >
+                <X size={22} strokeWidth={2.5} />
+              </button>
+            </div>
             
             <form onSubmit={handleSubmitCategory} className="space-y-3 sm:space-y-4">
               {/* Эмодзи с выбором */}
@@ -4125,7 +4817,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
               <button 
                 type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-lg mt-2 text-sm sm:text-base"
+                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
               >
                 {editingCategoryId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
@@ -4138,149 +4830,409 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ БАННЕРОВ */}
       {isBannerModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <button 
-              onClick={() => setIsBannerModalOpen(false)}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
-            >
-              <X size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            
-            <h2 className="text-xl sm:text-2xl font-bold text-[#155044] mb-4 sm:mb-6 text-center">
-              {editingBannerId ? 'Редактировать баннер' : 'Новый баннер'}
-            </h2>
-            
-            <form onSubmit={handleSubmitBanner} className="space-y-3 sm:space-y-4">
-              {/* Загрузка изображения */}
-              <div className="flex justify-center mb-3 sm:mb-4">
-                <label className="cursor-pointer w-full h-48 sm:h-56 md:h-64 border-2 border-dashed border-[#145142]/30 rounded-[12px] sm:rounded-[15px] flex flex-col items-center justify-center hover:bg-[#145142]/5 transition relative overflow-hidden group p-2 bg-white/40 backdrop-blur-sm">
-                  {bannerFormData.imageUrl ? (
-                    <img 
-                      src={bannerFormData.imageUrl} 
-                      alt="Preview" 
-                      className="w-full h-full object-contain rounded-lg"
-                      style={{ objectFit: 'contain' }}
-                    />
-                  ) : (
-                    <>
-                      <Upload size={24} className="sm:w-8 sm:h-8 text-gray-400 mb-1 sm:mb-2" />
-                      <span className="text-xs sm:text-sm text-gray-500 text-center px-2">Нажмите, чтобы загрузить фото</span>
-                    </>
-                  )}
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleBannerImageUpload} 
-                  />
-                  {bannerFormData.imageUrl && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-lg">
-                      <span className="text-white font-medium text-sm sm:text-base">Изменить</span>
+        <div
+          className="admin-banner-modal-backdrop-animate fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px] sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="banner-modal-title"
+        >
+          <div className="admin-banner-modal-panel-animate relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_24px_64px_-12px_rgba(20,81,66,0.28)] ring-1 ring-[#145142]/12 sm:rounded-[26px]">
+            <div
+              className="h-1.5 w-full shrink-0 bg-gradient-to-r from-[#0f3d32] via-[#145142] to-[#1a6b56]"
+              aria-hidden
+            />
+            <div className="relative max-h-[calc(92vh-6px)] overflow-y-auto overflow-x-hidden px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
+              <div className="mb-5 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <div className="admin-banner-modal-icon-pop flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#145142]/14 to-[#145142]/5 text-[#145142] ring-1 ring-[#145142]/18 shadow-[0_8px_24px_-6px_rgba(20,81,66,0.35)]">
+                    <LayoutTemplate className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+                  </div>
+                  <div className="min-w-0 pt-0.5">
+                    <h2
+                      id="banner-modal-title"
+                      className="text-lg font-bold leading-tight text-[#155044] sm:text-xl"
+                    >
+                      {editingBannerId ? 'Редактировать баннер' : 'Новый баннер'}
+                    </h2>
+                    <p className="mt-1 text-xs leading-snug text-[#145142]/65 sm:text-sm">
+                      Слайд на главной: фото и подписи на четырёх языках
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsBannerModalOpen(false)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white transition hover:scale-105 hover:bg-red-600 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  aria-label="Закрыть"
+                >
+                  <X size={22} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitBanner} className="space-y-5">
+                <section className="rounded-2xl border border-[#145142]/12 bg-gradient-to-b from-white to-[#f6faf8]/90 p-4 shadow-sm transition-shadow duration-300 hover:shadow-md hover:shadow-[#145142]/10 sm:p-5">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-[#145142]" strokeWidth={2} aria-hidden />
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#145142]/75">
+                        Обложка слайда
+                      </span>
                     </div>
-                  )}
-                </label>
-              </div>
-
-              {/* Заголовки на разных языках */}
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Заголовок (RU) *</label>
-                <input 
-                  name="title_ru" 
-                  required 
-                  value={bannerFormData.title_ru} 
-                  onChange={(e) => setBannerFormData(prev => ({ ...prev, title_ru: e.target.value }))}
-                  className="w-full p-2 sm:p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[8px] sm:rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm sm:text-base"
-                  placeholder="Например: Суші-бургери: ідеальний перекус" 
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Заголовок (UA)</label>
-                  <input 
-                    name="title_ua" 
-                    value={bannerFormData.title_ua} 
-                    onChange={(e) => setBannerFormData(prev => ({ ...prev, title_ua: e.target.value }))}
-                    className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[8px] sm:rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-xs sm:text-sm"
-                    placeholder="UA" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Заголовок (EN)</label>
-                  <input 
-                    name="title_en" 
-                    value={bannerFormData.title_en} 
-                    onChange={(e) => setBannerFormData(prev => ({ ...prev, title_en: e.target.value }))}
-                    className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[8px] sm:rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-xs sm:text-sm"
-                    placeholder="EN" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Заголовок (NL)</label>
-                  <input 
-                    name="title_nl" 
-                    value={bannerFormData.title_nl} 
-                    onChange={(e) => setBannerFormData(prev => ({ ...prev, title_nl: e.target.value }))}
-                    className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[8px] sm:rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-xs sm:text-sm"
-                    placeholder="NL" 
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Порядок отображения</label>
-                  <input 
-                    name="order" 
-                    type="number" 
-                    value={bannerFormData.order} 
-                    onChange={(e) => setBannerFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
-                    className="w-full p-2 sm:p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[8px] sm:rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm"
-                    placeholder="0" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Активен</label>
-                  <select 
-                    name="isActive" 
-                    value={bannerFormData.isActive ? 'true' : 'false'} 
-                    onChange={(e) => setBannerFormData(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-                    className="w-full p-2 sm:p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[8px] sm:rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm"
+                    <span className="hidden text-[10px] text-[#145142]/50 sm:inline">JPG, PNG · до 50 МБ</span>
+                  </div>
+                  <label
+                    onDragEnter={onBannerUploadDragEnter}
+                    onDragLeave={onBannerUploadDragLeave}
+                    onDragOver={onBannerUploadDragOver}
+                    onDrop={onBannerUploadDrop}
+                    className={`group relative flex h-48 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed p-3 transition-all duration-300 sm:h-56 md:h-64 sm:rounded-2xl sm:p-4 ${
+                      bannerImageDropActive
+                        ? 'scale-[1.01] border-[#145142] border-solid bg-[#145142]/12 ring-2 ring-[#145142]/40 ring-offset-2'
+                        : `border-[#145142]/28 bg-white/60 hover:border-[#145142]/50 hover:bg-[#145142]/[0.05] ${
+                            !bannerFormData.imageUrl ? 'admin-banner-dropzone-idle' : ''
+                          }`
+                    }`}
                   >
-                    <option value="true">Да</option>
-                    <option value="false">Нет</option>
-                  </select>
-                </div>
-              </div>
+                    {bannerFormData.imageUrl ? (
+                      <img
+                        src={bannerFormData.imageUrl}
+                        alt=""
+                        className="h-full w-full rounded-lg object-contain pointer-events-none"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center text-center px-2">
+                        <div
+                          className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-[#145142] ring-1 transition ${
+                            bannerImageDropActive
+                              ? 'scale-110 bg-[#145142]/20 ring-[#145142]/40'
+                              : 'bg-[#145142]/10 ring-[#145142]/15'
+                          }`}
+                        >
+                          <Upload className="h-7 w-7" strokeWidth={1.75} />
+                        </div>
+                        <span className="text-sm font-semibold text-[#155044]">
+                          {bannerImageDropActive ? 'Отпустите, чтобы загрузить' : 'Перетащите фото сюда'}
+                        </span>
+                        <span className="mt-1 text-xs font-medium text-[#145142]/70">или нажмите и выберите файл</span>
+                        <span className="mt-2 max-w-[260px] text-[11px] text-gray-500">
+                          Горизонтальное фото лучше для карусели · JPG, PNG, WebP
+                        </span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleBannerImageUpload}
+                    />
+                    {bannerFormData.imageUrl && bannerImageDropActive && (
+                      <div className="absolute inset-0 z-[6] flex items-center justify-center rounded-lg bg-[#145142]/35 ring-2 ring-inset ring-[#145142]/60">
+                        <span className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#155044] shadow-lg">
+                          Отпустите, чтобы заменить фото
+                        </span>
+                      </div>
+                    )}
+                    {bannerFormData.imageUrl && !bannerImageDropActive && (
+                      <div className="absolute inset-0 z-[5] flex items-center justify-center rounded-lg bg-black/45 opacity-0 transition group-hover:opacity-100">
+                        <span className="flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-[#155044] shadow-md">
+                          <Pencil className="h-4 w-4" />
+                          Заменить фото
+                        </span>
+                      </div>
+                    )}
+                  </label>
+                </section>
 
-              <button 
-                type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-lg mt-2 text-sm sm:text-base"
-              >
-                {editingBannerId ? 'Сохранить изменения' : 'Сохранить'}
-              </button>
-            </form>
-            {/* Продолжение тени и фона при прокрутке вниз */}
-            <div className="sticky bottom-0 left-0 right-0 h-12 -mb-12 bg-gradient-to-b from-transparent via-white/80 to-white/80 pointer-events-none z-10 rounded-b-[20px] sm:rounded-b-[25px]"></div>
+                {bannerFormData.imageUrl ? (
+                  <section className="rounded-2xl border border-[#145142]/12 bg-[#f4f9f7] p-4 shadow-sm transition-shadow duration-300 hover:shadow-md hover:shadow-[#145142]/8 sm:p-5">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                        <div className="flex items-center gap-2">
+                          <Move className="h-4 w-4 text-[#145142]" strokeWidth={2} aria-hidden />
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#145142]/75">
+                            Как на сайте
+                          </span>
+                        </div>
+                        <span className="rounded-full bg-[#145142]/12 px-2 py-0.5 text-[10px] font-semibold text-[#145142]/80">
+                          16∶9 · cover · все экраны
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBannerFormData((p) => ({ ...p, focalX: 50, focalY: 50 }))
+                        }
+                        className="text-xs font-semibold text-[#145142] underline decoration-[#145142]/35 underline-offset-2 hover:text-[#103d34]"
+                      >
+                        Сбросить в центр
+                      </button>
+                    </div>
+                    <p className="mb-3 text-xs leading-snug text-[#145142]/65">
+                      На сайте баннер всегда <span className="font-semibold">16∶9</span> и режим{' '}
+                      <span className="font-semibold">cover</span>, как в этом превью. Перетащите кадр или
+                      подстройте ползунки — на телефоне и на ПК обрезка будет такой же.
+                    </p>
+                    <div
+                      ref={bannerFocalPreviewRef}
+                      role="application"
+                      aria-label="Сдвиг кадра баннера, как на главной странице"
+                      className="admin-banner-site-preview-frame-web relative w-full cursor-grab touch-none select-none overflow-hidden bg-[#0d2a22] shadow-[0_8px_28px_rgba(20,81,66,0.18)] ring-2 ring-[#145142]/20 transition-shadow duration-300 hover:shadow-[0_12px_36px_rgba(20,81,66,0.28)] hover:ring-[#145142]/35 active:cursor-grabbing [touch-action:none]"
+                      onPointerDown={onBannerFocalPointerDown}
+                      onPointerMove={onBannerFocalPointerMove}
+                      onPointerUp={endBannerFocalDrag}
+                      onPointerCancel={endBannerFocalDrag}
+                    >
+                      <div
+                        className="absolute inset-0 bg-center"
+                        style={{
+                          backgroundImage: `url(${bannerFormData.imageUrl})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: `${bannerFormData.focalX}% ${bannerFormData.focalY}%`,
+                          backgroundRepeat: 'no-repeat',
+                        }}
+                        aria-hidden
+                      />
+                      <div
+                        className="pointer-events-none absolute inset-0 bg-black/10"
+                        aria-hidden
+                      />
+                      <div
+                        className="pointer-events-none absolute bottom-2.5 left-0 right-0 flex justify-center gap-2"
+                        aria-hidden
+                      >
+                        {[0, 1, 2].map((i) => (
+                          <span
+                            key={i}
+                            className={`h-1.5 w-1.5 rounded-full shadow-sm ${
+                              i === 0 ? 'bg-white' : 'bg-white/40'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#145142]/60">
+                          Заголовок (превью перевода)
+                        </span>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {(['ru', 'ua', 'en', 'nl'] as const).map((code) => (
+                            <button
+                              key={code}
+                              type="button"
+                              onClick={() => setBannerPreviewLocale(code)}
+                              className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase transition-all duration-200 active:scale-95 ${
+                                bannerPreviewLocale === code
+                                  ? 'bg-[#145142] text-white shadow-md shadow-[#145142]/25 ring-2 ring-[#145142]/30'
+                                  : 'bg-white text-[#145142] ring-1 ring-[#145142]/20 hover:bg-[#145142]/10 hover:ring-[#145142]/35'
+                              }`}
+                            >
+                              {code}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="mt-2 line-clamp-3 text-sm font-semibold leading-snug text-[#155044]">
+                          {(() => {
+                            const d = bannerFormData
+                            const line =
+                              bannerPreviewLocale === 'ru'
+                                ? d.title_ru
+                                : bannerPreviewLocale === 'ua'
+                                  ? d.title_ua || d.title_ru
+                                  : bannerPreviewLocale === 'en'
+                                    ? d.title_en || d.title_ru
+                                    : d.title_nl || d.title_ru
+                            const s = (line || '').trim()
+                            return s || '—'
+                          })()}
+                        </p>
+                        <p className="mt-1 text-[10px] leading-tight text-gray-500">
+                          На главной в карусели сейчас отображается фото; блок текста помогает сверить формулировки при переводе.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-[#145142]/75">
+                          Горизонталь · {Math.round(bannerFormData.focalX)}%
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={0.5}
+                          value={bannerFormData.focalX}
+                          onChange={(e) =>
+                            setBannerFormData((p) => ({
+                              ...p,
+                              focalX: Number(e.target.value),
+                            }))
+                          }
+                          className="h-2 w-full cursor-pointer accent-[#145142]"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-semibold text-[#145142]/75">
+                          Вертикаль · {Math.round(bannerFormData.focalY)}%
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={0.5}
+                          value={bannerFormData.focalY}
+                          onChange={(e) =>
+                            setBannerFormData((p) => ({
+                              ...p,
+                              focalY: Number(e.target.value),
+                            }))
+                          }
+                          className="h-2 w-full cursor-pointer accent-[#145142]"
+                        />
+                      </div>
+                    </div>
+                  </section>
+                ) : null}
+
+                <section className="space-y-4 rounded-2xl border border-[#145142]/10 bg-[#145142]/[0.04] p-4 transition-shadow duration-300 hover:shadow-sm hover:shadow-[#145142]/6 sm:p-5">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-[#145142]" strokeWidth={2} aria-hidden />
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#145142]/75">
+                      Заголовки
+                    </span>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-[#145142]/85 sm:text-sm">
+                      <span className="rounded-md bg-[#145142] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        RU
+                      </span>
+                      Основной текст <span className="font-normal text-red-500">*</span>
+                    </label>
+                    <input
+                      name="title_ru"
+                      required
+                      value={bannerFormData.title_ru}
+                      onChange={(e) =>
+                        setBannerFormData((prev) => ({ ...prev, title_ru: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-[#145142]/20 bg-white p-3 text-sm outline-none ring-[#145142]/20 transition placeholder:text-gray-400 focus:border-[#145142] focus:ring-2 sm:text-base"
+                      placeholder="Например: Суші-бургери: ідеальний перекус"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {(
+                      [
+                        ['title_ua', 'UA', bannerFormData.title_ua, 'title_ua'] as const,
+                        ['title_en', 'EN', bannerFormData.title_en, 'title_en'] as const,
+                        ['title_nl', 'NL', bannerFormData.title_nl, 'title_nl'] as const,
+                      ] as const
+                    ).map(([name, code, value, key]) => (
+                      <div key={key}>
+                        <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-[#145142]/80">
+                          <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/20">
+                            {code}
+                          </span>
+                        </label>
+                        <input
+                          name={name}
+                          value={value}
+                          onChange={(e) =>
+                            setBannerFormData((prev) => ({ ...prev, [key]: e.target.value }))
+                          }
+                          className="w-full rounded-xl border border-[#145142]/18 bg-white p-2.5 text-xs outline-none transition focus:border-[#145142] focus:ring-2 focus:ring-[#145142]/25 sm:text-sm"
+                          placeholder={code}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="grid grid-cols-1 gap-3 rounded-2xl border border-[#145142]/10 bg-[#f4f9f7] p-4 transition-shadow duration-300 hover:shadow-md hover:shadow-[#145142]/8 sm:grid-cols-2 sm:gap-4 sm:p-5">
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-[#145142]/85 sm:text-sm">
+                      <ListOrdered className="h-4 w-4 text-[#145142]" aria-hidden />
+                      Порядок в карусели
+                    </label>
+                    <input
+                      name="order"
+                      type="number"
+                      value={bannerFormData.order}
+                      onChange={(e) =>
+                        setBannerFormData((prev) => ({
+                          ...prev,
+                          order: parseInt(e.target.value, 10) || 0,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-[#145142]/20 bg-white p-3 text-sm outline-none transition focus:border-[#145142] focus:ring-2 focus:ring-[#145142]/25"
+                      placeholder="0"
+                      min={0}
+                    />
+                    <p className="mt-1.5 text-[11px] text-[#145142]/55">Меньше число — раньше в списке</p>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-[#145142]/85 sm:text-sm">
+                      <Eye className="h-4 w-4 text-[#145142]" aria-hidden />
+                      Показ на сайте
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="isActive"
+                        value={bannerFormData.isActive ? 'true' : 'false'}
+                        onChange={(e) =>
+                          setBannerFormData((prev) => ({
+                            ...prev,
+                            isActive: e.target.value === 'true',
+                          }))
+                        }
+                        className="w-full cursor-pointer appearance-none rounded-xl border border-[#145142]/20 bg-white p-3 pr-10 text-sm outline-none transition focus:border-[#145142] focus:ring-2 focus:ring-[#145142]/25"
+                      >
+                        <option value="true">Виден посетителям</option>
+                        <option value="false">Скрыт (черновик)</option>
+                      </select>
+                      <ChevronDown
+                        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#145142]/45"
+                        aria-hidden
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <button
+                  type="submit"
+                  className="admin-banner-submit-btn relative z-20 flex w-full appearance-none items-center justify-center gap-2 rounded-2xl border-0 bg-[#155044] py-3.5 text-sm font-bold text-white hover:bg-[#103d34] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142] focus-visible:ring-offset-2 sm:py-4 sm:text-base"
+                >
+                  <Save className="h-5 w-5 shrink-0 opacity-95" strokeWidth={2} />
+                  {editingBannerId ? 'Сохранить изменения' : 'Сохранить баннер'}
+                </button>
+              </form>
+
+              <div
+                className="pointer-events-none sticky bottom-0 left-0 right-0 z-[5] -mb-12 h-12 rounded-b-[22px] bg-gradient-to-b from-transparent via-white/85 to-white sm:rounded-b-[26px]"
+                aria-hidden
+              />
+            </div>
           </div>
         </div>
-        )}
+      )}
       
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КОМАНДЫ */}
       {isTeamModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <button 
-              onClick={() => setIsTeamModalOpen(false)}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
-            >
-              <X size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            
-            <h2 className="text-xl sm:text-2xl font-bold text-[#155044] mb-4 sm:mb-6 text-center">
-              {editingTeamId ? 'Редактировать члена команды' : 'Новый член команды'}
-            </h2>
+          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+              <div className="h-10 w-10 shrink-0" aria-hidden />
+              <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
+                {editingTeamId ? 'Редактировать члена команды' : 'Новый член команды'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsTeamModalOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-none hover:bg-red-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                aria-label="Закрыть"
+              >
+                <X size={22} strokeWidth={2.5} />
+              </button>
+            </div>
             
             <form onSubmit={handleSubmitTeam} className="space-y-3 sm:space-y-4">
               {/* Загрузка фото */}
@@ -4396,7 +5348,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
 
               <button 
                 type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-lg mt-2 text-sm sm:text-base"
+                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
               >
                 {editingTeamId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
@@ -4405,41 +5357,22 @@ export default function AdminView({ onBack }: AdminViewProps) {
           </div>
         </div>
       )}
-      {/* Модальное окно КОМАНДЫ */}
-      {isTeamModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <button 
-              onClick={() => setIsTeamModalOpen(false)}
-              className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 text-[#145142]/60 hover:text-red-500 transition"
-            >
-              <X size={20} className="sm:w-6 sm:h-6" />
-            </button>
-            
-            <h2 className="text-xl sm:text-2xl font-bold text-[#155044] mb-4 sm:mb-6 text-center">
-              {editingTeamId ? 'Редактировать члена команды' : 'Новый член команды'}
-            </h2>
-            
-            <form onSubmit={handleSubmitTeam} className="space-y-3 sm:space-y-4">
-               {/* ... (Ваши поля формы команды) ... */}
-               {/* Для краткости, если поля уже есть, оставьте их, главное - закрывающие теги ниже */}
-               
-               {/* Пример кнопки сохранения для формы команды */}
-               <button 
-                type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-lg mt-2 text-sm sm:text-base"
-              >
-                {editingTeamId ? 'Сохранить изменения' : 'Сохранить'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
       {/* МОДАЛКА НОВОСТЕЙ */}
       {isNewsModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-xl font-bold mb-4">{editingNews ? 'Редактировать' : 'Новая новость'}</h2>
+          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="h-10 w-10 shrink-0" aria-hidden />
+              <h2 className="flex-1 text-center text-xl font-bold px-1">{editingNews ? 'Редактировать' : 'Новая новость'}</h2>
+              <button
+                type="button"
+                onClick={() => setIsNewsModalOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-none hover:bg-red-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                aria-label="Закрыть"
+              >
+                <X size={22} strokeWidth={2.5} />
+              </button>
+            </div>
             <form onSubmit={handleSaveNews} className="space-y-4">
               <input name="title" defaultValue={editingNews?.title} placeholder="Заголовок" required className="w-full p-3 border rounded-lg"/>
               <textarea name="description" defaultValue={editingNews?.description} placeholder="Краткое описание" required className="w-full p-3 border rounded-lg"/>
@@ -4448,7 +5381,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
               <label className="flex items-center gap-2"><input type="checkbox" name="isHit" defaultChecked={editingNews?.isHit}/> Хит продаж</label>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setIsNewsModalOpen(false)} className="flex-1 py-3 bg-gray-100 rounded-lg">Отмена</button>
-                <button type="submit" className="flex-1 py-3 bg-[#155044] text-white rounded-lg">Сохранить</button>
+                <button type="submit" className="flex-1 py-3 bg-[#155044] text-white rounded-lg shadow-none hover:bg-[#103d34] transition">Сохранить</button>
               </div>
             </form>
           </div>

@@ -4,6 +4,17 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
+function clampFocal(value: unknown, fallback: number): number {
+  const n =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? parseFloat(value)
+        : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+}
+
 // 1. Получить все активные баннеры (отсортированные по порядку)
 router.get('/', async (req, res) => {
   try {
@@ -42,7 +53,8 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const { 
       title_ru, title_ua, title_en, title_nl,
-      imageUrl, order, isActive
+      imageUrl, order, isActive,
+      focalX, focalY
     } = req.body;
 
     const banner = await prisma.banner.create({
@@ -52,6 +64,8 @@ router.post('/', async (req: Request, res: Response) => {
         title_en: title_en || title_ru,
         title_nl: title_nl || title_ru,
         imageUrl,
+        focalX: clampFocal(focalX, 50),
+        focalY: clampFocal(focalY, 50),
         order: order || 0,
         isActive: isActive !== undefined ? isActive : true
       }
@@ -69,7 +83,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const { 
       title_ru, title_ua, title_en, title_nl,
-      imageUrl, order, isActive
+      imageUrl, order, isActive,
+      focalX, focalY
     } = req.body;
 
     const banner = await prisma.banner.update({
@@ -80,6 +95,12 @@ router.put('/:id', async (req: Request, res: Response) => {
         title_en,
         title_nl,
         imageUrl,
+        ...(focalX !== undefined && focalX !== null
+          ? { focalX: clampFocal(focalX, 50) }
+          : {}),
+        ...(focalY !== undefined && focalY !== null
+          ? { focalY: clampFocal(focalY, 50) }
+          : {}),
         order,
         isActive
       }

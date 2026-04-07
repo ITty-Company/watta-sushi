@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
 
 interface BlogPost {
   id: number
@@ -22,7 +23,7 @@ function normalizeVideoUrl(url?: string | null): string | null {
 
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/blog/${slug}`, {
+    const res = await fetch(`${serverApiBaseUrl()}/api/blog/${slug}`, {
       cache: 'no-store',
     })
     if (!res.ok) return null
@@ -50,7 +51,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const videoEmbedUrl = normalizeVideoUrl(post.videoUrl)
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] py-10 px-4">
+    <main className="watta-public-page-shell min-h-screen py-10 px-4">
       <article className="max-w-4xl mx-auto bg-white rounded-3xl border border-[#145142]/10 shadow-sm overflow-hidden">
         {post.imageUrl && <img src={post.imageUrl} alt={post.title} className="w-full h-[280px] md:h-[420px] object-cover" />}
 

@@ -314,11 +314,21 @@ export default function ProductView({
     }, 500)
   }
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#F5F5F7] text-[#145142]">Завантаження...</div>
-  if (!product) return <div className="min-h-screen flex items-center justify-center bg-[#F5F5F7]">Товар не знайдено</div>
+  if (isLoading)
+    return (
+      <div className="watta-public-page-shell min-h-screen flex items-center justify-center text-[#145142] font-semibold">
+        Завантаження...
+      </div>
+    )
+  if (!product)
+    return (
+      <div className="watta-public-page-shell min-h-screen flex items-center justify-center text-[#145142]">
+        Товар не знайдено
+      </div>
+    )
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] font-sans pb-32 relative">
+    <div className="watta-public-page-shell min-h-screen font-sans pb-32 relative">
       <LogoBackground />
 
       {/* --- HEADER (Как в корзине/профиле) --- */}

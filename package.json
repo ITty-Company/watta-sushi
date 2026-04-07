@@ -2,10 +2,29 @@
   "name": "watta-sushi",
   "version": "1.0.0",
   "scripts": {
+    "dev": "cd web && npm run dev",
+    "dev:safe": "cd web && npm run dev:safe",
+    "dev:local": "cd web && npm run dev",
+    "dev:lan": "cd web && npm run dev:lan",
+    "dev:render:lan": "cd web && npm run dev:render:lan",
+    "dev:reset": "cd web && npm run dev:reset",
+    "dev:clean": "cd web && npm run dev:clean",
+    "dev:rese": "cd web && npm run dev:reset",
     "build": "cd web && NODE_ENV=development npm install && npm run build",
     "start": "cd web && npm run start",
     "build:web": "cd web && NODE_ENV=development npm install && npm run build",
-    "start:web": "cd web && npm run start"
+    "start:web": "cd web && npm run start",
+    "docker:db": "docker-compose up -d 2>/dev/null || docker compose up -d",
+    "docker:db:down": "docker-compose down 2>/dev/null || docker compose down",
+    "local:prepare": "node scripts/local-prepare.cjs",
+    "local:prepare:cloud": "SKIP_DOCKER=1 node scripts/local-prepare.cjs",
+    "local:all": "node scripts/kill-dev-ports.cjs && rm -rf web/.next web/node_modules/.cache && npx --yes concurrently -k -c blue,magenta -n web,api \"npm run local:web\" \"npm run local:backend\"",
+    "local:all:clean": "node scripts/kill-dev-ports.cjs && rm -rf web/.next web/node_modules/.cache && npx --yes concurrently -k -c blue,magenta -n web,api \"npm run local:web\" \"npm run local:backend\"",
+    "local:backend": "cd backend && npm run dev",
+    "local:web": "cd web && NEXT_PUBLIC_API_URL=http://127.0.0.1:5050 npm run dev",
+    "local:web:mock": "cd web && npm run dev:mock",
+    "local:web:render": "cd web && npm run dev:render",
+    "dev:render": "cd web && npm run dev:render"
   },
   "dependencies": {
     "jsonwebtoken": "^9.0.3"

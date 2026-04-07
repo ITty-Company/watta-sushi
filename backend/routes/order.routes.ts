@@ -1,12 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-// import { checkAdmin } from '../authMiddleware'; // Если нужно будет в будущем
+import { checkAdmin } from '../authMiddleware';
 import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
 import { sendOrderReceipt } from '../services/email.service';
 import Stripe from 'stripe';
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+
+function getStripeClient(): Stripe | null {
+  const key = process.env.STRIPE_SECRET_KEY?.trim()
+  if (!key) return null
+  return new Stripe(key)
+}
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -110,13 +115,59 @@ router.get('/bonus', async (req: Request, res: Response) => {
 });
 
 // ==========================================
+// Агрегована статистика (тільки ADMIN, з БД)
+// ==========================================
+router.get('/stats', checkAdmin, async (_req: Request, res: Response) => {
+  try {
+    const [totalOrders, statusGroups, revenueAgg, paymentPaidCount] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
+      prisma.order.aggregate({
+        where: {
+          status: { in: ['COMPLETED', 'DELIVERED'] },
+        },
+        _sum: { totalPrice: true },
+      }),
+      prisma.order.count({ where: { paymentStatus: 'PAID' } }),
+    ]);
+
+    const raw: Record<string, number> = {};
+    for (const g of statusGroups) {
+      raw[g.status] = g._count._all;
+    }
+    const n = (s: string) => raw[s] ?? 0;
+
+    res.json({
+      totalOrders,
+      revenueCompleted: Number(revenueAgg._sum.totalPrice ?? 0),
+      paymentPaidCount,
+      byStatus: {
+        PENDING: n('PENDING'),
+        COOKING: n('COOKING'),
+        DELIVERING: n('DELIVERING'),
+        /** COMPLETED + DELIVERED (legacy) — одна колонка «виконані» */
+        COMPLETED: n('COMPLETED') + n('DELIVERED'),
+        CANCELLED: n('CANCELLED'),
+      },
+      rawStatusCounts: raw,
+    });
+  } catch (error) {
+    console.error('Order stats error:', error);
+    res.status(500).json({ message: 'Помилка статистики замовлень' });
+  }
+});
+
+// ==========================================
 // 2. Получить все заказы (Админ)
 // ==========================================
-router.get('/', async (req, res) => {
+router.get('/', checkAdmin, async (_req: Request, res: Response) => {
   try {
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { items: { include: { product: true } }, user: true }
+      include: { items: { include: { product: true } }, user: true },
     });
     res.json(orders);
   } catch (error) {
@@ -127,7 +178,7 @@ router.get('/', async (req, res) => {
 // ==========================================
 // 3. Получить заказы по ID (для Админки или дебага)
 // ==========================================
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', checkAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
     const orders = await prisma.order.findMany({
@@ -297,8 +348,16 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     if (paymentMethod === 'CARD') {
+      const stripe = getStripeClient()
+      if (!stripe) {
+        res.status(503).json({
+          message:
+            'Оплата карткою недоступна: додайте STRIPE_SECRET_KEY у backend/.env (локально) або на Render.',
+        })
+        return
+      }
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: order.items.map((item: any) => ({
@@ -339,7 +398,7 @@ router.post('/', async (req: Request, res: Response) => {
 // ==========================================
 // 5. Обновить статус
 // ==========================================
-router.patch('/:id/status', async (req: Request, res: Response) => {
+router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, paymentStatus } = req.body;

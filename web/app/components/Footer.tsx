@@ -18,7 +18,7 @@ export default function Footer() {
             <Link href="/about" className="hover:text-[#ff6b35] transition">Про нас</Link>
           </div>
 
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-400" suppressHydrationWarning>
             © {new Date().getFullYear()} Watta Sushi. Всі права захищені.
           </div>
         </div>
