@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { 
   ArrowLeft, 
@@ -17,13 +18,13 @@ import {
   ChefHat,
   Truck,
   Check,
+  CheckCircle,
   XCircle,
   Menu,
   Package,
   ShoppingBag,
   Layers,
   BarChart2,
-  TrendingUp,
   Sparkles,
   Users,
   Settings, 
@@ -38,11 +39,12 @@ import {
   Move,
   Store,
   BookOpen,
-  Receipt,
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import CityMapPicker from './CityMapPicker'
+import AdminDeliveryZoneEditor from './AdminDeliveryZoneEditor'
 import { useLanguage } from '../context/LanguageContext'
+import AdminDashboardStudio from './admin/AdminDashboardStudio'
 
 function notifyCountriesCatalogUpdated() {
   if (typeof window !== 'undefined') {
@@ -146,6 +148,8 @@ interface City {
   pricePerKm?: number
   latitude?: number
   longitude?: number
+  restaurantLatitude?: number | null
+  restaurantLongitude?: number | null
   zoom?: number
   isActive: boolean
   country?: {
@@ -258,6 +262,7 @@ const defaultSiteSettings: SiteSettings = {
 
 export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const { t, adminUiLanguage, setAdminUiLanguage } = useLanguage()
+  const reduceMotion = useReducedMotion()
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'blog' | 'crm' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'| 'ingredients'>('dashboard')
   
@@ -364,6 +369,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [newCityLongitude, setNewCityLongitude] = useState('')
   const [newCityZoom, setNewCityZoom] = useState('12')
   const [newCityPricePerKm, setNewCityPricePerKm] = useState('10')
+  const [newCityRestaurantLatitude, setNewCityRestaurantLatitude] = useState('')
+  const [newCityRestaurantLongitude, setNewCityRestaurantLongitude] = useState('')
   const [newCityIsActive, setNewCityIsActive] = useState(true)
   const [editingCityId, setEditingCityId] = useState<number | null>(null)
   const [cityMapSearchQuery, setCityMapSearchQuery] = useState('')
@@ -377,6 +384,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     { id: number; name: string; isFreeDelivery: boolean; flatDeliveryFee: number | null }[]
   >([])
   const [editorZonesLoading, setEditorZonesLoading] = useState(false)
+  const [zoneEditorRefresh, setZoneEditorRefresh] = useState(0)
   const bannerFocalPreviewRef = useRef<HTMLDivElement>(null)
   const bannerFocalDragRef = useRef<{
     active: boolean
@@ -599,7 +607,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     return () => {
       cancelled = true
     }
-  }, [editingCityId])
+  }, [editingCityId, zoneEditorRefresh])
 
   const saveEditorZoneTariff = useCallback(
     async (zoneId: number, body: { isFreeDelivery: boolean; flatDeliveryFee: number | null }) => {
@@ -864,30 +872,119 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
   // --- БЛОК НОВОСТЕЙ (NEWS SYSTEM) ---
   interface NewsItem {
-    id: number; title: string; description: string; content: string; imageUrl: string; isHit: boolean;
+    id: number
+    title: string
+    description: string
+    content: string
+    imageUrl?: string | null
+    galleryUrls?: unknown
+    productOffers?: unknown
+    isHit: boolean
   }
+  type NewsProductOffer = { productId: number; discountPercent: number }
+
   const [newsItems, setNewsItems] = useState<NewsItem[]>([])
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false)
   const [editingNews, setEditingNews] = useState<NewsItem | null>(null)
 
-  const handleSaveNews = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const form = e.target as HTMLFormElement
-    const formData = new FormData(form)
-    const isHitInput = form.querySelector('[name="isHit"]') as HTMLInputElement
-    formData.set('isHit', String(isHitInput?.checked || false))
-    
+  const [newsDraft, setNewsDraft] = useState({
+    title: '',
+    description: '',
+    content: '',
+    isHit: false,
+    galleryUrls: [] as string[],
+    pendingFiles: [] as File[],
+  })
+  const [newsProductOffers, setNewsProductOffers] = useState<NewsProductOffer[]>([])
+  const [newsPickProductId, setNewsPickProductId] = useState('')
+  const [newsPickDiscount, setNewsPickDiscount] = useState('10')
+
+  const parseGalleryFromPromo = useCallback((p: NewsItem | null): string[] => {
+    if (!p) return []
+    const g = (p as { galleryUrls?: unknown }).galleryUrls
+    if (Array.isArray(g)) return g.filter((x): x is string => typeof x === 'string' && x.length > 0)
+    if (p.imageUrl) return [p.imageUrl]
+    return []
+  }, [])
+
+  const parseOffersFromPromo = useCallback((p: NewsItem | null): NewsProductOffer[] => {
+    if (!p) return []
+    const o = (p as { productOffers?: unknown }).productOffers
+    const arr = Array.isArray(o) ? o : []
+    return arr
+      .map((row: { productId?: number; discountPercent?: number }) => ({
+        productId: Number(row.productId),
+        discountPercent: Math.min(100, Math.max(0, Math.round(Number(row.discountPercent) || 0))),
+      }))
+      .filter((x) => Number.isFinite(x.productId) && x.productId > 0)
+  }, [])
+
+  useEffect(() => {
+    if (!isNewsModalOpen) return
+    if (editingNews) {
+      setNewsDraft({
+        title: editingNews.title,
+        description: editingNews.description,
+        content: editingNews.content || '',
+        isHit: !!editingNews.isHit,
+        galleryUrls: parseGalleryFromPromo(editingNews),
+        pendingFiles: [],
+      })
+      setNewsProductOffers(parseOffersFromPromo(editingNews))
+    } else {
+      setNewsDraft({
+        title: '',
+        description: '',
+        content: '',
+        isHit: false,
+        galleryUrls: [],
+        pendingFiles: [],
+      })
+      setNewsProductOffers([])
+    }
+    setNewsPickProductId('')
+    setNewsPickDiscount('10')
+  }, [isNewsModalOpen, editingNews, parseGalleryFromPromo, parseOffersFromPromo])
+
+  const handleSaveNewsModal = async () => {
+    if (!newsDraft.title.trim()) {
+      toast.error(t.adminPanel.news.titlePlaceholder)
+      return
+    }
+    if (!newsDraft.description.trim()) {
+      toast.error(t.adminPanel.news.descPlaceholder)
+      return
+    }
+    const fd = new FormData()
+    fd.append('title', newsDraft.title.trim())
+    fd.append('description', newsDraft.description.trim())
+    fd.append('content', (newsDraft.content || newsDraft.description).trim())
+    fd.append('isHit', String(newsDraft.isHit))
+    fd.append('galleryUrls', JSON.stringify(newsDraft.galleryUrls))
+    fd.append('productOffers', JSON.stringify(newsProductOffers))
+    newsDraft.pendingFiles.forEach((f) => fd.append('images', f))
+
     const url = editingNews ? `/api/promotions/${editingNews.id}` : '/api/promotions'
     const method = editingNews ? 'PUT' : 'POST'
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData })
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
       if (res.ok) {
-        toast.success(t.adminPage.common.saveSuccess); setIsNewsModalOpen(false); setEditingNews(null);
-        fetch('/api/promotions').then(r => r.json()).then(setNewsItems)
+        toast.success(t.adminPage.common.saveSuccess)
+        setIsNewsModalOpen(false)
+        setEditingNews(null)
+        fetch('/api/promotions')
+          .then((r) => r.json())
+          .then(setNewsItems)
         window.dispatchEvent(new Event('promotionsUpdated'))
       } else toast.error(t.adminPage.common.updateError)
-    } catch (e) { toast.error(t.adminPage.common.networkError) }
+    } catch {
+      toast.error(t.adminPage.common.networkError)
+    }
   }
 
   const handleDeleteNews = async (id: number) => {
@@ -1125,6 +1222,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     setNewCityLongitude('')
     setNewCityZoom('12')
     setNewCityPricePerKm('10')
+    setNewCityRestaurantLatitude('')
+    setNewCityRestaurantLongitude('')
     setNewCityIsActive(true)
     setCityMapSearchQuery('')
     setCityMapSearchResults([])
@@ -1143,6 +1242,16 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     setNewCityZoom(city.zoom != null ? String(city.zoom) : '12')
     setNewCityPricePerKm(
       city.pricePerKm != null && Number.isFinite(city.pricePerKm) ? String(city.pricePerKm) : '10'
+    )
+    setNewCityRestaurantLatitude(
+      city.restaurantLatitude != null && Number.isFinite(city.restaurantLatitude)
+        ? String(city.restaurantLatitude)
+        : ''
+    )
+    setNewCityRestaurantLongitude(
+      city.restaurantLongitude != null && Number.isFinite(city.restaurantLongitude)
+        ? String(city.restaurantLongitude)
+        : ''
     )
     setNewCityIsActive(city.isActive)
     const currentOnMap = [city.name, city.country?.name].filter(Boolean).join(', ') || '📍 поточна локація'
@@ -1190,6 +1299,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           longitude: newCityLongitude ? parseFloat(newCityLongitude) : null,
           zoom: newCityZoom ? parseInt(newCityZoom) : 12,
           pricePerKm: newCityPricePerKm ? parseFloat(newCityPricePerKm) : 10,
+          restaurantLatitude: newCityRestaurantLatitude.trim() ? parseFloat(newCityRestaurantLatitude) : null,
+          restaurantLongitude: newCityRestaurantLongitude.trim() ? parseFloat(newCityRestaurantLongitude) : null,
         })
       })
       if (res.ok) {
@@ -1333,7 +1444,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           longitude: newCityLongitude ? parseFloat(newCityLongitude) : null,
           zoom: newCityZoom ? parseInt(newCityZoom) : 12,
           pricePerKm: newCityPricePerKm ? parseFloat(newCityPricePerKm) : 10,
-          isActive: newCityIsActive
+          isActive: newCityIsActive,
+          restaurantLatitude: newCityRestaurantLatitude.trim() ? parseFloat(newCityRestaurantLatitude) : null,
+          restaurantLongitude: newCityRestaurantLongitude.trim() ? parseFloat(newCityRestaurantLongitude) : null,
         })
       })
       if (res.ok) {
@@ -2563,13 +2676,17 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   { id: 'settings' as const, label: t.adminPanel.sidebar.settings, desc: t.adminPanel.sidebar.settingsDesc },
                   { id: 'ingredients' as const, label: t.adminPanel.sidebar.ingredients, desc: '' },
                 ].map(({ id, label, desc }) => (
-                  <button
+                  <motion.button
                     key={id}
                     type="button"
+                    layout
                     onClick={() => {
                       setActiveTab(id)
                       setIsRightPanelOpen(false)
                     }}
+                    whileHover={reduceMotion ? undefined : { x: -2 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                     className={`admin-watta-drawer-item group w-full rounded-2xl border px-4 py-3.5 text-left transition duration-200 sm:py-4 ${
                       activeTab === id
                         ? 'border-[#145142]/25 bg-gradient-to-r from-[#145142] to-[#1a6b58] text-white shadow-lg shadow-[#145142]/25 ring-1 ring-white/15'
@@ -2592,7 +2709,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         {desc}
                       </span>
                     ) : null}
-                  </button>
+                  </motion.button>
                 ))}
               </nav>
             </aside>
@@ -2603,173 +2720,54 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         <div className="w-full min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] md:min-h-[calc(100vh-128px)] pb-8 sm:pb-12 md:pb-20">
           <div className="admin-watta-page-inner max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pt-4 sm:pt-6 md:pt-8">
 
-          {/* Головна: преміум-дашборд */}
+          {/* Головна: студійний дашборд з графіками */}
           {!isRightPanelOpen && activeTab === 'dashboard' && (
-            <div className="flex flex-col gap-8 sm:gap-10 md:gap-12">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <div className="flex flex-col items-center gap-3">
-                    <RefreshCw size={32} className="text-zinc-400 animate-spin" />
-                    <p className="text-zinc-500 font-medium">{t.adminPanel.dashboard.loading}</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="rounded-lg border border-zinc-200 bg-zinc-100/80 px-3 py-2.5 sm:px-4 sm:py-3">
-                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
-                      {t.adminPanel.dashboard.statsHint}
-                      {dashboardMetrics.fromDb ? (
-                        <span className="ml-1.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                          · orders/stats
-                        </span>
-                      ) : (
-                        <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800/90">
-                          · {t.adminPanel.dashboard.statsFallback}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
-                          <TrendingUp size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.revenue}</p>
-                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">
-                            {dashboardMetrics.revenue.toFixed(2)} €
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
-                          <Package size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.orders}</p>
-                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{dashboardMetrics.totalOrders}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
-                          <Receipt size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.paidOrders}</p>
-                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{dashboardMetrics.paidOrders}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
-                          <ShoppingBag size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.products}</p>
-                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{products.length}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
-                          <MapPin size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.cities}</p>
-                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{cities.length}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4 shadow-sm">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200/90 text-zinc-700">
-                          <Globe size={18} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.adminPanel.dashboard.countries}</p>
-                          <p className="text-base sm:text-lg font-black tabular-nums text-zinc-900">{countries.length}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 sm:mb-3">
-                      {t.adminPanel.dashboard.statusTitle}
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-                      {[
-                        { label: t.adminPanel.dashboard.statusPending, count: dashboardMetrics.pending, accent: 'border-l-amber-400' },
-                        { label: t.adminPanel.dashboard.statusCooking, count: dashboardMetrics.cooking, accent: 'border-l-orange-400' },
-                        { label: t.adminPanel.dashboard.statusDelivering, count: dashboardMetrics.delivering, accent: 'border-l-sky-400' },
-                        { label: t.adminPanel.dashboard.statusCompleted, count: dashboardMetrics.completed, accent: 'border-l-emerald-500' },
-                        { label: t.adminPanel.dashboard.statusCancelled, count: dashboardMetrics.cancelled, accent: 'border-l-red-400' },
-                      ].map(({ label, count, accent }) => (
-                        <div
-                          key={label}
-                          className={`rounded-xl border border-zinc-200 bg-zinc-100/90 p-3 sm:p-4 shadow-sm border-l-4 ${accent}`}
-                        >
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">{label}</p>
-                          <p className="text-2xl sm:text-3xl font-black tabular-nums text-zinc-900 mt-0.5">{count}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 sm:mb-3">
-                      {t.adminPanel.dashboard.contentSection}
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-3">
-                      {[
-                        { icon: Tag, label: t.adminPanel.dashboard.promos, value: promos.length },
-                        { icon: Layers, label: t.adminPanel.dashboard.categories, value: menuCategories.length },
-                        { icon: User, label: t.adminPanel.dashboard.users, value: users.length },
-                        { icon: ImageIcon, label: t.adminPanel.dashboard.banners, value: banners.length },
-                        { icon: BookOpen, label: t.adminPanel.dashboard.blog, value: blogPosts.length },
-                        { icon: ListOrdered, label: t.adminPanel.dashboard.ingredients, value: ingredients.length },
-                        { icon: Users, label: t.adminPanel.dashboard.team, value: teamMembers.length },
-                      ].map(({ icon: Icon, label, value }) => (
-                        <div
-                          key={label}
-                          className="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm"
-                        >
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
-                            <Icon size={16} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 truncate">{label}</p>
-                            <p className="text-lg font-black tabular-nums text-zinc-900">{value}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <motion.div
+              key="admin-tab-dashboard"
+              initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <AdminDashboardStudio
+                isLoading={isLoading}
+                dashboardMetrics={dashboardMetrics}
+                orders={orders}
+                counts={{
+                  products: products.length,
+                  cities: cities.length,
+                  countries: countries.length,
+                  promos: promos.length,
+                  categories: menuCategories.length,
+                  users: users.length,
+                  banners: banners.length,
+                  blog: blogPosts.length,
+                  ingredients: ingredients.length,
+                  team: teamMembers.length,
+                }}
+              />
+            </motion.div>
           )}
 
           {/* Контент розділів — на всю ширину, коли обрано не дашборд */}
           {!isRightPanelOpen && activeTab !== 'dashboard' && (
-            <div className="w-full">
+            <motion.div
+              key={activeTab}
+              className="w-full"
+              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
+            >
               <div className="admin-watta-tab-toolbar">
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setIsRightPanelOpen(true)}
+                  whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.98 }}
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#145142]/12 to-[#1a6b58]/10 px-4 py-2.5 font-semibold text-[#145142] ring-1 ring-[#145142]/15 transition-all hover:from-[#145142]/18 hover:to-[#1a6b58]/14 hover:ring-[#145142]/25"
                 >
                   <Menu size={18} />
                   <span>{t.adminPanel.common.menuChangeSection}</span>
-                </button>
+                </motion.button>
               </div>
           {activeTab === 'orders' && (
             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 items-center">
@@ -2817,6 +2815,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       </div>
                       <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold uppercase ${
                         order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        order.status === 'CONFIRMED' ? 'bg-lime-100 text-lime-900' :
                         order.status === 'COOKING' ? 'bg-orange-100 text-orange-800' :
                         order.status === 'DELIVERING' ? 'bg-blue-100 text-blue-800' :
                         order.status === 'COMPLETED' || order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
@@ -2889,6 +2888,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       
                       {/* Кнопки смены статуса */}
                       <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto">
+                         <button onClick={() => updateStatus(order.id, 'CONFIRMED')} className="p-2 bg-lime-50 text-lime-700 rounded-lg hover:bg-lime-100" title={t.adminPanel.orders.hintConfirmed}><CheckCircle/></button>
                          <button onClick={() => updateStatus(order.id, 'COOKING')} className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100" title={t.adminPanel.orders.hintCooking}><ChefHat/></button>
                          <button onClick={() => updateStatus(order.id, 'DELIVERING')} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title={t.adminPanel.orders.hintDelivering}><Truck/></button>
                          <button onClick={() => updateStatus(order.id, 'COMPLETED')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100" title={t.adminPanel.orders.hintCompleted}><Check/></button>
@@ -3310,6 +3310,52 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         onSelect={handleChooseCityFromMap}
                         className="w-full border-2 border-[#145142]/20 rounded-[16px]"
                       />
+                      <div className="mt-4 rounded-[14px] border border-[#145142]/15 bg-[#f9fdfb] p-3 sm:p-4">
+                        <p className="text-xs font-bold text-[#145142]">
+                          Точка кухні / ресторану (для €/км до адреси клієнта)
+                        </p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-gray-600">
+                          Якщо залишити порожнім — для розрахунку відстані використовується центр карти міста (координати з пошуку вище).
+                        </p>
+                        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wide text-[#145142]/75">
+                              Широта кухні
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={newCityRestaurantLatitude}
+                              onChange={(e) => setNewCityRestaurantLatitude(e.target.value)}
+                              placeholder="напр. 52.3676"
+                              className="mt-1 w-full rounded-[12px] border-2 border-[#145142]/20 bg-white/90 p-3 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wide text-[#145142]/75">
+                              Довгота кухні
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={newCityRestaurantLongitude}
+                              onChange={(e) => setNewCityRestaurantLongitude(e.target.value)}
+                              placeholder="напр. 4.9041"
+                              className="mt-1 w-full rounded-[12px] border-2 border-[#145142]/20 bg-white/90 p-3 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newCityLatitude) setNewCityRestaurantLatitude(newCityLatitude)
+                            if (newCityLongitude) setNewCityRestaurantLongitude(newCityLongitude)
+                          }}
+                          className="mt-2 text-xs font-bold text-[#145142] underline decoration-[#145142]/40 hover:decoration-[#145142]"
+                        >
+                          Скопіювати з центру карти міста
+                        </button>
+                      </div>
                     </div>
 
                     {/* Страна */}
@@ -3380,20 +3426,19 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </form>
 
                   {editingCityId !== null && (
+                    <>
                     <div className="mt-8 rounded-[16px] border-2 border-[#145142]/20 bg-[#f7fbf9] p-4 sm:p-5">
                       <h3 className="text-base font-bold text-[#145142]">Тарифи зон доставки</h3>
                       <p className="mt-1 text-xs text-gray-600">
-                        Полігони зберігаються в базі; тут можна задати <strong>безкоштовно</strong> або{' '}
-                        <strong>фікс €</strong> для кожної зони. Якщо обидва вимкнені — на сайті показується
-                        стандарт (база + €/км міста).
+                        Полігони накреслюєте на карті в блоці нижче; тут задаєте <strong>безкоштовно</strong> або{' '}
+                        <strong>фікс €</strong> для кожної зони. Якщо обидва вимкнені — на сайті діє стандарт (база з
+                        налаштувань сайту + €/км міста × відстань від точки кухні).
                       </p>
                       {editorZonesLoading ? (
                         <p className="mt-3 text-sm text-gray-500">Завантаження зон…</p>
                       ) : editorDeliveryZones.length === 0 ? (
                         <p className="mt-3 text-sm text-gray-500">
-                          Для цього міста ще немає зон. Створіть зону через API{' '}
-                          <code className="rounded bg-white/80 px-1">POST /api/delivery-zones</code> (координати
-                          полігона JSON).
+                          Зон ще немає — накресліть полігон на карті під цим блоком і збережіть назву зони.
                         </p>
                       ) : (
                         <ul className="mt-4 flex flex-col gap-3">
@@ -3464,6 +3509,22 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         </ul>
                       )}
                     </div>
+                    {newCityLatitude &&
+                      newCityLongitude &&
+                      !Number.isNaN(parseFloat(newCityLatitude)) &&
+                      !Number.isNaN(parseFloat(newCityLongitude)) && (
+                        <AdminDeliveryZoneEditor
+                          cityId={editingCityId}
+                          centerLat={parseFloat(newCityLatitude)}
+                          centerLng={parseFloat(newCityLongitude)}
+                          zoom={parseInt(newCityZoom, 10) || 12}
+                          onZonesChanged={() => {
+                            setZoneEditorRefresh((k) => k + 1)
+                            void fetchData()
+                          }}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -4332,9 +4393,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             </div>
           )}
 
-            </div>
-          )}
-          {!isRightPanelOpen && activeTab === 'settings' && (
+          {activeTab === 'settings' && (
              <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 max-w-2xl mx-auto w-full">
                <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[24px] md:rounded-[28px] p-4 sm:p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70">
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#145142] mb-6 flex items-center gap-2">
@@ -4455,6 +4514,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
              </div>
             )}
 
+          </motion.div>
+          )}
           </div>
         </div>
 
@@ -5373,11 +5434,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       )}
       {/* МОДАЛКА НОВОСТЕЙ */}
       {isNewsModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4">
+          <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-[#145142]/10">
+            <div className="flex items-center justify-between gap-2 mb-4 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100 sm:border-0 sm:static">
               <div className="h-10 w-10 shrink-0" aria-hidden />
-              <h2 className="flex-1 text-center text-xl font-bold px-1">{editingNews ? 'Редактировать' : 'Новая новость'}</h2>
+              <h2 className="flex-1 text-center text-lg sm:text-xl font-bold px-1 text-[#145142]">
+                {editingNews ? t.adminPanel.news.editTitle : t.adminPanel.news.newTitle}
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsNewsModalOpen(false)}
@@ -5387,17 +5450,212 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 <X size={22} strokeWidth={2.5} />
               </button>
             </div>
-            <form onSubmit={handleSaveNews} className="space-y-4">
-              <input name="title" defaultValue={editingNews?.title} placeholder="Заголовок" required className="w-full p-3 border rounded-lg"/>
-              <textarea name="description" defaultValue={editingNews?.description} placeholder="Краткое описание" required className="w-full p-3 border rounded-lg"/>
-              <textarea name="content" defaultValue={editingNews?.content} placeholder="Полный текст" rows={5} className="w-full p-3 border rounded-lg"/>
-              <input type="file" name="image" accept="image/*" />
-              <label className="flex items-center gap-2"><input type="checkbox" name="isHit" defaultChecked={editingNews?.isHit}/> Хит продаж</label>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setIsNewsModalOpen(false)} className="flex-1 py-3 bg-gray-100 rounded-lg">Отмена</button>
-                <button type="submit" className="flex-1 py-3 bg-[#155044] text-white rounded-lg shadow-none hover:bg-[#103d34] transition">Сохранить</button>
+
+            <div className="space-y-4 sm:space-y-5">
+              <input
+                value={newsDraft.title}
+                onChange={(e) => setNewsDraft((d) => ({ ...d, title: e.target.value }))}
+                placeholder={t.adminPanel.news.titlePlaceholder}
+                className="w-full p-3 border border-gray-200 rounded-xl text-base"
+              />
+              <textarea
+                value={newsDraft.description}
+                onChange={(e) => setNewsDraft((d) => ({ ...d, description: e.target.value }))}
+                placeholder={t.adminPanel.news.descPlaceholder}
+                rows={3}
+                className="w-full p-3 border border-gray-200 rounded-xl text-base resize-y min-h-[80px]"
+              />
+              <textarea
+                value={newsDraft.content}
+                onChange={(e) => setNewsDraft((d) => ({ ...d, content: e.target.value }))}
+                placeholder={t.adminPanel.news.textPlaceholder}
+                rows={5}
+                className="w-full p-3 border border-gray-200 rounded-xl text-base resize-y"
+              />
+
+              <div>
+                <p className="text-sm font-bold text-[#145142] mb-2">{t.adminPanel.news.galleryLabel}</p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+                  {newsDraft.galleryUrls.map((url, idx) => (
+                    <div key={`${url}-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        aria-label={t.adminPanel.news.removePhotoAria}
+                        onClick={() =>
+                          setNewsDraft((d) => ({
+                            ...d,
+                            galleryUrls: d.galleryUrls.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="absolute top-1 right-1 h-7 w-7 rounded-full bg-black/55 text-white text-xs flex items-center justify-center hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {newsDraft.pendingFiles.map((f, idx) => (
+                    <div
+                      key={`p-${idx}-${f.name}`}
+                      className="relative aspect-square rounded-xl overflow-hidden border border-dashed border-[#145142]/40 bg-[#145142]/5 flex items-center justify-center p-1"
+                    >
+                      <span className="text-[10px] text-center text-[#145142] font-semibold line-clamp-3">{f.name}</span>
+                      <button
+                        type="button"
+                        aria-label={t.adminPanel.news.removePhotoAria}
+                        onClick={() =>
+                          setNewsDraft((d) => ({
+                            ...d,
+                            pendingFiles: d.pendingFiles.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="absolute top-1 right-1 h-7 w-7 rounded-full bg-black/55 text-white text-xs flex items-center justify-center hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <label className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 rounded-xl bg-[#145142]/10 text-[#145142] font-bold cursor-pointer hover:bg-[#145142]/15 transition border border-[#145142]/20">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const list = e.target.files ? Array.from(e.target.files) : []
+                      setNewsDraft((d) => ({
+                        ...d,
+                        pendingFiles: [...d.pendingFiles, ...list].slice(0, 24),
+                      }))
+                      e.target.value = ''
+                    }}
+                  />
+                  {t.adminPanel.news.uploadPhotos}
+                </label>
               </div>
-            </form>
+
+              <div className="rounded-xl border border-[#145142]/15 bg-[#145142]/[0.04] p-3 sm:p-4 space-y-3">
+                <p className="text-sm font-bold text-[#145142]">{t.adminPanel.news.dishesBlock}</p>
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                  <div className="flex-1 min-w-0">
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">{t.adminPanel.news.selectProduct}</label>
+                    <select
+                      value={newsPickProductId}
+                      onChange={(e) => setNewsPickProductId(e.target.value)}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white"
+                    >
+                      <option value="">—</option>
+                      {[...products]
+                        .sort((a, b) => a.name_ru.localeCompare(b.name_ru, 'uk'))
+                        .map((p) => (
+                          <option key={p.id} value={String(p.id)}>
+                            #{p.id} · {p.name_ru} — {p.price} €
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <div className="w-full sm:w-24">
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">{t.adminPanel.news.discountShort}</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={newsPickDiscount}
+                      onChange={(e) => setNewsPickDiscount(e.target.value)}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl text-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = Number(newsPickProductId)
+                      if (!id) {
+                        toast.error(t.adminPanel.news.pickProductFirst)
+                        return
+                      }
+                      if (newsProductOffers.some((o) => o.productId === id)) {
+                        toast.error(t.adminPanel.news.dishDuplicate)
+                        return
+                      }
+                      const pct = Math.min(100, Math.max(0, Math.round(Number(newsPickDiscount) || 0)))
+                      setNewsProductOffers((prev) => [...prev, { productId: id, discountPercent: pct }])
+                    }}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#145142] text-white font-bold text-sm hover:bg-[#103d34] transition"
+                  >
+                    {t.adminPanel.news.addDish}
+                  </button>
+                </div>
+                {newsProductOffers.length > 0 ? (
+                  <ul className="space-y-2">
+                    {newsProductOffers.map((row, i) => {
+                      const pr = products.find((p) => p.id === row.productId)
+                      return (
+                        <li
+                          key={`${row.productId}-${i}`}
+                          className="flex flex-wrap items-center gap-2 justify-between bg-white rounded-lg border border-gray-100 px-3 py-2"
+                        >
+                          <span className="text-sm font-medium text-gray-800 flex-1 min-w-0 truncate">
+                            {pr ? pr.name_ru : `ID ${row.productId}`}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={row.discountPercent}
+                              onChange={(e) => {
+                                const v = Math.min(100, Math.max(0, Math.round(Number(e.target.value) || 0)))
+                                setNewsProductOffers((prev) =>
+                                  prev.map((o, j) => (j === i ? { ...o, discountPercent: v } : o))
+                                )
+                              }}
+                              className="w-16 p-1.5 border rounded-lg text-sm text-center"
+                            />
+                            <span className="text-xs text-gray-500">%</span>
+                            <button
+                              type="button"
+                              onClick={() => setNewsProductOffers((prev) => prev.filter((_, j) => j !== i))}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              aria-label={t.adminPanel.news.removePhotoAria}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : null}
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newsDraft.isHit}
+                  onChange={(e) => setNewsDraft((d) => ({ ...d, isHit: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300"
+                />
+                <span className="text-sm font-semibold text-gray-800">{t.adminPanel.news.isHit}</span>
+              </label>
+
+              <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2 sticky bottom-0 bg-white pb-[env(safe-area-inset-bottom)]">
+                <button
+                  type="button"
+                  onClick={() => setIsNewsModalOpen(false)}
+                  className="flex-1 py-3 bg-gray-100 rounded-xl font-bold text-gray-800 hover:bg-gray-200 transition"
+                >
+                  {t.adminPanel.actions.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveNewsModal}
+                  className="flex-1 py-3 bg-[#155044] text-white rounded-xl font-bold shadow-none hover:bg-[#103d34] transition"
+                >
+                  {t.adminPanel.actions.save}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

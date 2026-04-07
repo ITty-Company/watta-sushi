@@ -44,7 +44,7 @@ router.post('/', async (req: Request, res: Response) => {
     const zone = await prisma.deliveryZone.create({
       data: {
         name,
-        color: color || '#4ade80',
+        color: color || '#145142',
         cityId: parseInt(cityId),
         coordinates: typeof coordinates === 'string' ? coordinates : JSON.stringify(coordinates),
         isFreeDelivery: free,

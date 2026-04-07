@@ -1,0 +1,535 @@
+'use client'
+
+import { useState, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import type { LucideIcon } from 'lucide-react'
+import {
+  Package,
+  Clock,
+  Check,
+  ChefHat,
+  Truck,
+  Star,
+  X,
+  Sparkles,
+} from 'lucide-react'
+import toast from 'react-hot-toast'
+import type { Language } from '@/app/context/LanguageContext'
+
+export interface ProfileOrderItem {
+  id: number
+  quantity: number
+  price: number
+  productId?: number
+  product: {
+    name_ru: string
+    name_ua?: string | null
+    name_en?: string | null
+    name_nl?: string | null
+    description_ru?: string
+    imageUrl?: string
+  }
+}
+
+export interface ProfileOrderReview {
+  id: number
+  rating: number
+  text: string
+  images?: unknown
+}
+
+export interface ProfileOrder {
+  id: number
+  createdAt: string
+  totalPrice: number
+  status: string
+  items: ProfileOrderItem[]
+  review?: ProfileOrderReview | null
+}
+
+function orderPipelineRank(status: string): number {
+  if (status === 'CANCELLED') return -1
+  if (status === 'DELIVERED' || status === 'COMPLETED') return 4
+  const m: Record<string, number> = {
+    PENDING: 0,
+    CONFIRMED: 1,
+    COOKING: 2,
+    DELIVERING: 3,
+  }
+  return m[status] ?? 0
+}
+
+function productLineName(
+  p: ProfileOrderItem['product'],
+  lang: Language
+): string {
+  if (lang === 'uk') return p.name_ua || p.name_ru
+  if (lang === 'en') return p.name_en || p.name_ru
+  if (lang === 'nl') return p.name_nl || p.name_ru
+  return p.name_ru
+}
+
+const stepIcons = [Clock, Check, ChefHat, Truck, Package]
+
+interface TProfile {
+  journeyHint: string
+  stepPending: string
+  stepConfirmed: string
+  stepCooking: string
+  stepDelivering: string
+  stepReceived: string
+  stepReview: string
+  stepReviewDone: string
+  orderCancelled: string
+  liveUpdating: string
+  reviewOpen: string
+  reviewModalTitle: string
+  reviewText: string
+  reviewPhotos: string
+  pickPhotos: string
+  reviewSend: string
+  orderLabel: string
+  total: string
+  reorder: string
+}
+
+interface Props {
+  orders: ProfileOrder[]
+  loading: boolean
+  loadingLabel: string
+  lang: Language
+  t: TProfile
+  emptyMessage: string
+  goMenuLabel: string
+  onGoMenu: () => void
+  onReorder: (order: ProfileOrder) => void
+  onReviewSubmitted: (orderId: number, review: ProfileOrderReview) => void
+}
+
+export default function ClientProfileOrders({
+  orders,
+  loading,
+  loadingLabel,
+  lang,
+  t,
+  emptyMessage,
+  goMenuLabel,
+  onGoMenu,
+  onReorder,
+  onReviewSubmitted,
+}: Props) {
+  const [reviewOrder, setReviewOrder] = useState<ProfileOrder | null>(null)
+  const [reviewText, setReviewText] = useState('')
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewImages, setReviewImages] = useState<string[]>([])
+  const [submitting, setSubmitting] = useState(false)
+
+  const stepLabels = [
+    t.stepPending,
+    t.stepConfirmed,
+    t.stepCooking,
+    t.stepDelivering,
+    t.stepReceived,
+  ]
+
+  const closeModal = useCallback(() => {
+    setReviewOrder(null)
+    setReviewText('')
+    setReviewRating(5)
+    setReviewImages([])
+  }, [])
+
+  const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files?.length) return
+    const next: string[] = [...reviewImages]
+    const max = 6
+    for (let i = 0; i < files.length && next.length < max; i++) {
+      const f = files[i]
+      if (!f.type.startsWith('image/')) continue
+      if (f.size > 2_000_000) {
+        toast.error('Файл завеликий (макс. ~2 МБ)')
+        continue
+      }
+      const reader = new FileReader()
+      reader.onload = () => {
+        const r = String(reader.result || '')
+        if (r) {
+          setReviewImages((prev) => (prev.length >= max ? prev : [...prev, r]))
+        }
+      }
+      reader.readAsDataURL(f)
+    }
+    e.target.value = ''
+  }
+
+  const submitReview = async () => {
+    if (!reviewOrder) return
+    const token = localStorage.getItem('token')
+    if (!token) {
+      toast.error('Увійдіть знову')
+      return
+    }
+    const txt = reviewText.trim()
+    if (txt.length < 3) {
+      toast.error('Додайте трохи тексту до відгуку')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderId: reviewOrder.id,
+          rating: reviewRating,
+          text: txt,
+          images: reviewImages,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.message || 'Не вдалося зберегти')
+        return
+      }
+      toast.success('Дякуємо!')
+      onReviewSubmitted(reviewOrder.id, {
+        id: data.id,
+        rating: data.rating,
+        text: data.text,
+        images: data.images,
+      })
+      closeModal()
+    } catch {
+      toast.error('Помилка мережі')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <motion.div
+          className="h-14 w-14 rounded-2xl border-2 border-[#145142]/30 border-t-[#145142]"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+        />
+        <p className="text-[#145142]/70 font-medium">{loadingLabel}</p>
+      </div>
+    )
+  }
+
+  if (orders.length === 0) {
+    return (
+      <div className="px-4 py-14 text-center sm:py-20">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-[#145142]/35">
+          <Package className="h-10 w-10" />
+        </div>
+        <p className="mb-6 text-base font-medium text-gray-600 sm:text-lg">{emptyMessage}</p>
+        <button
+          type="button"
+          onClick={onGoMenu}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#145142] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+        >
+          <Sparkles className="h-4 w-4" />
+          {goMenuLabel}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <p className="flex items-center gap-2 text-sm text-gray-600">
+        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        {t.journeyHint}
+      </p>
+
+      {orders.map((order, idx) => (
+        <OrderCard
+          key={order.id}
+          order={order}
+          index={idx}
+          lang={lang}
+          t={t}
+          stepLabels={stepLabels}
+          stepIcons={stepIcons}
+          onReorder={() => onReorder(order)}
+          onOpenReview={() => setReviewOrder(order)}
+        />
+      ))}
+
+      <AnimatePresence>
+        {reviewOrder ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                <h3 className="text-lg font-bold text-gray-900">{t.reviewModalTitle}</h3>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="p-2 rounded-xl hover:bg-gray-100 text-gray-500"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <p className="text-sm text-gray-500">
+                  #{reviewOrder.id} · {new Date(reviewOrder.createdAt).toLocaleString()}
+                </p>
+                <div className="flex gap-1 justify-center">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setReviewRating(n)}
+                      className="p-1"
+                    >
+                      <Star
+                        className={`w-9 h-9 ${
+                          n <= reviewRating
+                            ? 'text-amber-400 fill-amber-400'
+                            : 'text-gray-200'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder={t.reviewText}
+                  rows={4}
+                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-gray-800 focus:ring-2 focus:ring-[#145142]/30 focus:border-[#145142] outline-none resize-none"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">{t.reviewPhotos}</p>
+                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#145142]/10 text-[#145142] font-semibold cursor-pointer hover:bg-[#145142]/15">
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={onPickFiles} />
+                    {t.pickPhotos}
+                  </label>
+                  {reviewImages.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {reviewImages.map((src, i) => (
+                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={src} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            className="absolute top-0 right-0 bg-black/50 text-white text-xs px-1"
+                            onClick={() => setReviewImages((prev) => prev.filter((_, j) => j !== i))}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={submitReview}
+                  className="w-full py-3.5 rounded-2xl bg-[#145142] text-white font-bold hover:bg-[#0f3d32] disabled:opacity-60 transition"
+                >
+                  {submitting ? '…' : t.reviewSend}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function OrderCard({
+  order,
+  index,
+  lang,
+  t,
+  stepLabels,
+  stepIcons,
+  onReorder,
+  onOpenReview,
+}: {
+  order: ProfileOrder
+  index: number
+  lang: Language
+  t: TProfile
+  stepLabels: string[]
+  stepIcons: LucideIcon[]
+  onReorder: () => void
+  onOpenReview: () => void
+}) {
+  const rank = orderPipelineRank(order.status)
+  const cancelled = rank < 0
+  const terminal = order.status === 'COMPLETED' || order.status === 'DELIVERED'
+  const hasReview = !!order.review
+  const showReviewStep = terminal && !cancelled
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.25 }}
+      className="relative"
+    >
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:rounded-2xl sm:p-6">
+        <div className="relative mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#145142] text-white sm:h-14 sm:w-14">
+              <Package className="h-6 w-6 sm:h-7 sm:w-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 sm:text-xl">
+                {t.orderLabel} #{order.id}
+              </h3>
+              <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#145142]" />
+                {new Date(order.createdAt).toLocaleString(
+                  lang === 'uk' ? 'uk-UA' : lang === 'nl' ? 'nl-NL' : lang === 'en' ? 'en-GB' : 'ru-RU'
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-full">
+              {t.liveUpdating}
+            </span>
+            {cancelled ? (
+              <span className="text-xs font-bold text-red-700 bg-red-50 px-3 py-1.5 rounded-full border border-red-100">
+                {t.orderCancelled}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {!cancelled ? (
+          <div className="relative mb-6 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50/80 p-4 sm:p-5">
+            <div className="flex min-w-[520px] sm:min-w-0 sm:flex-wrap gap-0 sm:gap-2">
+              {stepLabels.map((label, si) => {
+                const Icon = stepIcons[si]
+                const done = rank > si
+                const current = rank === si
+                return (
+                  <div key={label} className="flex items-center flex-1 min-w-0">
+                    <div className="flex flex-col items-center flex-1">
+                      <div
+                        className={`relative flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors sm:h-11 sm:w-11 ${
+                          done
+                            ? 'border-[#145142] bg-[#145142] text-white'
+                            : current
+                              ? 'scale-105 border-[#145142] bg-white text-[#145142] ring-2 ring-[#145142]/20'
+                              : 'border-gray-200 bg-white text-gray-300'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </div>
+                      <p
+                        className={`mt-2 text-[10px] sm:text-xs font-bold text-center leading-tight max-w-[76px] sm:max-w-none px-0.5 ${
+                          done || current ? 'text-[#145142]' : 'text-gray-400'
+                        }`}
+                      >
+                        {label}
+                      </p>
+                    </div>
+                    {si < stepLabels.length - 1 ? (
+                      <div
+                        className={`h-0.5 flex-1 mx-1 mt-[-1.5rem] rounded-full ${
+                          rank > si ? 'bg-[#145142]' : 'bg-gray-200'
+                        }`}
+                      />
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+
+            {showReviewStep ? (
+              <div className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      hasReview ? 'bg-emerald-500 text-white' : 'bg-amber-100 text-amber-700'
+                    }`}
+                  >
+                    <Star className={`w-5 h-5 ${hasReview ? 'fill-white' : ''}`} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-[#145142] text-sm">
+                      {hasReview ? t.stepReviewDone : t.stepReview}
+                    </p>
+                    {hasReview && order.review ? (
+                      <p className="text-xs text-gray-500 line-clamp-2">{order.review.text}</p>
+                    ) : null}
+                  </div>
+                </div>
+                {!hasReview ? (
+                  <button
+                    type="button"
+                    onClick={onOpenReview}
+                    className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+                  >
+                    {t.reviewOpen}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="mb-5 space-y-0 rounded-xl border border-gray-100 bg-white p-3 sm:p-4">
+          {order.items.map((item, ii) => (
+            <div
+              key={ii}
+              className="flex justify-between items-center gap-3 py-2 border-b border-gray-100 last:border-0"
+            >
+              <span className="text-gray-800 font-semibold text-sm sm:text-base">
+                {productLineName(item.product, lang)}
+              </span>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-gray-500 text-xs font-medium bg-gray-100 px-2 py-0.5 rounded-md">
+                  ×{item.quantity}
+                </span>
+                <span className="text-[#145142] font-bold">
+                  {(item.price * item.quantity).toFixed(2)} €
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xl font-bold text-gray-900 sm:text-2xl">
+            {t.total}: {order.totalPrice} €
+          </p>
+          <button
+            type="button"
+            onClick={onReorder}
+            className="rounded-xl bg-[#145142] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+          >
+            {t.reorder}
+          </button>
+        </div>
+      </div>
+    </motion.article>
+  )
+}

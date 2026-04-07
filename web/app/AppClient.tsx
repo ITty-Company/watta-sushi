@@ -1,15 +1,27 @@
 'use client'
 
-import { ReactNode } from 'react'
-import { usePathname } from 'next/navigation'
+import { ReactNode, useEffect } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
 import LanguageProviderWrapper from './components/LanguageProviderWrapper'
 import FloatingContactButtons from './components/FloatingContactButtons'
 import Footer from './components/Footer'
 
+function scrollWindowToTop() {
+  window.scrollTo(0, 0)
+  document.documentElement.scrollTop = 0
+  document.body.scrollTop = 0
+}
+
 export default function AppClient({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const isHomeRoute = pathname === '/'
   const isAuthRoute = pathname === '/login' || pathname === '/register'
+
+  /** Після переходу на інший URL — завжди зверху (Next не скролить main автоматично). */
+  useEffect(() => {
+    scrollWindowToTop()
+  }, [pathname, searchParams])
 
   return (
     <LanguageProviderWrapper>

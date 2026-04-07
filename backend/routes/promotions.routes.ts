@@ -3,114 +3,179 @@ import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url'; // 1. Импортируем утилиту
+import { fileURLToPath } from 'url';
 
-// 2. Создаем __dirname вручную для ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 const router = Router();
 
-// Папка для загрузки картинок (теперь __dirname работает корректно)
 const uploadDir = path.join(__dirname, '../../web/public/uploads');
-
-// Создаем папку, если её нет
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Настройка Multer
 const storage = multer.diskStorage({
-    destination: (req: any, file: any, cb: any) => {
-        cb(null, uploadDir);
-    },
-    filename: (req: any, file: any, cb: any) => {
-        // Убираем спецсимволы
-        const sanitized = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
-        cb(null, `promo-${Date.now()}-${sanitized}`);
-    }
+  destination: (_req: any, _file: any, cb: any) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req: any, file: any, cb: any) => {
+    const sanitized = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
+    cb(null, `promo-${Date.now()}-${sanitized}`);
+  },
 });
 const upload = multer({ storage });
+const uploadNews = upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'images', maxCount: 24 },
+]);
 
-// 1. Получить все новости
-router.get('/', async (req: any, res: any) => {
+function safeJsonArray(raw: unknown, fallback: unknown[] = []): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
     try {
-        const promos = await prisma.promo.findMany({ orderBy: { createdAt: 'desc' } });
-        res.json(promos);
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Error fetching promos' });
+      const p = JSON.parse(raw);
+      return Array.isArray(p) ? p : fallback;
+    } catch {
+      return fallback;
     }
+  }
+  return fallback;
+}
+
+function normalizeGalleryUrls(body: any, files: Express.Multer.File[] | undefined): string[] {
+  const existing = safeJsonArray(body?.galleryUrls, [])
+    .filter((u): u is string => typeof u === 'string' && u.length > 0);
+  const fromUploads = (files || []).map((f) => `/uploads/${f.filename}`);
+  return [...existing, ...fromUploads];
+}
+
+function normalizeProductOffers(body: any): { productId: number; discountPercent: number }[] {
+  const raw = safeJsonArray(body?.productOffers, []);
+  const out: { productId: number; discountPercent: number }[] = [];
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue;
+    const productId = Number((row as any).productId);
+    const discountPercent = Number((row as any).discountPercent);
+    if (!Number.isFinite(productId) || productId < 1) continue;
+    if (!Number.isFinite(discountPercent)) continue;
+    const d = Math.min(100, Math.max(0, Math.round(discountPercent)));
+    out.push({ productId, discountPercent: d });
+  }
+  return out;
+}
+
+router.get('/', async (_req: any, res: any) => {
+  try {
+    const promos = await prisma.promo.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(promos);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error fetching promos' });
+  }
 });
 
-// 2. Получить одну новость
 router.get('/:id', async (req: any, res: any) => {
-    try {
-        const promo = await prisma.promo.findUnique({ where: { id: Number(req.params.id) } });
-        if (!promo) return res.status(404).json({ error: 'News not found' });
-        res.json(promo);
-    } catch (e) {
-        res.status(500).json({ error: 'Error fetching promo' });
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
     }
+    const promo = await prisma.promo.findUnique({ where: { id } });
+    if (!promo) {
+      res.status(404).json({ error: 'News not found' });
+      return;
+    }
+    const offers = normalizeProductOffers({ productOffers: promo.productOffers });
+    const ids = [...new Set(offers.map((o) => o.productId))];
+    const products =
+      ids.length > 0
+        ? await prisma.product.findMany({
+            where: { id: { in: ids } },
+            include: { category: true },
+          })
+        : [];
+    const offerProducts = products.map((p) => ({
+      ...p,
+      offerDiscountPercent: offers.find((o) => o.productId === p.id)?.discountPercent ?? 0,
+    }));
+    res.json({ ...promo, offerProducts });
+  } catch (e) {
+    res.status(500).json({ error: 'Error fetching promo' });
+  }
 });
 
-// 3. Создать новость
-router.post('/', upload.single('image'), async (req: any, res: any) => {
-    try {
-        const { title, description, content, isHit } = req.body;
-        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+router.post('/', uploadNews, async (req: any, res: any) => {
+  try {
+    const { title, description, content, isHit } = req.body;
+    const files = req.files as { image?: Express.Multer.File[]; images?: Express.Multer.File[] } | undefined;
+    const single = files?.image?.[0];
+    const multi = files?.images || [];
+    const fromSingle = single ? [`/uploads/${single.filename}`] : [];
+    const gallery = [...fromSingle, ...normalizeGalleryUrls(req.body, multi)];
+    const deduped = [...new Set(gallery)];
+    const imageUrl = deduped[0] || null;
+    const productOffers = normalizeProductOffers(req.body);
 
-        const promo = await prisma.promo.create({
-            data: {
-                title,
-                description,
-                content: content || description,
-                imageUrl,
-                isHit: isHit === 'true'
-            }
-        });
-        res.json(promo);
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: "Create error" });
-    }
+    const promo = await prisma.promo.create({
+      data: {
+        title: String(title || '').trim(),
+        description: String(description || '').trim(),
+        content: content != null ? String(content) : String(description || '').trim(),
+        imageUrl,
+        galleryUrls: deduped as object,
+        productOffers: productOffers as object,
+        isHit: isHit === 'true' || isHit === true,
+      },
+    });
+    res.json(promo);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Create error' });
+  }
 });
 
-// 4. Обновить новость
-router.put('/:id', upload.single('image'), async (req: any, res: any) => {
-    try {
-        const { title, description, content, isHit } = req.body;
-        const updateData: any = {
-            title,
-            description,
-            content,
-            isHit: isHit === 'true'
-        };
+router.put('/:id', uploadNews, async (req: any, res: any) => {
+  try {
+    const id = Number(req.params.id);
+    const { title, description, content, isHit } = req.body;
+    const files = req.files as { image?: Express.Multer.File[]; images?: Express.Multer.File[] } | undefined;
+    const single = files?.image?.[0];
+    const multi = files?.images || [];
+    const fromSingle = single ? [`/uploads/${single.filename}`] : [];
+    const merged = [...fromSingle, ...normalizeGalleryUrls(req.body, multi)];
+    const deduped = [...new Set(merged)];
 
-        if (req.file) {
-            updateData.imageUrl = `/uploads/${req.file.filename}`;
-        }
+    const updateData: Record<string, unknown> = {
+      title: String(title || '').trim(),
+      description: String(description || '').trim(),
+      content: content != null ? String(content) : undefined,
+      isHit: isHit === 'true' || isHit === true,
+      productOffers: normalizeProductOffers(req.body) as object,
+      galleryUrls: deduped as object,
+      imageUrl: deduped.length > 0 ? deduped[0] : null,
+    };
 
-        const promo = await prisma.promo.update({
-            where: { id: Number(req.params.id) },
-            data: updateData
-        });
-        res.json(promo);
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: "Update error" });
-    }
+    const promo = await prisma.promo.update({
+      where: { id },
+      data: updateData as any,
+    });
+    res.json(promo);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Update error' });
+  }
 });
 
-// 5. Удалить новость
 router.delete('/:id', async (req: any, res: any) => {
-    try {
-        await prisma.promo.delete({ where: { id: Number(req.params.id) } });
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: "Delete error" });
-    }
+  try {
+    await prisma.promo.delete({ where: { id: Number(req.params.id) } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Delete error' });
+  }
 });
 
 export default router;

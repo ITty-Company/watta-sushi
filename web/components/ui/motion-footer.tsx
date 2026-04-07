@@ -138,9 +138,9 @@ const STYLES = `
   margin-bottom: 0.15rem;
 }
 
-/* Телефон: заголовок «Готові замовити?» трохи нижче після ленти */
+/* Відступ під діагональну маркіз — заголовок не піднімається під неї */
 .footer-hero-line-wrap--title-offset {
-  margin-top: 0.5rem;
+  margin-top: 0;
 }
 
 @media (min-width: 640px) {
@@ -202,17 +202,16 @@ const STYLES = `
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-padding-inline: 1rem;
-  padding: 0.65rem 0.75rem 1.25rem;
+  padding: 0.65rem 0.75rem;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .footer-promo-carousel::-webkit-scrollbar {
-  height: 5px;
-}
-.footer-promo-carousel::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.35);
-  border-radius: 4px;
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .footer-promo-card {
@@ -363,7 +362,7 @@ const STYLES = `
   .footer-promo-carousel {
     gap: 0.75rem;
     scroll-padding-inline: max(0.5rem, env(safe-area-inset-left, 0px));
-    padding: 0.45rem 0.15rem 1rem;
+    padding: 0.45rem 0.15rem 0.55rem;
   }
 
   .footer-promo-card-media {
@@ -405,7 +404,7 @@ const STYLES = `
   .footer-promo-carousel {
     gap: 1rem;
     scroll-padding-inline: clamp(0.75rem, 2.5vw, 1.5rem);
-    padding: 0.55rem 0.5rem 1.15rem;
+    padding: 0.55rem 0.5rem 0.65rem;
   }
 
   .footer-promo-carousel-wrap {
@@ -421,14 +420,14 @@ const STYLES = `
 }
 
 .footer-promo-hint {
-  font-size: clamp(0.88rem, 2.4vw, 1.05rem);
+  font-size: clamp(0.9rem, 2.2vw, 1.08rem);
   font-weight: 500;
-  line-height: 1.5;
-  color: hsl(var(--muted-foreground));
+  line-height: 1.55;
+  color: rgba(20, 81, 66, 0.82);
   text-align: center;
-  margin: 0 auto 0.5rem;
-  max-width: min(36rem, 100%);
-  padding: 0 0.35rem;
+  margin: 0 auto;
+  max-width: min(38rem, 100%);
+  padding: 0 0.5rem;
   box-sizing: border-box;
 }
 
@@ -437,9 +436,10 @@ const STYLES = `
     margin-left: 0;
     margin-right: 0;
     text-align: left;
-    max-width: min(44rem, 100%);
+    max-width: min(46rem, 100%);
     padding-left: 0;
     padding-right: 0;
+    color: rgba(20, 81, 66, 0.78);
   }
 }
 
@@ -681,8 +681,9 @@ const STYLES = `
   font-weight: 900;
   letter-spacing: -0.05em;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(20, 81, 66, 0.12);
-  background: linear-gradient(180deg, rgba(20, 81, 66, 0.12) 0%, transparent 60%);
+  /* Той самий «водяний знак», але в темно-зеленому (#145142), як кнопки — не світлий 0.12 */
+  -webkit-text-stroke: 1.25px rgba(20, 81, 66, 0.52);
+  background: linear-gradient(180deg, rgba(20, 81, 66, 0.36) 0%, rgba(20, 81, 66, 0.1) 48%, transparent 68%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -1084,25 +1085,6 @@ export function CinematicFooter({
             )}
 
             <div className="flex w-full max-w-full flex-col items-center gap-5 sm:gap-6 lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]">
-                <div className="flex w-full flex-col gap-3 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:justify-center lg:justify-start">
-                  <MagneticButton
-                    type="button"
-                    as="button"
-                    onClick={goNext}
-                    className="footer-glass-pill flex w-full min-h-[48px] items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold tracking-tight text-foreground min-[480px]:w-auto min-[480px]:px-8 min-[480px]:py-4 md:px-11 md:py-5 md:text-base"
-                  >
-                    {cf.ctaBanners}
-                  </MagneticButton>
-                  <MagneticButton
-                    type="button"
-                    as="button"
-                    onClick={goMenu}
-                    className="footer-cta-solid flex w-full min-h-[48px] items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold tracking-tight min-[480px]:w-auto min-[480px]:px-8 min-[480px]:py-4 md:px-11 md:py-5 md:text-base"
-                  >
-                    {cf.ctaMenu}
-                  </MagneticButton>
-                </div>
-
                 <div className="flex w-full flex-col gap-2 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:justify-center lg:justify-start">
                   <MagneticButton
                     type="button"

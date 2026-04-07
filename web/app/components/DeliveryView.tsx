@@ -1,11 +1,17 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import type { Ref } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import LogoBackground from './LogoBackground'
 import { DeliveryExperienceBlocks } from './DeliveryExperienceBlocks'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
+import {
+  wattaRestaurantEmbedUrl,
+  wattaRestaurantExternalMapsUrl,
+  WATTA_RESTAURANT,
+} from '@/lib/wattaRestaurantLocation'
 import {
   MapPin,
   Sparkles,
@@ -41,6 +47,9 @@ interface City {
   name_en?: string
   name_nl?: string
   coordinates: { lat: number; lng: number }
+  /** Точка кухні з адмінки — центр інтерактивної карти зон */
+  restaurantLatitude?: number
+  restaurantLongitude?: number
   zoom: number
   deliveryZones: DeliveryZone[]
   country?: { code: string; name: string }
@@ -60,8 +69,10 @@ const defaultCities: City[] = [
   {
     id: 'amsterdam',
     name: 'Амстердам',
-    coordinates: { lat: 52.3676, lng: 4.9041 },
-    zoom: 11,
+    coordinates: { lat: WATTA_RESTAURANT.lat, lng: WATTA_RESTAURANT.lng },
+    restaurantLatitude: WATTA_RESTAURANT.lat,
+    restaurantLongitude: WATTA_RESTAURANT.lng,
+    zoom: 14,
     deliveryZones: [
       {
         id: 'amsterdam-center',
@@ -90,7 +101,15 @@ function formatCitiesFromApi(citiesData: any[]): City[] {
     coordinates:
       c.latitude && c.longitude
         ? { lat: c.latitude, lng: c.longitude }
-        : { lat: 52.3676, lng: 4.9041 },
+        : { lat: WATTA_RESTAURANT.lat, lng: WATTA_RESTAURANT.lng },
+    restaurantLatitude:
+      typeof c.restaurantLatitude === 'number' && !Number.isNaN(c.restaurantLatitude)
+        ? c.restaurantLatitude
+        : undefined,
+    restaurantLongitude:
+      typeof c.restaurantLongitude === 'number' && !Number.isNaN(c.restaurantLongitude)
+        ? c.restaurantLongitude
+        : undefined,
     zoom: c.zoom || 12,
     country: c.country
       ? { code: String(c.country.code || '').slice(0, 4), name: String(c.country.name || '') }
@@ -133,6 +152,8 @@ type DeliveryCheckStatus =
 type DeliveryCheckResult = {
   status: DeliveryCheckStatus
   placeLabel?: string
+  lat?: number
+  lng?: number
   zoneName?: string
   zoneId?: number
   zoneIsFreeDelivery?: boolean
@@ -140,52 +161,22 @@ type DeliveryCheckResult = {
   pricePerKm?: number
   defaultDeliveryFee?: number
   freeDeliveryThreshold?: number
+  /** Орієнтовна сума з бекенду (зона + база + €×км від кухні) */
+  estimatedDeliveryFee?: number | null
+  distanceKm?: number | null
 }
 
-function getAllCitiesMapUrl(cities: City[]) {
-  if (cities.length === 0) {
-    return 'https://www.google.com/maps?q=Europe&output=embed&z=4'
-  }
-  const valid = cities.filter(
-    (c) =>
-      c.coordinates &&
-      typeof c.coordinates.lat === 'number' &&
-      typeof c.coordinates.lng === 'number' &&
-      !Number.isNaN(c.coordinates.lat) &&
-      !Number.isNaN(c.coordinates.lng)
-  )
-  if (valid.length === 0) {
-    return 'https://www.google.com/maps?q=Europe&output=embed&z=4'
-  }
-  const markers = valid
-    .map((city, index) => {
-      const { lat, lng } = city.coordinates
-      const label = String.fromCharCode(65 + (index % 26))
-      return `color:green|label:${label}|${lat},${lng}`
-    })
-    .join('|')
-  const avgLat = valid.reduce((s, c) => s + c.coordinates.lat, 0) / valid.length
-  const avgLng = valid.reduce((s, c) => s + c.coordinates.lng, 0) / valid.length
-  const z = valid.length === 1 ? 11 : valid.length <= 3 ? 8 : valid.length <= 8 ? 7 : 6
-  return `https://www.google.com/maps?q=${avgLat},${avgLng}&output=embed&z=${z}&markers=${encodeURIComponent(markers)}`
-}
-
-function getCityMapUrl(city: City) {
-  const { lat, lng } = city.coordinates
-  const z = city.zoom || 12
-  if (typeof lat === 'number' && typeof lng === 'number' && !Number.isNaN(lat) && !Number.isNaN(lng)) {
-    return `https://www.google.com/maps?q=${lat},${lng}&output=embed&z=${z}`
-  }
-  const cityName = encodeURIComponent(city.name)
-  return `https://www.google.com/maps?q=${cityName}&output=embed&z=${z}`
-}
+/** Перша секція доставки — той самий блок, що welcome на головній; основний ролик з `web/public`. */
+const DELIVERY_HERO_VIDEO_SOURCES = ['/hero-untitled-design.mp4', '/watta-sushi-2-hero.mp4', '/welcome.mp4'] as const
 
 type DeliveryViewProps = {
   /** Усередині головного меню: один фон з меню, без другої шапки / «картки» */
   embedInMenu?: boolean
+  /** Для MenuView: ref на hero, щоб IntersectionObserver ховав панель категорій на мобільному */
+  menuWelcomeHeroRef?: Ref<HTMLElement>
 }
 
-export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps) {
+export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }: DeliveryViewProps) {
   const { t, getLocalized } = useLanguage()
   const d = t.deliveryPage
   const lp = t.locationPicker
@@ -198,6 +189,47 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
   const [postalChecking, setPostalChecking] = useState(false)
   const [postalResult, setPostalResult] = useState<DeliveryCheckResult | null>(null)
   const [siteTariff, setSiteTariff] = useState({ defaultDeliveryFee: 50, freeDeliveryThreshold: 1000 })
+
+  const [deliveryHeroVideoFailed, setDeliveryHeroVideoFailed] = useState(false)
+  const [deliveryHeroVideoIndex, setDeliveryHeroVideoIndex] = useState(0)
+  const deliveryHeroVideoRef = useRef<HTMLVideoElement | null>(null)
+  const deliveryHeroVideoSrc =
+    DELIVERY_HERO_VIDEO_SOURCES[deliveryHeroVideoIndex] ?? DELIVERY_HERO_VIDEO_SOURCES[0]
+
+  useEffect(() => {
+    if (deliveryHeroVideoFailed) return
+    const video = deliveryHeroVideoRef.current
+    if (!video) return
+
+    const safePlay = () => {
+      const p = video.play()
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {})
+      }
+    }
+
+    if (video.readyState >= 2) safePlay()
+    const timer = window.setTimeout(safePlay, 120)
+    const onCanPlay = () => safePlay()
+    const onLoadedData = () => safePlay()
+    const onPageShow = () => safePlay()
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') safePlay()
+    }
+
+    video.addEventListener('canplay', onCanPlay)
+    video.addEventListener('loadeddata', onLoadedData)
+    window.addEventListener('pageshow', onPageShow)
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      window.clearTimeout(timer)
+      video.removeEventListener('canplay', onCanPlay)
+      video.removeEventListener('loadeddata', onLoadedData)
+      window.removeEventListener('pageshow', onPageShow)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [deliveryHeroVideoSrc, deliveryHeroVideoFailed])
 
   const cityLabel = useCallback((c: City) => getLocalized(c, 'name') || c.name, [getLocalized])
 
@@ -332,6 +364,8 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
       setPostalResult({
         status: data.status as DeliveryCheckStatus,
         placeLabel: data.placeLabel,
+        lat: data.lat != null && Number.isFinite(Number(data.lat)) ? Number(data.lat) : undefined,
+        lng: data.lng != null && Number.isFinite(Number(data.lng)) ? Number(data.lng) : undefined,
         zoneName: data.zoneName,
         zoneId: data.zoneId,
         zoneIsFreeDelivery: data.zoneIsFreeDelivery,
@@ -339,6 +373,12 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
         pricePerKm: data.pricePerKm,
         defaultDeliveryFee: data.defaultDeliveryFee,
         freeDeliveryThreshold: data.freeDeliveryThreshold,
+        estimatedDeliveryFee:
+          data.estimatedDeliveryFee != null && !Number.isNaN(Number(data.estimatedDeliveryFee))
+            ? Number(data.estimatedDeliveryFee)
+            : null,
+        distanceKm:
+          data.distanceKm != null && !Number.isNaN(Number(data.distanceKm)) ? Number(data.distanceKm) : null,
       })
     } catch {
       setPostalResult({ status: 'server_error' })
@@ -381,38 +421,63 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
     selectedCity && !showAllCities && (selectedCity.deliveryZones?.length ?? 0) > 0
   )
 
-  const mapSrc = useMemo(() => {
-    if (cities.length === 0) {
-      return getAllCitiesMapUrl([])
-    }
-    if (!selectedCity) {
-      return getAllCitiesMapUrl(cities)
-    }
-    return showAllCities ? getAllCitiesMapUrl(cities) : getCityMapUrl(selectedCity)
-  }, [selectedCity, showAllCities, cities])
+  /** Завжди адреса кухні Watta Sushi (Amsterdam) — embed і зовнішнє посилання збігаються. */
+  const mapSrc = useMemo(
+    () =>
+      wattaRestaurantEmbedUrl(
+        showAllCities ? WATTA_RESTAURANT.embedZoomAll : WATTA_RESTAURANT.embedZoomSingle
+      ),
+    [showAllCities]
+  )
 
-  const mapsLinkHref = useMemo(() => {
-    const hrefAllCities = () => {
-      const valid = cities.filter((c) => c.coordinates && !Number.isNaN(c.coordinates.lat))
-      if (valid.length === 0) return 'https://www.google.com/maps'
-      const avgLat = valid.reduce((s, c) => s + c.coordinates.lat, 0) / valid.length
-      const avgLng = valid.reduce((s, c) => s + c.coordinates.lng, 0) / valid.length
-      return `https://www.google.com/maps?q=${avgLat},${avgLng}`
-    }
-    if (!selectedCity) {
-      return cities.length > 0 ? hrefAllCities() : 'https://www.google.com/maps'
-    }
-    if (showAllCities) {
-      return hrefAllCities()
-    }
-    const { lat, lng } = selectedCity.coordinates
-    if (typeof lat === 'number' && typeof lng === 'number' && !Number.isNaN(lat) && !Number.isNaN(lng)) {
-      return `https://www.google.com/maps?q=${lat},${lng}`
-    }
-    return `https://www.google.com/maps/search/${encodeURIComponent(selectedCity.name)}`
-  }, [selectedCity, showAllCities, cities])
+  const mapsLinkHref = useMemo(() => wattaRestaurantExternalMapsUrl(), [])
 
   return (
+    <>
+      <section
+        ref={menuWelcomeHeroRef}
+        className={`welcome-hero-section-web menu-snap-section-welcome-web${embedInMenu ? ' delivery-page-hero-embed-web' : ' delivery-page-hero-standalone-web'}`}
+        aria-label="Hero video"
+      >
+        <div className="welcome-hero-video-fill-web">
+          {deliveryHeroVideoFailed ? (
+            <div
+              className="welcome-video-native-web welcome-hero-fallback-image-web"
+              style={{ backgroundImage: "url('/watta-sushi.jpg')" }}
+              role="img"
+              aria-hidden
+            />
+          ) : (
+            <video
+              key={deliveryHeroVideoSrc}
+              ref={deliveryHeroVideoRef}
+              className="welcome-video-native-web"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              tabIndex={-1}
+              aria-hidden
+              onError={() => {
+                setDeliveryHeroVideoIndex((prev) => {
+                  if (prev < DELIVERY_HERO_VIDEO_SOURCES.length - 1) return prev + 1
+                  setDeliveryHeroVideoFailed(true)
+                  return prev
+                })
+              }}
+              onEnded={(e) => {
+                const el = e.currentTarget
+                el.currentTime = 0
+                void el.play()
+              }}
+            >
+              <source src={deliveryHeroVideoSrc} type="video/mp4" />
+            </video>
+          )}
+        </div>
+      </section>
+
     <div className={`delivery-watta-page relative${embedInMenu ? ' delivery-watta-page--embed' : ''}`}>
       {!embedInMenu && <div className="delivery-watta-noise" aria-hidden />}
       {!embedInMenu && <LogoBackground />}
@@ -575,6 +640,19 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                               {d.postalZoneTariffStandard}
                             </p>
                           )}
+                          {postalResult.estimatedDeliveryFee != null && (
+                            <p className="delivery-watta-postal-result-meta delivery-watta-postal-estimate font-semibold text-[#145142]">
+                              {d.estimatedDeliveryApprox.replace(
+                                '{{amount}}',
+                                String(postalResult.estimatedDeliveryFee)
+                              )}
+                            </p>
+                          )}
+                          {postalResult.distanceKm != null && postalResult.distanceKm > 0 && (
+                            <p className="delivery-watta-postal-result-meta text-sm">
+                              {d.distanceFromKitchen.replace('{{km}}', String(postalResult.distanceKm))}
+                            </p>
+                          )}
                           <ul className="delivery-watta-tariff-list">
                             <li>
                               {d.tariffPerKm}: <strong>{postalResult.pricePerKm ?? selectedCity?.pricePerKm ?? 10} €</strong>
@@ -610,8 +688,24 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                       <>
                         <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
                         <div>
-                          <p className="delivery-watta-postal-result-title">{d.cityNoDeliveryYet}</p>
-                          <p className="delivery-watta-postal-result-meta">{d.postalNoZones}</p>
+                          {postalResult.placeLabel ? (
+                            <>
+                              <p className="delivery-watta-postal-result-title">
+                                {d.postalFoundIndexNoZonesTitle}
+                              </p>
+                              <p className="delivery-watta-postal-result-meta">
+                                {d.postalAddressFound}: {postalResult.placeLabel}
+                              </p>
+                              <p className="delivery-watta-postal-result-meta text-[#145142]/85">
+                                {d.postalNoZones}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="delivery-watta-postal-result-title">{d.cityNoDeliveryYet}</p>
+                              <p className="delivery-watta-postal-result-meta">{d.postalNoZones}</p>
+                            </>
+                          )}
                         </div>
                       </>
                     )}
@@ -659,8 +753,12 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                   {cities.length > 0 && showInteractiveZonesMap && selectedCity ? (
                     <DeliveryZonesInteractiveMap
                       zones={selectedCity.deliveryZones}
-                      centerLat={selectedCity.coordinates.lat}
-                      centerLng={selectedCity.coordinates.lng}
+                      centerLat={
+                        selectedCity.restaurantLatitude ?? selectedCity.coordinates.lat
+                      }
+                      centerLng={
+                        selectedCity.restaurantLongitude ?? selectedCity.coordinates.lng
+                      }
                       zoom={selectedCity.zoom || 12}
                       buildPopupHtml={buildZonePopupHtml}
                       ariaLabel={d.mapInteractiveAria}
@@ -685,14 +783,23 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                     />
                   ) : null}
                 </div>
-                <a
-                  href={mapsLinkHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="delivery-watta-maps-link"
-                >
-                  {d.openMaps} ↗
-                </a>
+                <div className="delivery-watta-map-footer">
+                  <p className="delivery-watta-kitchen-caption">
+                    <MapPin className="delivery-watta-kitchen-caption-ico" strokeWidth={2.25} aria-hidden />
+                    <span>
+                      <span className="delivery-watta-kitchen-caption-label">{d.kitchenMapCaption}</span>
+                      <span className="delivery-watta-kitchen-caption-addr">{WATTA_RESTAURANT.addressLine}</span>
+                    </span>
+                  </p>
+                  <a
+                    href={mapsLinkHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="delivery-watta-maps-link"
+                  >
+                    {d.openMaps} ↗
+                  </a>
+                </div>
               </div>
             </section>
 
@@ -723,10 +830,11 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
               </section>
             )}
 
-            <DeliveryExperienceBlocks d={d} />
+            <DeliveryExperienceBlocks d={d} kitchenAddressLine={WATTA_RESTAURANT.addressLine} />
           </>
         )}
       </div>
     </div>
+    </>
   )
 }

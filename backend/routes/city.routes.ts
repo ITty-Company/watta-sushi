@@ -64,7 +64,19 @@ router.get('/country/:countryId', async (req, res) => {
 // Создать город
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, name_ua, name_nl, name_en, countryId, latitude, longitude, zoom, pricePerKm } = req.body;
+    const {
+      name,
+      name_ua,
+      name_nl,
+      name_en,
+      countryId,
+      latitude,
+      longitude,
+      restaurantLatitude,
+      restaurantLongitude,
+      zoom,
+      pricePerKm,
+    } = req.body;
 
     if (!name || !countryId) {
       return res.status(400).json({ message: 'Название города и страна обязательны' });
@@ -84,6 +96,16 @@ router.post('/', async (req: Request, res: Response) => {
         countryId: countryIdNum,
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
+        restaurantLatitude:
+          restaurantLatitude != null && restaurantLatitude !== '' && !Number.isNaN(parseFloat(String(restaurantLatitude)))
+            ? parseFloat(String(restaurantLatitude))
+            : null,
+        restaurantLongitude:
+          restaurantLongitude != null &&
+          restaurantLongitude !== '' &&
+          !Number.isNaN(parseFloat(String(restaurantLongitude)))
+            ? parseFloat(String(restaurantLongitude))
+            : null,
         zoom: zoom ? parseInt(zoom) : 12,
         pricePerKm:
           pricePerKm != null && pricePerKm !== '' && !Number.isNaN(parseFloat(String(pricePerKm)))
@@ -122,7 +144,20 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, name_ua, name_nl, name_en, countryId, latitude, longitude, zoom, pricePerKm, isActive } = req.body;
+    const {
+      name,
+      name_ua,
+      name_nl,
+      name_en,
+      countryId,
+      latitude,
+      longitude,
+      restaurantLatitude,
+      restaurantLongitude,
+      zoom,
+      pricePerKm,
+      isActive,
+    } = req.body;
 
     const updateData: any = {};
     if (name) updateData.name = name;
@@ -132,6 +167,20 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (countryId) updateData.countryId = parseInt(countryId);
     if (latitude !== undefined) updateData.latitude = latitude ? parseFloat(latitude) : null;
     if (longitude !== undefined) updateData.longitude = longitude ? parseFloat(longitude) : null;
+    if (restaurantLatitude !== undefined) {
+      updateData.restaurantLatitude =
+        restaurantLatitude != null && restaurantLatitude !== '' && !Number.isNaN(parseFloat(String(restaurantLatitude)))
+          ? parseFloat(String(restaurantLatitude))
+          : null
+    }
+    if (restaurantLongitude !== undefined) {
+      updateData.restaurantLongitude =
+        restaurantLongitude != null &&
+        restaurantLongitude !== '' &&
+        !Number.isNaN(parseFloat(String(restaurantLongitude)))
+          ? parseFloat(String(restaurantLongitude))
+          : null
+    }
     if (zoom !== undefined) updateData.zoom = parseInt(zoom);
     if (pricePerKm !== undefined) {
       const parsedPricePerKm = parseFloat(String(pricePerKm))
