@@ -85,9 +85,16 @@ const nextConfig = {
       { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
     ];
 
+    const heroVideoHeaders = [
+      { key: 'Cache-Control', value: 'public, max-age=604800, immutable' },
+      { key: 'Accept-Ranges', value: 'bytes' },
+    ];
+
     return [
       // Спочатку явні шляхи — щоб Cache-Control для чанків не «губився» після catch-all
       { source: '/_next/static/:path*', headers: nextStaticCache },
+      { source: '/watta-sushi-2-hero.mp4', headers: heroVideoHeaders },
+      { source: '/welcome.mp4', headers: heroVideoHeaders },
       { source: '/logo.png', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
       {
         source: '/api/:path*',

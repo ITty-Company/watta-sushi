@@ -54,13 +54,26 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 5050; // 5000 на ma
 // --- 1. БЕЗОПАСНОСТЬ (Security Middleware) ---
 app.use(helmet()); // Заголовки безопасности
 
-// Настройка CORS
+// Настройка CORS (FRONTEND_URL + CORS_ORIGINS через запятую — свой домен / превью Render)
+function normalizeOrigin(url) {
+  const s = String(url || '').trim().replace(/\/$/, '');
+  return s || null;
+}
+const extraCors = String(process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((s) => normalizeOrigin(s))
+  .filter(Boolean);
 const whitelist = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://watta-sushi-web.onrender.com',
-  process.env.FRONTEND_URL
-].filter(Boolean);
+  ...new Set(
+    [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'https://watta-sushi-web.onrender.com',
+      normalizeOrigin(process.env.FRONTEND_URL),
+      ...extraCors,
+    ].filter(Boolean)
+  ),
+];
 
 const isProd = process.env.NODE_ENV === 'production';
 const corsOptions = isProd
