@@ -2386,9 +2386,9 @@ body {
 
 @media (max-width: 480px) {
   .logo-icon-web {
-    width: 34px;
-    height: 34px;
-    min-width: 32px;
+    width: 44px;
+    height: 44px;
+    min-width: 40px;
   }
 }
 
@@ -3879,7 +3879,7 @@ body {
 @media (max-width: 480px) {
   /* Верхняя панель на мобильном: sticky, один фон (#ffffff) */
   .app-header-web {
-    padding: 8px 10px;
+    padding: 8px env(safe-area-inset-right, 0px) 8px env(safe-area-inset-left, 0px);
     position: sticky;
     top: 0;
     background: #ffffff !important;
@@ -3905,42 +3905,43 @@ body {
   
   /* Стрілки: див. глобальне правило max-width 1024px */
   
-  /* Телефон: компактна панель; ~4½ категорії у вікні, решта — свайп */
+  /* Телефон: панель на всю ширину (лише safe-area), текстура як на десктопі; у вікні ~4½ категорії */
   .categories-panel-wrapper-web {
     position: fixed !important;
-    left: max(6px, env(safe-area-inset-left, 0px)) !important;
-    right: max(6px, env(safe-area-inset-right, 0px)) !important;
+    left: 0 !important;
+    right: 0 !important;
     top: calc(72px + env(safe-area-inset-top, 0px)) !important;
-    width: auto !important;
+    width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 5px 8px !important;
+    padding: 6px max(6px, env(safe-area-inset-left, 0px)) 6px max(6px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
     z-index: 99;
     background: #ffffff !important;
-    border: 1px solid rgba(0, 0, 0, 0.07) !important;
-    border-top: none !important;
-    border-radius: 0 0 14px 14px !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border-radius: 14px !important;
+    box-shadow:
+      0 3px 14px rgba(0, 0, 0, 0.06),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
     overflow: visible;
     gap: 0;
     display: flex !important;
-    justify-content: center !important;
+    justify-content: stretch !important;
     align-items: center !important;
+    box-sizing: border-box !important;
   }
   
   .categories-panel-web {
-    --cat-chip: 48px;
-    --cat-gap: 5px;
-    max-width: calc(4 * var(--cat-chip) + 3 * var(--cat-gap) + 10px);
-    width: 100%;
-    margin: 0 auto;
-    padding: 4px 2px;
-    border-radius: 11px;
-    gap: var(--cat-gap);
-    flex: 0 1 auto;
-    min-width: 0;
+    --cat-gap: 6px;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 4px 4px !important;
+    border-radius: 12px;
+    gap: var(--cat-gap) !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
 
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -3962,13 +3963,14 @@ body {
   
   .category-button-web {
     scroll-snap-align: start;
+    flex: 0 0 calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
-    min-width: var(--cat-chip, 48px);
-    width: var(--cat-chip, 48px);
-    max-width: var(--cat-chip, 48px);
-    padding: 5px 2px 6px;
+    min-width: calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
+    width: calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
+    max-width: calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
+    padding: 6px 2px 7px;
     font-size: 0.6rem;
     border-radius: 11px;
     gap: 3px;
@@ -3988,7 +3990,7 @@ body {
   }
   
   .category-button-label-web {
-    font-size: 7px;
+    font-size: 7.5px;
     line-height: 1.1;
     white-space: nowrap;
     overflow: hidden;
@@ -4004,37 +4006,49 @@ body {
   }
 }
 
-/* Альбомний телефон 481–767: панель під шапкою як на портреті, без відступу top: 90px з базових стилів */
+/* Альбомний телефон 481–767: та сама логіка, що в портреті — повна ширина, 4½ чипа, тінь як на десктопі */
 @media (min-width: 481px) and (max-width: 767px) {
   .categories-panel-wrapper-web {
     position: fixed !important;
-    left: max(6px, env(safe-area-inset-left, 0px)) !important;
-    right: max(6px, env(safe-area-inset-right, 0px)) !important;
+    left: 0 !important;
+    right: 0 !important;
     top: calc(74px + env(safe-area-inset-top, 0px)) !important;
-    width: auto !important;
+    width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 6px 9px !important;
+    padding: 6px max(6px, env(safe-area-inset-left, 0px)) 6px max(6px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
     z-index: 99;
     background: #ffffff !important;
-    border: 1px solid rgba(0, 0, 0, 0.07) !important;
-    border-top: none !important;
-    border-radius: 0 0 14px 14px !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border-radius: 14px !important;
+    box-shadow:
+      0 3px 14px rgba(0, 0, 0, 0.06),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
     display: flex !important;
-    justify-content: center !important;
+    justify-content: stretch !important;
     align-items: center !important;
     gap: 0;
+    box-sizing: border-box !important;
   }
 
   .categories-panel-web {
-    max-width: calc(5 * 56px + 4 * 6px + 12px);
-    width: 100%;
-    margin: 0 auto;
-    padding: 5px 3px;
-    gap: 6px;
+    --cat-gap: 6px;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 5px 6px !important;
+    gap: var(--cat-gap) !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .category-button-web {
+    flex: 0 0 calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
+    min-width: calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
+    width: calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
+    max-width: calc((100% - 4 * var(--cat-gap)) / 4.5) !important;
   }
 
   .menu-content-top-gap-web {
@@ -4174,17 +4188,6 @@ body {
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-@media (max-width: 480px) {
-  .category-button-web {
-    padding: 5px 2px 6px;
-    gap: 3px;
-    border-radius: 11px;
-    min-width: 48px;
-    width: 48px;
-    max-width: 48px;
-  }
 }
 
 @media (min-width: 768px) and (max-width: 1024px) {
@@ -4805,7 +4808,7 @@ body {
 /* Responsive */
 @media (max-width: 480px) {
   .app-header-web {
-    padding: 8px 10px;
+    padding: 8px env(safe-area-inset-right, 0px) 8px env(safe-area-inset-left, 0px);
   }
 
   .header-content-web {
@@ -4814,23 +4817,23 @@ body {
   }
 
   .logo-section-web {
-    gap: 5px;
+    gap: 6px;
     padding: 2px 4px;
   }
 
   .logo-icon-web {
-    width: 34px;
-    height: 34px;
-    min-width: 32px;
+    width: 44px;
+    height: 44px;
+    min-width: 40px;
   }
 
   .logo-text-images-web {
-    height: 26px;
+    height: 34px;
   }
 
   .logo-text-image-web {
-    max-width: 92px !important;
-    height: 26px !important;
+    max-width: 132px !important;
+    height: 34px !important;
   }
   
   .header-actions-web {
@@ -9029,7 +9032,7 @@ body {
 
 @media (max-width: 480px) {
   .app-header-spacer-web {
-    height: calc(52px + env(safe-area-inset-top, 0px));
+    height: calc(60px + env(safe-area-inset-top, 0px));
   }
 
   .header-content-web {
@@ -9040,7 +9043,7 @@ body {
   .logo-section-web {
     flex: 1 1 auto;
     min-width: 0;
-    max-width: calc(100vw - 168px);
+    max-width: calc(100vw - 156px);
     padding-left: 2px;
     padding-right: 4px;
   }
