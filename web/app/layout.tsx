@@ -1,34 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import { Cormorant_Garamond, Inter, Marck_Script, Playfair_Display } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import AppClient from './AppClient';
 import DevNoiseCleanup from './components/DevNoiseCleanup';
+import './fonts.local';
 import './globals.css';
 
 export const dynamic = 'force-dynamic';
-
-const inter = Inter({ subsets: ['latin', 'cyrillic'] });
-
-const fontCormorant = Cormorant_Garamond({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-brand-cormorant',
-  display: 'swap',
-});
-
-const fontPlayfair = Playfair_Display({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '600', '700'],
-  variable: '--font-brand-playfair',
-  display: 'swap',
-});
-
-const fontMarck = Marck_Script({
-  weight: '400',
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-brand-marck',
-  display: 'swap',
-});
 
 // 1. SEO CONFIGURATION
 export const metadata: Metadata = {
@@ -92,10 +69,7 @@ export default function RootLayout({
 
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body
-        className={`${inter.className} ${fontCormorant.variable} ${fontPlayfair.variable} ${fontMarck.variable}`}
-        suppressHydrationWarning
-      >
+      <body suppressHydrationWarning>
         <DevNoiseCleanup />
         <script
           type="application/ld+json"
