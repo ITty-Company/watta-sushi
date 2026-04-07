@@ -4,6 +4,8 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
+const MAX_IMAGE_URL_LENGTH = 500;
+
 function clampFocal(value: unknown, fallback: number): number {
   const n =
     typeof value === 'number'
@@ -15,12 +17,27 @@ function clampFocal(value: unknown, fallback: number): number {
   return Math.max(0, Math.min(100, n));
 }
 
+function normalizeImageUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const url = value.trim();
+  if (!url || url.length > MAX_IMAGE_URL_LENGTH) return null;
+
+  // Allow local static paths (/file.jpg) and absolute URLs.
+  if (url.startsWith('/') || /^https?:\/\//i.test(url)) return url;
+  return null;
+}
+
 // 1. Получить все активные баннеры (отсортированные по порядку)
 router.get('/', async (req, res) => {
   try {
     const banners = await prisma.banner.findMany({
       where: {
-        isActive: true
+        isActive: true,
+        OR: [
+          { imageUrl: { startsWith: '/' } },
+          { imageUrl: { startsWith: 'http://' } },
+          { imageUrl: { startsWith: 'https://' } }
+        ]
       },
       orderBy: {
         order: 'asc'
@@ -37,6 +54,13 @@ router.get('/', async (req, res) => {
 router.get('/all', async (req, res) => {
   try {
     const banners = await prisma.banner.findMany({
+      where: {
+        OR: [
+          { imageUrl: { startsWith: '/' } },
+          { imageUrl: { startsWith: 'http://' } },
+          { imageUrl: { startsWith: 'https://' } }
+        ]
+      },
       orderBy: {
         order: 'asc'
       }
@@ -56,6 +80,10 @@ router.post('/', async (req: Request, res: Response) => {
       imageUrl, order, isActive,
       focalX, focalY
     } = req.body;
+    const safeImageUrl = normalizeImageUrl(imageUrl);
+    if (!safeImageUrl) {
+      return res.status(400).json({ error: 'Некорректный imageUrl для баннера' });
+    }
 
     const banner = await prisma.banner.create({
       data: {
@@ -63,7 +91,7 @@ router.post('/', async (req: Request, res: Response) => {
         title_ua: title_ua || title_ru,
         title_en: title_en || title_ru,
         title_nl: title_nl || title_ru,
-        imageUrl,
+        imageUrl: safeImageUrl,
         focalX: clampFocal(focalX, 50),
         focalY: clampFocal(focalY, 50),
         order: order || 0,
@@ -86,6 +114,11 @@ router.put('/:id', async (req: Request, res: Response) => {
       imageUrl, order, isActive,
       focalX, focalY
     } = req.body;
+    const safeImageUrl =
+      imageUrl !== undefined ? normalizeImageUrl(imageUrl) : undefined;
+    if (imageUrl !== undefined && !safeImageUrl) {
+      return res.status(400).json({ error: 'Некорректный imageUrl для баннера' });
+    }
 
     const banner = await prisma.banner.update({
       where: { id },
@@ -94,7 +127,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         title_ua,
         title_en,
         title_nl,
-        imageUrl,
+        ...(safeImageUrl !== undefined ? { imageUrl: safeImageUrl } : {}),
         ...(focalX !== undefined && focalX !== null
           ? { focalX: clampFocal(focalX, 50) }
           : {}),
