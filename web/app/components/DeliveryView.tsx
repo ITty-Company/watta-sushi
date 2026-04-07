@@ -188,6 +188,7 @@ type DeliveryViewProps = {
 export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps) {
   const { t, getLocalized } = useLanguage()
   const d = t.deliveryPage
+  const lp = t.locationPicker
 
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
   const [cities, setCities] = useState<City[]>([])
@@ -228,11 +229,19 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
           const matched = saved ? formattedCities.find((c) => c.id === saved) : null
           if (matched) {
             setSelectedCity(matched)
-          } else if (saved) {
-            setSelectedCity(null)
           } else if (formattedCities.length > 0) {
             setSelectedCity(formattedCities[0])
+          } else {
+            setSelectedCity(null)
           }
+        } else {
+          setCities(defaultCities)
+          const saved =
+            typeof window !== 'undefined' && window.localStorage
+              ? localStorage.getItem('selectedCityId')
+              : null
+          const matched = saved ? defaultCities.find((c) => c.id === saved) : null
+          setSelectedCity(matched ?? defaultCities[0] ?? null)
         }
       } catch (error) {
         console.error('Ошибка загрузки данных доставки:', error)
@@ -244,10 +253,8 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
         const matched = saved ? defaultCities.find((c) => c.id === saved) : null
         if (matched) {
           setSelectedCity(matched)
-        } else if (saved) {
-          setSelectedCity(null)
         } else {
-          setSelectedCity(defaultCities[0])
+          setSelectedCity(defaultCities[0] ?? null)
         }
       } finally {
         setLoading(false)
@@ -375,7 +382,9 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
   )
 
   const mapSrc = useMemo(() => {
-    if (cities.length === 0) return ''
+    if (cities.length === 0) {
+      return getAllCitiesMapUrl([])
+    }
     if (!selectedCity) {
       return getAllCitiesMapUrl(cities)
     }
@@ -457,22 +466,28 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                 </h2>
               </div>
               <div className="delivery-watta-city-row">
-                {cities.map((city) => (
-                  <button
-                    key={city.id}
-                    type="button"
-                    className={`delivery-watta-city-chip ${selectedCity?.id === city.id ? 'delivery-watta-city-chip--on' : ''}`}
-                    onClick={() => handleCityChange(city.id)}
-                  >
-                    <span className="delivery-watta-city-chip-pin" aria-hidden>
-                      📍
-                    </span>
-                    <span className="delivery-watta-city-chip-name">{cityLabel(city)}</span>
-                    {city.deliveryZones && city.deliveryZones.length > 0 && (
-                      <span className="delivery-watta-city-chip-badge">{city.deliveryZones.length}</span>
-                    )}
-                  </button>
-                ))}
+                {cities.length === 0 ? (
+                  <p className="delivery-watta-cities-empty" role="status">
+                    {lp.noActiveCities} {lp.activateInAdmin}
+                  </p>
+                ) : (
+                  cities.map((city) => (
+                    <button
+                      key={city.id}
+                      type="button"
+                      className={`delivery-watta-city-chip ${selectedCity?.id === city.id ? 'delivery-watta-city-chip--on' : ''}`}
+                      onClick={() => handleCityChange(city.id)}
+                    >
+                      <span className="delivery-watta-city-chip-pin" aria-hidden>
+                        📍
+                      </span>
+                      <span className="delivery-watta-city-chip-name">{cityLabel(city)}</span>
+                      {city.deliveryZones && city.deliveryZones.length > 0 && (
+                        <span className="delivery-watta-city-chip-badge">{city.deliveryZones.length}</span>
+                      )}
+                    </button>
+                  ))
+                )}
               </div>
               <p className="delivery-watta-sync-hint">{d.syncCityHint}</p>
             </section>
@@ -507,6 +522,7 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                         className="delivery-watta-postal-input"
                         placeholder={d.postalPlaceholder}
                         value={postalCode}
+                        disabled={!selectedCity || cities.length === 0}
                         onChange={(e) => setPostalCode(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') void runPostalCheck()
@@ -515,7 +531,7 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                       <button
                         type="button"
                         className="delivery-watta-postal-btn"
-                        disabled={postalChecking}
+                        disabled={postalChecking || !selectedCity || cities.length === 0}
                         onClick={() => void runPostalCheck()}
                       >
                         {postalChecking ? d.postalChecking : d.postalButton}
@@ -564,10 +580,16 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                               {d.tariffPerKm}: <strong>{postalResult.pricePerKm ?? selectedCity?.pricePerKm ?? 10} €</strong>
                             </li>
                             <li>
-                              {d.tariffBase}: <strong>{postalResult.defaultDeliveryFee ?? '—'} €</strong>
+                              {d.tariffBase}:{' '}
+                              <strong>
+                                {postalResult.defaultDeliveryFee ?? siteTariff.defaultDeliveryFee} €
+                              </strong>
                             </li>
                             <li>
-                              {d.tariffFreeFrom}: <strong>{postalResult.freeDeliveryThreshold ?? '—'} €</strong>
+                              {d.tariffFreeFrom}:{' '}
+                              <strong>
+                                {postalResult.freeDeliveryThreshold ?? siteTariff.freeDeliveryThreshold} €
+                              </strong>
                             </li>
                           </ul>
                         </div>
@@ -643,7 +665,7 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                       buildPopupHtml={buildZonePopupHtml}
                       ariaLabel={d.mapInteractiveAria}
                     />
-                  ) : cities.length > 0 && mapSrc ? (
+                  ) : mapSrc ? (
                     <iframe
                       key={!selectedCity || showAllCities ? 'all-cities' : selectedCity!.id}
                       src={mapSrc}
@@ -653,7 +675,13 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
-                      title={!selectedCity || showAllCities ? d.mapAll : cityLabel(selectedCity!)}
+                      title={
+                        cities.length === 0
+                          ? d.mapAll
+                          : !selectedCity || showAllCities
+                            ? d.mapAll
+                            : cityLabel(selectedCity!)
+                      }
                     />
                   ) : null}
                 </div>

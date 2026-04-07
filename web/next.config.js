@@ -1,7 +1,12 @@
-/** База для rewrites: якщо в env уже є localhost (з shell/IDE), Node йде на ::1 і отримує ECONNREFUSED, поки API на IPv4. */
+const path = require('path');
+
+/** База для rewrites — та сама нормалізація, що web/lib/backendBaseUrl.ts (BACKEND_URL для Render без перезбірки фронту). */
 function backendProxyBaseUrl() {
-  const raw = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050';
-  const trimmed = String(raw).trim().replace(/\/$/, '');
+  const raw =
+    process.env.BACKEND_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    'http://127.0.0.1:5050';
+  const trimmed = String(raw).replace(/\/$/, '');
   try {
     const u = new URL(trimmed);
     if (u.hostname === 'localhost') u.hostname = '127.0.0.1';
@@ -16,9 +21,14 @@ const nextConfig = {
   // Меньше нативных file watchers (на macOS часто EMFILE); плюс npm script с WATCHPACK_POLLING
   webpack: (config, { dev }) => {
     if (dev) {
-      // Дисковий кеш webpack на Desktop/iCloud дає ENOENT і 404 на /_next/static/*.
-      // Повне cache: false інколи залишає «дірки» між перекомпіляціями — тільки RAM.
-      config.cache = { type: 'memory' };
+      // RAM-only кеш давав «Cannot find module './NNN.js'» після concurrently / HMR — чанки розсинхронізувались.
+      // Filesystem у web/node_modules/.cache/webpack стабільніший за дефолтний шлях на iCloud Desktop.
+      config.cache = {
+        type: 'filesystem',
+        cacheDirectory: path.join(__dirname, 'node_modules', '.cache', 'webpack'),
+        compression: 'gzip',
+        buildDependencies: { config: [__filename] },
+      };
       config.watchOptions = {
         poll: process.env.WATCHPACK_POLLING ? 1000 : undefined,
         aggregateTimeout: 300,
