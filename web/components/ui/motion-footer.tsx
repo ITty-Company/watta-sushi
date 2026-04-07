@@ -5,29 +5,11 @@ import { useEffect, useRef, useCallback } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { cn } from '@/lib/utils'
+import { getMenuScrollParent, scrollMenuToSelector, scrollMenuToTop } from '@/lib/menuScroll'
 import { useLanguage } from '@/app/context/LanguageContext'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
-}
-
-function getMenuScrollParent(el: HTMLElement | null): HTMLElement | null {
-  if (typeof document === 'undefined') return null
-  return (el?.closest('.content-web') as HTMLElement | null) ?? (document.querySelector('.content-web') as HTMLElement | null)
-}
-
-function scrollMenuToSelector(selector: string) {
-  const scroller = getMenuScrollParent(null)
-  const target = document.querySelector(selector)
-  if (!scroller || !target) return
-  const top =
-    (target as HTMLElement).getBoundingClientRect().top + scroller.scrollTop - 20
-  scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
-}
-
-function scrollMenuToTop() {
-  const scroller = getMenuScrollParent(null)
-  scroller?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const STYLES = `

@@ -1,27 +1,38 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { ChevronDown } from 'lucide-react'
 import { ROTATING_WELCOME } from '@/lib/welcomeRotatingPhrases'
+import { scrollMenuToSelector } from '@/lib/menuScroll'
+import { useLanguage } from '../context/LanguageContext'
 
 type Props = {
   ariaLabel: string
+  /** CSS-селектор наступної «слайд»-секції (напр. блок cinematic footer). */
+  nextSectionSelector?: string
 }
 
-export function WelcomeHeroBadge({ ariaLabel }: Props) {
+export function WelcomeHeroBadge({ ariaLabel, nextSectionSelector }: Props) {
+  const { t } = useLanguage()
   const [index, setIndex] = useState(0)
   const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     if (reduceMotion) return
-    const t = window.setInterval(
+    const timer = window.setInterval(
       () => setIndex((n) => (n + 1) % ROTATING_WELCOME.length),
       3200
     )
-    return () => window.clearInterval(t)
+    return () => window.clearInterval(timer)
   }, [reduceMotion])
 
   const current = ROTATING_WELCOME[reduceMotion ? 0 : index]
+
+  const onScrollNext = useCallback(() => {
+    if (!nextSectionSelector) return
+    scrollMenuToSelector(nextSectionSelector, 12)
+  }, [nextSectionSelector])
 
   return (
     <div className="welcome-hero-badge-wrap-web" role="region" aria-label={ariaLabel}>
@@ -71,6 +82,17 @@ export function WelcomeHeroBadge({ ariaLabel }: Props) {
             </AnimatePresence>
           </div>
         </div>
+
+        {nextSectionSelector ? (
+          <button
+            type="button"
+            className="welcome-hero-badge-scroll-web"
+            aria-label={t.menuView.welcomeScrollDownAria}
+            onClick={onScrollNext}
+          >
+            <ChevronDown className="welcome-hero-badge-chevron-web" aria-hidden strokeWidth={2.5} />
+          </button>
+        ) : null}
       </div>
     </div>
   )
