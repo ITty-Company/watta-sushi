@@ -43,6 +43,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  /** iOS Safari: зона над шапкой не зелёная (раніше брало theme з manifest). */
+  themeColor: '#ffffff',
 };
 
 export default function RootLayout({

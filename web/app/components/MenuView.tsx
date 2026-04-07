@@ -1434,10 +1434,10 @@ export default function MenuView() {
       <LogoBackground />
 
       <div
-        className="fixed top-0 left-0 right-0 z-50 bg-[#F3F4F6] shadow-sm transition-transform duration-300 menu-top-safe-web"
+        className="menu-fixed-header-shell-web fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-transform duration-300 menu-top-safe-web md:bg-[#F3F4F6]"
         style={{
-          paddingLeft: 'max(8px, env(safe-area-inset-left, 0px))',
-          paddingRight: 'max(8px, env(safe-area-inset-right, 0px))',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
         }}
       >
 
