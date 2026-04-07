@@ -31,6 +31,7 @@ model User {
 
   dateOfBirth DateTime?
   favorites   Favorite[]
+  reviews     OrderReview[]
 }
 
 // --- ТОВАРЫ ---
@@ -72,6 +73,9 @@ model City {
   country       Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
   latitude      Float? // Широта для карты
   longitude     Float? // Долгота для карты
+  /// Точка кухні / ресторану для розрахунку €/км (якщо null — беруться latitude/longitude міста)
+  restaurantLatitude  Float?
+  restaurantLongitude Float?
   zoom          Int            @default(12) // Уровень зума карты
   isActive      Boolean        @default(true)
   products      ProductCity[]
@@ -85,7 +89,7 @@ model City {
 model DeliveryZone {
   id          Int      @id @default(autoincrement())
   name        String // Название зоны (например, "Центр")
-  color       String   @default("#4ade80") // Цвет зоны на карте
+  color       String   @default("#145142") // Цвет зоны на карте
   cityId      Int
   city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
   coordinates String // JSON строка с координатами полигона [{lat, lng}, ...]
@@ -163,6 +167,24 @@ model Order {
   user   User? @relation(fields: [userId], references: [id])
 
   items OrderItem[]
+  review OrderReview?
+}
+
+/// Відгук клієнта після отримання замовлення (1 відгук на замовлення)
+model OrderReview {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  userId    Int
+  rating    Int
+  text      String
+  images    Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -232,6 +254,10 @@ model Promo {
   description String
   content     String? // Полный текст
   imageUrl    String?
+  /// Галерея фото (URL-и), перше часто використовується як обкладинка
+  galleryUrls Json     @default("[]")
+  /// Акційні позиції: [{ "productId": 1, "discountPercent": 15 }, ...]
+  productOffers Json   @default("[]")
   isHit       Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

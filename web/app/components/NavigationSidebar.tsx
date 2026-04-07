@@ -187,7 +187,7 @@ export default function NavigationSidebar({
             <button
               type="button"
               className="watta-nav-sidebar-link"
-              onClick={run(() => onPageOpen('phone'))}
+              onClick={run(() => onPageOpen('contacts'))}
             >
               <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--contacts">
                 <Phone size={18} strokeWidth={2.25} />

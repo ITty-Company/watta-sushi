@@ -26,7 +26,9 @@ import favoriteRoutes from './routes/favorite.routes.ts';
 import ingredientRoutes from './routes/ingredients.routes.ts';
 import paymentRoutes from './routes/payment.routes.ts';
 import blogRoutes from './routes/blog.routes.ts';
+import reviewRoutes from './routes/review.routes.ts';
 import crmRoutes from './routes/crm.routes.ts';
+import contactRoutes from './routes/contact.routes.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -153,7 +155,9 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/ingredients', ingredientRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/blog', blogRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/crm', crmRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Тестовый маршрут
 app.get('/', (req, res) => {

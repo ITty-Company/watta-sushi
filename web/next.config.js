@@ -21,14 +21,19 @@ const nextConfig = {
   // Меньше нативных file watchers (на macOS часто EMFILE); плюс npm script с WATCHPACK_POLLING
   webpack: (config, { dev }) => {
     if (dev) {
-      // RAM-only кеш давав «Cannot find module './NNN.js'» після concurrently / HMR — чанки розсинхронізувались.
-      // Filesystem у web/node_modules/.cache/webpack стабільніший за дефолтний шлях на iCloud Desktop.
-      config.cache = {
-        type: 'filesystem',
-        cacheDirectory: path.join(__dirname, 'node_modules', '.cache', 'webpack'),
-        compression: 'gzip',
-        buildDependencies: { config: [__filename] },
-      };
+      // Персистентний (filesystem) кеш Webpack + HMR/concurrently давали зламані чанки:
+      // «Cannot find module './vendor-chunks/next.js'», 404 на /_next/static/*.
+      // У dev вимикаємо кеш — збірка трохи повільніша, зате стабільна.
+      if (process.env.NEXT_WEBPACK_FS_CACHE === '1') {
+        config.cache = {
+          type: 'filesystem',
+          cacheDirectory: path.join(__dirname, 'node_modules', '.cache', 'webpack'),
+          compression: 'gzip',
+          buildDependencies: { config: [__filename] },
+        };
+      } else {
+        config.cache = false;
+      }
       config.watchOptions = {
         poll: process.env.WATCHPACK_POLLING ? 1000 : undefined,
         aggregateTimeout: 300,

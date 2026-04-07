@@ -102,7 +102,34 @@ export async function middleware(request: NextRequest) {
         pricePerKm: 10,
         defaultDeliveryFee: 50,
         freeDeliveryThreshold: 1000,
+        estimatedDeliveryFee: postal.length >= 3 ? 0 : null,
+        distanceKm: postal.length >= 3 ? 2.5 : null,
       })
+    }
+
+    if (sub === 'contact') {
+      let body: { website?: string; name?: string; email?: string; message?: string } = {}
+      try {
+        body = await request.json()
+      } catch {
+        /* empty */
+      }
+      if (String(body.website || '').trim()) {
+        return NextResponse.json({ ok: true })
+      }
+      const name = String(body.name || '').trim()
+      const email = String(body.email || '').trim()
+      const message = String(body.message || '').trim()
+      if (name.length < 2 || name.length > 120) {
+        return NextResponse.json({ error: 'bad_name' }, { status: 400 })
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) {
+        return NextResponse.json({ error: 'bad_email' }, { status: 400 })
+      }
+      if (message.length < 10 || message.length > 4000) {
+        return NextResponse.json({ error: 'bad_message' }, { status: 400 })
+      }
+      return NextResponse.json({ ok: true })
     }
 
     if (sub === 'favorites/toggle') {

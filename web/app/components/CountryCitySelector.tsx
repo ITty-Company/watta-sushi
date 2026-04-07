@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, MapPin, X } from 'lucide-react'
-import Image from 'next/image'
 import { useLanguage } from '../context/LanguageContext'
+import { LocationPickerMascot } from './LocationPickerMascot'
 import { cn } from '@/lib/utils'
 
 const COUNTRIES_CATALOG_EVENT = 'countriesCatalogUpdated'
@@ -362,7 +362,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
           >
             <div
               ref={modalRef}
-              className="location-picker-modal location-picker-modal--glass relative mx-auto my-auto flex w-full max-w-[min(720px,100%)] flex-col overflow-hidden rounded-[clamp(20px,4vw,32px)]"
+              className="location-picker-modal location-picker-modal--glass relative mx-auto my-auto flex w-full max-w-[min(720px,100%)] flex-col overflow-visible rounded-[clamp(20px,4vw,32px)]"
               style={{ maxHeight: 'min(90vh,880px)' }}
               onClick={(e) => e.stopPropagation()}
               role="dialog"
@@ -370,23 +370,20 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
               aria-labelledby="location-picker-title"
             >
               <div className="location-picker-modal__ambient" aria-hidden />
-              <div className="location-picker-modal__header relative flex items-center justify-between gap-4 px-5 py-5 sm:px-8 sm:py-7">
+              <div className="location-picker-modal__header relative flex items-end justify-between gap-4 overflow-visible rounded-t-[clamp(20px,4vw,32px)] px-5 pb-5 pt-8 sm:px-8 sm:pb-7 sm:pt-10">
                 <div className="location-picker-modal__header-shine pointer-events-none absolute inset-0" aria-hidden />
-                <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
-                  <div className="location-picker-modal__logo-ring location-picker-modal__mascot relative flex h-[76px] w-[76px] shrink-0 items-center justify-center sm:h-[88px] sm:w-[88px]">
-                    <span className="location-picker-modal__logo-glow absolute inset-[-8px] rounded-[22px] opacity-90" aria-hidden />
-                    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[18px] border border-white/85 bg-white shadow-[0_8px_28px_rgba(20,81,66,0.2)] sm:rounded-[20px]">
-                      <Image
-                        src="/location-picker-mascot.jpg"
-                        alt=""
-                        width={400}
-                        height={400}
-                        className="h-full w-full object-contain object-center"
-                        sizes="(max-width: 640px) 76px, 88px"
-                      />
-                    </div>
+                <div className="relative z-[1] flex min-w-0 flex-1 items-end gap-3 sm:gap-4">
+                  <div
+                    className="location-picker-modal__mascot relative z-[1] -mt-10 mb-0.5 flex h-[124px] w-[108px] shrink-0 items-end justify-center sm:-mt-12 sm:h-[148px] sm:w-[128px]"
+                    aria-hidden
+                  >
+                    <span
+                      className="location-picker-modal__logo-glow location-picker-modal__logo-glow--mascot pointer-events-none absolute bottom-0 left-1/2 z-0 h-[85%] w-[130%] -translate-x-1/2 opacity-80"
+                      aria-hidden
+                    />
+                    <LocationPickerMascot className="relative z-[2] h-full w-full max-w-full" />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 pb-0.5">
                     <p className="location-picker-modal__kicker m-0 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#145142]/75 sm:text-[11px]">
                       Watta Sushi
                     </p>
@@ -406,7 +403,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                 </button>
               </div>
 
-              <div className="location-picker-modal__body min-h-[200px] flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-8 sm:py-7">
+              <div className="location-picker-modal__body min-h-[200px] flex-1 overflow-y-auto overflow-x-hidden rounded-b-[clamp(20px,4vw,32px)] px-5 py-5 sm:px-8 sm:py-7">
                 {catalogRefreshing && (
                   <div className="location-picker-modal__refresh mb-4 flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-semibold">
                     <span

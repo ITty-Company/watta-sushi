@@ -85,7 +85,8 @@ router.get('/my', async (req: Request, res: Response) => {
       include: { 
         items: { 
           include: { product: true } 
-        } 
+        },
+        review: true,
       }
     });
 

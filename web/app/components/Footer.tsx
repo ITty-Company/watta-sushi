@@ -5,7 +5,7 @@ import Image from 'next/image'
 export default function Footer() {
   return (
     <footer
-      className="site-footer-watta mt-auto"
+      className="site-footer-watta mt-auto shrink-0"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="site-footer-watta__ambient" aria-hidden />
@@ -40,8 +40,14 @@ export default function Footer() {
             <Link href="/blog" className="site-footer-watta__link">
               Блог
             </Link>
+            <Link href="/reviews" className="site-footer-watta__link">
+              Відгуки
+            </Link>
             <Link href="/about" className="site-footer-watta__link">
               Про нас
+            </Link>
+            <Link href="/contacts" className="site-footer-watta__link">
+              Контакти
             </Link>
           </nav>
 

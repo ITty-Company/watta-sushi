@@ -64,6 +64,19 @@ interface Translations {
     stepWeb: string
     stepApp: string
     stepPhone: string
+    stepWebDesc: string
+    stepAppDesc: string
+    stepPhoneDesc: string
+    /** Підпис під картою: наша кухня (адреса з `lib/wattaRestaurantLocation`) */
+    kitchenMapCaption: string
+    conditionsKicker: string
+    conditionsFeature1: string
+    conditionsFeature2: string
+    conditionsFeature3: string
+    deliveryPromiseKicker: string
+    deliveryPromiseTitle: string
+    deliveryPromiseText: string
+    deliveryPromiseFoot: string
     openMaps: string
     title: string
     description: string
@@ -78,6 +91,8 @@ interface Translations {
     postalInside: string
     postalOutside: string
     postalNoZones: string
+    /** Індекс знайдено на карті, але полігони зон ще не задані в адмінці */
+    postalFoundIndexNoZonesTitle: string
     postalGeocodeFail: string
     postalBadRequest: string
     postalZone: string
@@ -103,6 +118,10 @@ interface Translations {
     postalZoneTariffFree: string
     postalZoneTariffFlat: string
     postalZoneTariffStandard: string
+    /** Орієнтовна сума після перевірки індексу, плейсхолдер {{amount}} */
+    estimatedDeliveryApprox: string
+    /** Відстань від точки кухні, плейсхолдер {{km}} */
+    distanceFromKitchen: string
   }
   categories: {
     rolls: string
@@ -220,15 +239,194 @@ interface Translations {
       workTime: string
       contact: string
     }
+    /** Розширена сторінка «Про нас» */
+    heroKicker: string
+    heroWordmark: string
+    storyTitle: string
+    storyLead: string
+    storyP2: string
+    storyP3: string
+    journeyTitle: string
+    journeySub: string
+    j1Title: string
+    j1Body: string
+    j2Title: string
+    j2Body: string
+    j3Title: string
+    j3Body: string
+    j4Title: string
+    j4Body: string
+    bentoTitle: string
+    bentoSub: string
+    bento1Title: string
+    bento1Body: string
+    bento2Title: string
+    bento2Body: string
+    bento3Title: string
+    bento3Body: string
+    bento4Title: string
+    bento4Body: string
+    manifesto: string
+    manifestoSig: string
+    ctaMenu: string
+    ctaContacts: string
+    ctaDelivery: string
+    visitStripTitle: string
+    addressLine: string
+    hoursLine: string
+    phoneLine: string
+    teamEmptyTitle: string
+    teamEmptyBody: string
+    marqueeWords: string
   }
   promotionsPage: {
     title: string
     description: string
+    /** Заголовок списку новин/акцій */
+    listHeading: string
+    detailsCta: string
+    /** Плейсхолдер {{count}} */
+    morePhotosBadge: string
+    /** Плейсхолдер {{count}} */
+    offersBadge: string
+    noPhoto: string
+    loading: string
+    notFound: string
+    galleryAria: string
+    offersTitle: string
+    wasPrice: string
+    /** Плейсхолдер {{percent}} */
+    offPercent: string
+    hitBadge: string
   }
   profilePage: {
     title: string
     logout: string
     orderHistory: string
+  }
+  /** Кабінет клієнта (профіль) */
+  clientProfile: {
+    loading: string
+    redirectLogin: string
+    backHome: string
+    brandSubtitle: string
+    bonuses: string
+    tabHistory: string
+    tabAddress: string
+    tabFavorites: string
+    tabData: string
+    tabAdmin: string
+    logout: string
+    emptyOrders: string
+    goMenu: string
+    orderLabel: string
+    total: string
+    reorder: string
+    journeyHint: string
+    stepPending: string
+    stepConfirmed: string
+    stepCooking: string
+    stepDelivering: string
+    stepReceived: string
+    stepReview: string
+    stepReviewDone: string
+    orderCancelled: string
+    liveUpdating: string
+    reviewOpen: string
+    reviewModalTitle: string
+    reviewText: string
+    reviewPhotos: string
+    pickPhotos: string
+    reviewSend: string
+    favoritesTitle: string
+    favEmpty: string
+    favToMenu: string
+    addrTitle: string
+    addrSub: string
+    addrEmptyTitle: string
+    addrEmptySub: string
+    dataTitle: string
+    dataSub: string
+    labelName: string
+    labelPhone: string
+    labelEmail: string
+    notSpecified: string
+  }
+  /** Публічна сторінка відгуків */
+  reviewsPublic: {
+    title: string
+    subtitle: string
+    empty: string
+    loginCta: string
+    openProfile: string
+  }
+  /** Блог — обгортка UI */
+  blogPublic: {
+    title: string
+    subtitle: string
+    empty: string
+    readMore: string
+    backToBlog: string
+  }
+  /** Сторінка контактів */
+  contactPage: {
+    heroKicker: string
+    heroTitle: string
+    heroSubtitle: string
+    ctaForm: string
+    ctaDelivery: string
+    stat1Val: string
+    stat1Label: string
+    stat2Val: string
+    stat2Label: string
+    stat3Val: string
+    stat3Label: string
+    channelsTitle: string
+    channelsSub: string
+    cardCall: string
+    cardEmail: string
+    cardAddress: string
+    cardHours: string
+    phoneDisplay: string
+    phoneTel: string
+    emailDisplay: string
+    emailMailto: string
+    hoursDetail: string
+    openMaps: string
+    mapTitle: string
+    mapSub: string
+    socialTitle: string
+    faqTitle: string
+    faqSub: string
+    faq1Q: string
+    faq1A: string
+    faq2Q: string
+    faq2A: string
+    faq3Q: string
+    faq3A: string
+    faq4Q: string
+    faq4A: string
+    faq5Q: string
+    faq5A: string
+    formTitle: string
+    formSub: string
+    phName: string
+    phEmail: string
+    phPhone: string
+    phMessage: string
+    formSubmit: string
+    formSending: string
+    formSuccess: string
+    formError: string
+    formNetwork: string
+    errName: string
+    errEmail: string
+    errMessage: string
+    honeyLabel: string
+    bottomTitle: string
+    bottomCta: string
+    scrollHint: string
+    addressLine: string
   }
   adminPage: {
     auth: {
@@ -301,6 +499,13 @@ interface Translations {
       banners: string; blog: string; ingredients: string; team: string; countries: string;
       contentSection: string;
       statsFallback: string;
+      studioHeadline: string;
+      studioSub: string;
+      chartRevenue14d: string;
+      chartOrders14d: string;
+      chartStatusPie: string;
+      chartNoData: string;
+      avgOrderValue: string;
     }
     actions: {
       add: string; edit: string; editShort: string; delete: string; save: string; saveChanges: string; cancel: string;
@@ -315,13 +520,22 @@ interface Translations {
     }
     orders: {
       orderNum: string; noComment: string; payment: string; cash: string; online: string;
-      paid: string; error: string; waiting: string; hintCooking: string; hintDelivering: string; 
+      paid: string; error: string; waiting: string; hintConfirmed: string; hintCooking: string; hintDelivering: string; 
       hintCompleted: string; hintCancel: string;
       fulfillmentDelivery: string; fulfillmentPickup: string; deliveryFeeAdmin: string;
     }
     news: {
       title: string; addBtn: string; editTitle: string; newTitle: string;
       titlePlaceholder: string; descPlaceholder: string; textPlaceholder: string; isHit: string;
+      galleryLabel: string
+      uploadPhotos: string
+      removePhotoAria: string
+      dishesBlock: string
+      selectProduct: string
+      discountShort: string
+      addDish: string
+      dishDuplicate: string
+      pickProductFirst: string
     }
     products: {
       addBtn: string; hit: string; editTitle: string; newTitle: string;
@@ -381,6 +595,17 @@ interface Translations {
     welcomeBadgeAria: string
     /** Кнопка-стрілка вниз під привітанням */
     welcomeScrollDownAria: string
+    /** Заголовок блоку після банерів */
+    gastronomyTitle: string
+    /** Заголовок повного каталогу на головній */
+    homeCatalogTitle: string
+    /** Підзаголовок під каталогом */
+    homeCatalogSub: string
+    /** Підказка: товари на окремій сторінці */
+    catalogOnCategoryPageHint: string
+    categoryPageBack: string
+    categoryPageEmpty: string
+    categoryPageOpenCart: string
   }
   cinematicFooter: {
     readyTitle: string
@@ -460,7 +685,21 @@ const translations: Record<Language, Translations> = {
       stepWeb: 'На сайті',
       stepApp: 'У застосунку',
       stepPhone: 'Телефоном',
-      openMaps: 'Відкрити в Google Maps',
+      stepWebDesc: 'Меню, кошик, оплата й адреса — усе в один клік, без зайвих кроків.',
+      stepAppDesc: 'Той самий зручний досвід у застосунку — швидке повторення улюблених замовлень.',
+      stepPhoneDesc: 'Зателефонуйте — підкажемо по меню, зонах і часу доставки.',
+      kitchenMapCaption: 'Наша кухня на карті',
+      conditionsKicker: 'Сервіс',
+      conditionsFeature1: 'Мінімум і тарифи для вашого міста — за узгодженням з оператором.',
+      conditionsFeature2: 'Зони доставки прозорі: дивіться карту та перевірку за індексом вище.',
+      conditionsFeature3: 'До віддалених точок — за попередньою домовленістю.',
+      deliveryPromiseKicker: 'Пунктуальність',
+      deliveryPromiseTitle: 'Веземо вчасно й акуратно',
+      deliveryPromiseText:
+        'Плануємо збірку та маршрут так, щоб роли приїхали свіжими й у зручний для вас інтервал. Слідкуємо за навантаженням кухні та дорогою.',
+      deliveryPromiseFoot:
+        'Якщо затримка з нашої сторони — повідомимо вас одразу. Ваша вечеря для нас у пріоритеті.',
+      openMaps: 'Відкрити адресу кухні в Google Maps',
       title: 'Доставка',
       description: 'Суші та роли з доставкою у ваше місто.',
       workingHours: 'Режим роботи',
@@ -476,6 +715,8 @@ const translations: Record<Language, Translations> = {
       postalOutside: 'За межами зон доставки для цього міста',
       postalNoZones:
         'Для цього міста ще не накреслені зони на карті — уточнюйте доставку в оператора. Тарифи встановлює адміністратор.',
+      postalFoundIndexNoZonesTitle:
+        'Поштовий індекс знайдено — координати підтверджені (карта). Зони доставки для цього міста ще не накреслені в адмін-панелі.',
       postalGeocodeFail: 'Не вдалося знайти адресу за цим індексом — перевірте написання та країну міста.',
       postalBadRequest: 'Оберіть місто та введіть індекс.',
       postalZone: 'Зона',
@@ -501,6 +742,8 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffFree: 'Тариф зони: безкоштовна доставка',
       postalZoneTariffFlat: 'Тариф зони: {{amount}} €',
       postalZoneTariffStandard: 'Тариф зони: стандарт (база + €/км)',
+      estimatedDeliveryApprox: 'Орієнтовна доставка: {{amount}} €',
+      distanceFromKitchen: 'Відстань від кухні (орієнтовно): {{km}} км',
     },
     categories: { rolls: 'Роли', sushi: 'Суші', sets: 'Сети', soups: 'Супи', bowls: 'Боули', snacks: 'Закуски', drinks: 'Напої', sauces: 'Соуси' },
     hero: { title: 'Користь азіатських супів' },
@@ -603,18 +846,64 @@ const translations: Record<Language, Translations> = {
         address: "Адреса",
         workTime: "Режим роботи",
         contact: "Контакти"
-      }
+      },
+      heroKicker: "Швидка гастрономія",
+      heroWordmark: "SUSHI · ROLLS · ДОСТАВКА",
+      storyTitle: "Наша історія — це смак і дисципліна",
+      storyLead: "Watta Sushi почалася з простої ідеї: японська кухня може бути одночасно швидкою, охайною та щиро смачною — без компромісів щодо риби, рису й температури.",
+      storyP2: "Ми не збираємо роли «на склад»: кожен сет збирається під ваше замовлення. Соуси й рис тримаємо в чітких режимах, а начинку не жаліємо — щоб кожен шматочок відчувався.",
+      storyP3: "Команда в залі й на доставці говорить однією мовою — про турботу. Ми підкажемо, що обрати під настрій, подію чи дієту, і чесно скажемо, якщо щось краще спробувати іншим разом.",
+      journeyTitle: "Шлях страви до вас",
+      journeySub: "Від ідеї до столу — кілька кроків, які ми відпрацьовуємо щодня.",
+      j1Title: "Ідея та меню",
+      j1Body: "Карта страв оновлюється з урахуванням сезону, постачальників і того, що ви найчастіше замовляєте.",
+      j2Title: "Кухня",
+      j2Body: "Чисті процеси, контроль часу приготування та сервіровки — щоб смак був передбачувано відмінним.",
+      j3Title: "Упаковка",
+      j3Body: "Герметичні контейнери, акуратні соуси окремо — їжа доїжджає охайною та охолодженою.",
+      j4Title: "Доставка",
+      j4Body: "Кур’єри знають маршрути; ми синхронізуємо час, щоб ви отримали роли в найкращому вигляді.",
+      bentoTitle: "Те, за що нас обирають",
+      bentoSub: "Чотири опори бренду — у візуальній сітці та в реальній кухні.",
+      bento1Title: "Дисципліна рису",
+      bento1Body: "Правильна кислотність, температура й текстура — база, без якої рол не «сидить» на язиці.",
+      bento2Title: "Риба та постачання",
+      bento2Body: "Працюємо з перевіреними ланцюгами; свіжість для нас не гасло, а стандарт.",
+      bento3Title: "Швидкість без паніки",
+      bento3Body: "Темп на кухні високий, але не хаотичний — ви отримуєте страву, а не «щось схоже на суші».",
+      bento4Title: "Еко-акцент",
+      bento4Body: "Менше зайвого пластику там, де це можливо, і відповідальна утилізація — крок за кроком.",
+      manifesto: "Ми не граємо в японську кухню — ми її шанобливо готуємо.",
+      manifestoSig: "— Команда Watta Sushi",
+      ctaMenu: "Перейти до меню",
+      ctaContacts: "Зв’язатися",
+      ctaDelivery: "Умови доставки",
+      visitStripTitle: "Завітати або написати",
+      addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
+      hoursLine: "Щодня 12:00 — 22:00",
+      phoneLine: "+31 6 1234 5678",
+      teamEmptyTitle: "Команда на фото з’явиться зовсім скоро",
+      teamEmptyBody: "Поки що знайомтесь з нами через страви — кожен рол уже зроблений руками наших шефів.",
+      marqueeWords: "Свіжість|Температура|Смак|Команда|Амстердам|Роли|Суші|Доставка|Якість",
     },
     menuView: {
-    itemsCount: 'страв',
-    emptyCategoryTitle: 'Товарів у цій категорії поки немає',
-    emptyCategoryDesc: 'Додайте товари через адмін-панель',
-    seeAll: 'Подивитися всі',
-    footerPromoSeeOffers: 'Усі акції та банери — нижче',
-    footerPromoAriaRegion: 'Акції та спецпропозиції',
-    welcomeBadgeAria: 'Вітання різними мовами та назва бренду',
-    welcomeScrollDownAria: 'Прокрутити до наступного екрана',
-  },
+      itemsCount: 'страв',
+      emptyCategoryTitle: 'Товарів у цій категорії поки немає',
+      emptyCategoryDesc: 'Додайте товари через адмін-панель',
+      seeAll: 'Подивитися всі',
+      footerPromoSeeOffers: 'Усі акції та банери — нижче',
+      footerPromoAriaRegion: 'Акції та спецпропозиції',
+      welcomeBadgeAria: 'Вітання різними мовами та назва бренду',
+      welcomeScrollDownAria: 'Прокрутити до наступного екрана',
+      gastronomyTitle: 'Японська гастрономія',
+      homeCatalogTitle: 'Усе меню',
+      homeCatalogSub: 'Оберіть категорію в панелі зверху — сторінка прокрутиться до відповідного блоку.',
+      catalogOnCategoryPageHint:
+        'Страви обраної категорії відкриваються на окремій сторінці — натисніть тип у сітці нижче або в панелі категорій.',
+      categoryPageBack: 'На головну',
+      categoryPageEmpty: 'У цій категорії поки немає позицій.',
+      categoryPageOpenCart: 'Кошик',
+    },
     cinematicFooter: {
       readyTitle: 'Готові замовити?',
       ctaBanners: 'До банерів і акцій',
@@ -640,8 +929,143 @@ const translations: Record<Language, Translations> = {
     enterNewName: 'Введіть нову назву:',
     addSubcategory: '➕ Підкатегорія'
   },
-    promotionsPage: { title: "Акції", description: "Спеціальні пропозиції" },
+    promotionsPage: {
+      title: "Акції",
+      description: "Спеціальні пропозиції",
+      listHeading: "Новини та акції",
+      detailsCta: "Детальніше",
+      morePhotosBadge: "+{{count}} фото",
+      offersBadge: "{{count}} акцій",
+      noPhoto: "Без фото",
+      loading: "Завантаження...",
+      notFound: "Матеріал не знайдено",
+      galleryAria: "Галерея зображень",
+      offersTitle: "Страви зі знижкою",
+      wasPrice: "Було",
+      offPercent: "−{{percent}}%",
+      hitBadge: "ХІТ",
+    },
     profilePage: { title: "Профіль", logout: "Вийти", orderHistory: "Історія замовлень" },
+    clientProfile: {
+      loading: 'Завантаження…',
+      redirectLogin: 'Перенаправлення на вхід…',
+      backHome: 'На головну',
+      brandSubtitle: 'WATTA SUSHI',
+      bonuses: 'Ваші бонуси',
+      tabHistory: 'Історія замовлень',
+      tabAddress: 'Адреси доставки',
+      tabFavorites: 'Обране',
+      tabData: 'Особисті дані',
+      tabAdmin: 'Адмін-панель',
+      logout: 'Вийти',
+      emptyOrders: 'Ви ще нічого не замовляли',
+      goMenu: 'Перейти до меню',
+      orderLabel: 'Замовлення',
+      total: 'Разом',
+      reorder: 'Повторити замовлення',
+      journeyHint: 'Статус оновлюється автоматично, коли кухня змінює етап у системі.',
+      stepPending: 'Очікує підтвердження',
+      stepConfirmed: 'Підтверджено',
+      stepCooking: 'Готується',
+      stepDelivering: 'У доставці',
+      stepReceived: 'Отримано',
+      stepReview: 'Залишити відгук',
+      stepReviewDone: 'Дякуємо за відгук',
+      orderCancelled: 'Замовлення скасовано',
+      liveUpdating: 'Онлайн-статус',
+      reviewOpen: 'Написати відгук',
+      reviewModalTitle: 'Ваш відгук про замовлення',
+      reviewText: 'Розкажіть, як усе пройшло…',
+      reviewPhotos: 'Фото (до 6)',
+      pickPhotos: 'Обрати зображення',
+      reviewSend: 'Надіслати відгук',
+      favoritesTitle: 'Обрані товари',
+      favEmpty: 'У вас поки немає обраних товарів',
+      favToMenu: 'Перейти до меню',
+      addrTitle: 'Мої адреси',
+      addrSub: 'Збережені адреси доставки',
+      addrEmptyTitle: 'Адреси не збережені',
+      addrEmptySub: 'Додайте адресу при оформленні замовлення',
+      dataTitle: 'Особисті дані',
+      dataSub: 'Ваша контактна інформація',
+      labelName: "Ім'я",
+      labelPhone: 'Телефон',
+      labelEmail: 'Email',
+      notSpecified: 'Не вказано',
+    },
+    reviewsPublic: {
+      title: 'Відгуки клієнтів',
+      subtitle: 'Щирі враження про доставку, смак і сервіс Watta Sushi.',
+      empty: 'Ще немає опублікованих відгуків — станьте першим після замовлення.',
+      loginCta: 'Увійдіть, щоб залишити відгук у профілі після отримання замовлення.',
+      openProfile: 'На головну — профіль у меню',
+    },
+    blogPublic: {
+      title: 'Блог і рецепти шефа',
+      subtitle: 'Секрети приготування, поради та нотатки команди Watta Sushi.',
+      empty: 'Скоро тут з’являться нові статті.',
+      readMore: 'Читати далі',
+      backToBlog: 'Усі статті',
+    },
+    contactPage: {
+      heroKicker: 'Зв’яжіться з нами',
+      heroTitle: 'Watta Sushi поруч',
+      heroSubtitle: 'Питання по меню, доставці, корпоративам або співпраці — напишіть, і команда відповість якнайшвидше.',
+      ctaForm: 'Написати нам',
+      ctaDelivery: 'Зони доставки',
+      stat1Val: '~15 хв',
+      stat1Label: 'Середній час відповіді в чаті',
+      stat2Val: 'Amsterdam+',
+      stat2Label: 'Регіон доставки та самовивіз',
+      stat3Val: '100%',
+      stat3Label: 'Свіжі інгредієнти щодня',
+      channelsTitle: 'Як з нами зв’язатися',
+      channelsSub: 'Оберіть зручний канал — усі лінії ведуть до однієї кухні.',
+      cardCall: 'Телефон',
+      cardEmail: 'Email',
+      cardAddress: 'Адреса кухні',
+      cardHours: 'Години',
+      phoneDisplay: '+31 6 1234 5678',
+      phoneTel: '+31612345678',
+      emailDisplay: 'hello@watta-sushi.nl',
+      emailMailto: 'hello@watta-sushi.nl',
+      hoursDetail: 'Щодня 12:00 — 22:00',
+      openMaps: 'Відкрити в Google Maps',
+      mapTitle: 'Ми на карті',
+      mapSub: 'Самовивіз за попереднім замовленням — уточнюйте час у чаті або телефоном.',
+      socialTitle: 'Соцмережі та месенджери',
+      faqTitle: 'Часті питання',
+      faqSub: 'Коротко про доставку, оплату та замовлення.',
+      faq1Q: 'Як швидко привезете замовлення?',
+      faq1A: 'Час залежить від завантаженості кухні та маршруту кур’єра. Точний інтервал повідомляємо після підтвердження.',
+      faq2Q: 'Чи можна змінити адресу після оформлення?',
+      faq2A: 'Так, якщо кур’єр ще не виїхав — напишіть або зателефонуйте, і ми оновимо маршрут.',
+      faq3Q: 'Які способи оплати є?',
+      faq3A: 'Картка онлайн, готівка або термінал у кур’єра — залежно від міста та налаштувань на сайті.',
+      faq4Q: 'Чи є безглютенові або вегетаріанські опції?',
+      faq4A: 'У меню є позиції без риби та з овочами; про алергени краще написати в повідомленні — підкажемо по складу.',
+      faq5Q: 'Робите корпоративні сети?',
+      faq5A: 'Так, збираємо великі замовлення з урахуванням часу подачі. Залиште деталі у формі — менеджер зв’яжеться.',
+      formTitle: 'Форма зворотного зв’язку',
+      formSub: 'Заповніть поля — отримаємо листа на кухню та відповімо на email.',
+      phName: 'Ваше ім’я',
+      phEmail: 'you@example.com',
+      phPhone: '+31 … (необов’язково)',
+      phMessage: 'Розкажіть, чим можемо допомогти…',
+      formSubmit: 'Надіслати',
+      formSending: 'Надсилаємо…',
+      formSuccess: 'Дякуємо! Ми отримали повідомлення.',
+      formError: 'Не вдалося надіслати. Спробуйте пізніше.',
+      formNetwork: 'Помилка мережі. Перевірте з’єднання.',
+      errName: 'Вкажіть ім’я (2–120 символів).',
+      errEmail: 'Введіть коректний email.',
+      errMessage: 'Повідомлення — від 10 до 4000 символів.',
+      honeyLabel: 'Не заповнюйте це поле',
+      bottomTitle: 'Готові до смаку Watta?',
+      bottomCta: 'Перейти до меню',
+      scrollHint: 'Гортайте вниз',
+      addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+    },
     notifications: { title: "Сповіщення", empty: "Немає сповіщень" },
     adminPage: {
       auth: {
@@ -723,11 +1147,18 @@ const translations: Record<Language, Translations> = {
         countries: "Країн",
         contentSection: "Каталог і контент",
         statsFallback: "розрахунок зі списку замовлень",
+        studioHeadline: "Пульс Watta Sushi",
+        studioSub: "Статистика, графіки та каталог у стилі сайту.",
+        chartRevenue14d: "Виручка виконаних (14 днів)",
+        chartOrders14d: "Замовлень за день (усі)",
+        chartStatusPie: "Розподіл за статусами",
+        chartNoData: "Ще немає даних для графіка",
+        avgOrderValue: "Середній чек (виконані)",
       },
       actions: { add: "+ Додати", edit: "Редагувати", editShort: "Змінити", delete: "Видалити", save: "Зберегти", saveChanges: "Зберегти зміни", cancel: "Скасувати" },
       common: { menuChangeSection: "Меню / змінити розділ", emptyOrders: "Немає активних замовлень", emptyCities: "Міст поки немає", emptyBanners: "Банерів поки немає", emptyCategories: "Категорій поки немає", emptyUsers: "Користувачів поки немає", emptyTeam: "Членів команди поки немає", emptyPromos: "Промокодів поки немає", clickToUpload: "Натисніть, щоб завантажити фото", changeFile: "Змінити", selectFromList: "Вибрати зі списку", activeLabel: "Активно", inactiveLabel: "Неактивно", yes: "Так", no: "Ні", orderIndex: "Порядок відображення", choose: "Вибрати", notFound: "Нічого не знайдено. Спробуйте інший запит.", searching: "пошук...", bannerDragHint: "Перетягніть картку на іншу, щоб змінити порядок на сайті", bannerOrderSaved: "Порядок банерів збережено", bannerOrderSaveError: "Не вдалося зберегти порядок банерів" },
-      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовивіз", deliveryFeeAdmin: "Доставка:" },
-      news: { title: "Новини", addBtn: "+ Додати", editTitle: "Редагувати", newTitle: "Нова новина", titlePlaceholder: "Заголовок", descPlaceholder: "Короткий опис", textPlaceholder: "Повний текст", isHit: "Хіт продажу" },
+      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintConfirmed: "Підтверджено", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовивіз", deliveryFeeAdmin: "Доставка:" },
+      news: { title: "Новини", addBtn: "+ Додати", editTitle: "Редагувати", newTitle: "Нова новина", titlePlaceholder: "Заголовок", descPlaceholder: "Короткий опис", textPlaceholder: "Повний текст", isHit: "Хіт продажу", galleryLabel: "Галерея фото", uploadPhotos: "Додати фото (кілька)", removePhotoAria: "Прибрати фото", dishesBlock: "Страви зі знижкою в цій новині", selectProduct: "Оберіть страву", discountShort: "Знижка %", addDish: "Додати страву", dishDuplicate: "Ця страва вже додана", pickProductFirst: "Спочатку оберіть страву" },
       products: { addBtn: "+ Додати товар", hit: "ХІТ", editTitle: "Редагувати страву", newTitle: "Нова страва", nameLabel: "Назва товару", namePlaceholder: "Наприклад: Філадельфія", descLabel: "Опис", descPlaceholder: "Склад, вага, особливості...", priceLabel: "Ціна (€)", categoryLabel: "Категорія", selectCategory: "Оберіть...", deliveryCities: "Міста доставки *", addCitiesFirst: "Спочатку додайте міста у вкладці 'Міста'", descComposition: "Описи (Склад)", ingComposition: "Інгредієнти (Склад)" },
       ingredients: { title: "Бібліотека інгредієнтів", addNew: "Додати новий", nameRu: "Назва", namePlaceholder: "Наприклад: Лосось", addBtn: "Додати" },
       cities: { addCountry: "Додати нову країну", nameRu: "Назва *", sticker: "Стікер країни (прапор)", addCountryBtn: "✨ Додати країну", countriesTitle: "Країни", editCity: "Редагувати місто", addCity: "Додати нове місто", cityNameRu: "Назва міста *", searchMapLabel: "📍 Пошук міста на карті", searchMapDesc: "Шукайте за адресою, індексом або кодом.", searchMapPlaceholder: "Назва, адреса, індекс...", searchMapBtn: "Шукати за назвами", countryLabel: "Країна *", selectCountry: "Оберіть країну", activeCity: "Активне місто", saveChanges: "💾 Зберегти зміни", addCityBtn: "✨ Додати місто", cancelEdit: "Скасувати редагування", citiesTitle: "Міста", deliveryZones: "Зон доставки:" },
@@ -792,7 +1223,21 @@ const translations: Record<Language, Translations> = {
       stepWeb: 'На сайте',
       stepApp: 'В приложении',
       stepPhone: 'По телефону',
-      openMaps: 'Открыть в Google Maps',
+      stepWebDesc: 'Меню, корзина, оплата и адрес — всё на сайте без лишних шагов.',
+      stepAppDesc: 'Тот же удобный опыт в приложении — быстрый повтор любимых заказов.',
+      stepPhoneDesc: 'Позвоните — подскажем по меню, зонам и времени доставки.',
+      kitchenMapCaption: 'Наша кухня на карте',
+      conditionsKicker: 'Сервис',
+      conditionsFeature1: 'Минимум и тарифы для вашего города — уточняйте у оператора.',
+      conditionsFeature2: 'Зоны доставки прозрачны: смотрите карту и проверку по индексу выше.',
+      conditionsFeature3: 'В отдалённые точки — по предварительной договорённости.',
+      deliveryPromiseKicker: 'Пунктуальность',
+      deliveryPromiseTitle: 'Привозим вовремя и аккуратно',
+      deliveryPromiseText:
+        'Планируем сборку и маршрут так, чтобы роллы приехали свежими и в удобный для вас интервал.',
+      deliveryPromiseFoot:
+        'Если задержка с нашей стороны — сразу предупредим. Ваш ужин для нас в приоритете.',
+      openMaps: 'Открыть адрес кухни в Google Maps',
       title: 'Доставка',
       description: 'Суши и роллы с доставкой в ваш город.',
       workingHours: 'Режим работы',
@@ -808,6 +1253,8 @@ const translations: Record<Language, Translations> = {
       postalOutside: 'Вне зон доставки для этого города',
       postalNoZones:
         'Для этого города ещё не заданы зоны на карте — уточняйте у оператора. Тарифы настраивает администратор.',
+      postalFoundIndexNoZonesTitle:
+        'Индекс найден — координаты подтверждены (карта). Зоны доставки для этого города ещё не нарисованы в админ-панели.',
       postalGeocodeFail: 'Не удалось найти адрес по индексу — проверьте написание и страну города.',
       postalBadRequest: 'Выберите город и введите индекс.',
       postalZone: 'Зона',
@@ -833,6 +1280,8 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffFree: 'Тариф зоны: бесплатная доставка',
       postalZoneTariffFlat: 'Тариф зоны: {{amount}} €',
       postalZoneTariffStandard: 'Тариф зоны: стандарт (база + €/км)',
+      estimatedDeliveryApprox: 'Ориентировочная доставка: {{amount}} €',
+      distanceFromKitchen: 'Расстояние от кухни (примерно): {{km}} км',
     },
     categories: { rolls: 'Роллы', sushi: 'Суши', sets: 'Сеты', soups: 'Супы', bowls: 'Боулы', snacks: 'Закуски', drinks: 'Напитки', sauces: 'Соусы' },
     hero: { title: 'Польза азиатских супов' },
@@ -935,18 +1384,64 @@ const translations: Record<Language, Translations> = {
         address: "Адрес",
         workTime: "Режим работы",
         contact: "Контакты"
-      }
+      },
+      heroKicker: "Быстрая гастрономия",
+      heroWordmark: "SUSHI · ROLLS · ДОСТАВКА",
+      storyTitle: "Наша история — вкус и дисциплина",
+      storyLead: "Watta Sushi началась с простой идеи: японская кухня может быть одновременно быстрой, аккуратной и по-настоящему вкусной — без компромиссов по рыбе, рису и температуре.",
+      storyP2: "Мы не катаем роллы «на склад»: каждый сет собирается под ваш заказ. Соусы и рис держим в жёстких режимах, а начинку не жалеем — чтобы каждый кусочек чувствовался.",
+      storyP3: "Команда в зале и на доставке говорит на одном языке — заботы. Подскажем, что выбрать под настроение, событие или диету, и честно скажем, если что-то лучше попробовать в другой раз.",
+      journeyTitle: "Путь блюда к вам",
+      journeySub: "От идеи до стола — шаги, которые мы отрабатываем каждый день.",
+      j1Title: "Идея и меню",
+      j1Body: "Карта обновляется с учётом сезона, поставщиков и того, что вы заказываете чаще всего.",
+      j2Title: "Кухня",
+      j2Body: "Чистые процессы, контроль времени приготовления и подачи — чтобы вкус был предсказуемо отличным.",
+      j3Title: "Упаковка",
+      j3Body: "Герметичные контейнеры, соусы отдельно — еда приезжает аккуратной и холодной.",
+      j4Title: "Доставка",
+      j4Body: "Курьеры знают маршруты; синхронизируем время, чтобы роллы приехали в лучшем виде.",
+      bentoTitle: "За что нас выбирают",
+      bentoSub: "Четыре опоры бренда — на экране и на кухне.",
+      bento1Title: "Дисциплина риса",
+      bento1Body: "Кислотность, температура и текстура — база, без которой ролл не «сидит» на языке.",
+      bento2Title: "Рыба и поставки",
+      bento2Body: "Работаем с проверенными цепочками; свежесть для нас не лозунг, а стандарт.",
+      bento3Title: "Скорость без паники",
+      bento3Body: "Темп высокий, но не хаос — вы получаете блюдо, а не «что-то похожее на суши».",
+      bento4Title: "Эко-акцент",
+      bento4Body: "Меньше лишнего пластика там, где возможно, и ответственная утилизация — шаг за шагом.",
+      manifesto: "Мы не играем в японскую кухню — мы готовим её с уважением.",
+      manifestoSig: "— Команда Watta Sushi",
+      ctaMenu: "Перейти в меню",
+      ctaContacts: "Связаться",
+      ctaDelivery: "Условия доставки",
+      visitStripTitle: "Приехать или написать",
+      addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
+      hoursLine: "Ежедневно 12:00 — 22:00",
+      phoneLine: "+31 6 1234 5678",
+      teamEmptyTitle: "Скоро здесь появятся фото команды",
+      teamEmptyBody: "Пока знакомьтесь с нами через блюда — каждый ролл уже сделан руками наших шефов.",
+      marqueeWords: "Свежесть|Температура|Вкус|Команда|Амстердам|Роллы|Суши|Доставка|Качество",
     },
     menuView: {
-    itemsCount: 'блюд',
-    emptyCategoryTitle: 'Товаров в этой категории пока нет',
-    emptyCategoryDesc: 'Добавьте товары через админ-панель',
-    seeAll: 'Посмотреть все',
-    footerPromoSeeOffers: 'Все акции и баннеры — ниже',
-    footerPromoAriaRegion: 'Акции и спецпредложения',
-    welcomeBadgeAria: 'Приветствие на языках сайта и название бренда',
-    welcomeScrollDownAria: 'Прокрутить к следующему экрану',
-  },
+      itemsCount: 'блюд',
+      emptyCategoryTitle: 'Товаров в этой категории пока нет',
+      emptyCategoryDesc: 'Добавьте товары через админ-панель',
+      seeAll: 'Посмотреть все',
+      footerPromoSeeOffers: 'Все акции и баннеры — ниже',
+      footerPromoAriaRegion: 'Акции и спецпредложения',
+      welcomeBadgeAria: 'Приветствие на языках сайта и название бренда',
+      welcomeScrollDownAria: 'Прокрутить к следующему экрану',
+      gastronomyTitle: 'Японская гастрономия',
+      homeCatalogTitle: 'Всё меню',
+      homeCatalogSub: 'Выберите категорию на панели сверху — страница прокрутится к нужному разделу.',
+      catalogOnCategoryPageHint:
+        'Блюда категории открываются на отдельной странице — выберите тип в сетке ниже или в панели категорий.',
+      categoryPageBack: 'На главную',
+      categoryPageEmpty: 'В этой категории пока нет позиций.',
+      categoryPageOpenCart: 'Корзина',
+    },
     cinematicFooter: {
       readyTitle: 'Готовы заказать?',
       ctaBanners: 'К баннерам и акциям',
@@ -972,8 +1467,143 @@ const translations: Record<Language, Translations> = {
     enterNewName: 'Введите новое название:',
     addSubcategory: '➕ Подкатегория'
   },
-    promotionsPage: { title: "Акции", description: "Специальные предложения" },
+    promotionsPage: {
+      title: "Акции",
+      description: "Специальные предложения",
+      listHeading: "Новости и акции",
+      detailsCta: "Подробнее",
+      morePhotosBadge: "+{{count}} фото",
+      offersBadge: "{{count}} акций",
+      noPhoto: "Нет фото",
+      loading: "Загрузка...",
+      notFound: "Материал не найден",
+      galleryAria: "Галерея изображений",
+      offersTitle: "Блюда со скидкой",
+      wasPrice: "Было",
+      offPercent: "−{{percent}}%",
+      hitBadge: "ХИТ",
+    },
     profilePage: { title: "Профиль", logout: "Выйти", orderHistory: "История заказов" },
+    clientProfile: {
+      loading: 'Загрузка…',
+      redirectLogin: 'Перенаправление на вход…',
+      backHome: 'На главную',
+      brandSubtitle: 'WATTA SUSHI',
+      bonuses: 'Ваши бонусы',
+      tabHistory: 'История заказов',
+      tabAddress: 'Адреса доставки',
+      tabFavorites: 'Избранное',
+      tabData: 'Личные данные',
+      tabAdmin: 'Админ-панель',
+      logout: 'Выйти',
+      emptyOrders: 'Вы ещё ничего не заказывали',
+      goMenu: 'Перейти в меню',
+      orderLabel: 'Заказ',
+      total: 'Итого',
+      reorder: 'Повторить заказ',
+      journeyHint: 'Статус обновляется, когда кухня меняет этап в системе.',
+      stepPending: 'Ждёт подтверждения',
+      stepConfirmed: 'Подтверждён',
+      stepCooking: 'Готовится',
+      stepDelivering: 'В доставке',
+      stepReceived: 'Получен',
+      stepReview: 'Оставить отзыв',
+      stepReviewDone: 'Спасибо за отзыв',
+      orderCancelled: 'Заказ отменён',
+      liveUpdating: 'Онлайн-статус',
+      reviewOpen: 'Написать отзыв',
+      reviewModalTitle: 'Ваш отзыв о заказе',
+      reviewText: 'Расскажите, как всё прошло…',
+      reviewPhotos: 'Фото (до 6)',
+      pickPhotos: 'Выбрать изображения',
+      reviewSend: 'Отправить отзыв',
+      favoritesTitle: 'Избранные товары',
+      favEmpty: 'У вас пока нет избранных товаров',
+      favToMenu: 'Перейти в меню',
+      addrTitle: 'Мои адреса',
+      addrSub: 'Сохранённые адреса доставки',
+      addrEmptyTitle: 'Адреса не сохранены',
+      addrEmptySub: 'Добавьте адрес при оформлении заказа',
+      dataTitle: 'Личные данные',
+      dataSub: 'Ваша контактная информация',
+      labelName: 'Имя',
+      labelPhone: 'Телефон',
+      labelEmail: 'Email',
+      notSpecified: 'Не указано',
+    },
+    reviewsPublic: {
+      title: 'Отзывы клиентов',
+      subtitle: 'Честные впечатления о доставке, вкусе и сервисе Watta Sushi.',
+      empty: 'Пока нет отзывов — оставьте первый после получения заказа.',
+      loginCta: 'Войдите, чтобы оставить отзыв в профиле после доставки.',
+      openProfile: 'На главную — профиль в меню',
+    },
+    blogPublic: {
+      title: 'Блог и рецепты шефа',
+      subtitle: 'Секреты приготовления и заметки команды Watta Sushi.',
+      empty: 'Скоро появятся новые статьи.',
+      readMore: 'Читать далее',
+      backToBlog: 'Все статьи',
+    },
+    contactPage: {
+      heroKicker: 'Свяжитесь с нами',
+      heroTitle: 'Watta Sushi рядом',
+      heroSubtitle: 'Вопросы по меню, доставке, корпоративам или сотрудничеству — напишите, команда ответит как можно быстрее.',
+      ctaForm: 'Написать нам',
+      ctaDelivery: 'Зоны доставки',
+      stat1Val: '~15 мин',
+      stat1Label: 'Среднее время ответа в чате',
+      stat2Val: 'Amsterdam+',
+      stat2Label: 'Регион доставки и самовывоз',
+      stat3Val: '100%',
+      stat3Label: 'Свежие ингредиенты каждый день',
+      channelsTitle: 'Как с нами связаться',
+      channelsSub: 'Выберите удобный канал — все линии ведут на одну кухню.',
+      cardCall: 'Телефон',
+      cardEmail: 'Email',
+      cardAddress: 'Адрес кухни',
+      cardHours: 'Часы работы',
+      phoneDisplay: '+31 6 1234 5678',
+      phoneTel: '+31612345678',
+      emailDisplay: 'hello@watta-sushi.nl',
+      emailMailto: 'hello@watta-sushi.nl',
+      hoursDetail: 'Ежедневно 12:00 — 22:00',
+      openMaps: 'Открыть в Google Maps',
+      mapTitle: 'Мы на карте',
+      mapSub: 'Самовывоз по предзаказу — уточняйте время в чате или по телефону.',
+      socialTitle: 'Соцсети и мессенджеры',
+      faqTitle: 'Частые вопросы',
+      faqSub: 'Кратко о доставке, оплате и заказах.',
+      faq1Q: 'Как быстро привезёте заказ?',
+      faq1A: 'Время зависит от загрузки кухни и маршрута курьера. Точный интервал сообщим после подтверждения.',
+      faq2Q: 'Можно ли изменить адрес после оформления?',
+      faq2A: 'Да, если курьер ещё не выехал — напишите или позвоните, обновим маршрут.',
+      faq3Q: 'Какие способы оплаты доступны?',
+      faq3A: 'Карта онлайн, наличные или терминал у курьера — в зависимости от города и настроек на сайте.',
+      faq4Q: 'Есть безглютеновые или вегетарианские позиции?',
+      faq4A: 'В меню есть блюда без рыбы и с овощами; по аллергенам лучше написать в сообщении — подскажем по составу.',
+      faq5Q: 'Делаете корпоративные сеты?',
+      faq5A: 'Да, собираем крупные заказы с учётом времени подачи. Оставьте детали в форме — менеджер свяжется.',
+      formTitle: 'Форма обратной связи',
+      formSub: 'Заполните поля — письмо попадёт на кухню, ответ придёт на email.',
+      phName: 'Ваше имя',
+      phEmail: 'you@example.com',
+      phPhone: '+31 … (необязательно)',
+      phMessage: 'Расскажите, чем можем помочь…',
+      formSubmit: 'Отправить',
+      formSending: 'Отправляем…',
+      formSuccess: 'Спасибо! Мы получили сообщение.',
+      formError: 'Не удалось отправить. Попробуйте позже.',
+      formNetwork: 'Ошибка сети. Проверьте соединение.',
+      errName: 'Укажите имя (2–120 символов).',
+      errEmail: 'Введите корректный email.',
+      errMessage: 'Сообщение — от 10 до 4000 символов.',
+      honeyLabel: 'Не заполняйте это поле',
+      bottomTitle: 'Готовы к вкусу Watta?',
+      bottomCta: 'Перейти в меню',
+      scrollHint: 'Листайте вниз',
+      addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+    },
     notifications: { title: "Уведомления", empty: "Нет уведомлений" },
     adminPage: {
       auth: {
@@ -1055,11 +1685,18 @@ const translations: Record<Language, Translations> = {
         countries: "Стран",
         contentSection: "Каталог и контент",
         statsFallback: "расчёт по списку заказов",
+        studioHeadline: "Пульс Watta Sushi",
+        studioSub: "Статистика и графики в стиле сайта.",
+        chartRevenue14d: "Выручка выполненных (14 дней)",
+        chartOrders14d: "Заказов в день (все)",
+        chartStatusPie: "Распределение по статусам",
+        chartNoData: "Пока недостаточно данных для графика",
+        avgOrderValue: "Средний чек (выполнены)",
       },
       actions: { add: "+ Добавить", edit: "Редактировать", editShort: "Изменить", delete: "Удалить", save: "Сохранить", saveChanges: "Сохранить изменения", cancel: "Отмена" },
       common: { menuChangeSection: "Меню / изменить раздел", emptyOrders: "Нет активных заказов", emptyCities: "Городов пока нет", emptyBanners: "Баннеров пока нет", emptyCategories: "Категорий пока нет", emptyUsers: "Пользователей пока нет", emptyTeam: "Членов команды пока нет", emptyPromos: "Промокодов пока нет", clickToUpload: "Нажмите, чтобы загрузить фото", changeFile: "Изменить", selectFromList: "Выбрать из списка", activeLabel: "Активен", inactiveLabel: "Неактивен", yes: "Да", no: "Нет", orderIndex: "Порядок отображения", choose: "Выбрать", notFound: "Ничего не найдено. Попробуйте другой запрос.", searching: "поиск...", bannerDragHint: "Перетащите карточку на другую, чтобы изменить порядок на сайте", bannerOrderSaved: "Порядок баннеров сохранён", bannerOrderSaveError: "Не удалось сохранить порядок баннеров" },
-      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовывоз", deliveryFeeAdmin: "Доставка:" },
-      news: { title: "Новости", addBtn: "+ Добавить", editTitle: "Редактировать", newTitle: "Новая новость", titlePlaceholder: "Заголовок", descPlaceholder: "Краткое описание", textPlaceholder: "Полный текст", isHit: "Хит продаж" },
+      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintConfirmed: "Подтверждён", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовывоз", deliveryFeeAdmin: "Доставка:" },
+      news: { title: "Новости", addBtn: "+ Добавить", editTitle: "Редактировать", newTitle: "Новая новость", titlePlaceholder: "Заголовок", descPlaceholder: "Краткое описание", textPlaceholder: "Полный текст", isHit: "Хит продаж", galleryLabel: "Галерея фото", uploadPhotos: "Добавить фото (несколько)", removePhotoAria: "Убрать фото", dishesBlock: "Блюда со скидкой в этой новости", selectProduct: "Выберите блюдо", discountShort: "Скидка %", addDish: "Добавить блюдо", dishDuplicate: "Это блюдо уже добавлено", pickProductFirst: "Сначала выберите блюдо" },
       products: { addBtn: "+ Добавить товар", hit: "ХИТ", editTitle: "Редактировать блюдо", newTitle: "Новое блюдо", nameLabel: "Название товара", namePlaceholder: "Например: Филадельфия", descLabel: "Описание", descPlaceholder: "Состав, вес, особенности...", priceLabel: "Цена (€)", categoryLabel: "Категория", selectCategory: "Выберите...", deliveryCities: "Города доставки *", addCitiesFirst: "Сначала добавьте города во вкладке 'Города'", descComposition: "Описания (Состав)", ingComposition: "Ингредиенты (Состав)" },
       ingredients: { title: "Библиотека ингредиентов", addNew: "Добавить новый", nameRu: "Название", namePlaceholder: "Например: Лосось", addBtn: "Добавить" },
       cities: { addCountry: "Добавить новую страну", nameRu: "Название *", sticker: "Стикер страны (флаг)", addCountryBtn: "✨ Добавить страну", countriesTitle: "Страны", editCity: "Редактировать город", addCity: "Добавить новый город", cityNameRu: "Название города *", searchMapLabel: "📍 Поиск города на карте", searchMapDesc: "Ищите по адресу, индексу или коду.", searchMapPlaceholder: "Название, адрес, индекс...", searchMapBtn: "Искать по названиям", countryLabel: "Страна *", selectCountry: "Выберите страну", activeCity: "Активный город", saveChanges: "💾 Сохранить изменения", addCityBtn: "✨ Добавить город", cancelEdit: "Отменить редактирование", citiesTitle: "Города", deliveryZones: "Зон доставки:" },
@@ -1124,7 +1761,21 @@ const translations: Record<Language, Translations> = {
       stepWeb: 'On the website',
       stepApp: 'In the app',
       stepPhone: 'By phone',
-      openMaps: 'Open in Google Maps',
+      stepWebDesc: 'Menu, cart, payment and address — all in one flow, no extra steps.',
+      stepAppDesc: 'The same smooth experience in the app — reorder your favourites in seconds.',
+      stepPhoneDesc: 'Call us — we help with the menu, zones and delivery times.',
+      kitchenMapCaption: 'Our kitchen on the map',
+      conditionsKicker: 'Service',
+      conditionsFeature1: 'Minimum order and rates for your city — confirm with the operator.',
+      conditionsFeature2: 'Delivery zones are transparent: use the map and postcode check above.',
+      conditionsFeature3: 'Further-out addresses — on prior agreement.',
+      deliveryPromiseKicker: 'On time',
+      deliveryPromiseTitle: 'We deliver punctually and carefully',
+      deliveryPromiseText:
+        'We plan prep and routing so your rolls arrive fresh, in a window that works for you.',
+      deliveryPromiseFoot:
+        'If we are delayed on our side, we will let you know right away. Your dinner matters to us.',
+      openMaps: 'Open kitchen address in Google Maps',
       title: 'Delivery',
       description: 'Sushi and rolls delivered to your city.',
       workingHours: 'Working hours',
@@ -1140,6 +1791,8 @@ const translations: Record<Language, Translations> = {
       postalOutside: 'Outside delivery zones for this city',
       postalNoZones:
         'No map zones are configured for this city yet — ask the operator. Pricing is managed in the admin panel.',
+      postalFoundIndexNoZonesTitle:
+        'Postcode found — coordinates verified (maps). Delivery polygons for this city are not set up in the admin panel yet.',
       postalGeocodeFail: 'We could not resolve this postcode — check spelling and country.',
       postalBadRequest: 'Select a city and enter a postcode.',
       postalZone: 'Zone',
@@ -1165,6 +1818,8 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffFree: 'Zone tariff: free delivery',
       postalZoneTariffFlat: 'Zone tariff: €{{amount}}',
       postalZoneTariffStandard: 'Zone tariff: standard (base + per km)',
+      estimatedDeliveryApprox: 'Estimated delivery: €{{amount}}',
+      distanceFromKitchen: 'Approx. distance from kitchen: {{km}} km',
     },
     categories: { rolls: 'Rolls', sushi: 'Sushi', sets: 'Sets', soups: 'Soups', bowls: 'Bowls', snacks: 'Snacks', drinks: 'Drinks', sauces: 'Sauces' },
     hero: { title: 'Benefits of Asian Soups' },
@@ -1267,18 +1922,64 @@ const translations: Record<Language, Translations> = {
         address: "Address",
         workTime: "Working hours",
         contact: "Contacts"
-      }
+      },
+      heroKicker: "Fast gastronomy",
+      heroWordmark: "SUSHI · ROLLS · DELIVERY",
+      storyTitle: "Our story is flavour and discipline",
+      storyLead: "Watta Sushi started from a simple idea: Japanese food can be fast, neat, and genuinely delicious — with zero compromise on fish, rice, and temperature.",
+      storyP2: "We do not pre-stack rolls for a shelf: every set is built for your order. Sauces and rice stay in tight routines, and we do not skimp on filling — you should taste every bite.",
+      storyP3: "Front-of-house and couriers speak one language — care. We will steer you toward what fits your mood, event, or diet, and honestly say when something is better saved for next time.",
+      journeyTitle: "From kitchen to your table",
+      journeySub: "Steps we rehearse every single day.",
+      j1Title: "Menu & ideas",
+      j1Body: "The map evolves with season, suppliers, and what you order most.",
+      j2Title: "Kitchen",
+      j2Body: "Clean workflows and tight timing so quality stays predictable.",
+      j3Title: "Packaging",
+      j3Body: "Sealed boxes, sauces on the side — food travels neat and cool.",
+      j4Title: "Delivery",
+      j4Body: "Couriers know the routes; we sync timing so rolls arrive looking their best.",
+      bentoTitle: "Why guests stay with us",
+      bentoSub: "Four pillars — on screen and on the pass.",
+      bento1Title: "Rice discipline",
+      bento1Body: "Acidity, temperature, texture — the base that makes a roll sit right on the tongue.",
+      bento2Title: "Fish & sourcing",
+      bento2Body: "Trusted supply lines; freshness is our standard, not a slogan.",
+      bento3Title: "Speed without chaos",
+      bento3Body: "High tempo, not panic — you get the dish, not “something like sushi”.",
+      bento4Title: "Eco focus",
+      bento4Body: "Less throwaway plastic where we can, responsible waste — step by step.",
+      manifesto: "We do not cosplay Japanese food — we cook it with respect.",
+      manifestoSig: "— Team Watta Sushi",
+      ctaMenu: "Open the menu",
+      ctaContacts: "Contact us",
+      ctaDelivery: "Delivery info",
+      visitStripTitle: "Visit or message",
+      addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
+      hoursLine: "Daily 12:00 — 22:00",
+      phoneLine: "+31 6 1234 5678",
+      teamEmptyTitle: "Team portraits are coming soon",
+      teamEmptyBody: "For now, meet us through the food — every roll is already shaped by our chefs.",
+      marqueeWords: "Freshness|Temperature|Taste|Team|Amsterdam|Rolls|Sushi|Delivery|Quality",
     },
     menuView: {
-    itemsCount: 'dishes',
-    emptyCategoryTitle: 'No items in this category yet',
-    emptyCategoryDesc: 'Add items through the admin panel',
-    seeAll: 'See all',
-    footerPromoSeeOffers: 'All offers & banners — below',
-    footerPromoAriaRegion: 'Promotions and special offers',
-    welcomeBadgeAria: 'Welcome in each site language and brand name',
-    welcomeScrollDownAria: 'Scroll to the next screen',
-  },
+      itemsCount: 'dishes',
+      emptyCategoryTitle: 'No items in this category yet',
+      emptyCategoryDesc: 'Add items through the admin panel',
+      seeAll: 'See all',
+      footerPromoSeeOffers: 'All offers & banners — below',
+      footerPromoAriaRegion: 'Promotions and special offers',
+      welcomeBadgeAria: 'Welcome in each site language and brand name',
+      welcomeScrollDownAria: 'Scroll to the next screen',
+      gastronomyTitle: 'Japanese gastronomy',
+      homeCatalogTitle: 'Full menu',
+      homeCatalogSub: 'Tap a category in the bar above — we scroll straight to that section.',
+      catalogOnCategoryPageHint:
+        'Dishes open on a separate page — pick a type in the grid below or in the category bar.',
+      categoryPageBack: 'Home',
+      categoryPageEmpty: 'No dishes in this category yet.',
+      categoryPageOpenCart: 'Cart',
+    },
     cinematicFooter: {
       readyTitle: 'Ready to order?',
       ctaBanners: 'Banners & offers',
@@ -1304,8 +2005,143 @@ const translations: Record<Language, Translations> = {
     enterNewName: 'Enter new name:',
     addSubcategory: '➕ Subcategory'
   },
-    promotionsPage: { title: "Promotions", description: "Special offers" },
+    promotionsPage: {
+      title: "Promotions",
+      description: "Special offers",
+      listHeading: "News & promotions",
+      detailsCta: "Read more",
+      morePhotosBadge: "+{{count}} photos",
+      offersBadge: "{{count}} deals",
+      noPhoto: "No photo",
+      loading: "Loading...",
+      notFound: "Content not found",
+      galleryAria: "Image gallery",
+      offersTitle: "Discounted dishes",
+      wasPrice: "Was",
+      offPercent: "−{{percent}}%",
+      hitBadge: "HOT",
+    },
     profilePage: { title: "Profile", logout: "Log out", orderHistory: "Order history" },
+    clientProfile: {
+      loading: 'Loading…',
+      redirectLogin: 'Redirecting to sign in…',
+      backHome: 'Home',
+      brandSubtitle: 'WATTA SUSHI',
+      bonuses: 'Your bonus balance',
+      tabHistory: 'Order history',
+      tabAddress: 'Delivery addresses',
+      tabFavorites: 'Favorites',
+      tabData: 'Personal details',
+      tabAdmin: 'Admin panel',
+      logout: 'Log out',
+      emptyOrders: 'You have no orders yet',
+      goMenu: 'Browse menu',
+      orderLabel: 'Order',
+      total: 'Total',
+      reorder: 'Order again',
+      journeyHint: 'Status updates when the kitchen advances your order in the system.',
+      stepPending: 'Awaiting confirmation',
+      stepConfirmed: 'Confirmed',
+      stepCooking: 'Preparing',
+      stepDelivering: 'Out for delivery',
+      stepReceived: 'Received',
+      stepReview: 'Leave a review',
+      stepReviewDone: 'Thanks for your review',
+      orderCancelled: 'Order cancelled',
+      liveUpdating: 'Live status',
+      reviewOpen: 'Write a review',
+      reviewModalTitle: 'Your review',
+      reviewText: 'Tell us how it went…',
+      reviewPhotos: 'Photos (up to 6)',
+      pickPhotos: 'Choose images',
+      reviewSend: 'Submit review',
+      favoritesTitle: 'Saved dishes',
+      favEmpty: 'No saved dishes yet',
+      favToMenu: 'Go to menu',
+      addrTitle: 'My addresses',
+      addrSub: 'Saved delivery addresses',
+      addrEmptyTitle: 'No saved address',
+      addrEmptySub: 'Add one at checkout',
+      dataTitle: 'Personal details',
+      dataSub: 'Your contact information',
+      labelName: 'Name',
+      labelPhone: 'Phone',
+      labelEmail: 'Email',
+      notSpecified: 'Not set',
+    },
+    reviewsPublic: {
+      title: 'Customer reviews',
+      subtitle: 'Real feedback on delivery, taste, and service.',
+      empty: 'No reviews yet — be the first after your order arrives.',
+      loginCta: 'Sign in to leave a review in your profile after delivery.',
+      openProfile: 'Home — open Profile from the menu',
+    },
+    blogPublic: {
+      title: 'Chef blog & recipes',
+      subtitle: 'Cooking tips and stories from the Watta Sushi team.',
+      empty: 'New articles are coming soon.',
+      readMore: 'Read more',
+      backToBlog: 'All articles',
+    },
+    contactPage: {
+      heroKicker: 'Get in touch',
+      heroTitle: 'Watta Sushi, close to you',
+      heroSubtitle: 'Menu, delivery, events, or partnerships — send a message and our team will reply as soon as possible.',
+      ctaForm: 'Write to us',
+      ctaDelivery: 'Delivery areas',
+      stat1Val: '~15 min',
+      stat1Label: 'Typical chat response time',
+      stat2Val: 'Amsterdam+',
+      stat2Label: 'Delivery & pickup region',
+      stat3Val: '100%',
+      stat3Label: 'Fresh ingredients daily',
+      channelsTitle: 'Ways to reach us',
+      channelsSub: 'Pick a channel you like — it all goes to the same kitchen crew.',
+      cardCall: 'Phone',
+      cardEmail: 'Email',
+      cardAddress: 'Kitchen address',
+      cardHours: 'Opening hours',
+      phoneDisplay: '+31 6 1234 5678',
+      phoneTel: '+31612345678',
+      emailDisplay: 'hello@watta-sushi.nl',
+      emailMailto: 'hello@watta-sushi.nl',
+      hoursDetail: 'Daily 12:00 — 22:00',
+      openMaps: 'Open in Google Maps',
+      mapTitle: 'Find us on the map',
+      mapSub: 'Pickup by appointment — confirm the time via chat or phone.',
+      socialTitle: 'Social & messengers',
+      faqTitle: 'FAQ',
+      faqSub: 'Quick answers about delivery, payment, and orders.',
+      faq1Q: 'How fast is delivery?',
+      faq1A: 'It depends on kitchen load and the courier route. We share a tighter window right after confirmation.',
+      faq2Q: 'Can I change the address after ordering?',
+      faq2A: 'Yes, if the courier has not left yet — message or call us and we will update the route.',
+      faq3Q: 'Which payment methods do you support?',
+      faq3A: 'Card online, cash, or courier terminal — depending on your city and checkout settings.',
+      faq4Q: 'Any gluten-free or vegetarian options?',
+      faq4A: 'We have fish-free and vegetable-forward rolls; for allergens, drop us a note and we will check ingredients.',
+      faq5Q: 'Do you cater corporate sets?',
+      faq5A: 'Yes — we plan large orders around your serving time. Leave details in the form and a manager will follow up.',
+      formTitle: 'Contact form',
+      formSub: 'We receive this on the kitchen side and reply to your email.',
+      phName: 'Your name',
+      phEmail: 'you@example.com',
+      phPhone: '+31 … (optional)',
+      phMessage: 'How can we help?',
+      formSubmit: 'Send message',
+      formSending: 'Sending…',
+      formSuccess: 'Thanks! We have received your message.',
+      formError: 'Could not send. Please try again later.',
+      formNetwork: 'Network error. Check your connection.',
+      errName: 'Please enter a name (2–120 characters).',
+      errEmail: 'Please enter a valid email.',
+      errMessage: 'Message must be 10–4000 characters.',
+      honeyLabel: 'Leave this field empty',
+      bottomTitle: 'Ready for the Watta taste?',
+      bottomCta: 'Browse the menu',
+      scrollHint: 'Scroll to explore',
+      addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+    },
     notifications: { title: "Notifications", empty: "No notifications" },
     adminPage: {
       auth: {
@@ -1387,11 +2223,18 @@ const translations: Record<Language, Translations> = {
         countries: "Countries",
         contentSection: "Catalog & content",
         statsFallback: "computed from order list",
+        studioHeadline: "Watta Sushi pulse",
+        studioSub: "Stats and charts in the same visual language as the site.",
+        chartRevenue14d: "Completed revenue (14 days)",
+        chartOrders14d: "Orders per day (all)",
+        chartStatusPie: "Status distribution",
+        chartNoData: "Not enough data for this chart yet",
+        avgOrderValue: "Avg. ticket (completed)",
       },
       actions: { add: "+ Add", edit: "Edit", editShort: "Edit", delete: "Delete", save: "Save", saveChanges: "Save changes", cancel: "Cancel" },
       common: { menuChangeSection: "Menu / change section", emptyOrders: "No active orders", emptyCities: "No cities yet", emptyBanners: "No banners yet", emptyCategories: "No categories yet", emptyUsers: "No users yet", emptyTeam: "No team members yet", emptyPromos: "No promos yet", clickToUpload: "Click to upload photo", changeFile: "Change", selectFromList: "Select from list", activeLabel: "Active", inactiveLabel: "Inactive", yes: "Yes", no: "No", orderIndex: "Display order", choose: "Choose", notFound: "Nothing found. Try another query.", searching: "searching...", bannerDragHint: "Drag a card onto another to change the order on the site", bannerOrderSaved: "Banner order saved", bannerOrderSaveError: "Could not save banner order" },
-      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel", fulfillmentDelivery: "Delivery", fulfillmentPickup: "Pickup", deliveryFeeAdmin: "Delivery fee:" },
-      news: { title: "News", addBtn: "+ Add", editTitle: "Edit", newTitle: "New news", titlePlaceholder: "Title", descPlaceholder: "Short description", textPlaceholder: "Full text", isHit: "Bestseller" },
+      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintConfirmed: "Confirmed", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel", fulfillmentDelivery: "Delivery", fulfillmentPickup: "Pickup", deliveryFeeAdmin: "Delivery fee:" },
+      news: { title: "News", addBtn: "+ Add", editTitle: "Edit", newTitle: "New news", titlePlaceholder: "Title", descPlaceholder: "Short description", textPlaceholder: "Full text", isHit: "Bestseller", galleryLabel: "Photo gallery", uploadPhotos: "Add photos (multiple)", removePhotoAria: "Remove photo", dishesBlock: "Discounted dishes in this story", selectProduct: "Pick a dish", discountShort: "Discount %", addDish: "Add dish", dishDuplicate: "This dish is already added", pickProductFirst: "Select a dish first" },
       products: { addBtn: "+ Add product", hit: "HOT", editTitle: "Edit dish", newTitle: "New dish", nameLabel: "Product name", namePlaceholder: "e.g.: Philadelphia", descLabel: "Description", descPlaceholder: "Ingredients, weight, features...", priceLabel: "Price (€)", categoryLabel: "Category", selectCategory: "Select...", deliveryCities: "Delivery cities *", addCitiesFirst: "Add cities in the 'Cities' tab first", descComposition: "Descriptions (Composition)", ingComposition: "Ingredients (Composition)" },
       ingredients: { title: "Ingredients Library", addNew: "Add new", nameRu: "Name", namePlaceholder: "e.g.: Salmon", addBtn: "Add" },
       cities: { addCountry: "Add new country", nameRu: "Name *", sticker: "Country sticker (flag)", addCountryBtn: "✨ Add country", countriesTitle: "Countries", editCity: "Edit city", addCity: "Add new city", cityNameRu: "City name *", searchMapLabel: "📍 Search city on map", searchMapDesc: "Search by address, zip code, or name.", searchMapPlaceholder: "Name, address, index...", searchMapBtn: "Search by names", countryLabel: "Country *", selectCountry: "Select country", activeCity: "Active city", saveChanges: "💾 Save changes", addCityBtn: "✨ Add city", cancelEdit: "Cancel edit", citiesTitle: "Cities", deliveryZones: "Delivery zones:" },
@@ -1456,7 +2299,21 @@ const translations: Record<Language, Translations> = {
       stepWeb: 'Op de site',
       stepApp: 'In de app',
       stepPhone: 'Per telefoon',
-      openMaps: 'Openen in Google Maps',
+      stepWebDesc: 'Menu, winkelwagen, betaling en adres — alles in één flow.',
+      stepAppDesc: 'Dezelfde fijne ervaring in de app — favorieten snel opnieuw bestellen.',
+      stepPhoneDesc: 'Bel ons — we helpen met menu, zones en bezorgtijden.',
+      kitchenMapCaption: 'Onze keuken op de kaart',
+      conditionsKicker: 'Service',
+      conditionsFeature1: 'Minimum en tarieven voor jouw stad — check bij de operator.',
+      conditionsFeature2: 'Bezorgzones zijn helder: zie de kaart en postcodecheck hierboven.',
+      conditionsFeature3: 'Verder weg — in overleg.',
+      deliveryPromiseKicker: 'Stiptheid',
+      deliveryPromiseTitle: 'Op tijd en netjes bezorgd',
+      deliveryPromiseText:
+        'We plannen bereiding en route zodat je rolls vers zijn en binnen een handig tijdslot komen.',
+      deliveryPromiseFoot:
+        'Loopt het bij ons vertraging op, dan hoor je het meteen. Jouw diner telt.',
+      openMaps: 'Keukenadres openen in Google Maps',
       title: 'Bezorging',
       description: 'Sushi en rolls bij je thuis in jouw stad.',
       workingHours: 'Openingstijden',
@@ -1472,6 +2329,8 @@ const translations: Record<Language, Translations> = {
       postalOutside: 'Buiten de bezorgzones voor deze stad',
       postalNoZones:
         'Er zijn nog geen zones op de kaart — vraag de operator. Tarieven staan in het adminpaneel.',
+      postalFoundIndexNoZonesTitle:
+        'Postcode gevonden — coördinaten bevestigd (kaarten). Bezorgzones voor deze stad zijn nog niet getekend in het adminpaneel.',
       postalGeocodeFail: 'Postcode niet gevonden — controleer spelling en land.',
       postalBadRequest: 'Kies een stad en vul een postcode in.',
       postalZone: 'Zone',
@@ -1497,6 +2356,8 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffFree: 'Zonetarief: gratis bezorging',
       postalZoneTariffFlat: 'Zonetarief: € {{amount}}',
       postalZoneTariffStandard: 'Zonetarief: standaard (basis + per km)',
+      estimatedDeliveryApprox: 'Geschatte bezorging: € {{amount}}',
+      distanceFromKitchen: 'Afstand vanaf de keuken (ongeveer): {{km}} km',
     },
     categories: { rolls: 'Rollen', sushi: 'Sushi', sets: 'Sets', soups: 'Soepen', bowls: 'Bowls', snacks: 'Snacks', drinks: 'Dranken', sauces: 'Sauzen' },
     hero: { title: 'Voordelen van Aziatische soepen' },
@@ -1599,18 +2460,64 @@ const translations: Record<Language, Translations> = {
         address: "Adres",
         workTime: "Openingstijden",
         contact: "Contact"
-      }
+      },
+      heroKicker: "Snelle gastronomie",
+      heroWordmark: "SUSHI · ROLLS · BEZORGING",
+      storyTitle: "Ons verhaal is smaak en discipline",
+      storyLead: "Watta Sushi begon met een simpel idee: Japanse keuken kan snel, netjes en echt lekker zijn — zonder compromis op vis, rijst en temperatuur.",
+      storyP2: "We stapelen geen rollen voor de plank: elk set wordt voor jouw bestelling gemaakt. Sauzen en rijst houden we strak; vulling geven we ruim — elke hap moet tellen.",
+      storyP3: "Zaalmensen en bezorgers spreken één taal: zorg. We adviseren eerlijk wat past bij stemming, gelegenheid of dieet.",
+      journeyTitle: "Van keuken tot tafel",
+      journeySub: "Stappen die we elke dag oefenen.",
+      j1Title: "Menu & ideeën",
+      j1Body: "De kaart groeit mee met seizoen, leveranciers en wat jij het meest bestelt.",
+      j2Title: "Keuken",
+      j2Body: "Schone processen en strakke timing — kwaliteit blijft voorspelbaar.",
+      j3Title: "Verpakking",
+      j3Body: "Dichte boxen, sauzen apart — eten reist netjes en koel.",
+      j4Title: "Bezorging",
+      j4Body: "Bezorgers kennen de routes; we timen mee zodat rollen er top uitzien.",
+      bentoTitle: "Waarom gasten bij ons blijven",
+      bentoSub: "Vier pijlers — op scherm en op de pass.",
+      bento1Title: "Rijstdiscipline",
+      bento1Body: "Zuurgraad, temperatuur, textuur — de basis die een rol echt laat smaken.",
+      bento2Title: "Vis & inkoop",
+      bento2Body: "Betrouwbare ketens; versheid is standaard, geen slogan.",
+      bento3Title: "Snelheid zonder chaos",
+      bento3Body: "Hoog tempo, geen paniek — je krijgt het gerecht, geen ‘iets dat op sushi lijkt’.",
+      bento4Title: "Eco-focus",
+      bento4Body: "Minder wegwerpplastic waar het kan, verantwoord afval — stap voor stap.",
+      manifesto: "We doen niet alsof we Japanse keuken zijn — we koken het met respect.",
+      manifestoSig: "— Team Watta Sushi",
+      ctaMenu: "Naar het menu",
+      ctaContacts: "Contact",
+      ctaDelivery: "Bezorginfo",
+      visitStripTitle: "Langskomen of mailen",
+      addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
+      hoursLine: "Dagelijks 12:00 — 22:00",
+      phoneLine: "+31 6 1234 5678",
+      teamEmptyTitle: "Teamfoto’s volgen binnenkort",
+      teamEmptyBody: "Ontmoet ons nu via het eten — elke rol is al gevormd door onze chefs.",
+      marqueeWords: "Versheid|Temperatuur|Smaak|Team|Amsterdam|Rollen|Sushi|Bezorging|Kwaliteit",
     },
     menuView: {
-    itemsCount: 'gerechten',
-    emptyCategoryTitle: 'Nog geen items in deze categorie',
-    emptyCategoryDesc: 'Voeg items toe via het adminpaneel',
-    seeAll: 'Bekijk alles',
-    footerPromoSeeOffers: 'Alle acties en banners — hieronder',
-    footerPromoAriaRegion: 'Acties en speciale aanbiedingen',
-    welcomeBadgeAria: 'Welkom in elke sitetaal en de merknaam',
-    welcomeScrollDownAria: 'Naar het volgende scherm scrollen',
-  },
+      itemsCount: 'gerechten',
+      emptyCategoryTitle: 'Nog geen items in deze categorie',
+      emptyCategoryDesc: 'Voeg items toe via het adminpaneel',
+      seeAll: 'Bekijk alles',
+      footerPromoSeeOffers: 'Alle acties en banners — hieronder',
+      footerPromoAriaRegion: 'Acties en speciale aanbiedingen',
+      welcomeBadgeAria: 'Welkom in elke sitetaal en de merknaam',
+      welcomeScrollDownAria: 'Naar het volgende scherm scrollen',
+      gastronomyTitle: 'Japanse gastronomie',
+      homeCatalogTitle: 'Volledig menu',
+      homeCatalogSub: 'Kies een categorie in de balk hierboven — we scrollen naar dat deel van het menu.',
+      catalogOnCategoryPageHint:
+        'Gerechten van de categorie openen op een aparte pagina — kies een type in het raster hieronder of in de categoriebalk.',
+      categoryPageBack: 'Naar home',
+      categoryPageEmpty: 'Nog geen gerechten in deze categorie.',
+      categoryPageOpenCart: 'Winkelwagen',
+    },
     cinematicFooter: {
       readyTitle: 'Klaar om te bestellen?',
       ctaBanners: 'Naar banners & acties',
@@ -1636,8 +2543,143 @@ const translations: Record<Language, Translations> = {
     enterNewName: 'Voer nieuwe naam in:',
     addSubcategory: '➕ Subcategorie'
   },
-    promotionsPage: { title: "Aanbiedingen", description: "Speciale aanbiedingen" },
+    promotionsPage: {
+      title: "Aanbiedingen",
+      description: "Speciale aanbiedingen",
+      listHeading: "Nieuws & acties",
+      detailsCta: "Meer lezen",
+      morePhotosBadge: "+{{count}} foto’s",
+      offersBadge: "{{count}} acties",
+      noPhoto: "Geen foto",
+      loading: "Laden...",
+      notFound: "Niet gevonden",
+      galleryAria: "Beeldgalerij",
+      offersTitle: "Gerechten met korting",
+      wasPrice: "Was",
+      offPercent: "−{{percent}}%",
+      hitBadge: "HIT",
+    },
     profilePage: { title: "Profiel", logout: "Uitloggen", orderHistory: "Bestelgeschiedenis" },
+    clientProfile: {
+      loading: 'Laden…',
+      redirectLogin: 'Doorverwijzen naar inloggen…',
+      backHome: 'Naar home',
+      brandSubtitle: 'WATTA SUSHI',
+      bonuses: 'Je bonus',
+      tabHistory: 'Bestelgeschiedenis',
+      tabAddress: 'Bezorgadressen',
+      tabFavorites: 'Favorieten',
+      tabData: 'Persoonsgegevens',
+      tabAdmin: 'Adminpaneel',
+      logout: 'Uitloggen',
+      emptyOrders: 'Je hebt nog geen bestellingen',
+      goMenu: 'Naar menu',
+      orderLabel: 'Bestelling',
+      total: 'Totaal',
+      reorder: 'Opnieuw bestellen',
+      journeyHint: 'Status wordt bijgewerkt wanneer de keuken je bestelling doorzet.',
+      stepPending: 'Wacht op bevestiging',
+      stepConfirmed: 'Bevestigd',
+      stepCooking: 'Wordt bereid',
+      stepDelivering: 'Onderweg',
+      stepReceived: 'Ontvangen',
+      stepReview: 'Review achterlaten',
+      stepReviewDone: 'Bedankt voor je review',
+      orderCancelled: 'Bestelling geannuleerd',
+      liveUpdating: 'Live status',
+      reviewOpen: 'Schrijf review',
+      reviewModalTitle: 'Jouw review',
+      reviewText: 'Vertel hoe het was…',
+      reviewPhotos: "Foto's (max 6)",
+      pickPhotos: 'Kies afbeeldingen',
+      reviewSend: 'Review versturen',
+      favoritesTitle: 'Favoriete gerechten',
+      favEmpty: 'Nog geen favorieten',
+      favToMenu: 'Naar menu',
+      addrTitle: 'Mijn adressen',
+      addrSub: 'Opgeslagen bezorgadressen',
+      addrEmptyTitle: 'Geen adres opgeslagen',
+      addrEmptySub: 'Voeg een adres toe bij afrekenen',
+      dataTitle: 'Persoonsgegevens',
+      dataSub: 'Je contactgegevens',
+      labelName: 'Naam',
+      labelPhone: 'Telefoon',
+      labelEmail: 'E-mail',
+      notSpecified: 'Niet ingevuld',
+    },
+    reviewsPublic: {
+      title: 'Klantreviews',
+      subtitle: 'Echte reacties over bezorging, smaak en service.',
+      empty: 'Nog geen reviews — laat de eerste achter na je bestelling.',
+      loginCta: 'Log in om na levering een review in je profiel te plaatsen.',
+      openProfile: 'Home — profiel via het menu',
+    },
+    blogPublic: {
+      title: 'Blog & recepten van de chef',
+      subtitle: 'Tips en verhalen van team Watta Sushi.',
+      empty: 'Binnenkort nieuwe artikelen.',
+      readMore: 'Lees verder',
+      backToBlog: 'Alle artikelen',
+    },
+    contactPage: {
+      heroKicker: 'Neem contact op',
+      heroTitle: 'Watta Sushi dichtbij',
+      heroSubtitle: 'Vragen over menu, bezorging, events of samenwerking — stuur een bericht, we reageren zo snel mogelijk.',
+      ctaForm: 'Schrijf ons',
+      ctaDelivery: 'Bezorggebieden',
+      stat1Val: '~15 min',
+      stat1Label: 'Gemiddelde reactietijd in chat',
+      stat2Val: 'Amsterdam+',
+      stat2Label: 'Regio bezorging & afhalen',
+      stat3Val: '100%',
+      stat3Label: 'Dagvers ingrediënten',
+      channelsTitle: 'Hoe bereik je ons',
+      channelsSub: 'Kies je kanaal — alles komt bij dezelfde keuken terecht.',
+      cardCall: 'Telefoon',
+      cardEmail: 'E-mail',
+      cardAddress: 'Keukenadres',
+      cardHours: 'Openingstijden',
+      phoneDisplay: '+31 6 1234 5678',
+      phoneTel: '+31612345678',
+      emailDisplay: 'hello@watta-sushi.nl',
+      emailMailto: 'hello@watta-sushi.nl',
+      hoursDetail: 'Dagelijks 12:00 — 22:00',
+      openMaps: 'Openen in Google Maps',
+      mapTitle: 'Op de kaart',
+      mapSub: 'Afhalen op afspraak — bevestig de tijd via chat of telefoon.',
+      socialTitle: 'Social & messengers',
+      faqTitle: 'Veelgestelde vragen',
+      faqSub: 'Kort over bezorging, betaling en bestellen.',
+      faq1Q: 'Hoe snel wordt bezorgd?',
+      faq1A: 'Dat hangt af van de drukte in de keuken en de route. Na bevestiging geven we een schatting.',
+      faq2Q: 'Kan ik het adres nog wijzigen?',
+      faq2A: 'Ja, als de bezorger nog niet vertrokken is — mail of bel, dan passen we de route aan.',
+      faq3Q: 'Welke betaalmethoden?',
+      faq3A: 'Kaart online, contant of pin bij de bezorger — afhankelijk van de stad en checkout.',
+      faq4Q: 'Glutenvrij of vegetarisch?',
+      faq4A: 'Er zijn opties zonder vis en met groente; voor allergenen: stuur een bericht, we checken de samenstelling.',
+      faq5Q: 'Cateren voor bedrijven?',
+      faq5A: 'Ja — grote orders plannen we rond jouw tijd. Laat details in het formulier achter.',
+      formTitle: 'Contactformulier',
+      formSub: 'We ontvangen dit aan de keukenkant en antwoorden op je e-mail.',
+      phName: 'Je naam',
+      phEmail: 'you@example.com',
+      phPhone: '+31 … (optioneel)',
+      phMessage: 'Waarmee kunnen we helpen?',
+      formSubmit: 'Versturen',
+      formSending: 'Verzenden…',
+      formSuccess: 'Bedankt! We hebben je bericht ontvangen.',
+      formError: 'Verzenden mislukt. Probeer later opnieuw.',
+      formNetwork: 'Netwerkfout. Controleer je verbinding.',
+      errName: 'Vul een naam in (2–120 tekens).',
+      errEmail: 'Vul een geldig e-mailadres in.',
+      errMessage: 'Bericht: 10–4000 tekens.',
+      honeyLabel: 'Laat dit veld leeg',
+      bottomTitle: 'Klaar voor de Watta-smaak?',
+      bottomCta: 'Naar het menu',
+      scrollHint: 'Scroll verder',
+      addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+    },
     notifications: { title: "Meldingen", empty: "Geen meldingen" },
     adminPage: {
       auth: {
@@ -1719,11 +2761,18 @@ const translations: Record<Language, Translations> = {
         countries: "Landen",
         contentSection: "Catalogus en content",
         statsFallback: "berekend uit bestellijst",
+        studioHeadline: "Watta Sushi-puls",
+        studioSub: "Statistieken en grafieken in de stijl van de site.",
+        chartRevenue14d: "Omzet voltooide orders (14 dagen)",
+        chartOrders14d: "Bestellingen per dag (alle)",
+        chartStatusPie: "Verdeling per status",
+        chartNoData: "Nog onvoldoende gegevens voor deze grafiek",
+        avgOrderValue: "Gem. bestelwaarde (voltooid)",
       },
       actions: { add: "+ Toevoegen", edit: "Bewerken", editShort: "Wijzig", delete: "Verwijderen", save: "Opslaan", saveChanges: "Wijzigingen opslaan", cancel: "Annuleren" },
       common: { menuChangeSection: "Menu / sectie wijzigen", emptyOrders: "Geen actieve bestellingen", emptyCities: "Nog geen steden", emptyBanners: "Nog geen banners", emptyCategories: "Nog geen categorieën", emptyUsers: "Nog geen gebruikers", emptyTeam: "Nog geen teamleden", emptyPromos: "Nog geen promo's", clickToUpload: "Klik om foto te uploaden", changeFile: "Wijzig", selectFromList: "Selecteer uit lijst", activeLabel: "Actief", inactiveLabel: "Inactief", yes: "Ja", no: "Nee", orderIndex: "Weergavevolgorde", choose: "Kiezen", notFound: "Niets gevonden. Probeer een andere zoekopdracht.", searching: "zoeken...", bannerDragHint: "Sleep een kaart op een andere om de volgorde op de site te wijzigen", bannerOrderSaved: "Bannervolgorde opgeslagen", bannerOrderSaveError: "Kon bannervolgorde niet opslaan" },
-      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren", fulfillmentDelivery: "Bezorging", fulfillmentPickup: "Afhalen", deliveryFeeAdmin: "Bezorgkosten:" },
-      news: { title: "Nieuws", addBtn: "+ Toevoegen", editTitle: "Bewerken", newTitle: "Nieuw nieuws", titlePlaceholder: "Titel", descPlaceholder: "Korte beschrijving", textPlaceholder: "Volledige tekst", isHit: "Bestseller" },
+      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintConfirmed: "Bevestigd", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren", fulfillmentDelivery: "Bezorging", fulfillmentPickup: "Afhalen", deliveryFeeAdmin: "Bezorgkosten:" },
+      news: { title: "Nieuws", addBtn: "+ Toevoegen", editTitle: "Bewerken", newTitle: "Nieuw nieuws", titlePlaceholder: "Titel", descPlaceholder: "Korte beschrijving", textPlaceholder: "Volledige tekst", isHit: "Bestseller", galleryLabel: "Fotogalerij", uploadPhotos: "Foto’s toevoegen (meerdere)", removePhotoAria: "Foto verwijderen", dishesBlock: "Gerechten met korting in dit bericht", selectProduct: "Kies een gerecht", discountShort: "Korting %", addDish: "Gerecht toevoegen", dishDuplicate: "Dit gerecht staat al in de lijst", pickProductFirst: "Kies eerst een gerecht" },
       products: { addBtn: "+ Product toevoegen", hit: "HOT", editTitle: "Gerecht bewerken", newTitle: "Nieuw gerecht", nameLabel: "Productnaam", namePlaceholder: "bijv.: Philadelphia", descLabel: "Beschrijving", descPlaceholder: "Ingrediënten, gewicht, kenmerken...", priceLabel: "Prijs (€)", categoryLabel: "Categorie", selectCategory: "Selecteer...", deliveryCities: "Bezorgsteden *", addCitiesFirst: "Voeg eerst steden toe op het tabblad 'Steden'", descComposition: "Beschrijvingen (Samenstelling)", ingComposition: "Ingrediënten (Samenstelling)" },
       ingredients: { title: "Ingrediëntenbibliotheek", addNew: "Nieuwe toevoegen", nameRu: "Naam", namePlaceholder: "bijv.: Zalm", addBtn: "Toevoegen" },
       cities: { addCountry: "Nieuw land toevoegen", nameRu: "Naam *", sticker: "Landsticker (vlag)", addCountryBtn: "✨ Land toevoegen", countriesTitle: "Landen", editCity: "Stad bewerken", addCity: "Nieuwe stad toevoegen", cityNameRu: "Stadsnaam *", searchMapLabel: "📍 Zoek stad op kaart", searchMapDesc: "Zoek op adres, postcode of naam.", searchMapPlaceholder: "Naam, adres, index...", searchMapBtn: "Zoeken op naam", countryLabel: "Land *", selectCountry: "Selecteer land", activeCity: "Actieve stad", saveChanges: "💾 Wijzigingen opslaan", addCityBtn: "✨ Stad toevoegen", cancelEdit: "Bewerken annuleren", citiesTitle: "Steden", deliveryZones: "Bezorgzones:" },

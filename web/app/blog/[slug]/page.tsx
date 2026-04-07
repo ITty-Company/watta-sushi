@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
 
@@ -52,7 +53,15 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <main className="watta-public-page-shell min-h-screen py-10 px-4">
-      <article className="max-w-4xl mx-auto bg-white rounded-3xl border border-[#145142]/10 shadow-sm overflow-hidden">
+      <div className="max-w-4xl mx-auto mb-6">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-2 text-sm font-bold text-[#145142] hover:text-[#0f3d32] transition"
+        >
+          ← Усі статті
+        </Link>
+      </div>
+      <article className="max-w-4xl mx-auto bg-white rounded-3xl border border-[#145142]/10 shadow-lg shadow-[#145142]/5 overflow-hidden">
         {post.imageUrl && <img src={post.imageUrl} alt={post.title} className="w-full h-[280px] md:h-[420px] object-cover" />}
 
         <div className="p-6 md:p-10">
