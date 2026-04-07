@@ -1826,7 +1826,6 @@ export default function MenuView() {
               key={heroVideoSrc}
               ref={heroVideoRef}
               className="welcome-video-native-web"
-              src={heroVideoSrc}
               autoPlay
               muted
               loop
@@ -1846,7 +1845,9 @@ export default function MenuView() {
                 el.currentTime = 0
                 void el.play()
               }}
-            />
+            >
+              <source src={heroVideoSrc} type="video/mp4" />
+            </video>
           )}
         </div>
         <div className="welcome-hero-vignette-web" aria-hidden />

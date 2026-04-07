@@ -1,6 +1,11 @@
 # Blueprint Render: Postgres + API (Express) + Next.js.
 # Документація: https://render.com/docs/blueprint-spec
 #
+# Щоб прод як локально (відео в public/, меню з БД після seed):
+# 1) Закомітьте web/public/*.mp4 — вони мають потрапити в Git і в білд Next.
+# 2) Після зміни URL бекенду: Web → Clear build cache → Manual Deploy (NEXT_PUBLIC_* вшивається в білді).
+# 3) На бекенді за потреби: FRONTEND_URL = публічний URL фронту; CORS_ORIGINS = дод. домени через кому.
+#
 # Якщо сервіси вже створені вручну в Dashboard — звірте:
 # - У API: Root Directory = backend, міграції в build, DATABASE_URL з БД, без фіксованого PORT.
 # - У Web: Root Directory = web, NEXT_PUBLIC_API_URL = публічний URL API (https://…onrender.com).
@@ -29,8 +34,11 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      # URL фронта для LiqPay/редіректів; після першого деплою web можна підставити вручну.
+      # Публічний URL фронту (LiqPay, редіректи). Після першого деплою web вкажіть https://…onrender.com (без / в кінці).
       - key: FRONTEND_URL
+        sync: false
+      # Додаткові Origin для CORS через кому (кастомний домен диплому тощо).
+      - key: CORS_ORIGINS
         sync: false
 
   - type: web
