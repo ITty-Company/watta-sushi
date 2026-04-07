@@ -15,7 +15,6 @@ import AdminView from './AdminView'
 // --- ВАЖНО: Импорты новых страниц ---
 import PromotionsView from './PromotionsView'
 import AboutView from './AboutView'
-import AuthView from './AuthView'
 import CartView from './CartView'
 import PromotionsDetailView from './PromotionsDetailView'
 import Footer from './Footer'
@@ -23,6 +22,7 @@ import NavigationSidebar from './NavigationSidebar'
 import { CinematicFooter, type CinematicFooterPromoTeaser } from '@/components/ui/motion-footer'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { 
   Menu,       
   Phone,      
@@ -164,6 +164,7 @@ const DEFAULT_HOME_BANNERS: Array<{
 const HERO_VIDEO_SOURCES = ['/watta-sushi-2-hero.mp4', '/welcome.mp4'] as const
 
 export default function MenuView() {
+  const router = useRouter()
   // ИСПОЛЬЗУЕМ getLocalized из контекста
   const { t, language, getLocalized } = useLanguage()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -910,6 +911,22 @@ export default function MenuView() {
   // НОВЫЙ СТЕЙТ: Какую вкладку открыть в профиле
   const [profileInitialTab, setProfileInitialTab] = useState<'history' | 'address' | 'favorites'>('history')
 
+  const [profileGateReady, setProfileGateReady] = useState(false)
+  const [profileHasUser, setProfileHasUser] = useState(false)
+
+  useEffect(() => {
+    if (activePage !== 'profile') {
+      setProfileGateReady(false)
+      return
+    }
+    const u = typeof window !== 'undefined' && !!localStorage.getItem('currentUser')
+    setProfileHasUser(u)
+    setProfileGateReady(true)
+    if (!u) {
+      router.replace('/login?return=' + encodeURIComponent('/'))
+    }
+  }, [activePage, router])
+
   const handlePageOpen = (page: string) => {
     setActivePage(page)
     setIsSidebarOpen(false)
@@ -1366,19 +1383,23 @@ export default function MenuView() {
 /></div></div>
   
   if (activePage === 'profile') {
-    const isAuth = typeof window !== 'undefined' && localStorage.getItem('currentUser')
-    
-    if (!isAuth) {
+    if (!profileGateReady) {
       return (
-        <div className="full-page-web full-page-web--craft">
-          <AuthView 
-            // @ts-ignore
-            onBack={handleClosePage}
-            onLoginSuccess={() => {
-              setActivePage('profile') 
-              window.dispatchEvent(new Event('userChanged'))
-            }}
-          />
+        <div className="full-page-web full-page-web--craft flex min-h-[50vh] items-center justify-center">
+          <p className="text-[#145142] font-medium">{t.auth.loginDescription}</p>
+        </div>
+      )
+    }
+    if (!profileHasUser) {
+      return (
+        <div className="full-page-web full-page-web--craft flex min-h-[50vh] items-center justify-center px-6 text-center">
+          <p className="text-[#145142] font-medium">
+            {language === 'uk'
+              ? 'Перенаправлення на вхід…'
+              : language === 'en'
+                ? 'Redirecting to sign in…'
+                : 'Перенаправление на вход…'}
+          </p>
         </div>
       )
     }

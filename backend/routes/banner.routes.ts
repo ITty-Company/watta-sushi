@@ -1,10 +1,55 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = Router();
 const prisma = new PrismaClient();
 
-const MAX_IMAGE_URL_LENGTH = 500;
+/** Після збереження в БД лише короткі шляхи /uploads/… або зовнішні URL */
+const MAX_IMAGE_URL_LENGTH = 2048;
+
+const uploadDir = path.join(__dirname, '../../web/public/uploads');
+
+function ensureUploadDir() {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+}
+
+/** Адмінка шле base64 data URL після вибору файлу — зберігаємо у web/public/uploads (як promotions). */
+function persistDataUrlBannerImage(dataUrl: string): string | null {
+  const trimmed = dataUrl.trim();
+  const m = /^data:image\/(png|jpeg|jpg|webp|gif);base64,([\s\S]+)$/i.exec(trimmed);
+  if (!m) return null;
+  let ext = m[1].toLowerCase();
+  if (ext === 'jpeg') ext = 'jpg';
+  const b64 = m[2].replace(/\s/g, '');
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(b64, 'base64');
+  } catch {
+    return null;
+  }
+  if (buf.length < 24) return null;
+  if (buf.length > 12 * 1024 * 1024) return null;
+
+  ensureUploadDir();
+  const name = `banner-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+  const fp = path.join(uploadDir, name);
+  try {
+    fs.writeFileSync(fp, buf);
+  } catch (e) {
+    console.error('Banner image write failed:', e);
+    return null;
+  }
+  return `/uploads/${name}`;
+}
 
 function clampFocal(value: unknown, fallback: number): number {
   const n =
@@ -20,7 +65,13 @@ function clampFocal(value: unknown, fallback: number): number {
 function normalizeImageUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const url = value.trim();
-  if (!url || url.length > MAX_IMAGE_URL_LENGTH) return null;
+  if (!url) return null;
+
+  if (url.startsWith('data:image/')) {
+    return persistDataUrlBannerImage(url);
+  }
+
+  if (url.length > MAX_IMAGE_URL_LENGTH) return null;
 
   // Allow local static paths (/file.jpg) and absolute URLs.
   if (url.startsWith('/') || /^https?:\/\//i.test(url)) return url;

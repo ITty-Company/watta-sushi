@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import CartView from './components/CartView'
 import ProfileView from './components/ProfileView'
 import MenuView from './components/MenuView'
 import WattaLoadScreen from './components/WattaLoadScreen'
+
+const MIN_BOOT_SPLASH_MS = 1650
 
 export default function HomeClient() {
   /** Після гідратації — уникнення mismatch (динамічні віджети / розширення / dev-оверлеї) */
@@ -12,12 +14,14 @@ export default function HomeClient() {
   const [bootProgress, setBootProgress] = useState(0)
   const [showBootSplash, setShowBootSplash] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
+  const bootStartedAtRef = useRef<number | null>(null)
 
   useEffect(() => {
+    bootStartedAtRef.current = Date.now()
     setClientReady(true)
   }, [])
 
-  /** Полоса до 100%, потім коротка пауза — лише тоді показуємо застосунок */
+  /** Полоса до 100%; після reload на проді даємо мінімальний час, щоб сплеш завжди був помітний */
   useEffect(() => {
     if (!showBootSplash) return
     const id = window.setInterval(() => {
@@ -25,14 +29,17 @@ export default function HomeClient() {
         if (prev >= 100) return 100
 
         const cap = clientReady ? 100 : 78
-        const step = clientReady ? 9 : 0.65
+        const step = clientReady ? 5.5 : 0.55
         let next = prev + step
         if (!clientReady) next = Math.min(cap, next)
         else next = Math.min(100, next)
 
         if (next >= 100) {
           clearInterval(id)
-          window.setTimeout(() => setShowBootSplash(false), 520)
+          const started = bootStartedAtRef.current ?? Date.now()
+          const minUntil = started + MIN_BOOT_SPLASH_MS
+          const extra = Math.max(520, minUntil - Date.now() + 480)
+          window.setTimeout(() => setShowBootSplash(false), extra)
           return 100
         }
         return next
