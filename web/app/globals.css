@@ -6107,6 +6107,166 @@ body {
   }
 }
 
+/* Watta: splash + Uiverse-style loader (KSAplay), brand green */
+.watta-load-screen-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+}
+
+.watta-load-screen-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  max-width: min(92vw, 360px);
+}
+
+.watta-load-screen-root--compact .watta-load-screen-stack {
+  gap: 10px;
+  max-width: min(88vw, 280px);
+}
+
+.watta-load-screen-root--compact .watta-load-screen-logo {
+  width: min(42vw, 168px);
+  max-height: min(24vh, 140px);
+}
+
+.watta-load-screen-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.watta-load-screen-logo {
+  width: min(64vw, 240px);
+  height: auto;
+  max-height: min(36vh, 220px);
+  object-fit: contain;
+  object-position: center;
+}
+
+.watta-uiverse-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.watta-load-screen-root--compact .watta-uiverse-loader {
+  gap: 4px;
+}
+
+.watta-load-screen-root--compact .watta-loading-text {
+  font-size: 10pt;
+}
+
+.watta-loading-text {
+  color: #004d2c;
+  font-size: 12pt;
+  font-weight: 600;
+  margin-left: 0;
+}
+
+.watta-loading-text .watta-dot {
+  margin-left: 3px;
+  animation: wattaUiverseBlink 1.5s infinite;
+}
+
+.watta-loading-text .watta-dot:nth-of-type(1) {
+  animation-delay: 0s;
+}
+
+.watta-loading-text .watta-dot:nth-of-type(2) {
+  animation-delay: 0.3s;
+}
+
+.watta-loading-text .watta-dot:nth-of-type(3) {
+  animation-delay: 0.6s;
+}
+
+.watta-loading-bar-background {
+  --watta-bar-outer-h: 24px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 4px;
+  width: min(168px, 100%);
+  height: var(--watta-bar-outer-h);
+  background-color: #e4ebe7;
+  box-shadow: rgba(0, 77, 44, 0.12) -2px 2px 4px 0px inset;
+  border-radius: calc(var(--watta-bar-outer-h) / 2);
+}
+
+.watta-load-screen-root--compact .watta-loading-bar-background {
+  --watta-bar-outer-h: 20px;
+  width: min(148px, 100%);
+  padding: 3px;
+}
+
+.watta-loading-bar {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  --watta-bar-inner-h: 16px;
+  width: 0%;
+  height: var(--watta-bar-inner-h);
+  overflow: hidden;
+  background: linear-gradient(0deg, #004d2c 0%, #1a7a5c 55%, #2d9d73 100%);
+  border-radius: calc(var(--watta-bar-inner-h) / 2);
+}
+
+.watta-load-screen-root--compact .watta-loading-bar {
+  --watta-bar-inner-h: 14px;
+}
+
+.watta-loading-bar--determinate {
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: none;
+}
+
+.watta-white-bars-container {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.watta-white-bar {
+  background: linear-gradient(-45deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 70%);
+  width: 8px;
+  height: 36px;
+  opacity: 0.35;
+  rotate: 45deg;
+}
+
+.watta-load-screen-root--compact .watta-white-bar {
+  width: 6px;
+  height: 28px;
+}
+
+@keyframes wattaUiverseBlink {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* Hero video: віньєтка, блиск, бейдж (шари поверх відео) */
 .welcome-hero-vignette-web {
   position: absolute;
@@ -9297,6 +9457,19 @@ body {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, transparent 140px);
 }
 
+/* Доставка всередині menu-page: без вузької «картки» на білому, той самий фон що й меню */
+.delivery-watta-page--embed {
+  max-width: none;
+  margin: 0;
+  padding: 12px clamp(12px, 3vw, 20px) 40px;
+  border-radius: 0;
+  background: transparent;
+}
+
+.menu-delivery-embed-web {
+  box-sizing: border-box;
+}
+
 .delivery-watta-noise {
   pointer-events: none;
   position: absolute;
@@ -10313,7 +10486,7 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: 22px;
-  padding: 22px 20px 24px;
+  padding: clamp(18px, 3vw, 26px) clamp(16px, 3vw, 28px) clamp(20px, 3vw, 28px);
   border: 1px solid rgba(20, 81, 66, 0.14);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 252, 250, 0.92) 100%),
@@ -10321,6 +10494,62 @@ body {
   box-shadow:
     0 20px 50px rgba(20, 81, 66, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.delivery-watta-postal-grid {
+  display: grid;
+  gap: clamp(20px, 4vw, 32px);
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .delivery-watta-postal-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 28px 32px;
+  }
+
+  .delivery-watta-postal-form-block {
+    padding-left: 24px;
+    border-left: 1px solid rgba(20, 81, 66, 0.14);
+  }
+}
+
+.delivery-watta-postal-intro {
+  min-width: 0;
+}
+
+.delivery-watta-postal-intro-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.delivery-watta-postal-intro-head .delivery-watta-postal-title {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.delivery-watta-postal-form-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 767px) {
+  .delivery-watta-postal-form-block {
+    padding-top: 4px;
+    border-top: 1px solid rgba(20, 81, 66, 0.1);
+  }
+}
+
+.delivery-watta-postal-form-block .delivery-watta-postal-label {
+  margin: 0;
+}
+
+.delivery-watta-postal-form-block .delivery-watta-postal-controls {
+  width: 100%;
 }
 
 .delivery-watta-postal-inner::before {
@@ -10334,23 +10563,16 @@ body {
   opacity: 0.85;
 }
 
-.delivery-watta-postal-head {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  margin-bottom: 18px;
-}
-
 .delivery-watta-postal-head-ico {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   color: #145142;
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .delivery-watta-postal-title {
-  margin: 0 0 6px;
+  margin: 0;
   font-family: var(--font-brand-playfair), Georgia, serif;
   font-size: clamp(1.25rem, 3.5vw, 1.5rem);
   font-weight: 700;
@@ -10361,14 +10583,9 @@ body {
 .delivery-watta-postal-desc {
   margin: 0;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.62;
   color: #555;
-}
-
-.delivery-watta-postal-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  max-width: 42em;
 }
 
 .delivery-watta-postal-label {
@@ -10383,6 +10600,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: stretch;
 }
 
 .delivery-watta-postal-input {

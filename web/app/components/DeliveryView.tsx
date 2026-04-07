@@ -15,7 +15,6 @@ import {
   Shield,
   AlertCircle,
   CheckCircle2,
-  Info,
 } from 'lucide-react'
 
 function escapeHtml(s: string) {
@@ -181,7 +180,12 @@ function getCityMapUrl(city: City) {
   return `https://www.google.com/maps?q=${cityName}&output=embed&z=${z}`
 }
 
-export default function DeliveryView() {
+type DeliveryViewProps = {
+  /** Усередині головного меню: один фон з меню, без другої шапки / «картки» */
+  embedInMenu?: boolean
+}
+
+export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps) {
   const { t, getLocalized } = useLanguage()
   const d = t.deliveryPage
 
@@ -192,7 +196,6 @@ export default function DeliveryView() {
   const [postalCode, setPostalCode] = useState('')
   const [postalChecking, setPostalChecking] = useState(false)
   const [postalResult, setPostalResult] = useState<DeliveryCheckResult | null>(null)
-  const [pickedCityId, setPickedCityId] = useState<string | null>(null)
   const [siteTariff, setSiteTariff] = useState({ defaultDeliveryFee: 50, freeDeliveryThreshold: 1000 })
 
   const cityLabel = useCallback((c: City) => getLocalized(c, 'name') || c.name, [getLocalized])
@@ -208,25 +211,6 @@ export default function DeliveryView() {
         })
       })
       .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    const readPicked = () => {
-      try {
-        setPickedCityId(
-          typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('selectedCityId') : null
-        )
-      } catch {
-        setPickedCityId(null)
-      }
-    }
-    readPicked()
-    window.addEventListener('cityChanged', readPicked)
-    window.addEventListener('storage', readPicked)
-    return () => {
-      window.removeEventListener('cityChanged', readPicked)
-      window.removeEventListener('storage', readPicked)
-    }
   }, [])
 
   useEffect(() => {
@@ -419,18 +403,10 @@ export default function DeliveryView() {
     return `https://www.google.com/maps/search/${encodeURIComponent(selectedCity.name)}`
   }, [selectedCity, showAllCities, cities])
 
-  const cityNotInDeliveryCatalog = Boolean(
-    pickedCityId && cities.length > 0 && !cities.some((c) => c.id === pickedCityId)
-  )
-  const selectedCityHasNoZones = Boolean(
-    selectedCity && (selectedCity.deliveryZones?.length ?? 0) === 0
-  )
-  const showNoDeliveryForCityBanner = cityNotInDeliveryCatalog || selectedCityHasNoZones
-
   return (
-    <div className="delivery-watta-page relative">
-      <div className="delivery-watta-noise" aria-hidden />
-      <LogoBackground />
+    <div className={`delivery-watta-page relative${embedInMenu ? ' delivery-watta-page--embed' : ''}`}>
+      {!embedInMenu && <div className="delivery-watta-noise" aria-hidden />}
+      {!embedInMenu && <LogoBackground />}
       <div className="relative z-[2]">
         <header className="delivery-watta-hero">
           <div className="delivery-watta-hero-top">
@@ -473,12 +449,6 @@ export default function DeliveryView() {
           <div className="delivery-watta-loading">{d.loading}</div>
         ) : (
           <>
-            {showNoDeliveryForCityBanner && (
-              <div className="delivery-watta-no-delivery-banner" role="status">
-                <Info className="delivery-watta-no-delivery-ico" strokeWidth={2.25} aria-hidden />
-                <p>{d.cityNoDeliveryYet}</p>
-              </div>
-            )}
             <section className="delivery-watta-section" aria-labelledby="delivery-cities-label">
               <div className="delivery-watta-section-head">
                 <MapPin className="delivery-watta-section-ico" strokeWidth={2.25} />
@@ -504,9 +474,7 @@ export default function DeliveryView() {
                   </button>
                 ))}
               </div>
-              {!showNoDeliveryForCityBanner && (
-                <p className="delivery-watta-sync-hint">{d.syncCityHint}</p>
-              )}
+              <p className="delivery-watta-sync-hint">{d.syncCityHint}</p>
             </section>
 
             <div className="delivery-watta-policy-strip" role="note">
@@ -516,41 +484,43 @@ export default function DeliveryView() {
 
             <section className="delivery-watta-postal" aria-labelledby="postal-heading">
               <div className="delivery-watta-postal-inner">
-                <div className="delivery-watta-postal-head">
-                  <Search className="delivery-watta-postal-head-ico" strokeWidth={2.25} />
-                  <div>
-                    <h2 id="postal-heading" className="delivery-watta-postal-title">
-                      {d.postalTitle}
-                    </h2>
+                <div className="delivery-watta-postal-grid">
+                  <div className="delivery-watta-postal-intro">
+                    <div className="delivery-watta-postal-intro-head">
+                      <Search className="delivery-watta-postal-head-ico" strokeWidth={2.25} aria-hidden />
+                      <h2 id="postal-heading" className="delivery-watta-postal-title">
+                        {d.postalTitle}
+                      </h2>
+                    </div>
                     <p className="delivery-watta-postal-desc">{d.postalDesc}</p>
                   </div>
-                </div>
-                <div className="delivery-watta-postal-row">
-                  <label className="delivery-watta-postal-label" htmlFor="delivery-postal-input">
-                    {d.postalLabel}
-                  </label>
-                  <div className="delivery-watta-postal-controls">
-                    <input
-                      id="delivery-postal-input"
-                      type="text"
-                      inputMode="text"
-                      autoComplete="postal-code"
-                      className="delivery-watta-postal-input"
-                      placeholder={d.postalPlaceholder}
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') void runPostalCheck()
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="delivery-watta-postal-btn"
-                      disabled={postalChecking}
-                      onClick={() => void runPostalCheck()}
-                    >
-                      {postalChecking ? d.postalChecking : d.postalButton}
-                    </button>
+                  <div className="delivery-watta-postal-form-block">
+                    <label className="delivery-watta-postal-label" htmlFor="delivery-postal-input">
+                      {d.postalLabel}
+                    </label>
+                    <div className="delivery-watta-postal-controls">
+                      <input
+                        id="delivery-postal-input"
+                        type="text"
+                        inputMode="text"
+                        autoComplete="postal-code"
+                        className="delivery-watta-postal-input"
+                        placeholder={d.postalPlaceholder}
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void runPostalCheck()
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="delivery-watta-postal-btn"
+                        disabled={postalChecking}
+                        onClick={() => void runPostalCheck()}
+                      >
+                        {postalChecking ? d.postalChecking : d.postalButton}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {postalResult && (
@@ -617,7 +587,10 @@ export default function DeliveryView() {
                     {(postalResult.status === 'no_zones' || postalResult.status === 'city_not_found') && (
                       <>
                         <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
-                        <p className="delivery-watta-postal-result-title">{d.postalNoZones}</p>
+                        <div>
+                          <p className="delivery-watta-postal-result-title">{d.cityNoDeliveryYet}</p>
+                          <p className="delivery-watta-postal-result-meta">{d.postalNoZones}</p>
+                        </div>
                       </>
                     )}
                     {(postalResult.status === 'geocode_failed' || postalResult.status === 'bad_request') && (
