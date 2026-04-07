@@ -20,7 +20,7 @@ import CartView from './CartView'
 import PromotionsDetailView from './PromotionsDetailView'
 import Footer from './Footer'
 import NavigationSidebar from './NavigationSidebar'
-import { CinematicFooter } from '@/components/ui/motion-footer'
+import { CinematicFooter, type CinematicFooterPromoTeaser } from '@/components/ui/motion-footer'
 import { WelcomeHeroBadge } from './WelcomeHeroBadge'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
@@ -349,6 +349,29 @@ export default function MenuView() {
   
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
+
+  /** Акції з адмінки (/api/promotions) — карусель у cinematic footer */
+  const [cinematicPromoList, setCinematicPromoList] = useState<
+    Array<{ id: number; title: string; description: string; imageUrl?: string | null }>
+  >([])
+
+  const loadCinematicPromotions = useCallback(() => {
+    fetch('/api/promotions')
+      .then(async (res) => {
+        if (!res.ok) return []
+        const data = await res.json().catch(() => [])
+        return Array.isArray(data) ? data : []
+      })
+      .then((rows) => setCinematicPromoList(rows))
+      .catch(() => setCinematicPromoList([]))
+  }, [])
+
+  useEffect(() => {
+    loadCinematicPromotions()
+    const onPromotionsUpdated = () => loadCinematicPromotions()
+    window.addEventListener('promotionsUpdated', onPromotionsUpdated)
+    return () => window.removeEventListener('promotionsUpdated', onPromotionsUpdated)
+  }, [loadCinematicPromotions])
 
   const displayBanners = useMemo(
     () => (banners.length > 0 ? banners : DEFAULT_HOME_BANNERS),
@@ -919,6 +942,21 @@ export default function MenuView() {
   const showExpandButton = !isExpanded && filteredItems.length > initialLimit
 
   const cinematicFooterPromoTeasers = useMemo(() => {
+    const maxItems = 24
+
+    const fromPromotions = cinematicPromoList
+      .map((p) => {
+        const desc = (p.description || '').trim()
+        return {
+          id: p.id,
+          kind: 'promotion' as const,
+          label: (p.title || '').trim(),
+          categoryLabel: desc.length > 0 ? desc.slice(0, 140) : undefined,
+          imageUrl: p.imageUrl?.trim() || undefined,
+        }
+      })
+      .filter((p) => p.label.length > 0)
+
     const fromProducts = menuItems
       .filter((item) => item.isTop)
       .map((item) => ({
@@ -929,14 +967,11 @@ export default function MenuView() {
         imageUrl: item.imageUrl || undefined,
       }))
       .filter((p) => p.label.length > 0 || (p.categoryLabel?.length ?? 0) > 0)
-      .slice(0, 24)
 
-    if (fromProducts.length > 0) return fromProducts
-
-    return [...displayBanners]
+    const fromBanners = [...displayBanners]
       .filter((b) => b.isActive !== false)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .slice(0, 8)
+      .slice(0, 10)
       .map((b) => ({
         id: b.id,
         kind: 'banner' as const,
@@ -944,10 +979,28 @@ export default function MenuView() {
         imageUrl: b.imageUrl || undefined,
       }))
       .filter((p) => p.label.length > 0)
-  }, [menuItems, displayBanners, getLocalized])
+
+    const merged: CinematicFooterPromoTeaser[] = []
+    for (const x of fromPromotions) {
+      if (merged.length >= maxItems) break
+      merged.push(x)
+    }
+    for (const x of fromProducts) {
+      if (merged.length >= maxItems) break
+      merged.push(x)
+    }
+    if (merged.length > 0) return merged
+
+    return fromBanners
+  }, [cinematicPromoList, menuItems, displayBanners, getLocalized])
 
   const handleCinematicFooterPromoClick = useCallback(
-    (payload: { id: number; kind: 'product' | 'banner' }) => {
+    (payload: { id: number; kind: 'product' | 'banner' | 'promotion' }) => {
+      if (payload.kind === 'promotion') {
+        setSelectedPromoId(payload.id)
+        handlePageOpen('promotions')
+        return
+      }
       if (payload.kind === 'banner') {
         const i = displayBanners.findIndex((b) => b.id === payload.id)
         if (i >= 0) setCurrentBannerIndex(i)
@@ -970,7 +1023,7 @@ export default function MenuView() {
       requestAnimationFrame(() => requestAnimationFrame(scrollToCard))
       window.setTimeout(scrollToCard, 450)
     },
-    [displayBanners, menuItems]
+    [displayBanners, menuItems, handlePageOpen]
   )
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
