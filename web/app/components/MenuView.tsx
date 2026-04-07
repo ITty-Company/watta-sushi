@@ -131,8 +131,9 @@ export default function MenuView() {
 
   const [isExpanded, setIsExpanded] = useState(false)
 
+  /** Якщо mp4 немає на сервері — показуємо постер-зображення */
+  const [heroVideoFailed, setHeroVideoFailed] = useState(false)
 
-  
   useEffect(() => {
     // Проверяем сохранённый город из localStorage
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -866,7 +867,6 @@ export default function MenuView() {
     },
     [banners, menuItems]
   )
-
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
   const openProfileTab = (tab: 'history' | 'address' | 'favorites') => {
@@ -1650,25 +1650,35 @@ export default function MenuView() {
 
       <div className="categories-panel-spacer-web" aria-hidden />
 
-      {/* Перша секція: повноекранне відео під шапкою; панель категорій — fixed поверх (z-index 99) */}
       <section className="welcome-hero-section-web" aria-label="Welcome">
         <div className="welcome-hero-video-fill-web">
-          <video
-            className="welcome-video-native-web"
-            src="/watta-sushi-2-hero.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            tabIndex={-1}
-            aria-hidden
-            onEnded={(e) => {
-              const el = e.currentTarget
-              el.currentTime = 0
-              void el.play()
-            }}
-          />
+          {heroVideoFailed ? (
+            <div
+              className="welcome-video-native-web welcome-hero-fallback-image-web"
+              style={{ backgroundImage: "url('/watta-sushi.jpg')" }}
+              role="img"
+              aria-hidden
+            />
+          ) : (
+            <video
+              className="welcome-video-native-web"
+              src="/watta-sushi-2-hero.mp4"
+              poster="/watta-sushi.jpg"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              tabIndex={-1}
+              aria-hidden
+              onError={() => setHeroVideoFailed(true)}
+              onEnded={(e) => {
+                const el = e.currentTarget
+                el.currentTime = 0
+                void el.play()
+              }}
+            />
+          )}
         </div>
         <div className="welcome-hero-vignette-web" aria-hidden />
         <div className="welcome-hero-shimmer-web" aria-hidden />

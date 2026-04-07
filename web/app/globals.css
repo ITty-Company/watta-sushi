@@ -3515,6 +3515,15 @@ body {
   outline: none;
 }
 
+/* Заміна відео, якщо файл відсутній на хостингу (репо без великих mp4) */
+.welcome-hero-fallback-image-web {
+  background-size: cover;
+  background-position: center 18%;
+  background-repeat: no-repeat;
+  min-height: 100%;
+  height: 100%;
+}
+
 /* Телефон + планшет: звичайний формат — на всю ширину вікна, висота як у ролика */
 @media (max-width: 1024px) {
   .welcome-hero-section-web {
@@ -3540,6 +3549,13 @@ body {
     object-fit: contain;
     object-position: center center;
   }
+
+  .welcome-hero-fallback-image-web {
+    height: auto;
+    min-height: clamp(220px, 56vw, 72vh);
+    aspect-ratio: 16 / 10;
+    background-position: center center;
+  }
 }
 
 /* Планшет: трохи нижче під панеллю (було сильніше вгору — зменшено overlap + зсув кадру) */
@@ -3551,6 +3567,10 @@ body {
   .welcome-video-native-web {
     object-position: center 40%;
   }
+
+  .welcome-hero-fallback-image-web {
+    background-position: center 40%;
+  }
 }
 
 /* iPad / планшет 768–1024: відео нижче (менший overlap + нижча точка кадру) */
@@ -3561,6 +3581,10 @@ body {
 
   .welcome-video-native-web {
     object-position: center 62%;
+  }
+
+  .welcome-hero-fallback-image-web {
+    background-position: center 62%;
   }
 }
 
@@ -3586,6 +3610,10 @@ body {
     object-fit: contain;
     object-position: center center;
     vertical-align: top;
+  }
+
+  .welcome-hero-fallback-image-web {
+    background-position: center center;
   }
 }
 

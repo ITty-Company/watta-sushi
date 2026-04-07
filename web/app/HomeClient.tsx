@@ -73,7 +73,10 @@ export default function HomeClient() {
   if (!hydrated) {
     return (
       <div className="app-web min-h-[100dvh] bg-[#f2f5f3]" suppressHydrationWarning>
-        <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden" />
+        <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden flex flex-col items-center justify-center gap-4 px-6">
+          <img src="/logo.png" alt="" width={64} height={64} className="object-contain opacity-90" />
+          <div className="h-1 w-24 rounded-full bg-[#145142]/25 animate-pulse" aria-hidden />
+        </div>
       </div>
     )
   }
