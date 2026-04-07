@@ -12,63 +12,52 @@
 └── android/          # Android приложение (Kotlin/Jetpack Compose)
 ```
 
-## Быстрый старт
+## Быстрый старт (чтобы работал веб-сайт)
 
-### 1. Клонирование репозитория
+Нужны **Node.js 18+** и **npm**. База данных в этом проекте — **PostgreSQL** (не SQLite). Фронтенд ходит в API по **`http://127.0.0.1:5050`** (порт **5050**, не 8000 и не 5000 — на macOS порт 5000 часто занят AirPlay).
 
+### Вариант A (рекомендуется): Docker + скрипты из корня репозитория
+
+1. Клонируйте репозиторий и перейдите в папку проекта:
 ```bash
 git clone <repository-url>
-cd watta-sushi
+cd <папка-репозитория>
 ```
 
-### 2. Настройка бэкенда
-
-1. Перейдите в папку бэкенда:
-```bash
-cd backend
-```
-
-2. Создайте файл `.env` со следующим содержимым:
-```env
-# Подключение к базе
-DATABASE_URL="file:./dev.db"
-
-# Порт, на котором запустится сайт (вместо 3000)
-PORT=8000
-```
-
-3. Установите зависимости и настройте базу данных:
+2. Установите зависимости корня (для `concurrently` и скриптов), поднимите БД и примените миграции с сидом:
 ```bash
 npm install
-npx prisma generate
-npx prisma db push
+npm run local:prepare
 ```
+   Нужен запущенный **Docker Desktop** (скрипт поднимает Postgres из `docker-compose.yml`, порт на хосте **55432** — см. `backend/.env.docker.example`).
 
-4. Запустите бэкенд:
+3. Запустите **и Next.js, и бэкенд одной командой**:
 ```bash
-npm run dev
+npm run local:all
 ```
 
-Бэкенд будет доступен на `http://localhost:8000`
+4. Откройте в браузере: **[http://localhost:3000](http://localhost:3000)**  
+   API: `http://127.0.0.1:5050`  
+   Скрипт `local:web` принудительно выставляет `NEXT_PUBLIC_API_URL=http://127.0.0.1:5050`, чтобы прокси Next.js всегда бил в локальный Express.
 
-### 3. Настройка фронтенда
+### Вариант B: свой PostgreSQL без Docker
 
-1. Перейдите в папку веб-приложения:
 ```bash
-cd web
+cp backend/.env.example backend/.env
+# Укажите DATABASE_URL и JWT_SECRET в backend/.env
+SKIP_DOCKER=1 npm run local:prepare
+npm run local:all
 ```
 
-2. Установите зависимости:
+(Убедитесь, что строка подключения указывает на **ваш** инстанс Postgres и база/пользователь существуют.)
+
+### Вариант C: только фронт без бэкенда (мок-данные)
+
 ```bash
-npm install
+npm run local:web:mock
 ```
 
-3. Запустите dev-сервер:
-```bash
-npm run dev
-```
-
-Фронтенд будет доступен на `http://localhost:3000`
+Подробнее про переменные фронта: `web/.env.example`. Продакшен на Render описан в `render.yaml` и `DEPLOY.md` (переменная **`NEXT_PUBLIC_API_URL`** = публичный URL API).
 
 ## Бэкенд
 
@@ -78,32 +67,21 @@ npm run dev
 
 ### Установка и запуск
 
-1. Перейдите в папку `backend`
-2. Создайте файл `.env` (см. раздел "Быстрый старт")
-3. Установите зависимости:
+1. Создайте `backend/.env` из `backend/.env.example` или `backend/.env.docker.example` (см. раздел «Быстрый старт»). Обязательны **`DATABASE_URL`** (PostgreSQL) и **`JWT_SECRET`**. Порт API по умолчанию: **`PORT=5050`**.
+2. Установите зависимости и примените миграции:
 ```bash
+cd backend
 npm install
+npx prisma migrate deploy
+npx prisma db seed
 ```
-
-4. Сгенерируйте Prisma клиент:
-```bash
-npx prisma generate
-```
-
-5. Примените миграции базы данных:
-```bash
-npx prisma db push
-```
-
-6. Запустите сервер разработки:
+3. Режим разработки:
 ```bash
 npm run dev
 ```
+Продакшен-старт (как на Render): `npm run start:single`.
 
-Или для продакшена:
-```bash
-npm start
-```
+Удобнее из **корня** репозитория: `npm run local:prepare` затем `npm run local:all`.
 
 ### Структура
 - `server.js` - основной файл сервера
@@ -164,34 +142,28 @@ cd android
 ## Веб-сайт
 
 ### Требования
-- Node.js 18.0 или выше
-- npm или yarn
-- Запущенный бэкенд (см. раздел "Бэкенд")
+- Node.js 18+
+- Запущенный бэкенд на **127.0.0.1:5050** (или задайте `NEXT_PUBLIC_API_URL`)
 
 ### Установка и запуск
 
-1. Убедитесь, что бэкенд запущен (см. раздел "Бэкенд")
+**Рекомендуется с корня:** `npm run local:all` — поднимает API и Next.js с правильным `NEXT_PUBLIC_API_URL`.
 
-2. Перейдите в папку `web`:
+Отдельно только фронт:
 ```bash
 cd web
-```
-
-3. Установите зависимости:
-```bash
 npm install
-```
-
-4. Запустите dev-сервер:
-```bash
 npm run dev
 ```
-
-5. Откройте [http://localhost:3000](http://localhost:3000) в браузере
+При ручном запуске задайте в `web/.env.development` или в окружении: `NEXT_PUBLIC_API_URL=http://127.0.0.1:5050` (см. `web/.env.example`).
 
 ### Сборка для продакшена
 
+Перед сборкой в проде должен быть задан **`NEXT_PUBLIC_API_URL`** (URL вашего API, без слэша в конце).
+
 ```bash
+cd web
+npm install
 npm run build
 npm start
 ```
@@ -213,9 +185,9 @@ npm start
 - **Material Design 3** - дизайн-система
 
 ### Бэкенд
-- **Express.js** - веб-фреймворк для Node.js
-- **Prisma** - ORM для работы с базой данных
-- **SQLite** - база данных для разработки (PostgreSQL в продакшене)
+- **Express.js** — веб-фреймворк для Node.js
+- **Prisma** — ORM
+- **PostgreSQL** — локально через Docker (`npm run local:prepare`) или свой инстанс; в продакшене — см. `render.yaml`
 
 ### Веб
 - **Next.js 14** - React фреймворк
