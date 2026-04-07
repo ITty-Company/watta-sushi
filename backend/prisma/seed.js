@@ -53,6 +53,49 @@ async function main() {
   }
   console.log('✅ Categories created')
 
+  // Банери головної сторінки: URL відносно фронта (/file у web/public). На проді таблиця часто порожня — без рядків показується «заглушка».
+  const bannerCount = await prisma.banner.count()
+  if (bannerCount === 0) {
+    await prisma.banner.createMany({
+      data: [
+        {
+          title_ru: 'Watta Sushi',
+          title_ua: 'Watta Sushi',
+          title_en: 'Watta Sushi',
+          title_nl: 'Watta Sushi',
+          imageUrl: '/watta-sushi.jpg',
+          focalX: 50,
+          focalY: 36,
+          order: 0,
+          isActive: true,
+        },
+        {
+          title_ru: 'Свіжі роли та суші',
+          title_ua: 'Свіжі роли та суші',
+          title_en: 'Fresh rolls & sushi',
+          title_nl: 'Verse rolls en sushi',
+          imageUrl: '/sushi.png',
+          focalX: 50,
+          focalY: 48,
+          order: 1,
+          isActive: true,
+        },
+        {
+          title_ru: 'Якість і доставка',
+          title_ua: 'Якість і доставка',
+          title_en: 'Quality & delivery',
+          title_nl: 'Kwaliteit & bezorging',
+          imageUrl: '/profile-background.jpg',
+          focalX: 50,
+          focalY: 42,
+          order: 2,
+          isActive: true,
+        },
+      ],
+    })
+    console.log('✅ Default banners created (paths /watta-sushi.jpg, /sushi.png, … on the web host)')
+  }
+
   // Получаем ID всех категорий
   const rollsCat = await prisma.category.findUnique({ where: { slug: 'rolls' } })
   const sushiCat = await prisma.category.findUnique({ where: { slug: 'sushi' } })

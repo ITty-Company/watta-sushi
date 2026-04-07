@@ -110,6 +110,57 @@ interface User {
   createdAt?: string
 }
 
+/** Фонові банери з `web/public` — якщо API повернув [] (часто прод без рядків у таблиці Banner). */
+const DEFAULT_HOME_BANNERS: Array<{
+  id: number
+  title_ru: string
+  title_ua?: string
+  title_en?: string
+  title_nl?: string
+  imageUrl: string
+  order: number
+  isActive: boolean
+  focalX?: number
+  focalY?: number
+}> = [
+  {
+    id: -1,
+    title_ru: 'Watta Sushi',
+    title_ua: 'Watta Sushi',
+    title_en: 'Watta Sushi',
+    title_nl: 'Watta Sushi',
+    imageUrl: '/watta-sushi.jpg',
+    focalX: 50,
+    focalY: 36,
+    order: 0,
+    isActive: true,
+  },
+  {
+    id: -2,
+    title_ru: 'Свіжі роли та суші',
+    title_ua: 'Свіжі роли та суші',
+    title_en: 'Fresh rolls & sushi',
+    title_nl: 'Verse rolls en sushi',
+    imageUrl: '/sushi.png',
+    focalX: 50,
+    focalY: 48,
+    order: 1,
+    isActive: true,
+  },
+  {
+    id: -3,
+    title_ru: 'Якість і доставка',
+    title_ua: 'Якість і доставка',
+    title_en: 'Quality & delivery',
+    title_nl: 'Kwaliteit & bezorging',
+    imageUrl: '/profile-background.jpg',
+    focalX: 50,
+    focalY: 42,
+    order: 2,
+    isActive: true,
+  },
+]
+
 export default function MenuView() {
   // ИСПОЛЬЗУЕМ getLocalized из контекста
   const { t, language, getLocalized } = useLanguage()
@@ -256,26 +307,38 @@ export default function MenuView() {
   
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
-  
+
+  const displayBanners = useMemo(
+    () => (banners.length > 0 ? banners : DEFAULT_HOME_BANNERS),
+    [banners]
+  )
+
+  useEffect(() => {
+    setCurrentBannerIndex((idx) => {
+      if (displayBanners.length === 0) return 0
+      return idx >= displayBanners.length ? 0 : idx
+    })
+  }, [displayBanners.length])
+
   // Функции переключения (НОВОЕ)
   const nextBanner = () => {
-    if (banners.length <= 1) return;
-    setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-  };
+    if (displayBanners.length <= 1) return
+    setCurrentBannerIndex((prev) => (prev + 1) % displayBanners.length)
+  }
 
   const prevBanner = () => {
-    if (banners.length <= 1) return;
-    setCurrentBannerIndex((prev) => (prev - 1 + banners.length) % banners.length);
-  };
+    if (displayBanners.length <= 1) return
+    setCurrentBannerIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length)
+  }
 
   // 2. Возвращаем авто-таймер (листает каждые 5 секунд)
   useEffect(() => {
-    if (banners.length <= 1) return;
+    if (displayBanners.length <= 1) return
     const interval = setInterval(() => {
-      nextBanner();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [banners.length, nextBanner]);
+      nextBanner()
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [displayBanners.length, nextBanner])
 
   // Функция загрузки данных
   const loadBanners = useCallback(() => {
@@ -392,7 +455,7 @@ export default function MenuView() {
     }, bannerInterval)
 
     return () => clearInterval(interval)
-  }, [banners.length, bannerInterval, currentBannerIndex, nextBanner])
+  }, [displayBanners.length, bannerInterval, currentBannerIndex, nextBanner])
 
   // --- ЛОГИКА СВАЙПОВ (Touch) ---
   const touchStartRef = useRef<number | null>(null)
@@ -828,7 +891,7 @@ export default function MenuView() {
 
     if (fromProducts.length > 0) return fromProducts
 
-    return [...banners]
+    return [...displayBanners]
       .filter((b) => b.isActive !== false)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .slice(0, 8)
@@ -839,12 +902,12 @@ export default function MenuView() {
         imageUrl: b.imageUrl || undefined,
       }))
       .filter((p) => p.label.length > 0)
-  }, [menuItems, banners, getLocalized])
+  }, [menuItems, displayBanners, getLocalized])
 
   const handleCinematicFooterPromoClick = useCallback(
     (payload: { id: number; kind: 'product' | 'banner' }) => {
       if (payload.kind === 'banner') {
-        const i = banners.findIndex((b) => b.id === payload.id)
+        const i = displayBanners.findIndex((b) => b.id === payload.id)
         if (i >= 0) setCurrentBannerIndex(i)
         return
       }
@@ -865,7 +928,7 @@ export default function MenuView() {
       requestAnimationFrame(() => requestAnimationFrame(scrollToCard))
       window.setTimeout(scrollToCard, 450)
     },
-    [banners, menuItems]
+    [displayBanners, menuItems]
   )
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
@@ -1755,17 +1818,17 @@ export default function MenuView() {
           </div>
 
           <div className="home-brand-banner-shell-web">
-      {banners.length > 0 ? (
+      {displayBanners.length > 0 ? (
         <div 
           className="hero-banner-web hero-banner-image-bg-web max-w-7xl mx-auto rounded-none sm:rounded-2xl overflow-hidden relative group"
           // Добавляем обработчики свайпа для мобильных
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           style={{ 
-            backgroundImage: `url(${banners[currentBannerIndex].imageUrl})`,
+            backgroundImage: `url(${displayBanners[currentBannerIndex].imageUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: (() => {
-              const b = banners[currentBannerIndex]
+              const b = displayBanners[currentBannerIndex]
               const fx =
                 typeof b.focalX === 'number'
                   ? Math.max(0, Math.min(100, b.focalX))
@@ -1817,7 +1880,7 @@ export default function MenuView() {
           <div
               className="hero-dots-web hero-dots-banner-image-web absolute bottom-3 left-0 right-0 z-[3] flex justify-center gap-2 md:bottom-4 min-[1025px]:!bottom-[-20px]"
             >
-            {banners.map((_, i) => (
+            {displayBanners.map((_, i) => (
               <span 
                 key={i} 
                 className={`hero-dot-web ${i === currentBannerIndex ? 'active' : ''}`}
