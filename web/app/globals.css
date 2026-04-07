@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Poppins:wght@600;700;800&family=Montserrat:wght@700;800;900&family=Inter:wght@600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap');
+/* Inter підключається локально (fonts.local.ts + @fontsource/inter), без Google під час build */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Poppins:wght@600;700;800&family=Montserrat:wght@700;800;900&family=Space+Grotesk:wght@600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,6 +8,10 @@
 /* shadcn-совместимые токены (Tailwind: bg-background, text-primary, …) */
 @layer base {
   :root {
+    /* Брендові шрифти: локальні файли з npm (див. app/fonts.local.ts) */
+    --font-brand-cormorant: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --font-brand-playfair: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    --font-brand-marck: 'Marck Script', cursive;
     --background: 138 20% 97%;
     --foreground: 160 28% 14%;
     --primary: 160 61% 22%;
@@ -1426,7 +1431,7 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
