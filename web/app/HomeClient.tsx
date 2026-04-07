@@ -4,15 +4,42 @@ import { useState, useEffect, useCallback } from 'react'
 import CartView from './components/CartView'
 import ProfileView from './components/ProfileView'
 import MenuView from './components/MenuView'
+import WattaLoadScreen from './components/WattaLoadScreen'
 
 export default function HomeClient() {
   /** Після гідратації — уникнення mismatch (динамічні віджети / розширення / dev-оверлеї) */
-  const [hydrated, setHydrated] = useState(false)
+  const [clientReady, setClientReady] = useState(false)
+  const [bootProgress, setBootProgress] = useState(0)
+  const [showBootSplash, setShowBootSplash] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
 
   useEffect(() => {
-    setHydrated(true)
+    setClientReady(true)
   }, [])
+
+  /** Полоса до 100%, потім коротка пауза — лише тоді показуємо застосунок */
+  useEffect(() => {
+    if (!showBootSplash) return
+    const id = window.setInterval(() => {
+      setBootProgress((prev) => {
+        if (prev >= 100) return 100
+
+        const cap = clientReady ? 100 : 78
+        const step = clientReady ? 9 : 0.65
+        let next = prev + step
+        if (!clientReady) next = Math.min(cap, next)
+        else next = Math.min(100, next)
+
+        if (next >= 100) {
+          clearInterval(id)
+          window.setTimeout(() => setShowBootSplash(false), 520)
+          return 100
+        }
+        return next
+      })
+    }, 36)
+    return () => clearInterval(id)
+  }, [showBootSplash, clientReady])
 
   const handleSwitchTab = useCallback((tab: number) => {
     if (tab >= 0 && tab <= 2) {
@@ -70,12 +97,11 @@ export default function HomeClient() {
     }
   }, [handleSwitchTab])
 
-  if (!hydrated) {
+  if (showBootSplash) {
     return (
-      <div className="app-web min-h-[100dvh] bg-[#f2f5f3]" suppressHydrationWarning>
-        <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden flex flex-col items-center justify-center gap-4 px-6">
-          <img src="/logo.png" alt="" width={64} height={64} className="object-contain opacity-90" />
-          <div className="h-1 w-24 rounded-full bg-[#145142]/25 animate-pulse" aria-hidden />
+      <div className="app-web min-h-[100dvh] bg-white" suppressHydrationWarning>
+        <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden">
+          <WattaLoadScreen className="min-h-[100dvh]" progress={bootProgress} />
         </div>
       </div>
     )

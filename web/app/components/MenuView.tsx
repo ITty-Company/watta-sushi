@@ -21,7 +21,6 @@ import PromotionsDetailView from './PromotionsDetailView'
 import Footer from './Footer'
 import NavigationSidebar from './NavigationSidebar'
 import { CinematicFooter, type CinematicFooterPromoTeaser } from '@/components/ui/motion-footer'
-import { WelcomeHeroBadge } from './WelcomeHeroBadge'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { 
@@ -1425,7 +1424,6 @@ export default function MenuView() {
       </>
     )
   }
-  if (activePage === 'delivery') return <div className="full-page-web full-page-web--craft"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">{t.delivery}</h1></div><div className="full-page-content-web"><DeliveryView /></div></div>
   if (activePage === 'promotions') {
   if (selectedPromoId) {
     return (
@@ -1524,13 +1522,14 @@ export default function MenuView() {
             />
             
             <button 
+              type="button"
               onClick={() => handlePageOpen('delivery')}
               style={{
-                background: 'transparent',
+                background: activePage === 'delivery' ? 'rgba(20, 81, 66, 0.1)' : 'transparent',
                 border: 'none',
                 fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
+                fontWeight: activePage === 'delivery' ? '700' : '500',
+                color: activePage === 'delivery' ? '#145142' : '#333',
                 cursor: 'pointer',
                 padding: '4px 8px',
                 borderRadius: '6px'
@@ -1696,7 +1695,7 @@ export default function MenuView() {
       </header>
       <div className="app-header-spacer-web" aria-hidden />
 
-      {cartCount > 0 && activePage === null && (
+      {cartCount > 0 && (activePage === null || activePage === 'delivery') && (
         <div
           className="checkout-fab-wrap-web"
           style={{
@@ -1756,6 +1755,8 @@ export default function MenuView() {
                   onClick={(e) => { 
                     e.preventDefault();
                     e.stopPropagation();
+
+                    if (activePage === 'delivery') handleClosePage();
                     
                     if (categoriesPanelRef.current) {
                       scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
@@ -1804,14 +1805,19 @@ export default function MenuView() {
           </div>
       </div>
 
-      <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
-
-
       <div className="categories-panel-spacer-web" aria-hidden />
+
+      {activePage === 'delivery' ? (
+        <div className="menu-delivery-embed-web relative z-[1] w-full max-w-[100vw] pb-16">
+          <DeliveryView embedInMenu />
+        </div>
+      ) : (
+      <>
+      <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
 
       <section
         className="welcome-hero-section-web menu-snap-section-welcome-web"
-        aria-label="Welcome"
+        aria-label="Hero video"
       >
         <div className="welcome-hero-video-fill-web">
           {heroVideoFailed ? (
@@ -1850,12 +1856,6 @@ export default function MenuView() {
             </video>
           )}
         </div>
-        <div className="welcome-hero-vignette-web" aria-hidden />
-        <div className="welcome-hero-shimmer-web" aria-hidden />
-        <WelcomeHeroBadge
-          ariaLabel={t.menuView.welcomeBadgeAria}
-          nextSectionSelector="#menu-cinematic-block"
-        />
       </section>
 
       <div id="menu-cinematic-block" className="menu-snap-section-cinematic-web w-full shrink-0">
@@ -2118,6 +2118,8 @@ export default function MenuView() {
             </button>
           </div>
         )}
+      </>
+      )}
       {showCategoryAdmin && (
         <div className="admin-category-overlay-web" onClick={() => setShowCategoryAdmin(false)}>
           <div className="admin-category-panel-web" onClick={(e) => e.stopPropagation()}>

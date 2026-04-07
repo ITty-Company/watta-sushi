@@ -530,11 +530,18 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       }
       if (bannersRes.ok) setBanners(await bannersRes.json())
       if (teamRes.ok) setTeamMembers(await teamRes.json())
-      if (
-        [ingredientsRes, ordersRes, ordersStatsRes, prodRes, countriesRes, crmUsersRes].some(
-          (r) => r.status === 401 || r.status === 403
-        )
-      ) {
+      // Только защищённые админские GET: публичные /products, /countries и т.д. не должны выбрасывать из панели.
+      const adminAuthDenied =
+        ordersRes.status === 401 ||
+        ordersRes.status === 403 ||
+        crmUsersRes.status === 401 ||
+        crmUsersRes.status === 403
+      if (adminAuthDenied) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('currentUser')
+        localStorage.removeItem('userId')
+        localStorage.removeItem('userOrders')
+        window.dispatchEvent(new Event('userChanged'))
         toast.error(
           'Сервер отклонил доступ (401/403). Войдите снова как администратор или проверьте, что backend запущен и NEXT_PUBLIC_API_URL указывает на него.',
           { id: 'admin-panel-auth' }

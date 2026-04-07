@@ -233,12 +233,14 @@ const STYLES = `
   cursor: pointer;
 }
 
-.footer-promo-card:hover {
-  transform: translateY(-6px) scale(1.025) rotateX(2deg);
-  border-color: rgba(20, 81, 66, 0.32);
-  box-shadow:
-    0 28px 60px -14px rgba(20, 81, 66, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+@media (hover: hover) and (pointer: fine) {
+  .footer-promo-card:hover {
+    transform: translateY(-6px) scale(1.025) rotateX(2deg);
+    border-color: rgba(20, 81, 66, 0.32);
+    box-shadow:
+      0 28px 60px -14px rgba(20, 81, 66, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  }
 }
 
 .footer-promo-card:focus-visible {
@@ -336,8 +338,8 @@ const STYLES = `
 
 @media (max-width: 640px) {
   .footer-promo-carousel-wrap {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
+    padding-left: max(2.35rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2.35rem, env(safe-area-inset-right, 0px));
   }
 
   .footer-promo-nav {
@@ -346,22 +348,22 @@ const STYLES = `
   }
 
   .footer-promo-nav--prev {
-    left: 0.15rem;
+    left: max(0.1rem, env(safe-area-inset-left, 0px));
   }
 
   .footer-promo-nav--next {
-    right: 0.15rem;
+    right: max(0.1rem, env(safe-area-inset-right, 0px));
   }
 
   .footer-promo-card {
-    flex: 0 0 min(300px, 86vw);
-    scroll-snap-align: start;
+    flex: 0 0 min(272px, calc(100vw - 3.25rem));
+    scroll-snap-align: center;
   }
 
   .footer-promo-carousel {
-    gap: 0.85rem;
-    scroll-padding-inline: 0.5rem;
-    padding: 0.45rem 0.25rem 1rem;
+    gap: 0.75rem;
+    scroll-padding-inline: max(0.5rem, env(safe-area-inset-left, 0px));
+    padding: 0.45rem 0.15rem 1rem;
   }
 
   .footer-promo-card-media {
@@ -378,24 +380,73 @@ const STYLES = `
   }
 
   .footer-promo-section-fullbleed {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
+    padding-left: max(0.25rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.25rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (max-width: 380px) {
+  .footer-promo-card {
+    flex: 0 0 calc(100vw - 2.85rem);
+  }
+
+  .footer-promo-carousel-wrap {
+    padding-left: max(2rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .footer-promo-card {
+    flex: 0 0 min(252px, 38vw);
+    scroll-snap-align: start;
+  }
+
+  .footer-promo-carousel {
+    gap: 1rem;
+    scroll-padding-inline: clamp(0.75rem, 2.5vw, 1.5rem);
+    padding: 0.55rem 0.5rem 1.15rem;
+  }
+
+  .footer-promo-carousel-wrap {
+    padding-left: 2.75rem;
+    padding-right: 2.75rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .footer-promo-card {
+    flex: 0 0 min(292px, 24vw);
   }
 }
 
 .footer-promo-hint {
-  font-size: clamp(0.9rem, 2.1vw, 1.05rem);
+  font-size: clamp(0.88rem, 2.4vw, 1.05rem);
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.5;
   color: hsl(var(--muted-foreground));
   text-align: center;
-  margin: 0 0 0.5rem;
-  max-width: min(40rem, 100%);
+  margin: 0 auto 0.5rem;
+  max-width: min(36rem, 100%);
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .footer-promo-hint {
+    margin-left: 0;
+    margin-right: 0;
+    text-align: left;
+    max-width: min(44rem, 100%);
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 .footer-about-block {
   margin-top: 1.5rem;
-  padding: 1.2rem 1.3rem;
+  padding: 1.1rem max(1rem, env(safe-area-inset-left, 0px)) 1.15rem
+    max(1rem, env(safe-area-inset-right, 0px));
   border-radius: 1.25rem;
   border: 1px solid rgba(20, 81, 66, 0.12);
   background: linear-gradient(145deg, rgba(20, 81, 66, 0.06) 0%, rgba(255, 255, 255, 0.72) 100%);
@@ -404,6 +455,13 @@ const STYLES = `
   text-align: left;
   width: 100%;
   max-width: 42rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .footer-about-block {
+    padding: 1rem 0.95rem 1.1rem;
+  }
 }
 
 .footer-about-title {
@@ -618,7 +676,7 @@ const STYLES = `
 }
 
 .footer-giant-bg-text {
-  font-size: 26vw;
+  font-size: min(26vw, 18rem);
   line-height: 0.75;
   font-weight: 900;
   letter-spacing: -0.05em;
@@ -627,6 +685,12 @@ const STYLES = `
   background: linear-gradient(180deg, rgba(20, 81, 66, 0.12) 0%, transparent 60%);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+@media (max-width: 480px) {
+  .footer-giant-bg-text {
+    font-size: min(32vw, 14rem);
+  }
 }
 
 `
@@ -923,33 +987,31 @@ export function CinematicFooter({
             </div>
           </div>
 
-          <div className="footer-marquee-bar absolute left-0 top-4 z-10 w-full -rotate-2 scale-[1.08] overflow-hidden border-y border-white/20 py-2 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.55)] sm:top-8 sm:py-3 md:top-12 md:py-4">
-            <div className="flex w-max animate-footer-scroll-marquee text-[10px] font-bold uppercase tracking-[0.28em] md:text-xs">
+          <div className="footer-marquee-bar absolute left-0 top-4 z-10 w-full -rotate-2 scale-[1.02] overflow-hidden border-y border-white/20 py-2 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.55)] sm:top-8 sm:scale-[1.05] sm:py-3 md:top-12 md:scale-[1.08] md:py-4">
+            <div className="flex w-max animate-footer-scroll-marquee text-[9px] font-bold uppercase tracking-[0.22em] min-[400px]:text-[10px] min-[400px]:tracking-[0.28em] md:text-xs">
               <MarqueeStrip />
               <MarqueeStrip />
             </div>
           </div>
 
-          <div className="relative z-10 mx-auto mt-10 flex w-full max-w-[100rem] flex-1 flex-col justify-center gap-8 px-4 pb-8 sm:mt-14 sm:gap-9 sm:px-8 sm:pb-10 md:mt-20 md:gap-12 lg:mt-[4.5rem] lg:gap-14 lg:px-12 lg:pb-12 xl:gap-16 xl:px-16 2xl:px-24">
+          <div className="relative z-10 mx-auto mt-8 flex w-full max-w-[100rem] flex-1 flex-col justify-center gap-6 pb-8 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-1 sm:mt-12 sm:gap-8 sm:pb-10 sm:pl-8 sm:pr-8 md:mt-16 md:gap-10 md:pl-10 md:pr-10 lg:mt-[4.5rem] lg:gap-14 lg:px-12 lg:pb-12 xl:gap-16 xl:px-16 2xl:px-24">
             <div
               ref={leftColRef}
-              className="flex w-full flex-col items-center lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]"
+              className="flex w-full max-w-full flex-col items-center lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]"
             >
               <div className="footer-hero-line-wrap footer-hero-line-wrap--title-offset w-full lg:items-start">
                 <div className="footer-heading-accent footer-heading-accent--hero mx-auto lg:mx-0 lg:ml-0" aria-hidden />
                 <div className="footer-hero-line-cap mx-auto lg:mx-0 lg:ml-0" aria-hidden />
               </div>
 
-              <h2 className="footer-heading-flow footer-title-display mt-6 text-center text-4xl font-bold tracking-tight sm:mt-5 md:mt-4 md:text-6xl lg:text-left lg:text-7xl xl:text-8xl xl:leading-[0.98]">
+              <h2 className="footer-heading-flow footer-title-display mt-4 w-full max-w-[22rem] text-center text-[clamp(1.6rem,6.2vw,2.85rem)] font-bold leading-[1.1] tracking-tight sm:mt-5 sm:max-w-none sm:text-4xl md:mt-4 md:text-6xl lg:text-left lg:text-7xl xl:text-8xl xl:leading-[0.98]">
                 {cf.readyTitle}
               </h2>
             </div>
 
             {(teasers.length > 0 || showPromoFallback) && (
               <div className="w-full">
-                <p className="footer-promo-hint footer-accent-script mx-auto w-full max-w-[100rem] text-center md:mt-2 lg:text-left">
-                  {cf.promoPickHint}
-                </p>
+                <p className="footer-promo-hint footer-accent-script w-full md:mt-2">{cf.promoPickHint}</p>
                 <div className="footer-promo-section-fullbleed mt-3" role="region" aria-label={promoAria}>
                   <div className="footer-promo-carousel-wrap">
                     <button
@@ -1021,13 +1083,13 @@ export function CinematicFooter({
               </div>
             )}
 
-            <div className="flex w-full flex-col items-center gap-6 lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]">
-                <div className="flex w-full flex-wrap justify-center gap-3 md:gap-4 lg:justify-start">
+            <div className="flex w-full max-w-full flex-col items-center gap-5 sm:gap-6 lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]">
+                <div className="flex w-full flex-col gap-3 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:justify-center lg:justify-start">
                   <MagneticButton
                     type="button"
                     as="button"
                     onClick={goNext}
-                    className="footer-glass-pill flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold tracking-tight text-foreground md:px-11 md:py-5 md:text-base"
+                    className="footer-glass-pill flex w-full min-h-[48px] items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold tracking-tight text-foreground min-[480px]:w-auto min-[480px]:px-8 min-[480px]:py-4 md:px-11 md:py-5 md:text-base"
                   >
                     {cf.ctaBanners}
                   </MagneticButton>
@@ -1035,18 +1097,18 @@ export function CinematicFooter({
                     type="button"
                     as="button"
                     onClick={goMenu}
-                    className="footer-cta-solid flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold tracking-tight md:px-11 md:py-5 md:text-base"
+                    className="footer-cta-solid flex w-full min-h-[48px] items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold tracking-tight min-[480px]:w-auto min-[480px]:px-8 min-[480px]:py-4 md:px-11 md:py-5 md:text-base"
                   >
                     {cf.ctaMenu}
                   </MagneticButton>
                 </div>
 
-                <div className="flex w-full flex-wrap justify-center gap-2 md:gap-4 lg:justify-start">
+                <div className="flex w-full flex-col gap-2 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:justify-center lg:justify-start">
                   <MagneticButton
                     type="button"
                     as="button"
                     onClick={goMenu}
-                    className="footer-glass-pill rounded-full px-5 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground md:px-6 md:py-3 md:text-sm"
+                    className="footer-glass-pill flex w-full items-center justify-center rounded-full px-5 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground min-[400px]:w-auto md:px-6 md:py-3 md:text-sm"
                   >
                     {cf.ctaCatalog}
                   </MagneticButton>
@@ -1054,7 +1116,7 @@ export function CinematicFooter({
                     type="button"
                     as="button"
                     onClick={goNext}
-                    className="footer-glass-pill rounded-full px-5 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground md:px-6 md:py-3 md:text-sm"
+                    className="footer-glass-pill flex w-full items-center justify-center rounded-full px-5 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground min-[400px]:w-auto md:px-6 md:py-3 md:text-sm"
                   >
                     {cf.ctaOffers}
                   </MagneticButton>
@@ -1068,7 +1130,7 @@ export function CinematicFooter({
             </div>
           </div>
 
-          <div className="relative z-20 px-5 pb-6 md:px-10 md:pb-8">
+          <div className="relative z-20 px-[max(1.25rem,env(safe-area-inset-left))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-2 md:px-10 md:pb-8">
             <div className="flex w-full flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-5">
               <div className="order-1 shrink-0 text-center text-[9px] font-semibold uppercase tracking-widest text-muted-foreground md:w-[11rem] md:text-left md:text-[11px]">
                 © {new Date().getFullYear()} Watta Sushi

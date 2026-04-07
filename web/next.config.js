@@ -96,9 +96,10 @@ const nextConfig = {
       { source: '/watta-sushi-2-hero.mp4', headers: heroVideoHeaders },
       { source: '/welcome.mp4', headers: heroVideoHeaders },
       { source: '/logo.png', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+      // Не кешировать API: иначе CDN/edge отдаёт чужие или устаревшие 401/403 и ломает админку.
       {
         source: '/api/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' }],
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, must-revalidate' }],
       },
       { source: '/:path*', headers: securityHeaders },
     ];
