@@ -379,6 +379,8 @@ interface Translations {
     footerPromoAriaRegion: string
     /** Aria для бейджа на відео-hero: привітання + бренд */
     welcomeBadgeAria: string
+    /** Кнопка-стрілка вниз під привітанням */
+    welcomeScrollDownAria: string
   }
   cinematicFooter: {
     readyTitle: string
@@ -611,6 +613,7 @@ const translations: Record<Language, Translations> = {
     footerPromoSeeOffers: 'Усі акції та банери — нижче',
     footerPromoAriaRegion: 'Акції та спецпропозиції',
     welcomeBadgeAria: 'Вітання різними мовами та назва бренду',
+    welcomeScrollDownAria: 'Прокрутити до наступного екрана',
   },
     cinematicFooter: {
       readyTitle: 'Готові замовити?',
@@ -942,6 +945,7 @@ const translations: Record<Language, Translations> = {
     footerPromoSeeOffers: 'Все акции и баннеры — ниже',
     footerPromoAriaRegion: 'Акции и спецпредложения',
     welcomeBadgeAria: 'Приветствие на языках сайта и название бренда',
+    welcomeScrollDownAria: 'Прокрутить к следующему экрану',
   },
     cinematicFooter: {
       readyTitle: 'Готовы заказать?',
@@ -1273,6 +1277,7 @@ const translations: Record<Language, Translations> = {
     footerPromoSeeOffers: 'All offers & banners — below',
     footerPromoAriaRegion: 'Promotions and special offers',
     welcomeBadgeAria: 'Welcome in each site language and brand name',
+    welcomeScrollDownAria: 'Scroll to the next screen',
   },
     cinematicFooter: {
       readyTitle: 'Ready to order?',
@@ -1604,6 +1609,7 @@ const translations: Record<Language, Translations> = {
     footerPromoSeeOffers: 'Alle acties en banners — hieronder',
     footerPromoAriaRegion: 'Acties en speciale aanbiedingen',
     welcomeBadgeAria: 'Welkom in elke sitetaal en de merknaam',
+    welcomeScrollDownAria: 'Naar het volgende scherm scrollen',
   },
     cinematicFooter: {
       readyTitle: 'Klaar om te bestellen?',

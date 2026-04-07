@@ -1755,7 +1755,10 @@ export default function MenuView() {
 
       <div className="categories-panel-spacer-web" aria-hidden />
 
-      <section className="welcome-hero-section-web" aria-label="Welcome">
+      <section
+        className="welcome-hero-section-web menu-snap-section-welcome-web"
+        aria-label="Welcome"
+      >
         <div className="welcome-hero-video-fill-web">
           {heroVideoFailed ? (
             <div
@@ -1795,17 +1798,22 @@ export default function MenuView() {
         </div>
         <div className="welcome-hero-vignette-web" aria-hidden />
         <div className="welcome-hero-shimmer-web" aria-hidden />
-        <WelcomeHeroBadge ariaLabel={t.menuView.welcomeBadgeAria} />
+        <WelcomeHeroBadge
+          ariaLabel={t.menuView.welcomeBadgeAria}
+          nextSectionSelector="#menu-cinematic-block"
+        />
       </section>
 
-      <CinematicFooter
-        nextSectionId="hero-banners"
-        menuSectionId="menu-catalog"
-        promoTeasers={cinematicFooterPromoTeasers}
-        onPromoTeaserClick={handleCinematicFooterPromoClick}
-        promoFallbackCta={t.menuView.footerPromoSeeOffers}
-        promoRegionLabel={t.menuView.footerPromoAriaRegion}
-      />
+      <div id="menu-cinematic-block" className="menu-snap-section-cinematic-web w-full shrink-0">
+        <CinematicFooter
+          nextSectionId="hero-banners"
+          menuSectionId="menu-catalog"
+          promoTeasers={cinematicFooterPromoTeasers}
+          onPromoTeaserClick={handleCinematicFooterPromoClick}
+          promoFallbackCta={t.menuView.footerPromoSeeOffers}
+          promoRegionLabel={t.menuView.footerPromoAriaRegion}
+        />
+      </div>
 
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">
@@ -1816,7 +1824,7 @@ export default function MenuView() {
 
       <section
         id="hero-banners"
-        className="home-brand-story-section-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw]"
+        className="home-brand-story-section-web menu-after-welcome-web menu-snap-section-brand-web relative z-[2] w-full max-w-[100vw]"
         aria-labelledby="home-brand-heading"
       >
         <div className="home-brand-story-bg-web" aria-hidden />
