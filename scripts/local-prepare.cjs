@@ -7,6 +7,7 @@ const { execSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
+const { ensureDockerReady } = require('./ensure-docker.cjs');
 
 const root = path.resolve(__dirname, '..');
 const backendDir = path.join(root, 'backend');
@@ -93,6 +94,13 @@ async function main() {
   }
 
   if (!skipDocker) {
+    const dockerReady = await ensureDockerReady();
+    if (!dockerReady) {
+      console.error('\n❌ Docker не став доступний за час очікування.');
+      console.error('   Запустіть Docker Desktop вручну і повторіть: npm run local:prepare');
+      console.error('   Якщо PostgreSQL уже працює локально: SKIP_DOCKER=1 npm run local:prepare\n');
+      process.exit(1);
+    }
     if (!dockerUp()) {
       console.error('\n❌ Не вдалося підняти Docker (docker-compose / docker compose).');
       console.error('   Запустіть Docker Desktop і повторіть: npm run local:prepare');
@@ -136,8 +144,9 @@ async function main() {
   console.log('🌱 prisma db seed (меню + країни/міста)…');
   runBackend('npx prisma db seed');
 
-  console.log('\n✅ Готово. Далі в одному терміналі: npm run local:all');
-  console.log('   (або окремо: npm run local:backend та npm run local:web)\n');
+  console.log('\n✅ Готово. Повний стек однією командою: npm run local  (або npm run local:stack)');
+  console.log('   Якщо Docker і БД вже підняті: npm run local:all');
+  console.log('   Окремо: npm run local:backend та npm run local:web\n');
 }
 
 main().catch((e) => {

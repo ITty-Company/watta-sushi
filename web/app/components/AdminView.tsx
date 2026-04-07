@@ -1834,6 +1834,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
   const handleSubmitBanner = async (e: React.FormEvent) => {
     e.preventDefault()
+    const img = (bannerFormData.imageUrl || '').trim()
+    if (!img) {
+      toast.error('Загрузите изображение баннера (блок «Обложка слайда» сверху формы)')
+      return
+    }
     try {
       const token = localStorage.getItem('token')
       if (!token) {

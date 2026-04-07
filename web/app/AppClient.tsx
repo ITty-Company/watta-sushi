@@ -9,6 +9,7 @@ import Footer from './components/Footer'
 export default function AppClient({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const isHomeRoute = pathname === '/'
+  const isAuthRoute = pathname === '/login' || pathname === '/register'
 
   return (
     <LanguageProviderWrapper>
@@ -20,10 +21,10 @@ export default function AppClient({ children }: { children: ReactNode }) {
           {children}
         </main>
         
-        {/* На главной футер рендерится внутри HomeClient (.content-web) */}
-        {!isHomeRoute && <Footer />}
+        {/* На главной футер рендерится внутри HomeClient (.content-web); на /login /register — повноекранна сторінка */}
+        {!isHomeRoute && !isAuthRoute && <Footer />}
         
-        <FloatingContactButtons />
+        {!isAuthRoute && <FloatingContactButtons />}
       </div>
     </LanguageProviderWrapper>
   )

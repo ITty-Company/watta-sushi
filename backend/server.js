@@ -5,8 +5,9 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
-
-// --- ИМПОРТ РОУТОВ ---
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import shopRoutes from './routes/shop.routes.ts';
 import orderRoutes from './routes/order.routes.ts';
 import authRoutes from './routes/auth.routes.ts';
@@ -20,12 +21,21 @@ import deliveryCheckRoutes from './routes/deliveryCheck.routes.ts';
 import teamRoutes from './routes/team.routes.ts';
 import settingsRoutes from './routes/settings.routes.ts';
 import promotionsRoutes from './routes/promotions.routes.ts';
-import newsletterRoutes from './routes/newsletter.routes.ts'; // Добавил .ts для единообразия
-import favoriteRoutes from './routes/favorite.routes.ts'; // Добавил .ts для единообразия
-import ingredientRoutes from './routes/ingredients.routes.ts'; // Добавил .ts для единообразия
+import newsletterRoutes from './routes/newsletter.routes.ts';
+import favoriteRoutes from './routes/favorite.routes.ts';
+import ingredientRoutes from './routes/ingredients.routes.ts';
 import paymentRoutes from './routes/payment.routes.ts';
 import blogRoutes from './routes/blog.routes.ts';
 import crmRoutes from './routes/crm.routes.ts';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsPublicDir = path.resolve(__dirname, '../web/public/uploads');
+try {
+  fs.mkdirSync(uploadsPublicDir, { recursive: true });
+} catch {
+  /* ignore */
+}
 
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
 const dotenvResult = dotenv.config({ override: false });
@@ -113,6 +123,16 @@ app.use((req, res, next) => {
   console.log(`📡 [${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
   next();
 });
+
+// Статика завантажених файлів (Next на проді проксує /uploads сюди)
+app.use(
+  '/uploads',
+  express.static(uploadsPublicDir, {
+    maxAge: isProd ? '7d' : 0,
+    index: false,
+    fallthrough: true,
+  }),
+);
 
 // --- 3. ПОДКЛЮЧЕНИЕ РОУТОВ ---
 app.use('/api/shop', shopRoutes);

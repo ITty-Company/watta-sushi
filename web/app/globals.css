@@ -10719,3 +10719,29 @@ body {
 .delivery-watta-tariff-list li {
   margin-bottom: 4px;
 }
+
+/* Повноекранні сторінки входу / реєстрації */
+@layer components {
+  .auth-watta-label {
+    @apply block;
+  }
+  .auth-watta-label-text {
+    @apply text-xs font-semibold text-gray-500 mb-1.5 ml-0.5;
+  }
+  .auth-watta-input-wrap {
+    @apply relative flex items-center rounded-2xl border-2 border-gray-200 bg-white transition-all;
+  }
+  .auth-watta-input-wrap:focus-within {
+    @apply border-[#145142] ring-4 ring-emerald-900/10;
+  }
+  .auth-watta-input-icon {
+    @apply absolute left-3.5 w-5 h-5 text-[#145142]/70 pointer-events-none;
+  }
+  .auth-watta-input {
+    @apply w-full rounded-2xl border-0 bg-transparent py-3.5 pl-12 pr-4 text-[#0f3d32] placeholder:text-gray-400 outline-none text-base;
+  }
+  .auth-watta-btn-primary {
+    @apply w-full rounded-2xl bg-gradient-to-r from-[#0f3d32] to-[#145142] py-3.5 text-center text-base font-bold text-white shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none;
+    box-shadow: 0 10px 28px rgba(20, 81, 66, 0.22);
+  }
+}

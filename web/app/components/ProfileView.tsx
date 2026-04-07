@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu,
   MapPin, Clock, Settings, LogOut, Package, Shield, Mail, X
@@ -61,6 +62,17 @@ export default function ProfileView({
   onSelectCategory, // <--- ДОБАВИЛИ В ПАРАМЕТРЫ
   initialTab = 'history'
 }: ProfileViewProps) {
+  const router = useRouter()
+  const [profileAllowed, setProfileAllowed] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const ok = !!localStorage.getItem('currentUser')
+    setProfileAllowed(ok)
+    if (!ok) {
+      router.replace('/login?return=' + encodeURIComponent('/'))
+    }
+  }, [router])
 
   const [activeTab, setActiveTab] = useState<'history' | 'address' | 'favorites' | 'data'>('history')
   const [orders, setOrders] = useState<Order[]>([])
@@ -237,6 +249,21 @@ export default function ProfileView({
     }
   }
 
+
+  if (profileAllowed === null) {
+    return (
+      <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center bg-[#f2f5f3]">
+        <p className="text-[#145142] font-medium">Завантаження…</p>
+      </div>
+    )
+  }
+  if (!profileAllowed) {
+    return (
+      <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center bg-[#f2f5f3] px-6 text-center">
+        <p className="text-[#145142] font-medium">Перенаправлення на вхід…</p>
+      </div>
+    )
+  }
 
   const Header = () => (
     <div className="fixed top-4 left-2 right-2 w-auto max-w-[100vw] h-[100px] mx-auto bg-gradient-to-r from-white via-white to-[#f8faf9] rounded-[28px] shadow-2xl shadow-[#145142]/15 border-2 border-white/90 backdrop-blur-2xl flex items-center justify-between px-8 z-[1000] overflow-hidden">
