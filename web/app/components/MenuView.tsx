@@ -161,7 +161,8 @@ const DEFAULT_HOME_BANNERS: Array<{
   },
 ]
 
-const HERO_VIDEO_SOURCES = ['/welcome.mp4', '/watta-sushi-2-hero.mp4'] as const
+/** Основний кадр головної — океан + лого (як на макеті); welcome.mp4 — лише запасний файл. */
+const HERO_VIDEO_SOURCES = ['/watta-sushi-2-hero.mp4', '/welcome.mp4'] as const
 
 export default function MenuView() {
   // ИСПОЛЬЗУЕМ getLocalized из контекста
@@ -1826,7 +1827,6 @@ export default function MenuView() {
               ref={heroVideoRef}
               className="welcome-video-native-web"
               src={heroVideoSrc}
-              poster="/watta-sushi.jpg"
               autoPlay
               muted
               loop
