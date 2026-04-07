@@ -878,6 +878,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         toast.success(t.adminPage.common.saveSuccess); setIsNewsModalOpen(false); setEditingNews(null);
         fetch('/api/promotions').then(r => r.json()).then(setNewsItems)
+        window.dispatchEvent(new Event('promotionsUpdated'))
       } else toast.error(t.adminPage.common.updateError)
     } catch (e) { toast.error(t.adminPage.common.networkError) }
   }
@@ -888,6 +889,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       const token = localStorage.getItem('token')
       await fetch(`/api/promotions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
       setNewsItems(newsItems.filter(p => p.id !== id))
+      window.dispatchEvent(new Event('promotionsUpdated'))
     } catch { toast.error('Ошибка') }
   }
   const [editorLang, setEditorLang] = useState<'ru' | 'ua' | 'en' | 'nl'>('ru');

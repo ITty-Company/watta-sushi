@@ -138,6 +138,17 @@ const STYLES = `
   margin-bottom: 0.15rem;
 }
 
+/* Телефон: заголовок «Готові замовити?» трохи нижче після ленти */
+.footer-hero-line-wrap--title-offset {
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .footer-hero-line-wrap--title-offset {
+    margin-top: 0;
+  }
+}
+
 .footer-heading-accent--hero {
   width: min(18rem, 78vw);
   height: 4px;
@@ -324,11 +335,51 @@ const STYLES = `
 }
 
 @media (max-width: 640px) {
-  .footer-promo-nav--prev {
-    left: 0.1rem;
+  .footer-promo-carousel-wrap {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
   }
+
+  .footer-promo-nav {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .footer-promo-nav--prev {
+    left: 0.15rem;
+  }
+
   .footer-promo-nav--next {
-    right: 0.1rem;
+    right: 0.15rem;
+  }
+
+  .footer-promo-card {
+    flex: 0 0 min(300px, 86vw);
+    scroll-snap-align: start;
+  }
+
+  .footer-promo-carousel {
+    gap: 0.85rem;
+    scroll-padding-inline: 0.5rem;
+    padding: 0.45rem 0.25rem 1rem;
+  }
+
+  .footer-promo-card-media {
+    aspect-ratio: 16 / 10;
+  }
+
+  .footer-promo-card-body {
+    padding: 0.75rem 0.85rem 0.95rem;
+  }
+
+  .footer-promo-card-title {
+    font-size: 0.875rem;
+    -webkit-line-clamp: 3;
+  }
+
+  .footer-promo-section-fullbleed {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
   }
 }
 
@@ -668,10 +719,10 @@ export type CinematicFooterPromoTeaser = {
   id: number
   label: string
   imageUrl?: string
-  /** Назва категорії меню (для акційних страв) */
+  /** Назва категорії меню (для акційних страв) або короткий підзаголовок акції */
   categoryLabel?: string
-  /** product — акційна страва з адмінки; banner — елемент каруселі банерів */
-  kind?: 'product' | 'banner'
+  /** product — хіт меню; banner — банер; promotion — акція з адмінки (/api/promotions) */
+  kind?: 'product' | 'banner' | 'promotion'
 }
 
 export type CinematicFooterProps = {
@@ -682,8 +733,8 @@ export type CinematicFooterProps = {
   className?: string
   /** Активні банери — короткі підписи внизу екрана */
   promoTeasers?: CinematicFooterPromoTeaser[]
-  /** Клік по картці: id + тип джерела (страва або банер) */
-  onPromoTeaserClick?: (payload: { id: number; kind: 'product' | 'banner' }) => void
+  /** Клік по картці: id + тип джерела */
+  onPromoTeaserClick?: (payload: { id: number; kind: 'product' | 'banner' | 'promotion' }) => void
   /** Текст кнопки, якщо банерів ще немає (веде до секції банерів) */
   promoFallbackCta?: string
   /** Підпис зони для скрінрідерів */
@@ -820,7 +871,9 @@ export function CinematicFooter({
   }, [])
 
   const onPromoCardActivate = (p: CinematicFooterPromoTeaser) => {
-    onPromoTeaserClick?.({ id: p.id, kind: p.kind ?? 'banner' })
+    const kind = p.kind ?? 'banner'
+    onPromoTeaserClick?.({ id: p.id, kind })
+    if (kind === 'promotion') return
     goMenu()
   }
 
@@ -870,24 +923,24 @@ export function CinematicFooter({
             </div>
           </div>
 
-          <div className="footer-marquee-bar absolute left-0 top-10 z-10 w-full -rotate-2 scale-[1.08] overflow-hidden border-y border-white/20 py-3 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.55)] md:top-12 md:py-4">
+          <div className="footer-marquee-bar absolute left-0 top-4 z-10 w-full -rotate-2 scale-[1.08] overflow-hidden border-y border-white/20 py-2 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.55)] sm:top-8 sm:py-3 md:top-12 md:py-4">
             <div className="flex w-max animate-footer-scroll-marquee text-[10px] font-bold uppercase tracking-[0.28em] md:text-xs">
               <MarqueeStrip />
               <MarqueeStrip />
             </div>
           </div>
 
-          <div className="relative z-10 mx-auto mt-16 flex w-full max-w-[100rem] flex-1 flex-col justify-center gap-10 px-5 pb-8 sm:px-8 sm:pb-10 md:mt-20 md:gap-12 lg:mt-[4.5rem] lg:gap-14 lg:px-12 lg:pb-12 xl:gap-16 xl:px-16 2xl:px-24">
+          <div className="relative z-10 mx-auto mt-10 flex w-full max-w-[100rem] flex-1 flex-col justify-center gap-8 px-4 pb-8 sm:mt-14 sm:gap-9 sm:px-8 sm:pb-10 md:mt-20 md:gap-12 lg:mt-[4.5rem] lg:gap-14 lg:px-12 lg:pb-12 xl:gap-16 xl:px-16 2xl:px-24">
             <div
               ref={leftColRef}
               className="flex w-full flex-col items-center lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]"
             >
-              <div className="footer-hero-line-wrap w-full lg:items-start">
+              <div className="footer-hero-line-wrap footer-hero-line-wrap--title-offset w-full lg:items-start">
                 <div className="footer-heading-accent footer-heading-accent--hero mx-auto lg:mx-0 lg:ml-0" aria-hidden />
                 <div className="footer-hero-line-cap mx-auto lg:mx-0 lg:ml-0" aria-hidden />
               </div>
 
-              <h2 className="footer-heading-flow footer-title-display mt-3 text-center text-4xl font-bold tracking-tight md:mt-4 md:text-6xl lg:text-left lg:text-7xl xl:text-8xl xl:leading-[0.98]">
+              <h2 className="footer-heading-flow footer-title-display mt-6 text-center text-4xl font-bold tracking-tight sm:mt-5 md:mt-4 md:text-6xl lg:text-left lg:text-7xl xl:text-8xl xl:leading-[0.98]">
                 {cf.readyTitle}
               </h2>
             </div>
@@ -901,7 +954,7 @@ export function CinematicFooter({
                   <div className="footer-promo-carousel-wrap">
                     <button
                       type="button"
-                      className="footer-promo-nav footer-promo-nav--prev hidden sm:flex"
+                      className="footer-promo-nav footer-promo-nav--prev flex"
                       onClick={() => scrollCarousel(-1)}
                       aria-label={cf.prevPromo}
                     >
@@ -911,7 +964,7 @@ export function CinematicFooter({
                     </button>
                     <button
                       type="button"
-                      className="footer-promo-nav footer-promo-nav--next hidden sm:flex"
+                      className="footer-promo-nav footer-promo-nav--next flex"
                       onClick={() => scrollCarousel(1)}
                       aria-label={cf.nextPromo}
                     >
