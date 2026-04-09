@@ -1,9 +1,8 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import {
@@ -22,8 +21,10 @@ import {
   wattaRestaurantEmbedUrl,
   wattaRestaurantExternalMapsUrl,
 } from '@/lib/wattaRestaurantLocation'
+import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 
-const LogoBackground = dynamic(() => import('./LogoBackground'), { ssr: false, loading: () => null })
+const HERO_BG =
+  'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
 
 function IconTelegram({ className }: { className?: string }) {
   return (
@@ -47,48 +48,15 @@ function IconWhatsApp({ className }: { className?: string }) {
   )
 }
 
-function TiltSurface({
-  children,
-  className,
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [tf, setTf] = useState('perspective(900px) rotateX(0deg) rotateY(0deg)')
-  const reduce = useReducedMotion()
-
-  const onMove = (e: React.MouseEvent) => {
-    if (reduce) return
-    const el = ref.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    const px = (e.clientX - r.left) / r.width - 0.5
-    const py = (e.clientY - r.top) / r.height - 0.5
-    setTf(`perspective(900px) rotateX(${py * -12}deg) rotateY(${px * 12}deg) scale3d(1.02,1.02,1.02)`)
-  }
-  const onLeave = () => setTf('perspective(900px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)')
-
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        transform: tf,
-        transition: 'transform 0.18s ease-out',
-        transformStyle: 'preserve-3d',
-      }}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
-    >
-      {children}
-    </div>
-  )
-}
-
 type SiteLinks = { telegramUrl: string; whatsappUrl: string; instagramUrl: string }
 
-export default function ContactsView({ onBack }: { onBack: () => void }) {
+export type ContactsViewProps = {
+  /** Якщо true — компактний хедер «назад» (без глобальної шапки сайту) */
+  embedded?: boolean
+  onBack?: () => void
+}
+
+export default function ContactsView({ embedded = false, onBack }: ContactsViewProps) {
   const { t } = useLanguage()
   const c = t.contactPage
   const reduce = useReducedMotion()
@@ -106,7 +74,7 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
         setLinks({
           telegramUrl: String(d.telegramUrl || '').trim(),
           whatsappUrl: String(d.whatsappUrl || '').trim(),
-          instagramUrl: String(d.instagramUrl || '').trim(),
+          instagramUrl: String(d.instagramUrl || '').trim() || WATTA_INSTAGRAM_URL,
         })
         setPickupAddress(String(d.restaurantPickupAddress || '').trim())
       })
@@ -174,65 +142,88 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
   const faqs = buildFaqList(c)
 
   const fadeUp = reduce
-    ? { initial: false, whileInView: undefined }
-    : { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 } }
+    ? ({ initial: false as const } satisfies { initial: false })
+    : ({
+        initial: { opacity: 0, y: 28 },
+        whileInView: { opacity: 1, y: 0 },
+      } as const)
+
+  const statCards = [
+    { val: c.stat1Val, label: c.stat1Label },
+    { val: c.stat2Val, label: c.stat2Label },
+    { val: c.stat3Val, label: c.stat3Label },
+  ]
 
   return (
-    <div
-      className="relative min-h-[100dvh] overflow-x-hidden pb-24 pt-6 sm:pt-10"
-      style={{
-        backgroundImage:
-          "linear-gradient(165deg, rgba(244,251,247,0.97) 0%, rgba(232,241,236,0.98) 45%, rgba(220,234,228,0.95) 100%), url('/background.jpg')",
-        backgroundSize: 'cover, 280px',
-        backgroundAttachment: 'scroll, fixed',
-      }}
-    >
-      <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
-        <LogoBackground />
-      </div>
-
-      <div className="relative z-[1] mx-auto w-full max-w-6xl px-4 sm:px-6">
-        <header className="mb-10 flex flex-wrap items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-2xl border border-[#145142]/15 bg-white/90 px-4 py-2.5 text-sm font-bold text-[#145142] shadow-sm backdrop-blur-md transition hover:bg-white"
-          >
-            <ArrowLeft size={20} strokeWidth={2.25} />
-            {t.auth.back}
-          </button>
-          <div className="flex flex-wrap gap-2">
+    <div className="relative min-h-[100dvh] w-full overflow-x-hidden bg-white pb-24">
+      {embedded && onBack ? (
+        <div className="border-b border-gray-100 bg-white px-4 py-4 sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
             <button
               type="button"
-              onClick={scrollToForm}
-              className="rounded-2xl bg-[#145142] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-[#1a6b58]"
+              onClick={onBack}
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#145142]/15 bg-white px-4 py-2.5 text-sm font-bold text-[#145142] shadow-sm transition hover:bg-gray-50"
             >
-              {c.ctaForm}
+              <ArrowLeft size={20} strokeWidth={2.25} />
+              {t.auth.back}
             </button>
-            <Link
-              href="/delivery"
-              className="rounded-2xl border-2 border-[#145142]/30 bg-white/90 px-4 py-2.5 text-sm font-bold text-[#145142] backdrop-blur-md transition hover:border-[#145142]"
-            >
-              {c.ctaDelivery}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={scrollToForm}
+                className="rounded-2xl bg-[#145142] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-[#1a6b58]"
+              >
+                {c.ctaForm}
+              </button>
+              <Link
+                href="/delivery"
+                className="rounded-2xl border-2 border-[#145142]/30 bg-white px-4 py-2.5 text-sm font-bold text-[#145142] transition hover:border-[#145142]"
+              >
+                {c.ctaDelivery}
+              </Link>
+            </div>
           </div>
-        </header>
+        </div>
+      ) : null}
 
-        {/* Hero + 3D */}
-        <section className="relative mb-16 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div className="relative">
+      {/* Герой у стилі «Про нас» */}
+      <section
+        className="relative overflow-hidden text-white"
+        style={{ background: HERO_BG }}
+        aria-labelledby="contacts-hero-title"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.4]"
+          style={{
+            background: `repeating-linear-gradient(
+              -32deg,
+              transparent,
+              transparent 14px,
+              rgba(255, 255, 255, 0.04) 14px,
+              rgba(255, 255, 255, 0.04) 15px
+            )`,
+          }}
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -right-[15%] top-1/2 h-[min(70vw,480px)] w-[min(70vw,480px)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,92,0,0.14)_0%,transparent_68%)]"
+          aria-hidden
+        />
+
+        <div className="relative z-[1] mx-auto grid max-w-6xl gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.12fr_0.88fr] lg:items-center lg:gap-16 lg:py-24">
+          <div>
             <motion.p
-              className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#145142]/20 bg-white/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#145142]/90 backdrop-blur-md"
+              className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/85 backdrop-blur-md sm:text-xs"
               {...fadeUp}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5 }}
             >
-              <Sparkles size={14} className="text-[#145142]" />
+              <Sparkles size={14} className="text-white/90" />
               {c.heroKicker}
             </motion.p>
             <motion.h1
-              className="mb-4 max-w-xl text-4xl font-black leading-[1.05] tracking-tight text-gray-900 sm:text-5xl md:text-6xl"
-              style={{ textShadow: '0 2px 40px rgba(20,81,66,0.08)' }}
+              id="contacts-hero-title"
+              className="max-w-xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-7xl"
               {...fadeUp}
               viewport={{ once: true }}
               transition={{ duration: 0.55, delay: 0.05 }}
@@ -240,7 +231,7 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
               {c.heroTitle}
             </motion.h1>
             <motion.p
-              className="mb-8 max-w-xl text-base leading-relaxed text-gray-600 sm:text-lg"
+              className="mt-5 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg"
               {...fadeUp}
               viewport={{ once: true }}
               transition={{ duration: 0.55, delay: 0.1 }}
@@ -249,100 +240,106 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
             </motion.p>
 
             <motion.div
-              className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+              className="mt-8 flex flex-wrap gap-3"
               {...fadeUp}
               viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: 0.14 }}
+              transition={{ duration: 0.5, delay: 0.12 }}
             >
-              {[
-                { val: c.stat1Val, label: c.stat1Label },
-                { val: c.stat2Val, label: c.stat2Label },
-                { val: c.stat3Val, label: c.stat3Label },
-              ].map((s, i) => (
+              <button
+                type="button"
+                onClick={scrollToForm}
+                className="rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-[#145142] shadow-lg shadow-black/15 transition hover:bg-white/95"
+              >
+                {c.ctaForm}
+              </button>
+              <Link
+                href="/delivery"
+                className="rounded-2xl border-2 border-white/45 px-6 py-3.5 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                {c.ctaDelivery}
+              </Link>
+            </motion.div>
+
+            <motion.div
+              className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3"
+              {...fadeUp}
+              viewport={{ once: true }}
+              transition={{ duration: 0.55, delay: 0.16 }}
+            >
+              {statCards.map((s, i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-white/60 bg-white/70 p-4 shadow-md shadow-[#145142]/10 backdrop-blur-md"
+                  className="rounded-[18px] border border-white/20 bg-white/10 px-4 py-4 backdrop-blur-md sm:py-5"
                 >
-                  <div className="text-2xl font-black text-[#145142]">{s.val}</div>
-                  <div className="text-xs font-semibold leading-snug text-gray-600">{s.label}</div>
+                  <div className="text-2xl font-black text-white sm:text-3xl">{s.val}</div>
+                  <div className="mt-1 text-xs font-semibold leading-snug text-white/70">{s.label}</div>
                 </div>
               ))}
             </motion.div>
 
-            <p className="mt-6 hidden text-center text-xs font-medium text-[#145142]/60 md:block">{c.scrollHint}</p>
+            <p className="mt-8 text-center text-xs font-medium text-white/45 sm:text-left">{c.scrollHint}</p>
           </div>
 
-          <div className="relative mx-auto flex h-[min(420px,55vh)] w-full max-w-md items-center justify-center lg:h-[480px]">
+          <motion.div
+            className="relative mx-auto w-full max-w-[340px] lg:max-w-none lg:justify-self-end"
+            {...fadeUp}
+            viewport={{ once: true }}
+            transition={{ duration: 0.55, delay: 0.1 }}
+          >
             <div
-              className="pointer-events-none absolute inset-0 rounded-[40px] bg-gradient-to-br from-[#145142]/20 via-transparent to-emerald-400/20 blur-3xl"
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute left-1/2 top-8 h-24 w-24 -translate-x-1/2 rounded-full border border-[#145142]/20 opacity-60 animate-watta-orbit"
-              aria-hidden
-            />
-            <TiltSurface className="relative z-[1] w-full max-w-[320px]">
-              <div
-                className="relative overflow-hidden rounded-[32px] border border-white/70 bg-gradient-to-br from-white via-[#f4faf7] to-[#e3efe8] p-8 shadow-[0_24px_80px_rgba(20,81,66,0.22)]"
-                style={{ transform: 'translateZ(24px)' }}
-              >
-                <div
-                  className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-[#145142]/10 blur-2xl"
-                  aria-hidden
-                />
-                <div className="mx-auto mb-6 flex justify-center animate-watta-float will-change-transform">
-                  <div className="relative h-36 w-36">
-                    <div
-                      className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#145142] to-[#0f3d32] shadow-xl"
-                      style={{ transform: 'rotateY(12deg) rotateX(8deg)' }}
-                    />
-                    <div className="absolute inset-2 flex items-center justify-center rounded-2xl bg-white/95 shadow-inner">
-                      <Image src="/logo.png" alt="" width={100} height={100} className="object-contain drop-shadow-lg" priority />
-                    </div>
-                  </div>
+              className="overflow-hidden rounded-[28px] border border-white/25 bg-white p-8 shadow-[0_28px_90px_rgba(0,0,0,0.25)]"
+              style={{ filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.2))' }}
+            >
+              <div className="mx-auto mb-5 flex justify-center">
+                <div className="rounded-2xl border-[3px] border-[#145142] bg-gradient-to-br from-gray-50 to-white p-5 shadow-inner">
+                  <Image src="/logo.png" alt="" width={108} height={108} className="object-contain" priority />
                 </div>
-                <p className="text-center text-sm font-bold text-[#145142]">Watta Sushi</p>
-                <p className="mt-2 text-center text-xs leading-relaxed text-gray-600">{c.channelsSub}</p>
               </div>
-            </TiltSurface>
-          </div>
-        </section>
+              <p className="text-center text-base font-black text-[#145142]">Watta Sushi</p>
+              <p className="mt-3 text-center text-sm leading-relaxed text-[#5a5a5a]">{c.channelsSub}</p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
-        {/* Channels */}
-        <motion.section
-          className="mb-16"
+      {/* Канали звʼязку */}
+      <section className="border-t border-gray-100 bg-[#f5f5f7] py-16 sm:py-20">
+        <motion.div
+          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.55 }}
         >
-          <h2 className="mb-2 text-2xl font-black text-gray-900 sm:text-3xl">{c.channelsTitle}</h2>
-          <p className="mb-8 max-w-2xl text-gray-600">{c.channelsSub}</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
+            {c.channelsTitle}
+          </h2>
+          <p className="mb-10 max-w-2xl text-base text-gray-600 sm:text-lg">{c.channelsSub}</p>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             <a
               href={`tel:${c.phoneTel.replace(/\s/g, '')}`}
-              className="group flex flex-col rounded-3xl border border-white/70 bg-white/85 p-6 shadow-lg shadow-[#145142]/10 backdrop-blur-md transition hover:-translate-y-1 hover:shadow-xl"
+              className="group flex flex-col rounded-[22px] border border-gray-200/90 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)]"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#145142] text-white shadow-md transition group-hover:scale-110">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#145142] text-white shadow-md transition group-hover:scale-105">
                 <Phone size={22} />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/80">{c.cardCall}</span>
-              <span className="mt-1 text-lg font-bold text-gray-900">{c.phoneDisplay}</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/85">{c.cardCall}</span>
+              <span className="mt-1 text-lg font-black text-gray-900">{c.phoneDisplay}</span>
             </a>
             <a
               href={`mailto:${c.emailMailto}`}
-              className="group flex flex-col rounded-3xl border border-white/70 bg-white/85 p-6 shadow-lg shadow-[#145142]/10 backdrop-blur-md transition hover:-translate-y-1 hover:shadow-xl"
+              className="group flex flex-col rounded-[22px] border border-gray-200/90 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)]"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#145142] to-[#1a6b58] text-white shadow-md transition group-hover:scale-110">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#145142] to-[#1a6b58] text-white shadow-md transition group-hover:scale-105">
                 <Mail size={22} />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/80">{c.cardEmail}</span>
-              <span className="mt-1 break-all text-lg font-bold text-gray-900">{c.emailDisplay}</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/85">{c.cardEmail}</span>
+              <span className="mt-1 break-all text-lg font-black text-gray-900">{c.emailDisplay}</span>
             </a>
-            <div className="flex flex-col rounded-3xl border border-white/70 bg-white/85 p-6 shadow-lg shadow-[#145142]/10 backdrop-blur-md">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#145142]/90 text-white shadow-md">
+            <div className="flex flex-col rounded-[22px] border border-gray-200/90 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#145142] text-white shadow-md">
                 <MapPin size={22} />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/80">{c.cardAddress}</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/85">{c.cardAddress}</span>
               <p className="mt-1 text-sm font-semibold leading-snug text-gray-800">{addressLine}</p>
               <a
                 href={wattaRestaurantExternalMapsUrl()}
@@ -353,25 +350,26 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
                 {c.openMaps}
               </a>
             </div>
-            <div className="flex flex-col rounded-3xl border border-white/70 bg-white/85 p-6 shadow-lg shadow-[#145142]/10 backdrop-blur-md">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#145142]/90 text-white shadow-md">
+            <div className="flex flex-col rounded-[22px] border border-gray-200/90 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#145142] text-white shadow-md">
                 <Clock size={22} />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/80">{c.cardHours}</span>
-              <p className="mt-1 text-lg font-bold text-gray-900">{c.hoursDetail}</p>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#145142]/85">{c.cardHours}</span>
+              <p className="mt-1 text-lg font-black text-gray-900">{c.hoursDetail}</p>
             </div>
           </div>
-        </motion.section>
+        </motion.div>
+      </section>
 
-        {/* Social */}
-        {(links.telegramUrl || links.whatsappUrl || links.instagramUrl) && (
-          <motion.section
-            className="mb-16"
+      {(links.telegramUrl || links.whatsappUrl || links.instagramUrl) && (
+        <section className="border-t border-gray-100 bg-white py-14 sm:py-16">
+          <motion.div
+            className="mx-auto max-w-6xl px-4 sm:px-6"
             {...fadeUp}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="mb-6 text-2xl font-black text-gray-900">{c.socialTitle}</h2>
+            <h2 className="mb-8 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.socialTitle}</h2>
             <div className="flex flex-wrap gap-4">
               {links.telegramUrl ? (
                 <a
@@ -407,20 +405,21 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
                 </a>
               ) : null}
             </div>
-          </motion.section>
-        )}
+          </motion.div>
+        </section>
+      )}
 
-        {/* Map */}
-        <motion.section
-          className="mb-16"
+      <section className="border-t border-gray-100 bg-white py-16 sm:py-20">
+        <motion.div
+          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
         >
-          <h2 className="mb-2 text-2xl font-black text-gray-900 sm:text-3xl">{c.mapTitle}</h2>
-          <p className="mb-6 max-w-2xl text-gray-600">{c.mapSub}</p>
-          <div className="overflow-hidden rounded-[28px] border border-white/80 bg-white/90 shadow-2xl shadow-[#145142]/15 backdrop-blur-md">
-            <div className="aspect-[16/10] w-full min-h-[280px] sm:min-h-[360px]">
+          <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.mapTitle}</h2>
+          <p className="mb-8 max-w-2xl text-base text-gray-600 sm:text-lg">{c.mapSub}</p>
+          <div className="overflow-hidden rounded-[28px] border border-gray-200/80 bg-white shadow-[0_12px_48px_rgba(0,0,0,0.08)]">
+            <div className="aspect-[16/10] min-h-[280px] w-full sm:min-h-[360px]">
               <iframe
                 title={c.mapTitle}
                 src={wattaRestaurantEmbedUrl()}
@@ -431,24 +430,25 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
               />
             </div>
           </div>
-        </motion.section>
+        </motion.div>
+      </section>
 
-        {/* FAQ */}
-        <motion.section
-          className="mb-16"
+      <section className="border-t border-gray-100 bg-[#f5f5f7] py-16 sm:py-20">
+        <motion.div
+          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
         >
-          <h2 className="mb-2 text-2xl font-black text-gray-900 sm:text-3xl">{c.faqTitle}</h2>
-          <p className="mb-8 text-gray-600">{c.faqSub}</p>
+          <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.faqTitle}</h2>
+          <p className="mb-10 max-w-2xl text-gray-600">{c.faqSub}</p>
           <div className="space-y-3">
             {faqs.map((item, i) => {
               const open = faqOpen === i
               return (
                 <div
                   key={i}
-                  className="overflow-hidden rounded-2xl border border-[#145142]/10 bg-white/90 shadow-md backdrop-blur-md"
+                  className="overflow-hidden rounded-[20px] border border-gray-200/90 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.05)]"
                 >
                   <button
                     type="button"
@@ -469,19 +469,19 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
               )
             })}
           </div>
-        </motion.section>
+        </motion.div>
+      </section>
 
-        {/* Form */}
-        <motion.section
-          id="watta-contact-form"
-          className="mb-20 scroll-mt-24"
+      <section id="watta-contact-form" className="scroll-mt-[calc(5rem+env(safe-area-inset-top))] border-t border-gray-100 bg-white py-16 sm:py-20">
+        <motion.div
+          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
         >
-          <div className="overflow-hidden rounded-[32px] border border-[#145142]/15 bg-gradient-to-br from-white via-[#f7fbf9] to-[#eaf4ef] p-6 shadow-[0_28px_90px_rgba(20,81,66,0.12)] sm:p-10">
-            <h2 className="mb-2 text-2xl font-black text-gray-900">{c.formTitle}</h2>
-            <p className="mb-8 text-gray-600">{c.formSub}</p>
+          <div className="overflow-hidden rounded-[28px] border border-gray-200/90 bg-gradient-to-br from-white via-[#f8fbf9] to-[#eef6f1] p-6 shadow-[0_20px_70px_rgba(20,81,66,0.1)] sm:p-10 lg:max-w-4xl">
+            <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.formTitle}</h2>
+            <p className="mb-8 text-gray-600 sm:text-lg">{c.formSub}</p>
             <form onSubmit={submitForm} className="grid gap-5">
               <label className="sr-only" htmlFor="contact-honey">
                 {c.honeyLabel}
@@ -560,11 +560,12 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
               </button>
             </form>
           </div>
-        </motion.section>
+        </motion.div>
+      </section>
 
-        {/* Bottom CTA */}
+      <div className="border-t border-gray-100 bg-[#f5f5f7] px-4 py-12 sm:px-6 sm:py-16">
         <motion.div
-          className="relative overflow-hidden rounded-[28px] border border-[#145142]/20 bg-[#145142] p-8 text-center text-white shadow-2xl"
+          className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] border border-[#145142]/25 bg-[#145142] p-8 text-center text-white shadow-[0_20px_60px_rgba(20,81,66,0.35)] sm:p-12"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
@@ -577,7 +578,7 @@ export default function ContactsView({ onBack }: { onBack: () => void }) {
             }}
             aria-hidden
           />
-          <h3 className="relative z-[1] text-2xl font-black sm:text-3xl">{c.bottomTitle}</h3>
+          <h3 className="relative z-[1] text-2xl font-black sm:text-3xl md:text-4xl">{c.bottomTitle}</h3>
           <Link
             href="/"
             className="relative z-[1] mt-6 inline-flex rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-[#145142] shadow-lg transition hover:scale-[1.02]"

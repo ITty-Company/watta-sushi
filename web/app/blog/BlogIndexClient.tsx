@@ -2,8 +2,11 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowUpRight, BookOpen } from 'lucide-react'
+import { useMemo } from 'react'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { getFallbackBlogCards } from '@/app/lib/blogFallbackContent'
+
+const READ_LINK = '#27AE60'
 
 export interface BlogPostPreview {
   id: number
@@ -15,79 +18,109 @@ export interface BlogPostPreview {
   createdAt: string
 }
 
+type BlogCardRow = BlogPostPreview & { category?: string; dateDisplay?: string }
+
+function formatCardDate(iso: string, lang: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  if (lang === 'en') {
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+  if (lang === 'nl') {
+    return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${day}.${month}.${d.getFullYear()}`
+}
+
 export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] }) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+
+  const { rows, usingFallback } = useMemo((): { rows: BlogCardRow[]; usingFallback: boolean } => {
+    if (posts.length > 0) {
+      return { rows: posts, usingFallback: false }
+    }
+    const cards = getFallbackBlogCards(language)
+    return {
+      usingFallback: true,
+      rows: cards.map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        content: c.excerpt,
+        imageUrl: c.imageUrl,
+        author: c.author,
+        createdAt: c.createdAt,
+        category: c.category,
+        dateDisplay: c.dateDisplay,
+      })),
+    }
+  }, [posts, language])
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full max-w-[1440px] mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-12 sm:mb-14 relative"
+        className="mb-10 sm:mb-12"
       >
-        <div className="absolute -left-4 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-[#145142] via-[#1a6b58] to-transparent hidden sm:block" />
-        <div className="inline-flex items-center gap-2 text-[#145142] font-bold text-sm mb-3">
-          <BookOpen className="w-5 h-5" />
-          Watta
-        </div>
-        <h1 className="text-4xl sm:text-6xl font-extrabold text-[#145142] leading-tight">
+        <h1
+          className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl md:text-5xl lg:text-6xl"
+          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+        >
           {t.blogPublic.title}
         </h1>
-        <p className="text-gray-600 mt-4 max-w-2xl text-lg leading-relaxed">{t.blogPublic.subtitle}</p>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg">{t.blogPublic.subtitle}</p>
+        {usingFallback ? (
+          <p className="mt-6 max-w-3xl text-sm leading-relaxed text-gray-600 sm:text-base">{t.blogPublic.fallbackHint}</p>
+        ) : null}
       </motion.div>
 
-      {posts.length === 0 ? (
-        <div className="rounded-[2rem] border border-[#145142]/12 bg-white/90 backdrop-blur-sm p-12 text-center text-gray-600 shadow-xl">
-          {t.blogPublic.empty}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {posts.map((post, i) => (
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 lg:grid-cols-3 xl:grid-cols-4">
+        {rows.map((post, i) => {
+          const category = post.category ?? t.blogPublic.cardCategoryFallback
+          const dateStr = post.dateDisplay ?? formatCardDate(post.createdAt, language)
+
+          return (
             <motion.article
-              key={post.id}
+              key={`${post.id}-${post.slug}`}
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06, type: 'spring', damping: 22 }}
-              style={{ perspective: '1200px' }}
-              className="group relative rounded-[1.75rem] border border-[#145142]/10 bg-white overflow-hidden shadow-lg shadow-[#145142]/8 hover:shadow-2xl hover:shadow-[#145142]/15 transition-all duration-500 hover:-translate-y-1"
+              transition={{ delay: i * 0.04, type: 'spring', damping: 24 }}
+              className="flex flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
             >
-              <div
-                className="relative h-48 sm:h-52 overflow-hidden"
-                style={{ transformStyle: 'preserve-3d' }}
-              >
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
                 {post.imageUrl ? (
-                  <motion.img
-                    src={post.imageUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    whileHover={{ scale: 1.06, rotateX: 2 }}
-                    transition={{ duration: 0.45 }}
-                  />
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={post.imageUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#145142]/12 via-[#1a6b58]/10 to-[#f0f9f7]" />
+                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-sm text-gray-400">
+                    Watta
+                  </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-80" />
-                <span className="absolute bottom-3 left-4 text-xs font-bold text-white/90 drop-shadow">
-                  {new Date(post.createdAt).toLocaleDateString()} · {post.author}
-                </span>
               </div>
-              <div className="p-6 sm:p-7">
-                <h2 className="text-xl font-extrabold text-[#194A38] line-clamp-2 group-hover:text-[#145142] transition-colors">
-                  {post.title}
-                </h2>
-                <p className="text-sm text-gray-600 mt-3 line-clamp-3 leading-relaxed">{post.content}</p>
+              <div className="flex flex-1 flex-col p-5 sm:p-6">
+                <div className="mb-3 flex items-center justify-between gap-2 text-xs sm:text-sm">
+                  <span className="max-w-[65%] truncate rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-600">
+                    {category}
+                  </span>
+                  <time className="shrink-0 font-medium text-gray-400">{dateStr}</time>
+                </div>
+                <h2 className="line-clamp-3 text-lg font-black leading-snug text-gray-900 sm:text-xl">{post.title}</h2>
+                <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-gray-500">{post.content}</p>
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-xl bg-[#145142] text-white text-sm font-bold hover:bg-[#0f3d32] transition shadow-md shadow-[#145142]/20 group/link"
+                  className="mt-4 self-start text-sm font-bold transition hover:opacity-80"
+                  style={{ color: READ_LINK }}
                 >
                   {t.blogPublic.readMore}
-                  <ArrowUpRight className="w-4 h-4 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
                 </Link>
               </div>
             </motion.article>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
     </div>
   )
 }

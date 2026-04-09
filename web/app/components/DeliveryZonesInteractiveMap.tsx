@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react'
 import 'leaflet/dist/leaflet.css'
-
 export type DeliveryZoneMapZone = {
   id: string
   name: string
@@ -18,6 +17,8 @@ type Props = {
   centerLng: number
   zoom: number
   buildPopupHtml: (zone: DeliveryZoneMapZone) => string
+  /** Клік по полігону — зберегти тариф для кошика */
+  onZoneSelect?: (zone: DeliveryZoneMapZone) => void
   ariaLabel: string
 }
 
@@ -27,10 +28,16 @@ export default function DeliveryZonesInteractiveMap({
   centerLng,
   zoom,
   buildPopupHtml,
+  onZoneSelect,
   ariaLabel,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<{ remove: () => void } | null>(null)
+  const buildPopupHtmlRef = useRef(buildPopupHtml)
+  const onZoneSelectRef = useRef(onZoneSelect)
+
+  buildPopupHtmlRef.current = buildPopupHtml
+  onZoneSelectRef.current = onZoneSelect
 
   useEffect(() => {
     let cancelled = false
@@ -50,8 +57,11 @@ export default function DeliveryZonesInteractiveMap({
         attributionControl: true,
       }).setView([centerLat, centerLng], zoom)
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
       }).addTo(map)
 
       const group = L.featureGroup()
@@ -66,9 +76,10 @@ export default function DeliveryZonesInteractiveMap({
           weight: 2,
           opacity: 0.95,
         })
-        const html = `<div class="delivery-watta-zone-popup">${buildPopupHtml(z)}</div>`
-        poly.bindPopup(html, { maxWidth: 300, className: 'delivery-watta-leaflet-popup-wrap' })
+        const html = `<div class="delivery-watta-zone-popup">${buildPopupHtmlRef.current(z)}</div>`
+        poly.bindPopup(html, { maxWidth: 320, className: 'delivery-watta-leaflet-popup-wrap' })
         poly.on('click', () => {
+          onZoneSelectRef.current?.(z)
           poly.openPopup()
         })
         poly.addTo(group)
@@ -93,12 +104,12 @@ export default function DeliveryZonesInteractiveMap({
       mapInstanceRef.current?.remove()
       mapInstanceRef.current = null
     }
-  }, [zones, centerLat, centerLng, zoom, buildPopupHtml])
+  }, [zones, centerLat, centerLng, zoom])
 
   return (
     <div
       ref={containerRef}
-      className="delivery-watta-leaflet-map h-full min-h-[320px] w-full rounded-[12px]"
+      className="delivery-watta-leaflet-map h-full min-h-[min(70vh,520px)] w-full rounded-[12px] sm:min-h-[min(75vh,640px)]"
       role="region"
       aria-label={ariaLabel}
     />

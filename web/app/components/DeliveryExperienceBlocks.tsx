@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 export type DeliveryExperienceLabels = {
   conditionsTitle: string
   minOrder: string
+  minOrderAfterCheck: string
   remoteHint: string
   hoursTitle: string
   hoursRange: string
@@ -183,9 +184,12 @@ const conditionRows: { Icon: typeof ShoppingBag; textKey: 'conditionsFeature1' |
 export function DeliveryExperienceBlocks({
   d,
   kitchenAddressLine,
+  conditionsCheckSummary,
 }: {
   d: DeliveryExperienceLabels
   kitchenAddressLine: string
+  /** Після успішної перевірки індексу — персоналізований рядок про мінімум */
+  conditionsCheckSummary?: string | null
 }) {
   const reduceMotion = useReducedMotion() ?? false
 
@@ -217,6 +221,11 @@ export function DeliveryExperienceBlocks({
             </ul>
             <div className="delivery-watta-conditions-divider" aria-hidden />
             <p className="delivery-watta-block-text delivery-watta-block-text--lead">{d.minOrder}</p>
+            {conditionsCheckSummary ? (
+              <p className="delivery-watta-conditions-check-summary" role="status">
+                {conditionsCheckSummary}
+              </p>
+            ) : null}
             <p className="delivery-watta-block-text delivery-watta-block-text--muted">{d.remoteHint}</p>
           </TiltShell>
         </motion.div>

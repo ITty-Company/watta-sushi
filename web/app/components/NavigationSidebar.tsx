@@ -13,6 +13,10 @@ import {
   Info,
   X,
   Sparkles,
+  BookOpen,
+  Star,
+  ShoppingBag,
+  MapPin,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -143,7 +147,7 @@ export default function NavigationSidebar({
             <button
               type="button"
               className="watta-nav-sidebar-link"
-              onClick={run(() => onGoHome())}
+              onClick={run(() => onPageOpen('catalogMenu'))}
             >
               <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--menu">
                 <Menu size={18} strokeWidth={2.25} />
@@ -176,6 +180,28 @@ export default function NavigationSidebar({
             <button
               type="button"
               className="watta-nav-sidebar-link"
+              onClick={run(() => onPageOpen('blog'))}
+            >
+              <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--blog">
+                <BookOpen size={18} strokeWidth={2.25} />
+              </span>
+              <span className="watta-nav-sidebar-link-txt">{t.blogPublic.title}</span>
+            </button>
+
+            <button
+              type="button"
+              className="watta-nav-sidebar-link"
+              onClick={run(() => onPageOpen('reviews'))}
+            >
+              <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--reviews">
+                <Star size={18} strokeWidth={2.25} />
+              </span>
+              <span className="watta-nav-sidebar-link-txt">{t.reviewsPublic.title}</span>
+            </button>
+
+            <button
+              type="button"
+              className="watta-nav-sidebar-link"
               onClick={run(() => onPageOpen('about'))}
             >
               <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--about">
@@ -196,6 +222,57 @@ export default function NavigationSidebar({
             </button>
           </nav>
 
+          <p className="watta-nav-sidebar-subkicker">{t.navigation.sidebarMore}</p>
+
+          <nav
+            className="watta-nav-sidebar-nav watta-nav-sidebar-nav--secondary"
+            aria-label={t.navigation.sidebarMore}
+          >
+            <button
+              type="button"
+              className="watta-nav-sidebar-link"
+              onClick={run(() => onPageOpen('cartPublic'))}
+            >
+              <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--cart">
+                <ShoppingBag size={18} strokeWidth={2.25} />
+              </span>
+              <span className="watta-nav-sidebar-link-txt">{t.cart}</span>
+            </button>
+
+            <button
+              type="button"
+              className="watta-nav-sidebar-link"
+              onClick={run(() => onPageOpen('favoritesPublic'))}
+            >
+              <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--favorites">
+                <Heart size={18} strokeWidth={2.25} />
+              </span>
+              <span className="watta-nav-sidebar-link-txt">{t.navigation.favorites}</span>
+            </button>
+
+            <button
+              type="button"
+              className="watta-nav-sidebar-link"
+              onClick={run(() => onPageOpen('profilePublic'))}
+            >
+              <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--profile">
+                <User size={18} strokeWidth={2.25} />
+              </span>
+              <span className="watta-nav-sidebar-link-txt">{t.profilePage.title}</span>
+            </button>
+
+            <button
+              type="button"
+              className="watta-nav-sidebar-link"
+              onClick={run(() => onPageOpen('deliveryPublic'))}
+            >
+              <span className="watta-nav-sidebar-link-ico watta-nav-sidebar-link-ico--deliverypage">
+                <MapPin size={18} strokeWidth={2.25} />
+              </span>
+              <span className="watta-nav-sidebar-link-txt">{t.navigation.deliveryPage}</span>
+            </button>
+          </nav>
+
           {isAdmin && (
             <div className="watta-nav-sidebar-admin">
               <button
@@ -210,6 +287,12 @@ export default function NavigationSidebar({
               </button>
             </div>
           )}
+
+          <footer className="watta-nav-sidebar-foot">
+            <p className="watta-nav-sidebar-foot-txt" suppressHydrationWarning>
+              {t.navigation.footerLegal.replace('{{year}}', String(new Date().getFullYear()))}
+            </p>
+          </footer>
           </div>
         </div>
       </aside>

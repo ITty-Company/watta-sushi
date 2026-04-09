@@ -3,11 +3,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import LogoBackground from '../../../components/LogoBackground'
+import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
 
 interface MenuItem {
   id: number
@@ -20,6 +21,7 @@ interface MenuItem {
   emoji: string
   imageUrl?: string
   isTop?: boolean
+  promoDiscountPercent?: number
 }
 
 interface MenuCategoryRow {
@@ -55,6 +57,8 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
         emoji: '🍣',
         imageUrl: p.imageUrl,
         isTop: p.isPopular,
+        promoDiscountPercent:
+          typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
       })),
     [getLocalized]
   )
@@ -148,7 +152,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
   const displayTitle = categoryTitle || normalizedSlug
 
   return (
-    <div className="watta-public-page-shell min-h-screen font-sans text-[#145142] pt-[120px] pb-20 overflow-x-hidden relative">
+    <div className="watta-public-page-shell relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-[120px] font-sans text-[#145142]">
       <LogoBackground />
       <div className="relative z-10 max-w-[1200px] mx-auto px-4">
         <header className="fixed top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-4 sm:px-6 z-[500]">
@@ -188,44 +192,14 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((item) => (
-              <article
+              <WattaMenuProductCard
                 key={item.id}
-                data-menu-product-id={item.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col"
-              >
-                <Link href={`/product/${item.id}`} className="block aspect-[4/3] bg-gray-100 relative">
-                  {item.imageUrl ? (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl">{item.emoji}</div>
-                  )}
-                </Link>
-                <div className="p-4 flex flex-col flex-1 gap-2">
-                  <Link href={`/product/${item.id}`}>
-                    <h2 className="font-bold text-lg text-[#145142] line-clamp-2 hover:underline">{item.name}</h2>
-                  </Link>
-                  {item.description ? (
-                    <p className="text-sm text-gray-500 line-clamp-2">{item.description}</p>
-                  ) : null}
-                  <div className="flex items-center justify-between mt-auto pt-2">
-                    <span className="text-xl font-bold text-black">{item.price} €</span>
-                    <button
-                      type="button"
-                      onClick={() => addToCart(item)}
-                      className="bg-[#145142] text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-[#0f3d32] transition shadow-lg shadow-green-900/20 active:scale-95"
-                      aria-label={t.addToCart}
-                    >
-                      <Plus size={24} />
-                    </button>
-                  </div>
-                </div>
-              </article>
+                variant="grid"
+                product={item}
+                onAddToCart={() => addToCart(item)}
+              />
             ))}
           </div>
         )}

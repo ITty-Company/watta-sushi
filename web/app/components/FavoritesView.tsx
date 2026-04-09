@@ -88,7 +88,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
   )
 
   return (
-    <div className="watta-public-page-shell min-h-screen font-sans text-[#145142] pt-[120px] pb-20 overflow-x-hidden relative">
+    <div className="watta-public-page-shell relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-[120px] font-sans text-[#145142]">
       <LogoBackground />
       <div className="relative z-10">
         <Header />

@@ -25,6 +25,9 @@
     --border: 140 12% 86%;
     --input: 140 12% 86%;
     --ring: 160 61% 22%;
+    /* Єдиний «craft» фон головної та вкладок HomeClient — без різних відтінків між секціями */
+    --watta-page-gradient: linear-gradient(180deg, #f2f5f3 0%, #eef3f0 45%, #f5f7f6 100%);
+    --watta-page-fill: #f2f5f3;
   }
 }
 
@@ -1307,7 +1310,7 @@
 }
 
 .location-picker-modal__header {
-  border-bottom: 1px solid rgba(20, 81, 66, 0.1);
+  border-bottom: none;
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.72) 0%,
@@ -1359,49 +1362,31 @@
   animation: none;
 }
 
-/* Векторний маскот (замість растрового clipart) */
+/* Маскот модалки локації — PNG із прозорістю, без «білої коробки» */
 .location-picker-mascot {
   position: relative;
   z-index: 2;
   display: flex;
   height: 100%;
   width: 100%;
+  min-height: 0;
   align-items: flex-end;
   justify-content: center;
-}
-
-.location-picker-mascot__svg {
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  max-height: 124px;
-  display: block;
   overflow: visible;
-  filter: drop-shadow(0 14px 28px rgba(20, 81, 66, 0.32));
-  animation: locationPickerMascotFloat 4.5s ease-in-out infinite;
-  transform-origin: 50% 85%;
+  background: none;
 }
 
-@media (min-width: 640px) {
-  .location-picker-mascot__svg {
-    max-height: 148px;
-  }
-}
-
-@keyframes locationPickerMascotFloat {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-0.8deg);
-  }
-  50% {
-    transform: translateY(-5px) rotate(0.8deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .location-picker-mascot__svg {
-    animation: none;
-  }
+.location-picker-mascot__img {
+  object-fit: contain;
+  object-position: bottom center;
+  filter:
+    drop-shadow(0 10px 22px rgba(15, 61, 50, 0.28))
+    drop-shadow(0 2px 8px rgba(20, 81, 66, 0.18));
+  animation: none;
+  transform: none;
+  transform-origin: 50% 92%;
+  pointer-events: none;
+  user-select: none;
 }
 
 .location-picker-modal__title {
@@ -1429,7 +1414,13 @@
 .location-picker-modal__body {
   position: relative;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(243, 249, 246, 0.5) 100%);
+  /* Плавне злиття з хедером без окремої «лінії» */
+  background: linear-gradient(
+    180deg,
+    rgba(248, 252, 250, 0.55) 0%,
+    rgba(243, 249, 246, 0.52) 38%,
+    rgba(240, 247, 243, 0.55) 100%
+  );
 }
 
 .location-picker-modal__refresh {
@@ -1787,10 +1778,12 @@
   box-sizing: border-box;
 }
 
+/* Дозволяємо вертикальний скрол документа для маршрутів Next (/delivery, /contacts, /about тощо).
+   Головна сторінка лишається з внутрішнім скролом у .app-web > .content-web (height:100vh; overflow:hidden). */
+/* Темний базовий фон = низ градієнта підвалу — під футером і при rubber-band не з’являється біла смуга */
 html {
-  background-color: #ffffff !important;
-  height: 100%;
-  overflow: hidden;
+  background-color: #071210 !important;
+  overflow-x: hidden;
 }
 
 body {
@@ -1799,11 +1792,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffffff !important;
+  background-color: #071210 !important;
   margin: 0;
-  min-height: 100%;
-  height: 100%;
-  overflow: hidden;
+  padding: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app-container {
@@ -2408,7 +2404,7 @@ body {
 .full-page-web--craft {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(165deg, #f3f6f4 0%, #ecf3ef 38%, #f7faf8 72%, #eef2f0 100%);
+  background: var(--watta-page-gradient);
   padding-bottom: 96px;
 }
 
@@ -2418,33 +2414,19 @@ body {
   position: fixed;
   inset: 0;
   z-index: 0;
-  opacity: 0.92;
-  background-image:
-    radial-gradient(ellipse 85% 55% at 12% -8%, rgba(20, 81, 66, 0.13), transparent 52%),
-    radial-gradient(ellipse 55% 45% at 92% 18%, rgba(26, 107, 88, 0.09), transparent 48%),
-    repeating-linear-gradient(
-      -18deg,
-      transparent,
-      transparent 5px,
-      rgba(20, 81, 66, 0.02) 5px,
-      rgba(20, 81, 66, 0.02) 6px
-    );
-  animation: wattaCraftMeshDrift 24s ease-in-out infinite alternate;
+  opacity: 0.65;
+  background-image: repeating-linear-gradient(
+    -18deg,
+    transparent,
+    transparent 7px,
+    rgba(20, 81, 66, 0.014) 7px,
+    rgba(20, 81, 66, 0.014) 8px
+  );
 }
 
 .full-page-web--craft::after {
-  content: '';
-  pointer-events: none;
-  position: fixed;
-  width: min(92vw, 540px);
-  height: min(92vw, 540px);
-  right: -18%;
-  bottom: -22%;
-  z-index: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(20, 81, 66, 0.08) 0%, transparent 72%);
-  filter: blur(48px);
-  animation: wattaCraftOrbPulse 14s ease-in-out infinite;
+  content: none;
+  display: none;
 }
 
 @keyframes wattaCraftMeshDrift {
@@ -2524,7 +2506,7 @@ body {
 /* Легкий фон для головного скролу (вкладки меню / кошик / профіль у HomeClient) */
 .content-web--watta-craft {
   position: relative;
-  background: linear-gradient(180deg, #f2f5f3 0%, #eef3f0 45%, #f5f7f6 100%) !important;
+  background: var(--watta-page-gradient) !important;
 }
 
 .content-web--watta-craft::before {
@@ -2558,7 +2540,7 @@ body {
 .watta-public-page-shell {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(165deg, #f3f6f4 0%, #ecf3ef 42%, #f7faf8 100%);
+  background: var(--watta-page-gradient);
 }
 
 .watta-public-page-shell::before {
@@ -2567,20 +2549,18 @@ body {
   position: fixed;
   inset: 0;
   z-index: 0;
-  opacity: 0.72;
-  background-image:
-    radial-gradient(ellipse 75% 45% at 12% -5%, rgba(20, 81, 66, 0.11), transparent 52%),
-    radial-gradient(ellipse 50% 35% at 88% 25%, rgba(26, 107, 88, 0.07), transparent 45%),
-    repeating-linear-gradient(
-      -18deg,
-      transparent,
-      transparent 7px,
-      rgba(20, 81, 66, 0.012) 7px,
-      rgba(20, 81, 66, 0.012) 8px
-    );
+  opacity: 0.65;
+  background-image: repeating-linear-gradient(
+    -18deg,
+    transparent,
+    transparent 7px,
+    rgba(20, 81, 66, 0.014) 7px,
+    rgba(20, 81, 66, 0.014) 8px
+  );
 }
 
-.watta-public-page-shell > * {
+/* Усі прямі діти поверх декору — окрім шару LogoBackground (там position: absolute) */
+.watta-public-page-shell > *:not(.watta-public-page-shell__bg) {
   position: relative;
   z-index: 1;
 }
@@ -2593,15 +2573,19 @@ body {
 
 /* Панель категорий на полностраничных страницах */
 .full-page-web .categories-panel-wrapper-web {
-  margin: 20px auto 0 auto;
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 0 max(6px, env(safe-area-inset-left, 0px)) 0 max(6px, env(safe-area-inset-right, 0px));
 }
 
 @media (max-width: 768px) {
   .full-page-web .categories-panel-wrapper-web {
-    margin: 16px auto 0 auto;
-    padding: 0 16px;
+    margin: 0 auto;
+    padding: 0 max(4px, env(safe-area-inset-left, 0px)) 0 max(4px, env(safe-area-inset-right, 0px));
   }
+}
+
+.watta-full-menu-page .categories-panel-wrapper-web {
+  margin-top: 0;
 }
 
 .page-content-inner-web {
@@ -2631,7 +2615,8 @@ body {
   height: 100vh;
   width: 100%;
   max-width: 100%;
-  background: #ffffff;
+  /* Не білий — під футером/оверскролом не з’являється «смуга» */
+  background: var(--watta-page-fill);
   overflow: hidden;
 }
 
@@ -2641,7 +2626,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #ffffff;
+  background: var(--watta-page-fill);
   padding-bottom: 0;
 }
 
@@ -2674,9 +2659,93 @@ body {
   }
 }
 
+/* --- Переходи між секціями головної (marquee → cinematic → банери) --- */
+#menu-cinematic-block {
+  position: relative;
+  z-index: 1;
+  /* Продовжуємо .menu-page-web — без окремої «молочної» підкладки #eef1ef */
+  background: transparent;
+}
+
+/* Зелена бігуча смуга → блок cinematic: лише м’яка тінь, без переходу у світлий «шар» */
+#menu-cinematic-block::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: clamp(36px, 6vw, 64px);
+  flex-shrink: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 61, 50, 0.32) 0%,
+    rgba(20, 81, 66, 0.08) 55%,
+    transparent 100%
+  );
+}
+
+/* Cinematic → секція банерів: без білої лінії та без дуже світлого хвоста (#f6f8f7) */
+#menu-cinematic-block::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: clamp(48px, 8vw, 96px);
+  flex-shrink: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    #e4ebe7 28%,
+    #d8e3dd 62%,
+    #cfdcd4 100%
+  );
+  box-shadow: none;
+}
+
+/* Під marquee — без окремої смуги/тіні: одразу фон сторінки й контент */
+#menu-cinematic-block.menu-cinematic-block--ribbon::before {
+  content: none;
+  display: none;
+}
+
+/* Без нижнього «моста» — одразу наступна секція (банери), без світлої смуги */
+#menu-cinematic-block.menu-cinematic-block--ribbon::after {
+  content: none;
+  display: none;
+}
+
+/* Верх секції банерів — прибираємо «шов» 1px між мостом і фоном */
+#hero-banners.home-brand-story-section-web.menu-after-welcome-web {
+  margin-top: -1px;
+}
+
 @media (max-width: 1024px) and (prefers-reduced-motion: reduce) {
   .content-web--watta-craft:has(.menu-page-web) {
     scroll-snap-type: none;
+  }
+}
+
+/* М’яке «проявлення» секцій при скролі (герой не чіпаємо — він одразу на екрані) */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .content-web--watta-craft:has(.menu-page-web) .menu-snap-section-cinematic-web,
+    .content-web--watta-craft:has(.menu-page-web) .menu-snap-section-brand-web,
+    .content-web--watta-craft:has(.menu-page-web) #home-menu-catalog.home-menu-catalog-section-web {
+      animation: home-section-reveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 38%;
+    }
+  }
+
+}
+
+@keyframes home-section-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -2693,6 +2762,68 @@ body {
 @media (min-width: 481px) and (max-width: 1024px) {
   .app-header-spacer-web {
     height: 70px;
+  }
+}
+
+/* Повне меню /menu — та сама fixed-панель, що на головній (.categories-panel-wrapper-web) */
+
+/* Бігучий рядок під hero-відео (без нахилу) */
+@keyframes watta-hero-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.watta-hero-marquee-bar {
+  position: relative;
+  flex-shrink: 0;
+  background: linear-gradient(
+    105deg,
+    #0c3229 0%,
+    #145142 38%,
+    #176b57 52%,
+    #145142 65%,
+    #0f3d32 100%
+  );
+  box-shadow:
+    0 10px 36px -10px rgba(20, 81, 66, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.watta-hero-marquee-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(14px, 2.5vw, 22px);
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(12, 50, 41, 0.22) 100%);
+}
+
+/* Головна меню: без смуги під зеленою бігучою строкою — той самий фон, блок cinematic вище */
+.menu-page-web .watta-hero-marquee-bar {
+  border-top-width: 0;
+  border-bottom-width: 0;
+  border-bottom-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.menu-page-web .watta-hero-marquee-bar::after {
+  content: none;
+  display: none;
+}
+
+.watta-hero-marquee-track {
+  animation: watta-hero-marquee-scroll 42s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-hero-marquee-track {
+    animation: none;
   }
 }
 
@@ -3476,9 +3607,9 @@ body {
   justify-content: center;
   gap: 8px;
   margin: 0 auto;
-  padding: 14px 16px;
+  padding: 10px max(8px, env(safe-area-inset-left, 0px)) 10px max(8px, env(safe-area-inset-right, 0px));
   width: fit-content;
-  max-width: calc(100% - 24px);
+  max-width: calc(100% - 12px);
   position: fixed;
   top: calc(90px + env(safe-area-inset-top, 0px));
   left: 50%;
@@ -3498,11 +3629,11 @@ body {
   .categories-panel-wrapper-web {
     margin: 0 auto;
     width: fit-content;
-    max-width: calc(100% - 32px);
+    max-width: calc(100% - 12px);
     gap: 0;
     min-height: 54px;
     top: calc(88px + env(safe-area-inset-top, 0px));
-    padding: 10px 14px;
+    padding: 8px max(8px, env(safe-area-inset-left, 0px)) 8px max(8px, env(safe-area-inset-right, 0px));
   }
 }
 
@@ -3514,10 +3645,10 @@ body {
   /* Ноутбук / ПК: невеликий зазор між шапкою та панеллю категорій; компактна панель */
   .categories-panel-wrapper-web {
     top: calc(90px + var(--menu-header-cat-gap-web) + env(safe-area-inset-top, 0px));
-    padding: 6px 10px;
+    padding: 6px max(8px, env(safe-area-inset-left, 0px)) 6px max(8px, env(safe-area-inset-right, 0px));
     min-height: 0;
     gap: 6px;
-    max-width: calc(100% - 32px);
+    max-width: calc(100% - 12px);
     border-radius: 14px;
     box-shadow:
       0 3px 14px rgba(0, 0, 0, 0.06),
@@ -3553,7 +3684,7 @@ body {
 .menu-after-welcome-web {
   position: relative;
   z-index: 2;
-  background-color: #f3f4f6;
+  background: transparent;
 }
 
 /* Друга секція головної: темно-зелений фон, Tiffany, скло, серіфна типографіка */
@@ -3597,15 +3728,13 @@ body {
 }
 
 /* М’який фон під банером на головній: світлі тони як у блоків нижче, без «кіношного» неону */
+/* Той самий фон, що й .content-web--watta-craft — без «шва»; водяні знаки LogoBackground просвічують */
 .home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-story-bg-web {
-  background:
-    radial-gradient(ellipse 110% 75% at 50% -5%, rgba(20, 81, 66, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 45% at 100% 95%, rgba(20, 81, 66, 0.06) 0%, transparent 42%),
-    linear-gradient(175deg, #f6f8f7 0%, #eef2f0 38%, #e8ecea 100%);
+  background: var(--watta-page-gradient);
 }
 
 .home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-story-grain-web {
-  opacity: 0.055;
+  opacity: 0.04;
   mix-blend-mode: multiply;
 }
 
@@ -3614,7 +3743,7 @@ body {
   top: 12%;
   width: min(420px, 72vw);
   height: min(420px, 72vw);
-  background: radial-gradient(circle, rgba(20, 81, 66, 0.09) 0%, transparent 72%);
+  background: radial-gradient(circle, rgba(20, 81, 66, 0.05) 0%, transparent 72%);
   filter: blur(56px);
 }
 
@@ -3637,33 +3766,260 @@ body {
   background: rgba(20, 81, 66, 0.22) !important;
 }
 
-/* Повний каталог на головній */
+/* Каталог одразу після банерів — без окремого «моста» / нахиленої смуги */
+.home-full-menu-catalog-web.home-full-menu-catalog-after-banners-web {
+  background: transparent;
+}
+
+/* Повний каталог на головній — секція + креативний хедер Watta */
+.home-menu-catalog-section-web {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-menu-catalog-section-web::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: -1px 0 0;
+  height: min(46vh, 560px);
+  opacity: 0.38;
+  background-image: radial-gradient(rgba(20, 81, 66, 0.08) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.1) 48%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.1) 48%, transparent 100%);
+}
+
 .home-full-menu-catalog-web {
   padding-bottom: clamp(2.5rem, 5vw, 4rem);
 }
 
 .home-full-menu-catalog-head-web {
   text-align: center;
-  max-width: 40rem;
-  margin: 0 auto clamp(1.25rem, 3.5vw, 2.25rem);
+  max-width: min(40rem, 94vw);
+  margin: 0 auto clamp(1.75rem, 4.2vw, 3rem);
+  position: relative;
+  overflow: visible;
+}
+
+/* Заголовок над банерами на головній меню — той самий стиль, що каталог; без зайвого «повітря» до shell */
+.home-menu-hero-banners-head-web.home-full-menu-catalog-head-web {
+  margin-bottom: clamp(1rem, 2.6vw, 1.85rem);
+}
+
+#hero-banners .home-menu-hero-banners-head-web + .home-brand-banner-shell-web {
+  margin-top: 0;
+}
+
+/* Підзаголовок над банером — як вхідне SMS від Watta Sushi */
+.home-hero-banner-sms-web {
+  width: fit-content;
+  max-width: min(36rem, 100%);
+  margin: 0 auto;
+  text-align: left;
+}
+
+.home-hero-banner-sms-web__meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
+  margin-bottom: 0.35rem;
+  padding-left: 0.1rem;
+}
+
+.home-hero-banner-sms-web__badge {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.5);
+}
+
+.home-hero-banner-sms-web__sender {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #145142;
+}
+
+.home-hero-banner-sms-web__row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.home-hero-banner-sms-web__bubble {
+  position: relative;
+  z-index: 0;
+  padding: 0.9rem 1rem 0.45rem 1.05rem;
+  border-radius: 1.2rem;
+  border-bottom-left-radius: 0.35rem;
+  background: linear-gradient(168deg, #ffffff 0%, #f4faf7 52%, #eef6f2 100%);
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  box-shadow:
+    0 12px 40px -20px rgba(20, 81, 66, 0.28),
+    0 2px 10px rgba(20, 81, 66, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* «Хвіст» повідомлення зліва */
+.home-hero-banner-sms-web__bubble::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  bottom: 9px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 9px 7px 0;
+  border-color: transparent #f4faf7 transparent transparent;
+  filter: drop-shadow(-1px 1px 0 rgba(20, 81, 66, 0.06));
+}
+
+.home-hero-banner-sms-web__text {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(0.88rem, 2.2vw, 1.04rem);
+  font-weight: 500;
+  line-height: 1.55;
+  color: rgba(24, 44, 38, 0.9);
+}
+
+.home-hero-banner-sms-web__bubble-foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.3rem;
+  padding-top: 0.15rem;
+}
+
+.home-hero-banner-sms-web__time {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(20, 81, 66, 0.42);
+  text-transform: lowercase;
+}
+
+@media (min-width: 640px) {
+  .home-hero-banner-sms-web {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.home-full-menu-catalog-ornament-web {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  margin: 0 auto 1rem;
+  width: 100%;
+  max-width: 13.5rem;
+}
+
+.home-full-menu-catalog-ornament-cap-web {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #0f3d34 0%, #145142 50%, #1a6b58 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 2px 14px rgba(20, 81, 66, 0.35);
+}
+
+.home-full-menu-catalog-ornament-line-web {
+  flex: 1;
+  min-width: 2.5rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 81, 66, 0.08) 0%,
+    rgba(20, 81, 66, 0.45) 22%,
+    rgba(255, 107, 53, 0.5) 50%,
+    rgba(20, 81, 66, 0.45) 78%,
+    rgba(20, 81, 66, 0.08) 100%
+  );
+  background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-full-menu-catalog-ornament-line-web {
+    animation: home-catalog-ornament-flow 7s ease-in-out infinite;
+  }
+}
+
+@keyframes home-catalog-ornament-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    opacity: 0.88;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+  }
 }
 
 .home-full-menu-catalog-title-web {
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
   font-weight: 700;
-  font-size: clamp(1.45rem, 3.8vw, 2.1rem);
-  color: #145142;
-  margin: 0 0 0.4rem;
-  letter-spacing: 0.06em;
-  text-indent: 0.06em;
+  font-size: clamp(2.05rem, 5.8vw, 3.15rem);
+  letter-spacing: -0.025em;
+  /* 1.06 обрізав нижні рядки при background-clip: text (Playfair, кілька рядків) */
   line-height: 1.2;
+  margin: 0 0 1rem;
+  padding: 0.06em 0 0.18em;
+  overflow: visible;
+  background: linear-gradient(118deg, #0a2e26 0%, #145142 38%, #1f7a63 72%, #145142 100%);
+  background-size: 140% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 18px rgba(20, 81, 66, 0.1));
 }
 
-.home-full-menu-catalog-sub-web {
-  margin: 0;
-  font-size: 0.9375rem;
-  color: rgba(20, 81, 66, 0.62);
-  line-height: 1.55;
+@supports not (background-clip: text) {
+  .home-full-menu-catalog-title-web {
+    color: #145142;
+    background: none;
+    -webkit-text-fill-color: #145142;
+    filter: none;
+  }
+}
+
+/* Заголовок над банерами: один рядок («із нами» не переноситься окремо) */
+.home-hero-banner-title-rail-web {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  display: flex;
+  justify-content: center;
+}
+
+.home-hero-banner-title-rail-web::-webkit-scrollbar {
+  display: none;
+}
+
+.home-hero-banner-overlay-title-web {
+  white-space: nowrap;
+  text-align: center;
+  flex: 0 0 auto;
+  max-width: none;
+  box-sizing: border-box;
+  font-size: clamp(1.05rem, 3.95vw + 0.35rem, 3.15rem);
 }
 
 .home-menu-cat-block-web {
@@ -3673,23 +4029,401 @@ body {
 .home-menu-cat-heading-web {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin: 0 0 1.05rem;
-  padding-bottom: 0.55rem;
-  border-bottom: 2px solid rgba(20, 81, 66, 0.1);
+  gap: 0.85rem 1rem;
+  margin: 0 0 clamp(1.15rem, 3vw, 1.65rem);
+  padding: 0.65rem 0 1rem;
+  border-bottom: none;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+.home-menu-cat-accent-bar-web {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 81, 66, 0.85) 0%,
+    rgba(255, 107, 53, 0.55) 42%,
+    rgba(20, 81, 66, 0.12) 100%
+  );
+  opacity: 0.9;
+}
+
+.home-menu-cat-emoji-ring-web {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(3rem, 8vw, 3.5rem);
+  height: clamp(3rem, 8vw, 3.5rem);
+  border-radius: 1.15rem;
+  background: linear-gradient(145deg, rgba(20, 81, 66, 0.12) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  box-shadow:
+    0 8px 28px rgba(20, 81, 66, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
 }
 
 .home-menu-cat-emoji-web {
-  font-size: 1.7rem;
+  font-size: clamp(1.45rem, 3.5vw, 1.75rem);
   line-height: 1;
+}
+
+.home-menu-cat-heading-main-web {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .home-menu-cat-title-web {
   margin: 0;
-  font-size: clamp(1.1rem, 2.4vw, 1.35rem);
+  font-size: clamp(1.2rem, 2.8vw, 1.5rem);
+  font-weight: 800;
+  color: #0f3d32;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.home-menu-cat-meta-web {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.5);
+}
+
+.home-menu-cat-empty-web {
+  margin: 0.25rem 0 0;
+  padding: 1rem 1.15rem;
+  border-radius: 1rem;
+  background: rgba(20, 81, 66, 0.05);
+  border: 1px dashed rgba(20, 81, 66, 0.18);
+  font-size: 0.9rem;
+  color: rgba(30, 50, 44, 0.65);
+}
+
+/* Горизонтальна стрічка страв на головній (свайп / тачпад / смуга прокрутки) */
+.home-menu-category-rail-outer-web {
+  position: relative;
+}
+
+.home-menu-category-rail-web {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 4px;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 81, 66, 0.35) transparent;
+  overscroll-behavior-x: contain;
+}
+
+.home-menu-category-rail-web::-webkit-scrollbar {
+  height: 7px;
+}
+
+.home-menu-category-rail-web::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgba(20, 81, 66, 0.32);
+}
+
+.home-menu-category-rail-web::-webkit-scrollbar-track {
+  background: rgba(20, 81, 66, 0.06);
+  border-radius: 9999px;
+}
+
+.home-menu-product-card-web {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  box-shadow:
+    0 4px 6px -1px rgba(20, 81, 66, 0.05),
+    0 14px 36px -12px rgba(15, 40, 32, 0.12);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease,
+    border-color 0.25s ease;
+}
+
+/* У стрічці: одна «порція» на телефоні з ледь помітним зазором наступної картки */
+.home-menu-product-card--rail-web {
+  flex: 0 0 min(300px, 88%);
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 1rem) / 2);
+  }
+}
+
+@media (min-width: 900px) {
+  .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 2rem) / 3);
+  }
+}
+
+/* Ноутбук і десктоп — чотири картки в видимій зоні, решта — прокрутка */
+@media (min-width: 1024px) {
+  .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 3rem) / 4);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-menu-product-card-web:hover {
+    transform: translateY(-4px);
+    border-color: rgba(20, 81, 66, 0.22);
+    box-shadow:
+      0 12px 40px -14px rgba(20, 81, 66, 0.2),
+      0 4px 16px -4px rgba(15, 40, 32, 0.1);
+  }
+}
+
+.home-menu-product-card-media-web {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: linear-gradient(145deg, #eef4f0 0%, #e2ebe6 100%);
+}
+
+.home-menu-product-card-img-web {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-menu-product-card-media-web.group\/media:hover .home-menu-product-card-img-web {
+    transform: scale(1.05);
+  }
+}
+
+.home-menu-product-card-shine-web {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.2) 48%,
+    transparent 56%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-menu-product-card-media-web.group\/media:hover .home-menu-product-card-shine-web {
+    opacity: 1;
+  }
+}
+
+.home-menu-product-card-placeholder-web {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: clamp(2.5rem, 8vw, 3.5rem);
+}
+
+.home-menu-product-pill-web {
+  position: absolute;
+  top: 0.65rem;
+  z-index: 2;
+  padding: 0.28rem 0.55rem;
+  border-radius: 9999px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.home-menu-product-pill-web--hit {
+  left: 0.65rem;
+  background: rgba(20, 81, 66, 0.92);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(20, 81, 66, 0.35);
+}
+
+.home-menu-product-pill-web--promo {
+  right: 0.65rem;
+  background: linear-gradient(135deg, #ff6b35 0%, #e85a24 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.35);
+}
+
+.home-menu-product-card-body-web {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem 1.05rem;
+}
+
+.home-menu-product-card-title-link-web {
+  text-decoration: none;
+  color: inherit;
+}
+
+.home-menu-product-card-title-link-web:hover .home-menu-product-card-title-web {
+  color: #ff6b35;
+}
+
+.home-menu-product-card-title-web {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1rem, 2.4vw, 1.12rem);
   font-weight: 800;
   color: #145142;
-  letter-spacing: 0.02em;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.2s ease;
+}
+
+.home-menu-product-card-desc-web {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(30, 50, 44, 0.58);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-menu-product-card-footer-web {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: auto;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+.home-menu-product-price-stack-web {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+
+.home-menu-product-price-old-web {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(30, 50, 44, 0.38);
+  text-decoration: line-through;
+}
+
+.home-menu-product-price-web {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.15rem, 2.8vw, 1.35rem);
+  font-weight: 800;
+  color: #0f3d32;
+  letter-spacing: -0.02em;
+}
+
+.home-menu-product-add-web {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.65rem;
+  padding: 0.45rem 0.95rem 0.45rem 0.75rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(145deg, #176b57 0%, #145142 48%, #0f3d32 100%);
+  box-shadow:
+    0 4px 16px rgba(20, 81, 66, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.home-menu-product-add-web:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 22px rgba(20, 81, 66, 0.38);
+}
+
+.home-menu-product-add-web:active {
+  transform: scale(0.97);
+}
+
+.home-menu-product-add-icon-web {
+  flex-shrink: 0;
+}
+
+.home-menu-product-add-text-web {
+  max-width: 8.5rem;
+  line-height: 1.15;
+  text-align: left;
+}
+
+@media (max-width: 380px) {
+  .home-menu-product-add-text-web {
+    display: none;
+  }
+
+  .home-menu-product-add-web {
+    width: 2.65rem;
+    height: 2.65rem;
+    min-height: 2.65rem;
+    padding: 0;
+    border-radius: 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-menu-product-card-web,
+  .home-menu-product-card-img-web,
+  .home-menu-product-add-web {
+    transition: none;
+  }
+
+  .home-menu-product-card-web:hover {
+    transform: none;
+  }
+
+  .home-menu-product-card-media-web.group\/media:hover .home-menu-product-card-img-web {
+    transform: none;
+  }
 }
 
 .home-brand-editorial-web {
@@ -3975,6 +4709,59 @@ body {
   }
 }
 
+/* Текст поверх фото-банера (головна): звичайний sans, читабельність на яскравому фото */
+.hero-banner-overlay-wrap-web {
+  padding: clamp(1.1rem, 3.5vw, 2.25rem) clamp(1rem, 4vw, 2rem) clamp(1rem, 3vw, 1.75rem);
+  text-align: center;
+  background: linear-gradient(
+    180deg,
+    rgba(6, 18, 15, 0.58) 0%,
+    rgba(6, 18, 15, 0.32) 45%,
+    rgba(6, 18, 15, 0.08) 78%,
+    transparent 100%
+  );
+}
+
+.hero-banner-overlay-title-web {
+  margin: 0 auto;
+  max-width: min(22rem, 92vw);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.2rem, 3.6vw, 1.9rem);
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+@media (min-width: 640px) {
+  .hero-banner-overlay-title-web {
+    max-width: 34rem;
+  }
+}
+
+.hero-banner-overlay-sub-web {
+  margin: 0.5rem auto 0;
+  max-width: min(26rem, 94vw);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 500;
+  font-size: clamp(0.8125rem, 2.35vw, 1.02rem);
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.6),
+    0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* Горизонтальний свайп по банеру: вертикальний скрол сторінки лишається за браузером */
+.hero-banner-swipe-web {
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Планшет: менше «повітря» до/після слайдера, вищий банер, чіткіші крапки */
 @media (min-width: 768px) and (max-width: 1024px) {
   .home-brand-inner-web {
@@ -4144,6 +4931,9 @@ body {
   background-repeat: no-repeat;
   min-height: 100%;
   height: 100%;
+  /* Без Ken Burns / scale як у відео — статичне фото без «стрибань» */
+  animation: none !important;
+  transform: none !important;
 }
 
 /* Телефон + планшет: звичайний формат — на всю ширину вікна, висота як у ролика */
@@ -4238,6 +5028,228 @@ body {
   .welcome-hero-fallback-image-web {
     background-position: center 55%;
   }
+}
+
+/*
+ * Сторінка /delivery (без embed у меню): глобальна шапка + spacer уже дають відступ.
+ * Без від’ємного margin і без «нахльосту» як у menu-page — відео починається одразу під шапкою і
+ * показується повністю (object-fit: contain), як зручний перегляд на головній у вузьких вікнах.
+ */
+.delivery-page-hero-standalone-web.welcome-hero-section-web {
+  margin-top: 0 !important;
+  --welcome-cat-overlap: 0px !important;
+  min-height: 0;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.delivery-page-hero-standalone-web .welcome-hero-video-fill-web {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.delivery-page-hero-standalone-web .welcome-video-native-web {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(92vh, 920px);
+  margin: 0 auto;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+.delivery-page-hero-standalone-web .welcome-hero-fallback-image-web {
+  width: 100%;
+  height: auto;
+  min-height: min(52vw, 62vh);
+  max-height: min(92vh, 920px);
+  aspect-ratio: 16 / 9;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+@media (min-width: 1025px) {
+  .delivery-page-hero-standalone-web .welcome-video-native-web {
+    max-height: min(88vh, 960px);
+  }
+}
+
+/*
+ * /delivery: відступ під фіксований WattaGlobalSiteHeader (і safe-area),
+ * щоб герой і блоки не заходили під шапку.
+ */
+.delivery-page-root-web {
+  padding-top: calc(76px + env(safe-area-inset-top, 0px));
+}
+
+@media (max-width: 480px) {
+  .delivery-page-root-web {
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (min-width: 1025px) {
+  .delivery-page-root-web {
+    padding-top: calc(88px + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* /delivery: двоколонковий герой — відео зліва, текст справа (не в embed меню) */
+.delivery-page-hero-split-web {
+  width: 100%;
+  background: #f3f4f6;
+  border-bottom: none;
+}
+
+.delivery-page-hero-split-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 1600px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .delivery-page-hero-split-grid {
+    /* Трохи ширша колонка з відео — краще «сідає» кадр */
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    min-height: min(76vh, 700px);
+    gap: 0;
+  }
+}
+
+.delivery-page-hero-split-video-col {
+  display: flex;
+  flex-direction: column;
+  min-height: min(48vh, 420px);
+  background: #f3f4f6;
+}
+
+@media (min-width: 1024px) {
+  .delivery-page-hero-split-video-col {
+    flex-direction: row;
+    align-items: stretch;
+    min-height: 0;
+    border-right: 1px solid rgba(20, 81, 66, 0.12);
+  }
+}
+
+.delivery-page-hero-split-rail {
+  margin: 0;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.75);
+  text-align: center;
+  background: linear-gradient(180deg, rgba(20, 81, 66, 0.08), transparent);
+  border-bottom: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+@media (min-width: 1024px) {
+  .delivery-page-hero-split-rail {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: center;
+    padding: 20px 10px;
+    border-bottom: none;
+    border-right: 1px solid rgba(20, 81, 66, 0.1);
+    background: linear-gradient(90deg, rgba(20, 81, 66, 0.07), transparent);
+    max-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.delivery-page-hero-split-copy-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 18px 28px;
+  background: #f3f4f6;
+}
+
+@media (min-width: 1024px) {
+  .delivery-page-hero-split-copy-col {
+    padding: 28px 32px 36px 36px;
+  }
+}
+
+.delivery-watta-hero--split {
+  margin-bottom: 0;
+  padding: 4px 0 8px;
+  border-bottom: none;
+}
+
+.delivery-watta-hero--split::after {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .delivery-watta-hero--split {
+    padding-top: 4px;
+    border-bottom: 1px solid rgba(20, 81, 66, 0.12);
+  }
+
+  .delivery-watta-hero--split::after {
+    display: block;
+  }
+}
+
+.delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web {
+  flex: 1;
+  min-width: 0;
+  min-height: min(48vh, 420px);
+  display: flex;
+  flex-direction: column;
+}
+
+.delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web .welcome-hero-video-fill-web {
+  flex: 1;
+  min-height: 220px;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web .welcome-hero-video-fill-web {
+    border-radius: 0 12px 12px 0;
+    /* Менший відступ справа й без зазору знизу — суцільний фон #f3f4f6 */
+    margin: 10px 6px 0 0;
+    min-height: 0;
+  }
+}
+
+.delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web .welcome-video-native-web {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web .welcome-hero-fallback-image-web {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  max-height: none !important;
+  aspect-ratio: auto;
+  background-size: cover;
+  background-position: center center;
 }
 
 /* Кнопки-стрілок панелі категорій — яскраво-зелені за замовчуванням (ноут/ПК); на мобільному в блоці панелі сховані */
@@ -4567,7 +5579,7 @@ body {
   flex: 0 1 auto;
   width: fit-content;
   min-width: 0;
-  max-width: calc(100vw - 100px);
+  max-width: calc(100vw - 72px);
   overflow-x: auto;
   overflow-y: hidden;
   position: relative;
@@ -4589,7 +5601,7 @@ body {
 .categories-panel-web::before {
   content: '';
   flex-shrink: 0;
-  width: 20px;
+  width: 8px;
   display: block;
   order: -1;
 }
@@ -4597,7 +5609,7 @@ body {
 .categories-panel-web::after {
   content: '';
   flex-shrink: 0;
-  width: 20px;
+  width: 8px;
   display: block;
 }
 
@@ -4714,9 +5726,9 @@ body {
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
-    min-width: calc((100% - 4 * var(--cat-gap)) / 5.6) !important;
+    min-width: calc((100% - 8 * var(--cat-gap)) / 9) !important;
     width: auto !important;
-    max-width: min(102px, 34vw) !important;
+    max-width: min(92px, 22vw) !important;
     padding: 5px 3px 6px;
     font-size: 0.58rem;
     border-radius: 10px;
@@ -4794,9 +5806,9 @@ body {
 
   .category-button-web {
     flex: 0 0 auto !important;
-    min-width: calc((100% - 4 * var(--cat-gap)) / 5.2) !important;
+    min-width: calc((100% - 8 * var(--cat-gap)) / 9) !important;
     width: auto !important;
-    max-width: min(118px, 36vw) !important;
+    max-width: min(108px, 20vw) !important;
   }
 
   .menu-content-top-gap-web {
@@ -4814,8 +5826,8 @@ body {
   /* Стрілки приховані правилом max-width 1024px; тут — «вікно» 5 + ½ категорії, решта свайп */
   .categories-panel-wrapper-web {
     width: fit-content;
-    max-width: calc(100% - 32px);
-    padding: 0 12px;
+    max-width: calc(100% - 12px);
+    padding: 0 max(8px, env(safe-area-inset-left, 0px)) 0 max(8px, env(safe-area-inset-right, 0px));
     margin: 0 auto;
     left: 50%;
     transform: translateX(-50%);
@@ -4826,14 +5838,14 @@ body {
   }
 
   .categories-panel-web {
-    --tab-cat-chip: 80px;
-    --tab-cat-chip-max: 118px;
-    --tab-cat-gap: 8px;
-    /* 5 повних + ½ шостого; чипи можуть бути ширші за текст — верхня межа по max chip */
-    max-width: calc(var(--tab-cat-chip-max) * 5.5 + var(--tab-cat-gap) * 5 + 14px);
+    --tab-cat-chip: 68px;
+    --tab-cat-chip-max: 102px;
+    --tab-cat-gap: 7px;
+    /* 9 чипів у вікні, решта — свайп */
+    max-width: calc(var(--tab-cat-chip-max) * 9 + var(--tab-cat-gap) * 8 + 10px);
     width: 100%;
     margin: 0 auto;
-    padding: 10px 8px;
+    padding: 10px 6px;
     border-radius: 16px;
     gap: var(--tab-cat-gap);
     min-width: 0;
@@ -4897,12 +5909,12 @@ body {
 }
 
 @media (min-width: 1025px) {
-  /* Завжди видно ~9 категорій + ½; чипи підлаштовуються під текст (до --desk-cat-chip-max) */
+  /* Рівно 9 категорій у вікні; далі — стрілки / скрол */
   .categories-panel-web {
     --desk-cat-chip: 56px;
-    --desk-cat-chip-max: 112px;
+    --desk-cat-chip-max: 108px;
     --desk-cat-gap: 7px;
-    max-width: calc(var(--desk-cat-chip-max) * 9.5 + var(--desk-cat-gap) * 9 + 12px);
+    max-width: calc(var(--desk-cat-chip-max) * 9 + var(--desk-cat-gap) * 8 + 8px);
     width: 100%;
     padding: 6px 2px;
     gap: var(--desk-cat-gap);
@@ -4912,7 +5924,7 @@ body {
 
   .categories-panel-web::before,
   .categories-panel-web::after {
-    width: 6px;
+    width: 4px;
     flex-shrink: 0;
   }
 }
@@ -6354,7 +7366,7 @@ body {
   background-image: radial-gradient(rgba(20, 81, 66, 0.06) 1px, transparent 1px);
   background-size: 14px 14px;
   pointer-events: none;
-  mask-image: linear-gradient(180deg, black 0%, transparent 72%);
+  mask-image: linear-gradient(180deg, black 0%, transparent 88%);
 }
 
 @keyframes wattaNavShineDrift {
@@ -6491,7 +7503,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 14px 14px 22px;
+  padding: 14px 14px max(28px, calc(18px + env(safe-area-inset-bottom, 0px)));
   scrollbar-width: thin;
   scrollbar-color: rgba(20, 81, 66, 0.35) transparent;
 }
@@ -6516,6 +7528,17 @@ body {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(20, 81, 66, 0.45);
+}
+
+.watta-nav-sidebar-subkicker {
+  margin: 16px 0 10px 4px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(20, 81, 66, 0.14);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(13, 36, 30, 0.72);
 }
 
 .watta-nav-sidebar-quick {
@@ -6638,6 +7661,30 @@ body {
   animation-delay: 0.25s;
 }
 
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-link:nth-child(7) {
+  animation-delay: 0.29s;
+}
+
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-link:nth-child(8) {
+  animation-delay: 0.33s;
+}
+
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-nav--secondary .watta-nav-sidebar-link:nth-child(1) {
+  animation-delay: 0.36s;
+}
+
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-nav--secondary .watta-nav-sidebar-link:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-nav--secondary .watta-nav-sidebar-link:nth-child(3) {
+  animation-delay: 0.44s;
+}
+
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-nav--secondary .watta-nav-sidebar-link:nth-child(4) {
+  animation-delay: 0.48s;
+}
+
 @keyframes wattaNavLinkIn {
   to {
     opacity: 1;
@@ -6655,6 +7702,26 @@ body {
 .watta-nav-sidebar-link-txt {
   flex: 1;
   min-width: 0;
+  color: #0d241e;
+}
+
+.watta-nav-sidebar-foot {
+  margin-top: 8px;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(20, 81, 66, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 18px rgba(20, 81, 66, 0.08);
+}
+
+.watta-nav-sidebar-foot-txt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: #0d241e;
 }
 
 .watta-nav-sidebar-link::after {
@@ -6706,6 +7773,24 @@ body {
 }
 .watta-nav-sidebar-link-ico--contacts {
   background: linear-gradient(145deg, #0891b2 0%, #22d3ee 100%);
+}
+.watta-nav-sidebar-link-ico--blog {
+  background: linear-gradient(145deg, #7c3aed 0%, #a78bfa 100%);
+}
+.watta-nav-sidebar-link-ico--reviews {
+  background: linear-gradient(145deg, #ea580c 0%, #fb923c 100%);
+}
+.watta-nav-sidebar-link-ico--cart {
+  background: linear-gradient(145deg, #145142 0%, #2d8a6e 100%);
+}
+.watta-nav-sidebar-link-ico--favorites {
+  background: linear-gradient(145deg, #e11d48 0%, #fb7185 100%);
+}
+.watta-nav-sidebar-link-ico--profile {
+  background: linear-gradient(145deg, #475569 0%, #64748b 100%);
+}
+.watta-nav-sidebar-link-ico--deliverypage {
+  background: linear-gradient(145deg, #0e7490 0%, #06b6d4 100%);
 }
 
 .watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-qbtn {
@@ -10026,11 +11111,11 @@ body {
   }
 }
 
-/* Menu / профіль у вкладці — той самий м’який фон, що й .content-web--watta-craft */
+/* Menu / профіль у вкладці — без власної підкладки: фон і смуга з .content-web--watta-craft, водяні знаки LogoBackground */
 .menu-page-web {
   min-height: 100vh;
   min-height: 100dvh;
-  background: linear-gradient(180deg, #f2f5f3 0%, #eef3f0 45%, #f5f7f6 100%);
+  background: transparent;
   position: relative;
   /* Відступ для home indicator лише в підвалі (.site-footer-watta), інакше під футером з’являлась світла смуга */
   padding-bottom: 0;
@@ -10182,8 +11267,9 @@ body {
   max-width: 1180px;
   margin: 0 auto;
   position: relative;
-  border-radius: 0 0 24px 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, transparent 140px);
+  border-radius: 0;
+  /* Без білої «підкладки» — той самий тон, що delivery-page-root-web bg-[#F3F4F6] */
+  background: transparent;
 }
 
 /* Доставка всередині menu-page: без вузької «картки» на білому, той самий фон що й меню */
@@ -10208,105 +11294,47 @@ body {
   position: relative;
 }
 
-/* ——— Підвал сайту: мʼятно-бірюзовий бренд, Playfair + Cormorant + Inter ——— */
-.site-footer-watta {
+/* ——— Підвал: білий фон, колонки + пілюлі як у референсу ——— */
+.site-footer-watta.site-footer-watta--light {
   position: relative;
   isolation: isolate;
+  flex-shrink: 0;
+  margin-bottom: 0;
   overflow: hidden;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(
-    168deg,
-    #040a08 0%,
-    #0d241c 22%,
-    #145142 48%,
-    #0f3d34 72%,
-    #071210 100%
-  );
-  box-shadow:
-    0 -12px 48px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.site-footer-watta__ambient {
-  pointer-events: none;
-  position: absolute;
-  inset: -30% -20% 40% -20%;
-  background:
-    radial-gradient(ellipse 65% 50% at 15% 0%, rgba(10, 186, 181, 0.22) 0%, transparent 58%),
-    radial-gradient(ellipse 50% 45% at 92% 25%, rgba(20, 81, 66, 0.45) 0%, transparent 52%);
-  opacity: 0.9;
-  animation: siteFooterAmbient 14s ease-in-out infinite;
-  z-index: 0;
-}
-
-.site-footer-watta__grain {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  opacity: 0.14;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
-}
-
-.site-footer-watta__shine {
-  pointer-events: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(10, 186, 181, 0.55) 35%,
-    rgba(255, 255, 255, 0.35) 50%,
-    rgba(10, 186, 181, 0.45) 65%,
-    transparent 100%
-  );
-  z-index: 2;
+  background: #ffffff;
+  border-top: 1px solid rgba(20, 81, 66, 0.1);
+  box-shadow: 0 -8px 40px rgba(20, 81, 66, 0.04);
 }
 
 .site-footer-watta__inner {
-  position: relative;
-  z-index: 3;
-  max-width: 1800px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: clamp(1.35rem, 3.5vw, 2rem) clamp(1rem, 4vw, 2.5rem);
+  padding: clamp(1.75rem, 4vw, 2.75rem) clamp(1rem, 4vw, 2rem)
+    clamp(1.5rem, 3vw, 2.25rem);
 }
 
-.site-footer-watta__row {
+.site-footer-watta__hero-row {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: clamp(1.25rem, 3vw, 1.75rem);
+  align-items: stretch;
+  gap: 1.25rem;
 }
 
-@media (min-width: 900px) {
-  .site-footer-watta__row {
+@media (min-width: 1024px) {
+  .site-footer-watta__hero-row {
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    text-align: left;
-    gap: 1.25rem 1.5rem;
+    gap: 1rem 1.25rem;
   }
 }
 
-.site-footer-watta__brand {
+.site-footer-watta__brand-block {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.85rem;
-}
-
-@media (min-width: 900px) {
-  .site-footer-watta__brand {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-  }
+  gap: 1rem;
+  min-width: 0;
 }
 
 .site-footer-watta__logo-ring {
@@ -10316,139 +11344,336 @@ body {
   justify-content: center;
   width: 52px;
   height: 52px;
-  border-radius: 16px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(10, 186, 181, 0.12) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #f4faf8 0%, #e8f2ee 100%);
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  box-shadow: 0 4px 16px rgba(20, 81, 66, 0.08);
 }
 
 .site-footer-watta__logo-img {
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
+  filter: none;
 }
 
 .site-footer-watta__brand-text {
   min-width: 0;
+  text-align: left;
 }
 
 .site-footer-watta__title {
   margin: 0;
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
   font-weight: 700;
-  font-size: clamp(1.5rem, 3.2vw, 2rem);
-  letter-spacing: 0.04em;
+  font-size: clamp(1.35rem, 2.8vw, 1.75rem);
+  letter-spacing: 0.02em;
   line-height: 1.15;
-  background: linear-gradient(135deg, #ffffff 0%, rgba(200, 245, 232, 0.95) 45%, #e8fff8 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 2px 24px rgba(10, 186, 181, 0.15);
+  color: #0f241e;
 }
 
 .site-footer-watta__tagline {
-  margin: 0.35rem 0 0;
+  margin: 0.3rem 0 0;
   font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(1rem, 2.4vw, 1.2rem);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
   font-weight: 500;
   font-style: italic;
-  line-height: 1.4;
-  color: rgba(220, 245, 236, 0.78);
+  line-height: 1.35;
+  color: rgba(55, 72, 66, 0.78);
 }
 
-.site-footer-watta__nav {
+.site-footer-watta__pills {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem 0.65rem;
+  gap: 0.4rem 0.5rem;
 }
 
-@media (min-width: 900px) {
-  .site-footer-watta__nav {
-    justify-content: center;
+@media (min-width: 1024px) {
+  .site-footer-watta__pills {
     flex: 1 1 auto;
-    gap: 0.45rem 0.3rem;
-    min-width: 0;
+    justify-content: center;
+    max-width: min(52rem, 100%);
   }
 }
 
-.site-footer-watta__link {
+.site-footer-watta__pill {
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.82);
-  padding: 0.55rem 0.85rem;
+  color: #145142;
+  padding: 0.5rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: linear-gradient(180deg, #f7faf9 0%, #eef4f1 100%);
   transition:
-    color 0.25s ease,
-    background 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease,
-    transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
-.site-footer-watta__link:hover {
-  color: #fff;
-  background: rgba(10, 186, 181, 0.18);
-  border-color: rgba(10, 186, 181, 0.45);
-  box-shadow: 0 6px 22px rgba(10, 186, 181, 0.2);
-  transform: translateY(-2px);
+.site-footer-watta__pill:hover {
+  background: #fff;
+  border-color: rgba(20, 81, 66, 0.28);
+  box-shadow: 0 6px 20px rgba(20, 81, 66, 0.1);
+  transform: translateY(-1px);
 }
 
-.site-footer-watta__link:focus-visible {
-  outline: 2px solid rgba(74, 222, 128, 0.85);
-  outline-offset: 3px;
+.site-footer-watta__pill:focus-visible {
+  outline: 2px solid rgba(20, 81, 66, 0.45);
+  outline-offset: 2px;
 }
 
-.site-footer-watta__legal {
+.site-footer-watta__legal-pill {
   margin: 0;
-  width: 100%;
-  padding-top: 0.35rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
   font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
-  font-size: 0.92rem;
+  font-size: 0.8rem;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.45);
-  line-height: 1.5;
+  font-weight: 600;
+  color: rgba(45, 62, 56, 0.85);
+  line-height: 1.4;
+  text-align: center;
+  background: rgba(20, 81, 66, 0.06);
+  border: 1px solid rgba(20, 81, 66, 0.1);
 }
 
-@media (min-width: 900px) {
-  .site-footer-watta__legal {
-    width: auto;
-    flex: 0 1 14rem;
-    border-top: none;
-    padding-top: 0;
-    text-align: right;
-    font-size: 0.85rem;
-    line-height: 1.35;
-  }
-}
-
-@keyframes siteFooterAmbient {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: scale(1) translate(0, 0);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.03) translate(1%, -1%);
+@media (min-width: 1024px) {
+  .site-footer-watta__legal-pill {
+    flex: 0 0 auto;
+    max-width: 16rem;
+    text-align: center;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .site-footer-watta__ambient {
-    animation: none;
+.site-footer-watta__divider {
+  height: 1px;
+  margin: clamp(1.25rem, 3vw, 1.75rem) 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(20, 81, 66, 0.12) 20%,
+    rgba(20, 81, 66, 0.12) 80%,
+    transparent
+  );
+}
+
+.site-footer-watta__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .site-footer-watta__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+@media (min-width: 1024px) {
+  .site-footer-watta__grid {
+    grid-template-columns: 1.15fr repeat(5, minmax(0, 1fr));
+    gap: 1.5rem 1.25rem;
+    align-items: start;
+  }
+}
+
+.site-footer-watta__col-title {
+  margin: 0 0 0.65rem;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(100, 116, 110, 0.95);
+}
+
+.site-footer-watta__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.site-footer-watta__text-link {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f241e;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.site-footer-watta__text-link:hover {
+  color: #145142;
+}
+
+.site-footer-watta__text-link--phone {
+  font-variant-numeric: tabular-nums;
+}
+
+.site-footer-watta__text-link--static {
+  cursor: default;
+  pointer-events: none;
+}
+
+.site-footer-watta__body-strong {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f241e;
+  line-height: 1.45;
+}
+
+.site-footer-watta__app-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.site-footer-watta__app-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 10px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: #111827;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.site-footer-watta__app-btn:hover {
+  background: #000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
+}
+
+.site-footer-watta__app-btn:focus-visible {
+  outline: 2px solid #145142;
+  outline-offset: 2px;
+}
+
+.site-footer-watta__privacy {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f241e;
+  text-decoration: none;
+}
+
+.site-footer-watta__privacy:hover {
+  color: #145142;
+}
+
+.site-footer-watta__social-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.site-footer-watta__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  color: rgba(75, 90, 85, 0.9);
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: #fafcfb;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.site-footer-watta__icon-btn:hover {
+  color: #145142;
+  border-color: rgba(20, 81, 66, 0.28);
+  background: #fff;
+}
+
+.site-footer-watta__support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f241e;
+  text-decoration: none;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: linear-gradient(180deg, #f3f6f5 0%, #e8eeec 100%);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.site-footer-watta__support-btn:hover {
+  border-color: rgba(34, 158, 217, 0.45);
+  box-shadow: 0 4px 14px rgba(34, 158, 217, 0.12);
+}
+
+.site-footer-watta__pay-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-footer-watta__pay-mark {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+}
+
+.site-footer-watta__pay-mark--visa {
+  color: #1a1f71;
+  background: linear-gradient(180deg, #fff 0%, #f0f4ff 100%);
+}
+
+.site-footer-watta__pay-mark--mc {
+  color: #000;
+  background: linear-gradient(180deg, #fff 0%, #fff5f0 100%);
+}
+
+.site-footer-watta__pay-mark--ideal {
+  color: #1a1a1a;
+  letter-spacing: 0.04em;
+  border-color: rgba(200, 60, 90, 0.22);
+  background: linear-gradient(180deg, #fff 0%, #fff2f5 45%, #eef4ff 100%);
+}
+
+.site-footer-watta__payments-note {
+  margin: 0.5rem 0 0;
+  max-width: 16rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: rgba(20, 81, 66, 0.72);
 }
 
 .delivery-watta-noise {
@@ -10574,18 +11799,18 @@ body {
   border-radius: 999px;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: linear-gradient(145deg, #145142 0%, #176b57 42%, #1a6b58 78%, #145142 100%);
+  border: 2px solid #22c55e;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fcf9 55%, #f0faf4 100%);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.01em;
-  color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+  color: #0f3d32;
+  text-shadow: none;
   box-shadow:
-    0 0 0 1px rgba(10, 42, 34, 0.35),
-    0 6px 20px rgba(20, 81, 66, 0.35),
-    0 2px 6px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 0 0 1px rgba(20, 81, 66, 0.06),
+    0 4px 14px rgba(20, 81, 66, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
   transition:
     transform 0.35s cubic-bezier(0.34, 1.15, 0.64, 1),
     box-shadow 0.35s ease,
@@ -10601,7 +11826,7 @@ body {
   background: linear-gradient(
     105deg,
     transparent 36%,
-    rgba(255, 255, 255, 0.14) 48%,
+    rgba(34, 197, 94, 0.08) 48%,
     transparent 58%
   );
   transform: translateX(-120%);
@@ -10612,13 +11837,13 @@ body {
 
 .delivery-watta-stat:hover {
   transform: translateY(-3px) scale(1.02);
-  border-color: rgba(255, 255, 255, 0.32);
+  border-color: #16a34a;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 10px 32px rgba(20, 81, 66, 0.45),
-    0 4px 12px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
-  filter: saturate(1.08);
+    0 0 0 1px rgba(34, 197, 94, 0.25),
+    0 8px 24px rgba(20, 81, 66, 0.12),
+    0 4px 12px rgba(34, 197, 94, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  filter: none;
 }
 
 .delivery-watta-stat:hover::before {
@@ -10635,11 +11860,11 @@ body {
   height: 36px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 2px 8px rgba(0, 0, 0, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 4px rgba(20, 81, 66, 0.06);
 }
 
 .delivery-watta-stat-label {
@@ -10651,8 +11876,8 @@ body {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: #fff;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+  color: #145142;
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -10830,8 +12055,8 @@ body {
 
 .delivery-watta-map-inner {
   position: relative;
-  height: min(58vh, 560px);
-  min-height: 320px;
+  height: min(70vh, 640px);
+  min-height: min(400px, 55vh);
   border-radius: 14px;
   overflow: hidden;
   border: 2px solid rgba(20, 81, 66, 0.15);
@@ -10845,12 +12070,24 @@ body {
   height: 100%;
 }
 
+.delivery-watta-zones-map-hero-title {
+  margin: 0 0 10px;
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: #0f241e;
+  line-height: 1.15;
+}
+
 .delivery-watta-map-zones-hint {
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 600;
   color: #145142;
   line-height: 1.45;
+  text-align: center;
 }
 
 .delivery-watta-leaflet-map {
@@ -10898,6 +12135,18 @@ body {
   font-size: 12px;
   line-height: 1.45;
   color: #333;
+}
+
+.delivery-watta-zone-popup-foot {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(20, 81, 66, 0.12);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.75);
+  line-height: 1.35;
 }
 
 .leaflet-popup.delivery-watta-leaflet-popup-wrap .leaflet-popup-content-wrapper {
@@ -11520,6 +12769,20 @@ body {
   color: #1a1a1a;
 }
 
+.delivery-watta-conditions-check-summary {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid rgba(34, 197, 94, 0.45);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(255, 255, 255, 0.95));
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #0f3d32;
+  position: relative;
+  z-index: 1;
+}
+
 .delivery-watta-hours--v2 {
   padding: 28px 22px 32px;
 }
@@ -11967,12 +13230,15 @@ body {
   background: rgba(255, 255, 255, 0.75);
 }
 
-.delivery-watta-postal-result--inside {
+.delivery-watta-postal-result--inside,
+.delivery-watta-postal-result--amsterdam_ok {
   border-color: rgba(20, 81, 66, 0.35);
   background: linear-gradient(135deg, rgba(20, 81, 66, 0.08), rgba(255, 255, 255, 0.9));
 }
 
 .delivery-watta-postal-result--outside,
+.delivery-watta-postal-result--outside_amsterdam,
+.delivery-watta-postal-result--postcode_format_invalid,
 .delivery-watta-postal-result--geocode_failed,
 .delivery-watta-postal-result--bad_request,
 .delivery-watta-postal-result--server_error,
@@ -11990,6 +13256,8 @@ body {
 }
 
 .delivery-watta-postal-result--outside .delivery-watta-postal-result-ico,
+.delivery-watta-postal-result--outside_amsterdam .delivery-watta-postal-result-ico,
+.delivery-watta-postal-result--postcode_format_invalid .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--geocode_failed .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--bad_request .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--server_error .delivery-watta-postal-result-ico,

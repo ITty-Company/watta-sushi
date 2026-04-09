@@ -1,6 +1,7 @@
 'use client'
 
 import LogoBackground from './LogoBackground'
+import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 
 export default function PhoneView() {
   return (
@@ -55,12 +56,12 @@ export default function PhoneView() {
           <div className="contact-info-web">
             <h3>Instagram</h3>
             <a
-              href="https://instagram.com/example"
+              href={WATTA_INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: '#145142', fontWeight: 700 }}
             >
-              instagram.com/example
+              @watta_sushi
             </a>
           </div>
         </div>

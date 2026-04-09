@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import { useLanguage } from '../context/LanguageContext'
-import { LanguageSelector } from './LanguageSelector'
-import { CountryCitySelector } from './CountryCitySelector'
+import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
+import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
 import LogoBackground from './LogoBackground'
 import PhoneView from './PhoneView'
 import { NotificationsView } from './NotificationsView';
@@ -18,20 +18,41 @@ import CartView from './CartView'
 import PromotionsDetailView from './PromotionsDetailView'
 import Footer from './Footer'
 import NavigationSidebar from './NavigationSidebar'
-import { CinematicFooter, type CinematicFooterPromoTeaser } from '@/components/ui/motion-footer'
+import { CinematicFooter, type CinematicFooterAdminProduct } from '@/components/ui/motion-footer'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import {
+  MENU_BROWSE_RETURN_KEY,
+  parseMenuBrowseReturn,
+  shouldRestoreMenuBrowse,
+  writeMenuBrowseReturn,
+} from '@/lib/menuBrowseRestore'
+import { HomeCategoryProductRail } from './HomeCategoryProductRail'
+
+function readCinematicRailScrolls(): { rec: number; promo: number } {
+  if (typeof document === 'undefined') return { rec: 0, promo: 0 }
+  const root = document.getElementById('menu-cinematic-block')
+  if (!root) return { rec: 0, promo: 0 }
+  const rec = root.querySelector<HTMLElement>('[data-cinematic-rail="recommended"]')
+  const promo = root.querySelector<HTMLElement>('[data-cinematic-rail="promo"]')
+  return { rec: rec?.scrollLeft ?? 0, promo: promo?.scrollLeft ?? 0 }
+}
+
+function cinematicWeightSubtitle(desc: string, weightFallback: string): string {
+  const g = desc.match(/(\d+)\s*г\b/i)?.[1]
+  const ml = desc.match(/(\d+)\s*мл\b/i)?.[1]
+  return ml ? `${ml} мл` : g ? `${g} г` : weightFallback
+}
+
 import { 
   Menu,       
-  Phone,      
   Heart,      
   User,       
   ShoppingBag,
   ArrowLeft,
   ChevronLeft, 
   ChevronRight,
-  Plus,
 } from 'lucide-react'
 // --- ТИПЫ ДАННЫХ ---
 interface City {
@@ -51,12 +72,12 @@ interface DeliveryZone {
 
 const defaultCities: City[] = [
   {
-    id: 'kyiv',
-    name: 'Киев',
-    coordinates: { lat: 50.4501, lng: 30.5234 },
-    zoom: 11,
-    deliveryZones: []
-  }
+    id: 'amsterdam',
+    name: 'Amsterdam',
+    coordinates: { lat: 52.3676, lng: 4.9041 },
+    zoom: 12,
+    deliveryZones: [],
+  },
 ]
 
 interface MenuItem {
@@ -70,7 +91,14 @@ interface MenuItem {
   subcategory?: string
   emoji: string
   isTop?: boolean
-  imageUrl?: string;
+  imageUrl?: string
+  /** З адмінки: знижка % */
+  promoDiscountPercent?: number
+  /** З адмінки: блок «рекомендовані» */
+  isRecommended?: boolean
+  recommendOrder?: number
+  /** category.allowRecommendations !== false */
+  allowRecommendations?: boolean
 }
 
 interface MenuCategory {
@@ -514,29 +542,6 @@ export default function MenuView() {
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
 
-  /** Акції з адмінки (/api/promotions) — карусель у cinematic footer */
-  const [cinematicPromoList, setCinematicPromoList] = useState<
-    Array<{ id: number; title: string; description: string; imageUrl?: string | null }>
-  >([])
-
-  const loadCinematicPromotions = useCallback(() => {
-    fetch('/api/promotions')
-      .then(async (res) => {
-        if (!res.ok) return []
-        const data = await res.json().catch(() => [])
-        return Array.isArray(data) ? data : []
-      })
-      .then((rows) => setCinematicPromoList(rows))
-      .catch(() => setCinematicPromoList([]))
-  }, [])
-
-  useEffect(() => {
-    loadCinematicPromotions()
-    const onPromotionsUpdated = () => loadCinematicPromotions()
-    window.addEventListener('promotionsUpdated', onPromotionsUpdated)
-    return () => window.removeEventListener('promotionsUpdated', onPromotionsUpdated)
-  }, [loadCinematicPromotions])
-
   const displayBanners = useMemo(
     () => (banners.length > 0 ? banners : DEFAULT_HOME_BANNERS),
     [banners]
@@ -559,15 +564,6 @@ export default function MenuView() {
     if (displayBanners.length <= 1) return
     setCurrentBannerIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length)
   }
-
-  // 2. Возвращаем авто-таймер (листает каждые 5 секунд)
-  useEffect(() => {
-    if (displayBanners.length <= 1) return
-    const interval = setInterval(() => {
-      nextBanner()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [displayBanners.length, nextBanner])
 
   // Функция загрузки данных
   const loadBanners = useCallback(() => {
@@ -675,63 +671,111 @@ export default function MenuView() {
     }
   }, [loadBanners])
 
-  // Таймер авто-переключения (С УЧЕТОМ РУЧНОГО ЛИСТАНИЯ)
+  // Авто-перемикання + скидання інтервалу після ручного свайпу
   useEffect(() => {
-    if (banners.length <= 1) return
+    if (displayBanners.length <= 1) return
 
     const interval = setInterval(() => {
-        nextBanner()
+      nextBanner()
     }, bannerInterval)
 
     return () => clearInterval(interval)
   }, [displayBanners.length, bannerInterval, currentBannerIndex, nextBanner])
 
-  // --- ЛОГИКА СВАЙПОВ (Touch) ---
-  const touchStartRef = useRef<number | null>(null)
-  const minSwipeDistance = 50
+  /** Свайп по банеру: touch + миша/тачпад (pointer), ігнор переважно вертикального скролу */
+  const bannerSwipeRef = useRef<{ x: number; y: number } | null>(null)
+  const BANNER_SWIPE_MIN_PX = 48
+  const BANNER_SWIPE_VERTICAL_RATIO = 1.15
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = e.targetTouches[0].clientX
+  const bannerSwipeIgnoreTarget = (target: EventTarget | null) => {
+    const el = target as HTMLElement | null
+    if (!el) return true
+    return Boolean(el.closest('.hero-dots-web') || el.closest('button'))
   }
 
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return
-    
-    const touchEnd = e.changedTouches[0].clientX
-    const distance = touchStartRef.current - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
+  const bannerSwipeStart = (clientX: number, clientY: number, target: EventTarget | null) => {
+    if (bannerSwipeIgnoreTarget(target)) return
+    bannerSwipeRef.current = { x: clientX, y: clientY }
+  }
 
-    if (isLeftSwipe) {
-      nextBanner()
-    } else if (isRightSwipe) {
-      prevBanner()
+  const bannerSwipeEnd = (clientX: number, clientY: number) => {
+    const start = bannerSwipeRef.current
+    bannerSwipeRef.current = null
+    if (!start || displayBanners.length <= 1) return
+    const dx = start.x - clientX
+    const dy = start.y - clientY
+    if (Math.abs(dx) < BANNER_SWIPE_MIN_PX) return
+    if (Math.abs(dy) * BANNER_SWIPE_VERTICAL_RATIO >= Math.abs(dx)) return
+    if (dx > 0) nextBanner()
+    else prevBanner()
+  }
+
+  const onBannerTouchStart = (e: React.TouchEvent) => {
+    const t = e.targetTouches[0]
+    if (!t) return
+    bannerSwipeStart(t.clientX, t.clientY, e.target)
+  }
+
+  const onBannerTouchEnd = (e: React.TouchEvent) => {
+    const t = e.changedTouches[0]
+    if (!t) return
+    bannerSwipeEnd(t.clientX, t.clientY)
+  }
+
+  const onBannerTouchCancel = () => {
+    bannerSwipeRef.current = null
+  }
+
+  const onBannerPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    if (bannerSwipeIgnoreTarget(e.target)) return
+    bannerSwipeStart(e.clientX, e.clientY, e.target)
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
     }
-    
-    touchStartRef.current = null
   }
-  
-  // Мы убрали onMouseDown/Move/Up, так как на ПК теперь есть стрелки
-  const onMouseDown = (e: React.MouseEvent) => {} 
-  const onMouseMove = (e: React.MouseEvent) => {}
-  const onMouseUp = () => {}
+
+  const onBannerPointerUp = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return
+    bannerSwipeEnd(e.clientX, e.clientY)
+    try {
+      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const onBannerPointerCancel = () => {
+    bannerSwipeRef.current = null
+  }
   // --- ЗАГРУЗКА МЕНЮ С СЕРВЕРА ---
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [favorites, setFavorites] = useState<number[]>([]) // Храним ID лайкнутых товаров
   
   const mapProductsToItems = useCallback((data: any[]) => {
-    return (data || []).map((p: any) => ({
-      id: p.id,
-      name: getLocalized(p, 'name'),
-      description: getLocalized(p, 'description') || '',
-      price: p.price,
-      category: getLocalized(p.category, 'name') || 'Роллы',
-      categorySlug: p.category?.slug || 'rolls',
-      categoryId: p.categoryId,
-      emoji: '🍣',
-      imageUrl: p.imageUrl,
-      isTop: p.isPopular
-    }))
+    return (data || []).map((p: any) => {
+      const promoPct =
+        typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0
+      return {
+        id: p.id,
+        name: getLocalized(p, 'name'),
+        description: getLocalized(p, 'description') || '',
+        price: p.price,
+        category: getLocalized(p.category, 'name') || 'Роллы',
+        categorySlug: p.category?.slug || 'rolls',
+        categoryId: p.categoryId,
+        emoji: '🍣',
+        imageUrl: p.imageUrl,
+        isTop: p.isPopular,
+        promoDiscountPercent: promoPct,
+        isRecommended: p.isRecommended === true,
+        recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
+        allowRecommendations: p.category?.allowRecommendations !== false,
+      }
+    })
   }, [getLocalized])
 
   const loadMenuItems = useCallback(() => {
@@ -801,26 +845,14 @@ export default function MenuView() {
         fetch(url)
           .then(res => res.json())
           .then(data => {
-            const realItems = data.map((p: any) => ({
-              id: p.id,
-              name: getLocalized(p, 'name'), 
-              description: getLocalized(p, 'description') || '',
-              price: p.price,
-              category: getLocalized(p.category, 'name') || 'Роллы',
-              categorySlug: p.category?.slug || 'rolls',
-              categoryId: p.categoryId,
-              emoji: '🍣',
-              imageUrl: p.imageUrl,
-              isTop: p.isPopular
-            }));
-            setMenuItems(realItems);
+            setMenuItems(mapProductsToItems(Array.isArray(data) ? data : []))
           })
           .catch(err => console.error('Ошибка загрузки меню:', err));
       }
       window.addEventListener('productsUpdated', handleProductsUpdate)
       return () => window.removeEventListener('productsUpdated', handleProductsUpdate)
     }
-  }, [language, getLocalized, selectedCityId])
+  }, [language, getLocalized, selectedCityId, mapProductsToItems])
 
   // --- КОРЗИНА ---
   const [cartCount, setCartCount] = useState(0)
@@ -977,6 +1009,15 @@ export default function MenuView() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [showSubmenu, setShowSubmenu] = useState(false)
+
+  const browseStateRef = useRef({
+    selectedCategory: '',
+    activePage: null as string | null,
+    pathname: '/',
+  })
+  useEffect(() => {
+    browseStateRef.current = { selectedCategory, activePage, pathname }
+  }, [selectedCategory, activePage, pathname])
   
   const currentCategory = menuCategories.find(cat => cat.key === selectedCategory)
   
@@ -1125,6 +1166,46 @@ export default function MenuView() {
       setIsSidebarOpen(false)
       return
     }
+    if (page === 'reviews') {
+      router.push('/reviews')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'blog') {
+      router.push('/blog')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'catalogMenu') {
+      router.push('/menu')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'delivery' || page === 'deliveryPublic') {
+      router.push('/delivery')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'cartPublic') {
+      router.push('/cart')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'favoritesPublic') {
+      router.push('/favorites')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'profilePublic') {
+      router.push('/profile')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'notifications') {
+      setIsNotificationsOpen(true)
+      setIsSidebarOpen(false)
+      return
+    }
     setActivePage(page)
     setIsSidebarOpen(false)
     setTimeout(() => {
@@ -1150,79 +1231,49 @@ export default function MenuView() {
   }
 
 
-  const cinematicFooterPromoTeasers = useMemo(() => {
+  const cinematicAdminPromoProducts = useMemo((): CinematicFooterAdminProduct[] => {
     const maxItems = 24
-
-    const fromPromotions = cinematicPromoList
-      .map((p) => {
-        const desc = (p.description || '').trim()
-        return {
-          id: p.id,
-          kind: 'promotion' as const,
-          label: (p.title || '').trim(),
-          categoryLabel: desc.length > 0 ? desc.slice(0, 140) : undefined,
-          imageUrl: p.imageUrl?.trim() || undefined,
-        }
-      })
-      .filter((p) => p.label.length > 0)
-
-    const fromProducts = menuItems
-      .filter((item) => item.isTop)
+    const wf = t.productDetail.weightFallback
+    return menuItems
+      .filter((i) => (i.promoDiscountPercent ?? 0) > 0)
+      .sort((a, b) => (b.promoDiscountPercent ?? 0) - (a.promoDiscountPercent ?? 0))
+      .slice(0, maxItems)
       .map((item) => ({
         id: item.id,
-        kind: 'product' as const,
         label: (item.name || '').trim(),
         categoryLabel: (item.category || '').trim(),
         imageUrl: item.imageUrl || undefined,
-      }))
-      .filter((p) => p.label.length > 0 || (p.categoryLabel?.length ?? 0) > 0)
-
-    const fromBanners = [...displayBanners]
-      .filter((b) => b.isActive !== false)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .slice(0, 10)
-      .map((b) => ({
-        id: b.id,
-        kind: 'banner' as const,
-        label: (getLocalized(b, 'title') || b.title_ru || '').trim(),
-        imageUrl: b.imageUrl || undefined,
+        discountPercent: item.promoDiscountPercent,
+        description: item.description,
+        price: item.price,
+        isPopular: item.isTop === true,
+        emoji: item.emoji,
+        subtitleLine: cinematicWeightSubtitle(item.description, wf),
       }))
       .filter((p) => p.label.length > 0)
+  }, [menuItems, t.productDetail.weightFallback])
 
-    const merged: CinematicFooterPromoTeaser[] = []
-    for (const x of fromPromotions) {
-      if (merged.length >= maxItems) break
-      merged.push(x)
-    }
-    for (const x of fromProducts) {
-      if (merged.length >= maxItems) break
-      merged.push(x)
-    }
-    if (merged.length > 0) return merged
-
-    return fromBanners
-  }, [cinematicPromoList, menuItems, displayBanners, getLocalized])
-
-  const handleCinematicFooterPromoClick = useCallback(
-    (payload: { id: number; kind: 'product' | 'banner' | 'promotion' }) => {
-      if (payload.kind === 'promotion') {
-        setSelectedPromoId(payload.id)
-        handlePageOpen('promotions')
-        return
-      }
-      if (payload.kind === 'banner') {
-        const i = displayBanners.findIndex((b) => b.id === payload.id)
-        if (i >= 0) setCurrentBannerIndex(i)
-        return
-      }
-
-      const item = menuItems.find((m) => m.id === payload.id)
-      if (item?.categorySlug) {
-        navigateToCategoryPage(item.categorySlug)
-      }
-    },
-    [displayBanners, menuItems, handlePageOpen, navigateToCategoryPage]
-  )
+  const cinematicAdminRecommendedProducts = useMemo((): CinematicFooterAdminProduct[] => {
+    const maxItems = 24
+    const wf = t.productDetail.weightFallback
+    return menuItems
+      .filter((i) => i.isRecommended && i.allowRecommendations !== false)
+      .sort((a, b) => (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0))
+      .slice(0, maxItems)
+      .map((item) => ({
+        id: item.id,
+        label: (item.name || '').trim(),
+        categoryLabel: (item.category || '').trim(),
+        imageUrl: item.imageUrl || undefined,
+        description: item.description,
+        price: item.price,
+        isPopular: item.isTop === true,
+        emoji: item.emoji,
+        discountPercent: (item.promoDiscountPercent ?? 0) > 0 ? item.promoDiscountPercent : undefined,
+        subtitleLine: cinematicWeightSubtitle(item.description, wf),
+      }))
+      .filter((p) => p.label.length > 0)
+  }, [menuItems, t.productDetail.weightFallback])
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
   const openProfileTab = (tab: 'history' | 'address' | 'favorites') => {
@@ -1369,6 +1420,93 @@ export default function MenuView() {
   const scrollPositionRef = useRef<number>(0)
   const isUserScrollingRef = useRef<boolean>(false)
   const restorePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const persistMenuBrowseReturnState = useCallback(() => {
+    if (typeof document === 'undefined') return
+    const { selectedCategory: cat, activePage: page, pathname: path } = browseStateRef.current
+    if (path !== '/') return
+    const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
+    if (!root) return
+    const panel = categoriesPanelRef.current
+    const { rec, promo } = readCinematicRailScrolls()
+    writeMenuBrowseReturn({
+      v: 2,
+      pathname: '/',
+      scrollY: root.scrollTop,
+      categoryKey: cat || '',
+      categoriesPanelScrollLeft: panel?.scrollLeft ?? 0,
+      activePage: page,
+      cinematicRecScrollLeft: rec,
+      cinematicPromoScrollLeft: promo,
+    })
+  }, [])
+
+  useEffect(() => {
+    if (pathname !== '/') return
+    if (menuCategories.length === 0) return
+
+    const raw = sessionStorage.getItem(MENU_BROWSE_RETURN_KEY)
+    const payload = parseMenuBrowseReturn(raw)
+    if (!payload) return
+    if (!shouldRestoreMenuBrowse(payload)) {
+      sessionStorage.removeItem(MENU_BROWSE_RETURN_KEY)
+      return
+    }
+    if (payload.categoryKey && !menuCategories.some((c) => c.key === payload.categoryKey)) {
+      sessionStorage.removeItem(MENU_BROWSE_RETURN_KEY)
+      return
+    }
+
+    sessionStorage.removeItem(MENU_BROWSE_RETURN_KEY)
+
+    if (payload.categoryKey) {
+      setSelectedCategory(payload.categoryKey)
+    }
+    if (payload.activePage === null || payload.activePage === 'delivery') {
+      setActivePage(payload.activePage)
+    }
+
+    const scrollY = payload.scrollY
+    const panelLeft = payload.categoriesPanelScrollLeft
+
+    const apply = () => {
+      const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
+      if (!root) return
+      root.scrollTop = scrollY
+      const panel = categoriesPanelRef.current
+      if (panel) {
+        panel.scrollLeft = panelLeft
+        scrollPositionRef.current = panelLeft
+      }
+      if (payload.v === 2) {
+        const block = document.getElementById('menu-cinematic-block')
+        if (block) {
+          const recEl = block.querySelector<HTMLElement>('[data-cinematic-rail="recommended"]')
+          const promoEl = block.querySelector<HTMLElement>('[data-cinematic-rail="promo"]')
+          if (recEl && payload.cinematicRecScrollLeft != null) {
+            recEl.scrollLeft = payload.cinematicRecScrollLeft
+          }
+          if (promoEl && payload.cinematicPromoScrollLeft != null) {
+            promoEl.scrollLeft = payload.cinematicPromoScrollLeft
+          }
+        }
+      }
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(apply)
+    })
+    const t0 = window.setTimeout(apply, 0)
+    const t1 = window.setTimeout(apply, 120)
+    const t2 = window.setTimeout(apply, 380)
+    const t3 = window.setTimeout(apply, 650)
+    return () => {
+      window.clearTimeout(t0)
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+      window.clearTimeout(t3)
+    }
+  }, [pathname, menuCategories])
 
   const checkScrollButtons = useCallback((element: HTMLElement) => {
     if (element) {
@@ -1558,10 +1696,6 @@ export default function MenuView() {
   // ============================================
 
   if (activePage === 'phone') return <div className="full-page-web full-page-web--craft"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">{t.phone}</h1></div><div className="full-page-content-web"><PhoneView /></div></div>
-  if (activePage === 'notifications') return <div className="full-page-web full-page-web--craft"><div className="full-page-header-web"><button className="back-button-web" onClick={handleClosePage}><ArrowLeft size={24}/></button><h1 className="full-page-title-web">Уведомления</h1></div><div className="full-page-content-web"><NotificationsView 
-  isOpen={isNotificationsOpen} 
-  onClose={() => setIsNotificationsOpen(false)} 
-/></div></div>
   
   if (activePage === 'profile') {
     if (!profileGateReady) {
@@ -1586,20 +1720,25 @@ export default function MenuView() {
     }
 
     return (
-      <div className="full-page-web full-page-web--craft profile-page-full-web">
-        <ProfileView 
-          onBack={handleClosePage}
-          onMenuClick={toggleSidebar}
-          onOpenPhone={() => handlePageOpen('phone')}
-          onOpenNotifications={() => handlePageOpen('notifications')}
-          onOpenFavorites={() => openProfileTab('favorites')} 
-          onOpenCart={openCart}
-          onSelectCategory={(key) => { handleClosePage(); setSelectedCategory(key) }}
-          onOpenAdmin={() => setActivePage('admin')}
-          initialTab={profileInitialTab} 
-        />
-        
-      </div>
+      <>
+        <div className="full-page-web full-page-web--craft profile-page-full-web">
+          <ProfileView
+            onBack={handleClosePage}
+            onMenuClick={toggleSidebar}
+            onOpenPhone={() => handlePageOpen('phone')}
+            onOpenNotifications={() => handlePageOpen('notifications')}
+            onOpenFavorites={() => openProfileTab('favorites')}
+            onOpenCart={openCart}
+            onSelectCategory={(key) => {
+              handleClosePage()
+              setSelectedCategory(key)
+            }}
+            onOpenAdmin={() => setActivePage('admin')}
+            initialTab={profileInitialTab}
+          />
+        </div>
+        <NotificationsView isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+      </>
     )
   }
 
@@ -1617,7 +1756,10 @@ export default function MenuView() {
           onOpenProfileTab={openProfileTab}
           onPageOpen={handlePageOpen}
           onGoHome={handleClosePage}
-          onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onOpenNotifications={() => {
+            setIsSidebarOpen(false)
+            setIsNotificationsOpen(true)
+          }}
         />
         <NotificationsView
           isOpen={isNotificationsOpen}
@@ -1629,46 +1771,54 @@ export default function MenuView() {
   if (activePage === 'promotions') {
   if (selectedPromoId) {
     return (
+      <>
+        <div className="full-page-web full-page-web--craft">
+          <PromotionsDetailView
+            id={selectedPromoId}
+            onBack={() => setSelectedPromoId(null)}
+            onMenuClick={toggleSidebar}
+            onOpenPhone={() => handlePageOpen('phone')}
+            onOpenNotifications={() => handlePageOpen('notifications')}
+            onOpenFavorites={() => openProfileTab('favorites')}
+            onOpenProfile={() => openProfileTab('history')}
+          />
+        </div>
+        <NotificationsView isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+      </>
+    )
+  }
+  return (
+    <>
       <div className="full-page-web full-page-web--craft">
-        <PromotionsDetailView 
-          id={selectedPromoId}
-          onBack={() => setSelectedPromoId(null)}
+        <PromotionsView
+          onBack={handleClosePage}
           onMenuClick={toggleSidebar}
+          onOpenDetail={(id) => setSelectedPromoId(id)}
           onOpenPhone={() => handlePageOpen('phone')}
           onOpenNotifications={() => handlePageOpen('notifications')}
           onOpenFavorites={() => openProfileTab('favorites')}
           onOpenProfile={() => openProfileTab('history')}
         />
       </div>
-    )
-  }
-  return (
-    <div className="full-page-web full-page-web--craft">
-      <PromotionsView 
-        onBack={handleClosePage} 
-        onMenuClick={toggleSidebar}
-        // Передаем функцию открытия детальной страницы
-        onOpenDetail={(id) => setSelectedPromoId(id)}
-        onOpenPhone={() => handlePageOpen('phone')}
-        onOpenNotifications={() => handlePageOpen('notifications')}
-        onOpenFavorites={() => openProfileTab('favorites')}
-        onOpenProfile={() => openProfileTab('history')}
-      />
-    </div>
+      <NotificationsView isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+    </>
   )
 }
   if (activePage === 'cart') {
     return (
-      <div className="full-page-web full-page-web--craft">
-        <CartView 
-          onBack={handleClosePage}
-          onOpenProfile={() => openProfileTab('history')}
-          onOpenFavorites={() => openProfileTab('favorites')}
-          onOpenPhone={() => handlePageOpen('phone')}
-          onOpenNotifications={() => handlePageOpen('notifications')}
-          onMenuClick={toggleSidebar}
-        />
-      </div>
+      <>
+        <div className="full-page-web full-page-web--craft">
+          <CartView
+            onBack={handleClosePage}
+            onOpenProfile={() => openProfileTab('history')}
+            onOpenFavorites={() => openProfileTab('favorites')}
+            onOpenPhone={() => handlePageOpen('phone')}
+            onOpenNotifications={() => handlePageOpen('notifications')}
+            onMenuClick={toggleSidebar}
+          />
+        </div>
+        <NotificationsView isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+      </>
     )
   }
   const getTranslated = (item: any, field: 'name' | 'description') => {
@@ -1685,264 +1835,58 @@ export default function MenuView() {
 
   return (
     <div
-      className={`menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#F3F4F6]${heroPhaseMobile ? ' menu-page-web--hero-phase-mobile' : ''}`}
+      className={`menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-transparent${heroPhaseMobile ? ' menu-page-web--hero-phase-mobile' : ''}`}
     >
       <LogoBackground />
 
-      <div
-        className="menu-fixed-header-shell-web fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-transform duration-300 menu-top-safe-web md:bg-[#F3F4F6]"
-        style={{
-          paddingLeft: 'env(safe-area-inset-left, 0px)',
-          paddingRight: 'env(safe-area-inset-right, 0px)',
+      <WattaGlobalSiteHeader
+        cartCount={cartCount}
+        onCityChange={(cityId: number) => {
+          setSelectedCityId(cityId)
+          loadMenuItems()
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
+          }
         }}
-      >
-
-      <header className="app-header-web relative z-10 max-w-[100vw]">
-        <div className="header-content-web">
-          <div className="logo-section-web" onClick={handleClosePage} style={{ cursor: 'pointer' }}>
-            <div className="logo-icon-web"><Image src="/logo.png" alt="Logo" width={50} height={50} className="logo-image-web" priority style={{ objectFit: 'contain' }} /></div>
-            <div className="logo-text-images-web"><Image src="/1.jpg" alt="WATTA SUSHI" width={180} height={60} className="logo-text-image-web" priority style={{ objectFit: 'contain' }} /></div>
-          </div>
-          
-          {/* Центральная навигация для десктопа */}
-          <div className="header-center-nav-web" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            flex: 1,
-            justifyContent: 'center',
-            padding: '0 20px'
-          }}>
-            <CountryCitySelector 
-              onCityChange={(cityId: number) => {
-                setSelectedCityId(cityId)
-                // Перезагружаем меню для выбранного города
-                loadMenuItems()
-                // Отправляем событие для обновления других компонентов
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
-                }
-              }}
-            />
-            
-            <button 
-              type="button"
-              onClick={() => handlePageOpen('delivery')}
-              style={{
-                background: activePage === 'delivery' ? 'rgba(20, 81, 66, 0.1)' : 'transparent',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: activePage === 'delivery' ? '700' : '500',
-                color: activePage === 'delivery' ? '#145142' : '#333',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '6px'
-              }}
-            >
-              {t.navigation.delivery}
-            </button>
-            
-            <button 
-              onClick={() => handlePageOpen('about')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '6px'
-              }}
-            >
-              {t.navigation.about}
-            </button>
-            
-            <button 
-              onClick={() => handlePageOpen('promotions')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '6px'
-              }}
-            >
-              {t.navigation.promotions}
-            </button>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => handlePageOpen('contacts')}>
-              <Phone size={18} style={{ color: '#ff6b35' }} />
-              <span style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>{t.navigation.contacts}</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: '4px' }}>
-                <path d="M3 4.5L6 7.5L9 4.5" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
-          
-          <div className="header-actions-web">
-            <button 
-              className="header-profile-btn-web"
-              onClick={() => openProfileTab('history')}
-              aria-label="Профіль"
-              style={{
-                width: '44px',
-                height: '44px',
-                minWidth: '44px',
-                borderRadius: '12px',
-                border: '2px solid #145142',
-                background: '#ffffff',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)',
-                flexShrink: 0,
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <User size={20} className="header-profile-icon-web" style={{ color: '#145142', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))', strokeWidth: 2.5 }} />
-            </button>
-            <div className="location-section-web header-lang-wrap-web" style={{ display: 'flex', alignItems: 'center' }}>
-              <LanguageSelector />
-            </div>
-            
-            <button 
-              className="header-menu-btn-web"
-              onClick={toggleSidebar} 
-              aria-label="Меню"
-              style={{
-                width: '44px',
-                height: '44px',
-                minWidth: '44px',
-                borderRadius: '12px',
-                border: '2px solid #145142',
-                background: '#ffffff',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(20,81,66,0.15), inset 0 1px 0 rgba(255,255,255,1)',
-                flexShrink: 0,
-                position: 'relative',
-                overflow: 'hidden',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <Menu 
-                size={20} 
-                className="header-menu-icon-web"
-                style={{ 
-                  color: '#145142',
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
-                  strokeWidth: 2.5
-                }} 
-              />
-            </button>
-            
-            <button 
-              className="header-cart-btn-text-web" 
-              onClick={openCart} 
-              aria-label="Корзина"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                borderRadius: '12px',
-                border: '2px solid #145142',
-                background: '#ffffff',
-                cursor: 'pointer',
-                position: 'relative',
-                fontWeight: '600',
-                color: '#145142',
-                backdropFilter: 'blur(10px)',
-                boxShadow: '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)',
-                overflow: 'hidden'
-              }}
-            >
-              <span className="header-cart-label-web">{t.cart}</span>
-              <div className="header-cart-icon-wrap-web" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ShoppingBag size={18} className="header-cart-icon-web" />
-                {cartCount > 0 && (
-                  <span 
-                    className="cart-badge-web"
-                    style={{ 
-                      position: 'absolute', 
-                      top: '-8px', 
-                      right: '-8px', 
-                      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%)',
-                      color: 'white', 
-                      fontSize: '11px', 
-                      fontWeight: '800', 
-                      borderRadius: '12px', 
-                      minHeight: '20px', 
-                      minWidth: '20px', 
-                      padding: cartCount > 9 ? '3px 6px' : '3px',
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      lineHeight: '1',
-                      boxShadow: '0 4px 12px rgba(255,107,53,0.5), 0 0 0 3px rgba(255,255,255,0.9), inset 0 1px 0 rgba(255,255,255,0.3)',
-                      border: '2px solid #ffffff',
-                      letterSpacing: '-0.3px'
-                    }}
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </div>
-            </button>
-          </div>
-        </div>
-      </header>
-      <div className="app-header-spacer-web" aria-hidden />
-      </div>
+        deliveryEmbeddedActive={activePage === 'delivery'}
+        onPromotionsClick={() => handlePageOpen('promotions')}
+        onCartClick={openCart}
+        onMenuClick={toggleSidebar}
+        onProfileClick={() => openProfileTab('history')}
+        onLogoClick={handleClosePage}
+      />
 
       {cartCount > 0 && (activePage === null || activePage === 'delivery') && (
         <div
-          className="checkout-fab-wrap-web"
+          className="pointer-events-none fixed z-[9999] flex justify-end"
           style={{
-            position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-            zIndex: 9999,
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '0 max(16px, env(safe-area-inset-left)) 0 max(16px, env(safe-area-inset-right))',
+            bottom: 'max(6px, calc(4px + env(safe-area-inset-bottom, 0px)))',
+            right: 'max(10px, env(safe-area-inset-right, 0px))',
+            left: 'max(10px, env(safe-area-inset-left, 0px))',
           }}
         >
           <button
             type="button"
             onClick={openCart}
-            className="flex items-center justify-center gap-3"
-            style={{
-              background: 'linear-gradient(135deg, #145142 0%, #1a6b58 55%, #145142 100%)',
-              color: '#fff',
-              border: '2px solid rgba(255,255,255,0.35)',
-              borderRadius: 18,
-              minHeight: 58,
-              padding: '0 28px',
-              fontWeight: 800,
-              fontSize: 17,
-              letterSpacing: 0.2,
-              boxShadow:
-                '0 14px 40px rgba(20,81,66,0.35), 0 0 0 1px rgba(255,107,53,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
-              cursor: 'pointer',
-              width: 'min(720px, 100%)'
-            }}
+            className="pointer-events-auto group flex max-w-[min(100%,320px)] items-center gap-2 rounded-full border border-[#145142]/18 bg-white/85 py-1.5 pl-2 pr-3 shadow-[0_6px_28px_rgba(15,40,32,0.1),0_1px_0_rgba(255,255,255,0.9)_inset] backdrop-blur-md transition hover:border-[#145142]/28 hover:bg-white hover:shadow-[0_10px_36px_rgba(20,81,66,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/35 active:scale-[0.98] sm:gap-2.5 sm:py-2 sm:pl-2.5 sm:pr-4"
+            aria-label={t.cartSection.proceedCheckout}
           >
-            <ShoppingBag size={22} style={{ flexShrink: 0, opacity: 0.95 }} />
-            <span style={{ textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>{t.cartSection.proceedCheckout}</span>
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#145142] to-[#0f3d32] text-white shadow-sm ring-2 ring-white/80 sm:h-10 sm:w-10">
+              <ShoppingBag className="h-[18px] w-[18px] opacity-95 sm:h-5 sm:w-5" strokeWidth={2.25} />
+              <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff6b35] px-1 text-[10px] font-extrabold leading-none text-white shadow ring-2 ring-white">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            </span>
+            <span className="min-w-0 truncate text-left text-[13px] font-bold leading-tight text-[#0f241e] sm:text-sm">
+              {t.cartSection.proceedCheckout}
+            </span>
           </button>
         </div>
       )}
 
       <>
           <div
-            className={`categories-panel-wrapper-web relative${heroPhaseMobile ? ' categories-panel-wrapper-web--hero-phase-mobile' : ''}`}
+            className={`categories-panel-wrapper-web${heroPhaseMobile ? ' categories-panel-wrapper-web--hero-phase-mobile' : ''}`}
           >
             <button
               type="button"
@@ -2046,14 +1990,21 @@ export default function MenuView() {
         videoSources={HERO_VIDEO_SOURCES_MENU}
       />
 
-      <div id="menu-cinematic-block" className="menu-snap-section-cinematic-web w-full shrink-0">
+      <WattaHeroMarqueeBar />
+
+      <div
+        id="menu-cinematic-block"
+        className="menu-snap-section-cinematic-web menu-cinematic-block--ribbon w-full shrink-0"
+      >
         <CinematicFooter
-          nextSectionId="hero-banners"
-          menuSectionId="home-menu-catalog"
-          promoTeasers={cinematicFooterPromoTeasers}
-          onPromoTeaserClick={handleCinematicFooterPromoClick}
-          promoFallbackCta={t.menuView.footerPromoSeeOffers}
-          promoRegionLabel={t.menuView.footerPromoAriaRegion}
+          layout="compact"
+          adminPromoProducts={cinematicAdminPromoProducts}
+          adminRecommendedProducts={cinematicAdminRecommendedProducts}
+          onAdminProductAddToCart={(productId) => {
+            const item = menuItems.find((i) => i.id === productId)
+            if (item) addToCart(item)
+          }}
+          onBeforeNavigateToProduct={persistMenuBrowseReturnState}
         />
       </div>
 
@@ -2067,19 +2018,55 @@ export default function MenuView() {
       <section
         id="hero-banners"
         className="home-brand-story-section-web home-brand-banner-stage-soft-web menu-after-welcome-web menu-snap-section-brand-web relative z-[2] w-full max-w-[100vw]"
-        aria-label={t.cinematicFooter.ctaBanners}
+        aria-labelledby="hero-banners-heading"
       >
         <div className="home-brand-story-bg-web" aria-hidden />
         <div className="home-brand-story-grain-web" aria-hidden />
         <div className="home-brand-story-orb-web home-brand-story-orb-web--tiffany" aria-hidden />
         <div className="home-brand-inner-web relative z-[1] mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:px-8 md:pb-16 md:pt-14">
+          <header className="home-menu-hero-banners-head-web home-full-menu-catalog-head-web">
+            <div className="home-full-menu-catalog-ornament-web" aria-hidden>
+              <span className="home-full-menu-catalog-ornament-cap-web" />
+              <span className="home-full-menu-catalog-ornament-line-web" />
+              <span className="home-full-menu-catalog-ornament-cap-web" />
+            </div>
+            <div className="home-hero-banner-title-rail-web">
+              <h2
+                id="hero-banners-heading"
+                className="home-full-menu-catalog-title-web home-hero-banner-overlay-title-web"
+              >
+                {t.menuView.heroBannerOverlayTitle}
+              </h2>
+            </div>
+            <div
+              className="home-hero-banner-sms-web"
+              role="figure"
+              aria-label={`${t.menuView.heroBannerSmsSender}. ${t.menuView.heroBannerOverlaySub}`}
+            >
+              <div className="home-hero-banner-sms-web__meta" aria-hidden>
+                <span className="home-hero-banner-sms-web__badge">{t.menuView.heroBannerSmsBadge}</span>
+                <span className="home-hero-banner-sms-web__sender">{t.menuView.heroBannerSmsSender}</span>
+              </div>
+              <div className="home-hero-banner-sms-web__row">
+                <div className="home-hero-banner-sms-web__bubble">
+                  <p className="home-hero-banner-sms-web__text">{t.menuView.heroBannerOverlaySub}</p>
+                  <div className="home-hero-banner-sms-web__bubble-foot">
+                    <span className="home-hero-banner-sms-web__time">{t.menuView.heroBannerSmsTime}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
           <div className="home-brand-banner-shell-web home-brand-banner-shell-web--section-lead">
       {displayBanners.length > 0 ? (
         <div 
-          className="hero-banner-web hero-banner-image-bg-web max-w-7xl mx-auto rounded-none sm:rounded-2xl overflow-hidden relative group"
-          // Добавляем обработчики свайпа для мобильных
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
+          className="hero-banner-web hero-banner-image-bg-web hero-banner-swipe-web max-w-7xl mx-auto rounded-none sm:rounded-2xl overflow-hidden relative group"
+          onTouchStart={onBannerTouchStart}
+          onTouchEnd={onBannerTouchEnd}
+          onTouchCancel={onBannerTouchCancel}
+          onPointerDown={onBannerPointerDown}
+          onPointerUp={onBannerPointerUp}
+          onPointerCancel={onBannerPointerCancel}
           style={{ 
             backgroundImage: `url(${displayBanners[currentBannerIndex].imageUrl})`,
             backgroundSize: 'cover',
@@ -2166,82 +2153,58 @@ export default function MenuView() {
 
       <section
         id="home-menu-catalog"
-        className="home-full-menu-catalog-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] px-4 sm:px-6 md:px-8 pt-8 pb-12 sm:pt-10 sm:pb-16"
+        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] px-4 sm:px-6 md:px-8 pt-5 pb-12 sm:pt-7 sm:pb-16 md:pt-8"
         aria-labelledby="home-menu-catalog-title"
       >
-        <header className="home-full-menu-catalog-head-web">
-          <h2 id="home-menu-catalog-title" className="home-full-menu-catalog-title-web">
-            {t.menuView.homeCatalogTitle}
-          </h2>
-          <p className="home-full-menu-catalog-sub-web">{t.menuView.homeCatalogSub}</p>
-        </header>
+        <div className="home-menu-catalog-stack-web relative z-[1]">
+          <header className="home-full-menu-catalog-head-web">
+            <div className="home-full-menu-catalog-ornament-web" aria-hidden>
+              <span className="home-full-menu-catalog-ornament-cap-web" />
+              <span className="home-full-menu-catalog-ornament-line-web" />
+              <span className="home-full-menu-catalog-ornament-cap-web" />
+            </div>
+            <h2 id="home-menu-catalog-title" className="home-full-menu-catalog-title-web">
+              {t.menuView.homeCatalogTitle}
+            </h2>
+          </header>
 
-        <div className="mx-auto max-w-7xl space-y-10 sm:space-y-14">
-          {menuCategories.map((cat) => {
-            const catItems = itemsByCategory.get(cat.key) ?? []
-            return (
-              <div
-                key={cat.id}
-                id={`home-menu-cat-${cat.key}`}
-                className="home-menu-cat-block-web"
-              >
-                <div className="home-menu-cat-heading-web">
-                  <span className="home-menu-cat-emoji-web" aria-hidden>
-                    {cat.emoji}
-                  </span>
-                  <h3 className="home-menu-cat-title-web">{cat.name}</h3>
-                </div>
-                {catItems.length === 0 ? (
-                  <p className="text-sm text-gray-500">{t.menuView.emptyCategoryTitle}</p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {catItems.map((item) => (
-                      <article
-                        key={item.id}
-                        data-menu-product-id={item.id}
-                        className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
-                      >
-                        <Link href={`/product/${item.id}`} className="relative block aspect-[4/3] bg-gray-100">
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-5xl">
-                              {item.emoji}
-                            </div>
-                          )}
-                        </Link>
-                        <div className="flex flex-1 flex-col gap-2 p-4">
-                          <Link href={`/product/${item.id}`}>
-                            <h2 className="line-clamp-2 text-lg font-bold text-[#145142] hover:underline">
-                              {item.name}
-                            </h2>
-                          </Link>
-                          {item.description ? (
-                            <p className="line-clamp-2 text-sm text-gray-500">{item.description}</p>
-                          ) : null}
-                          <div className="mt-auto flex items-center justify-between pt-2">
-                            <span className="text-xl font-bold text-black">{item.price} €</span>
-                            <button
-                              type="button"
-                              onClick={() => addToCart(item)}
-                              className="flex h-12 w-12 items-center justify-center rounded-full bg-[#145142] text-white shadow-lg shadow-green-900/20 transition hover:bg-[#0f3d32] active:scale-95"
-                              aria-label={t.addToCart}
-                            >
-                              <Plus size={24} />
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
+          <div className="mx-auto max-w-7xl space-y-12 sm:space-y-16 md:space-y-[4.5rem]">
+            {menuCategories.map((cat) => {
+              const catItems = itemsByCategory.get(cat.key) ?? []
+              return (
+                <div
+                  key={cat.id}
+                  id={`home-menu-cat-${cat.key}`}
+                  className="home-menu-cat-block-web"
+                >
+                  <div className="home-menu-cat-heading-web">
+                    <span className="home-menu-cat-emoji-ring-web" aria-hidden>
+                      <span className="home-menu-cat-emoji-web">{cat.emoji}</span>
+                    </span>
+                    <div className="home-menu-cat-heading-main-web">
+                      <h3 className="home-menu-cat-title-web">{cat.name}</h3>
+                      {catItems.length > 0 ? (
+                        <span className="home-menu-cat-meta-web">
+                          {catItems.length} {t.menuView.itemsCount}
+                        </span>
+                      ) : null}
+                    </div>
+                    <span className="home-menu-cat-accent-bar-web" aria-hidden />
                   </div>
-                )}
-              </div>
-            )
-          })}
+                  {catItems.length === 0 ? (
+                    <p className="home-menu-cat-empty-web">{t.menuView.emptyCategoryTitle}</p>
+                  ) : (
+                    <HomeCategoryProductRail
+                      categoryLabel={cat.name}
+                      items={catItems}
+                      addToCart={(item) => addToCart(item as MenuItem)}
+                      onBeforeNavigateToProduct={persistMenuBrowseReturnState}
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </section>
       </>
@@ -2266,11 +2229,14 @@ export default function MenuView() {
         onOpenProfileTab={openProfileTab}
         onPageOpen={handlePageOpen}
         onGoHome={handleClosePage}
-        onOpenNotifications={() => setIsNotificationsOpen(true)}
+        onOpenNotifications={() => {
+          setIsSidebarOpen(false)
+          setIsNotificationsOpen(true)
+        }}
       />
-      <NotificationsView 
-        isOpen={isNotificationsOpen} 
-        onClose={() => setIsNotificationsOpen(false)} 
+      <NotificationsView
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
       />
       <Footer />
     </div>

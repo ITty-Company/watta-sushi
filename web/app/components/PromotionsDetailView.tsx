@@ -1,11 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import { ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import { promoGalleryUrls, promoTpl } from '@/app/lib/promoDisplay'
 // @ts-ignore
 import LogoBackground from './LogoBackground'
+import { WattaMenuProductCard } from './WattaMenuProductCard'
+import { getClientFallbackPromotionById, isClientFallbackPromoId } from '@/app/lib/demoPromotionsFallback'
 
 interface OfferProduct {
   id: number
@@ -42,23 +46,35 @@ export default function PromotionsDetailView({
   onOpenFavorites,
   onOpenProfile
 }: PromotionsDetailViewProps) {
-  const { t, getLocalized } = useLanguage()
+  const { t, getLocalized, language } = useLanguage()
+  const rightNavDrawer = useOptionalRightNavDrawer()
   const p = t.promotionsPage
   const [promo, setPromo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (isClientFallbackPromoId(id)) {
+      const local = getClientFallbackPromotionById(id, language)
+      setPromo(local)
+      setLoading(false)
+      return
+    }
     fetch(`/api/promotions/${id}`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setPromo(data)
         setLoading(false)
       })
-      .catch(e => {
+      .catch((e) => {
         console.error(e)
         setLoading(false)
       })
-  }, [id])
+  }, [id, language])
+
+  const handleGlobalNavMenu = () => {
+    if (rightNavDrawer?.enabled) rightNavDrawer.open()
+    else onMenuClick()
+  }
 
   const Header = () => (
     <div className="absolute top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-4 sm:px-6 z-[1000]">
@@ -68,11 +84,20 @@ export default function PromotionsDetailView({
       </div>
       <div className="flex items-center gap-2 sm:gap-3 md:gap-6 text-gray-700">
         <button type="button" onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full" aria-label="Phone"><Phone size={22}/></button>
-        <button type="button" onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full hidden sm:inline-flex" aria-label="Notifications"><Bell size={22}/></button>
+        {onOpenNotifications ? (
+          <button
+            type="button"
+            onClick={onOpenNotifications}
+            className="rounded-full p-2 text-[#FF5C00] transition hover:bg-orange-50"
+            aria-label={t.notifications.title}
+          >
+            <Bell size={22} strokeWidth={2.25} />
+          </button>
+        ) : null}
         <button type="button" onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full hidden sm:inline-flex" aria-label="Favorites"><Heart size={22}/></button>
         <button type="button" className="hover:bg-gray-100 p-2 rounded-full text-[#145142] hidden sm:inline-flex" aria-label="Cart"><ShoppingBag size={22}/></button>
         <button type="button" onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full" aria-label="Profile"><User size={22}/></button>
-        <button type="button" onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full" aria-label="Menu"><Menu size={22}/></button>
+        <button type="button" onClick={handleGlobalNavMenu} className="hover:bg-gray-100 p-2 rounded-full" aria-label="Menu"><Menu size={22}/></button>
       </div>
     </div>
   )
@@ -95,7 +120,36 @@ export default function PromotionsDetailView({
   const gallery = promoGalleryUrls(promo)
   const offerProducts: OfferProduct[] = Array.isArray(promo.offerProducts) ? promo.offerProducts : []
 
-  const formatMoney = (n: number) => `${n.toFixed(2)} €`
+  const addOfferToCart = useCallback(
+    (product: OfferProduct) => {
+      if (typeof window === 'undefined' || !window.localStorage) return
+      const pct = Math.min(100, Math.max(0, Math.round(Number(product.offerDiscountPercent) || 0)))
+      const base = Number(product.price) || 0
+      const deal = Math.round(base * (1 - pct / 100) * 100) / 100
+      const name = getLocalized(product, 'name') || product.name_ru
+      const desc = getLocalized(product, 'description') || product.description_ru || ''
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+      const n = cart.filter((x: { id?: number }) => x?.id === product.id).length
+      if (n >= 99) {
+        toast.error('Максимальна кількість товару — 99 шт.')
+        return
+      }
+      cart.push({
+        id: product.id,
+        name,
+        description: desc,
+        price: pct > 0 && base > 0 ? deal : base,
+        category: product.category?.name_ru || '',
+        emoji: '🍣',
+        imageUrl: product.imageUrl ?? undefined,
+        promoDiscountPercent: 0,
+      })
+      localStorage.setItem('cart', JSON.stringify(cart))
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      toast.success(t.addToCart)
+    },
+    [getLocalized, t.addToCart],
+  )
 
   return (
     <div className="menu-page-web relative min-h-screen pt-[120px] pb-20 px-3 sm:px-4"
@@ -158,48 +212,28 @@ export default function PromotionsDetailView({
               <h2 className="text-xl sm:text-2xl font-bold text-[#155044] mb-4 sm:mb-6">
                 {p.offersTitle}
               </h2>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 list-none p-0 m-0">
+              <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 sm:gap-5">
                 {offerProducts.map((product) => {
                   const pct = Math.min(100, Math.max(0, Math.round(Number(product.offerDiscountPercent) || 0)))
                   const base = Number(product.price) || 0
-                  const deal = base * (1 - pct / 100)
                   const name = getLocalized(product, 'name') || product.name_ru
                   const desc = getLocalized(product, 'description') || product.description_ru || ''
                   return (
-                    <li
-                      key={product.id}
-                      className="flex gap-4 rounded-2xl border border-gray-100 bg-gray-50/80 p-3 sm:p-4 shadow-sm"
-                    >
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-xl overflow-hidden bg-gray-200">
-                        {product.imageUrl ? (
-                          <img src={product.imageUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">{p.noPhoto}</div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1 flex flex-col justify-center">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="font-bold text-gray-900 text-base sm:text-lg leading-snug">{name}</span>
-                          {pct > 0 && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-[#155044] text-white">
-                              {promoTpl(p.offPercent, { percent: pct })}
-                            </span>
-                          )}
-                        </div>
-                        {desc ? (
-                          <p className="text-sm text-gray-600 line-clamp-2 mb-2">{desc}</p>
-                        ) : null}
-                        <div className="flex flex-wrap items-baseline gap-2 mt-auto">
-                          {pct > 0 && base > 0 ? (
-                            <>
-                              <span className="text-lg sm:text-xl font-bold text-[#155044]">{formatMoney(deal)}</span>
-                              <span className="text-sm text-gray-400 line-through">{p.wasPrice} {formatMoney(base)}</span>
-                            </>
-                          ) : (
-                            <span className="text-lg font-bold text-gray-900">{formatMoney(base)}</span>
-                          )}
-                        </div>
-                      </div>
+                    <li key={product.id}>
+                      <WattaMenuProductCard
+                        variant="grid"
+                        product={{
+                          id: product.id,
+                          name,
+                          description: desc,
+                          price: base,
+                          emoji: '🍣',
+                          imageUrl: product.imageUrl ?? undefined,
+                          isTop: false,
+                          promoDiscountPercent: pct,
+                        }}
+                        onAddToCart={() => addOfferToCart(product)}
+                      />
                     </li>
                   )
                 })}

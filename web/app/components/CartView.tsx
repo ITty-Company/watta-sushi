@@ -1,27 +1,65 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { getDeliveryOriginAddress } from '@/lib/deliveryOrigin'
 import {
-  ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu, MapPin, Truck, Store
+  ArrowLeft,
+  MapPin,
+  Truck,
+  Store,
+  Minus,
+  Plus,
+  Trash2,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  ShoppingBag,
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
+import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { useLanguage } from '../context/LanguageContext'
-import Footer from './Footer'
+import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import {
   buildAmsterdamSlots,
   type DeliveryDay,
 } from '@/lib/deliverySlotsAmsterdam'
 import toast from 'react-hot-toast'
+import { getApiUrl } from '@/lib/utils'
+import { effectiveUnitPrice, clampPromoPercent } from '@/lib/productPricing'
+import {
+  readWattaDeliveryZoneSelection,
+  type WattaDeliveryZoneSelection,
+} from '@/lib/wattaDeliveryZoneSelection'
+import { WattaMenuProductCard } from './WattaMenuProductCard'
+import { cn } from '@/lib/utils'
 
 const CHECKOUT_INPUT_CLASS =
-  'w-full min-w-0 p-4 bg-[#F3F4F6] rounded-xl text-base text-gray-600 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-[#145142] border border-transparent focus:border-[#ff6b35]/40'
-const UA_PHONE_MAX_LEN = 15
+  'w-full min-w-0 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-[15px] text-neutral-800 placeholder:text-neutral-400 outline-none transition focus:border-[#145142]/40 focus:ring-2 focus:ring-[#145142]/20'
+const CHECKOUT_CARD_CLASS =
+  'rounded-2xl border border-[#145142]/10 bg-white p-5 shadow-[0_1px_3px_rgba(20,81,66,0.06)] sm:p-6'
+const CHECKOUT_SECTION_TITLE_CLASS = 'text-lg font-bold tracking-tight text-[#145142] sm:text-xl'
+const CHECKOUT_PHONE_MAX_LEN = 22
 /** Під'їзд / поверх / кв.: лише цифри, до 1000 символів кожне */
 const DIGIT_ADDR_MAX = 4
 const STREET_MAX = 100
 const BUILDING_BLOCK_MAX = 4
 const COMMENT_MAX = 500
+
+function parseSpecsFromDescription(
+  desc: string,
+  weightFallback: string,
+  piecesFallback: string,
+): { weightLine: string; piecesLine: string } {
+  const g = desc.match(/(\d+)\s*г\b/i)?.[1]
+  const ml = desc.match(/(\d+)\s*мл\b/i)?.[1]
+  const pcs =
+    desc.match(/(\d+)\s*(шт|pcs|st\.|stuks)/i)?.[1] ||
+    desc.match(/(\d+)\s*(pieces|pcs)\b/i)?.[1]
+  const weightLine = ml ? `${ml} мл` : g ? `${g} г` : weightFallback
+  const piecesLine = pcs ? `${pcs} шт` : piecesFallback
+  return { weightLine, piecesLine }
+}
 
 function normalizeUaPhoneInput(value: string) {
   return value.replace(/[\s\-().]/g, '')
@@ -32,6 +70,19 @@ function isValidUaPhone(value: string): boolean {
   const n = normalizeUaPhoneInput(value)
   if (!n) return false
   return /^\+380\d{9}$/.test(n) || /^0\d{9}$/.test(n)
+}
+
+function digitsOnly(s: string) {
+  return s.replace(/\D/g, '')
+}
+
+/** UA або міжнародний номер (10–15 цифр). */
+function isValidCheckoutPhone(value: string): boolean {
+  const t = value.trim()
+  if (!t) return false
+  if (isValidUaPhone(t)) return true
+  const d = digitsOnly(t)
+  return d.length >= 10 && d.length <= 15
 }
 
 interface CheckoutSiteSettings {
@@ -57,6 +108,7 @@ interface MenuItem {
   imageUrl?: string
   quantity?: number
   isTop?: boolean
+  promoDiscountPercent?: number
 }
 
 const UPSELL_THRESHOLD = 300
@@ -67,7 +119,19 @@ interface CityOption {
   name: string
   name_ua?: string | null
   name_en?: string | null
+  name_nl?: string | null
   pricePerKm?: number | null
+}
+
+function cityDisplayName(language: string, row: Record<string, unknown>): string {
+  const suffix = language === 'uk' ? 'ua' : language
+  return String(
+    row[`name_${suffix}`] ??
+      row[`name_${language}`] ??
+      row.name_ru ??
+      row.name ??
+      '',
+  ).trim()
 }
 
 // Пропсы для навигации
@@ -88,7 +152,12 @@ export default function CartView({
   onOpenNotifications, 
   onMenuClick 
 }: CartViewProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const pd = t.productDetail
+  const cs = t.cartSection
+  const router = useRouter()
+  const rightNavDrawer = useOptionalRightNavDrawer()
+  const recScrollRef = useRef<HTMLDivElement>(null)
 
   const [cartItems, setCartItems] = useState<MenuItem[]>([])
   const [recommendations, setRecommendations] = useState<MenuItem[]>([])
@@ -96,7 +165,6 @@ export default function CartView({
   const [isBypassingUpsell, setIsBypassingUpsell] = useState(false)
   
   // Состояния для оформления
-  const [isCheckoutMode, setIsCheckoutMode] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   
   const [formData, setFormData] = useState({ 
@@ -119,10 +187,8 @@ export default function CartView({
   //---Оплата---
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CARD');
   const [fulfillment, setFulfillment] = useState<'delivery' | 'pickup'>('delivery')
-  const [selectedCity, setSelectedCity] = useState('Киев')
-  const [cities, setCities] = useState<CityOption[]>([
-    { id: 1, name: 'Киев', pricePerKm: 10 },
-  ])
+  const [selectedCity, setSelectedCity] = useState('')
+  const [cities, setCities] = useState<CityOption[]>([])
   const [distanceKm, setDistanceKm] = useState<number | null>(null)
   const [isCalculatingDistance, setIsCalculatingDistance] = useState(false)
   const [distanceError, setDistanceError] = useState<string | null>(null)
@@ -136,6 +202,7 @@ export default function CartView({
   const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSiteSettings>(defaultCheckoutSettings)
   const [bonusBalance, setBonusBalance] = useState(0)
   const [useBonuses, setUseBonuses] = useState(false)
+  const [mapZoneSelection, setMapZoneSelection] = useState<WattaDeliveryZoneSelection | null>(null)
 
   // --- ЗАГРУЗКА ДАННЫХ ---
   useEffect(() => {
@@ -151,69 +218,147 @@ export default function CartView({
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.localStorage) {
+  const syncCartFromStorage = useCallback(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return
+    try {
       const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      setCartItems(cart)
-
-      const savedUser = localStorage.getItem('currentUser')
-      if (savedUser) {
-        try {
-          const user = JSON.parse(savedUser)
-          setFormData(prev => ({ 
-            ...prev, 
-            name: user.name || '', 
-            phone: user.phone || '', 
-            address: user.address || '' 
-          }))
-        } catch (e) {}
-      }
+      setCartItems(Array.isArray(cart) ? cart : [])
+    } catch {
+      setCartItems([])
     }
+  }, [])
 
-    // Загрузка рекомендаций
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(data => {
-        const allProducts: MenuItem[] = data.map((p: any) => ({
-          id: p.id,
-          name: p.name_ru,
-          description: p.description_ru || '',
-          price: p.price,
-          category: p.category?.name_ru || '',
-          emoji: '🍱',
-          imageUrl: p.imageUrl,
-          isTop: p.isPopular
-        }))
-        setRecommendations(allProducts)
-      })
-      .catch(err => console.error('Ошибка загрузки рекомендаций:', err))
+  useEffect(() => {
+    syncCartFromStorage()
+    window.addEventListener('storage', syncCartFromStorage)
+    window.addEventListener('cartUpdated', syncCartFromStorage)
+    return () => {
+      window.removeEventListener('storage', syncCartFromStorage)
+      window.removeEventListener('cartUpdated', syncCartFromStorage)
+    }
+  }, [syncCartFromStorage])
+
+  const handleCityChange = useCallback((cityId: number) => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem('selectedCityId', String(cityId))
+    window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
+  }, [])
+
+  const scrollRecRail = useCallback((dir: -1 | 1) => {
+    const el = recScrollRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * Math.min(300, el.clientWidth * 0.8), behavior: 'smooth' })
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.localStorage) return
+    const savedUser = localStorage.getItem('currentUser')
+    if (!savedUser) return
+    try {
+      const user = JSON.parse(savedUser)
+      setFormData((prev) => ({
+        ...prev,
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+      }))
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    const loadRecs = () => {
+      const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
+      const cityId = rawCity ? parseInt(rawCity, 10) : NaN
+      const q = new URLSearchParams({ limit: '20' })
+      if (Number.isFinite(cityId) && cityId > 0) q.set('cityId', String(cityId))
+      fetch(getApiUrl(`/api/products/recommendations?${q.toString()}`))
+        .then((res) => res.json())
+        .then((data) => {
+          const list: MenuItem[] = (Array.isArray(data) ? data : []).map((p: Record<string, unknown>) => ({
+            id: Number(p.id),
+            name: String((p as { name_ru?: string }).name_ru ?? ''),
+            description: String((p as { description_ru?: string }).description_ru || ''),
+            price: Number(p.price),
+            category: String((p as { category?: { name_ru?: string } }).category?.name_ru || ''),
+            emoji: '🍱',
+            imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+            isTop: p.isPopular === true,
+            promoDiscountPercent:
+              typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
+          }))
+          setRecommendations(list)
+        })
+        .catch(() => setRecommendations([]))
+    }
+    loadRecs()
+    if (typeof window === 'undefined') return undefined
+    window.addEventListener('cityChanged', loadRecs)
+    return () => window.removeEventListener('cityChanged', loadRecs)
   }, [])
 
   useEffect(() => {
     fetch('/api/cities')
       .then((res) => res.json())
-      .then((data: CityOption[]) => {
-        const loadedCities = Array.isArray(data)
-          ? data
-              .map((city) => ({
-                id: Number(city.id),
-                name: String(city.name_ua || city.name || city.name_en || '').trim(),
-                name_ua: city.name_ua,
-                name_en: city.name_en,
-                pricePerKm: Number(city.pricePerKm ?? 10),
-              }))
-              .filter((city) => Boolean(city.name))
-          : []
+      .then((data: unknown) => {
+        const rows = Array.isArray(data) ? data : []
+        const loadedCities = rows
+          .map((raw) => {
+            const row = raw as Record<string, unknown>
+            const label = cityDisplayName(language, row)
+            return {
+              id: Number(row.id),
+              name: label,
+              name_ua: row.name_ua as string | null | undefined,
+              name_en: row.name_en as string | null | undefined,
+              name_nl: row.name_nl as string | null | undefined,
+              pricePerKm: Number(row.pricePerKm ?? 10),
+            }
+          })
+          .filter((city) => Boolean(city.name))
 
-        if (loadedCities.length > 0) {
-          setCities(loadedCities)
-          setSelectedCity((prev) =>
-            loadedCities.some((city) => city.name === prev) ? prev : loadedCities[0].name
-          )
+        if (loadedCities.length === 0) return
+
+        let wantId: number | null = null
+        try {
+          const raw =
+            typeof window !== 'undefined' ? window.localStorage.getItem('selectedCityId') : null
+          const n = raw ? parseInt(raw, 10) : NaN
+          if (Number.isFinite(n)) wantId = n
+        } catch {
+          /* ignore */
         }
+
+        const preferred =
+          (wantId != null ? loadedCities.find((c) => c.id === wantId) : null) ?? loadedCities[0]
+
+        setCities(loadedCities)
+        setSelectedCity(preferred.name)
       })
       .catch(() => {})
+  }, [language])
+
+  useEffect(() => {
+    const sync = () => setMapZoneSelection(readWattaDeliveryZoneSelection())
+    sync()
+    window.addEventListener('wattaDeliveryZoneUpdated', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('wattaDeliveryZoneUpdated', sync)
+      window.removeEventListener('storage', sync)
+    }
   }, [])
+
+  useEffect(() => {
+    if (cities.length === 0 || typeof window === 'undefined') return
+    const idRaw = localStorage.getItem('selectedCityId')
+    if (!idRaw) return
+    const found = cities.find((c) => String(c.id) === idRaw)
+    if (found) {
+      setSelectedCity((prev) => (prev === found.name ? prev : found.name))
+    }
+  }, [cities, mapZoneSelection])
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -286,7 +431,10 @@ export default function CartView({
   ]), [])
 
   // --- РАСЧЕТ ЦЕНЫ (ВОТ ЭТО ВАЖНО ДЛЯ ОШИБОК) ---
-  const basePrice = cartItems.reduce((sum, item) => sum + item.price, 0)
+  const basePrice = cartItems.reduce(
+    (sum, item) => sum + effectiveUnitPrice(item.price, item.promoDiscountPercent),
+    0
+  )
   const discountAmount = appliedPromo ? Math.round((basePrice * appliedPromo.discount) / 100) : 0
   const finalPrice = basePrice - discountAmount
   const { restaurantPickupAddress } = checkoutSettings
@@ -295,11 +443,47 @@ export default function CartView({
     [cities, selectedCity]
   )
   const selectedCityPricePerKm = Number(selectedCityInfo?.pricePerKm ?? 10)
+
+  const zoneMatchesCartCity = Boolean(
+    mapZoneSelection &&
+      selectedCityInfo &&
+      String(mapZoneSelection.cityId) === String(selectedCityInfo.id),
+  )
+
   const deliveryPrice = useMemo(() => {
     if (fulfillment === 'pickup') return 0
+
+    const zone = mapZoneSelection
+    const cityMatches =
+      zone && selectedCityInfo && String(zone.cityId) === String(selectedCityInfo.id)
+
+    if (cityMatches) {
+      if (zone.feeMode === 'free') {
+        return finalPrice >= checkoutSettings.freeDeliveryThreshold ? 0 : checkoutSettings.deliveryFee
+      }
+      if (zone.feeMode === 'flat') {
+        return Math.max(0, zone.flatAmount ?? 0)
+      }
+      if (zone.feeMode === 'standard') {
+        if (distanceKm != null) {
+          return Math.round(distanceKm * selectedCityPricePerKm * 100) / 100
+        }
+        return 0
+      }
+    }
+
     if (distanceKm == null) return 0
     return Math.round(distanceKm * selectedCityPricePerKm * 100) / 100
-  }, [fulfillment, distanceKm, selectedCityPricePerKm])
+  }, [
+    fulfillment,
+    mapZoneSelection,
+    selectedCityInfo,
+    finalPrice,
+    checkoutSettings.freeDeliveryThreshold,
+    checkoutSettings.deliveryFee,
+    distanceKm,
+    selectedCityPricePerKm,
+  ])
   const subtotalWithDelivery = finalPrice + deliveryPrice
   const appliedBonuses = useBonuses ? Math.min(bonusBalance, subtotalWithDelivery) : 0
   const totalToPay = Math.max(0, subtotalWithDelivery - appliedBonuses)
@@ -397,7 +581,7 @@ export default function CartView({
       } catch {
         if (!cancelled) {
           setDistanceKm(null)
-          setDistanceError('Не удалось рассчитать дистанцию')
+          setDistanceError(cs.distanceMatrixError)
         }
       } finally {
         if (!cancelled) setIsCalculatingDistance(false)
@@ -408,148 +592,17 @@ export default function CartView({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [fulfillment, formData.address, selectedCity, deliveryOriginAddress])
+  }, [fulfillment, formData.address, selectedCity, deliveryOriginAddress, language])
 
   const phoneInvalidHint =
-    formData.phone.trim() !== '' && !isValidUaPhone(formData.phone)
-  const phoneValid = isValidUaPhone(formData.phone)
+    formData.phone.trim() !== '' && !isValidCheckoutPhone(formData.phone)
+  const phoneValid = isValidCheckoutPhone(formData.phone)
   const canSubmitOrder = phoneValid && !isCalculatingDistance
 
 
   const upsellItems = upsellCandidates.length > 0 ? upsellCandidates : mockUpsellItems
   const isUpsellQualified = finalPrice >= UPSELL_THRESHOLD && upsellItems.length > 0
 
-  // // --- РАСЧЕТ ЦЕНЫ (ВОТ ЭТО ВАЖНО ДЛЯ ОШИБОК) ---
-  // const basePrice = cartItems.reduce((sum, item) => sum + item.price, 0)
-  // const discountAmount = appliedPromo ? Math.round((basePrice * appliedPromo.discount) / 100) : 0
-  // const finalPrice = basePrice - discountAmount
-  // const { restaurantPickupAddress } = checkoutSettings
-  // const selectedCityInfo = useMemo(
-  //   () => cities.find((city) => city.name === selectedCity) ?? null,
-  //   [cities, selectedCity]
-  // )
-  // const selectedCityPricePerKm = Number(selectedCityInfo?.pricePerKm ?? 10)
-  // const deliveryPrice = useMemo(() => {
-  //   if (fulfillment === 'pickup') return 0
-  //   if (distanceKm == null) return 0
-  //   return Math.round(distanceKm * selectedCityPricePerKm * 100) / 100
-  // }, [fulfillment, distanceKm, selectedCityPricePerKm])
-  // const subtotalWithDelivery = finalPrice + deliveryPrice
-  // const appliedBonuses = useBonuses ? Math.min(bonusBalance, subtotalWithDelivery) : 0
-  // const totalToPay = Math.max(0, subtotalWithDelivery - appliedBonuses)
-
-  // const pickupAddressDisplay = restaurantPickupAddress || '—'
-
-  // const estimateDistanceFromAddressMock = (from: string, to: string): number => {
-  //   const combined = `${from}|${to}`.trim().toLowerCase()
-  //   const hash = Array.from(combined).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
-  //   return Math.max(1.5, Math.min(25, (hash % 220) / 10))
-  // }
-
-  // const getDistanceKm = async (origin: string, destination: string): Promise<number> => {
-  //   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  //   if (!apiKey) {
-  //     return estimateDistanceFromAddressMock(origin, destination)
-  //   }
-
-  //   try {
-  //     const url =
-  //       `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}` +
-  //       `&destinations=${encodeURIComponent(destination)}&units=metric&key=${encodeURIComponent(apiKey)}`
-  //     const response = await fetch(url)
-  //     if (!response.ok) throw new Error('Distance Matrix request failed')
-  //     const data = await response.json()
-  //     const meters = data?.rows?.[0]?.elements?.[0]?.distance?.value
-  //     if (typeof meters !== 'number' || !Number.isFinite(meters)) {
-  //       throw new Error('Distance Matrix response missing distance')
-  //     }
-  //     return Math.round((meters / 1000) * 100) / 100
-  //   } catch {
-  //     return estimateDistanceFromAddressMock(origin, destination)
-  //   }
-  // }
-
-  // const amsterdamSlots = useMemo(
-  //   () => buildAmsterdamSlots(deliveryDay),
-  //   [deliveryDay]
-  // )
-
-  // const submitLiqPayCheckout = (data: string, signature: string) => {
-  //   const form = document.createElement('form')
-  //   form.method = 'POST'
-  //   form.action = 'https://www.liqpay.ua/api/3/checkout'
-  //   form.acceptCharset = 'utf-8'
-
-  //   const dataInput = document.createElement('input')
-  //   dataInput.type = 'hidden'
-  //   dataInput.name = 'data'
-  //   dataInput.value = data
-  //   form.appendChild(dataInput)
-
-  //   const signatureInput = document.createElement('input')
-  //   signatureInput.type = 'hidden'
-  //   signatureInput.name = 'signature'
-  //   signatureInput.value = signature
-  //   form.appendChild(signatureInput)
-
-  //   document.body.appendChild(form)
-  //   form.submit()
-  // }
-
-  // useEffect(() => {
-  //   if (amsterdamSlots.some((s) => s.value === deliverySlot)) return
-  //   setDeliverySlot('asap')
-  // }, [deliveryDay, amsterdamSlots, deliverySlot])
-
-  // useEffect(() => {
-  //   if (fulfillment !== 'delivery') {
-  //     setDistanceKm(null)
-  //     setDistanceError(null)
-  //     setIsCalculatingDistance(false)
-  //     return
-  //   }
-
-  //   const destinationAddress = formData.address.trim()
-  //   const originAddress = pickupAddressDisplay.trim()
-
-  //   if (!destinationAddress || !originAddress || originAddress === '—') {
-  //     setDistanceKm(null)
-  //     setDistanceError(null)
-  //     setIsCalculatingDistance(false)
-  //     return
-  //   }
-
-  //   let cancelled = false
-  //   setIsCalculatingDistance(true)
-  //   setDistanceError(null)
-
-  //   const timer = setTimeout(async () => {
-  //     try {
-  //       const destination = `${selectedCity}, ${destinationAddress}`.trim()
-  //       const km = await getDistanceKm(originAddress, destination)
-  //       if (!cancelled) setDistanceKm(km)
-  //     } catch {
-  //       if (!cancelled) {
-  //         setDistanceKm(null)
-  //         setDistanceError('Не удалось рассчитать дистанцию')
-  //       }
-  //     } finally {
-  //       if (!cancelled) setIsCalculatingDistance(false)
-  //     }
-  //   }, 450)
-
-  //   return () => {
-  //     cancelled = true
-  //     clearTimeout(timer)
-  //   }
-  // }, [fulfillment, formData.address, selectedCity, pickupAddressDisplay])
-
-  // const phoneInvalidHint =
-  //   formData.phone.trim() !== '' && !isValidUaPhone(formData.phone)
-  // const phoneValid = isValidUaPhone(formData.phone)
-  // const canSubmitOrder = phoneValid && !isCalculatingDistance
-
-  // --- ФУНКЦИИ КОРЗИНЫ ---
   const updateCart = (newCart: MenuItem[]) => {
     setCartItems(newCart)
     localStorage.setItem('cart', JSON.stringify(newCart))
@@ -559,7 +612,7 @@ export default function CartView({
   const addItem = (item: MenuItem) => {
     const currentQty = cartItems.filter(i => i.id === item.id).length;
     if (currentQty >= 99) {
-        toast.error('Максимальна кількість товару - 99 шт.')
+        toast.error(cs.toastMaxQty)
         return;
     }
     
@@ -601,14 +654,14 @@ export default function CartView({
       if (res.ok && data.success) {
         setAppliedPromo({ code: data.code, discount: data.discount })
         setPromoCode('') 
-        toast.success(`Промокод ${data.code} успешно применен!`)
+        toast.success(cs.toastPromoOk.replace('{{code}}', String(data.code)))
       } else {
-        setPromoError(data.message || 'Неверный код')
+        setPromoError(data.message || cs.promoInvalidFallback)
         setAppliedPromo(null)
       }
     } catch (e) {
       console.error(e)
-      setPromoError('Ошибка соединения')
+      setPromoError(cs.toastPromoNetwork)
     }
   }
 
@@ -619,13 +672,17 @@ export default function CartView({
 
   const handleAddUpsell = (item: MenuItem) => {
     addItem(getDiscountedUpsellItem(item))
-    toast.success(`${item.name} додано зі знижкою ${UPSELL_DISCOUNT_PERCENT}%`)
+    toast.success(
+      cs.toastUpsellAdded
+        .replace('{{name}}', item.name)
+        .replace('{{percent}}', String(UPSELL_DISCOUNT_PERCENT)),
+    )
   }
 
   // --- ОФОРМЛЕНИЕ ЗАКАЗА ---
  const handleOrder = async () => {
     if (fulfillment === 'delivery' && !formData.address.trim()) {
-      toast.error('Вкажіть адресу доставки')
+      toast.error(cs.toastAddressRequired)
       return
     }
     setIsLoading(true)
@@ -633,7 +690,7 @@ export default function CartView({
       const userId = localStorage.getItem('userId')
       const promoPart = appliedPromo ? `(ПРОМОКОД: ${appliedPromo.code} -${appliedPromo.discount}%)` : ''
       const fulfillmentPart =
-        fulfillment === 'pickup' ? `[${t.cartSection.fulfillmentPickup}]` : `[${t.cartSection.fulfillmentDelivery}]`
+        fulfillment === 'pickup' ? `[${cs.fulfillmentPickup}]` : `[${cs.fulfillmentDelivery}]`
       const dayLabel =
         deliveryDay === 'today' ? 'Сьогодні (Амстердам)' : 'Завтра (Амстердам)'
       const slotLabel =
@@ -648,8 +705,16 @@ export default function CartView({
       const sticksPart = `[Приборы: ${formData.sticks} шт, Персоны: ${formData.persons}]`
       const cbPart = formData.noCallbackConfirm ? '[Не перезванивать]' : ''
       const dbPart = formData.noDoorbellRing ? '[Не звонить в дверь]' : ''
+      const zoneNote =
+        fulfillment === 'delivery' &&
+        zoneMatchesCartCity &&
+        mapZoneSelection &&
+        mapZoneSelection.zoneName.trim()
+          ? `[${cs.deliveryFromMap.replace('{{zone}}', mapZoneSelection.zoneName)}]`
+          : ''
       const fullComment =
-        `${changePart} ${fulfillmentPart} ${timePart} ${sticksPart} ${cbPart} ${dbPart} ${formData.comment} ${appliedPromo ? promoPart : ''}`.trim()
+        `${zoneNote} ${changePart} ${fulfillmentPart} ${timePart} ${sticksPart} ${cbPart} ${dbPart} ${formData.comment} ${appliedPromo ? promoPart : ''}`
+          .trim()
 
       const addrDetails: string[] = []
       if (formData.buildingBlock.trim())
@@ -661,7 +726,7 @@ export default function CartView({
 
       const orderAddress =
         fulfillment === 'pickup'
-          ? `${t.cartSection.fulfillmentPickup}: ${pickupAddressDisplay}`
+          ? `${cs.fulfillmentPickup}: ${pickupAddressDisplay}`
           : [
               `${selectedCity}, ${formData.address.trim()}`,
               addrDetails.length ? addrDetails.join('; ') : '',
@@ -717,7 +782,7 @@ export default function CartView({
 
     } catch (error) { 
         console.error(error); 
-        toast.error('Не удалось оформить заказ.'); 
+        toast.error(cs.toastOrderFailed) 
     } finally { 
         setIsLoading(false);
     }
@@ -747,218 +812,261 @@ export default function CartView({
       setIsBypassingUpsell(false)
     }
   }
-  // --- КОМПОНЕНТЫ UI ---
-  const Header = () => (
-    <div className="fixed top-3 sm:top-4 left-2 right-2 w-auto max-w-[100vw] min-h-[72px] sm:h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2 sm:py-0 z-50 border border-[#145142]/10">
-      <div className="flex items-center gap-2 cursor-pointer min-w-0" onClick={onBack}>
-        <img src="/logo.png" alt="Logo" className="h-9 w-9 sm:h-10 sm:w-10 object-contain shrink-0" />
-        <img src="/1.jpg" alt="Watta Sushi" className="h-5 sm:h-6 w-auto max-w-[120px] sm:max-w-none object-contain" />
-      </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-3 md:gap-6 text-gray-700 shrink-0">
-        <button type="button" onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full transition text-[#145142] hover:ring-2 hover:ring-[#ff6b35]/30"><Phone size={22} className="sm:w-6 sm:h-6" /></button>
-        <button type="button" onClick={onOpenNotifications} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><Bell size={22} className="sm:w-6 sm:h-6" /></button>
-        <button type="button" onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><Heart size={22} className="sm:w-6 sm:h-6" /></button>
-        <button type="button" className="hover:bg-gray-100 p-2 rounded-full text-[#145142] relative ring-2 ring-transparent hover:ring-[#ff6b35]/30">
-            <ShoppingBag size={22} className="sm:w-6 sm:h-6" />
-            {cartItems.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-[#ff6b35] rounded-full border-2 border-white"></span>}
-        </button>
-        <button type="button" onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><User size={22} className="sm:w-6 sm:h-6" /></button>
-        <button type="button" onClick={onMenuClick} className="hover:bg-gray-100 p-2 rounded-full transition hover:ring-2 hover:ring-[#ff6b35]/30"><Menu size={22} className="sm:w-6 sm:h-6" /></button>
-      </div>
-    </div>
-  )
+  const handleGlobalNavMenu = () => {
+    if (rightNavDrawer?.enabled) rightNavDrawer.open()
+    else onMenuClick()
+  }
 
-  const MinusIcon = () => (
+  const cartMetaText = cs.cartMeta
+    .replace('{{lines}}', String(uniqueItems.length))
+    .replace('{{pieces}}', String(cartItems.length))
 
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-
-      <rect width="36" height="36" rx="5" fill="#194A38"/>
-
-      <path d="M12 18H24M33 18C33 26.2843 26.2843 33 18 33C9.71573 33 3 26.2843 3 18C3 9.71573 9.71573 3 18 3C26.2843 3 33 9.71573 33 18Z" stroke="#D9D9D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-
-    </svg>
-
-  )
-
-  const PlusIcon = () => (
-
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-
-      <rect width="36" height="36" rx="5" fill="#145142"/>
-
-      <path d="M12 18H24M18 12V24M33 18C33 26.2843 26.2843 33 18 33C9.71573 33 3 26.2843 3 18C3 9.71573 9.71573 3 18 3C26.2843 3 33 9.71573 33 18Z" stroke="#C4C4C4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-
-    </svg>
-
-  )
-
-  const TrashIcon = () => (
-
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-
-      <rect width="24" height="24" rx="5" fill="#194A38"/>
-
-      <path d="M10 11V17M14 11V17M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M3 6H21M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="#D9D9D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-
-    </svg>
-
-  )
-
-
-
-    const PromoInputBg = () => (
-    <div className="absolute inset-0 pointer-events-none">
-      <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 211 52" fill="none" preserveAspectRatio="none">
-        <defs>
-          <filter id="filter0_d_5331_178" x="0" y="0" width="210.399" height="51.4036" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-            <feOffset dy="4"/>
-            <feGaussianBlur stdDeviation="2"/>
-            <feComposite in2="hardAlpha" operator="out"/>
-            <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/>
-            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_5331_178"/>
-            <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_5331_178" result="shape"/>
-          </filter>
-          <g id="stroke0_5331_178">
-            <path d="M215.495 344.52C216.451 344.52 217.233 345.303 217.233 346.26C217.233 347.217 216.451 348 215.495 348C214.539 348 213.757 347.217 213.757 346.26C213.757 345.303 214.539 344.52 215.495 344.52ZM106.01 341.04C106.01 339.765 106.531 339.243 107.169 339.88C107.805 340.518 107.805 341.562 107.169 342.2C106.531 342.837 106.01 342.315 106.01 341.04Z" fill="#155044"/>
-            <rect width="2" height="2" fill="#155044" /> 
-          </g>
-        </defs>
-        <g filter="url(#filter0_d_5331_178)">
-          <path d="M5.69336 1.70386H204.693V41.7039H5.69336V1.70386Z" fill="white"/>
-        </g>
-      </svg>
-    </div>
-  )
   return (
-    <div className="watta-public-page-shell h-screen w-full max-w-[100vw] overflow-y-auto font-sans pb-20 overflow-x-hidden relative">
+    <div className="watta-public-page-shell relative flex w-full min-h-0 max-w-[100vw] flex-1 flex-col overflow-x-hidden bg-[#f4f6f4] font-sans">
       <LogoBackground />
-      <Header />
-      
-      {/* ПРОСТРАНСТВО ПОД ФИКСИРОВАННЫЙ ХЕДЕР */}
-      <div className="h-[120px] w-full"></div>
+      <WattaGlobalSiteHeader
+        cartCount={cartItems.length}
+        onCityChange={handleCityChange}
+        deliveryEmbeddedActive={false}
+        onPromotionsClick={() => router.push('/')}
+        onCartClick={() => {
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }
+        }}
+        onMenuClick={handleGlobalNavMenu}
+        onProfileClick={onOpenProfile}
+        logoHref="/"
+      />
 
-      <div className="relative z-10 max-w-[1600px] mx-auto px-3 sm:px-4 min-w-0">
-        
-        {/* КНОПКА НАЗАД */}
-        <div className="mb-8">
-           <button 
-             onClick={isCheckoutMode ? () => setIsCheckoutMode(false) : onBack}
-             className="bg-white px-6 py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-white/80 transition w-fit"
-           >
-             <ArrowLeft size={20} /> Назад
-           </button>
+      <div className="relative z-10 mx-auto flex min-h-0 w-full min-w-0 max-w-[1200px] flex-1 flex-col px-4 pb-12 pt-3 sm:px-6 sm:pt-4">
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-[#145142] shadow-sm transition hover:border-[#145142]/25 hover:bg-neutral-50"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
+            {t.auth.back}
+          </button>
         </div>
 
-        {!isCheckoutMode ? (
-          <>
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-[#194A38] mb-6 sm:mb-8 leading-tight tracking-tight break-words">
-              Ваш заказ ({cartItems.length} товара)
-            </h1>
+        <>
+          <div className="mb-5 sm:mb-6">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0f241e] sm:text-3xl">{t.cart}</h1>
+            <p className="mt-1 text-sm text-neutral-500">{cartMetaText}</p>
+          </div>
 
-            {cartItems.length === 0 ? (
-               <div className="flex flex-col items-center justify-center h-[300px] bg-white rounded-[20px]">
-                 <span className="text-2xl text-gray-400 font-bold">Корзина пуста</span>
-               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,28rem)] gap-6 lg:gap-8 items-start w-full min-w-0">
-                
-                {/* ЛЕВАЯ КОЛОНКА (Товары) */}
-                <div className="flex-1 flex flex-col gap-6 min-w-0">
-                {/* --- СПИСОК ТОВАРОВ  --- */}
-                
-                <div className="bg-white rounded-[20px] p-4 sm:p-6 flex flex-col gap-4 min-h-[392px] min-w-0 border border-[#145142]/10">
-                  {uniqueItems.map((item) => (
-                    <div key={item.id} className="w-full min-w-0 bg-[#D9D9D9] rounded-[20px] p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0" style={{ minHeight: '104px' }}>
-                      
-                      {/* Фото и Название */}
-                      <div className="flex items-center gap-6 w-full md:w-auto">
-                        <div className="w-[72px] h-[72px] bg-black rounded-[10px] overflow-hidden shrink-0">
-                          {item.imageUrl ? (
-                              <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.name} />
-                          ) : (
-                              <div className="w-full h-full flex items-center justify-center text-2xl">{item.emoji}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-[24px] md:text-[36px] font-bold text-[#194A38] leading-none mb-1">
-                              {/* Исправлено: item.name */}
-                              {item.name}
-                          </div>
-                          <div className="text-[18px] md:text-[24px] font-medium text-[#194A38] opacity-70 line-clamp-1">
-                              {/* Исправлено: item.description */}
-                              {item.description || 'состав'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Кнопки управления */}
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3">
-                          <button onClick={() => removeItem(item.id)} className="hover:opacity-70 transition"><MinusIcon /></button>
-                          <button onClick={() => addItem(item)} className="hover:opacity-70 transition"><PlusIcon /></button>
-                        </div>
-                        <button onClick={() => removeAllItem(item.id)} className="hover:opacity-70 transition"><TrashIcon /></button>
-                        <div className="text-[24px] font-normal text-black w-[100px] text-right whitespace-nowrap">
-                          {item.price * (item.quantity || 1)} €
-                        </div>
-                      </div>
-
-                    </div>
-                  ))}
+          {cartItems.length === 0 ? (
+            <div
+              role="status"
+              className="flex flex-1 flex-col justify-center pb-10 pt-2 sm:pb-12 sm:pt-4"
+            >
+              <div className="relative mx-auto w-full max-w-lg overflow-hidden rounded-[28px] border border-[#145142]/18 bg-white/95 p-8 shadow-[0_24px_56px_-28px_rgba(20,81,66,0.45)] backdrop-blur-[2px] sm:rounded-[32px] sm:p-10">
+                <div
+                  className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#ff6b35]/12 blur-2xl"
+                  aria-hidden
+                />
+                <div
+                  className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-[#145142]/12 blur-2xl"
+                  aria-hidden
+                />
+                <div
+                  className="pointer-events-none absolute left-1/2 top-6 -translate-x-1/2 text-2xl opacity-[0.07] sm:text-3xl"
+                  aria-hidden
+                >
+                  <span className="absolute -left-24 -top-2">🍣</span>
+                  <span className="absolute -right-20 top-8">🥢</span>
+                  <span className="absolute left-8 top-24">🍱</span>
                 </div>
-
-                {/* 1. БЛОК РЕКОМЕНДАЦИЙ (Добавлен) */}
-                {filteredRecommendations.length > 0 && (
-                  <div>
-                    <h2 className="text-[40px] font-bold text-[#145142] mb-6">Добавьте к заказу</h2>
-                    <div className="bg-white rounded-[20px] p-6 flex gap-4 overflow-x-auto scrollbar-hide items-stretch">
-                      {filteredRecommendations.map(item => (
-                        <div 
-                          key={item.id} 
-                          onClick={() => handleAddRecommendation(item)}
-                          className="flex items-center gap-4 shrink-0 min-w-[220px] bg-gray-50 hover:bg-gray-100 p-3 rounded-[15px] cursor-pointer transition border border-transparent hover:border-[#145142]/20"
-                        >
-                          <div className="w-[72px] h-[61px] bg-black rounded-[10px] overflow-hidden shrink-0">
+                <div className="relative flex flex-col items-center text-center">
+                  <span className="mb-4 inline-flex items-center rounded-full border border-[#145142]/30 bg-gradient-to-r from-[#145142]/[0.08] to-[#1a6b58]/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#145142] sm:text-xs">
+                    {cs.emptyCartKicker}
+                  </span>
+                  <div className="mb-5 flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-2xl bg-gradient-to-br from-white via-[#f4faf7] to-[#e8f2ed] text-[#145142] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] ring-2 ring-[#145142]/20 sm:h-[5.75rem] sm:w-[5.75rem]">
+                    <ShoppingBag className="h-11 w-11 sm:h-12 sm:w-12" strokeWidth={1.5} />
+                  </div>
+                  <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">
+                    {cs.empty}
+                  </h2>
+                  <p className="mt-3 max-w-md text-pretty text-sm leading-relaxed text-gray-600 sm:text-base">
+                    {cs.emptyCartHint}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onMenuClick}
+                    className="mt-8 inline-flex items-center gap-2 rounded-2xl border-2 border-[#145142] bg-white px-8 py-3.5 text-sm font-bold text-[#145142] shadow-sm transition hover:bg-[#145142]/[0.07] hover:shadow-md active:scale-[0.99]"
+                  >
+                    <Sparkles className="h-4 w-4 shrink-0 text-[#ff6b35]" strokeWidth={2.25} />
+                    {t.navigation.menu}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid w-full min-w-0 grid-cols-1 items-start gap-8 pb-8 lg:grid-cols-[1fr_minmax(300px,380px)] lg:gap-10">
+              <div className="flex min-w-0 flex-col gap-8">
+                <div className={CHECKOUT_CARD_CLASS}>
+                  <ul className="divide-y divide-neutral-100">
+                    {uniqueItems.map((item) => (
+                      <li key={item.id} className="flex flex-col gap-3 py-4 first:pt-0 sm:flex-row sm:items-center sm:gap-4">
+                        <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+                          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-neutral-100 sm:h-[4.5rem] sm:w-[4.5rem]">
                             {item.imageUrl ? (
-                              <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.name}/>
+                              <img src={item.imageUrl} className="h-full w-full object-cover" alt="" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-2xl">{item.emoji}</div>
+                              <div className="flex h-full w-full items-center justify-center text-2xl sm:text-3xl">
+                                {item.emoji}
+                              </div>
                             )}
                           </div>
-                          <div className="flex flex-col">
-                            {/* Исправлено: item.name вместо safeLocalized */}
-                            <span className="text-[18px] font-bold text-[#194A38] leading-tight line-clamp-2">{item.name}</span>
-                            <span className="text-[14px] font-bold text-[#145142] mt-1">{item.price} €</span>
-                          </div>
-                          <div className="ml-auto text-[#145142]">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <path d="M12 5v14M5 12h14"/>
-                            </svg>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold leading-snug text-neutral-900">{item.name}</p>
+                            {item.description ? (
+                              <p className="mt-0.5 line-clamp-1 text-sm text-neutral-500">{item.description}</p>
+                            ) : null}
+                            <p className="mt-1 text-sm text-neutral-600">
+                              {clampPromoPercent(item.promoDiscountPercent) > 0 ? (
+                                <>
+                                  <span className="text-neutral-400 line-through">{item.price} €</span>
+                                  <span className="ml-1.5 font-medium text-[#145142]">
+                                    {effectiveUnitPrice(item.price, item.promoDiscountPercent)} €
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="font-medium">{item.price} €</span>
+                              )}
+                              <span className="text-neutral-400"> / {cs.perPiece}</span>
+                            </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end sm:pl-2">
+                          <div className="flex items-center rounded-lg border border-neutral-200 bg-neutral-50 p-0.5">
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-md text-[#145142] transition hover:bg-white"
+                              aria-label="-1"
+                            >
+                              <Minus className="h-4 w-4" strokeWidth={2.5} />
+                            </button>
+                            <span className="min-w-[1.75rem] text-center text-sm font-semibold tabular-nums text-neutral-900">
+                              {item.quantity ?? 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => addItem(item)}
+                              className="flex h-8 w-8 items-center justify-center rounded-md bg-[#145142] text-white transition hover:bg-[#0f3d32]"
+                              aria-label="+1"
+                            >
+                              <Plus className="h-4 w-4" strokeWidth={2.5} />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAllItem(item.id)}
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-red-50 hover:text-red-600"
+                            aria-label="Remove line"
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={2.2} />
+                          </button>
+                          <p className="min-w-[4.5rem] text-right text-base font-semibold tabular-nums text-neutral-900">
+                            {(
+                              effectiveUnitPrice(item.price, item.promoDiscountPercent) * (item.quantity || 1)
+                            ).toFixed(2)}{' '}
+                            €
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                {/* ПРАВАЯ КОЛОНКА (Оплата и Сумма) */}
-             <div className="w-full min-w-0 flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start z-20">
+                {filteredRecommendations.length > 0 ? (
+                  <section className={CHECKOUT_CARD_CLASS} aria-labelledby="cart-recs-heading">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <h2 id="cart-recs-heading" className={CHECKOUT_SECTION_TITLE_CLASS}>
+                          {cs.addToOrder}
+                        </h2>
+                        <p className="mt-1 text-sm text-neutral-500">{pd.recommendsHint}</p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => scrollRecRail(-1)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#145142] transition hover:border-[#145142]/30 hover:bg-neutral-50"
+                          aria-label={cs.recScrollPrev}
+                        >
+                          <ChevronLeft className="h-4 w-4" strokeWidth={2.4} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => scrollRecRail(1)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#145142] transition hover:border-[#145142]/30 hover:bg-neutral-50"
+                          aria-label={cs.recScrollNext}
+                        >
+                          <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="relative -mx-1">
+                      <div
+                        ref={recScrollRef}
+                        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+                      >
+                        {filteredRecommendations.map((item) => (
+                          <div
+                            key={item.id}
+                            className="snap-start pl-0 first:pl-1 last:pr-1 sm:first:pl-2 sm:last:pr-2"
+                          >
+                            <WattaMenuProductCard
+                              variant="grid"
+                              className={cn(
+                                'w-[min(260px,78vw)] shrink-0 rounded-xl border border-neutral-200',
+                                'shadow-sm transition hover:shadow-md',
+                              )}
+                                  product={{
+                                    id: item.id,
+                                    name: item.name,
+                                    description: item.description,
+                                    price: item.price,
+                                    emoji: item.emoji,
+                                    imageUrl: item.imageUrl,
+                                    isTop: item.isTop,
+                                    promoDiscountPercent: item.promoDiscountPercent,
+                                  }}
+                                  subtitleLine={
+                                    parseSpecsFromDescription(
+                                      item.description,
+                                      pd.weightFallback,
+                                      pd.piecesFallback,
+                                    ).weightLine
+                                  }
+                                  onAddToCart={() => handleAddRecommendation(item)}
+                                />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                ) : null}
+              </div>
+
+              <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-[10.5rem] lg:z-20 lg:self-start">
                 <form
-                  className="flex flex-col gap-6 min-w-0"
+                  className="flex min-w-0 flex-col gap-5"
                   onSubmit={handleCheckoutSubmit}
                   noValidate
                 >
                 {/* 1. Контактные данные */}
-                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
-                   <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-6">Контактные данные</h2>
+                <div className={CHECKOUT_CARD_CLASS}>
+                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-4`}>{cs.contactDetails}</h2>
                    <div className="flex flex-col gap-4">
                       <input 
                         type="text" 
-                        placeholder="Ваше имя *" 
+                        placeholder={`${t.auth.name} *`}
                         className={CHECKOUT_INPUT_CLASS}
                         maxLength={100}
                         value={formData.name} 
@@ -966,86 +1074,90 @@ export default function CartView({
                         required 
                       />
                       <div className="flex flex-col gap-1 min-w-0">
-                        <input 
-                          type="tel" 
-                          placeholder="+380501234567 або 0501234567"
-                          className={CHECKOUT_INPUT_CLASS} 
-                          maxLength={UA_PHONE_MAX_LEN}
+                        <input
+                          type="tel"
+                          placeholder={cs.phonePlaceholder}
+                          className={`${CHECKOUT_INPUT_CLASS} ${
+                            phoneInvalidHint ? 'ring-2 ring-red-400 focus:ring-red-500' : ''
+                          }`}
+                          maxLength={CHECKOUT_PHONE_MAX_LEN}
                           value={formData.phone}
                           aria-invalid={phoneInvalidHint}
-                          // className={`${CHECKOUT_INPUT_CLASS} ${
-                          //   phoneInvalidHint
-                          //     ? 'ring-2 ring-red-500 focus:ring-red-500'
-                          //     : ''
-                          // }`} 
-                          onChange={e =>
+                          onChange={(e) =>
                             setFormData({
                               ...formData,
-                              phone: e.target.value.slice(0, UA_PHONE_MAX_LEN),
+                              phone: e.target.value.slice(0, CHECKOUT_PHONE_MAX_LEN),
                             })
                           }
-                          required 
+                          required
                         />
                         {phoneInvalidHint ? (
-                          <p className="text-sm font-medium text-red-600 pl-1">{t.cartSection.invalidPhone}</p>
+                          <p className="text-sm font-medium text-red-600 pl-1">{cs.invalidPhone}</p>
                         ) : null}
                       </div>
                    </div>
                 </div>
                 {/* 2. Доставка / самовивіз */}
-                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10 relative z-10">
-                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-                      <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38]">{t.delivery}</h2>
+                <div className={`${CHECKOUT_CARD_CLASS} relative z-10`}>
+                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <h2 className={CHECKOUT_SECTION_TITLE_CLASS}>{t.delivery}</h2>
                       {fulfillment === 'delivery' && (
-                        <span className="text-[#145142] font-semibold text-sm sm:text-base cursor-pointer flex items-center gap-1 shrink-0">
-                          Зона доставки ⓘ
+                        <span
+                          className="flex shrink-0 cursor-pointer items-center gap-1 text-sm font-semibold text-[#145142] sm:text-base"
+                          title={cs.deliveryZoneLabel}
+                          role="note"
+                        >
+                          {cs.deliveryZoneLabel}{' '}
+                          <span className="text-neutral-400" aria-hidden>
+                            ⓘ
+                          </span>
                         </span>
                       )}
                    </div>
 
                    <div
-                     className="mb-6 flex w-full min-w-0 rounded-2xl bg-[#F3F4F6] p-1.5 shadow-inner border border-[#145142]/10"
+                     className="mb-5 flex w-full min-w-0 gap-1 rounded-lg border border-neutral-200 bg-neutral-100 p-1"
                      role="group"
-                     aria-label={`${t.cartSection.fulfillmentDelivery} / ${t.cartSection.fulfillmentPickup}`}
+                     aria-label={`${cs.fulfillmentDelivery} / ${cs.fulfillmentPickup}`}
                    >
                      <button
                        type="button"
                        onClick={() => setFulfillment('delivery')}
-                       className={`relative z-10 flex flex-1 min-w-0 items-center justify-center gap-2 rounded-xl py-3 px-2 text-sm font-bold transition-all md:text-base cursor-pointer ${
+                       className={`relative z-10 flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-md px-2 py-2.5 text-sm font-semibold transition md:text-[15px] ${
                          fulfillment === 'delivery'
-                           ? 'bg-white text-[#145142] shadow-md ring-2 ring-[#ff6b35]/50'
-                           : 'text-gray-500 hover:text-[#145142]'
+                           ? 'bg-white text-[#145142] shadow-sm'
+                           : 'text-neutral-500 hover:text-[#145142]'
                        }`}
                      >
-                       <Truck className="h-5 w-5 shrink-0" />
-                       {t.cartSection.fulfillmentDelivery}
+                       <Truck className="h-4 w-4 shrink-0" />
+                       {cs.fulfillmentDelivery}
                      </button>
                      <button
                        type="button"
                        onClick={() => setFulfillment('pickup')}
-                       className={`relative z-10 flex flex-1 min-w-0 items-center justify-center gap-2 rounded-xl py-3 px-2 text-sm font-bold transition-all md:text-base cursor-pointer ${
+                       className={`relative z-10 flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-md px-2 py-2.5 text-sm font-semibold transition md:text-[15px] ${
                          fulfillment === 'pickup'
-                           ? 'bg-white text-[#145142] shadow-md ring-2 ring-[#ff6b35]/50'
-                           : 'text-gray-500 hover:text-[#145142]'
+                           ? 'bg-white text-[#145142] shadow-sm'
+                           : 'text-neutral-500 hover:text-[#145142]'
                        }`}
                      >
-                       <Store className="h-5 w-5 shrink-0" />
-                       {t.cartSection.fulfillmentPickup}
+                       <Store className="h-4 w-4 shrink-0" />
+                       {cs.fulfillmentPickup}
                      </button>
                    </div>
 
                    {fulfillment === 'delivery' ? (
                      <>
-                       <div className="flex gap-2 mb-4 flex-wrap" role="group" aria-label="Місто">
+                       <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label={cs.citiesGroupAria}>
                          {cities.map(city => (
                              <button 
                                key={city.id}
                                type="button"
                                onClick={() => setSelectedCity(city.name)}
-                               className={`px-4 sm:px-6 py-2 rounded-xl font-bold transition border cursor-pointer ${
+                               className={`cursor-pointer rounded-lg border px-3 py-2 text-sm font-semibold transition sm:px-4 ${
                                  selectedCity === city.name
-                                   ? 'bg-[#145142] text-white shadow-sm border-[#ff6b35]/50 ring-2 ring-[#ff6b35]/40'
-                                   : 'bg-[#F3F4F6] text-gray-600 border-transparent hover:bg-[#145142]/10 hover:text-[#145142]'
+                                   ? 'border-[#145142] bg-[#145142] text-white'
+                                   : 'border-transparent bg-neutral-100 text-neutral-600 hover:border-[#145142]/20 hover:bg-white hover:text-[#145142]'
                                }`}
                              >
                                {city.name}
@@ -1055,7 +1167,7 @@ export default function CartView({
 
                        <input 
                           type="text" 
-                          placeholder="Улица и номер дома *" 
+                          placeholder={cs.streetPlaceholder}
                           className={`${CHECKOUT_INPUT_CLASS} mb-4`}
                           maxLength={STREET_MAX}
                           value={formData.address} 
@@ -1074,7 +1186,7 @@ export default function CartView({
                         type="text" 
                         inputMode="numeric" 
                         pattern="[0-9]*"
-                        placeholder="Подъезд (лише цифри)"
+                        placeholder={cs.entrancePlaceholder}
                         className={CHECKOUT_INPUT_CLASS}
                         value={formData.entrance}
                         onChange={e => {
@@ -1086,7 +1198,7 @@ export default function CartView({
                             type="number"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder="Этаж (лише цифри)"
+                            placeholder={cs.floorPlaceholder}
                             className={CHECKOUT_INPUT_CLASS}
                             min={0}
                             max={9999}
@@ -1101,7 +1213,7 @@ export default function CartView({
                             type="number"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder="Квартира (лише цифри)"
+                            placeholder={cs.apartmentPlaceholder}
                             className={CHECKOUT_INPUT_CLASS}
                             min={0}
                             max={9999}
@@ -1114,7 +1226,7 @@ export default function CartView({
                           />
                           <input
                             type="text"
-                            placeholder="Корпус / блок"
+                            placeholder={cs.buildingPlaceholder}
                             className={CHECKOUT_INPUT_CLASS}
                             value={formData.buildingBlock}
                             onChange={e => {
@@ -1138,7 +1250,7 @@ export default function CartView({
                                  })
                                }
                              />
-                             <span className="text-gray-600 group-hover:text-[#145142]">Не перезванивать для подтверждения</span>
+                             <span className="text-neutral-600 group-hover:text-[#145142]">{cs.optNoCallback}</span>
                           </label>
                           <label className="flex items-start gap-3 cursor-pointer group">
                              <input
@@ -1152,22 +1264,22 @@ export default function CartView({
                                  })
                                }
                              />
-                             <span className="text-gray-600 group-hover:text-[#145142]">Не звонить в дверь</span>
+                             <span className="text-neutral-600 group-hover:text-[#145142]">{cs.optNoDoorbell}</span>
                           </label>
                        </div>
                      </>
                    ) : (
-                     <div className="rounded-2xl border border-[#145142]/15 bg-gradient-to-br from-[#145142]/[0.07] via-white to-[#ff6b35]/10 p-6 shadow-sm">
-                       <p className="text-sm font-semibold uppercase tracking-wide text-[#145142]/80 mb-3">
-                         {t.cartSection.pickupAtRestaurant}
+                     <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#145142]">
+                         {cs.pickupAtRestaurant}
                        </p>
-                       <div className="flex gap-4 items-start">
-                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#145142] text-white shadow-lg shadow-[#145142]/30">
-                           <MapPin className="h-6 w-6" />
+                       <div className="flex items-start gap-3">
+                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#145142] text-white">
+                           <MapPin className="h-5 w-5" />
                          </div>
                          <div>
-                           <p className="text-lg font-bold text-[#194A38] leading-snug">{pickupAddressDisplay}</p>
-                           <p className="mt-2 text-sm text-gray-600">{t.cartSection.pickupSubtitle}</p>
+                           <p className="font-semibold leading-snug text-neutral-900">{pickupAddressDisplay}</p>
+                           <p className="mt-1 text-sm text-neutral-600">{cs.pickupSubtitle}</p>
                          </div>
                        </div>
                      </div>
@@ -1175,12 +1287,12 @@ export default function CartView({
                 </div>
 
                 {/* 3. Время доставки (Europe/Amsterdam) */}
-                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
-                   <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-2">Время доставки</h2>
-                   <p className="text-xs text-gray-500 mb-6">Інтервали за часом Амстердама (CET/CEST). Минулий час недоступний.</p>
+                <div className={CHECKOUT_CARD_CLASS}>
+                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-1`}>{cs.deliveryTimeTitle}</h2>
+                   <p className="mb-5 text-xs text-neutral-500">{cs.deliveryTimeHint}</p>
                    <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                       <div className="min-w-0">
-                         <label className="block text-gray-400 text-sm mb-1">День</label>
+                         <label className="mb-1 block text-sm text-neutral-500">{cs.slotDayLabel}</label>
                          <select
                            className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
                            value={deliveryDay}
@@ -1188,12 +1300,12 @@ export default function CartView({
                              setDeliveryDay(e.target.value as DeliveryDay)
                            }
                          >
-                            <option value="today">Сьогодні</option>
-                            <option value="tomorrow">Завтра</option>
+                            <option value="today">{cs.dayToday}</option>
+                            <option value="tomorrow">{cs.dayTomorrow}</option>
                          </select>
                       </div>
                       <div className="min-w-0">
-                         <label className="block text-gray-400 text-sm mb-1">Час</label>
+                         <label className="mb-1 block text-sm text-neutral-500">{cs.slotTimeLabel}</label>
                          <select
                            className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
                            value={deliverySlot}
@@ -1210,11 +1322,11 @@ export default function CartView({
                 </div>
 
                 {/* 4. Комментарий и приборы */}
-                <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
-                   <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-6">Детали</h2>
+                <div className={CHECKOUT_CARD_CLASS}>
+                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-4`}>{cs.orderDetailsTitle}</h2>
                    <div className="flex flex-col gap-4 mb-4">
                       <div>
-                         <label className="block text-gray-400 text-sm mb-1">Кол-во людей (1–99)</label>
+                         <label className="mb-1 block text-sm text-neutral-500">{cs.partySizeLabel}</label>
                          <div className="flex flex-col gap-2">
                            <input
                              type="range"
@@ -1246,7 +1358,7 @@ export default function CartView({
                          </div>
                       </div>
                       <div>
-                         <label className="block text-gray-400 text-sm mb-1">Учебные палочки</label>
+                         <label className="mb-1 block text-sm text-neutral-500">{cs.chopsticksLabel}</label>
                          <select
                            className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
                            value={formData.sticks}
@@ -1266,7 +1378,7 @@ export default function CartView({
                       </div>
                    </div>
                    <textarea 
-                      placeholder="Комментарий к заказу" 
+                      placeholder={cs.commentPlaceholder}
                       className={`${CHECKOUT_INPUT_CLASS} h-32 resize-none min-h-[8rem]`}
                       maxLength={COMMENT_MAX}
                       value={formData.comment} 
@@ -1277,22 +1389,22 @@ export default function CartView({
                         })
                       }
                    />
-                   <p className="text-xs text-gray-400 mt-1 text-right">
+                   <p className="mt-1 text-right text-xs text-neutral-400">
                      {formData.comment.length}/{COMMENT_MAX}
                    </p>
                 </div>
                   
                   {/* 5. Блок Оплаты */}
-                  <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm border border-[#145142]/10">
-                    <h2 className="text-xl sm:text-[28px] font-bold text-[#194A38] mb-6">Способ оплаты</h2>
+                  <div className={CHECKOUT_CARD_CLASS}>
+                    <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-4`}>{cs.paymentMethodTitle}</h2>
                     
                     <div className="flex flex-col gap-3">
                       <label
                         onClick={() => setPaymentMethod('CASH')}
-                        className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition ${
                           paymentMethod === 'CASH'
-                            ? 'border-[#145142] bg-[#145142]/5 ring-2 ring-[#ff6b35]/35'
-                            : 'border-gray-200 hover:bg-gray-50 hover:border-[#145142]/25'
+                            ? 'border-[#145142] bg-[#145142]/[0.06]'
+                            : 'border-neutral-200 hover:border-[#145142]/25 hover:bg-neutral-50'
                         }`}
                       >
                         <div
@@ -1304,7 +1416,7 @@ export default function CartView({
                             <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
                           )}
                         </div>
-                        <span className="font-bold text-gray-700">Наличными</span>
+                        <span className="font-semibold text-neutral-800">{cs.payCash}</span>
                         <input
                           type="radio"
                           name="payment"
@@ -1317,7 +1429,7 @@ export default function CartView({
                         <input
                           type="number"
                           inputMode="numeric"
-                          placeholder="Сдача с какой суммы? (например: 1000)"
+                          placeholder={cs.changeFromPlaceholder}
                           className={CHECKOUT_INPUT_CLASS}
                           value={formData.needChangeFrom}
                           onChange={(e) =>
@@ -1331,10 +1443,10 @@ export default function CartView({
 
                       <label
                         onClick={() => setPaymentMethod('CARD')}
-                        className={`flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition ${
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
                           paymentMethod === 'CARD'
-                            ? 'border-[#145142] bg-[#145142]/5 ring-2 ring-[#ff6b35]/35'
-                            : 'border-gray-200 hover:bg-gray-50 hover:border-[#145142]/25'
+                            ? 'border-[#145142] bg-[#145142]/[0.06]'
+                            : 'border-neutral-200 hover:border-[#145142]/25 hover:bg-neutral-50'
                         }`}
                       >
                         <div
@@ -1346,8 +1458,8 @@ export default function CartView({
                             )}
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-bold text-gray-700">Картой онлайн</span>
-                            <span className="text-xs text-gray-500">LiqPay, Apple Pay, Google Pay</span>
+                            <span className="font-semibold text-neutral-800">{cs.payCard}</span>
+                            <span className="text-xs text-neutral-500">{cs.payCardHint}</span>
                           </div>
                           <input
                             type="radio"
@@ -1360,123 +1472,147 @@ export default function CartView({
                       </div>
                     </div>
                     {/* 6. Блок Итого (Объединенный с Промокодом) */}
-                    <div className="bg-white rounded-[30px] p-6 sm:p-8 shadow-sm flex flex-col gap-6 border border-[#145142]/10">
-                      <div className="relative overflow-hidden rounded-[20px] p-4">
-                          <div className="relative z-10">
-                            <h3 className="font-bold text-[#194A38] mb-3 text-lg">Промокод</h3>
-                            <div className="flex w-full gap-2 items-center">
-                              <input
-                                type="text"
-                                placeholder="Введіть код"
-                                className="flex-1 bg-[#F5F5F7] rounded-[15px] px-4 py-3 outline-none focus:ring-2 focus:ring-[#145142] font-bold text-[#194A38] uppercase placeholder:font-normal placeholder:normal-case"
-                                value={promoCode}
-                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                              />
-                              <button
-                                type="button"
-                                onClick={handleApplyPromo}
-                                className="bg-[#145142] text-white px-5 rounded-[15px] font-bold hover:bg-[#0f3d34] transition flex items-center justify-center shrink-0 min-w-fit whitespace-nowrap border border-[#ff6b35]/30 hover:border-[#ff6b35]/60"
-                              >
-                                OK
-                              </button>
-                            </div>
-                            {promoError && (
-                              <p className="text-red-500 text-sm mt-2 font-medium bg-red-50 p-2 rounded-lg text-center">
-                                {promoError}
-                              </p>
-                            )}
-                            {appliedPromo && (
-                              <div className="mt-3 flex items-center gap-2 text-[#145142] font-bold bg-[#145142]/10 p-2 rounded-lg justify-center">
-                                <span>🎉 Код {appliedPromo.code} застосовано!</span>
-                              </div>
-                            )}
+                    <div className={`${CHECKOUT_CARD_CLASS} flex flex-col gap-5`}>
+                      <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4">
+                        <h3 className="mb-3 text-base font-semibold text-[#145142]">{cs.promoCodeTitle}</h3>
+                        <div className="flex w-full flex-wrap items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder={cs.promoPlaceholder}
+                            className="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-[15px] font-semibold uppercase text-[#145142] outline-none placeholder:font-normal placeholder:normal-case focus:ring-2 focus:ring-[#145142]/30"
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyPromo}
+                            className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d34]"
+                          >
+                            OK
+                          </button>
+                        </div>
+                        {promoError ? (
+                          <p className="mt-2 rounded-lg bg-red-50 p-2 text-center text-sm font-medium text-red-600">
+                            {promoError}
+                          </p>
+                        ) : null}
+                        {appliedPromo ? (
+                          <div className="mt-3 rounded-lg bg-[#145142]/10 p-2 text-center text-sm font-semibold text-[#145142]">
+                            <span>
+                              {cs.promoApplied.replace('{{code}}', appliedPromo.code)}
+                            </span>
                           </div>
-                          <PromoInputBg />
+                        ) : null}
                       </div>
-                      <div className="w-full h-px bg-gray-200"></div>
-                      <div className="flex flex-col gap-4">
-                          <div className="flex justify-between items-center text-gray-500 text-lg">
-                            <span>Сумма заказа</span>
-                            <span>{basePrice} €</span>
+                      <div className="h-px w-full bg-neutral-200" />
+                      <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between text-sm text-neutral-600">
+                            <span>{cs.subtotalLabel}</span>
+                            <span className="tabular-nums font-medium text-neutral-900">{basePrice} €</span>
                           </div>
                           {appliedPromo && (
-                            <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
-                              <span>Скидка ({appliedPromo.code})</span>
-                              <span>-{discountAmount} €</span>
+                            <div className="flex items-center justify-between text-sm font-semibold text-[#145142]">
+                              <span>
+                                {cs.discountPrefix} ({appliedPromo.code})
+                              </span>
+                              <span className="tabular-nums">−{discountAmount} €</span>
                             </div>
                           )}
-                          <div className="flex justify-between items-center text-gray-500 text-lg gap-3">
+                          <div className="flex items-center justify-between gap-3 text-sm text-neutral-600">
                             <span>
                               {fulfillment === 'pickup'
-                                ? t.cartSection.fulfillmentPickup
+                                ? cs.fulfillmentPickup
                                 : t.delivery}
                             </span>
                             <span
-                              className={`text-right font-semibold ${
+                              className={`text-right font-medium tabular-nums ${
                                 fulfillment === 'delivery' && deliveryPrice === 0
                                   ? 'text-[#145142]'
-                                  : 'text-gray-700'
+                                  : 'text-neutral-800'
                               }`}
                             >
                               {fulfillment === 'pickup'
                                 ? '—'
                                 : deliveryPrice === 0
-                                  ? t.cartSection.deliveryFree
+                                  ? cs.deliveryFree
                                   : `${deliveryPrice} €`}
                             </span>
                           </div>
                           {fulfillment === 'delivery' && (
-                            <div className="text-xs -mt-2">
+                            <div className="-mt-1 space-y-1 text-xs">
+                              {zoneMatchesCartCity && mapZoneSelection ? (
+                                <p className="font-semibold text-[#145142]">
+                                  {cs.deliveryFromMap.replace('{{zone}}', mapZoneSelection.zoneName)}
+                                </p>
+                              ) : null}
+                              {zoneMatchesCartCity &&
+                              mapZoneSelection?.feeMode === 'standard' &&
+                              distanceKm == null ? (
+                                <p className="text-amber-800">{cs.deliveryZoneStandardHint}</p>
+                              ) : null}
                               {isCalculatingDistance ? (
-                                <p className="text-gray-500">Рассчитываем расстояние доставки...</p>
+                                <p className="text-neutral-500">{cs.calculatingDistance}</p>
                               ) : distanceKm != null ? (
                                 <p className="text-[#145142]">
-                                  Расстояние: {distanceKm.toFixed(2)} км x {selectedCityPricePerKm.toFixed(2)} = {deliveryPrice.toFixed(2)} €
+                                  {cs.distanceBreakdown
+                                    .replace('{{km}}', distanceKm.toFixed(2))
+                                    .replace('{{rate}}', selectedCityPricePerKm.toFixed(2))
+                                    .replace('{{sum}}', deliveryPrice.toFixed(2))}
                                 </p>
                               ) : (
-                                <p className="text-gray-500">Введите адрес доставки для расчета стоимости</p>
+                                <p className="text-neutral-500">{cs.enterAddressForDeliveryFee}</p>
                               )}
-                              {distanceError ? <p className="text-red-500">{distanceError}</p> : null}
+                              {distanceError ? <p className="text-red-600">{distanceError}</p> : null}
                             </div>
                           )}
                           {bonusBalance > 0 && (
-                            <div className="rounded-xl border border-[#145142]/20 bg-[#145142]/5 p-3">
-                              <label className="flex items-center justify-between gap-3 cursor-pointer">
-                                <span className="text-sm font-semibold text-[#145142]">
-                                  Списать бонусы (Доступно: {bonusBalance.toFixed(2)} €)
+                            <div className="rounded-lg border border-[#145142]/15 bg-[#145142]/[0.04] p-3">
+                              <label className="flex cursor-pointer items-center justify-between gap-3">
+                                <span className="text-sm font-medium text-[#145142]">
+                                  {cs.bonusAvailableLabel.replace(
+                                    '{{amount}}',
+                                    bonusBalance.toFixed(2),
+                                  )}
                                 </span>
                                 <input
                                   type="checkbox"
                                   checked={useBonuses}
                                   onChange={(e) => setUseBonuses(e.target.checked)}
-                                  className="w-5 h-5 accent-[#145142]"
+                                  className="h-4 w-4 accent-[#145142]"
                                 />
                               </label>
                               {useBonuses && (
-                                <p className="text-sm text-[#145142] mt-2">Будет списано: {appliedBonuses.toFixed(2)} €</p>
+                                <p className="mt-2 text-sm text-[#145142]">
+                                  {cs.bonusDeductLine.replace(
+                                    '{{amount}}',
+                                    appliedBonuses.toFixed(2),
+                                  )}
+                                </p>
                               )}
                             </div>
                           )}
                           {useBonuses && appliedBonuses > 0 && (
-                            <div className="flex justify-between items-center text-[#145142] text-lg font-bold">
-                              <span>Списано бонусами</span>
-                              <span>-{appliedBonuses.toFixed(2)} €</span>
+                            <div className="flex items-center justify-between text-sm font-semibold text-[#145142]">
+                              <span>{cs.bonusSpentLabel}</span>
+                              <span className="tabular-nums">−{appliedBonuses.toFixed(2)} €</span>
                             </div>
                           )}
-                          <div className="w-full h-px bg-gray-200 my-2"></div>
-                          <div className="flex justify-between items-end">
-                            <span className="text-[24px] font-bold text-black">К оплате</span>
-                            <span className="text-[32px] font-bold text-[#145142]">{totalToPay.toFixed(2)} €</span>
+                          <div className="my-1 h-px w-full bg-neutral-200" />
+                          <div className="flex items-end justify-between gap-3">
+                            <span className="text-lg font-bold text-neutral-900">{cs.total}</span>
+                            <span className="text-2xl font-bold tabular-nums text-[#145142]">
+                              {totalToPay.toFixed(2)} €
+                            </span>
                           </div>
                           <button
                             disabled={isLoading || !canSubmitOrder}
                             type="submit"
-                            className="w-full h-[60px] rounded-[15px] text-white text-[20px] font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 border border-[#ff6b35]/35 bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] hover:brightness-105 active:scale-[0.99] ring-2 ring-[#ff6b35]/30 focus-visible:outline-none focus-visible:ring-[#ff6b35]/60"
+                            className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#145142] text-base font-semibold text-white shadow-sm transition hover:bg-[#0f3d34] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40"
                           >
-                            {isLoading ? 'Обработка...' : 'Оформить заказ'}
+                            {isLoading ? cs.processing : cs.order}
                           </button>
-                          <p className="text-center text-xs text-gray-400 px-2 leading-tight">
-                            Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
+                          <p className="px-2 text-center text-[11px] leading-snug text-neutral-400">
+                            {cs.privacyConsent}
                           </p>
                       </div>
                     </div>
@@ -1484,18 +1620,15 @@ export default function CartView({
                 </div>
               </div>
             )}
-          </>
-        ) : (
-          null
-        )}
+        </>
       </div>
       {isUpsellModalOpen && (
         <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4">
           <div className="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-[#145142]/15 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#145142] to-[#1a6b58] px-6 py-5 text-white">
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Добавьте к заказу со скидкой!</h3>
-              <p className="mt-1 text-sm sm:text-base text-white/90">
-                Вы уже на сумме от {UPSELL_THRESHOLD} € - поймайте спецпредложение перед оплатой.
+            <div className="bg-[#145142] px-6 py-5 text-white">
+              <h3 className="text-xl font-bold tracking-tight sm:text-2xl">{cs.upsellTitle}</h3>
+              <p className="mt-1 text-sm text-white/90 sm:text-base">
+                {cs.upsellLead.replace('{{threshold}}', String(UPSELL_THRESHOLD))}
               </p>
             </div>
 
@@ -1510,8 +1643,10 @@ export default function CartView({
                         -{UPSELL_DISCOUNT_PERCENT}%
                       </span>
                     </div>
-                    <h4 className="mt-3 text-lg font-bold text-[#194A38] leading-tight">{item.name}</h4>
-                    <p className="mt-1 text-sm text-gray-500 min-h-[40px]">{item.description || 'Специальное предложение'}</p>
+                    <h4 className="mt-3 text-base font-semibold leading-tight text-neutral-900">{item.name}</h4>
+                    <p className="mt-1 min-h-[2.5rem] text-sm text-neutral-500">
+                      {item.description || cs.upsellOfferFallback}
+                    </p>
                     <div className="mt-3 flex items-end justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xl font-extrabold text-[#145142]">{discounted.price} €</span>
@@ -1521,9 +1656,9 @@ export default function CartView({
                     <button
                       type="button"
                       onClick={() => handleAddUpsell(item)}
-                      className="mt-4 h-11 rounded-xl bg-[#145142] text-white font-bold hover:bg-[#0f3d34] transition"
+                      className="mt-4 h-10 rounded-lg bg-[#145142] text-sm font-semibold text-white transition hover:bg-[#0f3d34]"
                     >
-                      Add to Cart
+                      {cs.upsellAddToCart}
                     </button>
                   </div>
                 )
@@ -1534,15 +1669,14 @@ export default function CartView({
               <button
                 type="button"
                 onClick={handleContinueCheckout}
-                className="w-full h-14 rounded-2xl text-white text-lg sm:text-xl font-extrabold shadow-lg border border-[#ff6b35]/35 bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] hover:brightness-105 active:scale-[0.99] transition"
+                className="h-12 w-full rounded-lg bg-[#145142] text-base font-semibold text-white shadow-sm transition hover:bg-[#0f3d34]"
               >
-                Продолжить оформление
+                {cs.upsellContinue}
               </button>
             </div>
           </div>
         </div>
       )}
-      <Footer />
     </div>
   )
 }

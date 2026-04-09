@@ -12,7 +12,10 @@ async function initDatabase() {
       console.error('❌ DATABASE_URL не установлен! Проверьте конфигурацию в Render Dashboard.')
       process.exit(1)
     }
-    
+
+    console.log('🗄️  prisma migrate deploy…')
+    execSync('npx prisma migrate deploy', { stdio: 'inherit' })
+
     // Проверяем подключение
     await prisma.$connect()
     console.log('✅ Подключение к базе данных установлено')
@@ -25,11 +28,9 @@ async function initDatabase() {
       categoriesCount = await prisma.category.count()
       usersCount = await prisma.user.count()
     } catch (error) {
-      // Если таблицы не существуют, нужно выполнить db push
-      console.log('⚠️  Таблицы не найдены, синхронизируем схему...')
-      execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' })
-      categoriesCount = await prisma.category.count()
-      usersCount = await prisma.user.count()
+      console.error('❌ Не удалось прочитать таблицы после migrate deploy:', error?.message || error)
+      console.error('   Проверьте DATABASE_URL и что все миграции в prisma/migrations применены.')
+      process.exit(1)
     }
     
     console.log(`📊 Текущее состояние БД: ${categoriesCount} категорий, ${usersCount} пользователей`)
