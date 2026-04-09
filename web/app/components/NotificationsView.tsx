@@ -1,61 +1,81 @@
-import React from 'react';
-import { X, Bell } from 'lucide-react';
+'use client'
 
-// ВАЖНО: Используем export const, чтобы совпадало с import { NotificationsView }
-export const NotificationsView = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  
-  // Если меню закрыто и анимация не нужна (или простая проверка), можно не рендерить
-  // Но для анимации лучше управлять классами. 
-  // Если в твоем MenuView компонент рендерится условно (&&), то этот блок не нужен.
-  // Если он рендерится всегда, но скрыт - оставляем логику ниже.
-  
+import React, { useEffect } from 'react'
+import { X, Bell } from 'lucide-react'
+import { useLanguage } from '@/app/context/LanguageContext'
+
+const ACCENT = '#FF5C00'
+
+export const NotificationsView = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean
+  onClose: () => void
+}) => {
+  const { t } = useLanguage()
+  const n = t.notifications
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
   return (
-    <>
-      {/* 1. Фон (Backdrop) - показываем только если isOpen */}
-      <div 
-        className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
-        }`}
-        onClick={onClose} 
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="watta-notifications-title">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/45 backdrop-blur-[2px] transition-opacity"
+        onClick={onClose}
+        aria-label={t.locationPicker.ariaClose}
       />
+      <div className="relative w-full max-w-[420px] overflow-hidden rounded-[24px] bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
+          <h2 id="watta-notifications-title" className="text-xl font-black tracking-tight text-gray-900 sm:text-2xl">
+            {n.title}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100"
+            aria-label={t.locationPicker.ariaClose}
+          >
+            <X size={22} strokeWidth={2.25} />
+          </button>
+        </div>
 
-      {/* 2. Сама панель */}
-      <div 
-        className={`fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <div className="flex flex-col h-full">
-          
-          {/* Шапка */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900">Повідомлення</h2>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        <div className="flex flex-col items-center justify-center px-6 py-14 text-center sm:py-16">
+          <div className="relative mb-8">
+            <div
+              className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-gray-100"
+              aria-hidden
             >
-              <X size={24} className="text-gray-500" />
-            </button>
-          </div>
-
-          {/* Контент: Пустое состояние */}
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-            <div className="relative mb-6">
-              <Bell size={64} className="text-gray-400" strokeWidth={1.5} />
-              <div className="absolute -top-1 -right-1 bg-white rounded-full p-1">
-                 <X size={20} className="text-orange-500 bg-white rounded-full border border-white" /> 
-              </div>
+              <Bell size={44} className="text-gray-500" strokeWidth={1.5} />
             </div>
-
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Повідомлень немає
-            </h3>
-            <p className="text-gray-500 max-w-[250px]">
-              Ми повідомимо, коли з'явиться щось цікаве
-            </p>
+            <div
+              className="absolute -left-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-md"
+              style={{ backgroundColor: ACCENT }}
+              aria-hidden
+            >
+              <X size={16} className="text-white" strokeWidth={3} />
+            </div>
           </div>
+
+          <h3 className="mb-2 text-lg font-black text-gray-900 sm:text-xl">{n.empty}</h3>
+          <p className="max-w-[280px] text-sm leading-relaxed text-gray-500 sm:text-[15px]">{n.emptySubtext}</p>
         </div>
       </div>
-    </>
-  );
-};
+    </div>
+  )
+}

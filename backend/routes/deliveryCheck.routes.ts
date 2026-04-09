@@ -1,5 +1,13 @@
 import { Router, Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
+import {
+  AMSTERDAM_EUR_PER_KM,
+  WATTA_KITCHEN_AMSTERDAM,
+  amsterdamDeliveryAllowed,
+  isAmsterdamCity,
+  isValidNlPostcodeFormat,
+  minimumOrderEurFromDistanceKm,
+} from '../lib/amsterdamDelivery.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -127,7 +135,19 @@ function citySearchNames(city: {
   return [...new Set(names.map((n) => n.trim()))]
 }
 
-function parseNominatimHit(hit: unknown): { lat: number; lng: number; displayName: string } | null {
+function nominatimAddress(hit: Record<string, unknown>): Record<string, string> | undefined {
+  const raw = hit.address
+  if (!raw || typeof raw !== 'object') return undefined
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === 'string' && v.trim()) out[k] = v
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
+function parseNominatimHit(
+  hit: unknown
+): { lat: number; lng: number; displayName: string; address?: Record<string, string> } | null {
   if (!hit || typeof hit !== 'object') return null
   const h = hit as Record<string, unknown>
   const lat = parseFloat(String(h.lat))
@@ -137,14 +157,30 @@ function parseNominatimHit(hit: unknown): { lat: number; lng: number; displayNam
     lat,
     lng: lon,
     displayName: typeof h.display_name === 'string' ? h.display_name : `${lat}, ${lon}`,
+    address: nominatimAddress(h),
   }
 }
 
 /** Опційно: той самий ключ, що й NEXT_PUBLIC_GOOGLE_MAPS_API_KEY на фронті (Geocoding API має бути увімкнено). */
+function googleComponentsToAddress(
+  components: { long_name: string; types: string[] }[] | undefined
+): Record<string, string> | undefined {
+  if (!Array.isArray(components)) return undefined
+  const out: Record<string, string> = {}
+  for (const c of components) {
+    const t = c.types || []
+    if (t.includes('locality')) out.city = c.long_name
+    if (t.includes('administrative_area_level_2')) out.municipality = c.long_name
+    if (t.includes('sublocality_level_1') && !out.city_district) out.city_district = c.long_name
+    if (t.includes('sublocality') && !out.suburb) out.suburb = c.long_name
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
 async function geocodeWithGoogle(
   query: string,
   regionCc: string
-): Promise<{ lat: number; lng: number; displayName: string } | null> {
+): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
   const key = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_SERVER_API_KEY
   if (!key || !query.trim()) return null
   const region = regionCc.replace(/[^A-Za-z]/g, '').slice(0, 2).toLowerCase()
@@ -152,16 +188,25 @@ async function geocodeWithGoogle(
   try {
     const res = await fetch(url)
     if (!res.ok) return null
-    const data = (await res.json()) as { status?: string; results?: { geometry?: { location?: { lat?: number; lng?: number } }; formatted_address?: string }[] }
+    const data = (await res.json()) as {
+      status?: string
+      results?: {
+        geometry?: { location?: { lat?: number; lng?: number } }
+        formatted_address?: string
+        address_components?: { long_name: string; types: string[] }[]
+      }[]
+    }
     if (data.status !== 'OK' || !data.results?.[0]?.geometry?.location) return null
-    const loc = data.results[0].geometry.location
+    const r0 = data.results[0]
+    const loc = r0.geometry!.location!
     const lat = Number(loc.lat)
     const lng = Number(loc.lng)
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
     return {
       lat,
       lng,
-      displayName: data.results[0].formatted_address || `${lat}, ${lng}`,
+      displayName: r0.formatted_address || `${lat}, ${lng}`,
+      address: googleComponentsToAddress(r0.address_components),
     }
   } catch {
     return null
@@ -179,7 +224,7 @@ async function geocodePostal(
     latitude?: number | null
     longitude?: number | null
   }
-): Promise<{ lat: number; lng: number; displayName: string } | null> {
+): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
   const cc = countryCode.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'UA'
   const variants = postalVariantsForCountry(postal, cc)
   if (variants.length === 0) return null
@@ -236,6 +281,7 @@ async function geocodePostal(
       limit: '8',
       countrycodes: cc.toLowerCase(),
       postalcode: pv,
+      addressdetails: '1',
     })
     const rows = await trySearch(params)
     const parsed = parseNominatimHit(rows[0])
@@ -248,6 +294,7 @@ async function geocodePostal(
     limit: '8',
     countrycodes: cc.toLowerCase(),
     q: `${pv0} ${primaryCity}`,
+    addressdetails: '1',
   })
   if (viewbox) {
     qParams.set('viewbox', viewbox)
@@ -263,6 +310,7 @@ async function geocodePostal(
       limit: '8',
       countrycodes: cc.toLowerCase(),
       q: `${pv0} ${names[1]}`,
+      addressdetails: '1',
     })
     if (viewbox) {
       q2.set('viewbox', viewbox)
@@ -279,6 +327,7 @@ async function geocodePostal(
       limit: '8',
       countrycodes: cc.toLowerCase(),
       q: `${pv0} ${primaryCity} ${countryHint}`,
+      addressdetails: '1',
     })
     rows = await trySearch(q3)
     parsed = parseNominatimHit(rows[0])
@@ -318,6 +367,20 @@ router.post('/check', async (req: Request, res: Response) => {
     const freeDeliveryThreshold = settings?.freeDeliveryThreshold ?? 1000
     const pricePerKm = city.pricePerKm ?? 10
 
+    const countryCode = (city.country?.code || 'UA').toUpperCase()
+    const amsterdamFlow = isAmsterdamCity(city) && countryCode === 'NL'
+
+    if (amsterdamFlow && !isValidNlPostcodeFormat(postalCode)) {
+      return res.json({
+        status: 'postcode_format_invalid' as const,
+        pricePerKm: AMSTERDAM_EUR_PER_KM,
+        defaultDeliveryFee: 0,
+        freeDeliveryThreshold,
+        estimatedDeliveryFee: null as number | null,
+        distanceKm: null as number | null,
+      })
+    }
+
     const zonesWithPoly = city.deliveryZones
       .map((z) => {
         const poly = parsePolygon(z.coordinates)
@@ -337,11 +400,46 @@ router.post('/check', async (req: Request, res: Response) => {
     if (!geo) {
       return res.json({
         status: 'geocode_failed' as const,
-        pricePerKm,
-        defaultDeliveryFee,
+        pricePerKm: amsterdamFlow ? AMSTERDAM_EUR_PER_KM : pricePerKm,
+        defaultDeliveryFee: amsterdamFlow ? 0 : defaultDeliveryFee,
         freeDeliveryThreshold,
         estimatedDeliveryFee: null as number | null,
         distanceKm: null as number | null,
+      })
+    }
+
+    /** Амстердам (NL): автоматично км від кухні × €2, без полігонів зон. */
+    if (amsterdamFlow) {
+      if (!amsterdamDeliveryAllowed(geo.lat, geo.lng, geo.address, geo.displayName)) {
+        return res.json({
+          status: 'outside_amsterdam' as const,
+          lat: geo.lat,
+          lng: geo.lng,
+          placeLabel: geo.displayName,
+          pricePerKm: AMSTERDAM_EUR_PER_KM,
+          defaultDeliveryFee: 0,
+          freeDeliveryThreshold,
+          estimatedDeliveryFee: null as number | null,
+          distanceKm: null as number | null,
+        })
+      }
+      const origin = kitchenOrigin(city)
+      const oLat = origin?.lat ?? WATTA_KITCHEN_AMSTERDAM.lat
+      const oLng = origin?.lng ?? WATTA_KITCHEN_AMSTERDAM.lng
+      const distanceKm = haversineKm(oLat, oLng, geo.lat, geo.lng)
+      const fee = roundMoney(distanceKm * AMSTERDAM_EUR_PER_KM)
+      const distRounded = roundMoney(distanceKm)
+      return res.json({
+        status: 'amsterdam_ok' as const,
+        lat: geo.lat,
+        lng: geo.lng,
+        placeLabel: geo.displayName,
+        pricePerKm: AMSTERDAM_EUR_PER_KM,
+        defaultDeliveryFee: 0,
+        freeDeliveryThreshold,
+        estimatedDeliveryFee: fee,
+        distanceKm: distRounded,
+        minimumOrderEur: minimumOrderEurFromDistanceKm(distanceKm),
       })
     }
 
@@ -367,6 +465,7 @@ router.post('/check', async (req: Request, res: Response) => {
           lat: geo.lat,
           lng: geo.lng,
         })
+        const dKm = est.distanceKm != null ? roundMoney(est.distanceKm) : null
         return res.json({
           status: 'inside' as const,
           lat: geo.lat,
@@ -381,7 +480,9 @@ router.post('/check', async (req: Request, res: Response) => {
           defaultDeliveryFee,
           freeDeliveryThreshold,
           estimatedDeliveryFee: est.estimatedDeliveryFee,
-          distanceKm: est.distanceKm != null ? roundMoney(est.distanceKm) : null,
+          distanceKm: dKm,
+          minimumOrderEur:
+            est.distanceKm != null ? minimumOrderEurFromDistanceKm(est.distanceKm) : null,
         })
       }
     }

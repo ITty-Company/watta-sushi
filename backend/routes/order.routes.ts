@@ -233,7 +233,7 @@ router.post('/', async (req: Request, res: Response) => {
           bannerInterval: 5000,
           telegramUrl: '',
           whatsappUrl: '',
-          instagramUrl: '',
+          instagramUrl: 'https://www.instagram.com/watta_sushi/',
           restaurantPickupAddress: '',
           freeDeliveryThreshold: 1000,
           deliveryFee: 50,

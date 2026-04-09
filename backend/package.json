@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "postinstall": "prisma generate",
-    "dev": "prisma generate && tsx watch server.js",
+    "dev": "prisma generate && prisma migrate deploy && tsx watch server.js",
     "start": "npm run init-db && npx tsx server.js",
     "start:single": "npm run init-db && npx tsx server.js",
     "migrate": "prisma migrate deploy",

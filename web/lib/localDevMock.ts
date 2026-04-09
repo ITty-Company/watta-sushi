@@ -3,6 +3,10 @@
  * Редагуйте контент тут — структуру полів краще не спрощувати.
  */
 
+import { getMiddlewareMockBlogPosts } from '../app/lib/blogFallbackContent'
+import { getMiddlewareMockPromotions } from '../app/lib/demoPromotionsFallback'
+import { WATTA_INSTAGRAM_URL } from './wattaSiteDefaults'
+
 export const MOCK_PROMO_CODE = 'MOCK10'
 
 const T = '2025-01-15T12:00:00.000Z'
@@ -17,12 +21,12 @@ const cat = (id: number) => mockCategories.find((c) => c.id === id)!
 
 export const mockCountry = {
   id: 1,
-  name: 'Україна',
-  name_ua: 'Україна',
-  name_en: 'Ukraine',
-  name_nl: 'Oekraïne',
-  flag: '🇺🇦',
-  code: 'UA',
+  name: 'Нідерланди',
+  name_ua: 'Нідерланди',
+  name_en: 'Netherlands',
+  name_nl: 'Nederland',
+  flag: '🇳🇱',
+  code: 'NL',
   isActive: true,
   createdAt: T,
   updatedAt: T,
@@ -30,13 +34,13 @@ export const mockCountry = {
 
 export const mockCityBase = {
   id: 1,
-  name: 'Київ',
-  name_ua: 'Київ',
-  name_nl: 'Kyiv',
-  name_en: 'Kyiv',
+  name: 'Амстердам',
+  name_ua: 'Амстердам',
+  name_nl: 'Amsterdam',
+  name_en: 'Amsterdam',
   countryId: 1,
-  latitude: 50.4501,
-  longitude: 30.5234,
+  latitude: 52.3676,
+  longitude: 4.9041,
   restaurantLatitude: null as number | null,
   restaurantLongitude: null as number | null,
   zoom: 12,
@@ -47,27 +51,35 @@ export const mockCityBase = {
 }
 
 /** Полігон для карти доставки (рядок JSON, як у БД). */
-const zonePolygonKyivCenter = JSON.stringify([
-  { lat: 50.52, lng: 30.42 },
-  { lat: 50.52, lng: 30.58 },
-  { lat: 50.42, lng: 30.58 },
-  { lat: 50.42, lng: 30.42 },
+const zonePolygonAmsterdamCenter = JSON.stringify([
+  { lat: 52.4, lng: 4.85 },
+  { lat: 52.4, lng: 4.95 },
+  { lat: 52.34, lng: 4.95 },
+  { lat: 52.34, lng: 4.85 },
 ])
 
-const zonePolygonKyivWest = JSON.stringify([
-  { lat: 50.52, lng: 30.22 },
-  { lat: 50.52, lng: 30.38 },
-  { lat: 50.42, lng: 30.38 },
-  { lat: 50.42, lng: 30.22 },
+const zonePolygonAmsterdamWest = JSON.stringify([
+  { lat: 52.42, lng: 4.75 },
+  { lat: 52.42, lng: 4.88 },
+  { lat: 52.36, lng: 4.88 },
+  { lat: 52.36, lng: 4.75 },
+])
+
+/** Zuid — стандартний тариф (€/км після вводу адреси в кошику) */
+const zonePolygonAmsterdamSouth = JSON.stringify([
+  { lat: 52.36, lng: 4.88 },
+  { lat: 52.36, lng: 5.02 },
+  { lat: 52.3, lng: 5.02 },
+  { lat: 52.3, lng: 4.88 },
 ])
 
 export const mockDeliveryZonesBare = [
   {
     id: 1,
-    name: 'Центр',
+    name: 'Centrum',
     color: '#22c55e',
     cityId: 1,
-    coordinates: zonePolygonKyivCenter,
+    coordinates: zonePolygonAmsterdamCenter,
     isFreeDelivery: true,
     flatDeliveryFee: null as number | null,
     createdAt: T,
@@ -75,12 +87,23 @@ export const mockDeliveryZonesBare = [
   },
   {
     id: 2,
-    name: 'Захід',
+    name: 'West',
     color: '#3b82f6',
     cityId: 1,
-    coordinates: zonePolygonKyivWest,
+    coordinates: zonePolygonAmsterdamWest,
     isFreeDelivery: false,
     flatDeliveryFee: 4.5,
+    createdAt: T,
+    updatedAt: T,
+  },
+  {
+    id: 3,
+    name: 'Zuid',
+    color: '#f59e0b',
+    cityId: 1,
+    coordinates: zonePolygonAmsterdamSouth,
+    isFreeDelivery: false,
+    flatDeliveryFee: null as number | null,
     createdAt: T,
     updatedAt: T,
   },
@@ -97,7 +120,7 @@ export function deliveryZonesForCity(cityId: number) {
         country: mockCountry,
       },
     }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'uk'))
+    .sort((a, b) => a.name.localeCompare(b.name, 'en'))
 }
 
 /** GET /api/countries — міста без deliveryZones (як у country.routes). */
@@ -278,8 +301,8 @@ export const mockSiteSettings = {
   bannerInterval: 5000,
   telegramUrl: 'https://t.me/watta_sushi_mock',
   whatsappUrl: 'https://wa.me/380000000000',
-  instagramUrl: 'https://instagram.com/',
-  restaurantPickupAddress: 'м. Київ, вул. Хрещатик, 1 (самовивіз, mock)',
+  instagramUrl: WATTA_INSTAGRAM_URL,
+  restaurantPickupAddress: 'Amstelveenseweg 192, 1075 XR Amsterdam (mock, самовивіз)',
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
 }
@@ -353,18 +376,4 @@ export const mockTeam = [
   },
 ]
 
-export const mockBlogPosts = [
-  {
-    id: 1,
-    title: 'Як обрати свіжий лосось для суші',
-    slug: 'yak-obraty-losos',
-    content:
-      'Коротка демо-стаття для блогу в режимі USE_LOCAL_MOCK.\n\nТут може бути повний HTML або текст — як у production.',
-    imageUrl: 'https://placehold.co/1200x640/145142/ffffff?text=Blog',
-    videoUrl: null as string | null,
-    author: 'Шеф Watta Sushi',
-    isPublished: true,
-    createdAt: T,
-    updatedAt: T,
-  },
-]
+export const mockBlogPosts = getMiddlewareMockBlogPosts()

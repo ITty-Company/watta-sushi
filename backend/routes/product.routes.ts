@@ -47,7 +47,7 @@ router.get('/categories', async (req, res) => {
 // 2.1. Создать категорию
 router.post('/categories', async (req: Request, res: Response) => {
   try {
-    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive } = req.body;
+    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations } = req.body;
     
     if (!name_ru) {
       return res.status(400).json({ error: 'Название категории (name_ru) обязательно' });
@@ -78,7 +78,8 @@ router.post('/categories', async (req: Request, res: Response) => {
         slug: finalSlug,
         emoji: emoji || '🍣',
         order: order || 0,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        allowRecommendations: allowRecommendations !== undefined ? Boolean(allowRecommendations) : true
       }
     });
     res.json(category);
@@ -95,11 +96,14 @@ router.post('/categories', async (req: Request, res: Response) => {
 router.put('/categories/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive } = req.body;
+    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations } = req.body;
     
     const category = await prisma.category.update({
       where: { id },
-      data: { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive }
+      data: {
+        name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive,
+        ...(allowRecommendations !== undefined ? { allowRecommendations: Boolean(allowRecommendations) } : {})
+      }
     });
     res.json(category);
   } catch (error) {
@@ -135,8 +139,14 @@ router.post('/', async (req: Request, res: Response) => {
       description_ru, description_ua, description_en, description_nl,
       categoryId, imageUrl,
       cityIds, // массив ID городов
-      ingredientIds // массив ID ингредиентов
+      ingredientIds, // массив ID ингредиентов
+      isPopular,
+      isRecommended,
+      recommendOrder,
+      promoDiscountPercent
     } = req.body;
+
+    const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)));
 
     const product = await prisma.product.create({
       data: {
@@ -151,6 +161,10 @@ router.post('/', async (req: Request, res: Response) => {
         description_nl: description_nl || description_ru || "",
         categoryId: parseInt(categoryId as string), // Исправили ошибку типов
         imageUrl,
+        isPopular: Boolean(isPopular),
+        isRecommended: Boolean(isRecommended),
+        recommendOrder: Math.round(Number(recommendOrder) || 0),
+        promoDiscountPercent: promoPct,
         
         // Связь с городами
         cities: cityIds && Array.isArray(cityIds) && cityIds.length > 0 ? {
@@ -186,8 +200,14 @@ router.put('/:id', async (req: Request, res: Response) => {
       description_ru, description_ua, description_en, description_nl,
       imageUrl, categoryId,
       cityIds,
-      ingredientIds // массив ID ингредиентов
+      ingredientIds, // массив ID ингредиентов
+      isPopular,
+      isRecommended,
+      recommendOrder,
+      promoDiscountPercent
     } = req.body;
+
+    const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)));
 
     // Сначала удаляем все связи с городами (старый метод)
     await prisma.productCity.deleteMany({
@@ -203,6 +223,10 @@ router.put('/:id', async (req: Request, res: Response) => {
         price: Number(price),
         description_ru, description_ua, description_en, description_nl,
         imageUrl: imageUrl || '',
+        isPopular: Boolean(isPopular),
+        isRecommended: Boolean(isRecommended),
+        recommendOrder: Math.round(Number(recommendOrder) || 0),
+        promoDiscountPercent: promoPct,
         category: { connect: { id: parseInt(categoryId as string) } },
         
         // Обновляем связи с городами
@@ -247,17 +271,41 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
 router.get('/recommendations', async (req: any, res: any) => {
   try {
-    const count = await prisma.product.count();
-    // Если товаров мало, skip может уйти в минус, защитимся
-    const maxSkip = Math.max(0, count - 4);
-    const skip = Math.floor(Math.random() * maxSkip);
-    
-    const recommendations = await prisma.product.findMany({
-      take: 4,
-      skip: skip,
-      include: { category: true }
+    const excludeId = req.query.excludeId ? parseInt(String(req.query.excludeId), 10) : null;
+    const cityId = req.query.cityId ? parseInt(String(req.query.cityId), 10) : null;
+    const take = Math.min(48, Math.max(4, parseInt(String(req.query.limit || '24'), 10) || 24));
+
+    const cityFilter =
+      cityId && Number.isFinite(cityId) && cityId > 0
+        ? { cities: { some: { cityId } } }
+        : undefined;
+
+    const baseWhere: any = {
+      isRecommended: true,
+      category: { is: { allowRecommendations: true } },
+      ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
+      ...(cityFilter || {}),
+    };
+
+    let recommendations = await prisma.product.findMany({
+      where: baseWhere,
+      take,
+      include: { category: true, ingredients: true },
+      orderBy: [{ recommendOrder: 'asc' }, { id: 'asc' }],
     });
-    
+
+    if (recommendations.length === 0) {
+      recommendations = await prisma.product.findMany({
+        where: {
+          ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
+          ...(cityFilter || {}),
+        },
+        take: Math.min(12, take),
+        include: { category: true, ingredients: true },
+        orderBy: [{ isPopular: 'desc' }, { id: 'asc' }],
+      });
+    }
+
     res.json(recommendations);
   } catch (e) {
     console.error(e);

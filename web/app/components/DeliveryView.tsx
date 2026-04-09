@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic'
 import type { Ref } from 'react'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import LogoBackground from './LogoBackground'
 import { DeliveryExperienceBlocks } from './DeliveryExperienceBlocks'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
@@ -12,6 +11,11 @@ import {
   wattaRestaurantExternalMapsUrl,
   WATTA_RESTAURANT,
 } from '@/lib/wattaRestaurantLocation'
+import {
+  clearWattaDeliveryZoneSelection,
+  feeModeFromZone,
+  writeWattaDeliveryZoneSelection,
+} from '@/lib/wattaDeliveryZoneSelection'
 import {
   MapPin,
   Sparkles,
@@ -148,6 +152,9 @@ type DeliveryCheckStatus =
   | 'bad_request'
   | 'server_error'
   | 'city_not_found'
+  | 'amsterdam_ok'
+  | 'outside_amsterdam'
+  | 'postcode_format_invalid'
 
 type DeliveryCheckResult = {
   status: DeliveryCheckStatus
@@ -164,6 +171,8 @@ type DeliveryCheckResult = {
   /** Орієнтовна сума з бекенду (зона + база + €×км від кухні) */
   estimatedDeliveryFee?: number | null
   distanceKm?: number | null
+  /** Мінімальна сума замовлення за правилом відстані (≤20 км / >20 км) */
+  minimumOrderEur?: number | null
 }
 
 /** Перша секція доставки — той самий блок, що welcome на головній; основний ролик з `web/public`. */
@@ -326,8 +335,15 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   const handleCityChange = (cityId: string) => {
     const city = cities.find((c) => c.id === cityId)
     if (city) {
+      if (selectedCity?.id !== cityId) {
+        clearWattaDeliveryZoneSelection()
+      }
       setSelectedCity(city)
-      setShowAllCities(false)
+      if (city.deliveryZones && city.deliveryZones.length > 0) {
+        setShowAllCities(false)
+      } else {
+        setShowAllCities(true)
+      }
       setPostalResult(null)
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem('selectedCityId', cityId)
@@ -379,6 +395,10 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
             : null,
         distanceKm:
           data.distanceKm != null && !Number.isNaN(Number(data.distanceKm)) ? Number(data.distanceKm) : null,
+        minimumOrderEur:
+          data.minimumOrderEur != null && !Number.isNaN(Number(data.minimumOrderEur))
+            ? Number(data.minimumOrderEur)
+            : null,
       })
     } catch {
       setPostalResult({ status: 'server_error' })
@@ -390,20 +410,58 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   const buildZonePopupHtml = useCallback(
     (zone: DeliveryZone) => {
       const nameSafe = escapeHtml(zone.name || '')
+      const foot = `<p class="delivery-watta-zone-popup-foot">${escapeHtml(d.zonePopupSaveHint)}</p>`
       if (zone.isFreeDelivery) {
-        return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-lead">${escapeHtml(d.zonePopupFree)}</p>`
+        return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-lead">${escapeHtml(d.zonePopupFree)}</p><p class="delivery-watta-zone-popup-muted">${escapeHtml(d.zonePopupStandardFreeFrom.replace('{{from}}', String(siteTariff.freeDeliveryThreshold)))}</p>${foot}`
       }
       if (zone.flatDeliveryFee != null && !Number.isNaN(zone.flatDeliveryFee)) {
         const line = d.zonePopupFlat.replace('{{amount}}', String(zone.flatDeliveryFee))
-        return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-lead">${escapeHtml(line)}</p>`
+        return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-lead">${escapeHtml(line)}</p>${foot}`
       }
       const base = siteTariff.defaultDeliveryFee
       const perKm = selectedCity?.pricePerKm ?? 10
       const from = siteTariff.freeDeliveryThreshold
       const ul = `<ul class="delivery-watta-zone-popup-list"><li>${escapeHtml(d.zonePopupStandardBase.replace('{{base}}', String(base)))}</li><li>${escapeHtml(d.zonePopupStandardPerKm.replace('{{perKm}}', String(perKm)))}</li><li>${escapeHtml(d.zonePopupStandardFreeFrom.replace('{{from}}', String(from)))}</li></ul>`
-      return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-muted">${escapeHtml(d.zonePopupStandardTitle)}</p>${ul}`
+      return `<strong class="delivery-watta-zone-popup-title">${nameSafe}</strong><p class="delivery-watta-zone-popup-muted">${escapeHtml(d.zonePopupStandardTitle)}</p>${ul}${foot}`
     },
-    [d, selectedCity?.pricePerKm, siteTariff.defaultDeliveryFee, siteTariff.freeDeliveryThreshold]
+    [
+      d,
+      selectedCity?.pricePerKm,
+      siteTariff.defaultDeliveryFee,
+      siteTariff.freeDeliveryThreshold,
+    ],
+  )
+
+  const handleMapZoneSelect = useCallback(
+    (zone: DeliveryZone) => {
+      if (!selectedCity) return
+      const mode = feeModeFromZone(zone)
+      const flatAmt =
+        zone.flatDeliveryFee != null && !Number.isNaN(Number(zone.flatDeliveryFee))
+          ? Number(zone.flatDeliveryFee)
+          : null
+      writeWattaDeliveryZoneSelection({
+        v: 1,
+        cityId: selectedCity.id,
+        zoneId: zone.id,
+        zoneName: zone.name || '',
+        feeMode: mode,
+        flatAmount: mode === 'flat' ? flatAmt : null,
+        updatedAt: Date.now(),
+      })
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('selectedCityId', selectedCity.id)
+        window.dispatchEvent(new Event('cityChanged'))
+      }
+      let feeLabel = d.zoneFeeStandard
+      if (mode === 'free') {
+        feeLabel = `${d.zoneFeeFree} · ${d.zonePopupStandardFreeFrom.replace('{{from}}', String(siteTariff.freeDeliveryThreshold))}`
+      } else if (mode === 'flat' && flatAmt != null) {
+        feeLabel = d.zonePopupFlat.replace('{{amount}}', String(flatAmt))
+      }
+      toast.success(d.zoneSelectedToast.replace('{{zone}}', zone.name || '—').replace('{{fee}}', feeLabel))
+    },
+    [d, selectedCity, siteTariff.freeDeliveryThreshold],
   )
 
   const zoneFeeLine = useCallback(
@@ -432,92 +490,124 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
 
   const mapsLinkHref = useMemo(() => wattaRestaurantExternalMapsUrl(), [])
 
+  const conditionsCheckSummary = useMemo(() => {
+    if (!postalResult) return null
+    const ok =
+      (postalResult.status === 'amsterdam_ok' || postalResult.status === 'inside') &&
+      postalResult.minimumOrderEur != null &&
+      postalResult.distanceKm != null
+    if (!ok) return null
+    return d.minOrderAfterCheck
+      .replace(/\{\{amount\}\}/g, String(postalResult.minimumOrderEur))
+      .replace(/\{\{km\}\}/g, String(postalResult.distanceKm))
+  }, [postalResult, d.minOrderAfterCheck])
+
+  const deliveryHeroHeader = (
+    <header className={`delivery-watta-hero${embedInMenu ? '' : ' delivery-watta-hero--split'}`}>
+      <div className="delivery-watta-hero-top">
+        <span className="delivery-watta-kicker">{d.kicker}</span>
+        <span className="delivery-watta-kicker-script" style={{ fontFamily: 'var(--font-brand-marck), cursive' }}>
+          {d.kickerScript}
+        </span>
+      </div>
+      <h1 className="delivery-watta-display">
+        <span className="delivery-watta-display-line">{d.headlineLead}</span>{' '}
+        <span className="delivery-watta-mark">{d.headlineMark}</span>
+      </h1>
+      <p className="delivery-watta-trail" style={{ fontFamily: 'var(--font-brand-cormorant), serif' }}>
+        {d.headlineTrail}
+      </p>
+      <p className="delivery-watta-sub">{d.sub}</p>
+      <div className="delivery-watta-stats">
+        <div className="delivery-watta-stat">
+          <span className="delivery-watta-stat-ico-wrap" aria-hidden>
+            <Sparkles className="delivery-watta-stat-ico" strokeWidth={2} />
+          </span>
+          <span className="delivery-watta-stat-label">{d.statFresh}</span>
+        </div>
+        <div className="delivery-watta-stat">
+          <span className="delivery-watta-stat-ico-wrap" aria-hidden>
+            <Timer className="delivery-watta-stat-ico" strokeWidth={2} />
+          </span>
+          <span className="delivery-watta-stat-label">{d.statFast}</span>
+        </div>
+        <div className="delivery-watta-stat">
+          <span className="delivery-watta-stat-ico-wrap" aria-hidden>
+            <Navigation className="delivery-watta-stat-ico" strokeWidth={2} />
+          </span>
+          <span className="delivery-watta-stat-label">{d.statCity}</span>
+        </div>
+      </div>
+    </header>
+  )
+
+  const deliveryHeroVideoBlock = (
+    <section
+      ref={menuWelcomeHeroRef}
+      className={`welcome-hero-section-web menu-snap-section-welcome-web${embedInMenu ? ' delivery-page-hero-embed-web' : ' delivery-page-hero-standalone-web delivery-page-hero-split-panel-web'}`}
+      aria-label="Hero video"
+    >
+      <div className="welcome-hero-video-fill-web">
+        {deliveryHeroVideoFailed ? (
+          <div
+            className="welcome-video-native-web welcome-hero-fallback-image-web"
+            style={{ backgroundImage: "url('/watta-sushi.jpg')" }}
+            role="img"
+            aria-hidden
+          />
+        ) : (
+          <video
+            key={deliveryHeroVideoSrc}
+            ref={deliveryHeroVideoRef}
+            className="welcome-video-native-web"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            tabIndex={-1}
+            aria-hidden
+            onError={() => {
+              setDeliveryHeroVideoIndex((prev) => {
+                if (prev < DELIVERY_HERO_VIDEO_SOURCES.length - 1) return prev + 1
+                setDeliveryHeroVideoFailed(true)
+                return prev
+              })
+            }}
+            onEnded={(e) => {
+              const el = e.currentTarget
+              el.currentTime = 0
+              void el.play()
+            }}
+          >
+            <source src={deliveryHeroVideoSrc} type="video/mp4" />
+          </video>
+        )}
+      </div>
+    </section>
+  )
+
   return (
     <>
-      <section
-        ref={menuWelcomeHeroRef}
-        className={`welcome-hero-section-web menu-snap-section-welcome-web${embedInMenu ? ' delivery-page-hero-embed-web' : ' delivery-page-hero-standalone-web'}`}
-        aria-label="Hero video"
-      >
-        <div className="welcome-hero-video-fill-web">
-          {deliveryHeroVideoFailed ? (
-            <div
-              className="welcome-video-native-web welcome-hero-fallback-image-web"
-              style={{ backgroundImage: "url('/watta-sushi.jpg')" }}
-              role="img"
-              aria-hidden
-            />
-          ) : (
-            <video
-              key={deliveryHeroVideoSrc}
-              ref={deliveryHeroVideoRef}
-              className="welcome-video-native-web"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              tabIndex={-1}
-              aria-hidden
-              onError={() => {
-                setDeliveryHeroVideoIndex((prev) => {
-                  if (prev < DELIVERY_HERO_VIDEO_SOURCES.length - 1) return prev + 1
-                  setDeliveryHeroVideoFailed(true)
-                  return prev
-                })
-              }}
-              onEnded={(e) => {
-                const el = e.currentTarget
-                el.currentTime = 0
-                void el.play()
-              }}
-            >
-              <source src={deliveryHeroVideoSrc} type="video/mp4" />
-            </video>
-          )}
+      {embedInMenu ? (
+        deliveryHeroVideoBlock
+      ) : (
+        <div className="delivery-page-hero-split-web">
+          <div className="delivery-page-hero-split-grid">
+            <div className="delivery-page-hero-split-video-col">
+              <p className="delivery-page-hero-split-rail" aria-hidden>
+                {d.splitHeroVideoRail}
+              </p>
+              {deliveryHeroVideoBlock}
+            </div>
+            <div className="delivery-page-hero-split-copy-col">{deliveryHeroHeader}</div>
+          </div>
         </div>
-      </section>
+      )}
 
     <div className={`delivery-watta-page relative${embedInMenu ? ' delivery-watta-page--embed' : ''}`}>
-      {!embedInMenu && <div className="delivery-watta-noise" aria-hidden />}
-      {!embedInMenu && <LogoBackground />}
       <div className="relative z-[2]">
-        <header className="delivery-watta-hero">
-          <div className="delivery-watta-hero-top">
-            <span className="delivery-watta-kicker">{d.kicker}</span>
-            <span className="delivery-watta-kicker-script" style={{ fontFamily: 'var(--font-brand-marck), cursive' }}>
-              {d.kickerScript}
-            </span>
-          </div>
-          <h1 className="delivery-watta-display">
-            <span className="delivery-watta-display-line">{d.headlineLead}</span>{' '}
-            <span className="delivery-watta-mark">{d.headlineMark}</span>
-          </h1>
-          <p className="delivery-watta-trail" style={{ fontFamily: 'var(--font-brand-cormorant), serif' }}>
-            {d.headlineTrail}
-          </p>
-          <p className="delivery-watta-sub">{d.sub}</p>
-          <div className="delivery-watta-stats">
-            <div className="delivery-watta-stat">
-              <span className="delivery-watta-stat-ico-wrap" aria-hidden>
-                <Sparkles className="delivery-watta-stat-ico" strokeWidth={2} />
-              </span>
-              <span className="delivery-watta-stat-label">{d.statFresh}</span>
-            </div>
-            <div className="delivery-watta-stat">
-              <span className="delivery-watta-stat-ico-wrap" aria-hidden>
-                <Timer className="delivery-watta-stat-ico" strokeWidth={2} />
-              </span>
-              <span className="delivery-watta-stat-label">{d.statFast}</span>
-            </div>
-            <div className="delivery-watta-stat">
-              <span className="delivery-watta-stat-ico-wrap" aria-hidden>
-                <Navigation className="delivery-watta-stat-ico" strokeWidth={2} />
-              </span>
-              <span className="delivery-watta-stat-label">{d.statCity}</span>
-            </div>
-          </div>
-        </header>
+        {embedInMenu && deliveryHeroHeader}
 
         {loading ? (
           <div className="delivery-watta-loading">{d.loading}</div>
@@ -608,6 +698,37 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
                   <div
                     className={`delivery-watta-postal-result delivery-watta-postal-result--${postalResult.status}`}
                   >
+                    {postalResult.status === 'amsterdam_ok' && (
+                      <>
+                        <CheckCircle2 className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <div>
+                          <p className="delivery-watta-postal-result-title">{d.postalAmsterdamOkTitle}</p>
+                          {postalResult.placeLabel && (
+                            <p className="delivery-watta-postal-result-meta">
+                              {d.postalAddressFound}: {postalResult.placeLabel}
+                            </p>
+                          )}
+                          {postalResult.distanceKm != null &&
+                            postalResult.estimatedDeliveryFee != null && (
+                              <p className="delivery-watta-postal-result-meta delivery-watta-postal-estimate font-semibold text-[#145142]">
+                                {d.postalAmsterdamOkFormula
+                                  .replace('{{km}}', String(postalResult.distanceKm))
+                                  .replace('{{amount}}', String(postalResult.estimatedDeliveryFee))}
+                              </p>
+                            )}
+                          <p className="delivery-watta-postal-result-meta text-sm text-[#145142]/80">
+                            {d.tariffPerKm}: <strong>2 €</strong> · {d.tariffBase}: <strong>0 €</strong>
+                          </p>
+                          {postalResult.minimumOrderEur != null && postalResult.distanceKm != null ? (
+                            <p className="delivery-watta-postal-result-meta mt-2 rounded-xl border border-[#22c55e]/40 bg-[#f0faf4] px-3 py-2 text-sm font-semibold text-[#0f3d32]">
+                              {d.minOrderAfterCheck
+                                .replace(/\{\{amount\}\}/g, String(postalResult.minimumOrderEur))
+                                .replace(/\{\{km\}\}/g, String(postalResult.distanceKm))}
+                            </p>
+                          ) : null}
+                        </div>
+                      </>
+                    )}
                     {postalResult.status === 'inside' && (
                       <>
                         <CheckCircle2 className="delivery-watta-postal-result-ico" strokeWidth={2} />
@@ -670,6 +791,13 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
                               </strong>
                             </li>
                           </ul>
+                          {postalResult.minimumOrderEur != null && postalResult.distanceKm != null ? (
+                            <p className="delivery-watta-postal-result-meta mt-2 rounded-xl border border-[#22c55e]/40 bg-[#f0faf4] px-3 py-2 text-sm font-semibold text-[#0f3d32]">
+                              {d.minOrderAfterCheck
+                                .replace(/\{\{amount\}\}/g, String(postalResult.minimumOrderEur))
+                                .replace(/\{\{km\}\}/g, String(postalResult.distanceKm))}
+                            </p>
+                          ) : null}
                         </div>
                       </>
                     )}
@@ -709,6 +837,23 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
                         </div>
                       </>
                     )}
+                    {postalResult.status === 'outside_amsterdam' && (
+                      <>
+                        <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <div>
+                          <p className="delivery-watta-postal-result-title">{d.postalOutsideAmsterdam}</p>
+                          {postalResult.placeLabel && (
+                            <p className="delivery-watta-postal-result-meta">{postalResult.placeLabel}</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {postalResult.status === 'postcode_format_invalid' && (
+                      <>
+                        <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
+                        <p className="delivery-watta-postal-result-title">{d.postalInvalidNlFormat}</p>
+                      </>
+                    )}
                     {(postalResult.status === 'geocode_failed' || postalResult.status === 'bad_request') && (
                       <>
                         <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
@@ -728,7 +873,10 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
 
             <section className="delivery-watta-map-section" aria-label="Map">
               {showInteractiveZonesMap && (
-                <p className="delivery-watta-map-zones-hint">{d.mapZonesHint}</p>
+                <>
+                  <h2 className="delivery-watta-zones-map-hero-title">{d.zonesMapHeroTitle}</h2>
+                  <p className="delivery-watta-map-zones-hint">{d.mapZonesHint}</p>
+                </>
               )}
               <div className="delivery-watta-map-toolbar">
                 <button
@@ -761,6 +909,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
                       }
                       zoom={selectedCity.zoom || 12}
                       buildPopupHtml={buildZonePopupHtml}
+                      onZoneSelect={handleMapZoneSelect}
                       ariaLabel={d.mapInteractiveAria}
                     />
                   ) : mapSrc ? (
@@ -830,7 +979,11 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
               </section>
             )}
 
-            <DeliveryExperienceBlocks d={d} kitchenAddressLine={WATTA_RESTAURANT.addressLine} />
+            <DeliveryExperienceBlocks
+              d={d}
+              kitchenAddressLine={WATTA_RESTAURANT.addressLine}
+              conditionsCheckSummary={conditionsCheckSummary}
+            />
           </>
         )}
       </div>

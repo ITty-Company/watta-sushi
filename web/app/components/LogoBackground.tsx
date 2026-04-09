@@ -328,7 +328,7 @@ export default function LogoBackground() {
   return (
     <div 
       ref={containerRef}
-      className="absolute inset-0 overflow-hidden pointer-events-none"
+      className="watta-public-page-shell__bg absolute inset-0 overflow-hidden pointer-events-none"
       style={{ 
         zIndex: 0,
         minHeight: '100%',

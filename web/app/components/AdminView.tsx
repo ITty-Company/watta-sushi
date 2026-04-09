@@ -44,6 +44,7 @@ import LogoBackground from './LogoBackground'
 import CityMapPicker from './CityMapPicker'
 import AdminDeliveryZoneEditor from './AdminDeliveryZoneEditor'
 import { useLanguage } from '../context/LanguageContext'
+import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
 
 function notifyCountriesCatalogUpdated() {
@@ -72,6 +73,9 @@ interface Product {
   categoryId: number
   imageUrl?: string
   isPopular: boolean
+  isRecommended?: boolean
+  recommendOrder?: number
+  promoDiscountPercent?: number
 }
 
 interface OrderItem {
@@ -193,6 +197,8 @@ interface MenuCategory {
   emoji?: string
   order: number
   isActive: boolean
+  /** Участие товаров категории в блоке рекомендаций (если у товара включено «рекомендуем») */
+  allowRecommendations?: boolean
 }
 
 interface User {
@@ -254,7 +260,7 @@ const defaultSiteSettings: SiteSettings = {
   bannerInterval: 5000,
   telegramUrl: '',
   whatsappUrl: '',
-  instagramUrl: '',
+  instagramUrl: WATTA_INSTAGRAM_URL,
   restaurantPickupAddress: '',
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
@@ -313,7 +319,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     slug: '',
     emoji: '🍣',
     order: 0,
-    isActive: true
+    isActive: true,
+    allowRecommendations: true,
   })
   
   // Состояния для модального окна КОМАНДЫ
@@ -356,7 +363,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     categoryId: '',
     imageUrl: '',
     cityIds: [] as number[],
-    ingredientIds: [] as number[] // Города для товара
+    ingredientIds: [] as number[],
+    isPopular: false,
+    isRecommended: false,
+    recommendOrder: '0',
+    promoDiscountPercent: '0',
   })
 
   // Состояния для управления городами
@@ -1029,7 +1040,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       description_ru: '', description_ua: '', description_en: '', description_nl: '',
       categoryId: '', imageUrl: '',
       cityIds: [],
-      ingredientIds: []   
+      ingredientIds: [],
+      isPopular: false,
+      isRecommended: false,
+      recommendOrder: '0',
+      promoDiscountPercent: '0',
     })
     setIsModalOpen(true)
   }
@@ -1063,7 +1078,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         categoryId: product.categoryId.toString(),
         imageUrl: product.imageUrl || '',
         cityIds: productData.cities?.map((pc: any) => pc.cityId) || [],
-        ingredientIds: []
+        ingredientIds: (productData.ingredients as { id: number }[] | undefined)?.map((i) => i.id) || [],
+        isPopular: Boolean(productData.isPopular),
+        isRecommended: Boolean(productData.isRecommended),
+        recommendOrder: String(productData.recommendOrder ?? 0),
+        promoDiscountPercent: String(productData.promoDiscountPercent ?? 0),
       })
     } else {
       setFormData({
@@ -1082,7 +1101,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         categoryId: product.categoryId.toString(),
         imageUrl: product.imageUrl || '',
         cityIds: [],
-        ingredientIds: []
+        ingredientIds: [],
+        isPopular: Boolean(product.isPopular),
+        isRecommended: Boolean(product.isRecommended),
+        recommendOrder: String(product.recommendOrder ?? 0),
+        promoDiscountPercent: String(product.promoDiscountPercent ?? 0),
       })
     }
     setIsModalOpen(true)
@@ -2331,7 +2354,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       slug: '',
       emoji: '🍣',
       order: menuCategories.length,
-      isActive: true
+      isActive: true,
+      allowRecommendations: true,
     })
     setIsCategoryModalOpen(true)
   }
@@ -2348,7 +2372,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       slug: category.slug,
       emoji: category.emoji || '🍣',
       order: category.order,
-      isActive: category.isActive
+      isActive: category.isActive,
+      allowRecommendations: category.allowRecommendations !== false,
     })
     setIsCategoryModalOpen(true)
   }
@@ -2955,9 +2980,19 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                              <ImageIcon size={32} className="sm:w-12 sm:h-12" />
                            </div>
                          )}
-                         {product.isPopular && (
-                           <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">{t.adminPanel.products.hit}</span>
-                         )}
+                         <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
+                           {product.isPopular ? (
+                             <span className="rounded-full bg-orange-500 px-2 py-1 text-xs text-white">{t.adminPanel.products.hit}</span>
+                           ) : null}
+                           {product.isRecommended ? (
+                             <span className="rounded-full bg-[#145142] px-2 py-1 text-[10px] font-bold text-white">Рекоменд.</span>
+                           ) : null}
+                           {(product.promoDiscountPercent ?? 0) > 0 ? (
+                             <span className="rounded-full bg-rose-500 px-2 py-1 text-[10px] font-bold text-white">
+                               −{product.promoDiscountPercent}%
+                             </span>
+                           ) : null}
+                         </div>
                        </div>
                        
                        {/* Инфо */}
@@ -4449,7 +4484,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                             type="url"
                             value={settings.instagramUrl}
                             onChange={(e) => setSettings({ ...settings, instagramUrl: e.target.value })}
-                            placeholder="https://instagram.com/..."
+                            placeholder="https://www.instagram.com/watta_sushi/"
                             className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-medium focus:border-[#145142]"
                           />
                         </div>
@@ -4665,6 +4700,58 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     </p>
                   )}
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-[#145142]/15 bg-[#f4faf8] p-3 sm:p-4">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#145142]/80">
+                  Вітрина: рекомендації та акції
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800">
+                    <input
+                      type="checkbox"
+                      checked={formData.isPopular}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, isPopular: e.target.checked }))}
+                      className="h-4 w-4 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
+                    />
+                    Хіт / топ продажів (бейдж на сайті)
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800">
+                    <input
+                      type="checkbox"
+                      checked={formData.isRecommended}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, isRecommended: e.target.checked }))}
+                      className="h-4 w-4 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
+                    />
+                    Блок «рекомендуємо» (картка товару, кошик)
+                  </label>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Порядок у рекомендаціях (менше — раніше)</label>
+                    <input
+                      type="number"
+                      name="recommendOrder"
+                      value={formData.recommendOrder}
+                      onChange={handleInputChange}
+                      min={0}
+                      className="w-full rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Акційна знижка, % (0 = без акції)</label>
+                    <input
+                      type="number"
+                      name="promoDiscountPercent"
+                      value={formData.promoDiscountPercent}
+                      onChange={handleInputChange}
+                      min={0}
+                      max={100}
+                      className="w-full rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
+                    />
+                  </div>
+                </div>
+                <p className="mt-2 text-[11px] leading-snug text-gray-500">
+                  Рекомендації показуються лише для товарів з увімкненим прапорцем, якщо в категорії дозволено участь у рекомендаціях.
+                </p>
               </div>
 
               {/* ОПИСАНИЯ */}
@@ -4887,6 +4974,25 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 >
                   <option value="true">Да</option>
                   <option value="false">Нет</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-[#145142]/80 sm:text-sm">
+                  Рекомендації на сайті
+                </label>
+                <select
+                  value={categoryFormData.allowRecommendations ? 'true' : 'false'}
+                  onChange={(e) =>
+                    setCategoryFormData((prev) => ({
+                      ...prev,
+                      allowRecommendations: e.target.value === 'true',
+                    }))
+                  }
+                  className="w-full rounded-[10px] border border-[#145142]/20 bg-white/80 p-2 text-sm outline-none backdrop-blur-sm focus:border-[#145142] focus:ring-2 focus:ring-[#145142] sm:p-3"
+                >
+                  <option value="true">Дозволено — товари з «рекомендуємо» можуть показуватись</option>
+                  <option value="false">Ні — жоден товар з цієї категорії не в рекомендаціях</option>
                 </select>
               </div>
 

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
+import { getFallbackBlogArticle, isFallbackBlogSlug } from '@/app/lib/blogFallbackContent'
+import BlogBackToIndex from '../BlogBackToIndex'
+import BlogArticleInner from '../BlogArticleInner'
 
 interface BlogPost {
   id: number
@@ -35,54 +37,70 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const post = await getPost(params.slug)
-  if (!post) {
-    return { title: 'Статья не найдена' }
+  const apiPost = await getPost(params.slug)
+  if (apiPost) {
+    return {
+      title: apiPost.title,
+      description: apiPost.content.slice(0, 160),
+    }
   }
-  return {
-    title: post.title,
-    description: post.content.slice(0, 160),
+  const fb = getFallbackBlogArticle(params.slug, 'uk')
+  if (fb) {
+    return {
+      title: fb.title,
+      description: fb.excerpt.slice(0, 160),
+    }
   }
+  return { title: 'Статья не найдена' }
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = await getPost(params.slug)
+  const apiPost = await getPost(params.slug)
+  const fbUk = !apiPost ? getFallbackBlogArticle(params.slug, 'uk') : null
+  const post =
+    apiPost ??
+    (fbUk
+      ? {
+          id: fbUk.id,
+          title: fbUk.title,
+          slug: fbUk.slug,
+          content: fbUk.content,
+          imageUrl: fbUk.imageUrl,
+          videoUrl: null as string | null,
+          author: fbUk.author,
+          createdAt: fbUk.createdAt,
+        }
+      : null)
+
   if (!post) notFound()
 
-  const videoEmbedUrl = normalizeVideoUrl(post.videoUrl)
+  const videoEmbedUrl = apiPost ? normalizeVideoUrl(post.videoUrl) : null
 
   return (
-    <main className="watta-public-page-shell min-h-screen py-10 px-4">
-      <div className="max-w-4xl mx-auto mb-6">
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-2 text-sm font-bold text-[#145142] hover:text-[#0f3d32] transition"
-        >
-          ← Усі статті
-        </Link>
+    <main
+      className="watta-public-page-shell flex min-h-screen flex-1 flex-col px-4 py-10"
+      style={{ backgroundColor: '#f5f5f7' }}
+    >
+      <div className="mx-auto mb-6 max-w-4xl">
+        <BlogBackToIndex />
       </div>
-      <article className="max-w-4xl mx-auto bg-white rounded-3xl border border-[#145142]/10 shadow-lg shadow-[#145142]/5 overflow-hidden">
-        {post.imageUrl && <img src={post.imageUrl} alt={post.title} className="w-full h-[280px] md:h-[420px] object-cover" />}
+      <article className="mx-auto max-w-4xl overflow-hidden rounded-[28px] border border-gray-200/80 bg-white shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
+        {post.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={post.imageUrl} alt="" className="h-[280px] w-full object-cover md:h-[420px]" />
+        ) : null}
 
         <div className="p-6 md:p-10">
-          <p className="text-sm text-gray-500 mb-3">
-            {new Date(post.createdAt).toLocaleDateString('ru-RU')} - {post.author}
-          </p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-[#145142] leading-tight">{post.title}</h1>
-
-          {videoEmbedUrl && (
-            <div className="mt-8 overflow-hidden rounded-2xl border border-[#145142]/15">
-              <iframe
-                src={videoEmbedUrl}
-                className="w-full aspect-video"
-                title={post.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          )}
-
-          <div className="mt-8 text-gray-800 leading-8 whitespace-pre-wrap text-[17px]">{post.content}</div>
+          <BlogArticleInner
+            slug={params.slug}
+            post={{
+              title: post.title,
+              content: post.content,
+              author: post.author,
+              createdAt: post.createdAt,
+            }}
+            videoEmbedUrl={videoEmbedUrl}
+          />
         </div>
       </article>
     </main>

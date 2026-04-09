@@ -19,9 +19,6 @@ interface Translations {
   admin: string
   
   // Секции
-  location: {
-    kyiv: string
-  }
   locationPicker: {
     title: string
     subtitle: string
@@ -57,6 +54,8 @@ interface Translations {
     zoneAvailable: string
     conditionsTitle: string
     minOrder: string
+    /** Після успішної перевірки індексу: {{amount}}, {{km}} */
+    minOrderAfterCheck: string
     remoteHint: string
     hoursTitle: string
     hoursRange: string
@@ -106,6 +105,12 @@ interface Translations {
     cityNoDeliveryYet: string
     mapZonesHint: string
     mapInteractiveAria: string
+    /** Великий заголовок над картою зон (як на референсі) */
+    zonesMapHeroTitle: string
+    /** Підказка в попапі полігона: зберегти тариф для кошика */
+    zonePopupSaveHint: string
+    /** Тост після кліку по зоні: {{zone}}, {{fee}} */
+    zoneSelectedToast: string
     zonePopupFree: string
     zonePopupFlat: string
     zonePopupStandardTitle: string
@@ -122,6 +127,15 @@ interface Translations {
     estimatedDeliveryApprox: string
     /** Відстань від точки кухні, плейсхолдер {{km}} */
     distanceFromKitchen: string
+    /** Амстердам: успішна перевірка індексу, км × 2 € */
+    postalAmsterdamOkTitle: string
+    postalAmsterdamOkFormula: string
+    /** Індекс не в Амстердамі / інше гементе */
+    postalOutsideAmsterdam: string
+    /** Невірний формат NL (1234 AB) */
+    postalInvalidNlFormat: string
+    /** Вертикальний підпис біля відео в спліт-гері (сторінка /delivery) */
+    splitHeroVideoRail: string
   }
   categories: {
     rolls: string
@@ -158,8 +172,14 @@ interface Translations {
   }
   cartSection: { 
     empty: string
+    /** Малий акцент над заголовком порожнього кошика */
+    emptyCartKicker: string
+    /** Підказка під порожнім кошиком */
+    emptyCartHint: string
     total: string
     order: string
+    /** Кнопка під час відправки */
+    processing: string
     proceedCheckout: string
     fulfillmentDelivery: string
     fulfillmentPickup: string
@@ -168,6 +188,73 @@ interface Translations {
     deliveryFree: string
     deliveryUnlockHint: string
     invalidPhone: string
+    /** Підзаголовок кошика: підставити {{lines}} та {{pieces}} */
+    cartMeta: string
+    /** Підпис «за штуку» біля ціни позиції */
+    perPiece: string
+    contactDetails: string
+    deliveryTimeTitle: string
+    /** Підказка під заголовком часу доставки (часовий пояс Амстердама) */
+    deliveryTimeHint: string
+    orderDetailsTitle: string
+    paymentMethodTitle: string
+    promoCodeTitle: string
+    promoPlaceholder: string
+    /** {{code}} — промокод */
+    promoApplied: string
+    subtotalLabel: string
+    discountPrefix: string
+    bonusAvailableLabel: string
+    bonusDeductLine: string
+    bonusSpentLabel: string
+    calculatingDistance: string
+    distanceBreakdown: string
+    enterAddressForDeliveryFee: string
+    privacyConsent: string
+    phonePlaceholder: string
+    deliveryZoneLabel: string
+    /** Рядок у підсумку: обрана зона з карти, {{zone}} */
+    deliveryFromMap: string
+    /** Зона «стандарт» — потрібна адреса для розрахунку км */
+    deliveryZoneStandardHint: string
+    citiesGroupAria: string
+    streetPlaceholder: string
+    entrancePlaceholder: string
+    floorPlaceholder: string
+    apartmentPlaceholder: string
+    buildingPlaceholder: string
+    optNoCallback: string
+    optNoDoorbell: string
+    slotDayLabel: string
+    slotTimeLabel: string
+    dayToday: string
+    dayTomorrow: string
+    partySizeLabel: string
+    chopsticksLabel: string
+    commentPlaceholder: string
+    payCash: string
+    payCard: string
+    payCardHint: string
+    changeFromPlaceholder: string
+    distanceMatrixError: string
+    promoInvalidFallback: string
+    toastMaxQty: string
+    /** {{code}} */
+    toastPromoOk: string
+    toastPromoNetwork: string
+    /** {{name}}, {{percent}} */
+    toastUpsellAdded: string
+    toastAddressRequired: string
+    toastOrderFailed: string
+    /** {{threshold}} — сума для upsell */
+    upsellTitle: string
+    upsellLead: string
+    upsellOfferFallback: string
+    upsellAddToCart: string
+    upsellContinue: string
+    recScrollPrev: string
+    recScrollNext: string
+    addToOrder: string
     checkoutSuccessTitle: string
     checkoutSuccessSubtitle: string
     checkoutOrderNumber: string
@@ -178,10 +265,68 @@ interface Translations {
     menu: string
     promotions: string
     delivery: string
+    /** Повна сторінка /delivery (окремо від вбудованої доставки в меню) */
+    deliveryPage: string
     about: string
     contacts: string
     admin: string
     favorites: string
+    /** Підзаголовок у бічній панелі: кошик, обране, профіль */
+    sidebarMore: string
+    /** © {{year}} … — підвал сайту та низ бічної панелі */
+    footerLegal: string
+    /** aria-label для фіксованої нижньої панелі навігації */
+    bottomNavAria: string
+    /** aria-label кнопки закриття правого drawer навігації */
+    closeNavDrawerAria: string
+    /** Заголовок блока посилань на сторінки сайту в правому drawer */
+    drawerExploreTitle: string
+    /** Короткий підзаголовок бренду в шапці drawer */
+    drawerBrandLine: string
+  }
+  /** Розширений підвал (білий фон, колонки) */
+  siteFooter: {
+    navAria: string
+    colNav: string
+    colOrder: string
+    colHours: string
+    colLocations: string
+    colSocial: string
+    blog: string
+    reviews: string
+    news: string
+    phone1: string
+    phone2: string
+    phone3: string
+    hoursLine: string
+    /** Якщо з API ще немає міст */
+    locationsEmpty: string
+    appStore: string
+    googlePlay: string
+    support: string
+    privacy: string
+    paymentsAria: string
+    /** Підпис під бейджами Visa / Mastercard / iDEAL */
+    paymentsMethodsNote: string
+    instagramAria: string
+    facebookAria: string
+    tiktokAria: string
+  }
+  /** Сторінка товару /product/[id] */
+  productDetail: {
+    loading: string
+    notFound: string
+    composition: string
+    recommendsTitle: string
+    recommendsHint: string
+    badgeTopSales: string
+    badgeNew: string
+    adding: string
+    prepTime: string
+    weightFallback: string
+    piecesFallback: string
+    toCart: string
+    addedHint: string
   }
   auth: {
     login: string
@@ -278,6 +423,42 @@ interface Translations {
     teamEmptyTitle: string
     teamEmptyBody: string
     marqueeWords: string
+    /** Кінематографічний тёмний герой + слайди в стилі преміум-доставки */
+    darkHeroSubtitle: string
+    darkFoundedLabel: string
+    darkFoundedYearCity: string
+    darkMilestoneLine1: string
+    darkMilestoneLine2: string
+    philosophyTitlePart1: string
+    philosophyTitlePart2: string
+    slide1Title: string
+    slide1Body: string
+    slide2Title: string
+    slide2Body: string
+    slide3Title: string
+    slide3Body: string
+    slide4Title: string
+    slide4Body: string
+    slide5Title: string
+    slide5Body: string
+    slide6Title: string
+    slide6Body: string
+    artHeadlineLine1: string
+    artHeadlineLine2: string
+    artHeadlineAccent: string
+    insideSectionTitle: string
+    inside1Title: string
+    inside1Body: string
+    inside2Title: string
+    inside2Body: string
+    inside3Title: string
+    inside3Body: string
+    inside4Title: string
+    inside4Body: string
+    inside5Title: string
+    inside5Body: string
+    inside6Title: string
+    inside6Body: string
   }
   promotionsPage: {
     title: string
@@ -298,6 +479,12 @@ interface Translations {
     /** Плейсхолдер {{percent}} */
     offPercent: string
     hitBadge: string
+    /** Зелене посилання як у референсі «Читати» */
+    readCta: string
+    /** Тег категорії, якщо з API не прийшла мітка */
+    defaultCategoryTag: string
+    /** Підказка, коли показуємо демо-новини без бекенду */
+    fallbackHint: string
   }
   profilePage: {
     title: string
@@ -367,6 +554,9 @@ interface Translations {
     empty: string
     readMore: string
     backToBlog: string
+    fallbackHint: string
+    /** Тег на картці, коли з API немає категорії */
+    cardCategoryFallback: string
   }
   /** Сторінка контактів */
   contactPage: {
@@ -427,6 +617,14 @@ interface Translations {
     bottomCta: string
     scrollHint: string
     addressLine: string
+  }
+  /** Сторінка політики конфіденційності */
+  privacyPage: {
+    title: string
+    back: string
+    updated: string
+    intro: string
+    blocks: ReadonlyArray<{ title: string; body: string }>
   }
   adminPage: {
     auth: {
@@ -582,6 +780,7 @@ interface Translations {
   notifications: {
     title: string
     empty: string
+    emptySubtext: string
   }
   // Додайте це до інтерфейсу Translations:
   menuView: {
@@ -599,13 +798,30 @@ interface Translations {
     gastronomyTitle: string
     /** Заголовок повного каталогу на головній */
     homeCatalogTitle: string
-    /** Підзаголовок під каталогом */
-    homeCatalogSub: string
     /** Підказка: товари на окремій сторінці */
     catalogOnCategoryPageHint: string
     categoryPageBack: string
     categoryPageEmpty: string
     categoryPageOpenCart: string
+    /** Сторінка /menu — повний каталог */
+    fullMenuTitle: string
+    fullMenuSub: string
+    fullMenuWant: string
+    fullMenuCategoriesAria: string
+    fullMenuLoading: string
+    fullMenuEmpty: string
+    /** Таб «усі категорії» у стрічці на /menu */
+    fullMenuAllTab: string
+    /** Aria для горизонтальної стрічки страв у категорії на головній */
+    categoryRailAria: string
+    /** Заголовок поверх фото-банера на головній */
+    heroBannerOverlayTitle: string
+    /** Підзаголовок / коротка «цитата» під заголовком на банері */
+    heroBannerOverlaySub: string
+    /** Під банером — стилізація як SMS від бренду */
+    heroBannerSmsSender: string
+    heroBannerSmsBadge: string
+    heroBannerSmsTime: string
   }
   cinematicFooter: {
     readyTitle: string
@@ -618,10 +834,25 @@ interface Translations {
     promoBadge: string
     prevPromo: string
     nextPromo: string
+    /** Блок товарів зі знижкою з адмінки */
+    sectionPromoTitle: string
+    sectionRecommendedTitle: string
+    /** Популярні / хіти з адмінки (isPopular) */
+    sectionPopularTitle: string
+    /** Горизонтальний ряд чипів категорій під підказкою */
+    sectionCategoriesTitle: string
+    recommendedBadge: string
+    popularBadge: string
+    promoStripAria: string
+    recommendedStripAria: string
+    popularStripAria: string
+    categoriesStripAria: string
     aboutTitle: string
     aboutLead: string
     aboutBody: string
     animationSlotAria: string
+    /** Фрази бігучого рядка під hero-відео, через | */
+    heroMarquee: string
   }
   adminCategory: {
     manageTitle: string
@@ -642,7 +873,6 @@ const translations: Record<Language, Translations> = {
     phone: "Контакти",
     delivery: "Доставка",
     admin: "Адмін-панель",
-    location: { kyiv: 'Київ' },
     locationPicker: {
       title: 'Вибір локації',
       subtitle: 'Оберіть країну та місто доставки',
@@ -677,10 +907,13 @@ const translations: Record<Language, Translations> = {
       zonesTitle: 'Зони доставки',
       zoneAvailable: 'Доставка в межах зони',
       conditionsTitle: 'Умови',
-      minOrder: 'Мінімальна сума замовлення — 700 € (для вашого міста уточнюйте в оператора).',
-      remoteHint: 'До віддалених районів — за попередньою домовленістю.',
+      minOrder:
+        'Доставляємо лише в міста зі списку на цій сторінці та в шапці сайту. Чи є доставка саме на вашу адресу і яка вартість — перевірте блоком вище за поштовим індексом. Мінімальна сума замовлення залежить від відстані від нашої кухні: до 20 км — від 25 €, понад 20 км — від 100 €.',
+      minOrderAfterCheck:
+        'За вашою перевіркою: мінімальне замовлення для цієї адреси — {{amount}} € (відстань від кухні ≈ {{km}} км).',
+      remoteHint: 'Дуже віддалені або нетипові адреси — за попередньою домовленістю з оператором.',
       hoursTitle: 'Ми на звʼязку',
-      hoursRange: '11:00 — 22:30',
+      hoursRange: '14:00 — 21:00',
       howTitle: 'Як замовити',
       stepWeb: 'На сайті',
       stepApp: 'У застосунку',
@@ -690,9 +923,12 @@ const translations: Record<Language, Translations> = {
       stepPhoneDesc: 'Зателефонуйте — підкажемо по меню, зонах і часу доставки.',
       kitchenMapCaption: 'Наша кухня на карті',
       conditionsKicker: 'Сервіс',
-      conditionsFeature1: 'Мінімум і тарифи для вашого міста — за узгодженням з оператором.',
-      conditionsFeature2: 'Зони доставки прозорі: дивіться карту та перевірку за індексом вище.',
-      conditionsFeature3: 'До віддалених точок — за попередньою домовленістю.',
+      conditionsFeature1:
+        'Працюємо лише з містами з нашого списку — оберіть своє на сторінці або в шапці сайту.',
+      conditionsFeature2:
+        'Вище за індексом можна перевірити, чи входить ваша адреса в зону та скільки коштуватиме доставка.',
+      conditionsFeature3:
+        'Відстань і мінімальне замовлення рахуються автоматично від координат кухні до точки вашого поштового індексу.',
       deliveryPromiseKicker: 'Пунктуальність',
       deliveryPromiseTitle: 'Веземо вчасно й акуратно',
       deliveryPromiseText:
@@ -706,9 +942,9 @@ const translations: Record<Language, Translations> = {
       payment: 'Оплата',
       postalTitle: 'Перевірка за індексом',
       postalDesc:
-        'Оберіть місто зі списку (як у шапці сайту) і введіть поштовий індекс — покажемо, чи потрапляє адреса в зону доставки. Межі зон і тарифи задає лише адміністратор.',
+        'Оберіть місто зі списку (як у шапці сайту) і введіть поштовий індекс. Для Амстердама (NL) рахуємо відстань від нашої кухні до точки індексу автоматично: 2 € за кілометр. В інших містах — зони й тарифи задає адміністратор.',
       postalLabel: 'Поштовий індекс',
-      postalPlaceholder: 'Напр. 01001 або 1012 AB',
+      postalPlaceholder: 'Напр. 1075 VV (Амстердам, NL)',
       postalButton: 'Перевірити',
       postalChecking: 'Шукаємо адресу…',
       postalInside: 'Доставка доступна у зоні',
@@ -730,6 +966,9 @@ const translations: Record<Language, Translations> = {
       cityNoDeliveryYet: 'Для цього міста ще немає доставки.',
       mapZonesHint: 'Натисніть на кольорову зону на карті — покажемо умови доставки для неї.',
       mapInteractiveAria: 'Інтерактивна карта зон доставки',
+      zonesMapHeroTitle: 'Зона доставки Watta Sushi',
+      zonePopupSaveHint: 'Натисніть на зону — тариф збережеться для кошика.',
+      zoneSelectedToast: 'Зона «{{zone}}»: {{fee}}. Застосовано в кошику.',
       zonePopupFree: 'Безкоштовна доставка в цій зоні.',
       zonePopupFlat: 'Фіксована доставка: {{amount}} €',
       zonePopupStandardTitle: 'Стандартний тариф для цієї зони',
@@ -744,6 +983,13 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Тариф зони: стандарт (база + €/км)',
       estimatedDeliveryApprox: 'Орієнтовна доставка: {{amount}} €',
       distanceFromKitchen: 'Відстань від кухні (орієнтовно): {{km}} км',
+      postalAmsterdamOkTitle: 'Доставка в Амстердамі доступна за цим індексом',
+      postalAmsterdamOkFormula: 'Відстань від кухні: {{km}} км × 2 €/км = орієнтовно {{amount}} € за доставку.',
+      postalOutsideAmsterdam:
+        'За цим індексом адреса не в Амстердамі (або в іншому гементе поруч). Перевірте індекс або оберіть інше місто.',
+      postalInvalidNlFormat:
+        'Формат індексу Нідерландів: чотири цифри та дві літери, наприклад 1075 VV.',
+      splitHeroVideoRail: 'З кухні — до вас',
     },
     categories: { rolls: 'Роли', sushi: 'Суші', sets: 'Сети', soups: 'Супи', bowls: 'Боули', snacks: 'Закуски', drinks: 'Напої', sauces: 'Соуси' },
     hero: { title: 'Користь азіатських супів' },
@@ -752,7 +998,7 @@ const translations: Record<Language, Translations> = {
       description:
         'Японська кухня з душею: свіжі роли, суші та авторські страви — з доставкою до вашого столу. Смак, який хочеться повторювати.',
     },
-    section: { title: 'Доставка суші у Києві', description: 'В асортименті Watta Sushi представлені роли, суші, сети і напої на будь-який смак. Ми рекомендуємо обов\'язково спробувати топ позиції нашого меню!' },
+    section: { title: 'Доставка суші до вашого столу', description: 'В асортименті Watta Sushi представлені роли, суші, сети і напої на будь-який смак. Ми рекомендуємо обов\'язково спробувати топ позиції нашого меню!' },
     homeBrandSection: {
       kicker: 'WATTA SUSHI',
       kickerScript: 'японська гастрономія',
@@ -765,9 +1011,13 @@ const translations: Record<Language, Translations> = {
       footerHint: 'Нижче — оберіть категорію в меню',
     },
     cartSection: {
-      empty: 'Корзина пуста',
+      empty: 'Кошик порожній',
+      emptyCartKicker: 'Ще трохи голодно?',
+      emptyCartHint:
+        'Заглянь у меню — обери роли чи суші, натисни «Замовити» на картці або додай страву на її сторінці. Ми вже готуємо соєвий соус.',
       total: 'Всього',
       order: 'Оформити замовлення',
+      processing: 'Обробка…',
       proceedCheckout: 'Перейти до оформлення',
       fulfillmentDelivery: 'Доставка',
       fulfillmentPickup: 'Самовивіз',
@@ -776,6 +1026,66 @@ const translations: Record<Language, Translations> = {
       deliveryFree: 'Безкоштовно',
       deliveryUnlockHint: 'Безкоштовна доставка від {{amount}} €',
       invalidPhone: 'Невірний формат телефону',
+      cartMeta: '{{lines}} поз. · {{pieces}} шт',
+      perPiece: 'шт.',
+      contactDetails: 'Контактні дані',
+      deliveryTimeTitle: 'Час доставки',
+      deliveryTimeHint: 'Інтервали за часом Амстердама (CET/CEST). Минулий слот недоступний.',
+      orderDetailsTitle: 'Деталі',
+      paymentMethodTitle: 'Спосіб оплати',
+      promoCodeTitle: 'Промокод',
+      promoPlaceholder: 'Введіть код',
+      promoApplied: 'Промокод {{code}} застосовано',
+      subtotalLabel: 'Сума замовлення',
+      discountPrefix: 'Знижка',
+      bonusAvailableLabel: 'Списати бонуси (доступно: {{amount}} €)',
+      bonusDeductLine: 'Буде списано: {{amount}} €',
+      bonusSpentLabel: 'Списано бонусами',
+      calculatingDistance: 'Розраховуємо відстань доставки…',
+      distanceBreakdown: 'Відстань: {{km}} км × {{rate}} = {{sum}} €',
+      enterAddressForDeliveryFee: 'Вкажіть адресу доставки для розрахунку вартості',
+      privacyConsent:
+        'Натискаючи кнопку, ви погоджуєтесь з обробкою персональних даних відповідно до політики конфіденційності.',
+      phonePlaceholder: '+380…, +31… або 10–15 цифр',
+      deliveryZoneLabel: 'Зона доставки',
+      deliveryFromMap: 'Зона на карті: {{zone}}',
+      deliveryZoneStandardHint:
+        'Для цієї зони доставка за км — вкажіть адресу нижче або перевірте індекс на сторінці доставки.',
+      citiesGroupAria: 'Місто доставки',
+      streetPlaceholder: 'Вулиця та номер будинку *',
+      entrancePlaceholder: "Під'їзд (лише цифри)",
+      floorPlaceholder: 'Поверх (лише цифри)',
+      apartmentPlaceholder: 'Квартира (лише цифри)',
+      buildingPlaceholder: 'Корпус / блок',
+      optNoCallback: 'Не передзвонювати для підтвердження',
+      optNoDoorbell: 'Не дзвонити у двері',
+      slotDayLabel: 'День',
+      slotTimeLabel: 'Час',
+      dayToday: 'Сьогодні',
+      dayTomorrow: 'Завтра',
+      partySizeLabel: 'Кількість осіб (1–99)',
+      chopsticksLabel: 'Палички',
+      commentPlaceholder: 'Коментар до замовлення',
+      payCash: 'Готівкою',
+      payCard: 'Карткою онлайн',
+      payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      changeFromPlaceholder: 'Решта з якої суми? (наприклад: 50)',
+      distanceMatrixError: 'Не вдалося розрахувати відстань',
+      promoInvalidFallback: 'Невірний код',
+      toastMaxQty: 'Максимум 99 шт. одного товару',
+      toastPromoOk: 'Промокод {{code}} застосовано',
+      toastPromoNetwork: 'Помилка з’єднання',
+      toastUpsellAdded: '{{name}} додано зі знижкою {{percent}}%',
+      toastAddressRequired: 'Вкажіть адресу доставки',
+      toastOrderFailed: 'Не вдалося оформити замовлення.',
+      upsellTitle: 'Додайте до замовлення зі знижкою',
+      upsellLead: 'Сума вже від {{threshold}} € — оберіть спецпропозицію перед оплатою.',
+      upsellOfferFallback: 'Спеціальна пропозиція',
+      upsellAddToCart: 'У кошик',
+      upsellContinue: 'Продовжити оформлення',
+      recScrollPrev: 'Прокрутити рекомендації вліво',
+      recScrollNext: 'Прокрутити рекомендації вправо',
+      addToOrder: 'Додайте до замовлення',
       checkoutSuccessTitle: 'Дякуємо за замовлення!',
       checkoutSuccessSubtitle: 'Ми отримали ваше замовлення. Менеджер зв\'яжеться з вами найближчим часом.',
       checkoutOrderNumber: 'Замовлення №',
@@ -786,10 +1096,58 @@ const translations: Record<Language, Translations> = {
       menu: 'Меню',
       promotions: 'Акції',
       delivery: 'Доставка',
+      deliveryPage: 'Сторінка доставки',
       about: 'Про нас',
       contacts: 'Контакти',
       admin: 'Адмін-панель',
-      favorites: 'Обране'
+      favorites: 'Обране',
+      sidebarMore: 'Ще',
+      footerLegal: '© {{year}} Watta Sushi. Всі права захищені.',
+      bottomNavAria: 'Основна навігація сайту',
+      closeNavDrawerAria: 'Закрити меню навігації',
+      drawerExploreTitle: 'Сторінки сайту',
+      drawerBrandLine: 'Доставка найсмачніших суші',
+    },
+    siteFooter: {
+      navAria: 'Навігація в підвалі сайту',
+      colNav: 'Навігація',
+      colOrder: 'Оформити замовлення',
+      colHours: 'Час роботи',
+      colLocations: 'Наші міста',
+      colSocial: 'Ми в соцмережах',
+      blog: 'Блог',
+      reviews: 'Відгуки',
+      news: 'Новини',
+      phone1: '+38 (067) 000 00 01',
+      phone2: '+38 (066) 000 00 02',
+      phone3: '+38 (093) 000 00 03',
+      hoursLine: 'щодня 14:00 — 21:00',
+      locationsEmpty: 'Міста з’являться після додавання в адмін-панелі.',
+      appStore: 'App Store',
+      googlePlay: 'Google Play',
+      support: 'Підтримка',
+      privacy: 'Політика конфіденційності',
+      paymentsAria: 'Способи оплати',
+      paymentsMethodsNote:
+        'Оплата банківською карткою та через iDEAL у Нідерландах.',
+      instagramAria: 'Instagram',
+      facebookAria: 'Facebook',
+      tiktokAria: 'TikTok',
+    },
+    productDetail: {
+      loading: 'Завантаження…',
+      notFound: 'Товар не знайдено',
+      composition: 'Склад',
+      recommendsTitle: 'Watta рекомендує',
+      recommendsHint: 'Обрані позиції, які гармонійно доповнять ваше замовлення.',
+      badgeTopSales: 'Топ продажів',
+      badgeNew: 'Новинка',
+      adding: 'Додаємо…',
+      prepTime: '30–40 хв',
+      weightFallback: '250 г',
+      piecesFallback: '8 шт',
+      toCart: 'У кошик',
+      addedHint: 'Додано в кошик',
     },
     auth: {
       login: 'Вхід',
@@ -880,11 +1238,46 @@ const translations: Record<Language, Translations> = {
       ctaDelivery: "Умови доставки",
       visitStripTitle: "Завітати або написати",
       addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
-      hoursLine: "Щодня 12:00 — 22:00",
+      hoursLine: "Щодня 14:00 — 21:00",
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Команда на фото з’явиться зовсім скоро",
       teamEmptyBody: "Поки що знайомтесь з нами через страви — кожен рол уже зроблений руками наших шефів.",
       marqueeWords: "Свіжість|Температура|Смак|Команда|Амстердам|Роли|Суші|Доставка|Якість",
+      darkHeroSubtitle: "Преміальний сервіс доставки страв японської кухні",
+      darkFoundedLabel: "Засновані в",
+      darkFoundedYearCity: "2025 в Амстердамі",
+      darkMilestoneLine1: "Сьогодні",
+      darkMilestoneLine2: "розвиваємо сервіс на території Нідерландів",
+      philosophyTitlePart1: "Watta",
+      philosophyTitlePart2: "філософія",
+      slide1Title: "Дійсно великі порції",
+      slide1Body: "Наші роли — щедра начинка в кожному шматочку, контроль ваги на кухні.",
+      slide2Title: "Завжди свіжі інгредієнти",
+      slide2Body: "Постачання щодня, перевірка якості та холодний ланцюг до вашого столу.",
+      slide3Title: "Широке меню",
+      slide3Body: "Класичні, веганські та авторські рецепти — знайдеться на кожен настрій.",
+      slide4Title: "Зручний застосунок",
+      slide4Body: "iOS та Android — замовлення в кілька торкань, історія та статус доставки.",
+      slide5Title: "Лайфстайл #wattafam",
+      slide5Body: "Новинки меню, колаборації та історії з кухні — у соцмережах і в застосунку.",
+      slide6Title: "Швидка доставка",
+      slide6Body: "Кур'єри знають маршрути — їжа приїжджає теплою та охайно упакованою.",
+      artHeadlineLine1: "Watta створює не просто роли,",
+      artHeadlineLine2: "а витвори",
+      artHeadlineAccent: "МИСТЕЦТВА",
+      insideSectionTitle: "Що всередині ролу?",
+      inside1Title: "Свіжі морепродукти",
+      inside1Body: "Лосось, тунець та інші позиції з перевірених постачальників.",
+      inside2Title: "Рис преміум-класу",
+      inside2Body: "Правильне приготування та баланс оцту — основа смаку кожного ролу.",
+      inside3Title: "Авокадо та овочі",
+      inside3Body: "Стиглі овочі, кремова текстура та свіжий хруст у фірмових рецептах.",
+      inside4Title: "Норі та соуси",
+      inside4Body: "Якісні водорості та соуси власного приготування — без зайвої солі.",
+      inside5Title: "Сир і крем-сир",
+      inside5Body: "Філадельфія та інші молочні нотки для класичних і авторських комбінацій.",
+      inside6Title: "Кунжут і прикраси",
+      inside6Body: "Тостований кунжут, мікрозелень та делікатні штрихи перед відправкою.",
     },
     menuView: {
       itemsCount: 'страв',
@@ -897,12 +1290,24 @@ const translations: Record<Language, Translations> = {
       welcomeScrollDownAria: 'Прокрутити до наступного екрана',
       gastronomyTitle: 'Японська гастрономія',
       homeCatalogTitle: 'Усе меню',
-      homeCatalogSub: 'Оберіть категорію в панелі зверху — сторінка прокрутиться до відповідного блоку.',
       catalogOnCategoryPageHint:
         'Страви обраної категорії відкриваються на окремій сторінці — натисніть тип у сітці нижче або в панелі категорій.',
       categoryPageBack: 'На головну',
       categoryPageEmpty: 'У цій категорії поки немає позицій.',
       categoryPageOpenCart: 'Кошик',
+      fullMenuTitle: 'Повне меню',
+      fullMenuSub: 'Усі категорії та страви на одній сторінці. Оберіть категорію зверху — список прокрутиться до потрібного блоку.',
+      fullMenuWant: 'Замовити',
+      fullMenuCategoriesAria: 'Категорії меню',
+      fullMenuLoading: 'Завантаження меню…',
+      fullMenuEmpty: 'Поки що немає страв у каталозі.',
+      fullMenuAllTab: 'Усі',
+      categoryRailAria: 'горизонтальна стрічка страв — гортайте вліво та вправо; натисніть картку, щоб відкрити страву',
+      heroBannerOverlayTitle: 'Проводьте час разом із\u00A0нами',
+      heroBannerOverlaySub: 'Свіжі роли, тепла зустріч і смак, яким хочеться ділитися.',
+      heroBannerSmsSender: 'Watta Sushi',
+      heroBannerSmsBadge: 'SMS',
+      heroBannerSmsTime: 'щойно',
     },
     cinematicFooter: {
       readyTitle: 'Готові замовити?',
@@ -911,16 +1316,29 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Каталог страв',
       ctaOffers: 'Пропозиції',
       promoCarouselAria: 'Акційні пропозиції — гортайте вліво-вправо',
-      promoPickHint: 'Торкніться картки — відкриємо повне меню',
+      promoPickHint:
+        'Нижче — рекомендовані страви та акційні пропозиції з меню. Гортайте стрічки вліво-вправо; торкніться картки, щоб відкрити страву.',
       promoBadge: 'Акція',
       prevPromo: 'Попередня',
       nextPromo: 'Наступна',
-      aboutTitle: 'WATTA — смак без зайвого шуму',
+      sectionPromoTitle: 'Акції',
+      sectionRecommendedTitle: 'Рекомендовані',
+      sectionPopularTitle: 'Хіти та топ',
+      sectionCategoriesTitle: 'Категорії',
+      recommendedBadge: 'Топ',
+      popularBadge: 'ХІТ',
+      promoStripAria: 'Страви зі знижкою зараз',
+      recommendedStripAria: 'Рекомендовані страви',
+      popularStripAria: 'Популярні страви — гортайте вліво та вправо',
+      categoriesStripAria: 'Категорії меню — натисніть, щоб перейти до розділу в каталозі',
+      aboutTitle: 'WATTA — СМАК БЕЗ ЗАЙВОГО ШУМУ',
       aboutLead:
         'Ми не граємо в «японську кухню з доставкою» — ми про точність рецепту, свіжість і сервіс, яким можна пишатися.',
       aboutBody:
         'Роли збираємо на замовлення, тримаємо дисципліну температури для рису й соусів, а команда чесно підкаже, що обрати під ваш настрій. Це не фастфуд — це швидка гастрономія з характером.',
       animationSlotAria: 'Місце для анімації бренду',
+      heroMarquee:
+        "З любов'ю до смаку|Watta Sushi|Свіжі роли|Швидка доставка|Преміум інгредієнти",
     },
   adminCategory: {
     manageTitle: 'Управління категоріями меню',
@@ -944,6 +1362,9 @@ const translations: Record<Language, Translations> = {
       wasPrice: "Було",
       offPercent: "−{{percent}}%",
       hitBadge: "ХІТ",
+      readCta: "Читати",
+      defaultCategoryTag: "Новини Watta",
+      fallbackHint: "Поки з сервера немає записів — нижче приклади оформлення. Ваші новини з’являться тут після додавання в адмін-панелі.",
     },
     profilePage: { title: "Профіль", logout: "Вийти", orderHistory: "Історія замовлень" },
     clientProfile: {
@@ -1004,8 +1425,10 @@ const translations: Record<Language, Translations> = {
       title: 'Блог і рецепти шефа',
       subtitle: 'Секрети приготування, поради та нотатки команди Watta Sushi.',
       empty: 'Скоро тут з’являться нові статті.',
-      readMore: 'Читати далі',
+      readMore: 'Читати',
       backToBlog: 'Усі статті',
+      fallbackHint: 'Поки з API немає статей — показуємо приклади нотаток шефа. Публікації з адмін-панелі замінять цей блок.',
+      cardCategoryFallback: 'Блог шефа',
     },
     contactPage: {
       heroKicker: 'Зв’яжіться з нами',
@@ -1029,7 +1452,7 @@ const translations: Record<Language, Translations> = {
       phoneTel: '+31612345678',
       emailDisplay: 'hello@watta-sushi.nl',
       emailMailto: 'hello@watta-sushi.nl',
-      hoursDetail: 'Щодня 12:00 — 22:00',
+      hoursDetail: 'Щодня 14:00 — 21:00',
       openMaps: 'Відкрити в Google Maps',
       mapTitle: 'Ми на карті',
       mapSub: 'Самовивіз за попереднім замовленням — уточнюйте час у чаті або телефоном.',
@@ -1041,7 +1464,8 @@ const translations: Record<Language, Translations> = {
       faq2Q: 'Чи можна змінити адресу після оформлення?',
       faq2A: 'Так, якщо кур’єр ще не виїхав — напишіть або зателефонуйте, і ми оновимо маршрут.',
       faq3Q: 'Які способи оплати є?',
-      faq3A: 'Картка онлайн, готівка або термінал у кур’єра — залежно від міста та налаштувань на сайті.',
+      faq3A:
+        'Банківська картка (Visa, Mastercard) та iDEAL для Нідерландів; також готівка або термінал у кур’єра — залежно від міста та налаштувань оформлення.',
       faq4Q: 'Чи є безглютенові або вегетаріанські опції?',
       faq4A: 'У меню є позиції без риби та з овочами; про алергени краще написати в повідомленні — підкажемо по складу.',
       faq5Q: 'Робите корпоративні сети?',
@@ -1066,7 +1490,52 @@ const translations: Record<Language, Translations> = {
       scrollHint: 'Гортайте вниз',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
     },
-    notifications: { title: "Сповіщення", empty: "Немає сповіщень" },
+    privacyPage: {
+      title: 'Політика конфіденційності',
+      back: 'Назад',
+      updated: 'Останнє оновлення: квітень 2026',
+      intro:
+        'Ця сторінка пояснює, як Watta Sushi збирає, використовує та захищає ваші персональні дані під час відвідування сайту, оформлення замовлень і користування сервісом. Ми діємо відповідно до застосовного законодавства, зокрема GDPR (ЄС).',
+      blocks: [
+        {
+          title: 'Володілець даних',
+          body: 'Відповідальним за обробку персональних даних є Watta Sushi (оператор сервісу доставки). Контактні дані для питань щодо приватності — через розділ «Контакти» на сайті або електронну пошту, вказану там.',
+        },
+        {
+          title: 'Які дані ми обробляємо',
+          body: 'Ім’я, телефон, email (за потреби), адреса доставки або самовивозу, історія замовлень, технічні дані (IP, тип браузера, файли cookie), а також повідомлення, які ви надсилаєте через форми зворотного зв’язку.',
+        },
+        {
+          title: 'Мета та правові підстави',
+          body: 'Дані використовуються для прийому й виконання замовлень, зв’язку з вами, покращення сервісу, дотримання юридичних зобов’язань і, за вашою згодою, для маркетингових повідомлень (які можна вимкнути).',
+        },
+        {
+          title: 'Передача третім особам',
+          body: 'Ми можемо передавати обмежений обсяг даних платіжним провайдерам, службам доставки та хостингу лише в обсязі, необхідному для надання послуги, на підставі договорів та вимог безпеки.',
+        },
+        {
+          title: 'Зберігання та безпека',
+          body: 'Дані зберігаються лише стільки, скільки потрібно для цілей обробки або вимог закону. Застосовуємо технічні та організаційні заходи для захисту від несанкціонованого доступу та втрати.',
+        },
+        {
+          title: 'Ваші права',
+          body: 'Ви можете запитати доступ, виправлення, видалення даних, обмеження обробки, перенесення даних або заперечити проти певних видів обробки. Для скарг — до наглядового органу у вашій країні перебування.',
+        },
+        {
+          title: 'Файли cookie',
+          body: 'Сайт може використовувати cookie для роботи кошика, мови інтерфейсу та аналітики. Ви можете керувати cookie в налаштуваннях браузера.',
+        },
+        {
+          title: 'Зміни до політики',
+          body: 'Ми можемо оновлювати цю сторінку; актуальна версія завжди опублікована тут. Продовжуючи користуватися сервісом після змін, ви підтверджуєте ознайомлення з оновленою політикою.',
+        },
+      ],
+    },
+    notifications: {
+      title: "Повідомлення",
+      empty: "Повідомлень немає",
+      emptySubtext: "Ми повідомимо, коли з'явиться щось цікаве",
+    },
     adminPage: {
       auth: {
         notAuthorized: "Ви не авторизовані",
@@ -1180,7 +1649,6 @@ const translations: Record<Language, Translations> = {
     phone: "Контакты",
     delivery: "Доставка",
     admin: "Админ-панель",
-    location: { kyiv: 'Киев' },
     locationPicker: {
       title: 'Выбор локации',
       subtitle: 'Выберите страну и город доставки',
@@ -1215,10 +1683,13 @@ const translations: Record<Language, Translations> = {
       zonesTitle: 'Зоны доставки',
       zoneAvailable: 'Доставка в пределах зоны',
       conditionsTitle: 'Условия',
-      minOrder: 'Минимальная сумма заказа — 700 € (для вашего города уточняйте у оператора).',
-      remoteHint: 'В отдалённые районы — по предварительной договорённости.',
+      minOrder:
+        'Доставляем только в города из списка на этой странице и в шапке сайта. Есть ли доставка на ваш адрес и какая стоимость — проверьте блоком выше по почтовому индексу. Минимальная сумма заказа зависит от расстояния от нашей кухни: до 20 км — от 25 €, свыше 20 км — от 100 €.',
+      minOrderAfterCheck:
+        'По вашей проверке: минимальный заказ для этого адреса — {{amount}} € (расстояние от кухни ≈ {{km}} км).',
+      remoteHint: 'Очень отдалённые или нетипичные адреса — по договорённости с оператором.',
       hoursTitle: 'Мы на связи',
-      hoursRange: '11:00 — 22:30',
+      hoursRange: '14:00 — 21:00',
       howTitle: 'Как заказать',
       stepWeb: 'На сайте',
       stepApp: 'В приложении',
@@ -1228,9 +1699,12 @@ const translations: Record<Language, Translations> = {
       stepPhoneDesc: 'Позвоните — подскажем по меню, зонам и времени доставки.',
       kitchenMapCaption: 'Наша кухня на карте',
       conditionsKicker: 'Сервис',
-      conditionsFeature1: 'Минимум и тарифы для вашего города — уточняйте у оператора.',
-      conditionsFeature2: 'Зоны доставки прозрачны: смотрите карту и проверку по индексу выше.',
-      conditionsFeature3: 'В отдалённые точки — по предварительной договорённости.',
+      conditionsFeature1:
+        'Работаем только с городами из нашего списка — выберите свой на странице или в шапке сайта.',
+      conditionsFeature2:
+        'Выше по индексу можно проверить, входит ли адрес в зону и сколько будет стоить доставка.',
+      conditionsFeature3:
+        'Расстояние и минимальный заказ считаются автоматически от координат кухни до точки почтового индекса.',
       deliveryPromiseKicker: 'Пунктуальность',
       deliveryPromiseTitle: 'Привозим вовремя и аккуратно',
       deliveryPromiseText:
@@ -1244,9 +1718,9 @@ const translations: Record<Language, Translations> = {
       payment: 'Оплата',
       postalTitle: 'Проверка по индексу',
       postalDesc:
-        'Выберите город из списка (как в шапке сайта) и введите почтовый индекс — покажем, попадает ли адрес в зону доставки. Границы зон и тарифы задаёт только администратор.',
+        'Выберите город из списка (как в шапке сайта) и введите индекс. Для Амстердама (NL) расстояние от нашей кухни до точки индекса считается автоматически: 2 € за километр. В других городах зоны и тарифы задаёт администратор.',
       postalLabel: 'Почтовый индекс',
-      postalPlaceholder: 'Напр. 01001 или 1012 AB',
+      postalPlaceholder: 'Напр. 1075 VV (Амстердам, NL)',
       postalButton: 'Проверить',
       postalChecking: 'Ищем адрес…',
       postalInside: 'Доставка доступна в зоне',
@@ -1268,6 +1742,9 @@ const translations: Record<Language, Translations> = {
       cityNoDeliveryYet: 'Для этого города пока нет доставки.',
       mapZonesHint: 'Нажмите на цветную зону на карте — покажем условия доставки.',
       mapInteractiveAria: 'Интерактивная карта зон доставки',
+      zonesMapHeroTitle: 'Зона доставки Watta Sushi',
+      zonePopupSaveHint: 'Нажмите на зону — тариф сохранится для корзины.',
+      zoneSelectedToast: 'Зона «{{zone}}»: {{fee}}. Применено в корзине.',
       zonePopupFree: 'Бесплатная доставка в этой зоне.',
       zonePopupFlat: 'Фиксированная доставка: {{amount}} €',
       zonePopupStandardTitle: 'Стандартный тариф для этой зоны',
@@ -1282,6 +1759,12 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Тариф зоны: стандарт (база + €/км)',
       estimatedDeliveryApprox: 'Ориентировочная доставка: {{amount}} €',
       distanceFromKitchen: 'Расстояние от кухни (примерно): {{km}} км',
+      postalAmsterdamOkTitle: 'Доставка в Амстердаме по этому индексу доступна',
+      postalAmsterdamOkFormula: 'Расстояние от кухни: {{km}} км × 2 €/км ≈ {{amount}} € за доставку.',
+      postalOutsideAmsterdam:
+        'По этому индексу адрес не в Амстердаме (или в другом гементе рядом). Проверьте индекс или выберите другой город.',
+      postalInvalidNlFormat: 'Формат индекса Нидерландов: четыре цифры и две буквы, например 1075 VV.',
+      splitHeroVideoRail: 'С кухни — к вам',
     },
     categories: { rolls: 'Роллы', sushi: 'Суши', sets: 'Сеты', soups: 'Супы', bowls: 'Боулы', snacks: 'Закуски', drinks: 'Напитки', sauces: 'Соусы' },
     hero: { title: 'Польза азиатских супов' },
@@ -1290,7 +1773,7 @@ const translations: Record<Language, Translations> = {
       description:
         'Японская кухня с душой: свежие роллы, суши и авторские блюда — с доставкой к вашему столу. Вкус, который хочется повторять.',
     },
-    section: { title: 'Доставка суши в Киеве', description: 'В ассортименте Watta Sushi представлены роллы, суши, сеты и напитки на любой вкус. Мы рекомендуем обязательно попробовать топ позиции нашего меню!' },
+    section: { title: 'Доставка суши к вашему столу', description: 'В ассортименте Watta Sushi представлены роллы, суши, сеты и напитки на любой вкус. Мы рекомендуем обязательно попробовать топ позиции нашего меню!' },
     homeBrandSection: {
       kicker: 'WATTA SUSHI',
       kickerScript: 'японская гастрономия',
@@ -1304,8 +1787,12 @@ const translations: Record<Language, Translations> = {
     },
     cartSection: {
       empty: 'Корзина пуста',
+      emptyCartKicker: 'Аппетит уже проснулся?',
+      emptyCartHint:
+        'Загляни в меню — выбери роллы или суши, нажми «Заказать» на карточке или добавь блюдо на странице позиции. Соевый соус мы подготовим.',
       total: 'Итого',
       order: 'Оформить заказ',
+      processing: 'Обработка…',
       proceedCheckout: 'Перейти к оформлению',
       fulfillmentDelivery: 'Доставка',
       fulfillmentPickup: 'Самовывоз',
@@ -1314,6 +1801,66 @@ const translations: Record<Language, Translations> = {
       deliveryFree: 'Бесплатно',
       deliveryUnlockHint: 'Бесплатная доставка от {{amount}} €',
       invalidPhone: 'Неверный формат телефона',
+      cartMeta: '{{lines}} поз. · {{pieces}} шт',
+      perPiece: 'шт.',
+      contactDetails: 'Контактные данные',
+      deliveryTimeTitle: 'Время доставки',
+      deliveryTimeHint: 'Интервалы по времени Амстердама (CET/CEST). Прошедшие слоты недоступны.',
+      orderDetailsTitle: 'Детали',
+      paymentMethodTitle: 'Способ оплаты',
+      promoCodeTitle: 'Промокод',
+      promoPlaceholder: 'Введите код',
+      promoApplied: 'Промокод {{code}} применён',
+      subtotalLabel: 'Сумма заказа',
+      discountPrefix: 'Скидка',
+      bonusAvailableLabel: 'Списать бонусы (доступно: {{amount}} €)',
+      bonusDeductLine: 'Будет списано: {{amount}} €',
+      bonusSpentLabel: 'Списано бонусами',
+      calculatingDistance: 'Считаем расстояние доставки…',
+      distanceBreakdown: 'Расстояние: {{km}} км × {{rate}} = {{sum}} €',
+      enterAddressForDeliveryFee: 'Введите адрес доставки для расчёта стоимости',
+      privacyConsent:
+        'Нажимая кнопку, вы соглашаетесь с обработкой персональных данных в соответствии с политикой конфиденциальности.',
+      phonePlaceholder: '+380…, +31… или 10–15 цифр',
+      deliveryZoneLabel: 'Зона доставки',
+      deliveryFromMap: 'Зона на карте: {{zone}}',
+      deliveryZoneStandardHint:
+        'Для этой зоны доставка по км — укажите адрес ниже или проверьте индекс на странице доставки.',
+      citiesGroupAria: 'Город доставки',
+      streetPlaceholder: 'Улица и номер дома *',
+      entrancePlaceholder: 'Подъезд (только цифры)',
+      floorPlaceholder: 'Этаж (только цифры)',
+      apartmentPlaceholder: 'Квартира (только цифры)',
+      buildingPlaceholder: 'Корпус / блок',
+      optNoCallback: 'Не перезванивать для подтверждения',
+      optNoDoorbell: 'Не звонить в дверь',
+      slotDayLabel: 'День',
+      slotTimeLabel: 'Время',
+      dayToday: 'Сегодня',
+      dayTomorrow: 'Завтра',
+      partySizeLabel: 'Количество персон (1–99)',
+      chopsticksLabel: 'Палочки',
+      commentPlaceholder: 'Комментарий к заказу',
+      payCash: 'Наличными',
+      payCard: 'Картой онлайн',
+      payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      changeFromPlaceholder: 'Сдача с какой суммы? (например: 50)',
+      distanceMatrixError: 'Не удалось рассчитать расстояние',
+      promoInvalidFallback: 'Неверный код',
+      toastMaxQty: 'Максимум 99 шт. одного товара',
+      toastPromoOk: 'Промокод {{code}} применён',
+      toastPromoNetwork: 'Ошибка соединения',
+      toastUpsellAdded: '{{name}} добавлено со скидкой {{percent}}%',
+      toastAddressRequired: 'Укажите адрес доставки',
+      toastOrderFailed: 'Не удалось оформить заказ.',
+      upsellTitle: 'Добавьте к заказу со скидкой',
+      upsellLead: 'Сумма уже от {{threshold}} € — выберите спецпредложение перед оплатой.',
+      upsellOfferFallback: 'Специальное предложение',
+      upsellAddToCart: 'В корзину',
+      upsellContinue: 'Продолжить оформление',
+      recScrollPrev: 'Прокрутить рекомендации влево',
+      recScrollNext: 'Прокрутить рекомендации вправо',
+      addToOrder: 'Добавьте к заказу',
       checkoutSuccessTitle: 'Спасибо за заказ!',
       checkoutSuccessSubtitle: 'Мы получили ваш заказ. Менеджер свяжется с вами в ближайшее время.',
       checkoutOrderNumber: 'Заказ №',
@@ -1324,10 +1871,58 @@ const translations: Record<Language, Translations> = {
       menu: 'Меню',
       promotions: 'Акции',
       delivery: 'Доставка',
+      deliveryPage: 'Страница доставки',
       about: 'О нас',
       contacts: 'Контакты',
       admin: 'Админ-панель',
-      favorites: 'Избранное'
+      favorites: 'Избранное',
+      sidebarMore: 'Ещё',
+      footerLegal: '© {{year}} Watta Sushi. Все права защищены.',
+      bottomNavAria: 'Основная навигация сайта',
+      closeNavDrawerAria: 'Закрыть меню навигации',
+      drawerExploreTitle: 'Страницы сайта',
+      drawerBrandLine: 'Доставка самых вкусных суши',
+    },
+    siteFooter: {
+      navAria: 'Навигация в подвале сайта',
+      colNav: 'Навигация',
+      colOrder: 'Оформить заказ',
+      colHours: 'Часы работы',
+      colLocations: 'Наши города',
+      colSocial: 'Мы в соцсетях',
+      blog: 'Блог',
+      reviews: 'Отзывы',
+      news: 'Новости',
+      phone1: '+38 (067) 000 00 01',
+      phone2: '+38 (066) 000 00 02',
+      phone3: '+38 (093) 000 00 03',
+      hoursLine: 'ежедневно 14:00 — 21:00',
+      locationsEmpty: 'Города появятся после добавления в админ-панели.',
+      appStore: 'App Store',
+      googlePlay: 'Google Play',
+      support: 'Поддержка',
+      privacy: 'Политика конфиденциальности',
+      paymentsAria: 'Способы оплаты',
+      paymentsMethodsNote:
+        'Оплата банковской картой и через iDEAL в Нидерландах.',
+      instagramAria: 'Instagram',
+      facebookAria: 'Facebook',
+      tiktokAria: 'TikTok',
+    },
+    productDetail: {
+      loading: 'Загрузка…',
+      notFound: 'Товар не найден',
+      composition: 'Состав',
+      recommendsTitle: 'Watta рекомендует',
+      recommendsHint: 'Подборка блюд, которые гармонично дополнят ваш заказ.',
+      badgeTopSales: 'Топ продаж',
+      badgeNew: 'Новинка',
+      adding: 'Добавляем…',
+      prepTime: '30–40 мин',
+      weightFallback: '250 г',
+      piecesFallback: '8 шт',
+      toCart: 'В корзину',
+      addedHint: 'Добавлено в корзину',
     },
     auth: {
       login: 'Вход',
@@ -1418,11 +2013,46 @@ const translations: Record<Language, Translations> = {
       ctaDelivery: "Условия доставки",
       visitStripTitle: "Приехать или написать",
       addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
-      hoursLine: "Ежедневно 12:00 — 22:00",
+      hoursLine: "Ежедневно 14:00 — 21:00",
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Скоро здесь появятся фото команды",
       teamEmptyBody: "Пока знакомьтесь с нами через блюда — каждый ролл уже сделан руками наших шефов.",
       marqueeWords: "Свежесть|Температура|Вкус|Команда|Амстердам|Роллы|Суши|Доставка|Качество",
+      darkHeroSubtitle: "Премиальный сервис доставки блюд японской кухни",
+      darkFoundedLabel: "Основаны в",
+      darkFoundedYearCity: "2025 в Амстердаме",
+      darkMilestoneLine1: "Сегодня",
+      darkMilestoneLine2: "развиваем сервис на территории Нидерландов",
+      philosophyTitlePart1: "Watta",
+      philosophyTitlePart2: "философия",
+      slide1Title: "По-настоящему большие порции",
+      slide1Body: "Наши роллы — щедрая начинка в каждом куске, контроль веса на кухне.",
+      slide2Title: "Всегда свежие ингредиенты",
+      slide2Body: "Поставки ежедневно, проверка качества и холодная цепь до вашего стола.",
+      slide3Title: "Широкое меню",
+      slide3Body: "Классические, веганские и авторские рецепты — на любой вкус.",
+      slide4Title: "Удобное приложение",
+      slide4Body: "iOS и Android — заказ в несколько касаний, история и статус доставки.",
+      slide5Title: "Лайфстайл #wattafam",
+      slide5Body: "Новинки меню, коллаборации и истории с кухни — в соцсетях и в приложении.",
+      slide6Title: "Быстрая доставка",
+      slide6Body: "Курьеры знают маршруты — еда приезжает тёплой и аккуратно упакованной.",
+      artHeadlineLine1: "Watta создаёт не просто роллы,",
+      artHeadlineLine2: "а произведения",
+      artHeadlineAccent: "ИСКУССТВА",
+      insideSectionTitle: "Что внутри ролла?",
+      inside1Title: "Свежие морепродукты",
+      inside1Body: "Лосось, тунец и другие позиции от проверенных поставщиков.",
+      inside2Title: "Рис премиум-класса",
+      inside2Body: "Правильная варка и баланс уксуса — основа вкуса каждого ролла.",
+      inside3Title: "Авокадо и овощи",
+      inside3Body: "Спелые овощи, кремовая текстура и свежий хруст в фирменных рецептах.",
+      inside4Title: "Нори и соусы",
+      inside4Body: "Качественные водоросли и соусы собственного приготовления — без лишней соли.",
+      inside5Title: "Сыр и крем-сыр",
+      inside5Body: "Филадельфия и другие молочные ноты для классических и авторских сочетаний.",
+      inside6Title: "Кунжут и украшения",
+      inside6Body: "Поджаренный кунжут, микрозелень и деликатные штрихи перед отправкой.",
     },
     menuView: {
       itemsCount: 'блюд',
@@ -1435,12 +2065,24 @@ const translations: Record<Language, Translations> = {
       welcomeScrollDownAria: 'Прокрутить к следующему экрану',
       gastronomyTitle: 'Японская гастрономия',
       homeCatalogTitle: 'Всё меню',
-      homeCatalogSub: 'Выберите категорию на панели сверху — страница прокрутится к нужному разделу.',
       catalogOnCategoryPageHint:
         'Блюда категории открываются на отдельной странице — выберите тип в сетке ниже или в панели категорий.',
       categoryPageBack: 'На главную',
       categoryPageEmpty: 'В этой категории пока нет позиций.',
       categoryPageOpenCart: 'Корзина',
+      fullMenuTitle: 'Полное меню',
+      fullMenuSub: 'Все категории и блюда на одной странице. Выберите категорию сверху — список прокрутится к нужному блоку.',
+      fullMenuWant: 'Заказать',
+      fullMenuCategoriesAria: 'Категории меню',
+      fullMenuLoading: 'Загрузка меню…',
+      fullMenuEmpty: 'Пока нет блюд в каталоге.',
+      fullMenuAllTab: 'Все',
+      categoryRailAria: 'горизонтальная лента блюд — листайте влево и вправо; нажмите карточку, чтобы открыть блюдо',
+      heroBannerOverlayTitle: 'Проводите время вместе с\u00A0нами',
+      heroBannerOverlaySub: 'Свежие роллы, тёплая встреча и вкус, которым хочется делиться.',
+      heroBannerSmsSender: 'Watta Sushi',
+      heroBannerSmsBadge: 'SMS',
+      heroBannerSmsTime: 'сейчас',
     },
     cinematicFooter: {
       readyTitle: 'Готовы заказать?',
@@ -1449,16 +2091,29 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Каталог блюд',
       ctaOffers: 'Предложения',
       promoCarouselAria: 'Акции — листайте влево и вправо',
-      promoPickHint: 'Нажмите на карточку — откроем полное меню',
+      promoPickHint:
+        'Ниже — рекомендуемые блюда и акционные предложения из меню. Листайте ленты влево-вправо; нажмите на карточку, чтобы открыть блюдо.',
       promoBadge: 'Акция',
       prevPromo: 'Назад',
       nextPromo: 'Вперёд',
-      aboutTitle: 'WATTA — вкус без лишнего шума',
+      sectionPromoTitle: 'Акции',
+      sectionRecommendedTitle: 'Рекомендуем',
+      sectionPopularTitle: 'Хиты и топ',
+      sectionCategoriesTitle: 'Категории',
+      recommendedBadge: 'Топ',
+      popularBadge: 'ХИТ',
+      promoStripAria: 'Блюда со скидкой',
+      recommendedStripAria: 'Рекомендуемые блюда',
+      popularStripAria: 'Популярные блюда — листайте влево и вправо',
+      categoriesStripAria: 'Категории меню — нажмите, чтобы перейти к разделу в каталоге',
+      aboutTitle: 'WATTA — ВКУС БЕЗ ЛИШНЕГО ШУМА',
       aboutLead:
         'Мы не играем в «японскую кухню с доставкой» — мы про точность рецепта, свежесть и сервис, которым можно гордиться.',
       aboutBody:
         'Роллы собираем под заказ, держим дисциплину температуры для риса и соусов, а команда честно подскажет, что выбрать под ваше настроение. Это не фастфуд — это быстрая гастрономия с характером.',
       animationSlotAria: 'Место для бренд-анимации',
+      heroMarquee:
+        'С любовью к вкусу|Watta Sushi|Свежие роллы|Быстрая доставка|Премиум ингредиенты',
     },
   adminCategory: {
     manageTitle: 'Управление категориями меню',
@@ -1482,6 +2137,9 @@ const translations: Record<Language, Translations> = {
       wasPrice: "Было",
       offPercent: "−{{percent}}%",
       hitBadge: "ХИТ",
+      readCta: "Читать",
+      defaultCategoryTag: "Новости Watta",
+      fallbackHint: "Пока с сервера нет записей — ниже примеры оформления. Ваши новости появятся после добавления в админ-панели.",
     },
     profilePage: { title: "Профиль", logout: "Выйти", orderHistory: "История заказов" },
     clientProfile: {
@@ -1542,8 +2200,10 @@ const translations: Record<Language, Translations> = {
       title: 'Блог и рецепты шефа',
       subtitle: 'Секреты приготовления и заметки команды Watta Sushi.',
       empty: 'Скоро появятся новые статьи.',
-      readMore: 'Читать далее',
+      readMore: 'Читать',
       backToBlog: 'Все статьи',
+      fallbackHint: 'Пока с API нет статей — ниже примеры заметок шефа. Публикации из админ-панели заменят этот блок.',
+      cardCategoryFallback: 'Блог шефа',
     },
     contactPage: {
       heroKicker: 'Свяжитесь с нами',
@@ -1567,7 +2227,7 @@ const translations: Record<Language, Translations> = {
       phoneTel: '+31612345678',
       emailDisplay: 'hello@watta-sushi.nl',
       emailMailto: 'hello@watta-sushi.nl',
-      hoursDetail: 'Ежедневно 12:00 — 22:00',
+      hoursDetail: 'Ежедневно 14:00 — 21:00',
       openMaps: 'Открыть в Google Maps',
       mapTitle: 'Мы на карте',
       mapSub: 'Самовывоз по предзаказу — уточняйте время в чате или по телефону.',
@@ -1579,7 +2239,8 @@ const translations: Record<Language, Translations> = {
       faq2Q: 'Можно ли изменить адрес после оформления?',
       faq2A: 'Да, если курьер ещё не выехал — напишите или позвоните, обновим маршрут.',
       faq3Q: 'Какие способы оплаты доступны?',
-      faq3A: 'Карта онлайн, наличные или терминал у курьера — в зависимости от города и настроек на сайте.',
+      faq3A:
+        'Банковская карта (Visa, Mastercard) и iDEAL для Нидерландов; также наличные или терминал у курьера — в зависимости от города и настроек оформления.',
       faq4Q: 'Есть безглютеновые или вегетарианские позиции?',
       faq4A: 'В меню есть блюда без рыбы и с овощами; по аллергенам лучше написать в сообщении — подскажем по составу.',
       faq5Q: 'Делаете корпоративные сеты?',
@@ -1604,7 +2265,52 @@ const translations: Record<Language, Translations> = {
       scrollHint: 'Листайте вниз',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
     },
-    notifications: { title: "Уведомления", empty: "Нет уведомлений" },
+    privacyPage: {
+      title: 'Политика конфиденциальности',
+      back: 'Назад',
+      updated: 'Последнее обновление: апрель 2026',
+      intro:
+        'Здесь описано, как Watta Sushi собирает, использует и защищает ваши персональные данные при посещении сайта, оформлении заказов и пользовании сервисом. Мы действуем в соответствии с применимым правом, включая GDPR (ЕС).',
+      blocks: [
+        {
+          title: 'Контролёр данных',
+          body: 'Ответственным за обработку персональных данных является Watta Sushi (оператор сервиса доставки). Для вопросов о конфиденциальности — раздел «Контакты» на сайте или email, указанный там.',
+        },
+        {
+          title: 'Какие данные мы обрабатываем',
+          body: 'Имя, телефон, email (при необходимости), адрес доставки или самовывоза, история заказов, технические данные (IP, тип браузера, cookie), а также сообщения через формы обратной связи.',
+        },
+        {
+          title: 'Цели и правовые основания',
+          body: 'Данные используются для приёма и выполнения заказов, связи с вами, улучшения сервиса, соблюдения юридических обязательств и, с вашего согласия, для маркетинговых сообщений (их можно отключить).',
+        },
+        {
+          title: 'Передача третьим лицам',
+          body: 'Мы можем передавать ограниченный объём данных платёжным провайдерам, службам доставки и хостинга только в объёме, необходимом для оказания услуги, на основании договоров и требований безопасности.',
+        },
+        {
+          title: 'Хранение и безопасность',
+          body: 'Данные хранятся столько, сколько нужно для целей обработки или требований закона. Применяются технические и организационные меры против несанкционированного доступа и потери.',
+        },
+        {
+          title: 'Ваши права',
+          body: 'Вы можете запросить доступ, исправление, удаление данных, ограничение обработки, перенос данных или возразить против отдельных видов обработки. Жалобы — в надзорный орган в вашей стране.',
+        },
+        {
+          title: 'Файлы cookie',
+          body: 'Сайт может использовать cookie для корзины, языка интерфейса и аналитики. Управлять cookie можно в настройках браузера.',
+        },
+        {
+          title: 'Изменения политики',
+          body: 'Мы можем обновлять эту страницу; актуальная версия всегда опубликована здесь. Продолжая пользоваться сервисом после изменений, вы подтверждаете ознакомление с обновлённой политикой.',
+        },
+      ],
+    },
+    notifications: {
+      title: "Уведомления",
+      empty: "Уведомлений нет",
+      emptySubtext: "Мы сообщим, когда появится что-то интересное",
+    },
     adminPage: {
       auth: {
         notAuthorized: "Вы не авторизованы",
@@ -1718,7 +2424,6 @@ const translations: Record<Language, Translations> = {
     phone: "Contacts",
     delivery: "Delivery",
     admin: "Admin Panel",
-    location: { kyiv: 'Kyiv' },
     locationPicker: {
       title: 'Delivery location',
       subtitle: 'Choose your country and city',
@@ -1753,10 +2458,13 @@ const translations: Record<Language, Translations> = {
       zonesTitle: 'Delivery zones',
       zoneAvailable: 'Delivery within zone',
       conditionsTitle: 'Terms',
-      minOrder: 'Minimum order — €700 (confirm with the operator for your city).',
-      remoteHint: 'Remote areas — on request.',
+      minOrder:
+        'We deliver only to cities shown in the list on this page and in the header. To see if we deliver to your address and the fee, use the postcode check above. Minimum order depends on distance from our kitchen: up to 20 km — from €25; over 20 km — from €100.',
+      minOrderAfterCheck:
+        'After your check: minimum order for this address is €{{amount}} (distance from kitchen ≈ {{km}} km).',
+      remoteHint: 'Very remote or unusual addresses — please confirm with the operator.',
       hoursTitle: 'We are open',
-      hoursRange: '11:00 — 22:30',
+      hoursRange: '14:00 — 21:00',
       howTitle: 'How to order',
       stepWeb: 'On the website',
       stepApp: 'In the app',
@@ -1766,9 +2474,12 @@ const translations: Record<Language, Translations> = {
       stepPhoneDesc: 'Call us — we help with the menu, zones and delivery times.',
       kitchenMapCaption: 'Our kitchen on the map',
       conditionsKicker: 'Service',
-      conditionsFeature1: 'Minimum order and rates for your city — confirm with the operator.',
-      conditionsFeature2: 'Delivery zones are transparent: use the map and postcode check above.',
-      conditionsFeature3: 'Further-out addresses — on prior agreement.',
+      conditionsFeature1:
+        'We only deliver to cities in our list — pick yours on this page or in the site header.',
+      conditionsFeature2:
+        'Use the postcode check above to see if your address is served and what delivery roughly costs.',
+      conditionsFeature3:
+        'Distance and minimum order are calculated automatically from our kitchen to your postcode coordinates.',
       deliveryPromiseKicker: 'On time',
       deliveryPromiseTitle: 'We deliver punctually and carefully',
       deliveryPromiseText:
@@ -1782,9 +2493,9 @@ const translations: Record<Language, Translations> = {
       payment: 'Payment',
       postalTitle: 'Check by postcode',
       postalDesc:
-        'Pick your city (same as in the site header) and enter your postcode — we show if the address is inside a delivery zone. Zone shapes and fees are set only by an administrator.',
+        'Pick your city (same as in the site header) and enter your postcode. For Amsterdam (NL) we automatically measure distance from our kitchen to that postcode: €2 per km. In other cities zones and fees are set by an administrator.',
       postalLabel: 'Postcode',
-      postalPlaceholder: 'e.g. 01001 or 1012 AB',
+      postalPlaceholder: 'e.g. 1075 VV (Amsterdam, NL)',
       postalButton: 'Check',
       postalChecking: 'Looking up address…',
       postalInside: 'Delivery available in this zone',
@@ -1806,6 +2517,9 @@ const translations: Record<Language, Translations> = {
       cityNoDeliveryYet: 'Delivery is not available for this city yet.',
       mapZonesHint: 'Tap a coloured zone on the map to see delivery terms for that area.',
       mapInteractiveAria: 'Interactive delivery zones map',
+      zonesMapHeroTitle: 'Watta Sushi delivery zone',
+      zonePopupSaveHint: 'Tap a zone — the rate is saved for your cart.',
+      zoneSelectedToast: 'Zone "{{zone}}": {{fee}}. Applied in cart.',
       zonePopupFree: 'Free delivery in this zone.',
       zonePopupFlat: 'Flat delivery fee: €{{amount}}',
       zonePopupStandardTitle: 'Standard tariff for this zone',
@@ -1820,6 +2534,12 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Zone tariff: standard (base + per km)',
       estimatedDeliveryApprox: 'Estimated delivery: €{{amount}}',
       distanceFromKitchen: 'Approx. distance from kitchen: {{km}} km',
+      postalAmsterdamOkTitle: 'Amsterdam delivery is available for this postcode',
+      postalAmsterdamOkFormula: 'Distance from kitchen: {{km}} km × €2/km ≈ €{{amount}} delivery.',
+      postalOutsideAmsterdam:
+        'This postcode is not in Amsterdam (or is in a neighbouring municipality). Check the code or pick another city.',
+      postalInvalidNlFormat: 'Dutch postcode format: four digits and two letters, e.g. 1075 VV.',
+      splitHeroVideoRail: 'From our kitchen to you',
     },
     categories: { rolls: 'Rolls', sushi: 'Sushi', sets: 'Sets', soups: 'Soups', bowls: 'Bowls', snacks: 'Snacks', drinks: 'Drinks', sauces: 'Sauces' },
     hero: { title: 'Benefits of Asian Soups' },
@@ -1828,7 +2548,7 @@ const translations: Record<Language, Translations> = {
       description:
         'Japanese cuisine with heart: fresh rolls, sushi, and signature dishes — delivered to your table. A taste you will want again.',
     },
-    section: { title: 'Sushi Delivery in Kyiv', description: 'Watta Sushi offers rolls, sushi, sets, and drinks for every taste. We highly recommend trying our top menu items!' },
+    section: { title: 'Sushi delivered to your table', description: 'Watta Sushi offers rolls, sushi, sets, and drinks for every taste. We highly recommend trying our top menu items!' },
     homeBrandSection: {
       kicker: 'WATTA SUSHI',
       kickerScript: 'Japanese gastronomy',
@@ -1841,9 +2561,13 @@ const translations: Record<Language, Translations> = {
       footerHint: 'Scroll down — pick a category from the menu',
     },
     cartSection: {
-      empty: 'Cart is empty',
+      empty: 'Your cart is empty',
+      emptyCartKicker: 'Room for something delicious?',
+      emptyCartHint:
+        'Browse the menu, pick rolls or sushi, tap Order on a card, or open a dish page. We will have the soy sauce ready.',
       total: 'Total',
       order: 'Place order',
+      processing: 'Processing…',
       proceedCheckout: 'Proceed to checkout',
       fulfillmentDelivery: 'Delivery',
       fulfillmentPickup: 'Pickup',
@@ -1852,6 +2576,66 @@ const translations: Record<Language, Translations> = {
       deliveryFree: 'Free',
       deliveryUnlockHint: 'Free delivery on orders over {{amount}} €',
       invalidPhone: 'Invalid phone format',
+      cartMeta: '{{lines}} items · {{pieces}} pcs',
+      perPiece: 'pc.',
+      contactDetails: 'Contact details',
+      deliveryTimeTitle: 'Delivery time',
+      deliveryTimeHint: 'Slots are in Amsterdam time (CET/CEST). Past times are not available.',
+      orderDetailsTitle: 'Extras',
+      paymentMethodTitle: 'Payment method',
+      promoCodeTitle: 'Promo code',
+      promoPlaceholder: 'Enter code',
+      promoApplied: 'Promo {{code}} applied',
+      subtotalLabel: 'Subtotal',
+      discountPrefix: 'Discount',
+      bonusAvailableLabel: 'Use bonuses (available: {{amount}} €)',
+      bonusDeductLine: 'Will deduct: {{amount}} €',
+      bonusSpentLabel: 'Bonuses applied',
+      calculatingDistance: 'Calculating delivery distance…',
+      distanceBreakdown: 'Distance: {{km}} km × {{rate}} = {{sum}} €',
+      enterAddressForDeliveryFee: 'Enter your address to calculate the delivery fee',
+      privacyConsent:
+        'By placing the order you agree to the processing of personal data as described in our privacy policy.',
+      phonePlaceholder: '+380…, +31… or 10–15 digits',
+      deliveryZoneLabel: 'Delivery zone',
+      deliveryFromMap: 'Map zone: {{zone}}',
+      deliveryZoneStandardHint:
+        'This zone uses per-km pricing — enter your address below or check your postcode on the delivery page.',
+      citiesGroupAria: 'Delivery city',
+      streetPlaceholder: 'Street and house number *',
+      entrancePlaceholder: 'Entrance (digits only)',
+      floorPlaceholder: 'Floor (digits only)',
+      apartmentPlaceholder: 'Apartment (digits only)',
+      buildingPlaceholder: 'Building / block',
+      optNoCallback: 'Do not call to confirm',
+      optNoDoorbell: 'Do not ring the doorbell',
+      slotDayLabel: 'Day',
+      slotTimeLabel: 'Time',
+      dayToday: 'Today',
+      dayTomorrow: 'Tomorrow',
+      partySizeLabel: 'Party size (1–99)',
+      chopsticksLabel: 'Chopsticks',
+      commentPlaceholder: 'Order notes',
+      payCash: 'Cash',
+      payCard: 'Card online',
+      payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      changeFromPlaceholder: 'Change needed from (e.g. 50)',
+      distanceMatrixError: 'Could not calculate distance',
+      promoInvalidFallback: 'Invalid code',
+      toastMaxQty: 'Maximum 99 of the same item',
+      toastPromoOk: 'Promo {{code}} applied',
+      toastPromoNetwork: 'Connection error',
+      toastUpsellAdded: '{{name}} added with {{percent}}% off',
+      toastAddressRequired: 'Please enter a delivery address',
+      toastOrderFailed: 'Could not place the order.',
+      upsellTitle: 'Add to your order with a discount',
+      upsellLead: 'Your total is already {{threshold}} €+ — pick an offer before paying.',
+      upsellOfferFallback: 'Special offer',
+      upsellAddToCart: 'Add to cart',
+      upsellContinue: 'Continue checkout',
+      recScrollPrev: 'Scroll recommendations left',
+      recScrollNext: 'Scroll recommendations right',
+      addToOrder: 'Add to your order',
       checkoutSuccessTitle: 'Thank you for your order!',
       checkoutSuccessSubtitle: 'We have received your order. A manager will contact you shortly.',
       checkoutOrderNumber: 'Order #',
@@ -1862,10 +2646,57 @@ const translations: Record<Language, Translations> = {
       menu: 'Menu',
       promotions: 'Promotions',
       delivery: 'Delivery',
+      deliveryPage: 'Delivery page',
       about: 'About',
       contacts: 'Contacts',
       admin: 'Admin Panel',
-      favorites: 'Favorites'
+      favorites: 'Favorites',
+      sidebarMore: 'More',
+      footerLegal: '© {{year}} Watta Sushi. All rights reserved.',
+      bottomNavAria: 'Main site navigation',
+      closeNavDrawerAria: 'Close navigation menu',
+      drawerExploreTitle: 'Site pages',
+      drawerBrandLine: 'Delivery of the tastiest sushi',
+    },
+    siteFooter: {
+      navAria: 'Site footer navigation',
+      colNav: 'Navigation',
+      colOrder: 'Place an order',
+      colHours: 'Opening hours',
+      colLocations: 'Our cities',
+      colSocial: 'Social media',
+      blog: 'Blog',
+      reviews: 'Reviews',
+      news: 'News',
+      phone1: '+38 (067) 000 00 01',
+      phone2: '+38 (066) 000 00 02',
+      phone3: '+38 (093) 000 00 03',
+      hoursLine: 'daily 14:00 — 21:00',
+      locationsEmpty: 'Cities will appear here after you add them in the admin panel.',
+      appStore: 'App Store',
+      googlePlay: 'Google Play',
+      support: 'Support',
+      privacy: 'Privacy policy',
+      paymentsAria: 'Payment methods',
+      paymentsMethodsNote: 'Pay by bank card and with iDEAL in the Netherlands.',
+      instagramAria: 'Instagram',
+      facebookAria: 'Facebook',
+      tiktokAria: 'TikTok',
+    },
+    productDetail: {
+      loading: 'Loading…',
+      notFound: 'Product not found',
+      composition: 'Ingredients',
+      recommendsTitle: 'Watta recommends',
+      recommendsHint: 'Hand-picked dishes that pair beautifully with your order.',
+      badgeTopSales: 'Top sales',
+      badgeNew: 'New',
+      adding: 'Adding…',
+      prepTime: '30–40 min',
+      weightFallback: '250 g',
+      piecesFallback: '8 pcs',
+      toCart: 'Add to cart',
+      addedHint: 'Added to cart',
     },
     auth: {
       login: 'Login',
@@ -1956,11 +2787,46 @@ const translations: Record<Language, Translations> = {
       ctaDelivery: "Delivery info",
       visitStripTitle: "Visit or message",
       addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
-      hoursLine: "Daily 12:00 — 22:00",
+      hoursLine: "Daily 14:00 — 21:00",
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Team portraits are coming soon",
       teamEmptyBody: "For now, meet us through the food — every roll is already shaped by our chefs.",
       marqueeWords: "Freshness|Temperature|Taste|Team|Amsterdam|Rolls|Sushi|Delivery|Quality",
+      darkHeroSubtitle: "Premium delivery of Japanese cuisine",
+      darkFoundedLabel: "Founded in",
+      darkFoundedYearCity: "2025 in Amsterdam",
+      darkMilestoneLine1: "Today",
+      darkMilestoneLine2: "we grow our service across the Netherlands",
+      philosophyTitlePart1: "Watta",
+      philosophyTitlePart2: "philosophy",
+      slide1Title: "Truly generous portions",
+      slide1Body: "Our rolls pack filling into every bite — we weigh and balance on the line.",
+      slide2Title: "Always fresh ingredients",
+      slide2Body: "Daily supply, quality checks, and a cold chain to your door.",
+      slide3Title: "A wide menu",
+      slide3Body: "Classic, vegan, and signature recipes — something for every mood.",
+      slide4Title: "A handy app",
+      slide4Body: "iOS and Android — order in a few taps, history and live delivery status.",
+      slide5Title: "Lifestyle #wattafam",
+      slide5Body: "Menu drops, collabs, and kitchen stories — on social and in the app.",
+      slide6Title: "Fast delivery",
+      slide6Body: "Couriers know the routes — food arrives warm and neatly packed.",
+      artHeadlineLine1: "Watta doesn’t just make rolls,",
+      artHeadlineLine2: "we craft",
+      artHeadlineAccent: "ART",
+      insideSectionTitle: "What’s inside a roll?",
+      inside1Title: "Fresh seafood",
+      inside1Body: "Salmon, tuna, and more from trusted suppliers.",
+      inside2Title: "Premium rice",
+      inside2Body: "Proper cook and vinegar balance — the backbone of every roll.",
+      inside3Title: "Avocado & veg",
+      inside3Body: "Ripe produce, creamy texture, and crunch in our house recipes.",
+      inside4Title: "Nori & sauces",
+      inside4Body: "Quality seaweed and house-made sauces — never overly salty.",
+      inside5Title: "Cheese & cream cheese",
+      inside5Body: "Philadelphia-style notes for classic and signature combos.",
+      inside6Title: "Sesame & garnish",
+      inside6Body: "Toasted sesame, microgreens, and finishing touches before dispatch.",
     },
     menuView: {
       itemsCount: 'dishes',
@@ -1973,12 +2839,24 @@ const translations: Record<Language, Translations> = {
       welcomeScrollDownAria: 'Scroll to the next screen',
       gastronomyTitle: 'Japanese gastronomy',
       homeCatalogTitle: 'Full menu',
-      homeCatalogSub: 'Tap a category in the bar above — we scroll straight to that section.',
       catalogOnCategoryPageHint:
         'Dishes open on a separate page — pick a type in the grid below or in the category bar.',
       categoryPageBack: 'Home',
       categoryPageEmpty: 'No dishes in this category yet.',
       categoryPageOpenCart: 'Cart',
+      fullMenuTitle: 'Full menu',
+      fullMenuSub: 'All categories and dishes on one page. Pick a category in the bar above — we scroll to that section.',
+      fullMenuWant: 'Order',
+      fullMenuCategoriesAria: 'Menu categories',
+      fullMenuLoading: 'Loading menu…',
+      fullMenuEmpty: 'No dishes in the catalog yet.',
+      fullMenuAllTab: 'All',
+      categoryRailAria: 'horizontal dish row — swipe left or right; tap a card to open the dish',
+      heroBannerOverlayTitle: 'Spend time with us',
+      heroBannerOverlaySub: 'Fresh rolls, good company, and flavours worth sharing.',
+      heroBannerSmsSender: 'Watta Sushi',
+      heroBannerSmsBadge: 'SMS',
+      heroBannerSmsTime: 'now',
     },
     cinematicFooter: {
       readyTitle: 'Ready to order?',
@@ -1987,16 +2865,29 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Full catalog',
       ctaOffers: 'Offers',
       promoCarouselAria: 'Swipe or use arrows to browse offers',
-      promoPickHint: 'Tap a card — we open the full menu',
+      promoPickHint:
+        'Below — recommended dishes and special offers from the menu. Swipe the rows left and right; tap a card to open the dish.',
       promoBadge: 'Offer',
       prevPromo: 'Previous',
       nextPromo: 'Next',
-      aboutTitle: 'WATTA — flavour without the noise',
+      sectionPromoTitle: 'On offer',
+      sectionRecommendedTitle: 'Recommended',
+      sectionPopularTitle: 'Hits & top picks',
+      sectionCategoriesTitle: 'Categories',
+      recommendedBadge: 'Top pick',
+      popularBadge: 'HIT',
+      promoStripAria: 'Discounted dishes',
+      recommendedStripAria: 'Recommended dishes',
+      popularStripAria: 'Popular dishes — swipe left and right',
+      categoriesStripAria: 'Menu categories — tap to jump to that section in the catalog',
+      aboutTitle: 'WATTA — FLAVOUR WITHOUT THE NOISE',
       aboutLead:
         'We are not playing “Japanese food to your door” — we care about recipe precision, freshness, and service you can brag about.',
       aboutBody:
         'Rolls are built to order; we keep rice and sauces on a tight temperature routine, and the team will honestly steer you to what fits your mood. Not fast food — fast gastronomy with attitude.',
       animationSlotAria: 'Brand animation area',
+      heroMarquee:
+        'With love for taste|Watta Sushi|Fresh rolls|Fast delivery|Premium ingredients',
     },
   adminCategory: {
     manageTitle: 'Menu Categories Management',
@@ -2020,6 +2911,9 @@ const translations: Record<Language, Translations> = {
       wasPrice: "Was",
       offPercent: "−{{percent}}%",
       hitBadge: "HOT",
+      readCta: "Read",
+      defaultCategoryTag: "Watta news",
+      fallbackHint: "No items from the server yet — below is sample layout. Your stories will show here once added in the admin panel.",
     },
     profilePage: { title: "Profile", logout: "Log out", orderHistory: "Order history" },
     clientProfile: {
@@ -2080,8 +2974,10 @@ const translations: Record<Language, Translations> = {
       title: 'Chef blog & recipes',
       subtitle: 'Cooking tips and stories from the Watta Sushi team.',
       empty: 'New articles are coming soon.',
-      readMore: 'Read more',
+      readMore: 'Read',
       backToBlog: 'All articles',
+      fallbackHint: 'No articles from the API yet — sample chef notes below. Admin posts will replace this block.',
+      cardCategoryFallback: "Chef's notes",
     },
     contactPage: {
       heroKicker: 'Get in touch',
@@ -2105,7 +3001,7 @@ const translations: Record<Language, Translations> = {
       phoneTel: '+31612345678',
       emailDisplay: 'hello@watta-sushi.nl',
       emailMailto: 'hello@watta-sushi.nl',
-      hoursDetail: 'Daily 12:00 — 22:00',
+      hoursDetail: 'Daily 14:00 — 21:00',
       openMaps: 'Open in Google Maps',
       mapTitle: 'Find us on the map',
       mapSub: 'Pickup by appointment — confirm the time via chat or phone.',
@@ -2117,7 +3013,8 @@ const translations: Record<Language, Translations> = {
       faq2Q: 'Can I change the address after ordering?',
       faq2A: 'Yes, if the courier has not left yet — message or call us and we will update the route.',
       faq3Q: 'Which payment methods do you support?',
-      faq3A: 'Card online, cash, or courier terminal — depending on your city and checkout settings.',
+      faq3A:
+        'Bank card (Visa, Mastercard) and iDEAL in the Netherlands; cash or courier card terminal may also be available depending on your city and checkout.',
       faq4Q: 'Any gluten-free or vegetarian options?',
       faq4A: 'We have fish-free and vegetable-forward rolls; for allergens, drop us a note and we will check ingredients.',
       faq5Q: 'Do you cater corporate sets?',
@@ -2142,7 +3039,52 @@ const translations: Record<Language, Translations> = {
       scrollHint: 'Scroll to explore',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
     },
-    notifications: { title: "Notifications", empty: "No notifications" },
+    privacyPage: {
+      title: 'Privacy policy',
+      back: 'Back',
+      updated: 'Last updated: April 2026',
+      intro:
+        'This page explains how Watta Sushi collects, uses, and protects your personal data when you visit our website, place orders, and use our services. We follow applicable law, including the GDPR (EU).',
+      blocks: [
+        {
+          title: 'Data controller',
+          body: 'Watta Sushi (delivery service operator) is responsible for processing your personal data. For privacy questions, use the Contacts section on the website or the email listed there.',
+        },
+        {
+          title: 'Data we process',
+          body: 'Name, phone, email (where needed), delivery or pickup address, order history, technical data (IP, browser type, cookies), and messages you send via contact forms.',
+        },
+        {
+          title: 'Purposes and legal bases',
+          body: 'We use data to take and fulfil orders, communicate with you, improve our service, meet legal obligations, and—with your consent—for marketing (which you can opt out of).',
+        },
+        {
+          title: 'Sharing with third parties',
+          body: 'We may share limited data with payment providers, delivery partners, and hosting services only as needed to provide the service, under contracts and security requirements.',
+        },
+        {
+          title: 'Retention and security',
+          body: 'We keep data only as long as needed for the purposes above or as required by law. We apply technical and organisational measures to protect against unauthorised access and loss.',
+        },
+        {
+          title: 'Your rights',
+          body: 'You may request access, correction, erasure, restriction of processing, data portability, or object to certain processing. You may lodge a complaint with a supervisory authority in your country.',
+        },
+        {
+          title: 'Cookies',
+          body: 'The site may use cookies for the cart, interface language, and analytics. You can manage cookies in your browser settings.',
+        },
+        {
+          title: 'Changes',
+          body: 'We may update this page; the current version is always published here. Continued use of the service after changes means you acknowledge the updated policy.',
+        },
+      ],
+    },
+    notifications: {
+      title: "Notifications",
+      empty: "No notifications yet",
+      emptySubtext: "We’ll let you know when something interesting shows up",
+    },
     adminPage: {
       auth: {
         notAuthorized: "You are not authorized",
@@ -2256,7 +3198,6 @@ const translations: Record<Language, Translations> = {
     phone: "Contacten",
     delivery: "Bezorging",
     admin: "Admin Paneel",
-    location: { kyiv: 'Kiev' },
     locationPicker: {
       title: 'Bezorglocatie',
       subtitle: 'Kies land en stad',
@@ -2291,10 +3232,13 @@ const translations: Record<Language, Translations> = {
       zonesTitle: 'Bezorgzones',
       zoneAvailable: 'Bezorging binnen de zone',
       conditionsTitle: 'Voorwaarden',
-      minOrder: 'Minimumbestelling — €700 (check bij de operator voor jouw stad).',
-      remoteHint: 'Verwijderde wijken — in overleg.',
+      minOrder:
+        'We leveren alleen naar steden in de lijst op deze pagina en in de header. Of we bij jou bezorgen en wat het kost, zie je via de postcodecheck hierboven. Het minimumbedrag hangt af van de afstand tot onze keuken: tot 20 km — vanaf €25; boven 20 km — vanaf €100.',
+      minOrderAfterCheck:
+        'Na jouw check: minimumbestelling voor dit adres is €{{amount}} (afstand vanaf keuken ≈ {{km}} km).',
+      remoteHint: 'Zeer ver of bijzondere adressen — graag even overleg met de operator.',
       hoursTitle: 'We zijn bereikbaar',
-      hoursRange: '11:00 — 22:30',
+      hoursRange: '14:00 — 21:00',
       howTitle: 'Hoe bestellen',
       stepWeb: 'Op de site',
       stepApp: 'In de app',
@@ -2304,9 +3248,12 @@ const translations: Record<Language, Translations> = {
       stepPhoneDesc: 'Bel ons — we helpen met menu, zones en bezorgtijden.',
       kitchenMapCaption: 'Onze keuken op de kaart',
       conditionsKicker: 'Service',
-      conditionsFeature1: 'Minimum en tarieven voor jouw stad — check bij de operator.',
-      conditionsFeature2: 'Bezorgzones zijn helder: zie de kaart en postcodecheck hierboven.',
-      conditionsFeature3: 'Verder weg — in overleg.',
+      conditionsFeature1:
+        'We bezorgen alleen naar steden in onze lijst — kies je stad op deze pagina of in de header.',
+      conditionsFeature2:
+        'Met de postcodecheck hierboven zie je of je adres binnen de zone valt en wat de bezorging ongeveer kost.',
+      conditionsFeature3:
+        'Afstand en minimumbedrag worden automatisch berekend vanaf onze keuken tot de coördinaten van je postcode.',
       deliveryPromiseKicker: 'Stiptheid',
       deliveryPromiseTitle: 'Op tijd en netjes bezorgd',
       deliveryPromiseText:
@@ -2320,7 +3267,7 @@ const translations: Record<Language, Translations> = {
       payment: 'Betaling',
       postalTitle: 'Check via postcode',
       postalDesc:
-        'Kies je stad (zoals in de header) en vul je postcode in — we tonen of je binnen een bezorgzone valt. Zones en tarieven stelt alleen de beheerder in.',
+        'Kies je stad (zoals in de header) en vul je postcode in. Voor Amsterdam (NL) berekenen we automatisch de afstand vanaf onze keuken: €2 per km. In andere steden stelt de beheerder zones en tarieven in.',
       postalLabel: 'Postcode',
       postalPlaceholder: 'bijv. 1012 AB',
       postalButton: 'Controleren',
@@ -2344,6 +3291,9 @@ const translations: Record<Language, Translations> = {
       cityNoDeliveryYet: 'Voor deze stad is nog geen bezorging beschikbaar.',
       mapZonesHint: 'Tik op een gekleurde zone op de kaart om de bezorgvoorwaarden te zien.',
       mapInteractiveAria: 'Interactieve kaart met bezorgzones',
+      zonesMapHeroTitle: 'Bezorgzone Watta Sushi',
+      zonePopupSaveHint: 'Tik op een zone — het tarief wordt opgeslagen voor je winkelwagen.',
+      zoneSelectedToast: 'Zone «{{zone}}»: {{fee}}. Toegepast in winkelwagen.',
       zonePopupFree: 'Gratis bezorging in deze zone.',
       zonePopupFlat: 'Vaste bezorgkosten: € {{amount}}',
       zonePopupStandardTitle: 'Standaardtarief voor deze zone',
@@ -2358,6 +3308,12 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Zonetarief: standaard (basis + per km)',
       estimatedDeliveryApprox: 'Geschatte bezorging: € {{amount}}',
       distanceFromKitchen: 'Afstand vanaf de keuken (ongeveer): {{km}} km',
+      postalAmsterdamOkTitle: 'Bezorging in Amsterdam is mogelijk voor deze postcode',
+      postalAmsterdamOkFormula: 'Afstand vanaf de keuken: {{km}} km × €2/km ≈ €{{amount}} bezorgkosten.',
+      postalOutsideAmsterdam:
+        'Deze postcode hoort niet bij Amsterdam (of staat in een andere gemeente). Controleer de postcode of kies een andere stad.',
+      postalInvalidNlFormat: 'Nederlands postcodeformaat: vier cijfers en twee letters, bijv. 1075 VV.',
+      splitHeroVideoRail: 'Van onze keuken tot bij u',
     },
     categories: { rolls: 'Rollen', sushi: 'Sushi', sets: 'Sets', soups: 'Soepen', bowls: 'Bowls', snacks: 'Snacks', drinks: 'Dranken', sauces: 'Sauzen' },
     hero: { title: 'Voordelen van Aziatische soepen' },
@@ -2366,7 +3322,7 @@ const translations: Record<Language, Translations> = {
       description:
         'Japanse keuken met hart: verse rolls, sushi en signature-gerechten — bij je thuisbezorgd. Een smaak om op terug te komen.',
     },
-    section: { title: 'Sushi bezorging in Kiev', description: 'Watta Sushi biedt rollen, sushi, sets en drankjes voor elke smaak. We raden ten zeerste aan om onze topmenu-items te proberen!' },
+    section: { title: 'Sushibezorging aan huis', description: 'Watta Sushi biedt rollen, sushi, sets en drankjes voor elke smaak. We raden ten zeerste aan om onze topmenu-items te proberen!' },
     homeBrandSection: {
       kicker: 'WATTA SUSHI',
       kickerScript: 'Japanse gastronomie',
@@ -2379,9 +3335,13 @@ const translations: Record<Language, Translations> = {
       footerHint: 'Scroll naar beneden — kies een categorie in het menu',
     },
     cartSection: {
-      empty: 'Winkelwagen is leeg',
+      empty: 'Je winkelwagen is leeg',
+      emptyCartKicker: 'Zin in iets lekkers?',
+      emptyCartHint:
+        'Ga naar het menu, kies rolls of sushi, tik op Bestellen op een kaart of voeg een gerecht toe op de productpagina. Sojasaus staat klaar.',
       total: 'Totaal',
       order: 'Bestelling plaatsen',
+      processing: 'Bezig…',
       proceedCheckout: 'Naar afrekenen',
       fulfillmentDelivery: 'Bezorging',
       fulfillmentPickup: 'Afhalen',
@@ -2390,6 +3350,66 @@ const translations: Record<Language, Translations> = {
       deliveryFree: 'Gratis',
       deliveryUnlockHint: 'Gratis bezorging vanaf {{amount}} €',
       invalidPhone: 'Ongeldig telefoonnummer',
+      cartMeta: '{{lines}} pos. · {{pieces}} st.',
+      perPiece: 'st.',
+      contactDetails: 'Contactgegevens',
+      deliveryTimeTitle: 'Bezorgtijd',
+      deliveryTimeHint: 'Tijdsloten volgens Amsterdam (CET/CEST). Verstreken tijden zijn niet beschikbaar.',
+      orderDetailsTitle: 'Details',
+      paymentMethodTitle: 'Betaalwijze',
+      promoCodeTitle: 'Promocode',
+      promoPlaceholder: 'Code invoeren',
+      promoApplied: 'Promocode {{code}} toegepast',
+      subtotalLabel: 'Subtotaal',
+      discountPrefix: 'Korting',
+      bonusAvailableLabel: 'Bonussen gebruiken (beschikbaar: {{amount}} €)',
+      bonusDeductLine: 'Wordt afgetrokken: {{amount}} €',
+      bonusSpentLabel: 'Bonussen verrekend',
+      calculatingDistance: 'Bezorgafstand berekenen…',
+      distanceBreakdown: 'Afstand: {{km}} km × {{rate}} = {{sum}} €',
+      enterAddressForDeliveryFee: 'Vul je adres in om de bezorgkosten te berekenen',
+      privacyConsent:
+        'Door te bestellen ga je akkoord met de verwerking van persoonsgegevens zoals in ons privacybeleid.',
+      phonePlaceholder: '+380…, +31… of 10–15 cijfers',
+      deliveryZoneLabel: 'Bezorgzone',
+      deliveryFromMap: 'Zone op kaart: {{zone}}',
+      deliveryZoneStandardHint:
+        'Voor deze zone geldt tarief per km — vul je adres in of controleer je postcode op de bezorgpagina.',
+      citiesGroupAria: 'Bezorgstad',
+      streetPlaceholder: 'Straat en huisnummer *',
+      entrancePlaceholder: 'Ingang (alleen cijfers)',
+      floorPlaceholder: 'Verdieping (alleen cijfers)',
+      apartmentPlaceholder: 'Appartement (alleen cijfers)',
+      buildingPlaceholder: 'Gebouw / blok',
+      optNoCallback: 'Niet terugbellen ter bevestiging',
+      optNoDoorbell: 'Niet aanbellen',
+      slotDayLabel: 'Dag',
+      slotTimeLabel: 'Tijd',
+      dayToday: 'Vandaag',
+      dayTomorrow: 'Morgen',
+      partySizeLabel: 'Aantal personen (1–99)',
+      chopsticksLabel: 'Eetstokjes',
+      commentPlaceholder: 'Opmerking bij bestelling',
+      payCash: 'Contant',
+      payCard: 'Online kaart',
+      payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      changeFromPlaceholder: 'Wisselgeld van welk bedrag? (bijv. 50)',
+      distanceMatrixError: 'Kon de afstand niet berekenen',
+      promoInvalidFallback: 'Ongeldige code',
+      toastMaxQty: 'Maximaal 99 stuks van hetzelfde product',
+      toastPromoOk: 'Promocode {{code}} toegepast',
+      toastPromoNetwork: 'Verbindingsfout',
+      toastUpsellAdded: '{{name}} toegevoegd met {{percent}}% korting',
+      toastAddressRequired: 'Vul je bezorgadres in',
+      toastOrderFailed: 'Bestelling plaatsen mislukt.',
+      upsellTitle: 'Voeg met korting toe aan je bestelling',
+      upsellLead: 'Je bedrag is al vanaf {{threshold}} € — kies een aanbieding vóór betaling.',
+      upsellOfferFallback: 'Speciale aanbieding',
+      upsellAddToCart: 'In winkelwagen',
+      upsellContinue: 'Verder met afrekenen',
+      recScrollPrev: 'Aanbevelingen naar links scrollen',
+      recScrollNext: 'Aanbevelingen naar rechts scrollen',
+      addToOrder: 'Voeg toe aan je bestelling',
       checkoutSuccessTitle: 'Bedankt voor je bestelling!',
       checkoutSuccessSubtitle: 'We hebben je bestelling ontvangen. Een medewerker neemt snel contact met je op.',
       checkoutOrderNumber: 'Bestelling #',
@@ -2400,10 +3420,57 @@ const translations: Record<Language, Translations> = {
       menu: 'Menu',
       promotions: 'Aanbiedingen',
       delivery: 'Bezorging',
+      deliveryPage: 'Bezorgpagina',
       about: 'Over ons',
       contacts: 'Contacten',
       admin: 'Admin Paneel',
-      favorites: 'Favorieten'
+      favorites: 'Favorieten',
+      sidebarMore: 'Meer',
+      footerLegal: '© {{year}} Watta Sushi. Alle rechten voorbehouden.',
+      bottomNavAria: 'Hoofdnavigatie',
+      closeNavDrawerAria: 'Navigatiemenu sluiten',
+      drawerExploreTitle: 'Pagina’s',
+      drawerBrandLine: 'Bezorging van de lekkerste sushi',
+    },
+    siteFooter: {
+      navAria: 'Voeternavigatie',
+      colNav: 'Navigatie',
+      colOrder: 'Bestellen',
+      colHours: 'Openingstijden',
+      colLocations: 'Onze steden',
+      colSocial: 'Social media',
+      blog: 'Blog',
+      reviews: 'Reviews',
+      news: 'Nieuws',
+      phone1: '+38 (067) 000 00 01',
+      phone2: '+38 (066) 000 00 02',
+      phone3: '+38 (093) 000 00 03',
+      hoursLine: 'dagelijks 14:00 — 21:00',
+      locationsEmpty: 'Steden verschijnen hier na toevoegen in het beheerpaneel.',
+      appStore: 'App Store',
+      googlePlay: 'Google Play',
+      support: 'Support',
+      privacy: 'Privacybeleid',
+      paymentsAria: 'Betaalmethoden',
+      paymentsMethodsNote: 'Betalen met pinpas/bankkaart en iDEAL (Nederland).',
+      instagramAria: 'Instagram',
+      facebookAria: 'Facebook',
+      tiktokAria: 'TikTok',
+    },
+    productDetail: {
+      loading: 'Laden…',
+      notFound: 'Product niet gevonden',
+      composition: 'Samenstelling',
+      recommendsTitle: 'Watta raadt aan',
+      recommendsHint: 'Onze favorieten die perfect bij je bestelling passen.',
+      badgeTopSales: 'Topverkoop',
+      badgeNew: 'Nieuw',
+      adding: 'Toevoegen…',
+      prepTime: '30–40 min',
+      weightFallback: '250 g',
+      piecesFallback: '8 st.',
+      toCart: 'In winkelwagen',
+      addedHint: 'Toegevoegd',
     },
     auth: {
       login: 'Inloggen',
@@ -2494,11 +3561,46 @@ const translations: Record<Language, Translations> = {
       ctaDelivery: "Bezorginfo",
       visitStripTitle: "Langskomen of mailen",
       addressLine: "Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands",
-      hoursLine: "Dagelijks 12:00 — 22:00",
+      hoursLine: "Dagelijks 14:00 — 21:00",
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Teamfoto’s volgen binnenkort",
       teamEmptyBody: "Ontmoet ons nu via het eten — elke rol is al gevormd door onze chefs.",
       marqueeWords: "Versheid|Temperatuur|Smaak|Team|Amsterdam|Rollen|Sushi|Bezorging|Kwaliteit",
+      darkHeroSubtitle: "Premium bezorging van Japanse gerechten",
+      darkFoundedLabel: "Opgericht in",
+      darkFoundedYearCity: "2025 in Amsterdam",
+      darkMilestoneLine1: "Vandaag",
+      darkMilestoneLine2: "breiden we onze service in heel Nederland uit",
+      philosophyTitlePart1: "Watta",
+      philosophyTitlePart2: "filosofie",
+      slide1Title: "Echt royale porties",
+      slide1Body: "Onze rollen zitten vol vulling — we wegen en balanceren op de lijn.",
+      slide2Title: "Altijd verse ingrediënten",
+      slide2Body: "Dagelijkse levering, kwaliteitscontroles en een koude keten tot aan je deur.",
+      slide3Title: "Een breed menu",
+      slide3Body: "Klassiek, vegan en signature — voor elke stemming iets lekkers.",
+      slide4Title: "Handige app",
+      slide4Body: "iOS en Android — bestellen in een paar tikken, historie en live bezorgstatus.",
+      slide5Title: "Lifestyle #wattafam",
+      slide5Body: "Menulanceringen, collabs en keukenverhalen — op social en in de app.",
+      slide6Title: "Snelle bezorging",
+      slide6Body: "Bezorgers kennen de routes — eten komt warm en netjes verpakt aan.",
+      artHeadlineLine1: "Watta maakt niet alleen rollen,",
+      artHeadlineLine2: "we creëren",
+      artHeadlineAccent: "KUNST",
+      insideSectionTitle: "Wat zit er in een rol?",
+      inside1Title: "Verse zeevruchten",
+      inside1Body: "Zalm, tonijn en meer van betrouwbare leveranciers.",
+      inside2Title: "Premium rijst",
+      inside2Body: "Juiste gaarheid en azijnbalans — de basis van elke rol.",
+      inside3Title: "Avocado & groente",
+      inside3Body: "Rijpe groente, romige textuur en bite in onze huisrecepten.",
+      inside4Title: "Nori & sauzen",
+      inside4Body: "Kwaliteitszeewier en huisgemaakte sauzen — nooit te zout.",
+      inside5Title: "Kaas & roomkaas",
+      inside5Body: "Philadelphia-achtige noten voor klassieke en signature combinaties.",
+      inside6Title: "Sesam & garnering",
+      inside6Body: "Geroosterde sesam, microgroen en finishing touches voor verzending.",
     },
     menuView: {
       itemsCount: 'gerechten',
@@ -2511,12 +3613,24 @@ const translations: Record<Language, Translations> = {
       welcomeScrollDownAria: 'Naar het volgende scherm scrollen',
       gastronomyTitle: 'Japanse gastronomie',
       homeCatalogTitle: 'Volledig menu',
-      homeCatalogSub: 'Kies een categorie in de balk hierboven — we scrollen naar dat deel van het menu.',
       catalogOnCategoryPageHint:
         'Gerechten van de categorie openen op een aparte pagina — kies een type in het raster hieronder of in de categoriebalk.',
       categoryPageBack: 'Naar home',
       categoryPageEmpty: 'Nog geen gerechten in deze categorie.',
       categoryPageOpenCart: 'Winkelwagen',
+      fullMenuTitle: 'Volledig menu',
+      fullMenuSub: 'Alle categorieën en gerechten op één pagina. Kies een categorie in de balk hierboven — we scrollen naar dat blok.',
+      fullMenuWant: 'Bestellen',
+      fullMenuCategoriesAria: 'Menucategorieën',
+      fullMenuLoading: 'Menu laden…',
+      fullMenuEmpty: 'Nog geen gerechten in de catalogus.',
+      fullMenuAllTab: 'Alles',
+      categoryRailAria: 'horizontale rij met gerechten — veeg links en rechts; tik op een kaart om het gerecht te openen',
+      heroBannerOverlayTitle: 'Breng tijd met ons door',
+      heroBannerOverlaySub: 'Verse rolls, gezelschap en smaken om te delen.',
+      heroBannerSmsSender: 'Watta Sushi',
+      heroBannerSmsBadge: 'SMS',
+      heroBannerSmsTime: 'zojuist',
     },
     cinematicFooter: {
       readyTitle: 'Klaar om te bestellen?',
@@ -2525,16 +3639,29 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Volledige catalogus',
       ctaOffers: 'Aanbiedingen',
       promoCarouselAria: 'Veeg of gebruik pijlen voor acties',
-      promoPickHint: 'Tik op een kaart — we openen het volledige menu',
+      promoPickHint:
+        'Hieronder — aanbevolen gerechten en acties uit het menu. Veeg de rijen naar links en rechts; tik op een kaart om het gerecht te openen.',
       promoBadge: 'Actie',
       prevPromo: 'Vorige',
       nextPromo: 'Volgende',
-      aboutTitle: 'WATTA — smaak zonder ruis',
+      sectionPromoTitle: 'Acties',
+      sectionRecommendedTitle: 'Aanbevolen',
+      sectionPopularTitle: 'Hits & topkeuzes',
+      sectionCategoriesTitle: 'Categorieën',
+      recommendedBadge: 'Top',
+      popularBadge: 'HIT',
+      promoStripAria: 'Gerechten met korting',
+      recommendedStripAria: 'Aanbevolen gerechten',
+      popularStripAria: 'Populaire gerechten — veeg links en rechts',
+      categoriesStripAria: 'Menucategorieën — tik om naar dat deel van de catalogus te gaan',
+      aboutTitle: 'WATTA — SMAAK ZONDER RUIS',
       aboutLead:
         'We doen niet alsof we “Japanse keuken aan huis” zijn — we gaan voor precisie in het recept, versheid en service om trots op te zijn.',
       aboutBody:
         'Rolls worden op bestelling gemaakt; rijst en sauzen houden we strak op temperatuur en het team helpt eerlijk kiezen wat bij je stemming past. Geen fastfood — wel snelle gastronomie met karakter.',
       animationSlotAria: 'Ruimte voor merk-animatie',
+      heroMarquee:
+        'Met liefde voor smaak|Watta Sushi|Verse rolls|Snelle bezorging|Premium ingrediënten',
     },
   adminCategory: {
     manageTitle: 'Menu Categorieën Beheer',
@@ -2558,6 +3685,9 @@ const translations: Record<Language, Translations> = {
       wasPrice: "Was",
       offPercent: "−{{percent}}%",
       hitBadge: "HIT",
+      readCta: "Lezen",
+      defaultCategoryTag: "Watta-nieuws",
+      fallbackHint: "Nog geen items van de server — hieronder voorbeelden. Jouw berichten verschijnen hier na toevoegen in het adminpaneel.",
     },
     profilePage: { title: "Profiel", logout: "Uitloggen", orderHistory: "Bestelgeschiedenis" },
     clientProfile: {
@@ -2618,8 +3748,10 @@ const translations: Record<Language, Translations> = {
       title: 'Blog & recepten van de chef',
       subtitle: 'Tips en verhalen van team Watta Sushi.',
       empty: 'Binnenkort nieuwe artikelen.',
-      readMore: 'Lees verder',
+      readMore: 'Lezen',
       backToBlog: 'Alle artikelen',
+      fallbackHint: 'Nog geen artikelen van de API — hieronder voorbeelden. Berichten uit het adminpaneel vervangen dit blok.',
+      cardCategoryFallback: 'Blog van de chef',
     },
     contactPage: {
       heroKicker: 'Neem contact op',
@@ -2643,7 +3775,7 @@ const translations: Record<Language, Translations> = {
       phoneTel: '+31612345678',
       emailDisplay: 'hello@watta-sushi.nl',
       emailMailto: 'hello@watta-sushi.nl',
-      hoursDetail: 'Dagelijks 12:00 — 22:00',
+      hoursDetail: 'Dagelijks 14:00 — 21:00',
       openMaps: 'Openen in Google Maps',
       mapTitle: 'Op de kaart',
       mapSub: 'Afhalen op afspraak — bevestig de tijd via chat of telefoon.',
@@ -2655,7 +3787,8 @@ const translations: Record<Language, Translations> = {
       faq2Q: 'Kan ik het adres nog wijzigen?',
       faq2A: 'Ja, als de bezorger nog niet vertrokken is — mail of bel, dan passen we de route aan.',
       faq3Q: 'Welke betaalmethoden?',
-      faq3A: 'Kaart online, contant of pin bij de bezorger — afhankelijk van de stad en checkout.',
+      faq3A:
+        'Bankpas/bankkaart (Visa, Mastercard) en iDEAL; eventueel contant of pin bij de bezorger — afhankelijk van stad en checkout.',
       faq4Q: 'Glutenvrij of vegetarisch?',
       faq4A: 'Er zijn opties zonder vis en met groente; voor allergenen: stuur een bericht, we checken de samenstelling.',
       faq5Q: 'Cateren voor bedrijven?',
@@ -2680,7 +3813,52 @@ const translations: Record<Language, Translations> = {
       scrollHint: 'Scroll verder',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
     },
-    notifications: { title: "Meldingen", empty: "Geen meldingen" },
+    privacyPage: {
+      title: 'Privacybeleid',
+      back: 'Terug',
+      updated: 'Laatst bijgewerkt: april 2026',
+      intro:
+        'Deze pagina legt uit hoe Watta Sushi uw persoonsgegevens verzamelt, gebruikt en beschermt wanneer u de website bezoekt, bestelt en onze diensten gebruikt. Wij handelen in overeenstemming met toepasselijk recht, waaronder de AVG (EU).',
+      blocks: [
+        {
+          title: 'Verwerkingsverantwoordelijke',
+          body: 'Watta Sushi (exploitant van de bezorgdienst) is verantwoordelijk voor de verwerking van persoonsgegevens. Voor privacyvragen: het contactgedeelte op de site of het daar vermelde e-mailadres.',
+        },
+        {
+          title: 'Welke gegevens verwerken we',
+          body: 'Naam, telefoon, e-mail (indien nodig), bezorg- of afhaaladres, bestelgeschiedenis, technische gegevens (IP, browsertype, cookies) en berichten via contactformulieren.',
+        },
+        {
+          title: 'Doelen en grondslagen',
+          body: 'Gegevens worden gebruikt om bestellingen aan te nemen en uit te voeren, met u te communiceren, de dienst te verbeteren, wettelijke verplichtingen na te komen en, met uw toestemming, voor marketing (afmeldbaar).',
+        },
+        {
+          title: 'Delen met derden',
+          body: 'Beperkte gegevens kunnen worden gedeeld met betaalproviders, bezorgpartners en hosting alleen voor zover nodig voor de dienstverlening, op basis van contracten en beveiligingseisen.',
+        },
+        {
+          title: 'Bewaring en beveiliging',
+          body: 'Gegevens worden bewaard zolang nodig voor de doeleinden of wettelijk verplicht. We passen technische en organisatorische maatregelen toe tegen ongeoorloofde toegang en verlies.',
+        },
+        {
+          title: 'Uw rechten',
+          body: 'U kunt inzage, correctie, verwijdering, beperking van verwerking, gegevensoverdraagbaarheid of bezwaar vragen. Klachten kunnen bij de toezichthouder in uw land.',
+        },
+        {
+          title: 'Cookies',
+          body: 'De site kan cookies gebruiken voor winkelwagen, taal en analytics. Beheer via uw browserinstellingen.',
+        },
+        {
+          title: 'Wijzigingen',
+          body: 'We kunnen deze pagina bijwerken; de actuele versie staat hier. Blijft u de dienst gebruiken na wijzigingen, dan erkent u het bijgewerkte beleid.',
+        },
+      ],
+    },
+    notifications: {
+      title: "Meldingen",
+      empty: "Nog geen meldingen",
+      emptySubtext: "We laten het weten zodra er iets interessants is",
+    },
     adminPage: {
       auth: {
         notAuthorized: "U bent niet ingelogd",

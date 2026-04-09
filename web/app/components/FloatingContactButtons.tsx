@@ -95,7 +95,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { Instagram } from 'lucide-react'
+import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 
 function IconTelegram({ className }: { className?: string }) {
   return (
@@ -122,6 +124,8 @@ function IconWhatsApp({ className }: { className?: string }) {
 const btnBase = "flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform duration-200 hover:scale-110 hover:shadow-xl active:scale-95 focus:outline-none"
 
 export default function FloatingContactButtons() {
+  const pathname = usePathname() || '/'
+  const isAuthRoute = pathname === '/login' || pathname === '/register'
   const [links, setLinks] = useState({ telegram: "", whatsapp: "", instagram: "" })
 
   useEffect(() => {
@@ -131,7 +135,7 @@ export default function FloatingContactButtons() {
         setLinks({
           telegram: String(d.telegramUrl || "").trim(),
           whatsapp: String(d.whatsappUrl || "").trim(),
-          instagram: String(d.instagramUrl || "").trim(),
+          instagram: String(d.instagramUrl || "").trim() || WATTA_INSTAGRAM_URL,
         })
       })
       .catch(() => {})
@@ -140,8 +144,14 @@ export default function FloatingContactButtons() {
   const hasAny = Boolean(links.telegram || links.whatsapp || links.instagram)
   if (!hasAny) return null
 
+  const bottomPos = isAuthRoute
+    ? 'bottom-5 md:bottom-6'
+    : 'bottom-[max(1rem,env(safe-area-inset-bottom,0px))] md:bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))]'
+
   return (
-    <div className="pointer-events-none fixed bottom-5 right-4 z-[9980] flex flex-col items-end gap-2.5 md:bottom-6 md:right-6">
+    <div
+      className={`pointer-events-none fixed right-4 z-[9980] flex flex-col items-end gap-2.5 md:right-6 ${bottomPos}`}
+    >
       <div className="pointer-events-auto flex flex-col gap-2.5 rounded-2xl border border-white/80 bg-white/95 p-2 shadow-lg backdrop-blur-md">
         {links.telegram && (
           <a href={links.telegram} target="_blank" rel="noopener noreferrer" className={`${btnBase} bg-[#229ED9] text-white`} aria-label="Telegram">

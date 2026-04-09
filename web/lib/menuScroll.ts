@@ -17,7 +17,21 @@ export function scrollMenuToSelector(selector: string, offset = 20) {
   scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
 }
 
-export function scrollMenuToTop() {
+export function scrollMenuToTop(behavior: ScrollBehavior = 'smooth') {
   const scroller = getMenuScrollParent(null)
-  scroller?.scrollTo({ top: 0, behavior: 'smooth' })
+  scroller?.scrollTo({ top: 0, left: 0, behavior })
+}
+
+/**
+ * Документ + усі `.content-web` (головна з height:100vh — скрол усередині контейнера, не window).
+ * Викликати після зміни маршруту або вкладки, щоб зверху була початкова секція.
+ */
+export function scrollEntireAppToTop() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  window.scrollTo(0, 0)
+  document.documentElement.scrollTop = 0
+  document.body.scrollTop = 0
+  document.querySelectorAll<HTMLElement>('.content-web').forEach((el) => {
+    el.scrollTop = 0
+  })
 }

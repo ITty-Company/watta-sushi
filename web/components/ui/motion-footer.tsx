@@ -5,8 +5,9 @@ import { useEffect, useRef, useCallback } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { cn } from '@/lib/utils'
-import { getMenuScrollParent, scrollMenuToSelector, scrollMenuToTop } from '@/lib/menuScroll'
+import { getMenuScrollParent } from '@/lib/menuScroll'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { WattaMenuProductCard } from '@/app/components/WattaMenuProductCard'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
@@ -16,6 +17,40 @@ const STYLES = `
 .cinematic-footer-wrapper {
   font-family: inherit;
   -webkit-font-smoothing: antialiased;
+}
+
+.cinematic-footer-wrapper.cinematic-footer--calm .footer-bg-mesh,
+.cinematic-footer-wrapper.cinematic-footer--calm .footer-aurora,
+.cinematic-footer-wrapper.cinematic-footer--calm .footer-bg-grid,
+.cinematic-footer-wrapper.cinematic-footer--calm .footer-ring-accent,
+.cinematic-footer-wrapper.cinematic-footer--calm .footer-orb {
+  display: none !important;
+}
+
+.cinematic-footer-wrapper.cinematic-footer--calm {
+  background-color: #eef1ef !important;
+}
+
+/* Великий «WATTA» на фоні — саме брендовий #145142, помітно, але без «крику» */
+.cinematic-footer-wrapper.cinematic-footer--calm .footer-giant-bg-text {
+  opacity: 1 !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  -webkit-text-stroke: 1.25px rgba(20, 81, 66, 0.42);
+  background: linear-gradient(
+    168deg,
+    rgba(20, 81, 66, 0.48) 0%,
+    rgba(15, 61, 52, 0.38) 42%,
+    rgba(20, 81, 66, 0.32) 100%
+  ) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.footer-promo-card-badge--pct {
+  background: linear-gradient(135deg, #ff6b35 0%, #e85a24 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.35);
 }
 
 /* Два «класичні» шрифти бренду: Inter з body + Playfair (заголовок) + Marck (один акцент) */
@@ -32,17 +67,6 @@ const STYLES = `
 @keyframes footer-breathe {
   0% { transform: translate(-50%, -50%) scale(1); opacity: 0.55; }
   100% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.9; }
-}
-
-@keyframes footer-scroll-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-@keyframes footer-heartbeat {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.45)); }
-  15%, 45% { transform: scale(1.15); filter: drop-shadow(0 0 10px rgba(255, 107, 53, 0.75)); }
-  30% { transform: scale(1); }
 }
 
 @keyframes footer-mesh-drift {
@@ -79,14 +103,6 @@ const STYLES = `
   animation: footer-breathe 8s ease-in-out infinite alternate;
 }
 
-.animate-footer-scroll-marquee {
-  animation: footer-scroll-marquee 40s linear infinite;
-}
-
-.animate-footer-heartbeat {
-  animation: footer-heartbeat 2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
-}
-
 .animate-footer-mesh-drift {
   animation: footer-mesh-drift 18s ease-in-out infinite;
 }
@@ -105,15 +121,14 @@ const STYLES = `
 
 @media (prefers-reduced-motion: reduce) {
   .animate-footer-breathe,
-  .animate-footer-scroll-marquee,
-  .animate-footer-heartbeat,
   .animate-footer-mesh-drift,
   .animate-footer-orb-a,
   .animate-footer-orb-b,
   .animate-footer-grid-pan,
   .footer-heading-flow,
   .footer-cta-solid::after,
-  .footer-heading-accent--hero {
+  .footer-heading-accent--hero,
+  .footer-ready-title {
     animation: none !important;
   }
 }
@@ -174,6 +189,64 @@ const STYLES = `
   border-radius: 50%;
   background: hsl(var(--primary));
   box-shadow: 0 0 14px hsl(var(--primary) / 0.55);
+}
+
+/* Заголовок «Готові замовити?» + підказка під каруселями */
+.footer-ready-block {
+  width: 100%;
+  max-width: 42rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.footer-ready-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.footer-ready-ornament .footer-heading-accent--hero {
+  width: min(13rem, 52vw);
+  height: 3px;
+  flex-shrink: 0;
+}
+
+.footer-ready-title {
+  margin: 0;
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.85rem, 6.2vw, 2.85rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  background: linear-gradient(118deg, #0c3229 0%, #145142 38%, #1f7a63 72%, #145142 100%);
+  background-size: 160% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 14px rgba(20, 81, 66, 0.12));
+}
+
+@supports not (background-clip: text) {
+  .footer-ready-title {
+    color: #145142;
+    background: none;
+    -webkit-text-fill-color: #145142;
+    filter: none;
+  }
+}
+
+/* Підзаголовок під «Готові замовити?» — звичайний текст, без «картки» / цитати */
+.footer-ready-hint {
+  margin: 0.65rem auto 0;
+  max-width: 34rem;
+  padding: 0 0.75rem;
+  text-align: center;
+  font-size: clamp(0.875rem, 2.35vw, 1rem);
+  font-weight: 500;
+  line-height: 1.55;
+  color: rgba(32, 52, 46, 0.82);
 }
 
 .footer-promo-carousel-wrap {
@@ -245,6 +318,30 @@ const STYLES = `
 .footer-promo-card:focus-visible {
   outline: 2px solid hsl(var(--primary));
   outline-offset: 3px;
+}
+
+/* Обгортка для WattaMenuProductCard — без «клікабельної» рамки всієї картки */
+.footer-promo-card.footer-promo-card--watta-grid {
+  cursor: default;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-promo-card.footer-promo-card--watta-grid:hover,
+.footer-promo-card.footer-promo-card--watta-grid:focus-visible {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.footer-promo-card.footer-promo-card--watta-grid .group {
+  width: 100%;
+  min-width: 0;
 }
 
 .footer-promo-card-media {
@@ -319,7 +416,7 @@ const STYLES = `
     border-color 0.2s ease;
 }
 
-.footer-promo-nav:hover {
+.footer-promo-nav:hover:not(.footer-promo-nav--rail) {
   background: linear-gradient(155deg, #176b57 0%, #145142 45%, #1a7a63 100%);
   border-color: rgba(20, 81, 66, 0.75);
   box-shadow:
@@ -328,11 +425,97 @@ const STYLES = `
   transform: translateY(-50%) scale(1.06);
 }
 
+.footer-promo-nav--rail:hover {
+  background: linear-gradient(155deg, #176b57 0%, #145142 45%, #1a7a63 100%);
+  border-color: rgba(20, 81, 66, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 10px 30px rgba(20, 81, 66, 0.42);
+  transform: scale(1.07);
+}
+
+.footer-promo-rail {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.footer-promo-rail__track {
+  flex: 1;
+  min-width: 0;
+}
+
+.footer-promo-nav--rail {
+  position: static;
+  top: auto;
+  flex-shrink: 0;
+  transform: none;
+}
+
+.footer-promo-nav--rail.footer-promo-nav--prev,
+.footer-promo-nav--rail.footer-promo-nav--next {
+  left: auto;
+  right: auto;
+}
+
 .footer-promo-nav--prev {
   left: 0;
 }
 .footer-promo-nav--next {
   right: 0;
+}
+
+/* Компактний блок на головній: менші картки (видно більше), стрілки не накладаються на контент */
+.cinematic-footer-wrap--compact .footer-promo-card {
+  flex: 0 0 min(11.25rem, 34vw);
+  scroll-snap-align: start;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-carousel {
+  gap: 0.55rem;
+  padding: 0.35rem 0;
+  scroll-padding-inline: 0.15rem;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-card-media {
+  aspect-ratio: 4 / 3;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-card-body {
+  padding: 0.55rem 0.65rem 0.7rem;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-card-title {
+  font-size: 0.82rem;
+  -webkit-line-clamp: 2;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-card-cat {
+  font-size: 0.58rem;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-rail .footer-promo-nav--rail {
+  width: 2.05rem;
+  height: 2.05rem;
+}
+
+@media (min-width: 480px) {
+  .cinematic-footer-wrap--compact .footer-promo-card {
+    flex: 0 0 min(12rem, 30vw);
+  }
+}
+
+@media (min-width: 768px) {
+  .cinematic-footer-wrap--compact .footer-promo-card {
+    flex: 0 0 min(13rem, 20vw);
+  }
+
+  .cinematic-footer-wrap--compact .footer-promo-rail .footer-promo-nav--rail {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -444,48 +627,131 @@ const STYLES = `
 }
 
 .footer-about-block {
-  margin-top: 1.5rem;
-  padding: 1.1rem max(1rem, env(safe-area-inset-left, 0px)) 1.15rem
-    max(1rem, env(safe-area-inset-right, 0px));
-  border-radius: 1.25rem;
-  border: 1px solid rgba(20, 81, 66, 0.12);
-  background: linear-gradient(145deg, rgba(20, 81, 66, 0.06) 0%, rgba(255, 255, 255, 0.72) 100%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  margin-top: 1.75rem;
+  position: relative;
+  overflow: hidden;
+  padding: 1.35rem 1.2rem 1.45rem 1.35rem;
+  padding-left: max(1.35rem, calc(0.85rem + env(safe-area-inset-left, 0px)));
+  padding-right: max(1.2rem, env(safe-area-inset-right, 0px));
+  border-radius: 1.35rem;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: linear-gradient(
+    152deg,
+    rgba(255, 255, 255, 0.97) 0%,
+    rgba(240, 246, 242, 0.92) 42%,
+    rgba(255, 255, 255, 0.94) 100%
+  );
+  box-shadow:
+    0 22px 56px -24px rgba(20, 81, 66, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   text-align: left;
   width: 100%;
   max-width: 42rem;
   box-sizing: border-box;
 }
 
+.footer-about-block::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  bottom: 1rem;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #0f3d34 0%, #145142 38%, #1f7a63 72%, #145142 100%);
+  box-shadow: 0 0 20px rgba(20, 81, 66, 0.25);
+}
+
+.footer-about-quote-bg {
+  position: absolute;
+  top: -0.15rem;
+  left: 0.85rem;
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(3.75rem, 19vw, 6rem);
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(20, 81, 66, 0.07);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.footer-about-quote-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.footer-about-quote-text {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.footer-about-quote-text p:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 480px) {
   .footer-about-block {
-    padding: 1rem 0.95rem 1.1rem;
+    padding: 1.2rem 1rem 1.35rem 1.15rem;
+    padding-left: max(1.15rem, calc(0.75rem + env(safe-area-inset-left, 0px)));
+  }
+
+  .footer-about-block::before {
+    top: 0.75rem;
+    bottom: 0.75rem;
   }
 }
 
 .footer-about-title {
-  font-size: 0.68rem;
+  position: relative;
+  font-size: clamp(0.72rem, 2.15vw, 0.82rem);
   font-weight: 900;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: hsl(var(--primary));
-  margin: 0 0 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: none;
+  line-height: 1.35;
+  color: #145142;
+  margin: 0 0 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.12);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .footer-about-lead {
-  margin: 0 0 0.6rem;
-  font-size: clamp(1rem, 2.8vw, 1.12rem);
-  font-weight: 700;
-  line-height: 1.38;
-  color: hsl(var(--foreground));
+  margin: 0 0 0;
+  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.18rem, 3.5vw, 1.42rem);
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: #142922;
 }
 
 .footer-about-body {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.62;
-  color: hsl(var(--muted-foreground));
+  margin: 0.95rem 0 0;
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(20, 81, 66, 0.08);
+  font-size: clamp(0.875rem, 2.2vw, 0.94rem);
+  line-height: 1.68;
+  font-weight: 500;
+  color: rgba(30, 50, 44, 0.88);
+}
+
+.footer-about-quote-close {
+  display: block;
+  margin-top: 0.65rem;
+  text-align: right;
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: 2.15rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(20, 81, 66, 0.14);
+  pointer-events: none;
+  user-select: none;
 }
 
 .footer-animation-slot {
@@ -641,40 +907,6 @@ const STYLES = `
   );
 }
 
-.footer-marquee-bar {
-  background: linear-gradient(
-    105deg,
-    #0c3229 0%,
-    #145142 38%,
-    #176b57 52%,
-    #145142 65%,
-    #0f3d32 100%
-  );
-  box-shadow:
-    0 10px 36px -10px rgba(20, 81, 66, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.footer-glass-pill {
-  background: linear-gradient(145deg, rgba(20, 81, 66, 0.07) 0%, rgba(20, 81, 66, 0.02) 100%);
-  box-shadow:
-    0 8px 24px -8px rgba(20, 81, 66, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    inset 0 -1px 2px rgba(20, 81, 66, 0.04);
-  border: 1px solid rgba(20, 81, 66, 0.18);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.footer-glass-pill:hover {
-  background: linear-gradient(145deg, rgba(20, 81, 66, 0.12) 0%, rgba(20, 81, 66, 0.04) 100%);
-  border-color: rgba(20, 81, 66, 0.32);
-  box-shadow:
-    0 14px 32px -8px rgba(20, 81, 66, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-
 .footer-giant-bg-text {
   font-size: min(26vw, 18rem);
   line-height: 0.75;
@@ -694,139 +926,264 @@ const STYLES = `
   }
 }
 
-`
-
-export type MagneticButtonProps = Omit<React.HTMLAttributes<HTMLElement>, 'as'> & {
-  as?: React.ElementType
-  href?: string
-  type?: 'button' | 'submit' | 'reset'
-  children?: React.ReactNode
+/* Компактний блок над баннерами: без «кінематографічних» орбіт і гігантського WATTA */
+.cinematic-footer-wrap--compact .footer-ring-accent,
+.cinematic-footer-wrap--compact .footer-orb {
+  display: none !important;
 }
 
-const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
-  ({ className, children, as: Component = 'button', ...props }, forwardedRef) => {
-    const localRef = useRef<HTMLElement | null>(null)
+.cinematic-footer-wrap--compact .cinematic-footer-wrapper.cinematic-footer--ribbon {
+  background: var(--watta-page-gradient) !important;
+  box-shadow: none;
+}
 
-    useEffect(() => {
-      if (typeof window === 'undefined') return
-      const element = localRef.current
-      if (!element) return
+.cinematic-footer-wrap--compact .footer-ready-block {
+  padding-top: clamp(0.65rem, 2.2vw, 1.15rem);
+}
 
-      const ctx = gsap.context(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-          const rect = element.getBoundingClientRect()
-          const hx = rect.width / 2
-          const hy = rect.height / 2
-          const x = e.clientX - rect.left - hx
-          const y = e.clientY - rect.top - hy
+.cinematic-footer-wrap--compact .footer-ready-hint {
+  margin-top: 0.45rem;
+  margin-bottom: clamp(0.35rem, 1.2vw, 0.75rem);
+}
 
-          gsap.to(element, {
-            x: x * 0.35,
-            y: y * 0.35,
-            scale: 1.04,
-            ease: 'power2.out',
-            duration: 0.35,
-          })
-        }
+.footer-catalog-carousel {
+  display: flex;
+  gap: 0.65rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  padding: 0.55rem 0.75rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 
-        const handleMouseLeave = () => {
-          gsap.to(element, {
-            x: 0,
-            y: 0,
-            scale: 1,
-            ease: 'elastic.out(1, 0.35)',
-            duration: 1,
-          })
-        }
+.footer-catalog-carousel::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
 
-        element.addEventListener('mousemove', handleMouseMove)
-        element.addEventListener('mouseleave', handleMouseLeave)
+.footer-catalog-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 252, 251, 0.94));
+  box-shadow: 0 10px 28px -12px rgba(20, 81, 66, 0.18);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #145142;
+  cursor: pointer;
+  transition:
+    transform 0.22s ease,
+    border-color 0.2s ease,
+    box-shadow 0.22s ease;
+}
 
-        return () => {
-          element.removeEventListener('mousemove', handleMouseMove)
-          element.removeEventListener('mouseleave', handleMouseLeave)
-        }
-      }, element)
+@media (hover: hover) and (pointer: fine) {
+  .footer-catalog-chip:hover {
+    transform: translateY(-2px);
+    border-color: rgba(20, 81, 66, 0.38);
+    box-shadow: 0 14px 36px -12px rgba(20, 81, 66, 0.28);
+  }
+}
 
-      return () => ctx.revert()
-    }, [])
+.footer-catalog-chip:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 3px;
+}
 
-    return (
-      <Component
-        ref={(node: HTMLElement | null) => {
-          localRef.current = node
-          if (typeof forwardedRef === 'function') forwardedRef(node)
-          else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = node
-        }}
-        className={cn('cursor-pointer', className)}
-        {...props}
-      >
-        {children}
-      </Component>
-    )
-  },
-)
-MagneticButton.displayName = 'MagneticButton'
+.footer-catalog-chip-emoji {
+  font-size: 1.05rem;
+  line-height: 1;
+}
 
-function MarqueeStrip() {
+.footer-catalog-chip-name {
+  white-space: nowrap;
+  max-width: min(42vw, 200px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footer-promo-card-badge--popular {
+  background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+  color: #fff;
+}
+
+/* Заголовок «Готові замовити?» → одразу стрічки акцій / рекомендацій */
+.cinematic-footer-wrap--compact .footer-cinematic-strip-stack [role='region'] h3 {
+  margin-bottom: 0.45rem;
+}
+
+.cinematic-footer-wrap--compact .footer-cinematic-strip-stack [role='region']:first-of-type .footer-promo-section-fullbleed {
+  margin-top: 0;
+}
+
+.cinematic-footer-wrap--compact .footer-about-block {
+  margin-bottom: 0.25rem;
+}
+
+`
+
+/** Товар у стрічках «Акції» / «Рекомендовані» (дані з API / адмінки). */
+export type CinematicFooterAdminProduct = {
+  id: number
+  label: string
+  imageUrl?: string
+  categoryLabel?: string
+  /** Для акційної ціни — показуємо −N% */
+  discountPercent?: number
+  description?: string
+  price?: number
+  /** Топ / хіт на картці */
+  isPopular?: boolean
+  emoji?: string
+  /** Під назвою (вага / мл) */
+  subtitleLine?: string
+}
+
+export type CinematicFooterProps = {
+  className?: string
+  /** Товари з promoDiscountPercent > 0 з адмінки */
+  adminPromoProducts?: CinematicFooterAdminProduct[]
+  /** Товари з isRecommended з адмінки */
+  adminRecommendedProducts?: CinematicFooterAdminProduct[]
+  /** Додати в кошик зі стрічки, без переходу на сторінку страви */
+  onAdminProductAddToCart: (productId: number) => void
+  onBeforeNavigateToProduct?: () => void
+  /**
+   * fullscreen — окремий повноекранний скрол-блок.
+   * compact — компактна стрічка (заголовок, стрічки, цитата) одразу над баннерами.
+   */
+  layout?: 'fullscreen' | 'compact'
+}
+
+function scrollFooterStrip(el: HTMLDivElement | null, dir: -1 | 1, itemSelector: string = '.footer-promo-card') {
+  if (!el) return
+  const card = el.querySelector(itemSelector) as HTMLElement | null
+  const gap = 16
+  const step = card ? card.offsetWidth + gap : Math.min(el.clientWidth * 0.82, 300)
+  el.scrollBy({ left: dir * step, behavior: 'smooth' })
+}
+
+function AdminProductStrip({
+  title,
+  ariaLabel,
+  items,
+  carouselRef,
+  onScroll,
+  onProductAddToCart,
+  onBeforeNavigateToProduct,
+  prevLabel,
+  nextLabel,
+  cinematicRail,
+}: {
+  title: string
+  ariaLabel: string
+  items: CinematicFooterAdminProduct[]
+  carouselRef: React.RefObject<HTMLDivElement | null>
+  onScroll: (dir: -1 | 1) => void
+  onProductAddToCart: (id: number) => void
+  onBeforeNavigateToProduct?: () => void
+  prevLabel: string
+  nextLabel: string
+  /** Для відновлення горизонтального скролу після повернення з картки товару */
+  cinematicRail?: 'recommended' | 'promo'
+}) {
+  if (items.length === 0) return null
   return (
-    <div className="flex items-center space-x-10 px-6 whitespace-nowrap text-white">
-      <span>Watta Sushi</span> <span className="text-white/70">✦</span>
-      <span>Свіжі роли</span> <span className="text-white/70">✦</span>
-      <span>Швидка доставка</span> <span className="text-white/70">✦</span>
-      <span>Преміум інгредієнти</span> <span className="text-white/70">✦</span>
-      <span>З любов’ю до смаку</span> <span className="text-white/70">✦</span>
+    <div className="w-full" role="region" aria-label={ariaLabel}>
+      <h3 className="mb-3 px-2 text-center font-sans text-base font-bold tracking-tight text-[#145142] sm:text-lg">
+        {title}
+      </h3>
+      <div className="footer-promo-section-fullbleed mt-1">
+        <div className="footer-promo-rail">
+          <button
+            type="button"
+            className="footer-promo-nav footer-promo-nav--rail footer-promo-nav--prev flex"
+            onClick={() => onScroll(-1)}
+            aria-label={prevLabel}
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="footer-promo-rail__track">
+            <div
+              ref={carouselRef as React.Ref<HTMLDivElement>}
+              className="footer-promo-carousel"
+              data-cinematic-rail={cinematicRail}
+            >
+              {items.map((p) => {
+                const promoPct =
+                  p.discountPercent && p.discountPercent > 0 ? Math.round(p.discountPercent) : undefined
+                return (
+                  <div key={p.id} className="footer-promo-card footer-promo-card--watta-grid text-left">
+                    <WattaMenuProductCard
+                      variant="grid"
+                      className="w-full min-w-0 flex-1 rounded-[1.25rem] border-[#145142]/14 shadow-[0_16px_44px_-14px_rgba(20,81,66,0.22)]"
+                      product={{
+                        id: p.id,
+                        name: (p.label || '').trim() || '—',
+                        description: p.description ?? '',
+                        price: p.price ?? 0,
+                        emoji: p.emoji ?? '🍣',
+                        imageUrl: p.imageUrl,
+                        isTop: p.isPopular === true,
+                        promoDiscountPercent: promoPct,
+                      }}
+                      subtitleLine={p.subtitleLine}
+                      onAddToCart={() => onProductAddToCart(p.id)}
+                      onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="footer-promo-nav footer-promo-nav--rail footer-promo-nav--next flex"
+            onClick={() => onScroll(1)}
+            aria-label={nextLabel}
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
 
-export type CinematicFooterPromoTeaser = {
-  id: number
-  label: string
-  imageUrl?: string
-  /** Назва категорії меню (для акційних страв) або короткий підзаголовок акції */
-  categoryLabel?: string
-  /** product — хіт меню; banner — банер; promotion — акція з адмінки (/api/promotions) */
-  kind?: 'product' | 'banner' | 'promotion'
-}
-
-export type CinematicFooterProps = {
-  /** id секції після цього блоку (карусель банерів) */
-  nextSectionId?: string
-  /** id блоку меню */
-  menuSectionId?: string
-  className?: string
-  /** Активні банери — короткі підписи внизу екрана */
-  promoTeasers?: CinematicFooterPromoTeaser[]
-  /** Клік по картці: id + тип джерела */
-  onPromoTeaserClick?: (payload: { id: number; kind: 'product' | 'banner' | 'promotion' }) => void
-  /** Текст кнопки, якщо банерів ще немає (веде до секції банерів) */
-  promoFallbackCta?: string
-  /** Підпис зони для скрінрідерів */
-  promoRegionLabel?: string
-}
-
 export function CinematicFooter({
-  nextSectionId = 'hero-banners',
-  menuSectionId = 'menu-catalog',
   className,
-  promoTeasers,
-  onPromoTeaserClick,
-  promoFallbackCta,
-  promoRegionLabel,
+  adminPromoProducts = [],
+  adminRecommendedProducts = [],
+  onAdminProductAddToCart,
+  onBeforeNavigateToProduct,
+  layout = 'fullscreen',
 }: CinematicFooterProps) {
-  const { t } = useLanguage()
-  const cf = t.cinematicFooter
+  const cf = useLanguage().t.cinematicFooter
+  const isCompact = layout === 'compact'
 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLElement>(null)
   const giantTextOuterRef = useRef<HTMLDivElement>(null)
   const giantTextRef = useRef<HTMLDivElement>(null)
   const leftColRef = useRef<HTMLDivElement>(null)
-  const carouselRef = useRef<HTMLDivElement>(null)
+  const promoCarouselRef = useRef<HTMLDivElement>(null)
+  const recCarouselRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || layout === 'compact') return
     const footerEl = footerRef.current
     const giant = giantTextRef.current
     if (!footerEl || !giant) return
@@ -853,7 +1210,7 @@ export function CinematicFooter({
     }
 
     return undefined
-  }, [])
+  }, [layout])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -871,7 +1228,7 @@ export function CinematicFooter({
         scrub: 1,
       }
 
-      if (giantTextOuterRef.current) {
+      if (layout === 'fullscreen' && giantTextOuterRef.current) {
         gsap.fromTo(
           giantTextOuterRef.current,
           { y: '8vh', scale: 0.88, opacity: 0 },
@@ -921,31 +1278,15 @@ export function CinematicFooter({
       window.removeEventListener('resize', onRefresh)
       ctx.revert()
     }
+  }, [layout])
+
+  const scrollPromoStrip = useCallback((dir: -1 | 1) => {
+    scrollFooterStrip(promoCarouselRef.current, dir)
   }, [])
 
-  const goNext = () => scrollMenuToSelector(`#${nextSectionId}`)
-  const goMenu = () => scrollMenuToSelector(`#${menuSectionId}`)
-
-  const scrollCarousel = useCallback((dir: -1 | 1) => {
-    const el = carouselRef.current
-    if (!el) return
-    const card = el.querySelector('.footer-promo-card') as HTMLElement | null
-    const gap = 16
-    const step = card ? card.offsetWidth + gap : Math.min(el.clientWidth * 0.82, 300)
-    el.scrollBy({ left: dir * step, behavior: 'smooth' })
+  const scrollRecStrip = useCallback((dir: -1 | 1) => {
+    scrollFooterStrip(recCarouselRef.current, dir)
   }, [])
-
-  const onPromoCardActivate = (p: CinematicFooterPromoTeaser) => {
-    const kind = p.kind ?? 'banner'
-    onPromoTeaserClick?.({ id: p.id, kind })
-    if (kind === 'promotion') return
-    goMenu()
-  }
-
-  const teasers = promoTeasers?.filter((p) => p.label.trim() || p.categoryLabel?.trim()) ?? []
-  const fallbackCta = promoFallbackCta?.trim() || t.menuView.footerPromoSeeOffers
-  const showPromoFallback = teasers.length === 0 && Boolean(fallbackCta)
-  const promoAria = promoRegionLabel?.trim() || cf.promoCarouselAria
 
   return (
     <>
@@ -953,197 +1294,134 @@ export function CinematicFooter({
 
       <div
         ref={wrapperRef}
-        className={cn('relative min-h-[100svh] w-full', className)}
-        style={{ clipPath: 'polygon(0% 0, 100% 0%, 100% 100%, 0 100%)' }}
+        className={cn('relative w-full', isCompact ? 'cinematic-footer-wrap--compact' : 'min-h-[100svh]', className)}
+        style={
+          isCompact
+            ? undefined
+            : { clipPath: 'polygon(0% 0, 100% 0%, 100% 100%, 0 100%)' }
+        }
       >
         <footer
           ref={footerRef}
-          className="cinematic-footer-wrapper absolute inset-0 flex w-full flex-col justify-between overflow-hidden bg-background text-foreground"
+          className={cn(
+            'cinematic-footer-wrapper cinematic-footer--calm flex w-full flex-col overflow-hidden bg-background text-foreground',
+            isCompact
+              ? 'cinematic-footer--ribbon relative min-h-0'
+              : 'absolute inset-0 min-h-0 justify-between',
+          )}
         >
           <div className="footer-bg-mesh animate-footer-mesh-drift pointer-events-none absolute inset-0 z-0" />
           <div className="footer-aurora pointer-events-none absolute left-1/2 top-1/2 z-0 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] blur-[80px]" />
           <div className="footer-bg-grid animate-footer-grid-pan pointer-events-none absolute inset-0 z-0" />
-          <div
-            className="footer-ring-accent pointer-events-none absolute left-1/2 top-[42%] z-0 h-[min(88vw,720px)] w-[min(88vw,720px)] -translate-x-1/2 -translate-y-1/2 md:top-[44%]"
-            aria-hidden
-          />
-          <div
-            className="footer-orb animate-footer-orb-a pointer-events-none absolute -left-[8%] top-[18%] z-0 h-48 w-48 bg-[rgba(20,81,66,0.22)] md:h-72 md:w-72"
-            aria-hidden
-          />
-          <div
-            className="footer-orb animate-footer-orb-b pointer-events-none absolute -right-[5%] bottom-[28%] z-0 h-40 w-40 bg-[rgba(26,107,86,0.2)] md:h-64 md:w-64"
-            aria-hidden
-          />
+          {!isCompact && (
+            <>
+              <div
+                className="footer-ring-accent pointer-events-none absolute left-1/2 top-[42%] z-0 h-[min(88vw,720px)] w-[min(88vw,720px)] -translate-x-1/2 -translate-y-1/2 md:top-[44%]"
+                aria-hidden
+              />
+              <div
+                className="footer-orb animate-footer-orb-a pointer-events-none absolute -left-[8%] top-[18%] z-0 h-48 w-48 bg-[rgba(20,81,66,0.22)] md:h-72 md:w-72"
+                aria-hidden
+              />
+              <div
+                className="footer-orb animate-footer-orb-b pointer-events-none absolute -right-[5%] bottom-[28%] z-0 h-40 w-40 bg-[rgba(26,107,86,0.2)] md:h-64 md:w-64"
+                aria-hidden
+              />
+
+              <div
+                ref={giantTextOuterRef}
+                className="pointer-events-none absolute -bottom-[5vh] left-1/2 z-0 -translate-x-1/2"
+              >
+                <div
+                  ref={giantTextRef}
+                  className="footer-giant-bg-text select-none whitespace-nowrap will-change-transform"
+                >
+                  WATTA
+                </div>
+              </div>
+            </>
+          )}
 
           <div
-            ref={giantTextOuterRef}
-            className="pointer-events-none absolute -bottom-[5vh] left-1/2 z-0 -translate-x-1/2"
+            className={cn(
+              'relative z-10 mx-auto flex w-full max-w-[100rem] flex-col items-center gap-8 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]',
+              isCompact
+                ? 'flex-none py-5 pb-10 pt-1.5 sm:gap-9 sm:py-8 sm:pb-12 sm:pt-2 md:px-8 lg:gap-10 lg:px-10 lg:pb-14 xl:px-14'
+                : 'flex-1 justify-center pb-[max(2rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] pt-1 sm:mt-12 sm:gap-10 sm:pb-[max(2.5rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] sm:pl-8 sm:pr-8 md:mt-16 md:pl-10 md:pr-10 lg:mt-[4.5rem] lg:gap-12 lg:px-12 lg:pb-[max(3rem,calc(1rem+env(safe-area-inset-bottom,0px)))] xl:gap-14 xl:px-16 2xl:px-24',
+            )}
           >
             <div
-              ref={giantTextRef}
-              className="footer-giant-bg-text select-none whitespace-nowrap will-change-transform"
-            >
-              WATTA
-            </div>
-          </div>
-
-          <div className="footer-marquee-bar absolute left-0 top-4 z-10 w-full -rotate-2 scale-[1.02] overflow-hidden border-y border-white/20 py-2 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.55)] sm:top-8 sm:scale-[1.05] sm:py-3 md:top-12 md:scale-[1.08] md:py-4">
-            <div className="flex w-max animate-footer-scroll-marquee text-[9px] font-bold uppercase tracking-[0.22em] min-[400px]:text-[10px] min-[400px]:tracking-[0.28em] md:text-xs">
-              <MarqueeStrip />
-              <MarqueeStrip />
-            </div>
-          </div>
-
-          <div className="relative z-10 mx-auto mt-8 flex w-full max-w-[100rem] flex-1 flex-col justify-center gap-6 pb-8 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-1 sm:mt-12 sm:gap-8 sm:pb-10 sm:pl-8 sm:pr-8 md:mt-16 md:gap-10 md:pl-10 md:pr-10 lg:mt-[4.5rem] lg:gap-14 lg:px-12 lg:pb-12 xl:gap-16 xl:px-16 2xl:px-24">
-            <div
               ref={leftColRef}
-              className="flex w-full max-w-full flex-col items-center lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]"
+              className={cn(
+                'flex w-full max-w-3xl flex-col items-center text-center',
+                isCompact ? 'gap-5 sm:gap-6' : 'gap-8',
+              )}
             >
-              <div className="footer-hero-line-wrap footer-hero-line-wrap--title-offset w-full lg:items-start">
-                <div className="footer-heading-accent footer-heading-accent--hero mx-auto lg:mx-0 lg:ml-0" aria-hidden />
-                <div className="footer-hero-line-cap mx-auto lg:mx-0 lg:ml-0" aria-hidden />
-              </div>
-
-              <h2 className="footer-heading-flow footer-title-display mt-4 w-full max-w-[22rem] text-center text-[clamp(1.6rem,6.2vw,2.85rem)] font-bold leading-[1.1] tracking-tight sm:mt-5 sm:max-w-none sm:text-4xl md:mt-4 md:text-6xl lg:text-left lg:text-7xl xl:text-8xl xl:leading-[0.98]">
-                {cf.readyTitle}
-              </h2>
-            </div>
-
-            {(teasers.length > 0 || showPromoFallback) && (
-              <div className="w-full">
-                <p className="footer-promo-hint footer-accent-script w-full md:mt-2">{cf.promoPickHint}</p>
-                <div className="footer-promo-section-fullbleed mt-3" role="region" aria-label={promoAria}>
-                  <div className="footer-promo-carousel-wrap">
-                    <button
-                      type="button"
-                      className="footer-promo-nav footer-promo-nav--prev flex"
-                      onClick={() => scrollCarousel(-1)}
-                      aria-label={cf.prevPromo}
-                    >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      className="footer-promo-nav footer-promo-nav--next flex"
-                      onClick={() => scrollCarousel(1)}
-                      aria-label={cf.nextPromo}
-                    >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    <div ref={carouselRef} className="footer-promo-carousel">
-                      {teasers.length > 0 ? (
-                        teasers.map((p) => (
-                          <button
-                            key={`${p.kind ?? 'banner'}-${p.id}`}
-                            type="button"
-                            className="footer-promo-card text-left"
-                            onClick={() => onPromoCardActivate(p)}
-                          >
-                            <div
-                              className="footer-promo-card-media"
-                              style={
-                                p.imageUrl
-                                  ? { backgroundImage: `url(${p.imageUrl})` }
-                                  : undefined
-                              }
-                            >
-                              <span className="footer-promo-card-badge">{cf.promoBadge}</span>
-                            </div>
-                            <div className="footer-promo-card-body">
-                              {p.categoryLabel?.trim() ? (
-                                <div className="footer-promo-card-cat">{p.categoryLabel.trim()}</div>
-                              ) : null}
-                              <div className="footer-promo-card-title">
-                                {p.label.trim() || p.categoryLabel?.trim() || '—'}
-                              </div>
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <button
-                          type="button"
-                          className="footer-promo-card"
-                          onClick={() => goNext()}
-                        >
-                          <div className="footer-promo-card-media flex items-center justify-center">
-                            <span className="footer-promo-card-badge">{cf.promoBadge}</span>
-                          </div>
-                          <div className="footer-promo-card-body">
-                            <div className="footer-promo-card-title">{fallbackCta}</div>
-                          </div>
-                        </button>
-                      )}
-                    </div>
+              <div
+                className={cn(
+                  'flex w-full flex-col items-center',
+                  isCompact ? 'gap-2.5 sm:gap-3' : 'gap-8',
+                )}
+              >
+                <div className="footer-ready-block flex flex-col items-center px-2">
+                  <div className="footer-ready-ornament" aria-hidden>
+                    <span className="footer-hero-line-cap" />
+                    <div className="footer-heading-accent--hero" />
+                    <span className="footer-hero-line-cap" />
                   </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex w-full max-w-full flex-col items-center gap-5 sm:gap-6 lg:max-w-[min(100%,40rem)] lg:items-start xl:max-w-[min(100%,44rem)]">
-                <div className="flex w-full flex-col gap-2 min-[400px]:flex-row min-[400px]:flex-wrap min-[400px]:justify-center lg:justify-start">
-                  <MagneticButton
-                    type="button"
-                    as="button"
-                    onClick={goMenu}
-                    className="footer-glass-pill flex w-full items-center justify-center rounded-full px-5 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground min-[400px]:w-auto md:px-6 md:py-3 md:text-sm"
-                  >
-                    {cf.ctaCatalog}
-                  </MagneticButton>
-                  <MagneticButton
-                    type="button"
-                    as="button"
-                    onClick={goNext}
-                    className="footer-glass-pill flex w-full items-center justify-center rounded-full px-5 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground min-[400px]:w-auto md:px-6 md:py-3 md:text-sm"
-                  >
-                    {cf.ctaOffers}
-                  </MagneticButton>
+                  <h2 className="footer-ready-title text-center">{cf.readyTitle}</h2>
+                  <p className="footer-ready-hint font-sans">{cf.promoPickHint}</p>
                 </div>
 
-              <aside className="footer-about-block mt-2">
-                <h3 className="footer-about-title">{cf.aboutTitle}</h3>
-                <p className="footer-about-lead">{cf.aboutLead}</p>
-                <p className="footer-about-body">{cf.aboutBody}</p>
-              </aside>
-            </div>
-          </div>
-
-          <div className="relative z-20 px-[max(1.25rem,env(safe-area-inset-left))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-2 md:px-10 md:pb-8">
-            <div className="flex w-full flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-5">
-              <div className="order-1 shrink-0 text-center text-[9px] font-semibold uppercase tracking-widest text-muted-foreground md:w-[11rem] md:text-left md:text-[11px]">
-                © {new Date().getFullYear()} Watta Sushi
-              </div>
-
-              <div className="order-2 flex flex-1 items-center justify-center gap-3 md:order-2 md:justify-end">
-                <div className="footer-glass-pill flex cursor-default items-center gap-2 rounded-full border-border/40 px-5 py-2.5">
-                  <span className="text-muted-foreground text-[9px] font-bold uppercase tracking-widest md:text-[11px]">
-                    З любов’ю
-                  </span>
-                  <span className="animate-footer-heartbeat text-sm text-destructive md:text-base">❤</span>
-                  <span className="text-foreground text-xs font-black md:text-sm">Watta</span>
-                </div>
-
-                <MagneticButton
-                  type="button"
-                  as="button"
-                  onClick={scrollMenuToTop}
-                  className="footer-glass-pill group flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground md:h-12 md:w-12"
-                  aria-label="Нагору"
+                <div
+                  className={cn(
+                    'footer-cinematic-strip-stack flex w-full flex-col items-center',
+                    isCompact ? 'gap-4 sm:gap-5' : 'gap-8',
+                  )}
                 >
-                  <svg
-                    className="h-5 w-5 transition-transform duration-300 group-hover:-translate-y-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                  </svg>
-                </MagneticButton>
+                  <AdminProductStrip
+                    title={cf.sectionRecommendedTitle}
+                    ariaLabel={cf.recommendedStripAria}
+                    items={adminRecommendedProducts}
+                    carouselRef={recCarouselRef}
+                    onScroll={scrollRecStrip}
+                    onProductAddToCart={onAdminProductAddToCart}
+                    onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                    prevLabel={cf.prevPromo}
+                    nextLabel={cf.nextPromo}
+                    cinematicRail="recommended"
+                  />
+
+                  <AdminProductStrip
+                    title={cf.sectionPromoTitle}
+                    ariaLabel={cf.promoStripAria}
+                    items={adminPromoProducts}
+                    carouselRef={promoCarouselRef}
+                    onScroll={scrollPromoStrip}
+                    onProductAddToCart={onAdminProductAddToCart}
+                    onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                    prevLabel={cf.prevPromo}
+                    nextLabel={cf.nextPromo}
+                    cinematicRail="promo"
+                  />
+                </div>
               </div>
+
+              <aside className="footer-about-block mt-2 w-full max-w-xl text-left">
+                <span className="footer-about-quote-bg" aria-hidden>
+                  «
+                </span>
+                <div className="footer-about-quote-inner">
+                  <h3 className="footer-about-title">{cf.aboutTitle}</h3>
+                  <blockquote className="footer-about-quote-text">
+                    <p className="footer-about-lead">{cf.aboutLead}</p>
+                    <p className="footer-about-body">{cf.aboutBody}</p>
+                  </blockquote>
+                  <span className="footer-about-quote-close" aria-hidden>
+                    »
+                  </span>
+                </div>
+              </aside>
             </div>
           </div>
         </footer>

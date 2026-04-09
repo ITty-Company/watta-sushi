@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import CartView from './components/CartView'
 import ProfileView from './components/ProfileView'
 import MenuView from './components/MenuView'
+import { NotificationsView } from './components/NotificationsView'
 import WattaLoadScreen from './components/WattaLoadScreen'
+import { scrollEntireAppToTop } from '@/lib/menuScroll'
 
 const MIN_BOOT_SPLASH_MS = 1650
 
@@ -14,6 +16,7 @@ export default function HomeClient() {
   const [bootProgress, setBootProgress] = useState(0)
   const [showBootSplash, setShowBootSplash] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const bootStartedAtRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -54,11 +57,17 @@ export default function HomeClient() {
     }
   }, [])
 
+  /** Меню / кошик / профіль — зверху контейнера, щоб була видима початкова секція. */
+  useLayoutEffect(() => {
+    if (showBootSplash) return
+    scrollEntireAppToTop()
+  }, [activeTab, showBootSplash])
+
   const handleBack = useCallback(() => setActiveTab(0), [])
   const handleOpenProfile = useCallback(() => setActiveTab(2), [])
   const handleOpenFavorites = useCallback(() => setActiveTab(2), [])
   const handleOpenPhone = useCallback(() => {}, [])
-  const handleOpenNotifications = useCallback(() => {}, [])
+  const handleOpenNotifications = useCallback(() => setNotificationsOpen(true), [])
   const handleMenuClick = useCallback(() => {}, [])
   const handleProfileBack = useCallback(() => setActiveTab(0), [])
   const handleOpenCart = useCallback(() => setActiveTab(1), [])
@@ -140,6 +149,9 @@ export default function HomeClient() {
             onOpenAdmin={handleOpenAdmin}
           />
         )}
+        {activeTab !== 0 ? (
+          <NotificationsView isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+        ) : null}
       </div>
     </div>
   )

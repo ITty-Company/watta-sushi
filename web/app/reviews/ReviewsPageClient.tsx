@@ -35,7 +35,7 @@ export default function ReviewsPageClient() {
   }, [])
 
   return (
-    <main className="watta-public-page-shell min-h-screen py-12 sm:py-16 px-4">
+    <main className="watta-public-page-shell flex min-h-screen flex-1 flex-col py-12 sm:py-16 px-4">
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 16 }}

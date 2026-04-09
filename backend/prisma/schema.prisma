@@ -45,6 +45,8 @@ model Category {
   emoji    String?   @default("🍣") // Эмодзи для категории
   order    Int       @default(0) // Порядок отображения
   isActive Boolean   @default(true) // Активна ли категория
+  /// Якщо false — товари з цієї категорії не потрапляють у блок «рекомендуємо» (навіть з isRecommended)
+  allowRecommendations Boolean @default(true)
   products Product[]
 }
 
@@ -119,6 +121,12 @@ model Product {
   price     Float
   imageUrl  String?
   isPopular Boolean @default(false)
+  /// Блок «Watta рекомендує» на сторінці товару (керується з адмінки)
+  isRecommended        Boolean @default(false)
+  /// Порядок у списку рекомендацій (менше — раніше)
+  recommendOrder       Int     @default(0)
+  /// Акційна знижка у % (0 = без акції); ціна зі знижкою рахується на клієнті
+  promoDiscountPercent Int     @default(0)
 
   category   Category @relation(fields: [categoryId], references: [id])
   categoryId Int

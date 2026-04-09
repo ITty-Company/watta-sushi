@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '../context/LanguageContext'
+import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import ClientProfileOrders from './profile/ClientProfileOrders'
 import {
   Phone, Bell, Heart, ShoppingBag, User, Menu,
@@ -73,6 +74,7 @@ export default function ProfileView({
 }: ProfileViewProps) {
   const router = useRouter()
   const { t, language } = useLanguage()
+  const rightNavDrawer = useOptionalRightNavDrawer()
   const [profileAllowed, setProfileAllowed] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -276,6 +278,11 @@ export default function ProfileView({
   const headerIconBtn =
     'flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 hover:text-[#145142] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#145142]/40'
 
+  const handleGlobalNavMenu = () => {
+    if (rightNavDrawer?.enabled) rightNavDrawer.open()
+    else onMenuClick()
+  }
+
   const Header = () => (
     <header className="fixed top-0 left-0 right-0 z-[1000] border-b border-gray-200/90 bg-white/95 shadow-sm backdrop-blur-md">
       <div className="mx-auto flex h-[56px] max-w-[1600px] items-center justify-between gap-2 px-3 sm:h-[60px] sm:px-5">
@@ -315,7 +322,7 @@ export default function ProfileView({
           >
             <User size={20} strokeWidth={2.25} />
           </span>
-          <button type="button" onClick={onMenuClick} className={headerIconBtn} aria-label={t.menu}>
+          <button type="button" onClick={handleGlobalNavMenu} className={headerIconBtn} aria-label={t.menu}>
             <Menu size={20} strokeWidth={2.25} />
           </button>
         </div>
@@ -324,7 +331,7 @@ export default function ProfileView({
   )
 
   return (
-    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] font-sans pt-[72px] sm:pt-[76px] pb-28 lg:pb-20 overflow-x-hidden bg-[#f4f6f5]">
+    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] font-sans pt-[72px] sm:pt-[76px] pb-10 lg:pb-16 overflow-x-hidden bg-[#f4f6f5]">
       <LogoBackground />
       <div className="relative z-10">
         <Header />

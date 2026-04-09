@@ -374,7 +374,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                 <div className="location-picker-modal__header-shine pointer-events-none absolute inset-0" aria-hidden />
                 <div className="relative z-[1] flex min-w-0 flex-1 items-end gap-3 sm:gap-4">
                   <div
-                    className="location-picker-modal__mascot relative z-[1] -mt-10 mb-0.5 flex h-[124px] w-[108px] shrink-0 items-end justify-center sm:-mt-12 sm:h-[148px] sm:w-[128px]"
+                    className="location-picker-modal__mascot relative z-[1] -mt-14 mb-0 flex h-[138px] w-[120px] shrink-0 items-end justify-center sm:-mt-[4.25rem] sm:h-[168px] sm:w-[148px]"
                     aria-hidden
                   >
                     <span
