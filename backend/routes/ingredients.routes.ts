@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -11,7 +12,7 @@ router.get('/', async (req: any, res: any) => {
 });
 
 // Создать ингредиент
-router.post('/', async (req: any, res: any) => {
+router.post('/', checkAdmin, async (req: any, res: any) => {
   const { name_ru, name_ua, name_en, name_nl, imageUrl } = req.body;
   const ing = await prisma.ingredient.create({
     data: { name_ru, name_ua, name_en, name_nl, imageUrl }
@@ -20,7 +21,7 @@ router.post('/', async (req: any, res: any) => {
 });
 
 // Удалить ингредиент
-router.delete('/:id', async (req: any, res: any) => {
+router.delete('/:id', checkAdmin, async (req: any, res: any) => {
   await prisma.ingredient.delete({ where: { id: Number(req.params.id) } });
   res.sendStatus(200);
 });

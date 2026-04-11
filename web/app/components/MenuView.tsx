@@ -29,6 +29,11 @@ import {
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
 import { HomeCategoryProductRail } from './HomeCategoryProductRail'
+import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
+import { getBearerAuthHeaders } from '@/lib/authHeaders'
+
+/** Скільки карток показувати в горизонтальній стрічці на головній; решта — через «Подивитися всі» на /menu */
+const HOME_CATEGORY_RAIL_PREVIEW_MAX = 6
 
 function readCinematicRailScrolls(): { rec: number; promo: number } {
   if (typeof document === 'undefined') return { rec: 0, promo: 0 }
@@ -49,7 +54,6 @@ import {
   Menu,       
   Heart,      
   User,       
-  ShoppingBag,
   ArrowLeft,
   ChevronLeft, 
   ChevronRight,
@@ -267,10 +271,13 @@ export default function MenuView() {
   // ИСПОЛЬЗУЕМ getLocalized из контекста
   const { t, language, getLocalized } = useLanguage()
   const welcomeHeroSectionRef = useRef<HTMLElement | null>(null)
+  const marqueeBarRef = useRef<HTMLDivElement | null>(null)
+  /** Після зеленої бігучої смуги: на вузькому екрані (≤768px) показуємо фікс-панель категорій; на ширших — завжди true */
   const [mobileCatBarVisible, setMobileCatBarVisible] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
+  /** Вузький екран: «фаза відео» + панель категорій після marquee (раніше лише ≤480 — на багатьох телефонах відео обрізалось) */
+  const [isPhoneLayout, setIsPhoneLayout] = useState(false)
   useEffect(() => {
-    const check = () => setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 768)
+    const check = () => setIsPhoneLayout(typeof window !== 'undefined' && window.innerWidth <= 768)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
@@ -289,52 +296,61 @@ export default function MenuView() {
     const el = document.getElementById(`home-menu-cat-${categoryKey}`)
     if (!root || !el) return
     const narrow = typeof window !== 'undefined' && window.innerWidth <= 768
-    const headerOffset = narrow ? 132 : 168
+    const headerOffset = narrow ? 148 : 168
     const top = el.getBoundingClientRect().top + root.scrollTop - headerOffset
     root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
   }, [])
 
   useLayoutEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px)')
-    let io: IntersectionObserver | null = null
-    let raf = 0
-
-    const detach = () => {
-      cancelAnimationFrame(raf)
-      io?.disconnect()
-      io = null
+    if (activePage !== null) {
+      setMobileCatBarVisible(true)
+      return
     }
 
-    const attach = () => {
-      detach()
-      if (!mq.matches) {
+    const mqPhone = window.matchMedia('(max-width: 768px)')
+    const root = () => document.querySelector<HTMLElement>('.content-web--watta-craft')
+
+    const update = () => {
+      if (!mqPhone.matches) {
         setMobileCatBarVisible(true)
         return
       }
-
-      const tick = () => {
-        const hero = welcomeHeroSectionRef.current
-        const root = hero?.closest('.content-web')
-        if (!hero || !root) {
-          raf = requestAnimationFrame(tick)
-          return
-        }
-        io = new IntersectionObserver(
-          ([e]) => {
-            if (!e) return
-            setMobileCatBarVisible(!e.isIntersecting)
-          },
-          { root, threshold: 0 }
-        )
-        io.observe(hero)
-      }
-      tick()
+      const scrollRoot = root()
+      const bar = marqueeBarRef.current
+      if (!scrollRoot || !bar) return
+      const rootTop = scrollRoot.getBoundingClientRect().top
+      const barBottom = bar.getBoundingClientRect().bottom
+      setMobileCatBarVisible(barBottom <= rootTop + 2)
     }
 
-    attach()
-    mq.addEventListener('change', attach)
+    let raf = 0
+    const detach = () => {
+      cancelAnimationFrame(raf)
+      root()?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+
+    const tryAttach = () => {
+      cancelAnimationFrame(raf)
+      detach()
+      if (!mqPhone.matches) {
+        setMobileCatBarVisible(true)
+        return
+      }
+      const scrollRoot = root()
+      if (!scrollRoot || !marqueeBarRef.current) {
+        raf = requestAnimationFrame(tryAttach)
+        return
+      }
+      update()
+      scrollRoot.addEventListener('scroll', update, { passive: true })
+      window.addEventListener('resize', update)
+    }
+
+    tryAttach()
+    mqPhone.addEventListener('change', tryAttach)
     return () => {
-      mq.removeEventListener('change', attach)
+      mqPhone.removeEventListener('change', tryAttach)
       detach()
     }
   }, [activePage])
@@ -342,22 +358,22 @@ export default function MenuView() {
   useEffect(() => {
     const el = document.querySelector<HTMLElement>('.content-web--watta-craft')
     if (!el) return
-    const mq = window.matchMedia('(max-width: 768px)')
+    const mqNarrow = window.matchMedia('(max-width: 768px)')
 
     const apply = () => {
-      if (!mq.matches) {
+      if (!mqNarrow.matches) {
         el.style.removeProperty('scroll-padding-top')
         return
       }
       el.style.scrollPaddingTop = mobileCatBarVisible
-        ? 'calc(130px + env(safe-area-inset-top, 0px))'
+        ? 'calc(148px + env(safe-area-inset-top, 0px))'
         : 'calc(56px + env(safe-area-inset-top, 0px))'
     }
 
     apply()
-    mq.addEventListener('change', apply)
+    mqNarrow.addEventListener('change', apply)
     return () => {
-      mq.removeEventListener('change', apply)
+      mqNarrow.removeEventListener('change', apply)
       el.style.removeProperty('scroll-padding-top')
     }
   }, [mobileCatBarVisible])
@@ -420,45 +436,42 @@ export default function MenuView() {
   }, [heroVideoSrc, heroVideoFailed])
 
   useEffect(() => {
-    // Проверяем сохранённый город из localStorage
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const savedCityId = localStorage.getItem('selectedCityId')
-      if (savedCityId) {
-        const cityId = parseInt(savedCityId)
-        setSelectedCityId(cityId)
+    if (typeof window === 'undefined' || !window.localStorage) return
+
+    let savedCityId: number | null = null
+    const savedRaw = localStorage.getItem('selectedCityId')
+    if (savedRaw) {
+      const parsed = parseInt(savedRaw, 10)
+      if (Number.isFinite(parsed) && parsed > 0) {
+        savedCityId = parsed
+        setSelectedCityId(parsed)
       }
     }
-    
 
+    const pickCityForList = (list: { id: number }[]) => {
+      if (!list.length) return
+      const ids = new Set(list.map((c) => c.id))
+      const pick = savedCityId != null && ids.has(savedCityId) ? savedCityId : list[0].id
+      setSelectedCityId(pick)
+      localStorage.setItem('selectedCityId', String(pick))
+    }
 
     // Кэш городов: session + localStorage — переживает перезагрузку вкладки и перезапуск браузера (тот же origin)
     const cacheKey = 'cities_cache'
     const persistKey = 'watta_cities_cache'
     const persistTimeKey = 'watta_cities_cache_time'
-    const cached =
-      typeof window !== 'undefined'
-        ? sessionStorage.getItem(cacheKey) || localStorage.getItem(persistKey)
-        : null
-    const cacheTimeRaw =
-      typeof window !== 'undefined'
-        ? sessionStorage.getItem(`${cacheKey}_time`) || localStorage.getItem(persistTimeKey)
-        : null
+    const cached = sessionStorage.getItem(cacheKey) || localStorage.getItem(persistKey)
+    const cacheTimeRaw = sessionStorage.getItem(`${cacheKey}_time`) || localStorage.getItem(persistTimeKey)
     const now = Date.now()
 
-    if (cached && cacheTimeRaw && (now - parseInt(cacheTimeRaw, 10)) < 10 * 60 * 1000) {
+    if (cached && cacheTimeRaw && now - parseInt(cacheTimeRaw, 10) < 10 * 60 * 1000) {
       try {
         const data = JSON.parse(cached)
         setDeliveryCities(data || [])
-        if ((data || []).length > 0 && !selectedCityId) {
-          const firstCityId = data[0].id
-          setSelectedCityId(firstCityId)
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('selectedCityId', firstCityId.toString())
-          }
-        }
+        pickCityForList(data || [])
         return
-      } catch (e) {
-        // кэш повреждён — грузим с сервера
+      } catch {
+        /* кэш повреждён — грузим с сервера */
       }
     }
 
@@ -467,44 +480,37 @@ export default function MenuView() {
         'Cache-Control': 'max-age=600' // 10 минут кэша
       }
     })
-      .then(res => {
+      .then((res) => {
         if (!res.ok) {
           console.error('Ошибка загрузки городов:', res.status, res.statusText)
           return []
         }
         return res.json()
       })
-      .then(data => {
+      .then((data) => {
         const t = Date.now().toString()
         sessionStorage.setItem(cacheKey, JSON.stringify(data))
         sessionStorage.setItem(`${cacheKey}_time`, t)
         try {
           localStorage.setItem(persistKey, JSON.stringify(data))
           localStorage.setItem(persistTimeKey, t)
-        } catch (_) {
+        } catch {
           /* quota */
         }
 
         setDeliveryCities(data || [])
-        // Если город не выбран и есть города, выбираем первый
-        if ((data || []).length > 0 && !selectedCityId) {
-          const firstCityId = data[0].id
-          setSelectedCityId(firstCityId)
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('selectedCityId', firstCityId.toString())
-          }
-        }
+        pickCityForList(data || [])
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Ошибка загрузки городов:', err)
-        const fallback =
-          typeof window !== 'undefined' ? localStorage.getItem(persistKey) || sessionStorage.getItem(cacheKey) : null
+        const fallback = localStorage.getItem(persistKey) || sessionStorage.getItem(cacheKey)
         if (fallback) {
           try {
             const data = JSON.parse(fallback)
             setDeliveryCities(data || [])
+            pickCityForList(data || [])
             return
-          } catch (_) {
+          } catch {
             /* ignore */
           }
         }
@@ -838,21 +844,13 @@ export default function MenuView() {
   
   // Слушаем событие обновления товаров из админ-панели
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const handleProductsUpdate = () => {
-        // Перезагружаем товары с актуальными значениями
-        const url = selectedCityId ? `/api/products?cityId=${selectedCityId}` : '/api/products'
-        fetch(url)
-          .then(res => res.json())
-          .then(data => {
-            setMenuItems(mapProductsToItems(Array.isArray(data) ? data : []))
-          })
-          .catch(err => console.error('Ошибка загрузки меню:', err));
-      }
-      window.addEventListener('productsUpdated', handleProductsUpdate)
-      return () => window.removeEventListener('productsUpdated', handleProductsUpdate)
+    if (typeof window === 'undefined') return
+    const handleProductsUpdate = () => {
+      void loadMenuItems()
     }
-  }, [language, getLocalized, selectedCityId, mapProductsToItems])
+    window.addEventListener('productsUpdated', handleProductsUpdate)
+    return () => window.removeEventListener('productsUpdated', handleProductsUpdate)
+  }, [loadMenuItems])
 
   // --- КОРЗИНА ---
   const [cartCount, setCartCount] = useState(0)
@@ -909,13 +907,15 @@ export default function MenuView() {
     const CACHE_TTL = 5 * 60 * 1000 // 5 минут
 
     const applyCategories = (categories: MenuCategory[]) => {
-      setMenuCategories(categories)
+      const usable = filterNonAggregateMenuCategories(categories)
+      const list = usable.length > 0 ? usable : categories
+      setMenuCategories(list)
       setSelectedCategory((prev) => {
-        if (categories.length > 0) {
-          const currentCategoryExists = categories.find((c: MenuCategory) => c.key === prev)
-          if (!currentCategoryExists || !prev) return categories[0].key
+        if (list.length > 0) {
+          const currentCategoryExists = list.find((c: MenuCategory) => c.key === prev)
+          if (!currentCategoryExists || !prev) return list[0].key
         }
-        return prev || (categories.length > 0 ? categories[0].key : '')
+        return prev || (list.length > 0 ? list[0].key : '')
       })
     }
 
@@ -985,7 +985,7 @@ export default function MenuView() {
           ...cat,
           name: t.categories[cat.key as keyof typeof t.categories] || cat.name
         }))
-        setMenuCategories(updatedCategories)
+        applyCategories(updatedCategories)
       })
   }, [language, t.categories])
   
@@ -1156,6 +1156,9 @@ export default function MenuView() {
   }, [activePage, router])
 
   const handlePageOpen = (page: string) => {
+    if (page === 'promotions') {
+      setSelectedPromoId(null)
+    }
     if (page === 'about') {
       router.push('/about')
       setIsSidebarOpen(false)
@@ -1217,6 +1220,7 @@ export default function MenuView() {
     setActivePage(null)
     setShowSubmenu(false)
     setSelectedSubcategory(null)
+    setSelectedPromoId(null)
   }
   
   const toggleSidebar = () => {
@@ -1324,10 +1328,10 @@ export default function MenuView() {
     if (!userStr) return
 
     try {
-      const user = JSON.parse(userStr)
-      // Передаем ID пользователя в заголовке (как мы договорились в бэкенде)
+      const auth = getBearerAuthHeaders()
+      if (Object.keys(auth as Record<string, string>).length === 0) return
       const res = await fetch('/api/favorites', {
-        headers: { 'x-user-id': user.id.toString() }
+        headers: auth,
       })
       if (res.ok) {
         const ids = await res.json()
@@ -1349,7 +1353,11 @@ export default function MenuView() {
     return
   }
 
-  const user = JSON.parse(userStr)
+  const auth = getBearerAuthHeaders()
+  if (Object.keys(auth as Record<string, string>).length === 0) {
+    toast.error('Увійдіть, щоб додавати в обране')
+    return
+  }
 
   // Оптимистичное обновление интерфейса (сразу меняем цвет, не ждем сервер)
   const isLiked = favorites.includes(productId)
@@ -1364,7 +1372,7 @@ export default function MenuView() {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'x-user-id': user.id.toString()
+        ...auth,
       },
       body: JSON.stringify({ productId })
     })
@@ -1768,42 +1776,6 @@ export default function MenuView() {
       </>
     )
   }
-  if (activePage === 'promotions') {
-  if (selectedPromoId) {
-    return (
-      <>
-        <div className="full-page-web full-page-web--craft">
-          <PromotionsDetailView
-            id={selectedPromoId}
-            onBack={() => setSelectedPromoId(null)}
-            onMenuClick={toggleSidebar}
-            onOpenPhone={() => handlePageOpen('phone')}
-            onOpenNotifications={() => handlePageOpen('notifications')}
-            onOpenFavorites={() => openProfileTab('favorites')}
-            onOpenProfile={() => openProfileTab('history')}
-          />
-        </div>
-        <NotificationsView isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
-      </>
-    )
-  }
-  return (
-    <>
-      <div className="full-page-web full-page-web--craft">
-        <PromotionsView
-          onBack={handleClosePage}
-          onMenuClick={toggleSidebar}
-          onOpenDetail={(id) => setSelectedPromoId(id)}
-          onOpenPhone={() => handlePageOpen('phone')}
-          onOpenNotifications={() => handlePageOpen('notifications')}
-          onOpenFavorites={() => openProfileTab('favorites')}
-          onOpenProfile={() => openProfileTab('history')}
-        />
-      </div>
-      <NotificationsView isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
-    </>
-  )
-}
   if (activePage === 'cart') {
     return (
       <>
@@ -1831,7 +1803,7 @@ export default function MenuView() {
   // ============================================
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
-  const heroPhaseMobile = isMobile && !mobileCatBarVisible
+  const heroPhaseMobile = isPhoneLayout && !mobileCatBarVisible
 
   return (
     <div
@@ -1855,34 +1827,6 @@ export default function MenuView() {
         onProfileClick={() => openProfileTab('history')}
         onLogoClick={handleClosePage}
       />
-
-      {cartCount > 0 && (activePage === null || activePage === 'delivery') && (
-        <div
-          className="pointer-events-none fixed z-[9999] flex justify-end"
-          style={{
-            bottom: 'max(6px, calc(4px + env(safe-area-inset-bottom, 0px)))',
-            right: 'max(10px, env(safe-area-inset-right, 0px))',
-            left: 'max(10px, env(safe-area-inset-left, 0px))',
-          }}
-        >
-          <button
-            type="button"
-            onClick={openCart}
-            className="pointer-events-auto group flex max-w-[min(100%,320px)] items-center gap-2 rounded-full border border-[#145142]/18 bg-white/85 py-1.5 pl-2 pr-3 shadow-[0_6px_28px_rgba(15,40,32,0.1),0_1px_0_rgba(255,255,255,0.9)_inset] backdrop-blur-md transition hover:border-[#145142]/28 hover:bg-white hover:shadow-[0_10px_36px_rgba(20,81,66,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/35 active:scale-[0.98] sm:gap-2.5 sm:py-2 sm:pl-2.5 sm:pr-4"
-            aria-label={t.cartSection.proceedCheckout}
-          >
-            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#145142] to-[#0f3d32] text-white shadow-sm ring-2 ring-white/80 sm:h-10 sm:w-10">
-              <ShoppingBag className="h-[18px] w-[18px] opacity-95 sm:h-5 sm:w-5" strokeWidth={2.25} />
-              <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff6b35] px-1 text-[10px] font-extrabold leading-none text-white shadow ring-2 ring-white">
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            </span>
-            <span className="min-w-0 truncate text-left text-[13px] font-bold leading-tight text-[#0f241e] sm:text-sm">
-              {t.cartSection.proceedCheckout}
-            </span>
-          </button>
-        </div>
-      )}
 
       <>
           <div
@@ -1976,6 +1920,38 @@ export default function MenuView() {
             <DeliveryView embedInMenu menuWelcomeHeroRef={welcomeHeroSectionRef} />
           </div>
         </>
+      ) : activePage === 'promotions' && selectedPromoId != null ? (
+        <>
+          <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
+          <div className="menu-delivery-embed-web relative z-[1] w-full max-w-[100vw] pb-6 sm:pb-8">
+            <PromotionsDetailView
+              embedded
+              id={selectedPromoId}
+              onBack={() => setSelectedPromoId(null)}
+              onMenuClick={toggleSidebar}
+              onOpenPhone={() => handlePageOpen('phone')}
+              onOpenNotifications={() => handlePageOpen('notifications')}
+              onOpenFavorites={() => openProfileTab('favorites')}
+              onOpenProfile={() => openProfileTab('history')}
+            />
+          </div>
+        </>
+      ) : activePage === 'promotions' ? (
+        <>
+          <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
+          <div className="menu-delivery-embed-web relative z-[1] w-full max-w-[100vw] pb-6 sm:pb-8">
+            <PromotionsView
+              embedded
+              onBack={handleClosePage}
+              onMenuClick={toggleSidebar}
+              onOpenDetail={(id) => setSelectedPromoId(id)}
+              onOpenPhone={() => handlePageOpen('phone')}
+              onOpenNotifications={() => handlePageOpen('notifications')}
+              onOpenFavorites={() => openProfileTab('favorites')}
+              onOpenProfile={() => openProfileTab('history')}
+            />
+          </div>
+        </>
       ) : (
       <>
       <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
@@ -1990,7 +1966,9 @@ export default function MenuView() {
         videoSources={HERO_VIDEO_SOURCES_MENU}
       />
 
-      <WattaHeroMarqueeBar />
+      <div ref={marqueeBarRef} className="w-full shrink-0">
+        <WattaHeroMarqueeBar />
+      </div>
 
       <div
         id="menu-cinematic-block"
@@ -2022,7 +2000,6 @@ export default function MenuView() {
       >
         <div className="home-brand-story-bg-web" aria-hidden />
         <div className="home-brand-story-grain-web" aria-hidden />
-        <div className="home-brand-story-orb-web home-brand-story-orb-web--tiffany" aria-hidden />
         <div className="home-brand-inner-web relative z-[1] mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:px-8 md:pb-16 md:pt-14">
           <header className="home-menu-hero-banners-head-web home-full-menu-catalog-head-web">
             <div className="home-full-menu-catalog-ornament-web" aria-hidden>
@@ -2043,15 +2020,27 @@ export default function MenuView() {
               role="figure"
               aria-label={`${t.menuView.heroBannerSmsSender}. ${t.menuView.heroBannerOverlaySub}`}
             >
-              <div className="home-hero-banner-sms-web__meta" aria-hidden>
-                <span className="home-hero-banner-sms-web__badge">{t.menuView.heroBannerSmsBadge}</span>
-                <span className="home-hero-banner-sms-web__sender">{t.menuView.heroBannerSmsSender}</span>
-              </div>
-              <div className="home-hero-banner-sms-web__row">
-                <div className="home-hero-banner-sms-web__bubble">
-                  <p className="home-hero-banner-sms-web__text">{t.menuView.heroBannerOverlaySub}</p>
-                  <div className="home-hero-banner-sms-web__bubble-foot">
-                    <span className="home-hero-banner-sms-web__time">{t.menuView.heroBannerSmsTime}</span>
+              <div className="home-hero-banner-sms-web__body">
+                <div className="home-hero-banner-sms-web__avatar-wrap" aria-hidden>
+                  <Image
+                    src="/logo.png"
+                    alt=""
+                    width={128}
+                    height={128}
+                    className="home-hero-banner-sms-web__avatar-img"
+                    sizes="(max-width: 640px) 44px, 56px"
+                  />
+                </div>
+                <div className="home-hero-banner-sms-web__stack">
+                  <div className="home-hero-banner-sms-web__meta" aria-hidden>
+                    <span className="home-hero-banner-sms-web__badge">{t.menuView.heroBannerSmsBadge}</span>
+                    <span className="home-hero-banner-sms-web__sender">{t.menuView.heroBannerSmsSender}</span>
+                  </div>
+                  <div className="home-hero-banner-sms-web__bubble">
+                    <p className="home-hero-banner-sms-web__text">{t.menuView.heroBannerOverlaySub}</p>
+                    <div className="home-hero-banner-sms-web__bubble-foot">
+                      <span className="home-hero-banner-sms-web__time">{t.menuView.heroBannerSmsTime}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2194,12 +2183,22 @@ export default function MenuView() {
                   {catItems.length === 0 ? (
                     <p className="home-menu-cat-empty-web">{t.menuView.emptyCategoryTitle}</p>
                   ) : (
-                    <HomeCategoryProductRail
-                      categoryLabel={cat.name}
-                      items={catItems}
-                      addToCart={(item) => addToCart(item as MenuItem)}
-                      onBeforeNavigateToProduct={persistMenuBrowseReturnState}
-                    />
+                    <>
+                      <HomeCategoryProductRail
+                        categoryLabel={cat.name}
+                        items={catItems.slice(0, HOME_CATEGORY_RAIL_PREVIEW_MAX)}
+                        addToCart={(item) => addToCart(item as MenuItem)}
+                        onBeforeNavigateToProduct={persistMenuBrowseReturnState}
+                      />
+                      <div className="home-menu-cat-view-all-wrap-web">
+                        <Link
+                          href={`/menu?cat=${encodeURIComponent(cat.key)}`}
+                          className="home-menu-cat-view-all-btn-web"
+                        >
+                          {t.menuView.seeAll}
+                        </Link>
+                      </div>
+                    </>
                   )}
                 </div>
               )

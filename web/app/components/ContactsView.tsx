@@ -23,8 +23,9 @@ import {
 } from '@/lib/wattaRestaurantLocation'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 
+/** Спокійний тон (як фон сайту), без контрастного «кінематографічного» зеленого */
 const HERO_BG =
-  'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
+  'linear-gradient(165deg, #f2f6f4 0%, #e8f0ec 42%, #dfe9e4 78%, #eef3f0 100%)'
 
 function IconTelegram({ className }: { className?: string }) {
   return (
@@ -186,44 +187,44 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
         </div>
       ) : null}
 
-      {/* Герой у стилі «Про нас» */}
+      {/* Герой: м’який світлий блок у тон сайту */}
       <section
-        className="relative overflow-hidden text-white"
+        className="relative overflow-hidden text-[#1a2c24]"
         style={{ background: HERO_BG }}
         aria-labelledby="contacts-hero-title"
       >
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.4]"
+          className="pointer-events-none absolute inset-0 opacity-[0.55]"
           style={{
             background: `repeating-linear-gradient(
               -32deg,
               transparent,
               transparent 14px,
-              rgba(255, 255, 255, 0.04) 14px,
-              rgba(255, 255, 255, 0.04) 15px
+              rgba(20, 81, 66, 0.028) 14px,
+              rgba(20, 81, 66, 0.028) 15px
             )`,
           }}
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute -right-[15%] top-1/2 h-[min(70vw,480px)] w-[min(70vw,480px)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,92,0,0.14)_0%,transparent_68%)]"
+          className="pointer-events-none absolute -right-[15%] top-1/2 h-[min(70vw,480px)] w-[min(70vw,480px)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,107,53,0.07)_0%,transparent_68%)]"
           aria-hidden
         />
 
         <div className="relative z-[1] mx-auto grid max-w-6xl gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.12fr_0.88fr] lg:items-center lg:gap-16 lg:py-24">
           <div>
             <motion.p
-              className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/85 backdrop-blur-md sm:text-xs"
+              className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#145142]/14 bg-white/85 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#145142]/90 shadow-sm backdrop-blur-sm sm:text-xs"
               {...fadeUp}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5 }}
             >
-              <Sparkles size={14} className="text-white/90" />
+              <Sparkles size={14} className="text-[#e85d2a]" />
               {c.heroKicker}
             </motion.p>
             <motion.h1
               id="contacts-hero-title"
-              className="max-w-xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-7xl"
+              className="max-w-xl text-4xl font-black leading-[1.05] tracking-tight text-[#0f241e] sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-7xl"
               {...fadeUp}
               viewport={{ once: true }}
               transition={{ duration: 0.55, delay: 0.05 }}
@@ -231,7 +232,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               {c.heroTitle}
             </motion.h1>
             <motion.p
-              className="mt-5 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg"
+              className="mt-5 max-w-xl text-base leading-relaxed text-[#4a5c54] sm:text-lg"
               {...fadeUp}
               viewport={{ once: true }}
               transition={{ duration: 0.55, delay: 0.1 }}
@@ -248,13 +249,13 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               <button
                 type="button"
                 onClick={scrollToForm}
-                className="rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-[#145142] shadow-lg shadow-black/15 transition hover:bg-white/95"
+                className="rounded-2xl bg-[#145142] px-6 py-3.5 text-sm font-black text-white shadow-md shadow-[#145142]/20 transition hover:bg-[#104034]"
               >
                 {c.ctaForm}
               </button>
               <Link
                 href="/delivery"
-                className="rounded-2xl border-2 border-white/45 px-6 py-3.5 text-sm font-black text-white transition hover:bg-white/10"
+                className="rounded-2xl border-2 border-[#145142]/22 bg-white/75 px-6 py-3.5 text-sm font-black text-[#145142] shadow-sm transition hover:border-[#145142]/35 hover:bg-white"
               >
                 {c.ctaDelivery}
               </Link>
@@ -269,15 +270,15 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               {statCards.map((s, i) => (
                 <div
                   key={i}
-                  className="rounded-[18px] border border-white/20 bg-white/10 px-4 py-4 backdrop-blur-md sm:py-5"
+                  className="rounded-[18px] border border-[#145142]/10 bg-white/80 px-4 py-4 shadow-sm backdrop-blur-sm sm:py-5"
                 >
-                  <div className="text-2xl font-black text-white sm:text-3xl">{s.val}</div>
-                  <div className="mt-1 text-xs font-semibold leading-snug text-white/70">{s.label}</div>
+                  <div className="text-2xl font-black text-[#0f241e] sm:text-3xl">{s.val}</div>
+                  <div className="mt-1 text-xs font-semibold leading-snug text-[#5a6d64]">{s.label}</div>
                 </div>
               ))}
             </motion.div>
 
-            <p className="mt-8 text-center text-xs font-medium text-white/45 sm:text-left">{c.scrollHint}</p>
+            <p className="mt-8 text-center text-xs font-medium text-[#7a8c84] sm:text-left">{c.scrollHint}</p>
           </div>
 
           <motion.div
@@ -286,10 +287,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
             viewport={{ once: true }}
             transition={{ duration: 0.55, delay: 0.1 }}
           >
-            <div
-              className="overflow-hidden rounded-[28px] border border-white/25 bg-white p-8 shadow-[0_28px_90px_rgba(0,0,0,0.25)]"
-              style={{ filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.2))' }}
-            >
+            <div className="overflow-hidden rounded-[28px] border border-[#145142]/10 bg-white/95 p-8 shadow-[0_18px_48px_rgba(20,81,66,0.08)]">
               <div className="mx-auto mb-5 flex justify-center">
                 <div className="rounded-2xl border-[3px] border-[#145142] bg-gradient-to-br from-gray-50 to-white p-5 shadow-inner">
                   <Image src="/logo.png" alt="" width={108} height={108} className="object-contain" priority />

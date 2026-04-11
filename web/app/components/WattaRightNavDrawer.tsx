@@ -20,12 +20,14 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useRightNavDrawer } from '../context/RightNavDrawerContext'
+import { CountryCitySelector } from './CountryCitySelector'
 import { cn } from '@/lib/utils'
 import { useFavoriteCount } from '@/hooks/useFavoriteCount'
 import { mergeServerFavoritesIntoLocal } from '@/lib/favoritesStorage'
 
 const EDGE_PX = 28
 const OPEN_SWIPE_PX = 56
+const CLOSE_SWIPE_PX = 56
 
 function RightEdgeOpenGesture({ onOpen, active }: { onOpen: () => void; active: boolean }) {
   const startX = useRef<number | null>(null)
@@ -34,7 +36,7 @@ function RightEdgeOpenGesture({ onOpen, active }: { onOpen: () => void; active: 
 
   return (
     <div
-      className="fixed top-0 right-0 z-[9987] touch-none md:hidden"
+      className="fixed top-0 right-0 z-40 touch-none md:hidden"
       style={{ width: EDGE_PX, height: '100dvh' }}
       aria-hidden
       onTouchStart={(e) => {
@@ -57,6 +59,38 @@ function RightEdgeOpenGesture({ onOpen, active }: { onOpen: () => void; active: 
         if (startX.current == null) return
         const endX = e.changedTouches[0]?.clientX ?? startX.current
         if (startX.current - endX > OPEN_SWIPE_PX) onOpen()
+        startX.current = null
+      }}
+    />
+  )
+}
+
+/** Лівий край відкритої панелі: свайп вправо (зліва направо) — закрити */
+function DrawerLeftEdgeCloseSwipe({ onClose, active }: { onClose: () => void; active: boolean }) {
+  const startX = useRef<number | null>(null)
+
+  if (!active) return null
+
+  return (
+    <div
+      className="absolute left-0 top-0 z-[80] w-7 touch-none"
+      style={{ height: '100%' }}
+      aria-hidden
+      onTouchStart={(e) => {
+        startX.current = e.touches[0]?.clientX ?? null
+      }}
+      onTouchMove={(e) => {
+        if (startX.current == null) return
+        const x = e.touches[0]?.clientX ?? startX.current
+        if (x - startX.current > CLOSE_SWIPE_PX) {
+          onClose()
+          startX.current = null
+        }
+      }}
+      onTouchEnd={(e) => {
+        if (startX.current == null) return
+        const endX = e.changedTouches[0]?.clientX ?? startX.current
+        if (endX - startX.current > CLOSE_SWIPE_PX) onClose()
         startX.current = null
       }}
     />
@@ -88,11 +122,31 @@ export default function WattaRightNavDrawer() {
   const pathname = usePathname() || '/'
   const { t } = useLanguage()
   const nav = t.navigation
-  const { isOpen, open, close, enabled } = useRightNavDrawer()
+  const { isOpen, open, close, enabled, cityChangeHandlerRef } = useRightNavDrawer()
   const panelRef = useRef<HTMLElement>(null)
   const favCount = useFavoriteCount()
 
   const [cartCount, setCartCount] = React.useState(0)
+  const [isAdmin, setIsAdmin] = React.useState(false)
+
+  useEffect(() => {
+    const readAdmin = () => {
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+        if (!raw) {
+          setIsAdmin(false)
+          return
+        }
+        const p = JSON.parse(raw) as { role?: string }
+        setIsAdmin(p?.role === 'ADMIN')
+      } catch {
+        setIsAdmin(false)
+      }
+    }
+    readAdmin()
+    window.addEventListener('userChanged', readAdmin)
+    return () => window.removeEventListener('userChanged', readAdmin)
+  }, [])
 
   useEffect(() => {
     const read = () => {
@@ -148,8 +202,8 @@ export default function WattaRightNavDrawer() {
     badge?: number
   }
 
-  const primaryItems: NavItem[] = useMemo(
-    () => [
+  const primaryItems: NavItem[] = useMemo(() => {
+    const items: NavItem[] = [
       { href: '/', label: nav.home, Icon: Home, isActive: (p) => p === '/' },
       {
         href: '/menu',
@@ -178,15 +232,23 @@ export default function WattaRightNavDrawer() {
         Icon: User,
         isActive: (p) => p.startsWith('/profile'),
       },
-    ],
-    [t.cart, t.profile, nav, favCount, cartCount],
-  )
+    ]
+    if (isAdmin) {
+      items.push({
+        href: '/admin',
+        label: t.admin,
+        Icon: Sparkles,
+        isActive: (p) => p === '/admin' || p.startsWith('/admin/'),
+      })
+    }
+    return items
+  }, [t.admin, t.cart, t.profile, nav, favCount, cartCount, isAdmin])
 
   const exploreItems = useMemo(
     () => [
       { href: '/delivery', label: nav.delivery, Icon: Truck, span: 'full' as const },
       { href: '/about', label: nav.about, Icon: Info, span: 'half' as const },
-      { href: '/', label: nav.promotions, Icon: Sparkles, span: 'half' as const },
+      { href: '/promotions', label: nav.promotions, Icon: Sparkles, span: 'half' as const },
       { href: '/blog', label: t.blogPublic.title, Icon: BookOpen, span: 'wide' as const },
       { href: '/reviews', label: t.reviewsPublic.title, Icon: Star, span: 'half' as const },
       { href: '/contacts', label: nav.contacts, Icon: Phone, span: 'half' as const },
@@ -197,8 +259,19 @@ export default function WattaRightNavDrawer() {
   const year = new Date().getFullYear()
   const legal = nav.footerLegal.replace('{{year}}', String(year))
 
+  const backdropTouchStart = useRef<{ x: number; y: number } | null>(null)
+
   const onBackdropPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (e.target !== e.currentTarget) return
+      /* На тачі не закриваємо по pointerdown — інакше не встигне свайп; тап закриває onClick */
+      if (e.pointerType === 'mouse') close()
+    },
+    [close],
+  )
+
+  const onBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) close()
     },
     [close],
@@ -226,6 +299,24 @@ export default function WattaRightNavDrawer() {
             isOpen ? 'opacity-100' : 'opacity-0',
           )}
           onPointerDown={onBackdropPointerDown}
+          onClick={onBackdropClick}
+          onTouchStart={(e) => {
+            if (e.target !== e.currentTarget) return
+            const t = e.touches[0]
+            if (!t) return
+            backdropTouchStart.current = { x: t.clientX, y: t.clientY }
+          }}
+          onTouchEnd={(e) => {
+            if (e.target !== e.currentTarget) return
+            const start = backdropTouchStart.current
+            backdropTouchStart.current = null
+            if (!start) return
+            const t = e.changedTouches[0]
+            if (!t) return
+            const dx = t.clientX - start.x
+            const dy = t.clientY - start.y
+            if (dx > CLOSE_SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.1) close()
+          }}
           style={{ pointerEvents: isOpen ? 'auto' : 'none' }}
         />
 
@@ -236,7 +327,7 @@ export default function WattaRightNavDrawer() {
           aria-modal="true"
           aria-label={nav.bottomNavAria}
           className={cn(
-            'absolute right-0 top-0 flex h-[100dvh] w-[min(100vw-0.75rem,23.5rem)] max-w-[min(100vw-0.75rem,23.5rem)] flex-col overflow-hidden rounded-l-[1.75rem] border-l border-[#145142]/12 bg-white pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] shadow-[-16px_0_48px_rgba(20,81,66,0.12),-4px_0_24px_rgba(0,0,0,0.06)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+            'absolute right-0 top-0 flex h-[100dvh] w-[min(100vw-0.75rem,23.5rem)] max-w-[min(100vw-0.75rem,23.5rem)] flex-col overflow-hidden rounded-l-[1.75rem] border-l border-[#145142]/10 bg-white pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] shadow-[-6px_0_28px_rgba(20,81,66,0.06),-2px_0_12px_rgba(0,0,0,0.05)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
             isOpen ? 'translate-x-0' : 'translate-x-full',
           )}
           style={{ pointerEvents: isOpen ? 'auto' : 'none' }}
@@ -244,10 +335,10 @@ export default function WattaRightNavDrawer() {
           {/* Шапка — світлий м’ятний градієнт */}
           <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#f0faf6] via-[#ffffff] to-[#e8f4ef] px-4 pb-2 pt-4">
             <div
-              className="pointer-events-none absolute inset-0 opacity-[0.35]"
+              className="pointer-events-none absolute inset-0 opacity-[0.22]"
               style={{
-                backgroundImage: `radial-gradient(ellipse 120% 80% at 100% 0%, rgba(20, 81, 66, 0.08), transparent 55%),
-                  radial-gradient(ellipse 80% 60% at 0% 100%, rgba(255, 107, 53, 0.06), transparent 50%)`,
+                backgroundImage: `radial-gradient(ellipse 120% 80% at 100% 0%, rgba(20, 81, 66, 0.05), transparent 55%),
+                  radial-gradient(ellipse 80% 60% at 0% 100%, rgba(255, 107, 53, 0.05), transparent 50%)`,
               }}
               aria-hidden
             />
@@ -264,12 +355,11 @@ export default function WattaRightNavDrawer() {
                 </div>
                 <div className="min-w-0">
                   <p
-                    className="font-serif text-xl font-bold leading-[1.1] tracking-tight text-[#0f241e]"
+                    className="font-serif text-[clamp(1.05rem,4.2vw,1.25rem)] font-bold leading-tight tracking-tight text-[#0f241e]"
                     style={{ fontFamily: 'var(--font-brand-playfair), Georgia, serif' }}
                   >
-                    Watta
+                    Watta Sushi
                   </p>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#ff6b35]">Sushi</p>
                   <p className="mt-1 max-w-[13rem] text-[11px] font-medium leading-snug text-[#145142]/75">
                     {nav.drawerBrandLine}
                   </p>
@@ -311,6 +401,19 @@ export default function WattaRightNavDrawer() {
               className="relative flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overscroll-contain px-3 pb-3 pt-1"
               aria-label={nav.bottomNavAria}
             >
+              <div className="relative z-[2] mb-3 min-[1025px]:hidden">
+                <p className="mb-2 px-1 text-[9px] font-black uppercase tracking-[0.35em] text-[#145142]/50">
+                  {nav.drawerLocationTitle}
+                </p>
+                <div className="rounded-2xl border border-[#145142]/10 bg-white/95 p-2.5 shadow-sm">
+                  <CountryCitySelector
+                    onCityChange={(cityId) => {
+                      cityChangeHandlerRef.current?.(cityId)
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="mb-3 flex items-center justify-between gap-2 px-1">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#145142]/20 to-transparent" />
                 <span className="shrink-0 px-2 text-[9px] font-black uppercase tracking-[0.42em] text-[#145142]/55">
@@ -457,6 +560,8 @@ export default function WattaRightNavDrawer() {
               </p>
             </div>
           </div>
+
+          <DrawerLeftEdgeCloseSwipe onClose={close} active={isOpen} />
         </aside>
       </div>
     </>

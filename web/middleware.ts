@@ -36,6 +36,12 @@ function favCookieHeader(ids: Set<number>): string {
   return `${FAV_COOKIE}=${payload}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly`
 }
 
+/** Узгоджено з API: обране лише з Bearer JWT (мок не валідує підпис). */
+function hasBearerAuth(request: NextRequest): boolean {
+  const a = request.headers.get('authorization')?.trim()
+  return Boolean(a?.startsWith('Bearer ') && a.length > 'Bearer '.length)
+}
+
 /**
  * Відповіді збігаються з Express-роутами (Prisma JSON), див. backend/routes/*.routes.ts
  */
@@ -133,8 +139,7 @@ export async function middleware(request: NextRequest) {
     }
 
     if (sub === 'favorites/toggle') {
-      const userId = Number(request.headers.get('x-user-id'))
-      if (!userId) {
+      if (!hasBearerAuth(request)) {
         return NextResponse.json({ message: 'Нужна авторизация' }, { status: 401 })
       }
       let body: { productId?: number } = {}
@@ -235,13 +240,11 @@ export async function middleware(request: NextRequest) {
     case 'banners':
       return NextResponse.json(mockBanners)
     case 'favorites': {
-      const userId = Number(request.headers.get('x-user-id'))
-      if (!userId) return NextResponse.json([])
+      if (!hasBearerAuth(request)) return NextResponse.json([])
       return NextResponse.json(Array.from(parseFavCookie(request)))
     }
     case 'favorites/list': {
-      const userId = Number(request.headers.get('x-user-id'))
-      if (!userId) {
+      if (!hasBearerAuth(request)) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
       }
       return NextResponse.json(productsForFavoriteList(Array.from(parseFavCookie(request))))

@@ -1,6 +1,15 @@
 'use client'
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react'
 
 export type RightNavDrawerContextValue = {
   open: () => void
@@ -9,6 +18,10 @@ export type RightNavDrawerContextValue = {
   isOpen: boolean
   /** Drawer is available (non-auth public shell). */
   enabled: boolean
+  /**
+   * Хедер записує сюди onCityChange зі сторінки — drawer викликає при виборі міста в панелі.
+   */
+  cityChangeHandlerRef: MutableRefObject<((cityId: number) => void) | null>
 }
 
 const RightNavDrawerContext = createContext<RightNavDrawerContextValue | null>(null)
@@ -21,6 +34,7 @@ export function RightNavDrawerProvider({
   children: React.ReactNode
 }) {
   const [isOpen, setOpen] = useState(false)
+  const cityChangeHandlerRef = useRef<((cityId: number) => void) | null>(null)
 
   const open = useCallback(() => {
     if (enabled) setOpen(true)
@@ -44,6 +58,7 @@ export function RightNavDrawerProvider({
       toggle,
       isOpen: enabled && isOpen,
       enabled,
+      cityChangeHandlerRef,
     }),
     [enabled, isOpen, open, close, toggle]
   )

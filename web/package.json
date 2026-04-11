@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
+    "dev:https": "next dev --experimental-https -H 0.0.0.0 -p 3000",
     "dev:safe": "node ../scripts/kill-port.cjs 3000 && rm -rf .next node_modules/.cache && WATCHPACK_POLLING=true next dev -H 0.0.0.0 -p 3000",
+    "dev:safe:https": "node ../scripts/kill-port.cjs 3000 && rm -rf .next node_modules/.cache && WATCHPACK_POLLING=true next dev --experimental-https -H 0.0.0.0 -p 3000",
     "dev:lan": "next dev -H 0.0.0.0 -p 3000",
     "dev:render": "node ../scripts/next-dev-render.cjs",
     "dev:render:lan": "node ../scripts/next-dev-render.cjs",

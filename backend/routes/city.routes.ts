@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -62,7 +63,7 @@ router.get('/country/:countryId', async (req, res) => {
 });
 
 // Создать город
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', checkAdmin, async (req: Request, res: Response) => {
   try {
     const {
       name,
@@ -141,7 +142,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Обновить город
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const {
@@ -213,7 +214,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Удалить город
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -107,7 +108,7 @@ router.get('/:id', async (req: any, res: any) => {
   }
 });
 
-router.post('/', uploadNews, async (req: any, res: any) => {
+router.post('/', checkAdmin, uploadNews, async (req: any, res: any) => {
   try {
     const { title, description, content, isHit } = req.body;
     const files = req.files as { image?: Express.Multer.File[]; images?: Express.Multer.File[] } | undefined;
@@ -137,7 +138,7 @@ router.post('/', uploadNews, async (req: any, res: any) => {
   }
 });
 
-router.put('/:id', uploadNews, async (req: any, res: any) => {
+router.put('/:id', checkAdmin, uploadNews, async (req: any, res: any) => {
   try {
     const id = Number(req.params.id);
     const { title, description, content, isHit } = req.body;
@@ -169,7 +170,7 @@ router.put('/:id', uploadNews, async (req: any, res: any) => {
   }
 });
 
-router.delete('/:id', async (req: any, res: any) => {
+router.delete('/:id', checkAdmin, async (req: any, res: any) => {
   try {
     await prisma.promo.delete({ where: { id: Number(req.params.id) } });
     res.json({ success: true });

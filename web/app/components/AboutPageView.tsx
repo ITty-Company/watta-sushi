@@ -241,13 +241,9 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
         </header>
       ) : null}
 
-      {/* Кінематографічний герой (зелений бренд); на /about — зазор і скруглення, щоб не зливається з білою шапкою */}
+      {/* Кінематографічний герой: одразу під глобальною шапкою + категоріями (без зазору) */}
       <section
-        className={cn(
-          'relative overflow-hidden text-white',
-          !embedded &&
-            'mt-6 rounded-t-[1.25rem] shadow-[0_-1px_0_rgba(0,0,0,0.06)] sm:mt-8 sm:rounded-t-[1.5rem]',
-        )}
+        className={cn('relative overflow-hidden text-white')}
         style={{ background: HERO_BG }}
         aria-labelledby="about-dark-hero-title"
       >

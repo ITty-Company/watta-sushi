@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendSms } from '../utils/smsSender';
+import { getJwtSecret } from '../lib/jwtSecret';
 
 const router = Router();
 const prisma = new PrismaClient();
-const SECRET_KEY = process.env.JWT_SECRET || 'secret-key';
 
 // 1. РЕГИСТРАЦИЯ
 router.post('/register', async (req: any, res: any) => {
@@ -115,7 +115,7 @@ router.post('/verify', async (req: any, res: any) => {
     
     // Если уже подтвержден - просто отдаем токен (чтобы не было ошибки)
     if (user.isPhoneVerified) {
-        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '30d' });
+        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, getJwtSecret(), { expiresIn: '30d' });
         return res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
     }
 
@@ -135,7 +135,7 @@ router.post('/verify', async (req: any, res: any) => {
     // Генерируем токен
     const token = jwt.sign(
         { userId: updatedUser.id, email: updatedUser.email, role: updatedUser.role }, 
-        SECRET_KEY, 
+        getJwtSecret(), 
         { expiresIn: '30d' }
     );
 
@@ -174,7 +174,7 @@ router.post('/login', async (req: any, res: any) => {
 
     const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role }, 
-        SECRET_KEY, 
+        getJwtSecret(), 
         { expiresIn: '30d' }
     );
     

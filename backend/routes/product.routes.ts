@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -45,7 +46,7 @@ router.get('/categories', async (req, res) => {
 });
 
 // 2.1. Создать категорию
-router.post('/categories', async (req: Request, res: Response) => {
+router.post('/categories', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations } = req.body;
     
@@ -93,7 +94,7 @@ router.post('/categories', async (req: Request, res: Response) => {
 });
 
 // 2.2. Обновить категорию
-router.put('/categories/:id', async (req: Request, res: Response) => {
+router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations } = req.body;
@@ -113,7 +114,7 @@ router.put('/categories/:id', async (req: Request, res: Response) => {
 });
 
 // 2.3. Удалить категорию
-router.delete('/categories/:id', async (req: Request, res: Response) => {
+router.delete('/categories/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     const productsCount = await prisma.product.count({ where: { categoryId: id } });
@@ -131,7 +132,7 @@ router.delete('/categories/:id', async (req: Request, res: Response) => {
 });
 
 // 3. Создать товар
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { 
       name_ru, name_ua, name_en, name_nl, 
@@ -191,7 +192,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // 4. Обновить товар
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { 
@@ -257,7 +258,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // 5. Удалить товар
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.product.delete({

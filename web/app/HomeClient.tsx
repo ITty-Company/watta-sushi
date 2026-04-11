@@ -24,6 +24,20 @@ export default function HomeClient() {
     setClientReady(true)
   }, [])
 
+  /** Під час білого сплешу — не показувати глобальні FAB (Instagram тощо) з AppClient */
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    if (showBootSplash) {
+      root.setAttribute('data-watta-boot-splash', '1')
+    } else {
+      root.removeAttribute('data-watta-boot-splash')
+    }
+    return () => {
+      root.removeAttribute('data-watta-boot-splash')
+    }
+  }, [showBootSplash])
+
   /** Полоса до 100%; після reload на проді даємо мінімальний час, щоб сплеш завжди був помітний */
   useEffect(() => {
     if (!showBootSplash) return

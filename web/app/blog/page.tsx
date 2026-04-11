@@ -34,8 +34,7 @@ export default async function BlogPage() {
 
   return (
     <main
-      className="watta-public-page-shell flex min-h-screen flex-1 flex-col px-4 py-12 sm:py-16"
-      style={{ backgroundColor: '#f5f5f7' }}
+      className="watta-public-page-shell flex min-h-screen flex-1 flex-col bg-[#f2f5f3] px-4 pb-12 pt-2 sm:px-6 sm:pb-16 sm:pt-3"
     >
       <BlogIndexClient posts={posts} />
     </main>

@@ -43,8 +43,12 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  /** iOS Safari: зона над шапкой не зелёная (раніше брало theme з manifest). */
-  themeColor: '#ffffff',
+  /** Світлий chrome зверху/знизу (Safari, Android), навіть при системній темній темі */
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#ffffff' },
+  ],
+  colorScheme: 'only light',
 };
 
 export default function RootLayout({
@@ -70,7 +74,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang="ru" className="watta-light-chrome" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <DevNoiseCleanup />
         <script

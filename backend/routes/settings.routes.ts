@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { checkAdmin } from '../authMiddleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -29,8 +30,8 @@ router.get('/', async (req, res) => {
   }
 })
 
-// Сохранить настройки
-router.post('/', async (req, res) => {
+// Сохранить настройки (только ADMIN)
+router.post('/', checkAdmin, async (req, res) => {
   try {
     const b = req.body || {}
     const bannerInterval =

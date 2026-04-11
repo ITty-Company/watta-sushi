@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useEffect, useRef, useCallback } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getMenuScrollParent } from '@/lib/menuScroll'
 import { useLanguage } from '@/app/context/LanguageContext'
@@ -240,13 +241,86 @@ const STYLES = `
 /* Підзаголовок під «Готові замовити?» — звичайний текст, без «картки» / цитати */
 .footer-ready-hint {
   margin: 0.65rem auto 0;
-  max-width: 34rem;
-  padding: 0 0.75rem;
+  width: 100%;
+  max-width: min(42rem, 100%);
+  padding: 0;
+  box-sizing: border-box;
   text-align: center;
-  font-size: clamp(0.875rem, 2.35vw, 1rem);
+  font-size: clamp(0.8125rem, 2.15vw, 1rem);
   font-weight: 500;
-  line-height: 1.55;
+  line-height: 1.5;
   color: rgba(32, 52, 46, 0.82);
+  text-wrap: balance;
+}
+
+.footer-ready-hint-line {
+  display: block;
+}
+
+.footer-ready-hint-line + .footer-ready-hint-line {
+  margin-top: 0.28em;
+}
+
+/* Декоративна підказка «гортайте вліво-вправо» над стрічками */
+.footer-ready-swipe-cue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  margin-bottom: 0.1rem;
+  color: rgba(20, 81, 66, 0.52);
+  pointer-events: none;
+}
+
+.footer-ready-swipe-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+.footer-ready-swipe-icon--l {
+  animation: footer-ready-swipe-l 2.1s ease-in-out infinite;
+}
+
+.footer-ready-swipe-icon--r {
+  animation: footer-ready-swipe-r 2.1s ease-in-out infinite;
+}
+
+.footer-ready-swipe-track {
+  width: 1.75rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 81, 66, 0.12),
+    rgba(20, 81, 66, 0.32),
+    rgba(20, 81, 66, 0.12)
+  );
+}
+
+@keyframes footer-ready-swipe-l {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateX(-5px);
+    opacity: 1;
+  }
+}
+
+@keyframes footer-ready-swipe-r {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateX(5px);
+    opacity: 1;
+  }
 }
 
 .footer-promo-carousel-wrap {
@@ -943,7 +1017,12 @@ const STYLES = `
 
 .cinematic-footer-wrap--compact .footer-ready-hint {
   margin-top: 0.45rem;
-  margin-bottom: clamp(0.35rem, 1.2vw, 0.75rem);
+  margin-bottom: 0.2rem;
+}
+
+.cinematic-footer-wrap--compact .footer-ready-swipe-cue {
+  margin-top: 0.35rem;
+  margin-bottom: clamp(0.25rem, 1vw, 0.55rem);
 }
 
 .footer-catalog-carousel {
@@ -1363,14 +1442,28 @@ export function CinematicFooter({
                   isCompact ? 'gap-2.5 sm:gap-3' : 'gap-8',
                 )}
               >
-                <div className="footer-ready-block flex flex-col items-center px-2">
+                <div className="footer-ready-block flex flex-col items-center px-1 sm:px-2">
                   <div className="footer-ready-ornament" aria-hidden>
                     <span className="footer-hero-line-cap" />
                     <div className="footer-heading-accent--hero" />
                     <span className="footer-hero-line-cap" />
                   </div>
                   <h2 className="footer-ready-title text-center">{cf.readyTitle}</h2>
-                  <p className="footer-ready-hint font-sans">{cf.promoPickHint}</p>
+                  <p className="footer-ready-hint font-sans">
+                    {cf.promoPickHint
+                      .split('\n')
+                      .filter(Boolean)
+                      .map((line, i) => (
+                        <span key={i} className="footer-ready-hint-line">
+                          {line}
+                        </span>
+                      ))}
+                  </p>
+                  <div className="footer-ready-swipe-cue" aria-hidden>
+                    <ChevronLeft className="footer-ready-swipe-icon footer-ready-swipe-icon--l" strokeWidth={2.25} />
+                    <span className="footer-ready-swipe-track" />
+                    <ChevronRight className="footer-ready-swipe-icon footer-ready-swipe-icon--r" strokeWidth={2.25} />
+                  </div>
                 </div>
 
                 <div

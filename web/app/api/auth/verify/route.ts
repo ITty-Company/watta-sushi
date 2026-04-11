@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendBaseUrl } from '@/lib/backendBaseUrl'
+import {
+  backendBaseUrl,
+  backendUnreachableMessage,
+  isBackendConnectionError,
+} from '@/lib/backendBaseUrl'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,12 +42,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data)
     } catch (fetchError: unknown) {
       clearTimeout(timeoutId)
-      const err = fetchError as { name?: string; code?: string; message?: string }
+      const err = fetchError as { name?: string }
       if (err.name === 'AbortError') {
         return NextResponse.json({ message: 'Таймаут подключения к серверу.' }, { status: 504 })
       }
-      if (err.code === 'ECONNREFUSED' || String(err.message || '').includes('fetch failed')) {
-        return NextResponse.json({ message: 'Не удалось подключиться к серверу.' }, { status: 503 })
+      if (isBackendConnectionError(fetchError)) {
+        return NextResponse.json({ message: backendUnreachableMessage(apiBase) }, { status: 503 })
       }
       throw fetchError
     }

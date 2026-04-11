@@ -57,6 +57,15 @@ if (!process.env.DATABASE_URL?.trim()) {
 }
 console.log('✅ DATABASE_URL найден');
 
+const isProd = process.env.NODE_ENV === 'production';
+if (isProd && !process.env.JWT_SECRET?.trim()) {
+  console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: в production нужен JWT_SECRET');
+  process.exit(1);
+}
+if (isProd) {
+  console.log('✅ JWT_SECRET задан');
+}
+
 // --- ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ---
 const app = express();
 app.set('trust proxy', 1);
@@ -87,7 +96,6 @@ const whitelist = [
   ),
 ];
 
-const isProd = process.env.NODE_ENV === 'production';
 const corsOptions = isProd
   ? {
       origin(origin, callback) {
@@ -117,8 +125,9 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // --- 2. ПАРСИНГ И ЛОГИРОВАНИЕ ---
-app.use(express.json({ limit: '50mb' })); // Увеличенный лимит для загрузки картинок
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Великі файли — через multipart (multer) на відповідних роутах; JSON 50mb = легка DoS-мишень
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Логирование запросов
 app.use((req, res, next) => {

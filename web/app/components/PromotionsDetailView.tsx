@@ -28,6 +28,8 @@ interface OfferProduct {
 }
 
 interface PromotionsDetailViewProps {
+  /** Усередині MenuView / з глобальною шапкою — без власного плаваючого хедера */
+  embedded?: boolean
   id: number
   onBack: () => void
   onMenuClick: () => void
@@ -38,13 +40,14 @@ interface PromotionsDetailViewProps {
 }
 
 export default function PromotionsDetailView({
+  embedded = false,
   id,
   onBack,
   onMenuClick,
   onOpenPhone,
   onOpenNotifications,
   onOpenFavorites,
-  onOpenProfile
+  onOpenProfile,
 }: PromotionsDetailViewProps) {
   const { t, getLocalized, language } = useLanguage()
   const rightNavDrawer = useOptionalRightNavDrawer()
@@ -104,14 +107,18 @@ export default function PromotionsDetailView({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-24 px-4 text-[#145142] font-semibold">
+      <div
+        className={`flex items-center justify-center px-4 font-semibold text-[#145142] ${embedded ? 'min-h-[40vh] py-12' : 'min-h-screen pt-24'}`}
+      >
         {p.loading}
       </div>
     )
   }
   if (!promo || promo.error) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-24 px-4 text-gray-600">
+      <div
+        className={`flex items-center justify-center px-4 text-gray-600 ${embedded ? 'min-h-[40vh] py-12' : 'min-h-screen pt-24'}`}
+      >
         {p.notFound}
       </div>
     )
@@ -151,13 +158,35 @@ export default function PromotionsDetailView({
     [getLocalized, t.addToCart],
   )
 
+  const shellClass = embedded
+    ? 'relative w-full px-3 pb-12 pt-2 sm:px-4'
+    : 'menu-page-web relative min-h-screen px-3 pb-20 pt-[120px] sm:px-4'
+
   return (
-    <div className="menu-page-web relative min-h-screen pt-[120px] pb-20 px-3 sm:px-4"
-         style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.9)), url('/background.jpg')", backgroundRepeat: 'repeat', backgroundSize: '300px', backgroundAttachment: 'fixed' }}>
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-50"><LogoBackground /></div>
-      <Header />
-      
-      <div className="w-full max-w-[1200px] mx-auto mb-6 px-1 sm:px-2 flex justify-start relative z-20">
+    <div
+      className={shellClass}
+      style={
+        embedded
+          ? { backgroundColor: '#f5f5f7' }
+          : {
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.9)), url('/background.jpg')",
+              backgroundRepeat: 'repeat',
+              backgroundSize: '300px',
+              backgroundAttachment: 'fixed',
+            }
+      }
+    >
+      {!embedded ? (
+        <>
+          <div className="pointer-events-none absolute inset-0 z-0 opacity-50">
+            <LogoBackground />
+          </div>
+          <Header />
+        </>
+      ) : null}
+
+      <div className="relative z-20 mx-auto mb-6 flex w-full max-w-[1200px] justify-start px-1 sm:px-2">
          <button type="button" onClick={onBack} className="bg-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-[15px] flex items-center gap-2 text-[#145142] font-bold shadow-sm hover:bg-gray-50 transition text-sm sm:text-base">
            <ArrowLeft size={20} /> {t.auth.back}
          </button>

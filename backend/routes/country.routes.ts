@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
 });
 
 // Получить все страны (включая неактивные) - для админа
-router.get('/all', async (req, res) => {
+router.get('/all', checkAdmin, async (req, res) => {
   try {
     const countries = await prisma.country.findMany({
       include: {
@@ -70,7 +71,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Создать страну
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', checkAdmin, async (req: Request, res: Response) => {
   try {
     const body = req.body ?? {};
     const rawName = typeof body.name === 'string' ? body.name.trim() : '';
@@ -137,7 +138,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Обновить страну
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const body = req.body ?? {};
@@ -179,7 +180,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // Удалить страну
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 

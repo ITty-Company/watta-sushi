@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -102,7 +103,7 @@ router.get('/', async (req, res) => {
 });
 
 // 2. Получить все баннеры (включая неактивные) для админки
-router.get('/all', async (req, res) => {
+router.get('/all', checkAdmin, async (req, res) => {
   try {
     const banners = await prisma.banner.findMany({
       where: {
@@ -124,7 +125,7 @@ router.get('/all', async (req, res) => {
 });
 
 // 3. Создать баннер
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { 
       title_ru, title_ua, title_en, title_nl,
@@ -197,7 +198,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // 5. Удалить баннер
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     await prisma.banner.delete({

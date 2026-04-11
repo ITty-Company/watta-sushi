@@ -283,6 +283,8 @@ interface Translations {
     drawerExploreTitle: string
     /** Короткий підзаголовок бренду в шапці drawer */
     drawerBrandLine: string
+    /** Заголовок блоку вибору міста в правому drawer (мобільна навігація) */
+    drawerLocationTitle: string
   }
   /** Розширений підвал (білий фон, колонки) */
   siteFooter: {
@@ -538,6 +540,12 @@ interface Translations {
     labelPhone: string
     labelEmail: string
     notSpecified: string
+    /** Публічна /profile — герой і блок швидких дій */
+    publicHeroLead: string
+    publicHubTitle: string
+    publicOrdersCta: string
+    /** Підказка в боковій колонці вкладеного профілю (не плутати з publicOrdersCta) */
+    inAppNavHint: string
   }
   /** Публічна сторінка відгуків */
   reviewsPublic: {
@@ -1107,6 +1115,7 @@ const translations: Record<Language, Translations> = {
       closeNavDrawerAria: 'Закрити меню навігації',
       drawerExploreTitle: 'Сторінки сайту',
       drawerBrandLine: 'Доставка найсмачніших суші',
+      drawerLocationTitle: 'Ваше місто',
     },
     siteFooter: {
       navAria: 'Навігація в підвалі сайту',
@@ -1283,7 +1292,7 @@ const translations: Record<Language, Translations> = {
       itemsCount: 'страв',
       emptyCategoryTitle: 'Товарів у цій категорії поки немає',
       emptyCategoryDesc: 'Додайте товари через адмін-панель',
-      seeAll: 'Подивитися всі',
+      seeAll: 'Дивитися все',
       footerPromoSeeOffers: 'Усі акції та банери — нижче',
       footerPromoAriaRegion: 'Акції та спецпропозиції',
       welcomeBadgeAria: 'Вітання різними мовами та назва бренду',
@@ -1316,8 +1325,7 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Каталог страв',
       ctaOffers: 'Пропозиції',
       promoCarouselAria: 'Акційні пропозиції — гортайте вліво-вправо',
-      promoPickHint:
-        'Нижче — рекомендовані страви та акційні пропозиції з меню. Гортайте стрічки вліво-вправо; торкніться картки, щоб відкрити страву.',
+      promoPickHint: 'Нижче — рекомендовані страви та акційні пропозиції з меню.',
       promoBadge: 'Акція',
       prevPromo: 'Попередня',
       nextPromo: 'Наступна',
@@ -1413,6 +1421,11 @@ const translations: Record<Language, Translations> = {
       labelPhone: 'Телефон',
       labelEmail: 'Email',
       notSpecified: 'Не вказано',
+      publicHeroLead:
+        'Кухня знає вас у лице: замовлення, бонуси й обране — усе під рукою. Дерзко, по-шефськи, без зайвого шуму.',
+      publicHubTitle: 'Куди далі',
+      publicOrdersCta: 'Історія замовлень і бонуси — на головній, вкладка «Профіль»',
+      inAppNavHint: 'Розділи зліва на великому екрані; на телефоні — вкладки внизу.',
     },
     reviewsPublic: {
       title: 'Відгуки клієнтів',
@@ -1498,8 +1511,8 @@ const translations: Record<Language, Translations> = {
         'Ця сторінка пояснює, як Watta Sushi збирає, використовує та захищає ваші персональні дані під час відвідування сайту, оформлення замовлень і користування сервісом. Ми діємо відповідно до застосовного законодавства, зокрема GDPR (ЄС).',
       blocks: [
         {
-          title: 'Володілець даних',
-          body: 'Відповідальним за обробку персональних даних є Watta Sushi (оператор сервісу доставки). Контактні дані для питань щодо приватності — через розділ «Контакти» на сайті або електронну пошту, вказану там.',
+          title: 'Контролер персональних даних',
+          body: 'Контролером персональних даних є Watta Sushi (оператор сервісу доставки). Контактні дані для питань щодо приватності — через розділ «Контакти» на сайті або електронну пошту, вказану там.',
         },
         {
           title: 'Які дані ми обробляємо',
@@ -1882,6 +1895,7 @@ const translations: Record<Language, Translations> = {
       closeNavDrawerAria: 'Закрыть меню навигации',
       drawerExploreTitle: 'Страницы сайта',
       drawerBrandLine: 'Доставка самых вкусных суши',
+      drawerLocationTitle: 'Ваш город',
     },
     siteFooter: {
       navAria: 'Навигация в подвале сайта',
@@ -2091,8 +2105,7 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Каталог блюд',
       ctaOffers: 'Предложения',
       promoCarouselAria: 'Акции — листайте влево и вправо',
-      promoPickHint:
-        'Ниже — рекомендуемые блюда и акционные предложения из меню. Листайте ленты влево-вправо; нажмите на карточку, чтобы открыть блюдо.',
+      promoPickHint: 'Ниже — рекомендуемые блюда и акционные предложения из меню.',
       promoBadge: 'Акция',
       prevPromo: 'Назад',
       nextPromo: 'Вперёд',
@@ -2188,6 +2201,11 @@ const translations: Record<Language, Translations> = {
       labelPhone: 'Телефон',
       labelEmail: 'Email',
       notSpecified: 'Не указано',
+      publicHeroLead:
+        'Кухня знает вас в лицо: заказы, бонусы и избранное — всё под рукой. По-шефски, без лишнего шума.',
+      publicHubTitle: 'Куда дальше',
+      publicOrdersCta: 'История заказов и бонусы — на главной, вкладка «Профиль»',
+      inAppNavHint: 'Разделы слева на большом экране; на телефоне — вкладки внизу.',
     },
     reviewsPublic: {
       title: 'Отзывы клиентов',
@@ -2657,6 +2675,7 @@ const translations: Record<Language, Translations> = {
       closeNavDrawerAria: 'Close navigation menu',
       drawerExploreTitle: 'Site pages',
       drawerBrandLine: 'Delivery of the tastiest sushi',
+      drawerLocationTitle: 'Your city',
     },
     siteFooter: {
       navAria: 'Site footer navigation',
@@ -2865,8 +2884,7 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Full catalog',
       ctaOffers: 'Offers',
       promoCarouselAria: 'Swipe or use arrows to browse offers',
-      promoPickHint:
-        'Below — recommended dishes and special offers from the menu. Swipe the rows left and right; tap a card to open the dish.',
+      promoPickHint: 'Below — recommended dishes and special offers from the menu.',
       promoBadge: 'Offer',
       prevPromo: 'Previous',
       nextPromo: 'Next',
@@ -2962,6 +2980,11 @@ const translations: Record<Language, Translations> = {
       labelPhone: 'Phone',
       labelEmail: 'Email',
       notSpecified: 'Not set',
+      publicHeroLead:
+        'The kitchen knows you: orders, bonuses, favourites — all in one place. Bold, chef-style, no noise.',
+      publicHubTitle: 'Where next',
+      publicOrdersCta: 'Order history & bonuses — open home, then Profile tab',
+      inAppNavHint: 'Sidebar on desktop; bottom tabs on your phone.',
     },
     reviewsPublic: {
       title: 'Customer reviews',
@@ -3431,6 +3454,7 @@ const translations: Record<Language, Translations> = {
       closeNavDrawerAria: 'Navigatiemenu sluiten',
       drawerExploreTitle: 'Pagina’s',
       drawerBrandLine: 'Bezorging van de lekkerste sushi',
+      drawerLocationTitle: 'Jouw stad',
     },
     siteFooter: {
       navAria: 'Voeternavigatie',
@@ -3639,8 +3663,7 @@ const translations: Record<Language, Translations> = {
       ctaCatalog: 'Volledige catalogus',
       ctaOffers: 'Aanbiedingen',
       promoCarouselAria: 'Veeg of gebruik pijlen voor acties',
-      promoPickHint:
-        'Hieronder — aanbevolen gerechten en acties uit het menu. Veeg de rijen naar links en rechts; tik op een kaart om het gerecht te openen.',
+      promoPickHint: 'Hieronder — aanbevolen gerechten en acties uit het menu.',
       promoBadge: 'Actie',
       prevPromo: 'Vorige',
       nextPromo: 'Volgende',
@@ -3736,6 +3759,11 @@ const translations: Record<Language, Translations> = {
       labelPhone: 'Telefoon',
       labelEmail: 'E-mail',
       notSpecified: 'Niet ingevuld',
+      publicHeroLead:
+        'De keuken kent je: bestellingen, bonussen, favorieten — alles binnen handbereik. Strak, chef-niveau, zonder ruis.',
+      publicHubTitle: 'Waarheen',
+      publicOrdersCta: 'Bestelgeschiedenis & bonussen — startpagina, tabblad Profiel',
+      inAppNavHint: 'Zijbalk op desktop; onderaan tabbladen op je telefoon.',
     },
     reviewsPublic: {
       title: 'Klantreviews',

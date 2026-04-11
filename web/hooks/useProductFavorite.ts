@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { readFavoriteIds, writeFavoriteIds } from '@/lib/favoritesStorage'
 
 export function useProductFavorite(productId: number) {
@@ -36,14 +37,14 @@ export function useProductFavorite(productId: number) {
 
       const userStr =
         typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
-      if (userStr) {
+      const auth = getBearerAuthHeaders()
+      if (userStr && Object.keys(auth as Record<string, string>).length > 0) {
         try {
-          const user = JSON.parse(userStr)
           await fetch('/api/favorites/toggle', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-user-id': String(user.id),
+              ...auth,
             },
             body: JSON.stringify({ productId }),
           })
