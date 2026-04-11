@@ -346,7 +346,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
         aria-haspopup="dialog"
         aria-label={lp.ariaOpen}
       >
-        <MapPin size={17} className="shrink-0 text-[#145142]" strokeWidth={2.25} />
+        <MapPin size={17} className="location-picker-trigger__pin shrink-0 text-[#145142]" strokeWidth={2.25} />
         <span className="location-picker-trigger__label">{displayText}</span>
         <ChevronDown size={15} className="location-picker-trigger__chev" strokeWidth={2.5} />
       </button>
@@ -355,26 +355,25 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
         mounted &&
         createPortal(
           <div
-            className="location-picker-backdrop fixed inset-0 z-[999999] flex items-center justify-center overflow-auto p-4 sm:p-5"
+            className="location-picker-backdrop location-picker-backdrop--mobile-tight fixed inset-0 z-[999999] flex items-center justify-center overflow-auto p-2.5 sm:p-5"
             style={{ isolation: 'isolate' }}
             onClick={handleClose}
             role="presentation"
           >
             <div
               ref={modalRef}
-              className="location-picker-modal location-picker-modal--glass relative mx-auto my-auto flex w-full max-w-[min(720px,100%)] flex-col overflow-visible rounded-[clamp(20px,4vw,32px)]"
-              style={{ maxHeight: 'min(90vh,880px)' }}
+              className="location-picker-modal location-picker-modal--glass location-picker-modal--mobile-compact relative mx-auto my-auto flex w-full max-h-[min(90vh,880px)] max-w-[min(calc(100vw-1.25rem),26rem)] flex-col overflow-visible rounded-[18px] max-sm:max-h-[min(76dvh,28rem)] sm:max-w-[min(720px,100%)] sm:rounded-[clamp(20px,4vw,32px)]"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
               aria-labelledby="location-picker-title"
             >
               <div className="location-picker-modal__ambient" aria-hidden />
-              <div className="location-picker-modal__header relative flex items-end justify-between gap-4 overflow-visible rounded-t-[clamp(20px,4vw,32px)] px-5 pb-5 pt-8 sm:px-8 sm:pb-7 sm:pt-10">
+              <div className="location-picker-modal__header relative flex items-end justify-between gap-2 overflow-visible rounded-t-[18px] px-3 pb-0.5 pt-2.5 sm:gap-4 sm:rounded-t-[clamp(20px,4vw,32px)] sm:px-8 sm:pb-2 sm:pt-5">
                 <div className="location-picker-modal__header-shine pointer-events-none absolute inset-0" aria-hidden />
-                <div className="relative z-[1] flex min-w-0 flex-1 items-end gap-3 sm:gap-4">
+                <div className="relative z-[1] flex min-w-0 flex-1 items-end gap-2 sm:gap-4">
                   <div
-                    className="location-picker-modal__mascot relative z-[1] -mt-14 mb-0 flex h-[138px] w-[120px] shrink-0 items-end justify-center sm:-mt-[4.25rem] sm:h-[168px] sm:w-[148px]"
+                    className="location-picker-modal__mascot relative z-[1] -mt-7 mb-0 flex h-[84px] w-[72px] shrink-0 translate-y-1 items-end justify-center sm:-mt-14 sm:h-[168px] sm:w-[148px] sm:translate-y-2"
                     aria-hidden
                   >
                     <span
@@ -387,23 +386,23 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                     <p className="location-picker-modal__kicker m-0 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#145142]/75 sm:text-[11px]">
                       Watta Sushi
                     </p>
-                    <h2 id="location-picker-title" className="location-picker-modal__title m-0 mt-1">
+                    <h2 id="location-picker-title" className="location-picker-modal__title m-0 mt-0.5 sm:mt-1">
                       {lp.title}
                     </h2>
-                    <p className="location-picker-modal__subtitle m-0 mt-2 max-w-[42ch]">{lp.subtitle}</p>
+                    <p className="location-picker-modal__subtitle m-0 mt-1 max-w-[42ch] sm:mt-2">{lp.subtitle}</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="location-picker-close relative z-[1] h-11 w-11 shrink-0"
+                  className="location-picker-close relative z-[1] h-9 w-9 shrink-0 sm:h-11 sm:w-11"
                   onClick={handleClose}
                   aria-label={lp.ariaClose}
                 >
-                  <X size={20} strokeWidth={2.25} />
+                  <X size={18} strokeWidth={2.25} />
                 </button>
               </div>
 
-              <div className="location-picker-modal__body min-h-[200px] flex-1 overflow-y-auto overflow-x-hidden rounded-b-[clamp(20px,4vw,32px)] px-5 py-5 sm:px-8 sm:py-7">
+              <div className="location-picker-modal__body min-h-[120px] flex-1 overflow-y-auto overflow-x-hidden rounded-b-[18px] px-3 pb-3 pt-0.5 sm:min-h-[200px] sm:rounded-b-[clamp(20px,4vw,32px)] sm:px-8 sm:pb-7 sm:pt-2">
                 {catalogRefreshing && (
                   <div className="location-picker-modal__refresh mb-4 flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-semibold">
                     <span
@@ -430,12 +429,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                       </div>
                     </div>
                   ) : (
-                    <div
-                      className="location-picker-grid grid gap-2.5 sm:gap-3"
-                      style={{
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
-                      }}
-                    >
+                    <div className="location-picker-grid location-picker-grid--countries grid gap-2 sm:gap-3">
                       {filteredCountries.map((country, i) => {
                         const isSelected = selectedCountry?.id === country.id
                         return (
@@ -483,12 +477,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                         )}
                       </div>
                     ) : (
-                      <div
-                        className="location-picker-grid grid gap-2.5 sm:gap-3"
-                        style={{
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
-                        }}
-                      >
+                      <div className="location-picker-grid location-picker-grid--cities grid gap-2 sm:gap-3">
                         {filteredCities.map((city, i) => {
                           const isSelected = selectedCity?.id === city.id
                           return (

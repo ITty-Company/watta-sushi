@@ -7,6 +7,7 @@ import { ArrowLeft, Heart } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
+import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { mergeServerFavoritesIntoLocal, readFavoriteIds } from '@/lib/favoritesStorage'
 import { WattaMenuProductCard, type WattaMenuProductCardModel } from '../components/WattaMenuProductCard'
 
@@ -42,11 +43,11 @@ export default function FavoritesPage() {
       await mergeServerFavoritesIntoLocal()
 
       const userStr = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
-      if (userStr) {
+      const listAuth = getBearerAuthHeaders()
+      if (userStr && Object.keys(listAuth as Record<string, string>).length > 0) {
         try {
-          const user = JSON.parse(userStr)
           const res = await fetch('/api/favorites/list', {
-            headers: { 'x-user-id': String(user.id) },
+            headers: listAuth,
           })
           if (res.ok) {
             const data = await res.json()

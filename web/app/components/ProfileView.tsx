@@ -8,11 +8,15 @@ import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import ClientProfileOrders from './profile/ClientProfileOrders'
 import {
   Phone, Bell, Heart, ShoppingBag, User, Menu,
-  MapPin, Clock, Settings, LogOut, Shield, Mail, X
+  MapPin, Clock, Settings, LogOut, Shield, Mail, X, Sparkles
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import Footer from './Footer'
 import toast from 'react-hot-toast'
+import { getBearerAuthHeaders } from '@/lib/authHeaders'
+
+const HERO_BG =
+  'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
 
 // --- ТИПЫ ДАННЫХ ---
 interface OrderItem {
@@ -211,10 +215,10 @@ export default function ProfileView({
     setFavLoading(true)
     try {
       const userStr = localStorage.getItem('currentUser')
-      if (userStr) {
-        const user = JSON.parse(userStr)
+      const auth = getBearerAuthHeaders()
+      if (userStr && Object.keys(auth as Record<string, string>).length > 0) {
         const res = await fetch('/api/favorites/list', {
-          headers: { 'x-user-id': user.id.toString() }
+          headers: auth,
         })
         if (res.ok) {
           setFavoriteItems(await res.json())
@@ -238,13 +242,17 @@ export default function ProfileView({
     try {
       const userStr = localStorage.getItem('currentUser')
       if (!userStr) return
-      const user = JSON.parse(userStr)
+      const auth = getBearerAuthHeaders()
+      if (Object.keys(auth as Record<string, string>).length === 0) {
+        toast.error(t.clientProfile.redirectLogin || 'Увійдіть знову')
+        return
+      }
 
       await fetch('/api/favorites/toggle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id.toString()
+          ...auth,
         },
         body: JSON.stringify({ productId })
       })
@@ -274,6 +282,9 @@ export default function ProfileView({
       </div>
     )
   }
+
+  const displayName = (user?.name || t.clientProfile.notSpecified).trim() || t.clientProfile.notSpecified
+  const headingName = language === 'en' ? displayName.toLowerCase() : displayName
 
   const headerIconBtn =
     'flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 hover:text-[#145142] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#145142]/40'
@@ -331,10 +342,73 @@ export default function ProfileView({
   )
 
   return (
-    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] font-sans pt-[72px] sm:pt-[76px] pb-10 lg:pb-16 overflow-x-hidden bg-[#f4f6f5]">
+    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#f2f5f3] pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
       <LogoBackground />
       <div className="relative z-10">
         <Header />
+
+      <div className="mx-auto max-w-[1600px] px-3 pb-2 sm:px-4 sm:pb-3">
+        <section
+          className="relative mt-1 overflow-hidden rounded-2xl text-white shadow-[0_20px_60px_rgba(20,81,66,0.22)] sm:mt-2 sm:rounded-[1.75rem]"
+          style={{ background: HERO_BG }}
+          aria-labelledby="inapp-profile-hero-title"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.35]"
+            style={{
+              background: `repeating-linear-gradient(
+                -32deg,
+                transparent,
+                transparent 14px,
+                rgba(255, 255, 255, 0.04) 14px,
+                rgba(255, 255, 255, 0.04) 15px
+              )`,
+            }}
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -right-[12%] top-1/2 h-[min(72vw,320px)] w-[min(72vw,320px)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,92,0,0.14)_0%,transparent_68%)]"
+            aria-hidden
+          />
+          <div className="relative z-[1] px-4 py-7 sm:px-7 sm:py-9 lg:px-10 lg:py-10">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90 backdrop-blur-md sm:text-[11px]">
+              <Sparkles className="h-3.5 w-3.5 text-[#ffb38a]" strokeWidth={2.4} aria-hidden />
+              {t.clientProfile.brandSubtitle}
+            </p>
+            <h1
+              id="inapp-profile-hero-title"
+              className="font-black leading-[0.98] tracking-tight text-white"
+              style={{
+                fontSize: 'clamp(1.85rem, 6.5vw, 3.25rem)',
+                fontFamily: 'var(--font-inter, ui-sans-serif), system-ui, sans-serif',
+              }}
+            >
+              {headingName}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/82 sm:text-base lg:text-lg">
+              {t.clientProfile.publicHeroLead}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2 sm:gap-2.5">
+              {user?.email ? (
+                <span className="inline-flex max-w-full items-center gap-2 truncate rounded-2xl border border-white/20 bg-black/10 px-3 py-2 text-[11px] font-semibold text-white/95 backdrop-blur-md sm:text-sm">
+                  <span className="shrink-0 text-white/60">{t.clientProfile.labelEmail}:</span>
+                  <span className="min-w-0 truncate">{user.email}</span>
+                </span>
+              ) : null}
+              {user?.phone ? (
+                <span className="inline-flex max-w-full items-center gap-2 truncate rounded-2xl border border-white/20 bg-black/10 px-3 py-2 text-[11px] font-semibold text-white/95 backdrop-blur-md sm:text-sm">
+                  <span className="shrink-0 text-white/60">{t.clientProfile.labelPhone}:</span>
+                  <span className="min-w-0 truncate">{user.phone}</span>
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300/35 bg-emerald-950/25 px-3 py-2 text-[11px] font-bold text-emerald-50 backdrop-blur-md sm:text-sm">
+                {t.clientProfile.bonuses}:{' '}
+                <span className="tabular-nums text-white">{bonusBalance.toFixed(2)} €</span>
+              </span>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 flex flex-col lg:flex-row gap-6 lg:gap-8">
         
@@ -362,18 +436,9 @@ export default function ProfileView({
                 <span className="font-medium text-emerald-800/90">{t.clientProfile.bonuses}</span>
                 <span className="font-bold tabular-nums">{bonusBalance.toFixed(2)} €</span>
               </p>
-              <div className="mt-4 w-full space-y-2 border-t border-gray-100 pt-4 text-left text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Phone size={16} className="shrink-0 text-[#145142]" />
-                  <span className="truncate">{user?.phone || t.clientProfile.notSpecified}</span>
-                </div>
-                {user?.email ? (
-                  <div className="flex items-center gap-2">
-                    <Mail size={16} className="shrink-0 text-[#145142]" />
-                    <span className="truncate">{user.email}</span>
-                  </div>
-                ) : null}
-              </div>
+              <p className="mt-4 border-t border-gray-100 pt-4 text-left text-xs leading-relaxed text-gray-500">
+                {t.clientProfile.inAppNavHint}
+              </p>
             </div>
 
             <nav className="flex flex-col gap-1 border-t border-gray-100 pt-2" aria-label="Profile">
@@ -431,17 +496,6 @@ export default function ProfileView({
 
         {/* ПРАВАЯ КОЛОНКА - КОНТЕНТ */}
         <div className="flex-1">
-          <div className="mb-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm lg:hidden">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#145142] text-white">
-              <User size={22} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-gray-900">{user?.name || t.clientProfile.notSpecified}</p>
-              <p className="text-xs text-gray-500">
-                {t.clientProfile.bonuses}: <span className="font-semibold tabular-nums text-[#145142]">{bonusBalance.toFixed(2)} €</span>
-              </p>
-            </div>
-          </div>
           <div
             className={`relative min-h-[420px] rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:min-h-[520px] sm:p-8 ${
               activeTab === 'favorites' ? 'overflow-visible' : 'overflow-hidden'
@@ -616,11 +670,10 @@ export default function ProfileView({
       </div>
 
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-[1001] border-t border-gray-200 bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
-        style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}
+        className="fixed bottom-0 left-0 right-0 z-[1001] box-border w-full border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md lg:hidden"
         aria-label={t.clientProfile.tabHistory}
       >
-        <div className="flex justify-around items-stretch max-w-lg mx-auto px-1 pt-1">
+        <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pt-1.5">
           {(
             [
               { id: 'history' as const, icon: Clock, label: t.clientProfile.tabHistory },
@@ -633,14 +686,16 @@ export default function ProfileView({
               key={id}
               type="button"
               onClick={() => setActiveTab(id)}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 rounded-xl transition ${
+              className={`flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 transition sm:min-h-[3.5rem] ${
                 activeTab === id
-                  ? 'text-[#145142] bg-[#145142]/10'
+                  ? 'bg-[#145142]/10 text-[#145142]'
                   : 'text-gray-500 hover:text-[#145142]/80'
               }`}
             >
-              <Icon size={22} className={activeTab === id && id === 'favorites' ? 'fill-current' : ''} />
-              <span className="text-[9px] font-bold leading-tight text-center px-0.5 line-clamp-2">{label}</span>
+              <Icon size={23} strokeWidth={2.2} className={activeTab === id && id === 'favorites' ? 'fill-current' : ''} />
+              <span className="max-w-[5.5rem] px-0.5 text-center text-[10px] font-bold leading-[1.15] tracking-tight text-current sm:max-w-none sm:text-[11px]">
+                {label}
+              </span>
             </button>
           ))}
         </div>

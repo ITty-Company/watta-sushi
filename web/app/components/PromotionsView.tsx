@@ -15,6 +15,8 @@ const READ_LINK = '#27AE60'
 const PAGE_BG = '#f5f5f7'
 
 interface PromotionsViewProps {
+  /** Усередині MenuView: та сама шапка + категорії, без дубльованого хедера */
+  embedded?: boolean
   onBack: () => void
   onMenuClick: () => void
   onOpenPhone?: () => void
@@ -41,6 +43,7 @@ function formatListDate(iso: string | undefined, lang: string): string {
 }
 
 export default function PromotionsView({
+  embedded = false,
   onBack,
   onMenuClick,
   onOpenPhone,
@@ -115,13 +118,21 @@ export default function PromotionsView({
 
   return (
     <div
-      className="menu-page-web relative min-h-screen px-4 pb-20 pt-[120px]"
+      className={
+        embedded
+          ? 'relative w-full px-4 pb-12 pt-2 sm:px-6'
+          : 'menu-page-web relative min-h-screen px-4 pb-20 pt-[120px]'
+      }
       style={{ backgroundColor: PAGE_BG }}
     >
-      <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.12]">
-        <LogoBackground />
-      </div>
-      <Header />
+      {!embedded ? (
+        <>
+          <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.12]">
+            <LogoBackground />
+          </div>
+          <Header />
+        </>
+      ) : null}
       <div className="relative z-20 mx-auto mb-6 flex w-full max-w-[1800px] justify-start px-2">
         <button
           type="button"

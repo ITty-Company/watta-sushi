@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ShoppingCart } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
@@ -152,29 +151,20 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
   const displayTitle = categoryTitle || normalizedSlug
 
   return (
-    <div className="watta-public-page-shell relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-[120px] font-sans text-[#145142]">
+    <div className="watta-public-page-shell relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-3 font-sans text-[#145142] sm:pt-4">
       <LogoBackground />
-      <div className="relative z-10 max-w-[1200px] mx-auto px-4">
-        <header className="fixed top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-4 sm:px-6 z-[500]">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={() => router.push('/')}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition shrink-0"
-              aria-label={t.menuView.categoryPageBack}
-            >
-              <ArrowLeft size={20} className="text-gray-700" />
-            </button>
-            <h1 className="text-lg sm:text-xl font-bold text-[#145142] truncate">{displayTitle}</h1>
-          </div>
-          <Link
-            href="/cart"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#145142] text-white text-sm font-semibold hover:bg-[#0f3d32] transition shrink-0"
+      <div className="relative z-10 mx-auto max-w-[1200px] px-4 sm:px-6">
+        <div className="mb-4 flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 transition hover:bg-gray-200"
+            aria-label={t.menuView.categoryPageBack}
           >
-            <ShoppingCart size={18} />
-            <span className="hidden sm:inline">{t.menuView.categoryPageOpenCart}</span>
-          </Link>
-        </header>
+            <ArrowLeft size={20} className="text-gray-700" />
+          </button>
+          <h1 className="min-w-0 truncate text-lg font-bold text-[#145142] sm:text-xl">{displayTitle}</h1>
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center min-h-[40vh] text-[#145142] font-semibold">

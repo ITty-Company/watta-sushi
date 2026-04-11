@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, PromoType } from '@prisma/client'; // Импортируем PromoType
+import { PrismaClient, PromoType } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -27,7 +28,7 @@ router.post('/check', async (req: Request, res: Response) => {
 });
 
 // 2. Получить ВСЕ коды (для Админа)
-router.get('/', async (req, res) => {
+router.get('/', checkAdmin, async (req, res) => {
   try {
     const promos = await prisma.promoCode.findMany({ orderBy: { id: 'desc' } });
     res.json(promos);
@@ -37,7 +38,7 @@ router.get('/', async (req, res) => {
 });
 
 // 3. Создать код (для Админа)
-router.post('/create', async (req: Request, res: Response) => {
+router.post('/create', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { code, discount } = req.body;
     
@@ -63,7 +64,7 @@ router.post('/create', async (req: Request, res: Response) => {
 });
 
 // 4. Удалить код (для Админа)
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.promoCode.delete({ where: { id: parseInt(id) } });

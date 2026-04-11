@@ -26,7 +26,7 @@ interface ProductViewProps {
   onOpenFavorites: () => void
   onOpenNotifications: () => void
   onMenuClick: () => void
-  onCartClick: () => void
+  onCartClick?: () => void
   onOpenPhone: () => void
 }
 
@@ -73,7 +73,7 @@ function parseSpecsFromDescription(
   return { weightLine, piecesLine }
 }
 
-export default function ProductView({ productId, onBack, onCartClick }: ProductViewProps) {
+export default function ProductView({ productId, onBack }: ProductViewProps) {
   const { t, language } = useLanguage()
   const pd = t.productDetail
   const [product, setProduct] = useState<Product | null>(null)
@@ -208,36 +208,27 @@ export default function ProductView({ productId, onBack, onCartClick }: ProductV
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
   const unitEffective = effectiveUnitPrice(product.price, promoPct)
 
-  const mobileBarBottom = 'max(1rem, env(safe-area-inset-bottom, 0px))'
+  /** Від низу viewport — висота глобальної панелі (див. globals `.watta-app-with-public-bottom-bar main`) */
+  const globalBottomBarOffset = 'calc(54px + env(safe-area-inset-bottom, 0px))'
 
   return (
-    <div className="relative flex min-h-screen flex-1 flex-col bg-white pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-16">
-      {/* Top bar */}
-      <header className="sticky top-0 z-50 border-b border-black/[0.04] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <div
+      className="relative flex min-h-screen flex-1 flex-col bg-white pb-[calc(9.5rem+54px+env(safe-area-inset-bottom,0px))] md:pb-16"
+    >
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-6 pt-3 sm:px-6 sm:pb-10 sm:pt-4">
+        <div className="mb-4 flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-black/[0.06] bg-white text-neutral-800 shadow-sm transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/30"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-black/[0.06] bg-white text-neutral-800 shadow-sm transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/30"
             aria-label={t.auth.back}
           >
             <ArrowLeft className="h-5 w-5" strokeWidth={2.2} />
           </button>
-          <p className="line-clamp-1 min-w-0 flex-1 text-center text-sm font-semibold text-neutral-900 sm:text-base">
+          <p className="line-clamp-1 min-w-0 flex-1 text-sm font-semibold text-neutral-900 sm:text-base">
             {getName(product)}
           </p>
-          <button
-            type="button"
-            onClick={onCartClick}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#145142] text-white shadow-md shadow-[#145142]/25 transition hover:bg-[#104034] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40"
-            aria-label={t.cart}
-          >
-            <ShoppingBag className="h-5 w-5" strokeWidth={2.2} />
-          </button>
         </div>
-      </header>
-
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className="flex flex-col gap-8 lg:flex-row lg:gap-14">
           {/* Image */}
           <div className="w-full lg:w-[48%] lg:shrink-0">
@@ -487,10 +478,10 @@ export default function ProductView({ productId, onBack, onCartClick }: ProductV
         )}
       </div>
 
-      {/* Mobile sticky bar — над safe area */}
+      {/* Mobile sticky bar — щільно над глобальною нижньою навігацією, без зазору під «чолкою» */}
       <div
-        className="fixed inset-x-0 z-[60] border-t border-black/[0.06] bg-white/95 px-4 py-3 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] backdrop-blur-md md:hidden"
-        style={{ bottom: mobileBarBottom }}
+        className="fixed inset-x-0 z-[100] box-border border-t border-black/[0.06] bg-white px-4 py-3 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] backdrop-blur-md md:hidden"
+        style={{ bottom: globalBottomBarOffset }}
       >
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -17,7 +18,7 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-router.get('/all', async (_req: Request, res: Response) => {
+router.get('/all', checkAdmin, async (_req: Request, res: Response) => {
   try {
     const posts = await prisma.blogPost.findMany({
       orderBy: { createdAt: 'desc' },
@@ -47,7 +48,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { title, slug, content, imageUrl, videoUrl, author, isPublished } = req.body;
     if (!title || !slug || !content) {
@@ -76,7 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const { title, slug, content, imageUrl, videoUrl, author, isPublished } = req.body;
@@ -107,7 +108,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     await prisma.blogPost.delete({ where: { id } });

@@ -24,11 +24,13 @@ git clone <repository-url>
 cd <папка-репозитория>
 ```
 
-2. Установите зависимости корня (для `concurrently` и скриптов), поднимите БД и примените миграции с сидом:
+2. Установите зависимости и поднимите БД с миграциями и сидом:
 ```bash
 npm install
 npm run local:prepare
 ```
+   Скрипт **`local:prepare`** сам выполнит `npm install` в папках **`web/`** и **`backend/`**, если там ещё нет `node_modules` (удобно после свежего `git clone`). При желании можно заранее поставить всё одной командой: **`npm run local:install`** (корень + web + backend).
+
    Нужен запущенный **Docker Desktop** (скрипт поднимает Postgres из `docker-compose.yml`, порт на хосте **55432** — см. `backend/.env.docker.example`).
 
 3. Запустите **и Next.js, и бэкенд одной командой**:
@@ -155,7 +157,9 @@ cd web
 npm install
 npm run dev
 ```
-При ручном запуске задайте в `web/.env.development` или в окружении: `NEXT_PUBLIC_API_URL=http://127.0.0.1:5050` (см. `web/.env.example`).
+С **корня репозитория** команда **`npm run dev`** уже подставляет `NEXT_PUBLIC_API_URL=http://127.0.0.1:5050` и `WATCHPACK_POLLING=true` (как `npm run local:web`), чтобы фронт ходил в локальный API без правки shell.
+
+При ручном `cd web && npm run dev` задайте в `web/.env.development` или в окружении: `NEXT_PUBLIC_API_URL=http://127.0.0.1:5050` (см. `web/.env.example`).
 
 ### Сборка для продакшена
 

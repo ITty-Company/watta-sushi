@@ -11,10 +11,28 @@ const { ensureDockerReady } = require('./ensure-docker.cjs');
 
 const root = path.resolve(__dirname, '..');
 const backendDir = path.join(root, 'backend');
+const webDir = path.join(root, 'web');
 const envPath = path.join(backendDir, '.env');
 const envExample = path.join(backendDir, '.env.docker.example');
 /** Має збігатися з лівим портом у docker-compose (host → container 5432) */
 const DOCKER_HOST_PG_PORT = 55432;
+
+function ensureNpmInstall(projectDir, label) {
+  const nm = path.join(projectDir, 'node_modules');
+  if (fs.existsSync(nm)) return;
+  if (!fs.existsSync(path.join(projectDir, 'package.json'))) return;
+  console.log(`📦 npm install у ${label}…`);
+  execSync('npm install', { cwd: projectDir, stdio: 'inherit', env: { ...process.env } });
+}
+
+/** Якщо немає web/.env.development — копія з прикладу (локальний API :5050). */
+function ensureWebEnv() {
+  const devEnv = path.join(webDir, '.env.development');
+  const ex = path.join(webDir, '.env.example');
+  if (fs.existsSync(devEnv) || !fs.existsSync(ex)) return;
+  fs.copyFileSync(ex, devEnv);
+  console.log('✅ Створено web/.env.development з web/.env.example');
+}
 
 function ensureEnv() {
   if (!fs.existsSync(envExample)) {
@@ -78,6 +96,9 @@ function runBackend(cmd) {
 async function main() {
   console.log('📦 Локальна підготовка Watta Sushi…\n');
   ensureEnv();
+  ensureNpmInstall(backendDir, 'backend');
+  ensureNpmInstall(webDir, 'web');
+  ensureWebEnv();
 
   const skipDocker = process.env.SKIP_DOCKER === '1';
 
@@ -144,8 +165,9 @@ async function main() {
   console.log('🌱 prisma db seed (меню + країни/міста)…');
   runBackend('npx prisma db seed');
 
-  console.log('\n✅ Готово. Повний стек однією командою: npm run local  (або npm run local:stack)');
-  console.log('   Якщо Docker і БД вже підняті: npm run local:all');
+  console.log('\n✅ Готово. Повний стек: npm run local:all (або npm run local)');
+  console.log('   Після старту відкрийте сайт у браузері: http://localhost:3000');
+  console.log('   API: http://127.0.0.1:5050 (не вставляйте коментарі # ... у package.json — ламає concurrently)');
   console.log('   Окремо: npm run local:backend та npm run local:web\n');
 }
 

@@ -1,12 +1,21 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { sendNewsletterEmail } from '../utils/mailer';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Отправка рассылки
-router.post('/send', async (req: any, res: any) => {
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// Отправка рассылки (только ADMIN)
+router.post('/send', checkAdmin, async (req: any, res: any) => {
   const { subject, message, promoCode } = req.body;
 
   try {
@@ -22,16 +31,18 @@ router.post('/send', async (req: any, res: any) => {
     }
 
     // Формируем красивый HTML
+    const safeMessage = escapeHtml(String(message || '')).replace(/\n/g, '<br>')
+    const safePromo = promoCode ? escapeHtml(String(promoCode)) : ''
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
         <h1 style="color: #155044;">Watta Sushi News</h1>
         <div style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
-          ${message.replace(/\n/g, '<br>')}
+          ${safeMessage}
         </div>
         ${promoCode ? `
           <div style="background: #f3f4f6; padding: 15px; border-radius: 10px; text-align: center; margin: 20px 0;">
             <p style="margin: 0; color: #666;">Ваш промокод:</p>
-            <h2 style="color: #ff6b35; margin: 10px 0; font-size: 24px;">${promoCode}</h2>
+            <h2 style="color: #ff6b35; margin: 10px 0; font-size: 24px;">${safePromo}</h2>
           </div>
         ` : ''}
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">

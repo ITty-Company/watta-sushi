@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
-import jwt from 'jsonwebtoken'; // <--- НУЖНО ДОБАВИТЬ ЭТОТ ИМПОРТ
+import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../lib/jwtSecret';
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
 import { sendOrderReceipt } from '../services/email.service';
@@ -15,15 +16,13 @@ function getStripeClient(): Stripe | null {
 
 const router = Router();
 const prisma = new PrismaClient();
-const SECRET_KEY = process.env.JWT_SECRET || 'secret-key'; // <--- КЛЮЧ ДЛЯ РАСШИФРОВКИ
-
 function getAuthUserId(req: Request): number | null {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) return null;
     const token = authHeader.split(' ')[1];
     if (!token) return null;
-    const decoded = jwt.verify(token, SECRET_KEY) as { userId?: string | number };
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId?: string | number };
     const parsed = Number(decoded.userId);
     return Number.isFinite(parsed) ? parsed : null;
   } catch {
@@ -76,7 +75,7 @@ router.get('/my', async (req: Request, res: Response) => {
     const token = authHeader.split(' ')[1]; // "Bearer <token>" -> "<token>"
 
     // 2. Расшифровываем токен, чтобы узнать userId
-    const decoded = jwt.verify(token, SECRET_KEY) as { userId: string | number };
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string | number };
     
     // 3. Ищем заказы этого пользователя
     const orders = await prisma.order.findMany({
@@ -263,9 +262,12 @@ router.post('/', async (req: Request, res: Response) => {
 
     const parsedUserId = userId != null && userId !== '' ? parseInt(String(userId), 10) : NaN;
     const authUserId = getAuthUserId(req);
-    const effectiveUserId = Number.isFinite(parsedUserId)
-      ? parsedUserId
-      : authUserId ?? null;
+    /** Не довіряємо body userId без JWT; при токені — лише id з токена. */
+    if (Number.isFinite(parsedUserId) && (!authUserId || authUserId !== parsedUserId)) {
+      res.status(403).json({ message: 'Нельзя привязать заказ к чужому аккаунту' });
+      return;
+    }
+    const effectiveUserId = authUserId ?? null;
     const requestedBonuses = Number(usedBonuses);
     const safeUsedBonuses =
       Number.isFinite(requestedBonuses) && requestedBonuses > 0 ? requestedBonuses : 0;

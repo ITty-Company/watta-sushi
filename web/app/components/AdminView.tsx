@@ -1029,7 +1029,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const openCreateModal = async () => {
     setEditingId(null)
     // Загружаем города при открытии модального окна
-    const citiesRes = await fetch('/api/cities/all')
+    const token = localStorage.getItem('token')
+    const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+    const citiesRes = await fetch('/api/cities/all', { headers: adminHeaders })
     if (citiesRes.ok) {
       const citiesData = await citiesRes.json()
       setCities(citiesData)
@@ -1052,8 +1054,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const openEditModal = async (product: Product) => {
     setEditingId(product.id)
     // Загружаем города и связи товара с городами
+    const token = localStorage.getItem('token')
+    const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
     const [citiesRes, productRes] = await Promise.all([
-      fetch('/api/cities/all'),
+      fetch('/api/cities/all', { headers: adminHeaders }),
       fetch(`/api/products/${product.id}`)
     ])
     if (citiesRes.ok) {

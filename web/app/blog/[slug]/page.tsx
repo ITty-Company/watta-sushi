@@ -78,8 +78,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <main
-      className="watta-public-page-shell flex min-h-screen flex-1 flex-col px-4 py-10"
-      style={{ backgroundColor: '#f5f5f7' }}
+      className="watta-public-page-shell flex min-h-screen flex-1 flex-col bg-[#f2f5f3] px-4 pb-12 pt-2 sm:px-6 sm:pb-16 sm:pt-3"
     >
       <div className="mx-auto mb-6 max-w-4xl">
         <BlogBackToIndex />

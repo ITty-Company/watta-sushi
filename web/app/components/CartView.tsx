@@ -17,9 +17,7 @@ import {
   ShoppingBag,
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
-import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { useLanguage } from '../context/LanguageContext'
-import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import {
   buildAmsterdamSlots,
   type DeliveryDay,
@@ -156,7 +154,6 @@ export default function CartView({
   const pd = t.productDetail
   const cs = t.cartSection
   const router = useRouter()
-  const rightNavDrawer = useOptionalRightNavDrawer()
   const recScrollRef = useRef<HTMLDivElement>(null)
 
   const [cartItems, setCartItems] = useState<MenuItem[]>([])
@@ -237,12 +234,6 @@ export default function CartView({
       window.removeEventListener('cartUpdated', syncCartFromStorage)
     }
   }, [syncCartFromStorage])
-
-  const handleCityChange = useCallback((cityId: number) => {
-    if (typeof window === 'undefined') return
-    localStorage.setItem('selectedCityId', String(cityId))
-    window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
-  }, [])
 
   const scrollRecRail = useCallback((dir: -1 | 1) => {
     const el = recScrollRef.current
@@ -813,34 +804,19 @@ export default function CartView({
     }
   }
 
-  const handleGlobalNavMenu = () => {
-    if (rightNavDrawer?.enabled) rightNavDrawer.open()
-    else onMenuClick()
-  }
-
   const cartMetaText = cs.cartMeta
     .replace('{{lines}}', String(uniqueItems.length))
     .replace('{{pieces}}', String(cartItems.length))
 
+  const isEmpty = cartItems.length === 0
+
   return (
     <div className="watta-public-page-shell relative flex w-full min-h-0 max-w-[100vw] flex-1 flex-col overflow-x-hidden bg-[#f4f6f4] font-sans">
       <LogoBackground />
-      <WattaGlobalSiteHeader
-        cartCount={cartItems.length}
-        onCityChange={handleCityChange}
-        deliveryEmbeddedActive={false}
-        onPromotionsClick={() => router.push('/')}
-        onCartClick={() => {
-          if (typeof window !== 'undefined') {
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-          }
-        }}
-        onMenuClick={handleGlobalNavMenu}
-        onProfileClick={onOpenProfile}
-        logoHref="/"
-      />
 
-      <div className="relative z-10 mx-auto flex min-h-0 w-full min-w-0 max-w-[1200px] flex-1 flex-col px-4 pb-12 pt-3 sm:px-6 sm:pt-4">
+      <div
+        className={`relative z-10 mx-auto flex min-h-0 w-full min-w-0 max-w-[1200px] flex-col px-4 pt-3 sm:px-6 sm:pt-4 ${isEmpty ? 'flex-none pb-6 sm:pb-8' : 'flex-1 pb-12'}`}
+      >
         <div className="mb-4">
           <button
             type="button"
@@ -859,10 +835,7 @@ export default function CartView({
           </div>
 
           {cartItems.length === 0 ? (
-            <div
-              role="status"
-              className="flex flex-1 flex-col justify-center pb-10 pt-2 sm:pb-12 sm:pt-4"
-            >
+            <div role="status" className="flex flex-col pb-2 pt-2">
               <div className="relative mx-auto w-full max-w-lg overflow-hidden rounded-[28px] border border-[#145142]/18 bg-white/95 p-8 shadow-[0_24px_56px_-28px_rgba(20,81,66,0.45)] backdrop-blur-[2px] sm:rounded-[32px] sm:p-10">
                 <div
                   className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#ff6b35]/12 blur-2xl"

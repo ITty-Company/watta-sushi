@@ -1478,6 +1478,7 @@
   box-shadow:
     0 4px 14px rgba(20, 81, 66, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transform: translateY(4px);
 }
 
 .location-picker-section__label {
@@ -1586,6 +1587,11 @@
   animation: locationPickerRing 1.4s ease-in-out 2;
 }
 
+.location-picker-trigger__pin {
+  position: relative;
+  top: 3px;
+}
+
 .location-picker-trigger__label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1615,16 +1621,13 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 14px;
-  min-height: 52px;
-  border-radius: 999px;
-  border: 1.5px solid rgba(20, 81, 66, 0.2);
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(250, 252, 251, 0.75) 100%
-  );
-  color: #0f3d32;
+  padding: 12px 16px;
+  min-height: 48px;
+  /* М’якший силует ніж «пігулка» — спокійніше в модалці */
+  border-radius: 14px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: rgba(255, 255, 255, 0.78);
+  color: #145142;
   font-family: Inter, system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
@@ -1632,14 +1635,12 @@
   cursor: pointer;
   text-align: center;
   width: 100%;
-  box-shadow:
-    0 2px 10px rgba(20, 81, 66, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 2px rgba(20, 81, 66, 0.04);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   transition:
-    transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1),
-    box-shadow 0.32s ease,
+    transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1),
+    box-shadow 0.28s ease,
     border-color 0.25s ease,
     background 0.25s ease,
     color 0.2s ease;
@@ -1653,7 +1654,7 @@
   inset: 0;
   border-radius: inherit;
   opacity: 0;
-  background: radial-gradient(circle at 30% 20%, rgba(20, 81, 66, 0.14) 0%, transparent 55%);
+  background: radial-gradient(circle at 88% 0%, rgba(34, 197, 94, 0.14) 0%, transparent 48%);
   transition: opacity 0.35s ease;
   pointer-events: none;
 }
@@ -1663,42 +1664,48 @@
 }
 
 .location-picker-chip:hover {
-  transform: translateY(-3px) scale(1.02);
-  border-color: rgba(20, 81, 66, 0.45);
+  transform: translateY(-1px);
+  border-color: rgba(20, 81, 66, 0.32);
+  background: rgba(255, 255, 255, 0.95);
   box-shadow:
-    0 12px 28px rgba(20, 81, 66, 0.16),
-    0 0 0 1px rgba(20, 81, 66, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 4px 14px rgba(20, 81, 66, 0.08),
+    0 0 0 1px rgba(20, 81, 66, 0.05);
 }
 
 .location-picker-chip:active {
-  transform: translateY(-1px) scale(0.99);
+  transform: translateY(0);
 }
 
+/* Обраний варіант — світла «картка» + акцент зліва, без важкого темного градієнта */
 .location-picker-chip--selected {
-  background: linear-gradient(135deg, #0c3229 0%, #145142 42%, #0f3d32 100%);
-  color: #fff;
-  border-color: rgba(12, 50, 41, 0.98);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(
+    152deg,
+    rgba(240, 253, 244, 0.98) 0%,
+    rgba(220, 252, 231, 0.82) 48%,
+    rgba(209, 250, 229, 0.72) 100%
+  );
+  color: #064e3b;
+  border: 1px solid rgba(20, 81, 66, 0.22);
+  border-left: 3px solid #145142;
+  font-weight: 700;
+  text-shadow: none;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 10px 28px rgba(20, 81, 66, 0.42),
-    0 4px 14px rgba(15, 61, 50, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 2px 10px rgba(20, 81, 66, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .location-picker-chip--selected::after {
-  background: radial-gradient(circle at 70% 15%, rgba(255, 255, 255, 0.35) 0%, transparent 50%);
-  opacity: 0.55;
+  background: radial-gradient(circle at 12% 0%, rgba(20, 81, 66, 0.07) 0%, transparent 52%);
+  opacity: 0.5;
 }
 
 .location-picker-chip--selected:hover {
-  transform: translateY(-4px) scale(1.03);
+  transform: translateY(-1px);
+  border-color: rgba(20, 81, 66, 0.34);
+  border-left-color: #0f3d32;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.24),
-    0 14px 36px rgba(20, 81, 66, 0.45),
-    0 6px 18px rgba(12, 50, 41, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    0 6px 18px rgba(20, 81, 66, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .location-picker-close {
@@ -1732,6 +1739,89 @@
   box-shadow:
     0 8px 22px rgba(10, 186, 181, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* Вузький екран / телефон: компактніша модалка вибору країни/міста */
+@media (max-width: 639px) {
+  .location-picker-backdrop--mobile-tight {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .location-picker-modal--mobile-compact.location-picker-modal--glass {
+    box-shadow:
+      0 0 0 1px rgba(20, 81, 66, 0.06),
+      0 8px 28px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  }
+
+  .location-picker-modal__title {
+    font-size: 1.12rem;
+    line-height: 1.18;
+  }
+
+  .location-picker-modal__subtitle {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .location-picker-section {
+    margin-bottom: 0.75rem;
+    padding: 0.65rem 0.7rem 0.75rem;
+    border-radius: 16px;
+  }
+
+  .location-picker-section__head {
+    margin-bottom: 0.55rem;
+    gap: 0.45rem;
+  }
+
+  .location-picker-section__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 11px;
+    transform: translateY(2px);
+  }
+
+  .location-picker-section__label {
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+  }
+
+  .location-picker-chip {
+    padding: 8px 10px;
+    min-height: 40px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+
+  .location-picker-empty {
+    padding: 1rem 0.75rem !important;
+  }
+
+  .location-picker-empty__title {
+    font-size: 1rem;
+  }
+
+  .location-picker-empty__text {
+    font-size: 0.88rem;
+  }
+}
+
+/* Сітка країн/міст: на телефоні 2 колонки, з sm — як раніше */
+.location-picker-grid--countries,
+.location-picker-grid--cities {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .location-picker-grid--countries,
+  .location-picker-grid--cities {
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1780,19 +1870,20 @@
 
 /* Дозволяємо вертикальний скрол документа для маршрутів Next (/delivery, /contacts, /about тощо).
    Головна сторінка лишається з внутрішнім скролом у .app-web > .content-web (height:100vh; overflow:hidden). */
-/* Темний базовий фон = низ градієнта підвалу — під футером і при rubber-band не з’являється біла смуга */
-html {
-  background-color: #071210 !important;
+/* Світлий корінь: iOS/Android не тонують статус-бар / safe area під системну темну тему; rubber-band лишається світлим */
+html.watta-light-chrome {
+  color-scheme: only light;
+  background-color: #ffffff !important;
   overflow-x: hidden;
 }
 
-body {
+html.watta-light-chrome body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #071210 !important;
+  background-color: #ffffff !important;
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -2408,20 +2499,10 @@ body {
   padding-bottom: 96px;
 }
 
+/* Раніше тут був repeating-linear-gradient — на мобільних давав помітну зеленувату смугу вздовж краю екрана */
 .full-page-web--craft::before {
-  content: '';
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.65;
-  background-image: repeating-linear-gradient(
-    -18deg,
-    transparent,
-    transparent 7px,
-    rgba(20, 81, 66, 0.014) 7px,
-    rgba(20, 81, 66, 0.014) 8px
-  );
+  content: none;
+  display: none;
 }
 
 .full-page-web--craft::after {
@@ -2497,7 +2578,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .full-page-web--craft::before,
   .full-page-web--craft::after {
     animation: none !important;
   }
@@ -2510,30 +2590,13 @@ body {
 }
 
 .content-web--watta-craft::before {
-  content: '';
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.65;
-  background-image: repeating-linear-gradient(
-    -18deg,
-    transparent,
-    transparent 7px,
-    rgba(20, 81, 66, 0.014) 7px,
-    rgba(20, 81, 66, 0.014) 8px
-  );
+  content: none;
+  display: none;
 }
 
 .content-web--watta-craft > * {
   position: relative;
   z-index: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .content-web--watta-craft::before {
-    opacity: 0.4;
-  }
 }
 
 /* Публічні маршрути Next (блог, /product, /menu, success тощо) — той самий фірмовий настрій */
@@ -2544,31 +2607,14 @@ body {
 }
 
 .watta-public-page-shell::before {
-  content: '';
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.65;
-  background-image: repeating-linear-gradient(
-    -18deg,
-    transparent,
-    transparent 7px,
-    rgba(20, 81, 66, 0.014) 7px,
-    rgba(20, 81, 66, 0.014) 8px
-  );
+  content: none;
+  display: none;
 }
 
 /* Усі прямі діти поверх декору — окрім шару LogoBackground (там position: absolute) */
 .watta-public-page-shell > *:not(.watta-public-page-shell__bg) {
   position: relative;
   z-index: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .watta-public-page-shell::before {
-    opacity: 0.5;
-  }
 }
 
 /* Панель категорий на полностраничных страницах */
@@ -2586,6 +2632,216 @@ body {
 
 .watta-full-menu-page .categories-panel-wrapper-web {
   margin-top: 0;
+}
+
+/* /menu: одна sticky-зона — шапка + горизонталь категорій (липне до viewport при скролі) */
+.watta-full-menu-sticky-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 95;
+  width: 100%;
+  flex-shrink: 0;
+  background: #f2f5f3;
+  box-shadow: 0 12px 32px -20px rgba(20, 81, 66, 0.45);
+}
+
+/* Глобальний chrome (AppClient): шапка + категорії на блозі, відгуках, кошику тощо */
+.watta-public-sticky-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 95;
+  width: 100%;
+  flex-shrink: 0;
+  background: var(--watta-page-fill, #f2f5f3);
+  box-shadow: 0 10px 28px -18px rgba(20, 81, 66, 0.35);
+}
+.watta-public-sticky-chrome .categories-panel-wrapper-web {
+  position: relative !important;
+  top: auto !important;
+  left: auto;
+  right: auto;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+@media (max-width: 480px) {
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
+    margin-top: 4px;
+  }
+}
+
+/* Відступ контенту над фіксованою нижньою панеллю (до lg панель видима). Висота рядка + safe-area на оболонці панелі. */
+@media (max-width: 1023px) {
+  .watta-app-with-public-bottom-bar main {
+    padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Нижня панель: Головна / Меню / Кошик / Профіль — фон і safe-area на зовнішньому nav, щоб під панеллю не було «дірки» / сторінкового фону */
+.watta-public-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 92;
+  pointer-events: none;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #ffffff;
+  border-top: 1px solid rgba(20, 81, 66, 0.12);
+  box-shadow: 0 -10px 36px rgba(20, 81, 66, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.watta-public-bottom-bar__inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 2px;
+  max-width: 100vw;
+  margin: 0 auto;
+  padding: 6px max(6px, env(safe-area-inset-left, 0px)) 8px max(6px, env(safe-area-inset-right, 0px));
+  background: transparent;
+  border-top: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.watta-public-bottom-bar__item {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  text-decoration: none;
+  color: rgba(55, 72, 66, 0.72);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 12px;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.watta-public-bottom-bar__item--active {
+  color: #145142;
+  background: rgba(20, 81, 66, 0.08);
+}
+
+.watta-public-bottom-bar__ico-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.watta-public-bottom-bar__ico {
+  width: 22px;
+  height: 22px;
+}
+
+.watta-public-bottom-bar__badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e85d2a;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.watta-public-bottom-bar__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+@media (min-width: 1024px) {
+  .watta-public-bottom-bar {
+    display: none !important;
+  }
+}
+
+.watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+  position: relative !important;
+  top: auto !important;
+  left: auto;
+  right: auto;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+@media (max-width: 480px) {
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-top: 4px;
+  }
+}
+/* Менший зазор під комбінованим блоком — контент ближче, scroll-margin рахуємо в JS */
+.watta-full-menu-below-sticky-spacer {
+  height: 12px !important;
+}
+@media (min-width: 481px) {
+  .watta-full-menu-below-sticky-spacer {
+    height: 14px !important;
+  }
+}
+
+/* /menu: intro — те саме відео, що на головній; компактна «кінцева» рамка */
+.watta-full-menu-intro-video {
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: min(960px, 100%);
+  aspect-ratio: 16 / 9;
+  max-height: min(46vh, 520px);
+  border-radius: 1.15rem;
+  overflow: hidden;
+  background: #0a0a0a;
+  box-shadow: 0 24px 48px -32px rgba(15, 36, 30, 0.45);
+}
+@media (min-width: 640px) {
+  .watta-full-menu-intro-video {
+    border-radius: 1.35rem;
+  }
+}
+.watta-full-menu-intro-video-el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.watta-full-menu-intro-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background-size: cover;
+  background-position: center 22%;
+  background-repeat: no-repeat;
 }
 
 .page-content-inner-web {
@@ -2639,7 +2895,7 @@ body {
 @media (max-width: 1024px) {
   .content-web--watta-craft:has(.menu-page-web) {
     scroll-snap-type: y mandatory;
-    /* Щоб snap не підтягував секцію під фіксовану шапку + категорії */
+    /* Щоб snap не підтягував секцію під sticky шапку + категорії */
     scroll-padding-top: calc(130px + env(safe-area-inset-top, 0px));
   }
 
@@ -2765,7 +3021,7 @@ body {
   }
 }
 
-/* Повне меню /menu — та сама fixed-панель, що на головній (.categories-panel-wrapper-web) */
+/* Повне меню /menu — та сама sticky-панель категорій, що на головній (.categories-panel-wrapper-web) */
 
 /* Бігучий рядок під hero-відео (без нахилу) */
 @keyframes watta-hero-marquee-scroll {
@@ -2827,17 +3083,22 @@ body {
   }
 }
 
-/* Header Web — фиксирован сверху, не поднимается при скролле вниз */
+/* Оболонка фікс-хедера: на телефоні/планшеті — однакові поля зліва/справа + safe-area */
+@media (max-width: 1024px) {
+  .menu-fixed-header-shell-web {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* Header Web — у потоці документа; оболонка .menu-fixed-header-shell-web — sticky (працює і в .content-web, і при скролі body) */
 /* Первая белая панель — хедер, без градиента/воды */
 .app-header-web {
   background: #ffffff;
   padding: 18px 28px;
   border-bottom: 1px solid rgba(0,0,0,0.06);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
+  position: relative;
+  z-index: 1;
   box-shadow: none;
   width: 100%;
   transition: all 0.3s ease;
@@ -3590,17 +3851,34 @@ body {
 }
 
 /* Categories Web */
+
+/* Sticky-панель категорій під sticky-шапкою: safe-area + висота хедера (як у колишніх fixed top) */
+:root {
+  --watta-cat-sticky-top: calc(env(safe-area-inset-top, 0px) + 88px);
+}
+@media (max-width: 480px) {
+  :root {
+    --watta-cat-sticky-top: calc(env(safe-area-inset-top, 0px) + 68px);
+  }
+}
+@media (min-width: 481px) and (max-width: 767px) {
+  :root {
+    --watta-cat-sticky-top: calc(env(safe-area-inset-top, 0px) + 74px);
+  }
+}
+
 .categories-scroll-web {
   display: flex;
   gap: 16px;
   padding: 20px 24px;
   overflow-x: auto;
   scrollbar-width: none;
+  -ms-overflow-style: none;
   background: #f5f5f5;
   border-bottom: 1px solid #e5e5e5;
 }
 
-/* Панель категорій: один стиль картки; top з урахуванням safe-area */
+/* Панель категорій: sticky в межах .content-web, одразу під sticky-шапкою (без fixed + transform — інакше «їде» з overflow) */
 .categories-panel-wrapper-web {
   display: flex;
   align-items: center;
@@ -3610,11 +3888,12 @@ body {
   padding: 10px max(8px, env(safe-area-inset-left, 0px)) 10px max(8px, env(safe-area-inset-right, 0px));
   width: fit-content;
   max-width: calc(100% - 12px);
-  position: fixed;
-  top: calc(90px + env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 99;
+  position: sticky;
+  top: var(--watta-cat-sticky-top);
+  left: auto;
+  right: auto;
+  transform: none;
+  z-index: 85;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 18px;
@@ -3632,7 +3911,6 @@ body {
     max-width: calc(100% - 12px);
     gap: 0;
     min-height: 54px;
-    top: calc(88px + env(safe-area-inset-top, 0px));
     padding: 8px max(8px, env(safe-area-inset-left, 0px)) 8px max(8px, env(safe-area-inset-right, 0px));
   }
 }
@@ -3640,11 +3918,11 @@ body {
 @media (min-width: 1025px) {
   :root {
     --menu-header-cat-gap-web: 10px;
+    --watta-cat-sticky-top: calc(env(safe-area-inset-top, 0px) + 90px + var(--menu-header-cat-gap-web));
   }
 
   /* Ноутбук / ПК: невеликий зазор між шапкою та панеллю категорій; компактна панель */
   .categories-panel-wrapper-web {
-    top: calc(90px + var(--menu-header-cat-gap-web) + env(safe-area-inset-top, 0px));
     padding: 6px max(8px, env(safe-area-inset-left, 0px)) 6px max(8px, env(safe-area-inset-right, 0px));
     min-height: 0;
     gap: 6px;
@@ -3656,27 +3934,25 @@ body {
   }
 }
 
-/* Отступ под фиксированной панелью категорий, чтобы контент не заходил под неё */
+/* Панель у потоці — лише невеликий зазор (раніше резерв під fixed) */
 .categories-panel-spacer-web {
   flex-shrink: 0;
-  height: 96px; /* резерв под панель */
+  height: 20px;
 }
 @media (max-width: 480px) {
-  /* Один зазор під фікс. шапку + компактна панель категорій */
   .categories-panel-spacer-web {
-    height: 102px;
+    height: 16px;
   }
 }
 @media (min-width: 481px) and (max-width: 1024px) {
   .categories-panel-spacer-web {
-    height: 92px;
+    height: 18px;
   }
 }
 
 @media (min-width: 1025px) {
   .categories-panel-spacer-web {
-    /* + var(--menu-header-cat-gap-web) — місце під зазор між шапкою та категоріями */
-    height: calc(74px + var(--menu-header-cat-gap-web, 0px));
+    height: calc(12px + var(--menu-header-cat-gap-web, 0px));
   }
 }
 
@@ -3714,19 +3990,6 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-.home-brand-story-orb-web--tiffany {
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-  width: min(520px, 85vw);
-  height: min(520px, 85vw);
-  border-radius: 50%;
-  right: -18%;
-  top: 8%;
-  background: radial-gradient(circle, rgba(10, 186, 181, 0.38) 0%, transparent 68%);
-  filter: blur(48px);
-}
-
 /* М’який фон під банером на головній: світлі тони як у блоків нижче, без «кіношного» неону */
 /* Той самий фон, що й .content-web--watta-craft — без «шва»; водяні знаки LogoBackground просвічують */
 .home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-story-bg-web {
@@ -3736,15 +3999,6 @@ body {
 .home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-story-grain-web {
   opacity: 0.04;
   mix-blend-mode: multiply;
-}
-
-.home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-story-orb-web--tiffany {
-  right: -22%;
-  top: 12%;
-  width: min(420px, 72vw);
-  height: min(420px, 72vw);
-  background: radial-gradient(circle, rgba(20, 81, 66, 0.05) 0%, transparent 72%);
-  filter: blur(56px);
 }
 
 .home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-banner-shell-web {
@@ -3805,6 +4059,8 @@ body {
 /* Заголовок над банерами на головній меню — той самий стиль, що каталог; без зайвого «повітря» до shell */
 .home-menu-hero-banners-head-web.home-full-menu-catalog-head-web {
   margin-bottom: clamp(1rem, 2.6vw, 1.85rem);
+  /* Не обрізати довгі фрази (Playfair + gradient): на всю ширину inner, без max-width 40rem */
+  max-width: 100%;
 }
 
 #hero-banners .home-menu-hero-banners-head-web + .home-brand-banner-shell-web {
@@ -3817,6 +4073,38 @@ body {
   max-width: min(36rem, 100%);
   margin: 0 auto;
   text-align: left;
+}
+
+.home-hero-banner-sms-web__body {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.home-hero-banner-sms-web__avatar-wrap {
+  flex: 0 0 auto;
+  width: clamp(2.65rem, 9vw, 3.5rem);
+  height: clamp(2.65rem, 9vw, 3.5rem);
+  align-self: flex-end;
+}
+
+.home-hero-banner-sms-web__avatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 2px 6px rgba(20, 81, 66, 0.12));
+}
+
+.home-hero-banner-sms-web__stack {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .home-hero-banner-sms-web__meta {
@@ -3843,11 +4131,6 @@ body {
   font-weight: 700;
   letter-spacing: 0.03em;
   color: #145142;
-}
-
-.home-hero-banner-sms-web__row {
-  display: flex;
-  justify-content: flex-start;
 }
 
 .home-hero-banner-sms-web__bubble {
@@ -3996,17 +4279,15 @@ body {
   }
 }
 
-/* Заголовок над банерами: один рядок («із нами» не переноситься окремо) */
+/* Заголовок над банерами: переносимо рядок, щоб уся фраза була видима без обрізання */
 .home-hero-banner-title-rail-web {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
   overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .home-hero-banner-title-rail-web::-webkit-scrollbar {
@@ -4014,16 +4295,27 @@ body {
 }
 
 .home-hero-banner-overlay-title-web {
-  white-space: nowrap;
+  white-space: normal;
+  text-wrap: balance;
   text-align: center;
-  flex: 0 0 auto;
-  max-width: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   font-size: clamp(1.05rem, 3.95vw + 0.35rem, 3.15rem);
+  /* Краї літер не «з’їдає» background-clip: text + негативний letter-spacing */
+  padding-inline: clamp(0.12em, 1.2vw, 0.28em);
+  overflow: visible;
 }
 
 .home-menu-cat-block-web {
   scroll-margin-top: clamp(104px, 22vw, 148px);
+}
+
+@media (max-width: 480px) {
+  .home-menu-cat-block-web {
+    scroll-margin-top: clamp(132px, 34vw, 178px);
+  }
 }
 
 .home-menu-cat-heading-web {
@@ -4110,6 +4402,44 @@ body {
   color: rgba(30, 50, 44, 0.65);
 }
 
+.home-menu-cat-view-all-wrap-web {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(1rem, 3vw, 1.35rem);
+}
+
+.home-menu-cat-view-all-btn-web {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.65rem;
+  padding: 0.55rem 1.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.22);
+  background: #ffffff;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #145142;
+  box-shadow: 0 4px 18px rgba(20, 81, 66, 0.08);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.home-menu-cat-view-all-btn-web:hover {
+  border-color: rgba(20, 81, 66, 0.38);
+  color: #0f3d32;
+  box-shadow: 0 8px 26px rgba(20, 81, 66, 0.12);
+}
+
+.home-menu-cat-view-all-btn-web:active {
+  transform: scale(0.98);
+}
+
 /* Горизонтальна стрічка страв на головній (свайп / тачпад / смуга прокрутки) */
 .home-menu-category-rail-outer-web {
   position: relative;
@@ -4125,23 +4455,22 @@ body {
   scroll-padding-inline: 4px;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 0.35rem;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(20, 81, 66, 0.35) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   overscroll-behavior-x: contain;
 }
 
 .home-menu-category-rail-web::-webkit-scrollbar {
-  height: 7px;
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
-.home-menu-category-rail-web::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
-  background: rgba(20, 81, 66, 0.32);
-}
-
+.home-menu-category-rail-web::-webkit-scrollbar-thumb,
 .home-menu-category-rail-web::-webkit-scrollbar-track {
-  background: rgba(20, 81, 66, 0.06);
-  border-radius: 9999px;
+  display: none;
+  background: transparent;
 }
 
 .home-menu-product-card-web {
@@ -4846,11 +5175,21 @@ body {
   }
 }
 
-/* Мобільний «фаза відео»: без нахльосту категорій на hero; панель схована доки секція в зоні скролу */
+/* Вузький екран (≤768): «фаза відео» — лише шапка + повне відео; категорії після зеленої бігучої смуги */
 @media (max-width: 768px) {
   .menu-page-web--hero-phase-mobile .welcome-hero-section-web {
     margin-top: 0 !important;
     --welcome-cat-overlap: 0px !important;
+  }
+
+  .menu-page-web--hero-phase-mobile .welcome-video-native-web {
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  .menu-page-web--hero-phase-mobile .welcome-hero-fallback-image-web {
+    background-size: contain !important;
+    background-position: center center !important;
   }
 
   .categories-panel-spacer-web--hero-phase-mobile {
@@ -4862,7 +5201,7 @@ body {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateY(-120%);
+    transform: translateY(-130%);
     transition:
       opacity 0.2s ease,
       visibility 0.2s ease,
@@ -4870,19 +5209,7 @@ body {
   }
 }
 
-@media (max-width: 480px) {
-  .categories-panel-wrapper-web.categories-panel-wrapper-web--hero-phase-mobile {
-    transform: translateY(-130%) !important;
-  }
-}
-
-@media (min-width: 481px) and (max-width: 767px) {
-  .categories-panel-wrapper-web.categories-panel-wrapper-web--hero-phase-mobile {
-    transform: translateY(-120%) !important;
-  }
-}
-
-/* Перша секція: відео на всю ширину/висоту екрана під шапкою; панель категорій — fixed z-99 поверх */
+/* Перша секція: відео на всю ширину/висоту екрана під шапкою; панель категорій — sticky поверх відео */
 .welcome-hero-section-web {
   /* Overlap під панеллю категорій — чим більше, тим вище «сідає» відео */
   --welcome-cat-overlap: clamp(128px, 26vw, 176px);
@@ -4984,6 +5311,19 @@ body {
   .welcome-hero-fallback-image-web {
     background-position: center 40%;
   }
+
+  .menu-page-web .welcome-hero-section-web {
+    /* Трохи сильніший нахлест — відео ближче до шапки + категорій, без «повітряного» зазору */
+    --welcome-cat-overlap: clamp(72px, 16vw, 140px);
+  }
+
+  .menu-page-web .welcome-video-native-web {
+    object-position: center center !important;
+  }
+
+  .menu-page-web .welcome-hero-fallback-image-web {
+    background-position: center center !important;
+  }
 }
 
 /* iPad / планшет 768–1024: відео нижче (менший overlap + нижча точка кадру) */
@@ -4999,12 +5339,20 @@ body {
   .welcome-hero-fallback-image-web {
     background-position: center 62%;
   }
+
+  .menu-page-web .welcome-video-native-web {
+    object-position: center center !important;
+  }
+
+  .menu-page-web .welcome-hero-fallback-image-web {
+    background-position: center center !important;
+  }
 }
 
 /* Телефон: менший нахлест — більше кадру видео без «обрізання» зверху */
 @media (max-width: 480px) {
   .welcome-hero-section-web {
-    --welcome-cat-overlap: clamp(72px, 18vw, 108px);
+    --welcome-cat-overlap: clamp(56px, 14vw, 96px);
     max-width: 100%;
     overflow-x: clip;
   }
@@ -5021,12 +5369,36 @@ body {
     max-width: 100%;
     height: auto;
     object-fit: contain;
-    object-position: center 55%;
+    object-position: center center;
     vertical-align: top;
   }
 
   .welcome-hero-fallback-image-web {
-    background-position: center 55%;
+    background-position: center center;
+  }
+}
+
+/*
+ * Головна лише на телефоні (≤480px): відео під категоріями в потоці, без нахльосту.
+ * Планшет / ноутбук / ПК — нахлест як раніше (категорії «на» відео, менший зазор під шапкою).
+ */
+@media (max-width: 480px) {
+  .menu-page-web .welcome-hero-section-web {
+    --welcome-cat-overlap: 0px !important;
+    margin-top: 0 !important;
+  }
+
+  .menu-page-web .welcome-hero-video-fill-web {
+    margin-top: 0 !important;
+  }
+
+  .menu-page-web .welcome-video-native-web {
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  .menu-page-web .welcome-hero-fallback-image-web {
+    background-position: center center !important;
   }
 }
 
@@ -5080,23 +5452,11 @@ body {
 }
 
 /*
- * /delivery: відступ під фіксований WattaGlobalSiteHeader (і safe-area),
- * щоб герой і блоки не заходили під шапку.
+ * /delivery: шапка + категорії вже в потоці (WattaPublicSiteChrome у main).
+ * Додатковий padding-top не потрібен — інакше подвоюється місце під хедер, як на скріншоті.
  */
 .delivery-page-root-web {
-  padding-top: calc(76px + env(safe-area-inset-top, 0px));
-}
-
-@media (max-width: 480px) {
-  .delivery-page-root-web {
-    padding-top: calc(56px + env(safe-area-inset-top, 0px));
-  }
-}
-
-@media (min-width: 1025px) {
-  .delivery-page-root-web {
-    padding-top: calc(88px + env(safe-area-inset-top, 0px));
-  }
+  padding-top: 0;
 }
 
 /* /delivery: двоколонковий герой — відео зліва, текст справа (не в embed меню) */
@@ -5116,8 +5476,8 @@ body {
 
 @media (min-width: 1024px) {
   .delivery-page-hero-split-grid {
-    /* Трохи ширша колонка з відео — краще «сідає» кадр */
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    /* Ширша колонка з відео + contain у клітинці — видно весь кадр без бокового кропу */
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
     min-height: min(76vh, 700px);
     gap: 0;
   }
@@ -5173,6 +5533,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
   padding: 20px 18px 28px;
   background: #f3f4f6;
 }
@@ -5217,6 +5578,7 @@ body {
   min-height: 220px;
   border-radius: 0;
   overflow: hidden;
+  background: #f3f4f6;
 }
 
 @media (min-width: 1024px) {
@@ -5227,8 +5589,8 @@ body {
 
   .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web .welcome-hero-video-fill-web {
     border-radius: 0 12px 12px 0;
-    /* Менший відступ справа й без зазору знизу — суцільний фон #f3f4f6 */
-    margin: 10px 6px 0 0;
+    /* Мінімальний відступ справа — більше ширини під відео */
+    margin: 10px 2px 0 0;
     min-height: 0;
   }
 }
@@ -5238,7 +5600,7 @@ body {
   height: 100%;
   min-height: 220px;
   max-height: none !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
   object-position: center center !important;
 }
 
@@ -5248,8 +5610,9 @@ body {
   min-height: 220px;
   max-height: none !important;
   aspect-ratio: auto;
-  background-size: cover;
+  background-size: contain;
   background-position: center center;
+  background-repeat: no-repeat;
 }
 
 /* Кнопки-стрілок панелі категорій — яскраво-зелені за замовчуванням (ноут/ПК); на мобільному в блоці панелі сховані */
@@ -5596,6 +5959,16 @@ body {
   display: none;
   width: 0;
   height: 0;
+  background: transparent;
+}
+
+.categories-panel-web::-webkit-scrollbar-thumb,
+.categories-panel-web::-webkit-scrollbar-track,
+.categories-panel-web::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 .categories-panel-web::before {
@@ -5636,11 +6009,9 @@ body {
 }
 
 @media (max-width: 480px) {
-  /* Верхняя панель на мобильном: sticky, один фон (#ffffff) */
+  /* Верхняя панель на мобильном — фон оболонки sticky */
   .app-header-web {
-    padding: 8px env(safe-area-inset-right, 0px) 8px env(safe-area-inset-left, 0px);
-    position: sticky;
-    top: 0;
+    padding: 8px 0;
     background: #ffffff !important;
     border: none !important;
     border-bottom: none !important;
@@ -5649,34 +6020,27 @@ body {
     backdrop-filter: none !important;
     outline: none;
   }
-  
+
   .app-header-web::before {
-    content: '';
-    position: fixed;
-    top: -200vh;
-    left: 0;
-    right: 0;
-    height: 200vh;
-    background: #ffffff;
-    z-index: 99;
-    pointer-events: none;
+    content: none;
+    display: none;
   }
   
   /* Стрілки: див. глобальне правило max-width 1024px */
   
   /* Телефон: панель на всю ширину (лише safe-area), компактніша висота */
   .categories-panel-wrapper-web {
-    position: fixed !important;
+    position: sticky !important;
     left: 0 !important;
     right: 0 !important;
-    top: calc(68px + env(safe-area-inset-top, 0px)) !important;
+    top: var(--watta-cat-sticky-top) !important;
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
     padding: 4px max(4px, env(safe-area-inset-left, 0px)) 4px max(4px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
-    z-index: 99;
+    z-index: 85;
     background: #ffffff !important;
     border: 1px solid rgba(0, 0, 0, 0.06) !important;
     border-radius: 14px !important;
@@ -5718,6 +6082,15 @@ body {
   
   .categories-panel-web::-webkit-scrollbar {
     display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+
+  .categories-panel-web::-webkit-scrollbar-thumb,
+  .categories-panel-web::-webkit-scrollbar-track {
+    display: none;
+    background: transparent;
   }
   
   .category-button-web {
@@ -5769,17 +6142,17 @@ body {
 /* Альбомний телефон 481–767: та сама логіка, що в портреті — повна ширина, 4½ чипа, тінь як на десктопі */
 @media (min-width: 481px) and (max-width: 767px) {
   .categories-panel-wrapper-web {
-    position: fixed !important;
+    position: sticky !important;
     left: 0 !important;
     right: 0 !important;
-    top: calc(74px + env(safe-area-inset-top, 0px)) !important;
+    top: var(--watta-cat-sticky-top) !important;
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
     padding: 6px max(6px, env(safe-area-inset-left, 0px)) 6px max(6px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
-    z-index: 99;
+    z-index: 85;
     background: #ffffff !important;
     border: 1px solid rgba(0, 0, 0, 0.06) !important;
     border-radius: 14px !important;
@@ -5817,7 +6190,7 @@ body {
   }
 
   .categories-panel-spacer-web {
-    height: 120px;
+    height: 20px;
   }
 }
 
@@ -5829,8 +6202,9 @@ body {
     max-width: calc(100% - 12px);
     padding: 0 max(8px, env(safe-area-inset-left, 0px)) 0 max(8px, env(safe-area-inset-right, 0px));
     margin: 0 auto;
-    left: 50%;
-    transform: translateX(-50%);
+    left: auto;
+    right: auto;
+    transform: none;
     display: flex;
     align-items: center;
     gap: 0;
@@ -5867,6 +6241,16 @@ body {
     display: none;
     width: 0;
     height: 0;
+    background: transparent;
+  }
+
+  .categories-panel-web::-webkit-scrollbar-thumb,
+  .categories-panel-web::-webkit-scrollbar-track,
+  .categories-panel-web::-webkit-scrollbar-corner {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
   }
 
   .category-button-web {
@@ -5905,6 +6289,100 @@ body {
   .categories-panel-web::before,
   .categories-panel-web::after {
     display: none;
+  }
+}
+
+/*
+ * Головна лише на телефоні (≤480px): смуга категорій — фон як «Готові замовити»;
+ * біла картка чіпів по центру. На планшеті / десктопі лишаються загальні стилі (панель поверх відео).
+ */
+@media (max-width: 480px) {
+  .menu-page-web .categories-panel-wrapper-web {
+    position: sticky !important;
+    top: var(--watta-cat-sticky-top) !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 10px max(14px, env(safe-area-inset-left, 0px)) 12px max(14px, env(safe-area-inset-right, 0px)) !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    overflow: visible;
+    gap: 6px;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--watta-page-gradient) !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .menu-page-web .categories-scroll-btn-web {
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 22px !important;
+    font-size: 12px !important;
+  }
+
+  .menu-page-web .categories-panel-web {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: min(calc(100vw - 32px), 40rem) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 8px 10px !important;
+    scroll-padding-inline: 10px;
+    border-radius: 16px !important;
+    gap: 6px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow:
+      0 4px 18px rgba(0, 0, 0, 0.07),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 10px,
+      #000 calc(100% - 10px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 10px,
+      #000 calc(100% - 10px),
+      transparent 100%
+    );
+    mask-size: 100% 100%;
+    -webkit-mask-size: 100% 100%;
+  }
+
+  .menu-page-web .categories-panel-web::before,
+  .menu-page-web .categories-panel-web::after {
+    width: 8px !important;
+    min-width: 8px !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+  }
+
+  .menu-page-web .category-button-web {
+    min-width: 52px !important;
+    max-width: min(88px, 24vw) !important;
+    padding: 7px 5px !important;
+    border-radius: 11px !important;
+    gap: 4px !important;
+    scroll-snap-align: start;
+  }
+
+  .menu-page-web .category-button-icon-web {
+    font-size: 1.02rem !important;
+  }
+
+  .menu-page-web .category-button-label-web {
+    font-size: 7.5px !important;
+    line-height: 1.1 !important;
   }
 }
 
@@ -6228,6 +6706,15 @@ body {
 
 .categories-scroll-web::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.categories-scroll-web::-webkit-scrollbar-thumb,
+.categories-scroll-web::-webkit-scrollbar-track {
+  display: none;
+  background: transparent;
 }
 
 .category-chip-web {
@@ -6578,7 +7065,7 @@ body {
 /* Responsive */
 @media (max-width: 480px) {
   .app-header-web {
-    padding: 8px env(safe-area-inset-right, 0px) 8px env(safe-area-inset-left, 0px);
+    padding: 8px 0;
   }
 
   .header-content-web {
@@ -6692,7 +7179,7 @@ body {
 
 @media (min-width: 481px) and (max-width: 768px) {
   .app-header-web {
-    padding: 12px 16px;
+    padding: 12px 0;
   }
 
   .header-content-web {
@@ -6775,7 +7262,7 @@ body {
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .app-header-web {
-    padding: 14px 20px;
+    padding: 14px 0;
   }
 
   .header-content-web {
@@ -7920,6 +8407,13 @@ body {
   }
 }
 
+/* Під час початкового сплешу головної (data з HomeClient) — без FAB соцмереж */
+html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
 /* Watta: splash + Uiverse-style loader (KSAplay), brand green */
 .watta-load-screen-root {
   display: flex;
@@ -8283,12 +8777,16 @@ body {
     margin-top: clamp(18px, 5.5vw, 36px);
   }
 
+  .menu-page-web .welcome-hero-video-fill-web {
+    margin-top: 0 !important;
+  }
+
   .welcome-video-native-web {
-    object-position: center 58%;
+    object-position: center center;
   }
 
   .welcome-hero-fallback-image-web {
-    background-position: center 58%;
+    background-position: center center;
   }
 
   .welcome-hero-badge-wrap-web {
@@ -11121,6 +11619,19 @@ body {
   padding-bottom: 0;
 }
 
+/* Головна: без «білого мосту» між шапкою/категоріями та відео на планшеті й ПК (лише телефон має відступи через spacer + градієнтну смугу) */
+.menu-page-web .menu-content-top-gap-web {
+  height: 0 !important;
+  min-height: 0 !important;
+}
+
+@media (min-width: 481px) {
+  .menu-page-web .categories-panel-spacer-web {
+    height: 0 !important;
+    min-height: 0 !important;
+  }
+}
+
 /* Верхняя зона под «чёлку» / статус-бар */
 .menu-top-safe-web {
   padding-top: env(safe-area-inset-top, 0px);
@@ -11195,17 +11706,7 @@ body {
   }
 }
 
-@media (min-width: 481px) {
-  .menu-content-top-gap-web {
-    height: 140px;
-  }
-}
-
-@media (min-width: 768px) {
-  .menu-content-top-gap-web {
-    height: 160px;
-  }
-}
+/* Резерв під fixed-категорії більше не потрібен: зазор лише на телефоні (див. .menu-page-web нижче) */
 
 /* Анимации для страницы профиля */
 @keyframes pulse-slow {
@@ -13315,5 +13816,51 @@ body {
   .auth-watta-btn-primary {
     @apply w-full rounded-2xl bg-gradient-to-r from-[#0f3d32] to-[#145142] py-3.5 text-center text-base font-bold text-white shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none;
     box-shadow: 0 10px 28px rgba(20, 81, 66, 0.22);
+  }
+
+  /* Сторінки /login та /register — усе в межах 100dvh без прокрутки сторінки (компактні поля) */
+  .auth-watta-page-shell {
+    box-sizing: border-box;
+    min-height: 0;
+    max-height: 100vh;
+    max-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .auth-watta-page-shell .auth-watta-label-text {
+    @apply mb-0.5 text-[10px] uppercase tracking-wide;
+  }
+  .auth-watta-page-shell .auth-watta-input-wrap {
+    @apply rounded-xl border-[1.5px];
+  }
+  .auth-watta-page-shell .auth-watta-input-wrap:focus-within {
+    @apply ring-2 ring-emerald-900/10;
+  }
+  .auth-watta-page-shell .auth-watta-input-icon {
+    @apply left-2.5 w-4 h-4;
+  }
+  .auth-watta-page-shell .auth-watta-input {
+    @apply rounded-xl py-2 pl-10 pr-3 text-sm;
+  }
+  .auth-watta-page-shell .auth-watta-btn-primary {
+    @apply rounded-xl py-2.5 text-sm shadow-md hover:scale-[1.005] active:scale-[0.995];
+    box-shadow: 0 6px 18px rgba(20, 81, 66, 0.18);
+  }
+  /* Якщо реєстрація не вміщується — лише прокрутка всередині картки, не всієї сторінки */
+  .auth-watta-page-shell .auth-watta-form-card {
+    max-height: calc(100vh - 4.75rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 4.75rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Низький екран — ховаємо підзаголовок форми, щоб реєстрація влізла */
+@media (max-height: 700px) {
+  .auth-watta-page-shell .auth-watta-form-desc {
+    display: none;
   }
 }

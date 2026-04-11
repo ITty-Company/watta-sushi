@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { backendBaseUrl } from '@/lib/backendBaseUrl'
+import {
+  backendBaseUrl,
+  backendUnreachableMessage,
+  isBackendConnectionError,
+} from '@/lib/backendBaseUrl'
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,12 +62,9 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      if (fetchError.code === 'ECONNREFUSED' || fetchError.message.includes('fetch failed')) {
-        console.error('Connection refused to:', backendUrl)
-        return NextResponse.json(
-          { message: 'Не удалось подключиться к серверу. Проверьте URL бэкенда.' },
-          { status: 503 }
-        )
+      if (isBackendConnectionError(fetchError)) {
+        console.error('Connection error to:', backendUrl, fetchError)
+        return NextResponse.json({ message: backendUnreachableMessage(apiBase) }, { status: 503 })
       }
       
       throw fetchError

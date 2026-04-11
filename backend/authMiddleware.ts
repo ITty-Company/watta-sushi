@@ -1,48 +1,65 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response, NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
+import { PrismaClient } from '@prisma/client'
+import { getJwtSecret } from './lib/jwtSecret'
 
-const prisma = new PrismaClient();
-const SECRET_KEY = process.env.JWT_SECRET || 'secret-key'; // як у routes/auth.routes.ts та order.routes.ts
+const prisma = new PrismaClient()
 
-// Расширяем тип Request, чтобы TS не ругался (если используешь TypeScript)
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: { id: number; role?: string; email?: string | null; name?: string | null }
 }
 
+/** Адмінські операції (БД, розсилки, банери тощо). */
 export const checkAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // 1. Достаем токен из заголовка (Bearer eyJhbGci...)
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization
     if (!authHeader) {
-      return res.status(401).json({ message: 'Нет токена авторизации' });
+      return res.status(401).json({ message: 'Нет токена авторизации' })
     }
 
-    const token = authHeader.split(' ')[1]; // Берем часть после "Bearer"
-
-    // 2. Проверяем токен
-    const decoded: any = jwt.verify(token, SECRET_KEY);
-    const uid = Number(decoded.userId);
+    const token = authHeader.split(' ')[1]
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId?: string | number }
+    const uid = Number(decoded.userId)
     if (!Number.isFinite(uid)) {
-      return res.status(403).json({ message: 'Неверный токен' });
+      return res.status(403).json({ message: 'Неверный токен' })
     }
 
-    // 3. Ищем юзера в базе и проверяем роль
-    const user = await prisma.user.findUnique({ where: { id: uid } });
+    const user = await prisma.user.findUnique({ where: { id: uid } })
 
     if (!user) {
-      return res.status(401).json({ message: 'Пользователь не найден' });
+      return res.status(401).json({ message: 'Пользователь не найден' })
     }
 
-    if (user.role !== 'ADMIN') { // <--- САМАЯ ВАЖНАЯ ПРОВЕРКА
-      return res.status(403).json({ message: 'Доступ запрещен! Вы не админ.' });
+    if (user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Доступ запрещен! Вы не админ.' })
     }
 
-    // Если все ок — пускаем дальше
-    req.user = user;
-    next();
-
-  } catch (e) {
-    return res.status(403).json({ message: 'Неверный токен' });
+    req.user = { id: user.id, role: user.role, email: user.email, name: user.name }
+    next()
+  } catch {
+    return res.status(403).json({ message: 'Неверный токен' })
   }
-};
+}
+
+/** Залогінений клієнт (обране, «мої замовлення»). `req.user.id` — з JWT, без довіри до body/query. */
+export const authenticateUser = (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Нет токена авторизации' })
+    }
+    const token = authHeader.split(' ')[1]
+    if (!token) {
+      return res.status(401).json({ message: 'Нет токена авторизации' })
+    }
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId?: string | number }
+    const uid = Number(decoded.userId)
+    if (!Number.isFinite(uid)) {
+      return res.status(403).json({ message: 'Неверный токен' })
+    }
+    req.user = { id: uid }
+    next()
+  } catch {
+    return res.status(403).json({ message: 'Неверный токен' })
+  }
+}

@@ -70,6 +70,7 @@ export default function Footer() {
 
   const pillLinks = [
     { href: '/menu', label: nav.menu },
+    { href: '/promotions', label: nav.promotions },
     { href: '/delivery', label: nav.deliveryPage },
     { href: '/blog', label: sf.blog },
     { href: '/reviews', label: sf.reviews },
@@ -77,10 +78,22 @@ export default function Footer() {
     { href: '/contacts', label: nav.contacts },
   ]
 
+  /** Колонка «Навігація» — ті самі основні сторінки, що й у drawer / pills, плюс кошик, профіль, сповіщення, вхід. */
   const navLinks = [
+    { href: '/', label: nav.home },
+    { href: '/menu', label: nav.menu },
+    { href: '/promotions', label: nav.promotions },
     { href: '/delivery', label: nav.delivery },
-    { href: '/blog', label: sf.news },
+    { href: '/blog', label: sf.blog },
+    { href: '/reviews', label: sf.reviews },
     { href: '/about', label: nav.about },
+    { href: '/contacts', label: nav.contacts },
+    { href: '/favorites', label: nav.favorites },
+    { href: '/cart', label: t.cart },
+    { href: '/profile', label: t.profile },
+    { href: '/notifications', label: t.notifications.title },
+    { href: '/login', label: t.auth.login },
+    { href: '/register', label: t.auth.register },
   ]
 
   useEffect(() => {
@@ -155,25 +168,7 @@ export default function Footer() {
         <div className="site-footer-watta__divider" aria-hidden />
 
         <div className="site-footer-watta__grid">
-          <div className="site-footer-watta__col site-footer-watta__col--brand">
-            <Link href="/privacy" className="site-footer-watta__privacy">
-              {sf.privacy}
-            </Link>
-          </div>
-
-          <div className="site-footer-watta__col">
-            <h3 className="site-footer-watta__col-title">{sf.colNav}</h3>
-            <ul className="site-footer-watta__list">
-              {navLinks.map(({ href, label }) => (
-                <li key={href}>
-                  <Link href={href} className="site-footer-watta__text-link">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
+          {/* Колонка «Оформити замовлення» + телефони — перша (найширша на десктопі). */}
           <div className="site-footer-watta__col">
             <h3 className="site-footer-watta__col-title">{sf.colOrder}</h3>
             <ul className="site-footer-watta__list">
@@ -188,28 +183,41 @@ export default function Footer() {
           </div>
 
           <div className="site-footer-watta__col">
+            <h3 className="site-footer-watta__col-title">{sf.colNav}</h3>
+            <ul className="site-footer-watta__list">
+              {navLinks.map(({ href, label }) => (
+                <li key={`${href}:${label}`}>
+                  <Link href={href} className="site-footer-watta__text-link">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="site-footer-watta__col site-footer-watta__col--brand">
+            <Link href="/privacy" className="site-footer-watta__privacy">
+              {sf.privacy}
+            </Link>
+          </div>
+
+          <div className="site-footer-watta__col">
             <h3 className="site-footer-watta__col-title">{sf.colHours}</h3>
             <p className="site-footer-watta__body-strong">{sf.hoursLine}</p>
           </div>
 
-          <div className="site-footer-watta__col">
-            <h3 className="site-footer-watta__col-title">{sf.colLocations}</h3>
-            <ul className="site-footer-watta__list">
-              {locationLines.length === 0 ? (
-                <li>
-                  <span className="site-footer-watta__text-link site-footer-watta__text-link--static">
-                    {sf.locationsEmpty}
-                  </span>
-                </li>
-              ) : (
-                locationLines.map((line) => (
+          {locationLines.length > 0 ? (
+            <div className="site-footer-watta__col">
+              <h3 className="site-footer-watta__col-title">{sf.colLocations}</h3>
+              <ul className="site-footer-watta__list">
+                {locationLines.map((line) => (
                   <li key={line}>
                     <span className="site-footer-watta__text-link site-footer-watta__text-link--static">{line}</span>
                   </li>
-                ))
-              )}
-            </ul>
-          </div>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           <div className="site-footer-watta__col">
             <h3 className="site-footer-watta__col-title">{sf.colSocial}</h3>

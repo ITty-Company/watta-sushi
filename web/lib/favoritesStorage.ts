@@ -1,5 +1,7 @@
 /** Локальне обране: масив id (узгоджено з useProductFavorite та картками меню). */
 
+import { getBearerAuthHeaders } from '@/lib/authHeaders'
+
 export function readFavoriteIds(): number[] {
   if (typeof window === 'undefined') return []
   try {
@@ -28,8 +30,10 @@ export async function mergeServerFavoritesIntoLocal(): Promise<void> {
     const user = JSON.parse(userStr)
     const uid = Number(user?.id)
     if (!Number.isFinite(uid) || uid <= 0) return
+    const authHeaders = getBearerAuthHeaders()
+    if (Object.keys(authHeaders as Record<string, string>).length === 0) return
     const res = await fetch('/api/favorites', {
-      headers: { 'x-user-id': String(uid) },
+      headers: authHeaders,
     })
     if (!res.ok) return
     const serverIds: unknown = await res.json()

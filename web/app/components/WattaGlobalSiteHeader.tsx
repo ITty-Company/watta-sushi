@@ -30,6 +30,8 @@ function useCartCountFallback(enabled: boolean) {
 }
 
 export type WattaGlobalSiteHeaderProps = {
+  /** На /menu: шапка всередині спільного sticky-блоку з категоріями — без власного `position: sticky` */
+  disableSticky?: boolean
   /** Скільки позицій у кошику; якщо не передано — рахуємо з localStorage */
   cartCount?: number
   onCityChange: (cityId: number) => void
@@ -45,6 +47,7 @@ export type WattaGlobalSiteHeaderProps = {
 }
 
 export default function WattaGlobalSiteHeader({
+  disableSticky = false,
   cartCount: cartCountProp,
   onCityChange,
   deliveryEmbeddedActive = false,
@@ -60,6 +63,15 @@ export default function WattaGlobalSiteHeader({
   const pathname = usePathname()
   const internalCount = useCartCountFallback(cartCountProp === undefined)
   const cartCount = cartCountProp ?? internalCount
+
+  useEffect(() => {
+    const ref = rightNavDrawer?.cityChangeHandlerRef
+    if (!ref) return
+    ref.current = onCityChange
+    return () => {
+      ref.current = null
+    }
+  }, [rightNavDrawer, onCityChange])
 
   const deliveryNavActive = pathname === '/delivery' || deliveryEmbeddedActive
 
@@ -108,13 +120,13 @@ export default function WattaGlobalSiteHeader({
     display: 'inline-block',
   })
 
+  const shellPositionClass = disableSticky
+    ? 'relative z-[90]'
+    : 'sticky top-0 z-[90] transition-transform duration-300'
+
   return (
     <div
-      className="menu-fixed-header-shell-web fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-transform duration-300 menu-top-safe-web md:bg-[var(--watta-page-fill)]"
-      style={{
-        paddingLeft: 'env(safe-area-inset-left, 0px)',
-        paddingRight: 'env(safe-area-inset-right, 0px)',
-      }}
+      className={`menu-fixed-header-shell-web ${shellPositionClass} w-full shrink-0 bg-white shadow-sm menu-top-safe-web md:bg-[var(--watta-page-fill)]`}
     >
       <header className="app-header-web relative z-10 max-w-[100vw]">
         <div className="header-content-web">
@@ -297,7 +309,6 @@ export default function WattaGlobalSiteHeader({
           </div>
         </div>
       </header>
-      <div className="app-header-spacer-web" aria-hidden />
     </div>
   )
 }
