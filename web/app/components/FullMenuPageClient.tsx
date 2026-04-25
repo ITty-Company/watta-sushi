@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
+import WattaStickyChromeLayout from './WattaStickyChromeLayout'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 
 interface MenuItem {
@@ -374,7 +375,7 @@ export default function FullMenuPageClient() {
 
   return (
     <div className="watta-full-menu-page flex w-full max-w-[100vw] flex-1 flex-col overflow-x-clip bg-[#f2f5f3]">
-      <div ref={stickyChromeRef} className="watta-full-menu-sticky-chrome">
+      <WattaStickyChromeLayout innerRef={stickyChromeRef} chromeClassName="watta-full-menu-sticky-chrome">
         <WattaGlobalSiteHeader
           disableSticky
           logoHref="/"
@@ -464,7 +465,7 @@ export default function FullMenuPageClient() {
             ›
           </button>
         </div>
-      </div>
+      </WattaStickyChromeLayout>
 
       <div className="categories-panel-spacer-web watta-full-menu-below-sticky-spacer" aria-hidden />
 
