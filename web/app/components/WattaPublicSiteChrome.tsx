@@ -4,6 +4,7 @@ import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
+import WattaStickyChromeLayout from './WattaStickyChromeLayout'
 
 /**
  * Єдина верхня панель + горизонталь категорій для усіх публічних сторінок,
@@ -19,7 +20,7 @@ export default function WattaPublicSiteChrome() {
   }, [])
 
   return (
-    <div className="watta-public-sticky-chrome shrink-0">
+    <WattaStickyChromeLayout chromeClassName="watta-public-sticky-chrome">
       <WattaGlobalSiteHeader
         disableSticky
         logoHref="/"
@@ -30,6 +31,6 @@ export default function WattaPublicSiteChrome() {
         onProfileClick={() => router.push('/profile')}
       />
       <WattaMenuCategoryStrip />
-    </div>
+    </WattaStickyChromeLayout>
   )
 }

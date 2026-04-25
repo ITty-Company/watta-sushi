@@ -30,7 +30,7 @@ function useCartCountFallback(enabled: boolean) {
 }
 
 export type WattaGlobalSiteHeaderProps = {
-  /** На /menu: шапка всередині спільного sticky-блоку з категоріями — без власного `position: sticky` */
+  /** У `watta-full-menu-sticky-chrome` / `watta-public-sticky-chrome`: шапка без власного `position: sticky` */
   disableSticky?: boolean
   /** Скільки позицій у кошику; якщо не передано — рахуємо з localStorage */
   cartCount?: number

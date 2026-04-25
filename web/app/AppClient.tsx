@@ -37,7 +37,7 @@ export default function AppClient({ children }: { children: ReactNode }) {
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
         {/* Мінімум висоти вікна: футер лишається внизу; фон сторінки — як у шапки контенту */}
         <div
-          className={`flex min-h-[100dvh] min-h-[100svh] flex-col overflow-x-hidden bg-[#f2f5f3]${showPublicBottomBar ? ' watta-app-with-public-bottom-bar' : ''}`}
+          className={`watta-app-shell-root flex min-h-[100dvh] min-h-[100svh] flex-col bg-[#f2f5f3]${showPublicBottomBar ? ' watta-app-with-public-bottom-bar' : ''}`}
         >
           {/* Контент займає вільне місце між шапкою сторінки та глобальним футером */}
           <main className="flex min-h-0 w-full max-w-[100vw] flex-1 flex-col">
