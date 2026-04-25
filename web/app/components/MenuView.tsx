@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import { useLanguage } from '../context/LanguageContext'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
+import WattaStickyChromeLayout from './WattaStickyChromeLayout'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
 import LogoBackground from './LogoBackground'
 import PhoneView from './PhoneView'
@@ -272,17 +273,6 @@ export default function MenuView() {
   const { t, language, getLocalized } = useLanguage()
   const welcomeHeroSectionRef = useRef<HTMLElement | null>(null)
   const marqueeBarRef = useRef<HTMLDivElement | null>(null)
-  /** Після зеленої бігучої смуги: на вузькому екрані (≤768px) показуємо фікс-панель категорій; на ширших — завжди true */
-  const [mobileCatBarVisible, setMobileCatBarVisible] = useState(true)
-  /** Вузький екран: «фаза відео» + панель категорій після marquee (раніше лише ≤480 — на багатьох телефонах відео обрізалось) */
-  const [isPhoneLayout, setIsPhoneLayout] = useState(false)
-  useEffect(() => {
-    const check = () => setIsPhoneLayout(typeof window !== 'undefined' && window.innerWidth <= 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
   const [activePage, setActivePage] = useState<string | null>(null)
 
   const scrollMainContentToTop = useCallback(() => {
@@ -301,60 +291,7 @@ export default function MenuView() {
     root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
   }, [])
 
-  useLayoutEffect(() => {
-    if (activePage !== null) {
-      setMobileCatBarVisible(true)
-      return
-    }
-
-    const mqPhone = window.matchMedia('(max-width: 768px)')
-    const root = () => document.querySelector<HTMLElement>('.content-web--watta-craft')
-
-    const update = () => {
-      if (!mqPhone.matches) {
-        setMobileCatBarVisible(true)
-        return
-      }
-      const scrollRoot = root()
-      const bar = marqueeBarRef.current
-      if (!scrollRoot || !bar) return
-      const rootTop = scrollRoot.getBoundingClientRect().top
-      const barBottom = bar.getBoundingClientRect().bottom
-      setMobileCatBarVisible(barBottom <= rootTop + 2)
-    }
-
-    let raf = 0
-    const detach = () => {
-      cancelAnimationFrame(raf)
-      root()?.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
-    }
-
-    const tryAttach = () => {
-      cancelAnimationFrame(raf)
-      detach()
-      if (!mqPhone.matches) {
-        setMobileCatBarVisible(true)
-        return
-      }
-      const scrollRoot = root()
-      if (!scrollRoot || !marqueeBarRef.current) {
-        raf = requestAnimationFrame(tryAttach)
-        return
-      }
-      update()
-      scrollRoot.addEventListener('scroll', update, { passive: true })
-      window.addEventListener('resize', update)
-    }
-
-    tryAttach()
-    mqPhone.addEventListener('change', tryAttach)
-    return () => {
-      mqPhone.removeEventListener('change', tryAttach)
-      detach()
-    }
-  }, [activePage])
-
+  /** Смуга шапка + категорії на вузьких екранах: завжди та сама, що на ноуті (без «фази відео» без категорій) */
   useEffect(() => {
     const el = document.querySelector<HTMLElement>('.content-web--watta-craft')
     if (!el) return
@@ -365,9 +302,7 @@ export default function MenuView() {
         el.style.removeProperty('scroll-padding-top')
         return
       }
-      el.style.scrollPaddingTop = mobileCatBarVisible
-        ? 'calc(148px + env(safe-area-inset-top, 0px))'
-        : 'calc(56px + env(safe-area-inset-top, 0px))'
+      el.style.scrollPaddingTop = 'calc(148px + env(safe-area-inset-top, 0px))'
     }
 
     apply()
@@ -376,7 +311,7 @@ export default function MenuView() {
       mqNarrow.removeEventListener('change', apply)
       el.style.removeProperty('scroll-padding-top')
     }
-  }, [mobileCatBarVisible])
+  }, [])
 
   const [selectedPromoId, setSelectedPromoId] = useState<number | null>(null)
   // --- ГОРОДА ДОСТАВКИ ---
@@ -404,6 +339,16 @@ export default function MenuView() {
     if (!video) return
 
     const safePlay = () => {
+      video.defaultMuted = true
+      video.muted = true
+      video.playsInline = true
+      video.autoplay = true
+      video.loop = true
+      video.setAttribute('playsinline', 'true')
+      video.setAttribute('webkit-playsinline', 'true')
+      video.setAttribute('muted', 'true')
+      video.setAttribute('autoplay', 'true')
+      video.disablePictureInPicture = true
       const p = video.play()
       if (p && typeof p.catch === 'function') {
         p.catch(() => {
@@ -414,6 +359,8 @@ export default function MenuView() {
 
     if (video.readyState >= 2) safePlay()
     const t = window.setTimeout(safePlay, 120)
+    const t2 = window.setTimeout(safePlay, 420)
+    const t3 = window.setTimeout(safePlay, 900)
     const onCanPlay = () => safePlay()
     const onLoadedData = () => safePlay()
     const onPageShow = () => safePlay()
@@ -428,6 +375,8 @@ export default function MenuView() {
 
     return () => {
       window.clearTimeout(t)
+      window.clearTimeout(t2)
+      window.clearTimeout(t3)
       video.removeEventListener('canplay', onCanPlay)
       video.removeEventListener('loadeddata', onLoadedData)
       window.removeEventListener('pageshow', onPageShow)
@@ -1803,35 +1752,31 @@ export default function MenuView() {
   // ============================================
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
-  const heroPhaseMobile = isPhoneLayout && !mobileCatBarVisible
-
   return (
-    <div
-      className={`menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-transparent${heroPhaseMobile ? ' menu-page-web--hero-phase-mobile' : ''}`}
-    >
+    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] bg-transparent">
       <LogoBackground />
 
-      <WattaGlobalSiteHeader
-        cartCount={cartCount}
-        onCityChange={(cityId: number) => {
-          setSelectedCityId(cityId)
-          loadMenuItems()
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
-          }
-        }}
-        deliveryEmbeddedActive={activePage === 'delivery'}
-        onPromotionsClick={() => handlePageOpen('promotions')}
-        onCartClick={openCart}
-        onMenuClick={toggleSidebar}
-        onProfileClick={() => openProfileTab('history')}
-        onLogoClick={handleClosePage}
-      />
+      {/* Фіксована верхня зона: шапка + категорії (WattaStickyChromeLayout — липне до вікна при скролі .content-web) */}
+      <WattaStickyChromeLayout chromeClassName="watta-full-menu-sticky-chrome">
+        <WattaGlobalSiteHeader
+          disableSticky
+          cartCount={cartCount}
+          onCityChange={(cityId: number) => {
+            setSelectedCityId(cityId)
+            loadMenuItems()
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
+            }
+          }}
+          deliveryEmbeddedActive={activePage === 'delivery'}
+          onPromotionsClick={() => handlePageOpen('promotions')}
+          onCartClick={openCart}
+          onMenuClick={toggleSidebar}
+          onProfileClick={() => openProfileTab('history')}
+          onLogoClick={handleClosePage}
+        />
 
-      <>
-          <div
-            className={`categories-panel-wrapper-web${heroPhaseMobile ? ' categories-panel-wrapper-web--hero-phase-mobile' : ''}`}
-          >
+          <div className="categories-panel-wrapper-web">
             <button
               type="button"
               className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`}
@@ -1906,12 +1851,9 @@ export default function MenuView() {
               ›
             </button>
           </div>
+      </WattaStickyChromeLayout>
 
-          <div
-            className={`categories-panel-spacer-web${heroPhaseMobile ? ' categories-panel-spacer-web--hero-phase-mobile' : ''}`}
-            aria-hidden
-          />
-      </>
+          <div className="categories-panel-spacer-web" aria-hidden />
 
       {activePage === 'delivery' ? (
         <>

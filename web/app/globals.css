@@ -1874,7 +1874,16 @@
 html.watta-light-chrome {
   color-scheme: only light;
   background-color: #ffffff !important;
-  overflow-x: hidden;
+  /* hidden по осі X змушує WebKit вважати root scrollport — ламає position:sticky у дочірніх до body */
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/* Оболонка AppClient: не overflow-x-hidden — інакше sticky-шапка/категорії не липнуть до вікна при скролі body */
+.watta-app-shell-root {
+  overflow-x: clip;
+  overflow-y: visible;
+  max-width: 100vw;
 }
 
 html.watta-light-chrome body {
@@ -1888,7 +1897,7 @@ html.watta-light-chrome body {
   padding: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -2634,26 +2643,20 @@ html.watta-light-chrome body {
   margin-top: 0;
 }
 
-/* /menu: одна sticky-зона — шапка + горизонталь категорій (липне до viewport при скролі) */
+/* /menu і public: верхня зона — position fixed + резерв висоти в WattaStickyChromeLayout */
 .watta-full-menu-sticky-chrome {
-  position: sticky;
-  top: 0;
-  z-index: 95;
   width: 100%;
   flex-shrink: 0;
-  background: #f2f5f3;
-  box-shadow: 0 12px 32px -20px rgba(20, 81, 66, 0.45);
+  background: transparent;
+  box-shadow: none;
 }
 
-/* Глобальний chrome (AppClient): шапка + категорії на блозі, відгуках, кошику тощо */
+/* Глобальний chrome (AppClient): шапка + категорії */
 .watta-public-sticky-chrome {
-  position: sticky;
-  top: 0;
-  z-index: 95;
   width: 100%;
   flex-shrink: 0;
-  background: var(--watta-page-fill, #f2f5f3);
-  box-shadow: 0 10px 28px -18px rgba(20, 81, 66, 0.35);
+  background: transparent;
+  box-shadow: none;
 }
 .watta-public-sticky-chrome .categories-panel-wrapper-web {
   position: relative !important;
@@ -2662,6 +2665,9 @@ html.watta-light-chrome body {
   right: auto;
   margin-top: 6px;
   margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 @media (max-width: 480px) {
   .watta-public-sticky-chrome .categories-panel-wrapper-web {
@@ -2792,19 +2798,56 @@ html.watta-light-chrome body {
   right: auto;
   margin-top: 6px;
   margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 @media (max-width: 480px) {
   .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
     margin-top: 4px;
   }
 }
-/* Менший зазор під комбінованим блоком — контент ближче, scroll-margin рахуємо в JS */
-.watta-full-menu-below-sticky-spacer {
-  height: 12px !important;
+
+/* Головна: не другий position:sticky — перебиває .menu-page-web (моб.) */
+.menu-page-web .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+  position: relative !important;
+  top: auto !important;
 }
-@media (min-width: 481px) {
+
+/* Усі сторінки з sticky-chrome: білий лише header + внутрішня .categories-panel-web */
+.watta-full-menu-sticky-chrome .menu-fixed-header-shell-web,
+.watta-public-sticky-chrome .menu-fixed-header-shell-web {
+  background: #ffffff !important;
+}
+.watta-full-menu-sticky-chrome .app-header-web,
+.watta-public-sticky-chrome .app-header-web {
+  border-bottom: none;
+}
+.watta-full-menu-sticky-chrome .categories-panel-web,
+.watta-public-sticky-chrome .categories-panel-web {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.07),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+@media (min-width: 1025px) {
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    border-radius: 14px;
+    box-shadow:
+      0 3px 14px rgba(0, 0, 0, 0.06),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  }
+}
+/* /menu: зазор під sticky як на глобальній сітці — 0 з планшету, невеликий лише на телефоні */
+.watta-full-menu-below-sticky-spacer {
+  height: 0 !important;
+  min-height: 0 !important;
+}
+@media (max-width: 480px) {
   .watta-full-menu-below-sticky-spacer {
-    height: 14px !important;
+    height: 10px !important;
   }
 }
 
@@ -2895,8 +2938,8 @@ html.watta-light-chrome body {
 @media (max-width: 1024px) {
   .content-web--watta-craft:has(.menu-page-web) {
     scroll-snap-type: y mandatory;
-    /* Щоб snap не підтягував секцію під sticky шапку + категорії */
-    scroll-padding-top: calc(130px + env(safe-area-inset-top, 0px));
+    /* Щоб snap не підтягував секцію під fixed шапку + категорії (збіг з JS у MenuView) */
+    scroll-padding-top: calc(148px + env(safe-area-inset-top, 0px));
   }
 
   .menu-snap-section-welcome-web {
@@ -3934,25 +3977,15 @@ html.watta-light-chrome body {
   }
 }
 
-/* Панель у потоці — лише невеликий зазор (раніше резерв під fixed) */
+/* Панель → наступний блок: 0 з планшету/ПК/ноуту/альбому; невеликий зазор лише на вузькому телефоні (≤480) */
 .categories-panel-spacer-web {
   flex-shrink: 0;
-  height: 20px;
+  height: 0 !important;
+  min-height: 0 !important;
 }
 @media (max-width: 480px) {
   .categories-panel-spacer-web {
-    height: 16px;
-  }
-}
-@media (min-width: 481px) and (max-width: 1024px) {
-  .categories-panel-spacer-web {
-    height: 18px;
-  }
-}
-
-@media (min-width: 1025px) {
-  .categories-panel-spacer-web {
-    height: calc(12px + var(--menu-header-cat-gap-web, 0px));
+    height: 10px !important;
   }
 }
 
@@ -5209,9 +5242,9 @@ html.watta-light-chrome body {
   }
 }
 
-/* Перша секція: відео на всю ширину/висоту екрана під шапкою; панель категорій — sticky поверх відео */
+/* Перша секція: герой; на головній (.menu-page-web) без нахльосту — див. блок «Головна: герой… під панеллю» */
 .welcome-hero-section-web {
-  /* Overlap під панеллю категорій — чим більше, тим вище «сідає» відео */
+  /* Негативний margin-top через --welcome-cat-overlap; на / для menu-page вимкнено */
   --welcome-cat-overlap: clamp(128px, 26vw, 176px);
   position: relative;
   isolation: isolate;
@@ -5379,19 +5412,32 @@ html.watta-light-chrome body {
 }
 
 /*
- * Головна лише на телефоні (≤480px): відео під категоріями в потоці, без нахльосту.
- * Планшет / ноутбук / ПК — нахлест як раніше (категорії «на» відео, менший зазор під шапкою).
+ * Головна: герой (фото/відео) під панеллю категорій у потоці — без нахльосту на всіх ширинах.
  */
-@media (max-width: 480px) {
+.menu-page-web .welcome-hero-section-web {
+  --welcome-cat-overlap: 0px !important;
+  margin-top: 0 !important;
+}
+
+/* Планшет+ПК: підтягуємо герой до візуального низу панелі (резерв у потоці + вимір fixed часто дають смугу #f2f5f3) */
+@media (min-width: 481px) {
   .menu-page-web .welcome-hero-section-web {
-    --welcome-cat-overlap: 0px !important;
-    margin-top: 0 !important;
+    margin-top: -96px !important;
   }
+}
 
-  .menu-page-web .welcome-hero-video-fill-web {
-    margin-top: 0 !important;
+/* Планшет / ноут до 1024: без мін-висоти clamp — інакше object-fit:contain залишав пусте #f3f4f6 під чіпами */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .menu-page-web .welcome-hero-section-web {
+    min-height: 0 !important;
   }
+}
 
+.menu-page-web .welcome-hero-video-fill-web {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 480px) {
   .menu-page-web .welcome-video-native-web {
     object-fit: contain !important;
     object-position: center center !important;
@@ -5615,46 +5661,67 @@ html.watta-light-chrome body {
   background-repeat: no-repeat;
 }
 
-/* Кнопки-стрілок панелі категорій — яскраво-зелені за замовчуванням (ноут/ПК); на мобільному в блоці панелі сховані */
+/* Кнопки-стрілок панелі категорій — той самий темно-зелений бренд (#145142), що на ноуті, на всіх ширинах */
 .categories-scroll-btn-web {
   flex-shrink: 0;
   width: 28px;
   height: 28px;
+  min-width: 28px;
   -webkit-appearance: none;
   appearance: none;
-  border: 2px solid rgba(21, 128, 61, 0.9);
-  background: linear-gradient(145deg, #16a34a 0%, #22c55e 42%, #34d399 100%);
+  border: 1.5px solid rgba(8, 56, 44, 0.98);
   border-radius: 50%;
+  background: linear-gradient(
+    155deg,
+    #083828 0%,
+    #0d4a36 22%,
+    #145142 52%,
+    #166b4d 78%,
+    #127a52 100%
+  );
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.2),
-    0 0 8px 0 rgba(34, 197, 94, 0.55),
-    0 2px 6px rgba(0, 0, 0, 0.12);
+    0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 0 12px rgba(20, 81, 66, 0.55),
+    0 0 6px rgba(16, 107, 74, 0.4),
+    0 2px 10px rgba(8, 40, 32, 0.35),
+    0 1px 4px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
   color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
     border-color 0.2s ease,
     background 0.2s ease;
   z-index: 10;
+  overflow: visible;
 }
 
 .categories-scroll-btn-web:hover {
-  background: linear-gradient(145deg, #22c55e 0%, #4ade80 48%, #34d399 100%);
-  border-color: rgba(22, 163, 74, 1);
+  background: linear-gradient(
+    155deg,
+    #0d4a36 0%,
+    #145142 38%,
+    #166b4d 62%,
+    #18906e 100%
+  );
+  border-color: rgba(6, 48, 38, 1);
   color: #ffffff;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.28),
-    0 0 0 2px rgba(34, 197, 94, 0.35),
-    0 0 12px 0 rgba(74, 222, 128, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 16px rgba(20, 81, 66, 0.65),
+    0 0 8px rgba(10, 186, 181, 0.25),
+    0 4px 14px rgba(8, 50, 40, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.14);
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 .categories-scroll-btn-web:active {
@@ -5663,14 +5730,19 @@ html.watta-light-chrome body {
 
 .categories-scroll-btn-web:focus,
 .categories-scroll-btn-web:focus-visible {
-  background: linear-gradient(145deg, #16a34a 0%, #22c55e 42%, #34d399 100%);
-  border-color: rgba(21, 128, 61, 0.9);
+  background: linear-gradient(
+    155deg,
+    #083828 0%,
+    #145142 45%,
+    #166b4d 100%
+  );
+  border-color: rgba(8, 56, 44, 0.98);
   color: #ffffff;
-  outline: 2px solid rgba(74, 222, 128, 0.75);
+  outline: 2px solid rgba(10, 186, 181, 0.75);
   outline-offset: 2px;
 }
 
-/* Не змішувати колір через opacity на білому тлі (виглядало як «шалфей») */
+/* Неактивна стрілка (край панелі) */
 .categories-scroll-btn-hidden-web,
 .categories-scroll-btn-hidden-web:hover,
 .categories-scroll-btn-hidden-web:focus,
@@ -5679,30 +5751,15 @@ html.watta-light-chrome body {
   cursor: not-allowed;
   pointer-events: none;
   color: rgba(255, 255, 255, 0.5);
-  border-color: rgba(90, 110, 104, 0.45);
-  background: linear-gradient(145deg, #5a6e68 0%, #4a5c57 100%);
+  border-color: rgba(60, 82, 74, 0.65);
+  background: linear-gradient(145deg, #4a5c54 0%, #3d4e48 100%);
   text-shadow: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   outline: none;
   transform: none;
 }
 
-/* Стрілки листання категорій — лише ноутбук / десктоп (≥1025px); телефон і планшет — свайп */
-@media (max-width: 1024px) {
-  .categories-panel-wrapper-web .categories-scroll-btn-web {
-    display: none !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-}
+/* Стрілки категорій — на всіх ширинах (як на ноуті); на вузьких — компактніше (max-width: 768px нижче) */
 
 /* Ноутбук / десктоп: стрілки — яскраво темно-зелені (бренд #145142), не лайм */
 @media (min-width: 1025px) and (max-width: 1439px) {
@@ -5867,16 +5924,15 @@ html.watta-light-chrome body {
 }
 
 @media (max-width: 768px) {
-  /* Планшет / вузька ширина: стрілки + смуга на всю доступну ширину обгортки */
+  /* Планшет / вузька ширина: ті ж стрілки розміром, що на ноуті; чипи крупніше + горизонтальний скрол */
   .categories-scroll-btn-web {
     display: flex;
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    font-size: 14px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 16px;
     flex-shrink: 0;
     border-radius: 50%;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   }
 
   .categories-panel-wrapper-web {
@@ -5903,23 +5959,23 @@ html.watta-light-chrome body {
     scroll-snap-align: start;
     flex-shrink: 0;
     flex-grow: 0;
-    min-width: 52px;
+    min-width: 64px;
     width: auto;
-    max-width: 112px;
+    max-width: min(112px, 30vw);
     box-sizing: border-box;
-    padding: 7px 5px;
+    padding: 9px 6px;
     gap: 4px;
-    border-radius: 11px;
+    border-radius: 12px;
   }
 
   .category-button-icon-web {
-    font-size: 1.08rem;
+    font-size: 1.2rem;
     line-height: 1;
-    max-height: 1.3em;
+    max-height: 1.35em;
   }
 
   .category-button-label-web {
-    font-size: 7.5px;
+    font-size: 8.5px;
   }
 }
 
@@ -6099,13 +6155,14 @@ html.watta-light-chrome body {
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
-    min-width: calc((100% - 8 * var(--cat-gap)) / 9) !important;
+    /* Не вміщати «9 в ряд» — великі чипи, зайве листається горизонтально */
+    min-width: 68px !important;
     width: auto !important;
-    max-width: min(92px, 22vw) !important;
-    padding: 5px 3px 6px;
+    max-width: min(110px, 32vw) !important;
+    padding: 8px 6px 9px;
     font-size: 0.58rem;
-    border-radius: 10px;
-    gap: 2px;
+    border-radius: 12px;
+    gap: 3px;
     border-width: 1.5px;
     box-shadow:
       0 1px 5px rgba(0, 0, 0, 0.1),
@@ -6113,17 +6170,17 @@ html.watta-light-chrome body {
   }
   
   .category-button-icon-web {
-    font-size: 0.98rem;
+    font-size: 1.2rem;
     line-height: 1;
-    max-height: 1.3em;
+    max-height: 1.4em;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   
   .category-button-label-web {
-    font-size: 7px;
-    line-height: 1.1;
+    font-size: 8.5px;
+    line-height: 1.12;
     white-space: normal;
     overflow-wrap: break-word;
     word-break: break-word;
@@ -6179,24 +6236,20 @@ html.watta-light-chrome body {
 
   .category-button-web {
     flex: 0 0 auto !important;
-    min-width: calc((100% - 8 * var(--cat-gap)) / 9) !important;
+    min-width: 68px !important;
     width: auto !important;
-    max-width: min(108px, 20vw) !important;
+    max-width: min(112px, 30vw) !important;
   }
 
   .menu-content-top-gap-web {
     height: 0 !important;
     min-height: 0 !important;
   }
-
-  .categories-panel-spacer-web {
-    height: 20px;
-  }
 }
 
 /* Планшет 768–1024: ширші чипи. 481–767 (телефон альбом) лишається компактнішим — правила max-width 768 вище */
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* Стрілки приховані правилом max-width 1024px; тут — «вікно» 5 + ½ категорії, решта свайп */
+  /* Планшет: вікно категорій + горизонтальний скрол; стрілки — глобальні (темно-зелені) */
   .categories-panel-wrapper-web {
     width: fit-content;
     max-width: calc(100% - 12px);
@@ -6313,16 +6366,16 @@ html.watta-light-chrome body {
     gap: 6px;
     align-items: center !important;
     justify-content: center !important;
-    background: var(--watta-page-gradient) !important;
+    background: transparent !important;
     border: none !important;
     box-shadow: none !important;
   }
 
   .menu-page-web .categories-scroll-btn-web {
-    width: 22px !important;
-    min-width: 22px !important;
-    height: 22px !important;
-    font-size: 12px !important;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    font-size: 16px !important;
   }
 
   .menu-page-web .categories-panel-web {
@@ -6368,21 +6421,21 @@ html.watta-light-chrome body {
   }
 
   .menu-page-web .category-button-web {
-    min-width: 52px !important;
-    max-width: min(88px, 24vw) !important;
-    padding: 7px 5px !important;
-    border-radius: 11px !important;
-    gap: 4px !important;
+    min-width: 68px !important;
+    max-width: min(110px, 32vw) !important;
+    padding: 8px 6px 9px !important;
+    border-radius: 12px !important;
+    gap: 3px !important;
     scroll-snap-align: start;
   }
 
   .menu-page-web .category-button-icon-web {
-    font-size: 1.02rem !important;
+    font-size: 1.2rem !important;
   }
 
   .menu-page-web .category-button-label-web {
-    font-size: 7.5px !important;
-    line-height: 1.1 !important;
+    font-size: 8.5px !important;
+    line-height: 1.12 !important;
   }
 }
 
@@ -11615,21 +11668,17 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   min-height: 100dvh;
   background: transparent;
   position: relative;
+  /* Не `overflow-x: hidden` з Tailwind: інакше за правилами CSS y-вісь стає scrollport і ламає position:sticky (Safari/WebKit) відносно .content-web */
+  overflow-x: clip;
+  overflow-y: visible;
   /* Відступ для home indicator лише в підвалі (.site-footer-watta), інакше під футером з’являлась світла смуга */
   padding-bottom: 0;
 }
 
-/* Головна: без «білого мосту» між шапкою/категоріями та відео на планшеті й ПК (лише телефон має відступи через spacer + градієнтну смугу) */
+/* Головна: зазор між панеллю категорій і наступними секціями (категорія→контент — глобальні .categories-panel-spacer-web) */
 .menu-page-web .menu-content-top-gap-web {
   height: 0 !important;
   min-height: 0 !important;
-}
-
-@media (min-width: 481px) {
-  .menu-page-web .categories-panel-spacer-web {
-    height: 0 !important;
-    min-height: 0 !important;
-  }
 }
 
 /* Верхняя зона под «чёлку» / статус-бар */
@@ -11706,7 +11755,7 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   }
 }
 
-/* Резерв під fixed-категорії більше не потрібен: зазор лише на телефоні (див. .menu-page-web нижче) */
+/* Резерв під fixed-категорії: зазор категорія→контент — глобальні `.categories-panel-spacer-web` (0 з 481px, 10px лише ≤480) */
 
 /* Анимации для страницы профиля */
 @keyframes pulse-slow {
