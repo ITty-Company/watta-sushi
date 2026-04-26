@@ -32,9 +32,11 @@ import {
 import { HomeCategoryProductRail } from './HomeCategoryProductRail'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
+import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
 
 /** Скільки карток показувати в горизонтальній стрічці на головній; решта — через «Подивитися всі» на /menu */
-const HOME_CATEGORY_RAIL_PREVIEW_MAX = 6
+const HOME_CATEGORY_RAIL_PREVIEW_MAX = 12
 
 function readCinematicRailScrolls(): { rec: number; promo: number } {
   if (typeof document === 'undefined') return { rec: 0, promo: 0 }
@@ -202,6 +204,7 @@ function WelcomeHeroSection({
   setHeroVideoSourceIndex,
   setHeroVideoFailed,
   heroVideoRef,
+  heroVideoCanvasRef,
   heroVideoSrc,
   videoSources,
 }: {
@@ -210,6 +213,7 @@ function WelcomeHeroSection({
   setHeroVideoSourceIndex: React.Dispatch<React.SetStateAction<number>>
   setHeroVideoFailed: React.Dispatch<React.SetStateAction<boolean>>
   heroVideoRef: React.Ref<HTMLVideoElement>
+  heroVideoCanvasRef: React.RefObject<HTMLCanvasElement>
   heroVideoSrc: string
   videoSources: readonly string[]
 }) {
@@ -228,32 +232,64 @@ function WelcomeHeroSection({
             aria-hidden
           />
         ) : (
-          <video
-            key={heroVideoSrc}
-            ref={heroVideoRef}
-            className="welcome-video-native-web"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            tabIndex={-1}
-            aria-hidden
-            onError={() => {
-              setHeroVideoSourceIndex((prev) => {
-                if (prev < videoSources.length - 1) return prev + 1
-                setHeroVideoFailed(true)
-                return prev
-              })
-            }}
-            onEnded={(e) => {
-              const el = e.currentTarget
-              el.currentTime = 0
-              void el.play()
-            }}
-          >
-            <source src={heroVideoSrc} type="video/mp4" />
-          </video>
+          <div className="welcome-hero-video-stack-web">
+            <video
+              key={heroVideoSrc}
+              ref={heroVideoRef}
+              className="welcome-video-native-web welcome-hero-video-source-for-canvas-web"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls={false}
+              disablePictureInPicture
+              preload="auto"
+              tabIndex={-1}
+              aria-hidden
+              onContextMenu={(e) => e.preventDefault()}
+              onError={() => {
+                setHeroVideoSourceIndex((prev) => {
+                  if (prev < videoSources.length - 1) return prev + 1
+                  setHeroVideoFailed(true)
+                  return prev
+                })
+              }}
+              onEnded={(e) => {
+                const el = e.currentTarget
+                el.currentTime = 0
+                void el.play()
+              }}
+            >
+              <source src={heroVideoSrc} type="video/mp4" />
+            </video>
+            <canvas
+              ref={heroVideoCanvasRef}
+              className="welcome-hero-video-canvas-mirror-web"
+              aria-hidden
+            />
+            {/* Поверх canvas: жодні кліки/жести не доходять до прихованого <video> */}
+            <div
+              className="welcome-hero-video-input-shield-web"
+              aria-hidden
+              role="presentation"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onAuxClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onDoubleClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+            />
+          </div>
         )}
       </div>
     </section>
@@ -324,6 +360,7 @@ export default function MenuView() {
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)
+  const heroVideoCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const heroVideoSrc =
     HERO_VIDEO_SOURCES_MENU[heroVideoSourceIndex] ?? HERO_VIDEO_SOURCES_MENU[0]
@@ -336,53 +373,19 @@ export default function MenuView() {
   useEffect(() => {
     if (heroVideoFailed) return
     const video = heroVideoRef.current
-    if (!video) return
-
-    const safePlay = () => {
-      video.defaultMuted = true
-      video.muted = true
-      video.playsInline = true
-      video.autoplay = true
-      video.loop = true
-      video.setAttribute('playsinline', 'true')
-      video.setAttribute('webkit-playsinline', 'true')
-      video.setAttribute('muted', 'true')
-      video.setAttribute('autoplay', 'true')
-      video.disablePictureInPicture = true
-      const p = video.play()
-      if (p && typeof p.catch === 'function') {
-        p.catch(() => {
-          // Safari/iOS може тимчасово блокувати autoplay до canplay/pageshow.
-        })
-      }
-    }
-
-    if (video.readyState >= 2) safePlay()
-    const t = window.setTimeout(safePlay, 120)
-    const t2 = window.setTimeout(safePlay, 420)
-    const t3 = window.setTimeout(safePlay, 900)
-    const onCanPlay = () => safePlay()
-    const onLoadedData = () => safePlay()
-    const onPageShow = () => safePlay()
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') safePlay()
-    }
-
-    video.addEventListener('canplay', onCanPlay)
-    video.addEventListener('loadeddata', onLoadedData)
-    window.addEventListener('pageshow', onPageShow)
-    document.addEventListener('visibilitychange', onVisibility)
-
+    const canvas = heroVideoCanvasRef.current
+    if (!video || !canvas) return
+    const stack = video.closest('.welcome-hero-video-stack-web')
+    const offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
+    const offAutoplay = bindHeroVideoAutoplay(video, {
+      extendedRetries: true,
+      blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
+    })
     return () => {
-      window.clearTimeout(t)
-      window.clearTimeout(t2)
-      window.clearTimeout(t3)
-      video.removeEventListener('canplay', onCanPlay)
-      video.removeEventListener('loadeddata', onLoadedData)
-      window.removeEventListener('pageshow', onPageShow)
-      document.removeEventListener('visibilitychange', onVisibility)
+      offMirror()
+      offAutoplay()
     }
-  }, [heroVideoSrc, heroVideoFailed])
+  }, [heroVideoSrc, heroVideoFailed, activePage])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.localStorage) return
@@ -795,6 +798,12 @@ export default function MenuView() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handleProductsUpdate = () => {
+      if (typeof sessionStorage !== 'undefined') {
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const k = sessionStorage.key(i)
+          if (k?.startsWith('menu_items_')) sessionStorage.removeItem(k)
+        }
+      }
       void loadMenuItems()
     }
     window.addEventListener('productsUpdated', handleProductsUpdate)
@@ -1067,6 +1076,19 @@ export default function MenuView() {
           break
         }
       }
+    }
+    const sortInCategory = (arr: MenuItem[]) =>
+      [...arr].sort((a, b) => {
+        const aRec = a.isRecommended === true && a.allowRecommendations !== false
+        const bRec = b.isRecommended === true && b.allowRecommendations !== false
+        if (aRec !== bRec) return aRec ? -1 : 1
+        if (aRec && bRec) return (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0)
+        return a.id - b.id
+      })
+    for (const cat of menuCategories) {
+      const k = cat.key
+      const arr = map.get(k)
+      if (arr?.length) map.set(k, sortInCategory(arr))
     }
     return map
   }, [menuItems, menuCategories])
@@ -1904,6 +1926,7 @@ export default function MenuView() {
         setHeroVideoSourceIndex={setHeroVideoSourceIndex}
         setHeroVideoFailed={setHeroVideoFailed}
         heroVideoRef={heroVideoRef}
+        heroVideoCanvasRef={heroVideoCanvasRef}
         heroVideoSrc={heroVideoSrc}
         videoSources={HERO_VIDEO_SOURCES_MENU}
       />

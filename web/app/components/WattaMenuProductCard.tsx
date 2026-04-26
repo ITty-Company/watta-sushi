@@ -15,6 +15,8 @@ export type WattaMenuProductCardModel = {
   emoji?: string
   imageUrl?: string
   isTop?: boolean
+  /** Рекомендована позиція з адмінки — окремий бейдж на картці */
+  isRecommended?: boolean
   promoDiscountPercent?: number
 }
 
@@ -46,12 +48,15 @@ export function WattaMenuProductCard({
 
   const pillHit =
     'rounded-lg bg-[#eef6f3] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
+  const pillRec =
+    'rounded-lg bg-indigo-50 px-2 py-0.5 text-[10px] font-extrabold text-indigo-800 ring-1 ring-indigo-200/80'
   const pillPromo =
     'rounded-lg bg-[#fff3e8] px-2 py-0.5 text-[10px] font-extrabold text-[#c45a12] ring-1 ring-[#f5c4a8]'
 
   const pills = (
     <div className="pointer-events-none absolute left-2 top-2 z-[2] flex max-w-[calc(100%-3rem)] flex-wrap gap-1">
       {product.isTop ? <span className={pillHit}>{t.popular}</span> : null}
+      {product.isRecommended ? <span className={pillRec}>{t.menuView.recommendedPill}</span> : null}
       {promoPct > 0 ? <span className={pillPromo}>−{promoPct}%</span> : null}
     </div>
   )

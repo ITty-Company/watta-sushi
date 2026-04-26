@@ -6,6 +6,8 @@ import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
+import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
+import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import WattaStickyChromeLayout from './WattaStickyChromeLayout'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
@@ -21,6 +23,9 @@ interface MenuItem {
   emoji: string
   imageUrl?: string
   isTop?: boolean
+  isRecommended?: boolean
+  recommendOrder?: number
+  allowRecommendations?: boolean
   promoDiscountPercent?: number
 }
 
@@ -59,6 +64,7 @@ export default function FullMenuPageClient() {
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)
+  const heroVideoCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const heroVideoSrc =
     HERO_VIDEO_SOURCES_MENU[heroVideoSourceIndex] ?? HERO_VIDEO_SOURCES_MENU[0]
 
@@ -102,6 +108,9 @@ export default function FullMenuPageClient() {
           emoji: '🍣',
           imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
           isTop: p.isPopular === true,
+          isRecommended: p.isRecommended === true,
+          recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
+          allowRecommendations: (cat as { allowRecommendations?: boolean } | undefined)?.allowRecommendations !== false,
           promoDiscountPercent:
             typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
         }
@@ -170,35 +179,17 @@ export default function FullMenuPageClient() {
   useEffect(() => {
     if (heroVideoFailed) return
     const video = heroVideoRef.current
-    if (!video) return
-
-    const safePlay = () => {
-      const p = video.play()
-      if (p && typeof p.catch === 'function') {
-        p.catch(() => {})
-      }
-    }
-
-    if (video.readyState >= 2) safePlay()
-    const t = window.setTimeout(safePlay, 120)
-    const onCanPlay = () => safePlay()
-    const onLoadedData = () => safePlay()
-    const onPageShow = () => safePlay()
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') safePlay()
-    }
-
-    video.addEventListener('canplay', onCanPlay)
-    video.addEventListener('loadeddata', onLoadedData)
-    window.addEventListener('pageshow', onPageShow)
-    document.addEventListener('visibilitychange', onVisibility)
-
+    const canvas = heroVideoCanvasRef.current
+    if (!video || !canvas) return
+    const stack = video.closest('.welcome-hero-video-stack-web')
+    const offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
+    const offAutoplay = bindHeroVideoAutoplay(video, {
+      extendedRetries: true,
+      blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
+    })
     return () => {
-      window.clearTimeout(t)
-      video.removeEventListener('canplay', onCanPlay)
-      video.removeEventListener('loadeddata', onLoadedData)
-      window.removeEventListener('pageshow', onPageShow)
-      document.removeEventListener('visibilitychange', onVisibility)
+      offMirror()
+      offAutoplay()
     }
   }, [heroVideoSrc, heroVideoFailed])
 
@@ -224,6 +215,17 @@ export default function FullMenuPageClient() {
       list.push(it)
       m.set(it.categorySlug, list)
     }
+    const sortInCategory = (arr: MenuItem[]) =>
+      [...arr].sort((a, b) => {
+        const aRec = a.isRecommended === true && a.allowRecommendations !== false
+        const bRec = b.isRecommended === true && b.allowRecommendations !== false
+        if (aRec !== bRec) return aRec ? -1 : 1
+        if (aRec && bRec) return (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0)
+        return a.id - b.id
+      })
+    m.forEach((arr, k) => {
+      if (arr.length) m.set(k, sortInCategory(arr))
+    })
     return m
   }, [items])
 
@@ -487,32 +489,63 @@ export default function FullMenuPageClient() {
                 aria-hidden
               />
             ) : (
-              <video
-                key={heroVideoSrc}
-                ref={heroVideoRef}
-                className="watta-full-menu-intro-video-el"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                tabIndex={-1}
-                aria-hidden
-                onError={() => {
-                  setHeroVideoSourceIndex((prev) => {
-                    if (prev < HERO_VIDEO_SOURCES_MENU.length - 1) return prev + 1
-                    setHeroVideoFailed(true)
-                    return prev
-                  })
-                }}
-                onEnded={(e) => {
-                  const el = e.currentTarget
-                  el.currentTime = 0
-                  void el.play()
-                }}
-              >
-                <source src={heroVideoSrc} type="video/mp4" />
-              </video>
+              <div className="welcome-hero-video-stack-web h-full w-full min-h-0">
+                <video
+                  key={heroVideoSrc}
+                  ref={heroVideoRef}
+                  className="watta-full-menu-intro-video-el welcome-hero-video-source-for-canvas-web"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls={false}
+                  disablePictureInPicture
+                  preload="auto"
+                  tabIndex={-1}
+                  aria-hidden
+                  onContextMenu={(e) => e.preventDefault()}
+                  onError={() => {
+                    setHeroVideoSourceIndex((prev) => {
+                      if (prev < HERO_VIDEO_SOURCES_MENU.length - 1) return prev + 1
+                      setHeroVideoFailed(true)
+                      return prev
+                    })
+                  }}
+                  onEnded={(e) => {
+                    const el = e.currentTarget
+                    el.currentTime = 0
+                    void el.play()
+                  }}
+                >
+                  <source src={heroVideoSrc} type="video/mp4" />
+                </video>
+                <canvas
+                  ref={heroVideoCanvasRef}
+                  className="welcome-hero-video-canvas-mirror-web"
+                  aria-hidden
+                />
+                <div
+                  className="welcome-hero-video-input-shield-web"
+                  aria-hidden
+                  role="presentation"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  onAuxClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  onDoubleClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                />
+              </div>
             )}
           </div>
 
