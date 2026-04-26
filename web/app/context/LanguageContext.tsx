@@ -822,6 +822,8 @@ interface Translations {
     fullMenuAllTab: string
     /** Aria для горизонтальної стрічки страв у категорії на головній */
     categoryRailAria: string
+    /** Бейдж на картці товару, якщо isRecommended в адмінці */
+    recommendedPill: string
     /** Заголовок поверх фото-банера на головній */
     heroBannerOverlayTitle: string
     /** Підзаголовок / коротка «цитата» під заголовком на банері */
@@ -1312,6 +1314,7 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'Поки що немає страв у каталозі.',
       fullMenuAllTab: 'Усі',
       categoryRailAria: 'горизонтальна стрічка страв — гортайте вліво та вправо; натисніть картку, щоб відкрити страву',
+      recommendedPill: 'Від Watta',
       heroBannerOverlayTitle: 'Проводьте час разом із\u00A0нами',
       heroBannerOverlaySub: 'Свіжі роли, тепла зустріч і смак, яким хочеться ділитися.',
       heroBannerSmsSender: 'Watta Sushi',
@@ -2092,6 +2095,7 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'Пока нет блюд в каталоге.',
       fullMenuAllTab: 'Все',
       categoryRailAria: 'горизонтальная лента блюд — листайте влево и вправо; нажмите карточку, чтобы открыть блюдо',
+      recommendedPill: 'Watta+',
       heroBannerOverlayTitle: 'Проводите время вместе с\u00A0нами',
       heroBannerOverlaySub: 'Свежие роллы, тёплая встреча и вкус, которым хочется делиться.',
       heroBannerSmsSender: 'Watta Sushi',
@@ -2871,6 +2875,7 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'No dishes in the catalog yet.',
       fullMenuAllTab: 'All',
       categoryRailAria: 'horizontal dish row — swipe left or right; tap a card to open the dish',
+      recommendedPill: 'Staff pick',
       heroBannerOverlayTitle: 'Spend time with us',
       heroBannerOverlaySub: 'Fresh rolls, good company, and flavours worth sharing.',
       heroBannerSmsSender: 'Watta Sushi',
@@ -3650,6 +3655,7 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'Nog geen gerechten in de catalogus.',
       fullMenuAllTab: 'Alles',
       categoryRailAria: 'horizontale rij met gerechten — veeg links en rechts; tik op een kaart om het gerecht te openen',
+      recommendedPill: 'Aanrader',
       heroBannerOverlayTitle: 'Breng tijd met ons door',
       heroBannerOverlaySub: 'Verse rolls, gezelschap en smaken om te delen.',
       heroBannerSmsSender: 'Watta Sushi',

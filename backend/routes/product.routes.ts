@@ -5,11 +5,23 @@ import { checkAdmin } from '../authMiddleware';
 const router = Router();
 const prisma = new PrismaClient();
 
+/** Доступність у місті: явне додавання в ProductCity АБО «усі міста» (нема жодного зв’язку). */
+function whereVisibleInCity(cityId: number | null) {
+  if (cityId == null || !Number.isFinite(cityId) || cityId <= 0) return undefined;
+  return {
+    OR: [
+      { cities: { some: { cityId } } },
+      { cities: { none: {} } },
+    ],
+  } as const;
+}
+
 // 1. Получить ВСЕ товары (с фильтрацией по городу)
 router.get('/', async (req, res) => {
   try {
     const cityId = req.query.cityId ? parseInt(req.query.cityId as string) : null;
-    
+    const cityWhere = whereVisibleInCity(Number.isFinite(cityId) && cityId > 0 ? cityId! : null);
+
     const products = await prisma.product.findMany({
       include: { 
         category: true,
@@ -18,13 +30,7 @@ router.get('/', async (req, res) => {
         },
         ingredients: true // <-- Добавили, чтобы сразу видеть ингредиенты
       },
-      where: cityId ? {
-        cities: {
-          some: {
-            cityId: cityId
-          }
-        }
-      } : undefined
+      where: cityWhere,
     });
     res.json(products);
   } catch (error) {
@@ -276,16 +282,14 @@ router.get('/recommendations', async (req: any, res: any) => {
     const cityId = req.query.cityId ? parseInt(String(req.query.cityId), 10) : null;
     const take = Math.min(48, Math.max(4, parseInt(String(req.query.limit || '24'), 10) || 24));
 
-    const cityFilter =
-      cityId && Number.isFinite(cityId) && cityId > 0
-        ? { cities: { some: { cityId } } }
-        : undefined;
+    const cityScope =
+      cityId && Number.isFinite(cityId) && cityId > 0 ? whereVisibleInCity(cityId) : undefined;
 
     const baseWhere: any = {
       isRecommended: true,
       category: { is: { allowRecommendations: true } },
       ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
-      ...(cityFilter || {}),
+      ...(cityScope || {}),
     };
 
     let recommendations = await prisma.product.findMany({
@@ -299,7 +303,7 @@ router.get('/recommendations', async (req: any, res: any) => {
       recommendations = await prisma.product.findMany({
         where: {
           ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
-          ...(cityFilter || {}),
+          ...(cityScope || {}),
         },
         take: Math.min(12, take),
         include: { category: true, ingredients: true },

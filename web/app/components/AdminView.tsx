@@ -4703,6 +4703,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       Сначала добавьте города во вкладке "Города"
                     </p>
                   )}
+                  {cities.length > 0 && (
+                    <p className="text-[11px] leading-snug text-[#145142]/70 mt-2">
+                      Не вибрано жодного міста = товар показується в усіх містах. Якщо позначити міста — тільки в них.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -4727,7 +4732,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       onChange={(e) => setFormData((prev) => ({ ...prev, isRecommended: e.target.checked }))}
                       className="h-4 w-4 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
                     />
-                    Блок «рекомендуємо» (картка товару, кошик)
+                    Рекомендована страва (головна, картка, кошик, стрічка «рекомендовані»)
                   </label>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-[#145142]/80">Порядок у рекомендаціях (менше — раніше)</label>
@@ -4754,7 +4759,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </div>
                 </div>
                 <p className="mt-2 text-[11px] leading-snug text-gray-500">
-                  Рекомендації показуються лише для товарів з увімкненим прапорцем, якщо в категорії дозволено участь у рекомендаціях.
+                  Потрібні прапорець тут і «участь у рекомендаціях» у категорії. На головній рекомендовані з&apos;являються в стрічці зверху та першими в прев’ю категорії; на картці — бейдж.
                 </p>
               </div>
 

@@ -20,12 +20,25 @@ interface MenuItem {
   emoji: string
   imageUrl?: string
   isTop?: boolean
+  isRecommended?: boolean
+  recommendOrder?: number
+  allowRecommendations?: boolean
   promoDiscountPercent?: number
 }
 
 interface MenuCategoryRow {
   slug: string
   name: string
+}
+
+function sortCategoryItems(arr: MenuItem[]): MenuItem[] {
+  return [...arr].sort((a, b) => {
+    const aRec = a.isRecommended === true && a.allowRecommendations !== false
+    const bRec = b.isRecommended === true && b.allowRecommendations !== false
+    if (aRec !== bRec) return aRec ? -1 : 1
+    if (aRec && bRec) return (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0)
+    return a.id - b.id
+  })
 }
 
 export default function CategoryMenuClient({ slug }: { slug: string }) {
@@ -56,6 +69,9 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
         emoji: '🍣',
         imageUrl: p.imageUrl,
         isTop: p.isPopular,
+        isRecommended: p.isRecommended === true,
+        recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
+        allowRecommendations: p.category?.allowRecommendations !== false,
         promoDiscountPercent:
           typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
       })),
@@ -100,7 +116,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
       const res = await fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
       const data = res.ok ? await res.json() : []
       const mapped = mapProductsToItems(Array.isArray(data) ? data : [])
-      setItems(mapped.filter((i) => i.categorySlug === normalizedSlug))
+      setItems(sortCategoryItems(mapped.filter((i) => i.categorySlug === normalizedSlug)))
     } catch {
       setItems([])
     } finally {
