@@ -22,15 +22,11 @@ router.get('/', async (req, res) => {
     const cityId = req.query.cityId ? parseInt(req.query.cityId as string) : null;
     const cityWhere = whereVisibleInCity(Number.isFinite(cityId) && cityId > 0 ? cityId! : null);
 
+    // Список для меню/адмін-таблиці: тільки category. Інакше 100+ товарів × ingredients → величезний JSON,
+    // Safari/мобілка можуть не отримати тіло. Деталі — GET /:id, інгредієнти — /api/ingredients.
     const products = await prisma.product.findMany({
-      include: { 
-        category: true,
-        cities: {
-          include: { city: true }
-        },
-        ingredients: true // <-- Добавили, чтобы сразу видеть ингредиенты
-      },
       where: cityWhere,
+      include: { category: true },
     });
     res.json(products);
   } catch (error) {

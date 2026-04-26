@@ -745,22 +745,23 @@ export default function MenuView() {
     const cacheTime = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`${cacheKey}_time`) : null
     const now = Date.now()
 
-    // Сразу показываем кэш (даже устаревший) — быстрая отрисовка
+    // Сразу показываем кэш (даже устаревший) — быстрая отрисовка. Порожній масив не кешували раніше — ігноруємо, щоб «оживити» меню.
     if (cached && cacheTime) {
       try {
         const data = JSON.parse(cached)
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           setMenuItems(mapProductsToItems(data))
           // Если кэш свежий — только фоновое обновление
           if ((now - parseInt(cacheTime, 10)) < CACHE_TTL) {
             fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
-              .then(res => (res.ok ? res.json() : []))
-              .then(data => {
-                if (typeof sessionStorage !== 'undefined') {
-                  sessionStorage.setItem(cacheKey, JSON.stringify(data))
+              .then((res) => (res.ok ? res.json() : []))
+              .then((data) => {
+                const list = Array.isArray(data) ? data : []
+                if (typeof sessionStorage !== 'undefined' && list.length > 0) {
+                  sessionStorage.setItem(cacheKey, JSON.stringify(list))
                   sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
                 }
-                setMenuItems(mapProductsToItems(data))
+                setMenuItems(mapProductsToItems(list))
               })
               .catch(() => {})
             return
@@ -777,12 +778,13 @@ export default function MenuView() {
         }
         return res.json()
       })
-      .then(data => {
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(cacheKey, JSON.stringify(data))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : []
+        if (typeof sessionStorage !== 'undefined' && list.length > 0) {
+          sessionStorage.setItem(cacheKey, JSON.stringify(list))
           sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
         }
-        setMenuItems(mapProductsToItems(data))
+        setMenuItems(mapProductsToItems(list))
       })
       .catch(err => {
         console.error('Ошибка загрузки меню:', err)
