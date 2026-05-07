@@ -12,7 +12,6 @@ import {
 import LogoBackground from './LogoBackground'
 
 const READ_LINK = '#27AE60'
-const PAGE_BG = '#f5f5f7'
 
 interface PromotionsViewProps {
   /** Усередині MenuView: та сама шапка + категорії, без дубльованого хедера */
@@ -57,6 +56,7 @@ export default function PromotionsView({
   const [promotions, setPromotions] = useState<any[]>([])
   const [loaded, setLoaded] = useState(false)
   const p = t.promotionsPage
+  const a = t.siteAria
 
   useEffect(() => {
     fetch('/api/promotions')
@@ -84,10 +84,10 @@ export default function PromotionsView({
     <div className="absolute top-4 left-0 right-0 z-[1000] mx-auto flex h-[80px] w-[95%] max-w-[1800px] items-center justify-between rounded-[20px] bg-white px-6 shadow-lg">
       <button type="button" className="flex cursor-pointer items-center gap-2" onClick={onBack}>
         <img src="/logo.png" alt="" className="h-10 w-10 object-contain" />
-        <img src="/1.jpg" alt="Watta Sushi" className="hidden h-6 w-auto object-contain sm:block" />
+        <img src="/1.jpg" alt={t.common.brandName} className="hidden h-6 w-auto object-contain sm:block" />
       </button>
       <div className="flex items-center gap-3 text-gray-700 md:gap-6">
-        <button type="button" onClick={onOpenPhone} className="rounded-full p-2 hover:bg-gray-100">
+        <button type="button" onClick={onOpenPhone} className="rounded-full p-2 hover:bg-gray-100" aria-label={a.phone}>
           <Phone size={24} />
         </button>
         {onOpenNotifications ? (
@@ -100,16 +100,16 @@ export default function PromotionsView({
             <Bell size={24} strokeWidth={2.25} />
           </button>
         ) : null}
-        <button type="button" onClick={onOpenFavorites} className="hidden rounded-full p-2 hover:bg-gray-100 sm:inline-flex">
+        <button type="button" onClick={onOpenFavorites} className="hidden rounded-full p-2 hover:bg-gray-100 sm:inline-flex" aria-label={a.favorites}>
           <Heart size={24} />
         </button>
-        <button type="button" className="hidden rounded-full p-2 text-[#145142] sm:inline-flex">
+        <button type="button" className="hidden rounded-full p-2 text-[#145142] sm:inline-flex" aria-label={a.cart}>
           <ShoppingBag size={24} />
         </button>
-        <button type="button" onClick={onOpenProfile} className="rounded-full p-2 hover:bg-gray-100">
+        <button type="button" onClick={onOpenProfile} className="rounded-full p-2 hover:bg-gray-100" aria-label={a.profile}>
           <User size={24} />
         </button>
-        <button type="button" onClick={handleGlobalNavMenu} className="rounded-full p-2 hover:bg-gray-100">
+        <button type="button" onClick={handleGlobalNavMenu} className="rounded-full p-2 hover:bg-gray-100" aria-label={a.menu}>
           <Menu size={24} />
         </button>
       </div>
@@ -120,10 +120,9 @@ export default function PromotionsView({
     <div
       className={
         embedded
-          ? 'relative w-full px-4 pb-12 pt-2 sm:px-6'
-          : 'menu-page-web relative min-h-screen px-4 pb-20 pt-[120px]'
+          ? 'relative w-full px-4 pb-12 pt-2 sm:px-6 watta-page-bg'
+          : 'menu-page-web watta-page-bg relative min-h-screen px-4 pb-20 pt-[120px]'
       }
-      style={{ backgroundColor: PAGE_BG }}
     >
       {!embedded ? (
         <>

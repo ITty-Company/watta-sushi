@@ -36,6 +36,7 @@ import {
   Eye,
   LayoutTemplate,
   ChevronDown,
+  ChevronUp,
   Move,
   Store,
   BookOpen,
@@ -45,6 +46,7 @@ import CityMapPicker from './CityMapPicker'
 import AdminDeliveryZoneEditor from './AdminDeliveryZoneEditor'
 import { useLanguage } from '../context/LanguageContext'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
+import { productGalleryFromApi } from '@/lib/productGallery'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
 
 function notifyCountriesCatalogUpdated() {
@@ -72,9 +74,13 @@ interface Product {
 
   categoryId: number
   imageUrl?: string
+  imageUrls?: unknown
   isPopular: boolean
-  isRecommended?: boolean
+  isHomeHit?: boolean
+  isCartRecommend?: boolean
   recommendOrder?: number
+  /** Порядок у рекомендаціях кошика */
+  cartRecommendOrder?: number
   promoDiscountPercent?: number
 }
 
@@ -361,14 +367,18 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     price: '',
     description_ru: '', description_ua: '', description_en: '', description_nl: '',
     categoryId: '',
-    imageUrl: '',
+    imageUrls: [] as string[],
     cityIds: [] as number[],
     ingredientIds: [] as number[],
     isPopular: false,
-    isRecommended: false,
+    isHomeHit: false,
+    isCartRecommend: false,
     recommendOrder: '0',
+    cartRecommendOrder: '0',
     promoDiscountPercent: '0',
   })
+  const formDataRef = useRef(formData)
+  formDataRef.current = formData
 
   // Состояния для управления городами
   const [newCityName, setNewCityName] = useState('')
@@ -1015,15 +1025,69 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }))
-      }
-      reader.readAsDataURL(file)
+  const GALLERY_MAX = 24
+
+  const readFilesAsDataUrls = (files: File[]) =>
+    Promise.all(
+      files.map(
+        (f) =>
+          new Promise<string>((ok, err) => {
+            const r = new FileReader()
+            r.onloadend = () => ok(r.result as string)
+            r.onerror = () => err(new Error('read'))
+            r.readAsDataURL(f)
+          }),
+      ),
+    )
+
+  const productImageInputRef = useRef<HTMLInputElement | null>(null)
+  const [productGalleryDnd, setProductGalleryDnd] = useState(false)
+
+  const addProductImageFiles = (fileList: FileList | File[] | null | undefined) => {
+    if (!fileList) return
+    const picked = Array.isArray(fileList) ? fileList : Array.from(fileList)
+    if (picked.length === 0) return
+    const images = picked.filter((f) => f.type.startsWith('image/'))
+    if (images.length === 0) {
+      toast.error('Оберіть файли зображень (JPG, PNG, WebP…)')
+      return
     }
+    const remain = GALLERY_MAX - formDataRef.current.imageUrls.length
+    if (remain <= 0) {
+      toast.error('Максимум 24 фото')
+      return
+    }
+    const slice = images.slice(0, remain)
+    void readFilesAsDataUrls(slice)
+      .then((urls) => {
+        setFormData((p) => ({ ...p, imageUrls: [...p.imageUrls, ...urls].slice(0, GALLERY_MAX) }))
+      })
+      .catch(() => {
+        toast.error('Не вдалося прочитати файл')
+      })
+  }
+
+  const handleProductGalleryAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const el = e.target
+    addProductImageFiles(el.files)
+    el.value = ''
+  }
+
+  const removeProductImage = (i: number) => {
+    setFormData((prev) => ({ ...prev, imageUrls: prev.imageUrls.filter((_, j) => j !== i) }))
+  }
+
+  const moveProductImage = (from: number, dir: -1 | 1) => {
+    setFormData((prev) => {
+      const to = from + dir
+      if (to < 0 || to >= prev.imageUrls.length) return prev
+      const next = [...prev.imageUrls]
+      const a = next[from]!
+      const b = next[to]!
+      next[from] = b
+      next[to] = a
+      return { ...prev, imageUrls: next }
+    })
   }
 
   const openCreateModal = async () => {
@@ -1040,12 +1104,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       name_ru: '', name_ua: '', name_en: '', name_nl: '',
       price: '', 
       description_ru: '', description_ua: '', description_en: '', description_nl: '',
-      categoryId: '', imageUrl: '',
+      categoryId: '', imageUrls: [],
       cityIds: [],
       ingredientIds: [],
       isPopular: false,
-      isRecommended: false,
+      isHomeHit: false,
+      isCartRecommend: false,
       recommendOrder: '0',
+      cartRecommendOrder: '0',
       promoDiscountPercent: '0',
     })
     setIsModalOpen(true)
@@ -1066,6 +1132,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
     if (productRes.ok) {
       const productData = await productRes.json()
+      const hitsOn = Boolean(productData.isPopular) || Boolean(productData.isHomeHit)
       setFormData({
         name_ru: product.name_ru,
         name_ua: product.name_ua || '',
@@ -1080,15 +1147,21 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         description_nl: product.description_nl || '',
         
         categoryId: product.categoryId.toString(),
-        imageUrl: product.imageUrl || '',
+        imageUrls: productGalleryFromApi({
+          imageUrl: productData.imageUrl,
+          imageUrls: (productData as { imageUrls?: unknown }).imageUrls,
+        }),
         cityIds: productData.cities?.map((pc: any) => pc.cityId) || [],
         ingredientIds: (productData.ingredients as { id: number }[] | undefined)?.map((i) => i.id) || [],
-        isPopular: Boolean(productData.isPopular),
-        isRecommended: Boolean(productData.isRecommended),
+        isPopular: hitsOn,
+        isHomeHit: hitsOn,
+        isCartRecommend: Boolean(productData.isCartRecommend),
         recommendOrder: String(productData.recommendOrder ?? 0),
+        cartRecommendOrder: String(productData.cartRecommendOrder ?? 0),
         promoDiscountPercent: String(productData.promoDiscountPercent ?? 0),
       })
     } else {
+      const hitsOn = Boolean(product.isPopular) || Boolean(product.isHomeHit)
       setFormData({
         name_ru: product.name_ru,
         name_ua: product.name_ua || '',
@@ -1103,12 +1176,17 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         description_nl: product.description_nl || '',
         
         categoryId: product.categoryId.toString(),
-        imageUrl: product.imageUrl || '',
+        imageUrls: productGalleryFromApi({
+          imageUrl: product.imageUrl,
+          imageUrls: (product as { imageUrls?: unknown }).imageUrls,
+        }),
         cityIds: [],
         ingredientIds: [],
-        isPopular: Boolean(product.isPopular),
-        isRecommended: Boolean(product.isRecommended),
+        isPopular: hitsOn,
+        isHomeHit: hitsOn,
+        isCartRecommend: Boolean(product.isCartRecommend),
         recommendOrder: String(product.recommendOrder ?? 0),
+        cartRecommendOrder: String(product.cartRecommendOrder ?? 0),
         promoDiscountPercent: String(product.promoDiscountPercent ?? 0),
       })
     }
@@ -1159,6 +1237,39 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         toast.error(t.adminPage.auth.notAuthorized)
         return
       }
+      const anyName = [formData.name_ru, formData.name_ua, formData.name_en, formData.name_nl]
+        .map((s) => (typeof s === 'string' ? s.trim() : ''))
+        .find((s) => s.length > 0)
+      if (!anyName) {
+        toast.error('Введите название товара хотя бы на одном языке (вкладки RU / UA / EN / NL).')
+        return
+      }
+      if (!formData.categoryId || String(formData.categoryId).trim() === '') {
+        toast.error('Выберите категорию.')
+        return
+      }
+      const priceNum = Number(formData.price)
+      if (!Number.isFinite(priceNum) || priceNum < 0) {
+        toast.error('Укажите корректную цену (число ≥ 0).')
+        return
+      }
+      const payload = {
+        ...formData,
+        name_ru: (formData.name_ru || '').trim() || anyName,
+        name_ua: (formData.name_ua || '').trim() || anyName,
+        name_en: (formData.name_en || '').trim() || anyName,
+        name_nl: (formData.name_nl || '').trim() || anyName,
+        price: priceNum,
+        categoryId: Number(formData.categoryId),
+        imageUrl: formData.imageUrls[0] || '',
+        imageUrls: formData.imageUrls,
+        cityIds: (formData.cityIds || [])
+          .map((id) => Number(id))
+          .filter((n) => Number.isFinite(n) && n > 0),
+        ingredientIds: (formData.ingredientIds || [])
+          .map((id) => Number(id))
+          .filter((n) => Number.isFinite(n) && n > 0),
+      }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
       
       let res
@@ -1166,13 +1277,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         res = await fetch(`/api/products/${editingId}`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         })
       } else {
         res = await fetch('/api/products', {
           method: 'POST',
           headers,
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         })
       }
       
@@ -2985,12 +3096,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                            </div>
                          )}
                          <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
-                           {product.isPopular ? (
-                             <span className="rounded-full bg-orange-500 px-2 py-1 text-xs text-white">{t.adminPanel.products.hit}</span>
-                           ) : null}
-                           {product.isRecommended ? (
-                             <span className="rounded-full bg-[#145142] px-2 py-1 text-[10px] font-bold text-white">Рекоменд.</span>
-                           ) : null}
+                          {product.isHomeHit || product.isPopular ? (
+                            <span className="rounded-full bg-[#145142] px-2 py-1 text-[10px] font-bold text-white">
+                              Наші хіти
+                            </span>
+                          ) : null}
+                          {product.isCartRecommend ? (
+                            <span className="rounded-full bg-indigo-600 px-2 py-1 text-[10px] font-bold text-white">Кошик</span>
+                          ) : null}
                            {(product.promoDiscountPercent ?? 0) > 0 ? (
                              <span className="rounded-full bg-rose-500 px-2 py-1 text-[10px] font-bold text-white">
                                −{product.promoDiscountPercent}%
@@ -3466,7 +3579,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
                   {editingCityId !== null && (
                     <>
-                    <div className="mt-8 rounded-[16px] border-2 border-[#145142]/20 bg-[#f7fbf9] p-4 sm:p-5">
+                    <div className="mt-8 rounded-[16px] border-2 border-[#145142]/20 bg-white p-4 sm:p-5">
                       <h3 className="text-base font-bold text-[#145142]">Тарифи зон доставки</h3>
                       <p className="mt-1 text-xs text-gray-600">
                         Полігони накреслюєте на карті в блоці нижче; тут задаєте <strong>безкоштовно</strong> або{' '}
@@ -3812,7 +3925,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           {/* === Вкладка: БАННЕРЫ === */}
           {activeTab === 'banners' && (
             <div className="admin-banners-tab-shell flex flex-col gap-6 sm:gap-8">
-              <div className="admin-banners-tab-hero rounded-[20px] border border-[#145142]/14 bg-gradient-to-br from-white via-[#f7fbf9] to-[#eaf4f0] p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
+              <div className="admin-banners-tab-hero rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
                 <div
                   className="admin-banners-tab-hero-orb absolute -right-10 -top-12 h-40 w-40 rounded-full bg-[#145142]/12 blur-3xl"
                   aria-hidden
@@ -4578,23 +4691,127 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             </div>
             
             <form onSubmit={handleSubmitProduct} className="space-y-3 sm:space-y-4">
-              <div className="flex justify-center mb-3 sm:mb-4">
-                <label className="cursor-pointer w-full h-32 sm:h-40 border-2 border-dashed border-[#145142]/30 rounded-[12px] sm:rounded-[15px] flex flex-col items-center justify-center hover:bg-[#145142]/5 transition relative overflow-hidden group p-2 bg-white/40 backdrop-blur-sm">
-                  {formData.imageUrl ? (
-                    <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover rounded-lg" />
-                  ) : (
-                    <>
-                      <Upload size={24} className="sm:w-8 sm:h-8 text-gray-400 mb-1 sm:mb-2" />
-                      <span className="text-xs sm:text-sm text-gray-500 text-center px-2">Нажмите, чтобы загрузить фото</span>
-                    </>
-                  )}
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  {formData.imageUrl && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-lg">
-                      <span className="text-white font-medium text-sm sm:text-base">Изменить</span>
+              <div className="mb-3 sm:mb-4 space-y-2">
+                <p className="text-xs font-semibold text-[#145142]/80">
+                  Фото (до 24). Первое — в меню и каталоге; на странице блюда можно листать. Можно перетягнути
+                  кілька файлів з папки сюди.
+                </p>
+                <input
+                  ref={productImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden
+                  onChange={handleProductGalleryAdd}
+                />
+                <div
+                  className={
+                    'rounded-[14px] border-2 border-dashed p-2 transition-colors ' +
+                    (productGalleryDnd
+                      ? 'border-[#145142] bg-[#145142]/10 ring-2 ring-[#145142]/30'
+                      : 'border-transparent')
+                  }
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    e.dataTransfer.dropEffect = 'copy'
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if ([...e.dataTransfer.types].includes('Files')) setProductGalleryDnd(true)
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    const next = e.relatedTarget as Node | null
+                    if (next && e.currentTarget.contains(next)) return
+                    setProductGalleryDnd(false)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setProductGalleryDnd(false)
+                    addProductImageFiles(e.dataTransfer.files)
+                  }}
+                >
+                {formData.imageUrls[0] ? (
+                  <button
+                    type="button"
+                    onClick={() => productImageInputRef.current?.click()}
+                    className="w-full h-32 sm:h-40 overflow-hidden rounded-[12px] sm:rounded-[15px] border border-[#145142]/20 bg-[#f6faf7] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40"
+                  >
+                    <img
+                      src={formData.imageUrls[0]}
+                      alt="Обкладинка"
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => productImageInputRef.current?.click()}
+                    className="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-[12px] border-2 border-dashed border-[#145142]/25 bg-white/50 px-3 py-4 text-sm text-gray-500 transition hover:border-[#145142]/40 hover:bg-[#145142]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40"
+                  >
+                    <Upload size={22} className="text-[#145142]/50" />
+                    <span>Натисніть або перетягніть фото сюди</span>
+                    <span className="text-xs text-gray-400">Кілька файлів — одразу (до 24)</span>
+                  </button>
+                )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.imageUrls.map((url, i) => (
+                    <div
+                      key={`${i}-${url.slice(0, 32)}`}
+                      className="relative h-20 w-20 overflow-hidden rounded-lg border border-[#145142]/20 bg-white"
+                    >
+                      <img src={url} alt="" className="h-full w-full object-cover" />
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/55 px-0.5 py-0.5 text-center text-[9px] font-bold text-white">
+                        {i === 0 ? 'Меню' : i + 1}
+                      </span>
+                      <div className="absolute right-0.5 top-0.5 flex flex-col gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => moveProductImage(i, -1)}
+                          disabled={i === 0}
+                          className="flex h-5 w-5 items-center justify-center rounded bg-white/95 text-[#145142] shadow disabled:opacity-30"
+                          title="Нагору"
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveProductImage(i, 1)}
+                          disabled={i === formData.imageUrls.length - 1}
+                          className="flex h-5 w-5 items-center justify-center rounded bg-white/95 text-[#145142] shadow disabled:opacity-30"
+                          title="Вниз"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeProductImage(i)}
+                        className="absolute left-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded bg-red-500 text-white shadow"
+                        title="Видалити"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
+                  ))}
+                  {formData.imageUrls.length < GALLERY_MAX && (
+                    <button
+                      type="button"
+                      onClick={() => productImageInputRef.current?.click()}
+                      className="flex h-20 w-20 flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-[#145142]/35 bg-white/60 hover:bg-[#145142]/5"
+                    >
+                      <Upload size={20} className="text-[#145142]/60" />
+                      <span className="px-1 text-center text-[9px] font-bold text-[#145142]/70">Додати</span>
+                    </button>
                   )}
-                </label>
+                </div>
+                </div>
               </div>
 
               {/* --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ --- */}
@@ -4711,31 +4928,39 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#145142]/15 bg-[#f4faf8] p-3 sm:p-4">
+              <div className="rounded-xl border border-[#145142]/15 bg-white p-3 sm:p-4">
                 <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#145142]/80">
-                  Вітрина: рекомендації та акції
+                  Вітрина: хіти, кошик і акції
                 </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800">
+                  <label className="flex cursor-pointer items-start gap-2 text-sm font-semibold text-gray-800 sm:col-span-2">
                     <input
                       type="checkbox"
-                      checked={formData.isPopular}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, isPopular: e.target.checked }))}
-                      className="h-4 w-4 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
+                      checked={formData.isPopular || formData.isHomeHit}
+                      onChange={(e) => {
+                        const on = e.target.checked
+                        setFormData((prev) => ({ ...prev, isPopular: on, isHomeHit: on }))
+                      }}
+                      className="h-4 w-4 mt-0.5 shrink-0 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
                     />
-                    Хіт / топ продажів (бейдж на сайті)
+                    <span>
+                      <span className="block">Наші хіти / хіт продажів</span>
+                      <span className="mt-0.5 block text-xs font-normal text-[#145142]/75">
+                        Бейджі XIT і «Від Watta» на картці, стрічка на головній, пріоритет у каталозі — вмикаються разом
+                      </span>
+                    </span>
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800 sm:col-span-2">
                     <input
                       type="checkbox"
-                      checked={formData.isRecommended}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, isRecommended: e.target.checked }))}
+                      checked={formData.isCartRecommend}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, isCartRecommend: e.target.checked }))}
                       className="h-4 w-4 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
                     />
-                    Рекомендована страва (головна, картка, кошик, стрічка «рекомендовані»)
+                    Рекомендації в кошику та на сторінці товару (окремо від «хітів» — можна ввімкнути обидва)
                   </label>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Порядок у рекомендаціях (менше — раніше)</label>
+                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Порядок у блоці «хіти» на головній (менше — раніше)</label>
                     <input
                       type="number"
                       name="recommendOrder"
@@ -4746,6 +4971,17 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     />
                   </div>
                   <div>
+                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Порядок у рекомендаціях кошика (менше — раніше)</label>
+                    <input
+                      type="number"
+                      name="cartRecommendOrder"
+                      value={formData.cartRecommendOrder}
+                      onChange={handleInputChange}
+                      min={0}
+                      className="w-full rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
                     <label className="mb-1 block text-xs font-medium text-[#145142]/80">Акційна знижка, % (0 = без акції)</label>
                     <input
                       type="number"
@@ -4754,12 +4990,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       onChange={handleInputChange}
                       min={0}
                       max={100}
-                      className="w-full rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
+                      className="w-full max-w-md rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
                     />
                   </div>
                 </div>
                 <p className="mt-2 text-[11px] leading-snug text-gray-500">
-                  Потрібні прапорець тут і «участь у рекомендаціях» у категорії. На головній рекомендовані з&apos;являються в стрічці зверху та першими в прев’ю категорії; на картці — бейдж.
+                  У категорії має бути ввімкнено «рекомендації». Блок «хіти/хіт» і «кошик» — окремо; перший виставляє і топ-бейдж, і показ на головній.
                 </p>
               </div>
 

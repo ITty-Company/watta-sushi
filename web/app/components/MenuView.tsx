@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import Image from 'next/image'
 import { useLanguage } from '../context/LanguageContext'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import WattaStickyChromeLayout from './WattaStickyChromeLayout'
@@ -34,6 +33,11 @@ import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
+import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
+import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
+import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
+import type { WattaLanguage } from '@/lib/i18n/language'
+import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 
 /** Скільки карток показувати в горизонтальній стрічці на головній; решта — через «Подивитися всі» на /menu */
 const HOME_CATEGORY_RAIL_PREVIEW_MAX = 12
@@ -47,10 +51,22 @@ function readCinematicRailScrolls(): { rec: number; promo: number } {
   return { rec: rec?.scrollLeft ?? 0, promo: promo?.scrollLeft ?? 0 }
 }
 
-function cinematicWeightSubtitle(desc: string, weightFallback: string): string {
-  const g = desc.match(/(\d+)\s*г\b/i)?.[1]
-  const ml = desc.match(/(\d+)\s*мл\b/i)?.[1]
-  return ml ? `${ml} мл` : g ? `${g} г` : weightFallback
+function cinematicWeightSubtitle(
+  desc: string,
+  weightFallback: string,
+  lang: WattaLanguage,
+): string {
+  const g = desc.match(/(\d+)\s*(g|г)\b/i)?.[1]
+  const ml = desc.match(/(\d+)\s*(ml|мл)\b/i)?.[1]
+  if (ml) {
+    if (lang === 'ru' || lang === 'uk') return `${ml} мл`
+    return `${ml} ml`
+  }
+  if (g) {
+    if (lang === 'ru' || lang === 'uk') return `${g} г`
+    return `${g} g`
+  }
+  return weightFallback
 }
 
 import { 
@@ -102,7 +118,7 @@ interface MenuItem {
   /** З адмінки: знижка % */
   promoDiscountPercent?: number
   /** З адмінки: блок «рекомендовані» */
-  isRecommended?: boolean
+  isHomeHit?: boolean
   recommendOrder?: number
   /** category.allowRecommendations !== false */
   allowRecommendations?: boolean
@@ -122,17 +138,6 @@ interface MenuSubcategory {
   name: string
   items: MenuItem[]
 }
-
-const defaultCategories: MenuCategory[] = [
-  { id: 'rolls', key: 'rolls', name: 'Роллы', emoji: '🍣', subcategories: [] },
-  { id: 'sushi', key: 'sushi', name: 'Суши', emoji: '🍙', subcategories: [] },
-  { id: 'sets', key: 'sets', name: 'Сеты', emoji: '🍱', subcategories: [] },
-  { id: 'soups', key: 'soups', name: 'Супы', emoji: '🍜', subcategories: [] },
-  { id: 'bowls', key: 'bowls', name: 'Боули', emoji: '🥗', subcategories: [] },
-  { id: 'snacks', key: 'snacks', name: 'Закуски', emoji: '🍤', subcategories: [] },
-  { id: 'drinks', key: 'drinks', name: 'Напитки', emoji: '🧃', subcategories: [] },
-  { id: 'sauces', key: 'sauces', name: 'Соуси', emoji: '🌶️', subcategories: [] }
-]
 
 interface User {
   id: number | string
@@ -171,7 +176,7 @@ const DEFAULT_HOME_BANNERS: Array<{
   },
   {
     id: -2,
-    title_ru: 'Свіжі роли та суші',
+    title_ru: 'Свежие роллы и суши',
     title_ua: 'Свіжі роли та суші',
     title_en: 'Fresh rolls & sushi',
     title_nl: 'Verse rolls en sushi',
@@ -183,7 +188,7 @@ const DEFAULT_HOME_BANNERS: Array<{
   },
   {
     id: -3,
-    title_ru: 'Якість і доставка',
+    title_ru: 'Качество и доставка',
     title_ua: 'Якість і доставка',
     title_en: 'Quality & delivery',
     title_nl: 'Kwaliteit & bezorging',
@@ -217,11 +222,12 @@ function WelcomeHeroSection({
   heroVideoSrc: string
   videoSources: readonly string[]
 }) {
+  const { t } = useLanguage()
   return (
     <section
       ref={sectionRef}
-      className="welcome-hero-section-web menu-snap-section-welcome-web"
-      aria-label="Hero video"
+      className="welcome-hero-section-web menu-snap-section-welcome-web menu-welcome-hero-tight-web"
+      aria-label={t.siteAria.heroVideo}
     >
       <div className="welcome-hero-video-fill-web">
         {heroVideoFailed ? (
@@ -307,6 +313,7 @@ export default function MenuView() {
   )
   // ИСПОЛЬЗУЕМ getLocalized из контекста
   const { t, language, getLocalized } = useLanguage()
+  const a = t.siteAria
   const welcomeHeroSectionRef = useRef<HTMLElement | null>(null)
   const marqueeBarRef = useRef<HTMLDivElement | null>(null)
   const [activePage, setActivePage] = useState<string | null>(null)
@@ -321,8 +328,9 @@ export default function MenuView() {
     const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
     const el = document.getElementById(`home-menu-cat-${categoryKey}`)
     if (!root || !el) return
-    const narrow = typeof window !== 'undefined' && window.innerWidth <= 768
-    const headerOffset = narrow ? 148 : 168
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200
+    /* збіг зі scroll-padding у globals: телефон 148, планшет 118, широкий 168 */
+    const headerOffset = w <= 768 ? 148 : w <= 1024 ? 118 : 168
     const top = el.getBoundingClientRect().top + root.scrollTop - headerOffset
     root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
   }, [])
@@ -713,33 +721,38 @@ export default function MenuView() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [favorites, setFavorites] = useState<number[]>([]) // Храним ID лайкнутых товаров
   
-  const mapProductsToItems = useCallback((data: any[]) => {
-    return (data || []).map((p: any) => {
-      const promoPct =
-        typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0
-      return {
-        id: p.id,
-        name: getLocalized(p, 'name'),
-        description: getLocalized(p, 'description') || '',
-        price: p.price,
-        category: getLocalized(p.category, 'name') || 'Роллы',
-        categorySlug: p.category?.slug || 'rolls',
-        categoryId: p.categoryId,
-        emoji: '🍣',
-        imageUrl: p.imageUrl,
-        isTop: p.isPopular,
-        promoDiscountPercent: promoPct,
-        isRecommended: p.isRecommended === true,
-        recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
-        allowRecommendations: p.category?.allowRecommendations !== false,
-      }
-    })
-  }, [getLocalized])
+  const mapProductsToItems = useCallback(
+    (data: any[]) => {
+      return (data || []).map((p: any) => {
+        const promoPct =
+          typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0
+        return {
+          id: p.id,
+          name: getLocalized(p, 'name'),
+          description: getLocalized(p, 'description') || '',
+          price: p.price,
+          category: p.category
+            ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)
+            : t.categories.rolls,
+          categorySlug: p.category?.slug || 'rolls',
+          categoryId: p.categoryId,
+          emoji: '🍣',
+          imageUrl: p.imageUrl,
+          isTop: p.isPopular,
+          promoDiscountPercent: promoPct,
+          isHomeHit: p.isHomeHit === true,
+          recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
+          allowRecommendations: p.category?.allowRecommendations !== false,
+        }
+      })
+    },
+    [getLocalized, t.categories, language],
+  )
 
   const loadMenuItems = useCallback(() => {
     const cityIdToUse = selectedCityId || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
     const url = cityIdToUse ? `/api/products?cityId=${cityIdToUse}` : '/api/products'
-    const cacheKey = `menu_items_${cityIdToUse}_${language}`
+    const cacheKey = menuItemsSessionKey(cityIdToUse)
     const CACHE_TTL = 5 * 60 * 1000 // 5 минут
     const cached = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
     const cacheTime = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`${cacheKey}_time`) : null
@@ -753,10 +766,32 @@ export default function MenuView() {
           setMenuItems(mapProductsToItems(data))
           // Если кэш свежий — только фоновое обновление
           if ((now - parseInt(cacheTime, 10)) < CACHE_TTL) {
-            fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
+            fetch(url, {
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' },
+            })
               .then((res) => (res.ok ? res.json() : []))
               .then((data) => {
                 const list = Array.isArray(data) ? data : []
+                if (cityIdToUse && list.length === 0) {
+                  fetch('/api/products', {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache' },
+                  })
+                    .then((r) => (r.ok ? r.json() : []))
+                    .then((all) => {
+                      const allList = Array.isArray(all) ? all : []
+                      if (typeof sessionStorage !== 'undefined' && allList.length > 0) {
+                        sessionStorage.setItem(cacheKey, JSON.stringify(allList))
+                        sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+                      }
+                      setMenuItems(mapProductsToItems(allList))
+                    })
+                    .catch(() => {
+                      setMenuItems([])
+                    })
+                  return
+                }
                 if (typeof sessionStorage !== 'undefined' && list.length > 0) {
                   sessionStorage.setItem(cacheKey, JSON.stringify(list))
                   sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
@@ -770,7 +805,10 @@ export default function MenuView() {
       } catch (_) { /* кэш повреждён */ }
     }
 
-    fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
+    fetch(url, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    })
       .then(res => {
         if (!res.ok) {
           console.error('Ошибка загрузки товаров:', res.status, res.statusText)
@@ -780,6 +818,26 @@ export default function MenuView() {
       })
       .then((data) => {
         const list = Array.isArray(data) ? data : []
+        if (cityIdToUse && list.length === 0) {
+          fetch('/api/products', {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' },
+          })
+            .then((r) => (r.ok ? r.json() : []))
+            .then((all) => {
+              const allList = Array.isArray(all) ? all : []
+              if (typeof sessionStorage !== 'undefined' && allList.length > 0) {
+                sessionStorage.setItem(cacheKey, JSON.stringify(allList))
+                sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
+              }
+              setMenuItems(mapProductsToItems(allList))
+            })
+            .catch((err) => {
+              console.error('Ошибка fallback загрузки меню:', err)
+              setMenuItems([])
+            })
+          return
+        }
         if (typeof sessionStorage !== 'undefined' && list.length > 0) {
           sessionStorage.setItem(cacheKey, JSON.stringify(list))
           sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
@@ -803,7 +861,9 @@ export default function MenuView() {
       if (typeof sessionStorage !== 'undefined') {
         for (let i = sessionStorage.length - 1; i >= 0; i--) {
           const k = sessionStorage.key(i)
-          if (k?.startsWith('menu_items_')) sessionStorage.removeItem(k)
+          if (k?.startsWith('menu_items_') || k?.startsWith('menu_categories_')) {
+            sessionStorage.removeItem(k)
+          }
         }
       }
       void loadMenuItems()
@@ -828,7 +888,7 @@ export default function MenuView() {
   }, [])
 
   const openCart = () => {
-    handlePageOpen('cart')
+    router.push('/cart')
   }
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
@@ -860,11 +920,14 @@ export default function MenuView() {
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([])
   
   const loadCategories = useCallback(() => {
-    const cacheKey = `menu_categories_${language}`
+    const cacheKey = menuCategoriesSessionKey()
     const cached = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
     const cacheTime = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`${cacheKey}_time`) : null
     const now = Date.now()
     const CACHE_TTL = 5 * 60 * 1000 // 5 минут
+
+    const mapApi = (data: Record<string, unknown>[]) =>
+      buildMenuCategoriesFromApi(data, language, t.categories as Record<string, string>)
 
     const applyCategories = (categories: MenuCategory[]) => {
       const usable = filterNonAggregateMenuCategories(categories)
@@ -879,73 +942,60 @@ export default function MenuView() {
       })
     }
 
-    // Сразу показываем кэш, если есть — быстрая отрисовка
+    // Сирі дані + локалізація — одна сесія: перемикання мови не чекає мережі
     if (cached && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_TTL) {
-      try {
-        const categories = JSON.parse(cached) as MenuCategory[]
-        if (Array.isArray(categories) && categories.length > 0) {
-          applyCategories(categories)
-          // Фоновое обновление (revalidate)
-          fetch('/api/products/categories')
-            .then(res => res.json())
-            .then(data => {
-              const next = data
-                .filter((cat: any) => cat.isActive !== false)
-                .map((cat: any) => ({
-                  id: cat.id.toString(),
-                  key: cat.slug,
-                  slug: cat.slug,
-                  name: language === 'uk' && cat.name_ua ? cat.name_ua : language === 'en' && cat.name_en ? cat.name_en : language === 'nl' && cat.name_nl ? cat.name_nl : cat.name_ru,
-                  emoji: cat.emoji || '🍣',
-                  subcategories: []
-                }))
-                .sort((a: any, b: any) => {
-                  const catA = data.find((c: any) => c.slug === a.key)
-                  const catB = data.find((c: any) => c.slug === b.key)
-                  return (catA?.order || 0) - (catB?.order || 0)
-                })
-              sessionStorage.setItem(cacheKey, JSON.stringify(next))
+      const raw = parseCategoriesCacheJson(cached)
+      if (raw) {
+        applyCategories(mapApi(raw))
+        fetch('/api/products/categories', { cache: 'no-store' })
+          .then((res) => {
+            if (!res.ok) throw new Error(String(res.status))
+            return res.json()
+          })
+          .then((data) => {
+            const list = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+            if (typeof sessionStorage !== 'undefined' && list.length > 0) {
+              sessionStorage.setItem(cacheKey, JSON.stringify(list))
               sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
-              applyCategories(next)
-            })
-            .catch(() => {})
-          return
-        }
-      } catch (_) { /* кэш повреждён — грузим ниже */ }
+            }
+            if (list.length > 0) applyCategories(mapApi(list))
+          })
+          .catch(() => {})
+        return
+      }
     }
 
-    // Нет кэша или устарел — загружаем
-    fetch('/api/products/categories')
-      .then(res => res.json())
-      .then(data => {
-        const categories = data
-          .filter((cat: any) => cat.isActive !== false)
-          .map((cat: any) => ({
-            id: cat.id.toString(),
-            key: cat.slug,
-            slug: cat.slug,
-            name: language === 'uk' && cat.name_ua ? cat.name_ua : language === 'en' && cat.name_en ? cat.name_en : language === 'nl' && cat.name_nl ? cat.name_nl : cat.name_ru,
-            emoji: cat.emoji || '🍣',
-            subcategories: []
-          }))
-          .sort((a: any, b: any) => {
-            const catA = data.find((c: any) => c.slug === a.key)
-            const catB = data.find((c: any) => c.slug === b.key)
-            return (catA?.order || 0) - (catB?.order || 0)
-          })
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(cacheKey, JSON.stringify(categories))
+    const applyFallback = () => {
+      const updatedCategories: MenuCategory[] = MENU_CATEGORY_FALLBACK_SLUGS.map((key) => ({
+        id: key,
+        key,
+        name: t.categories[key as keyof typeof t.categories] ?? key,
+        emoji: MENU_CATEGORY_EMOJI[key],
+        subcategories: [],
+      }))
+      applyCategories(updatedCategories)
+    }
+
+    fetch('/api/products/categories', { cache: 'no-store' })
+      .then((res) => {
+        if (!res.ok) throw new Error(String(res.status))
+        return res.json()
+      })
+      .then((data) => {
+        const list = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+        if (typeof sessionStorage !== 'undefined' && list.length > 0) {
+          sessionStorage.setItem(cacheKey, JSON.stringify(list))
           sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
         }
-        applyCategories(categories)
+        if (list.length > 0) {
+          applyCategories(mapApi(list))
+          return
+        }
+        applyFallback()
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Ошибка загрузки категорий:', err)
-        const updatedCategories = defaultCategories.map(cat => ({
-          ...cat,
-          name: t.categories[cat.key as keyof typeof t.categories] || cat.name
-        }))
-        applyCategories(updatedCategories)
+        applyFallback()
       })
   }, [language, t.categories])
   
@@ -958,7 +1008,11 @@ export default function MenuView() {
     if (typeof window !== 'undefined') {
       const handleCategoriesUpdate = () => {
         console.log('Получено событие categoriesUpdated, перезагружаем категории...')
-        // Используем loadCategories для перезагрузки
+        if (typeof sessionStorage !== 'undefined') {
+          const key = menuCategoriesSessionKey()
+          sessionStorage.removeItem(key)
+          sessionStorage.removeItem(`${key}_time`)
+        }
         loadCategories()
       }
       window.addEventListener('categoriesUpdated', handleCategoriesUpdate)
@@ -1058,31 +1112,35 @@ export default function MenuView() {
     for (const cat of menuCategories) {
       map.set(cat.key, [])
     }
-    const matchesCat = (item: MenuItem, selectedCat: MenuCategory) => {
-      if (item.categorySlug) {
-        if (item.categorySlug === selectedCat.key) return true
-        if (selectedCat.slug && item.categorySlug === selectedCat.slug) return true
+    /** Спочатку categoryId (з Prisma) — надійно навіть при кривому/порожньому slug у адмінці. */
+    const resolveItemCategory = (item: MenuItem): MenuCategory | undefined => {
+      if (item.categoryId != null) {
+        const byId = menuCategories.find((c) => String(c.id) === String(item.categoryId))
+        if (byId) return byId
       }
-      if (item.categoryId != null && selectedCat.id) {
-        if (String(item.categoryId) === String(selectedCat.id)) return true
+      for (const c of menuCategories) {
+        if (item.categorySlug) {
+          if (item.categorySlug === c.key) return c
+          if (c.slug && item.categorySlug === c.slug) return c
+        }
+        if (item.category && c.name) {
+          if (item.category.toLowerCase().trim() === c.name.toLowerCase().trim()) return c
+        }
       }
-      if (item.category && selectedCat.name) {
-        if (item.category.toLowerCase().trim() === selectedCat.name.toLowerCase().trim()) return true
-      }
-      return false
+      return undefined
     }
     for (const item of menuItems) {
-      for (const cat of menuCategories) {
-        if (matchesCat(item, cat)) {
-          map.get(cat.key)!.push(item)
-          break
-        }
+      const cat = resolveItemCategory(item)
+      if (cat) {
+        const list = map.get(cat.key) ?? []
+        list.push(item)
+        map.set(cat.key, list)
       }
     }
     const sortInCategory = (arr: MenuItem[]) =>
       [...arr].sort((a, b) => {
-        const aRec = a.isRecommended === true && a.allowRecommendations !== false
-        const bRec = b.isRecommended === true && b.allowRecommendations !== false
+        const aRec = a.isHomeHit === true && a.allowRecommendations !== false
+        const bRec = b.isHomeHit === true && b.allowRecommendations !== false
         if (aRec !== bRec) return aRec ? -1 : 1
         if (aRec && bRec) return (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0)
         return a.id - b.id
@@ -1094,6 +1152,30 @@ export default function MenuView() {
     }
     return map
   }, [menuItems, menuCategories])
+
+  /** Категорії, у яких є хоча б один товар (порожні з адмінки не показуємо на головній) */
+  const menuCategoriesWithItems = useMemo(
+    () => menuCategories.filter((cat) => (itemsByCategory.get(cat.key) ?? []).length > 0),
+    [menuCategories, itemsByCategory],
+  )
+
+  /** Усі категорії з адмінки/АПІ в стрічці (крім slug-ів «усе/все») — клік веде на сторінку категорії навіть без товарів */
+  const categoriesForTopStrip = useMemo(
+    () => filterNonAggregateMenuCategories(menuCategories),
+    [menuCategories],
+  )
+
+  /** Секцію з товарами: або по категоріях, або один блок «усе», якщо кластер не збігся */
+  const showHomeMenuCatalog = menuCategoriesWithItems.length > 0 || menuItems.length > 0
+  const homeCatalogAsSingleList = menuItems.length > 0 && menuCategoriesWithItems.length === 0
+
+  useEffect(() => {
+    if (categoriesForTopStrip.length === 0) return
+    const validKeys = new Set(categoriesForTopStrip.map((c) => c.key))
+    if (!selectedCategory || !validKeys.has(selectedCategory)) {
+      setSelectedCategory(categoriesForTopStrip[0].key)
+    }
+  }, [categoriesForTopStrip, selectedCategory])
 
   // Отладочный эффект для отслеживания изменений
   useEffect(() => {
@@ -1208,33 +1290,11 @@ export default function MenuView() {
   }
 
 
-  const cinematicAdminPromoProducts = useMemo((): CinematicFooterAdminProduct[] => {
-    const maxItems = 24
-    const wf = t.productDetail.weightFallback
-    return menuItems
-      .filter((i) => (i.promoDiscountPercent ?? 0) > 0)
-      .sort((a, b) => (b.promoDiscountPercent ?? 0) - (a.promoDiscountPercent ?? 0))
-      .slice(0, maxItems)
-      .map((item) => ({
-        id: item.id,
-        label: (item.name || '').trim(),
-        categoryLabel: (item.category || '').trim(),
-        imageUrl: item.imageUrl || undefined,
-        discountPercent: item.promoDiscountPercent,
-        description: item.description,
-        price: item.price,
-        isPopular: item.isTop === true,
-        emoji: item.emoji,
-        subtitleLine: cinematicWeightSubtitle(item.description, wf),
-      }))
-      .filter((p) => p.label.length > 0)
-  }, [menuItems, t.productDetail.weightFallback])
-
   const cinematicAdminRecommendedProducts = useMemo((): CinematicFooterAdminProduct[] => {
     const maxItems = 24
     const wf = t.productDetail.weightFallback
     return menuItems
-      .filter((i) => i.isRecommended && i.allowRecommendations !== false)
+      .filter((i) => i.isHomeHit && i.allowRecommendations !== false)
       .sort((a, b) => (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0))
       .slice(0, maxItems)
       .map((item) => ({
@@ -1247,10 +1307,10 @@ export default function MenuView() {
         isPopular: item.isTop === true,
         emoji: item.emoji,
         discountPercent: (item.promoDiscountPercent ?? 0) > 0 ? item.promoDiscountPercent : undefined,
-        subtitleLine: cinematicWeightSubtitle(item.description, wf),
+        subtitleLine: cinematicWeightSubtitle(item.description, wf, language),
       }))
       .filter((p) => p.label.length > 0)
-  }, [menuItems, t.productDetail.weightFallback])
+  }, [menuItems, t.productDetail.weightFallback, language])
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
   const openProfileTab = (tab: 'history' | 'address' | 'favorites') => {
@@ -1322,13 +1382,13 @@ export default function MenuView() {
   const userStr = localStorage.getItem('currentUser')
 
   if (!userStr) {
-    toast.error('Увійдіть, щоб додавати в обране') // Или t.auth.required
+    toast.error(t.clientProfile.loginToAddFavorites)
     return
   }
 
   const auth = getBearerAuthHeaders()
   if (Object.keys(auth as Record<string, string>).length === 0) {
-    toast.error('Увійдіть, щоб додавати в обране')
+    toast.error(t.clientProfile.loginToAddFavorites)
     return
   }
 
@@ -1362,7 +1422,7 @@ export default function MenuView() {
       localStorage.setItem('cart', JSON.stringify(cart))
       const event = new CustomEvent('cartUpdated')
       window.dispatchEvent(event)
-      toast.success(t.addToCart || 'Добавлено!')
+      toast.success(t.addToCart)
     }
   }
   
@@ -1689,13 +1749,7 @@ export default function MenuView() {
     if (!profileHasUser) {
       return (
         <div className="full-page-web full-page-web--craft flex min-h-[50vh] items-center justify-center px-6 text-center">
-          <p className="text-[#145142] font-medium">
-            {language === 'uk'
-              ? 'Перенаправлення на вхід…'
-              : language === 'en'
-                ? 'Redirecting to sign in…'
-                : 'Перенаправление на вход…'}
-          </p>
+          <p className="text-[#145142] font-medium">{t.clientProfile.redirectLogin}</p>
         </div>
       )
     }
@@ -1777,11 +1831,14 @@ export default function MenuView() {
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
   return (
-    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] bg-transparent">
+    <div className="menu-page-web relative w-full max-w-[100vw] bg-transparent">
       <LogoBackground />
 
       {/* Фіксована верхня зона: шапка + категорії (WattaStickyChromeLayout — липне до вікна при скролі .content-web) */}
-      <WattaStickyChromeLayout chromeClassName="watta-full-menu-sticky-chrome">
+      <WattaStickyChromeLayout
+        chromeClassName="watta-full-menu-sticky-chrome"
+        flowHeightFudgePx={36}
+      >
         <WattaGlobalSiteHeader
           disableSticky
           cartCount={cartCount}
@@ -1797,6 +1854,8 @@ export default function MenuView() {
           onCartClick={openCart}
           onMenuClick={toggleSidebar}
           onProfileClick={() => openProfileTab('history')}
+          onFavoritesClick={() => openProfileTab('favorites')}
+          favoritesCount={favorites.length}
           onLogoClick={handleClosePage}
         />
 
@@ -1813,7 +1872,7 @@ export default function MenuView() {
             </button>
 
             <div ref={categoriesPanelRef} className="categories-panel-web" onScroll={handleScroll}>
-              {menuCategories.map((category) => (
+              {categoriesForTopStrip.map((category) => (
                 <button
                   key={category.key}
                   type="button"
@@ -1933,7 +1992,8 @@ export default function MenuView() {
         videoSources={HERO_VIDEO_SOURCES_MENU}
       />
 
-      <div ref={marqueeBarRef} className="w-full shrink-0">
+      {/* Бігуча смуга одразу після hero-відео (не між шапкою/категоріями і відео) */}
+      <div ref={marqueeBarRef} className="home-hero-after-marquee-wrap-web w-full shrink-0">
         <WattaHeroMarqueeBar />
       </div>
 
@@ -1943,7 +2003,7 @@ export default function MenuView() {
       >
         <CinematicFooter
           layout="compact"
-          adminPromoProducts={cinematicAdminPromoProducts}
+          adminPromoProducts={[]}
           adminRecommendedProducts={cinematicAdminRecommendedProducts}
           onAdminProductAddToCart={(productId) => {
             const item = menuItems.find((i) => i.id === productId)
@@ -1965,54 +2025,12 @@ export default function MenuView() {
         className="home-brand-story-section-web home-brand-banner-stage-soft-web menu-after-welcome-web menu-snap-section-brand-web relative z-[2] w-full max-w-[100vw]"
         aria-labelledby="hero-banners-heading"
       >
+        <h2 id="hero-banners-heading" className="sr-only">
+          {t.menuView.heroBannersSectionAria}
+        </h2>
         <div className="home-brand-story-bg-web" aria-hidden />
         <div className="home-brand-story-grain-web" aria-hidden />
         <div className="home-brand-inner-web relative z-[1] mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:px-8 md:pb-16 md:pt-14">
-          <header className="home-menu-hero-banners-head-web home-full-menu-catalog-head-web">
-            <div className="home-full-menu-catalog-ornament-web" aria-hidden>
-              <span className="home-full-menu-catalog-ornament-cap-web" />
-              <span className="home-full-menu-catalog-ornament-line-web" />
-              <span className="home-full-menu-catalog-ornament-cap-web" />
-            </div>
-            <div className="home-hero-banner-title-rail-web">
-              <h2
-                id="hero-banners-heading"
-                className="home-full-menu-catalog-title-web home-hero-banner-overlay-title-web"
-              >
-                {t.menuView.heroBannerOverlayTitle}
-              </h2>
-            </div>
-            <div
-              className="home-hero-banner-sms-web"
-              role="figure"
-              aria-label={`${t.menuView.heroBannerSmsSender}. ${t.menuView.heroBannerOverlaySub}`}
-            >
-              <div className="home-hero-banner-sms-web__body">
-                <div className="home-hero-banner-sms-web__avatar-wrap" aria-hidden>
-                  <Image
-                    src="/logo.png"
-                    alt=""
-                    width={128}
-                    height={128}
-                    className="home-hero-banner-sms-web__avatar-img"
-                    sizes="(max-width: 640px) 44px, 56px"
-                  />
-                </div>
-                <div className="home-hero-banner-sms-web__stack">
-                  <div className="home-hero-banner-sms-web__meta" aria-hidden>
-                    <span className="home-hero-banner-sms-web__badge">{t.menuView.heroBannerSmsBadge}</span>
-                    <span className="home-hero-banner-sms-web__sender">{t.menuView.heroBannerSmsSender}</span>
-                  </div>
-                  <div className="home-hero-banner-sms-web__bubble">
-                    <p className="home-hero-banner-sms-web__text">{t.menuView.heroBannerOverlaySub}</p>
-                    <div className="home-hero-banner-sms-web__bubble-foot">
-                      <span className="home-hero-banner-sms-web__time">{t.menuView.heroBannerSmsTime}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </header>
           <div className="home-brand-banner-shell-web home-brand-banner-shell-web--section-lead">
       {displayBanners.length > 0 ? (
         <div 
@@ -2058,7 +2076,7 @@ export default function MenuView() {
               prevBanner();
             }}
             className="hidden md:flex absolute top-0 left-0 bottom-0 w-16 items-center justify-center text-white/50 hover:text-white hover:bg-black/10 transition-all z-10 opacity-0 group-hover:opacity-100"
-            aria-label="Previous slide"
+            aria-label={a.previousSlide}
           >
             <ChevronLeft size={48} strokeWidth={1.5} />
           </button>
@@ -2070,7 +2088,7 @@ export default function MenuView() {
               nextBanner();
             }}
             className="hidden md:flex absolute top-0 right-0 bottom-0 w-16 items-center justify-center text-white/50 hover:text-white hover:bg-black/10 transition-all z-10 opacity-0 group-hover:opacity-100"
-            aria-label="Next slide"
+            aria-label={a.nextSlide}
           >
             <ChevronRight size={48} strokeWidth={1.5} />
           </button>
@@ -2107,25 +2125,55 @@ export default function MenuView() {
         </div>
       </section>
 
+      {showHomeMenuCatalog ? (
       <section
         id="home-menu-catalog"
-        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] px-4 sm:px-6 md:px-8 pt-5 pb-12 sm:pt-7 sm:pb-16 md:pt-8"
+        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] px-4 sm:px-6 md:px-8 pt-3 pb-12 sm:pt-5 sm:pb-16 md:pt-6"
         aria-labelledby="home-menu-catalog-title"
       >
         <div className="home-menu-catalog-stack-web relative z-[1]">
-          <header className="home-full-menu-catalog-head-web">
-            <div className="home-full-menu-catalog-ornament-web" aria-hidden>
-              <span className="home-full-menu-catalog-ornament-cap-web" />
-              <span className="home-full-menu-catalog-ornament-line-web" />
-              <span className="home-full-menu-catalog-ornament-cap-web" />
-            </div>
+          <header
+            className="home-full-menu-catalog-head-web mx-auto w-full max-w-7xl"
+            aria-labelledby="home-menu-catalog-title"
+          >
             <h2 id="home-menu-catalog-title" className="home-full-menu-catalog-title-web">
               {t.menuView.homeCatalogTitle}
             </h2>
           </header>
 
-          <div className="mx-auto max-w-7xl space-y-12 sm:space-y-16 md:space-y-[4.5rem]">
-            {menuCategories.map((cat) => {
+          <div className="home-menu-cat-list-web mx-auto max-w-7xl">
+            {homeCatalogAsSingleList ? (
+              <div
+                className="home-menu-cat-block-web"
+                id="home-menu-cat--all"
+              >
+                <div className="home-menu-cat-band-web">
+                  <div className="home-menu-cat-heading-web">
+                    <span className="home-menu-cat-emoji-bare-web" aria-hidden>🍣</span>
+                    <div className="home-menu-cat-heading-text-web min-w-0">
+                      <h3 className="home-menu-cat-title-web">{t.menuView.homeCatalogTitle}</h3>
+                      <p className="home-menu-cat-meta-line-web">
+                        {menuItems.length} {t.menuView.itemsCount}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="home-menu-cat-rail-inset-web">
+                    <HomeCategoryProductRail
+                      categoryLabel={t.menuView.homeCatalogTitle}
+                      items={menuItems.slice(0, HOME_CATEGORY_RAIL_PREVIEW_MAX * 2)}
+                      addToCart={(item) => addToCart(item as MenuItem)}
+                      onBeforeNavigateToProduct={persistMenuBrowseReturnState}
+                    />
+                  </div>
+                  <div className="home-menu-cat-view-all-wrap-web">
+                    <Link href="/menu" className="home-menu-cat-view-all-btn-web">
+                      {t.menuView.seeAll}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+            menuCategoriesWithItems.map((cat) => {
               const catItems = itemsByCategory.get(cat.key) ?? []
               return (
                 <div
@@ -2133,46 +2181,43 @@ export default function MenuView() {
                   id={`home-menu-cat-${cat.key}`}
                   className="home-menu-cat-block-web"
                 >
-                  <div className="home-menu-cat-heading-web">
-                    <span className="home-menu-cat-emoji-ring-web" aria-hidden>
-                      <span className="home-menu-cat-emoji-web">{cat.emoji}</span>
-                    </span>
-                    <div className="home-menu-cat-heading-main-web">
-                      <h3 className="home-menu-cat-title-web">{cat.name}</h3>
-                      {catItems.length > 0 ? (
-                        <span className="home-menu-cat-meta-web">
+                  <div className="home-menu-cat-band-web">
+                    <div className="home-menu-cat-heading-web">
+                      <span className="home-menu-cat-emoji-bare-web" aria-hidden>
+                        {cat.emoji}
+                      </span>
+                      <div className="home-menu-cat-heading-text-web min-w-0">
+                        <h3 className="home-menu-cat-title-web">{cat.name}</h3>
+                        <p className="home-menu-cat-meta-line-web">
                           {catItems.length} {t.menuView.itemsCount}
-                        </span>
-                      ) : null}
+                        </p>
+                      </div>
                     </div>
-                    <span className="home-menu-cat-accent-bar-web" aria-hidden />
-                  </div>
-                  {catItems.length === 0 ? (
-                    <p className="home-menu-cat-empty-web">{t.menuView.emptyCategoryTitle}</p>
-                  ) : (
-                    <>
+                    <div className="home-menu-cat-rail-inset-web">
                       <HomeCategoryProductRail
                         categoryLabel={cat.name}
                         items={catItems.slice(0, HOME_CATEGORY_RAIL_PREVIEW_MAX)}
                         addToCart={(item) => addToCart(item as MenuItem)}
                         onBeforeNavigateToProduct={persistMenuBrowseReturnState}
                       />
-                      <div className="home-menu-cat-view-all-wrap-web">
-                        <Link
-                          href={`/menu?cat=${encodeURIComponent(cat.key)}`}
-                          className="home-menu-cat-view-all-btn-web"
-                        >
-                          {t.menuView.seeAll}
-                        </Link>
-                      </div>
-                    </>
-                  )}
+                    </div>
+                    <div className="home-menu-cat-view-all-wrap-web">
+                      <Link
+                        href={`/menu?cat=${encodeURIComponent(cat.key)}`}
+                        className="home-menu-cat-view-all-btn-web"
+                      >
+                        {t.menuView.seeAll}
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               )
-            })}
+            })
+            )}
           </div>
         </div>
       </section>
+      ) : null}
       </>
       )}
       {showCategoryAdmin && (

@@ -15,15 +15,17 @@ export default function CartPage() {
   const handlePhone = () => window.location.href = 'tel:+380930000000' // Ваш номер
 
   return (
-    <CartView 
-      onBack={() => router.back()} 
-      
-      // Передаем недостающие функции:
-      onOpenProfile={handleProfile}
-      onOpenFavorites={handleFavorites}
-      onOpenNotifications={handleNotifications}
-      onMenuClick={handleMenu}
-      onOpenPhone={handlePhone}
-    />
+    <>
+      <CartView 
+        onBack={() => router.back()} 
+        
+        // Передаем недостающие функции:
+        onOpenProfile={handleProfile}
+        onOpenFavorites={handleFavorites}
+        onOpenNotifications={handleNotifications}
+        onMenuClick={handleMenu}
+        onOpenPhone={handlePhone}
+      />
+    </>
   )
 }

@@ -27,7 +27,7 @@ function CheckoutSuccessContent() {
   }, [])
 
   return (
-    <div className="watta-public-page-shell relative flex min-h-screen flex-1 flex-col items-center justify-center px-6 py-16 font-sans">
+    <div className="watta-public-page-shell watta-page-bg relative flex min-h-screen flex-1 flex-col items-center justify-center px-6 py-16 font-sans">
       <LogoBackground />
       <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center rounded-[28px] bg-white/95 backdrop-blur-md border border-[#145142]/10 shadow-[0_20px_60px_rgba(20,81,66,0.12)] px-8 py-12">
         <div
@@ -61,11 +61,12 @@ function CheckoutSuccessContent() {
 }
 
 function SuccessFallback() {
+  const { t } = useLanguage()
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6]">
+    <div className="min-h-screen flex items-center justify-center watta-page-bg">
       <div
         className="h-10 w-10 rounded-full border-2 border-[#145142] border-t-transparent animate-spin"
-        aria-label="Loading"
+        aria-label={t.siteAria.loading}
       />
     </div>
   )

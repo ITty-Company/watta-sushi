@@ -161,8 +161,9 @@ const steps = [
     descKey: 'stepAppDesc' as const,
     svg: (
       <>
-        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-        <line x1="12" y1="18" x2="12.01" y2="18" />
+        <rect x="3" y="3" width="18" height="18" rx="5" ry="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" />
       </>
     ),
   },
@@ -220,7 +221,6 @@ export function DeliveryExperienceBlocks({
               ))}
             </ul>
             <div className="delivery-watta-conditions-divider" aria-hidden />
-            <p className="delivery-watta-block-text delivery-watta-block-text--lead">{d.minOrder}</p>
             {conditionsCheckSummary ? (
               <p className="delivery-watta-conditions-check-summary" role="status">
                 {conditionsCheckSummary}

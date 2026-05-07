@@ -16,6 +16,8 @@ import {
   feeModeFromZone,
   writeWattaDeliveryZoneSelection,
 } from '@/lib/wattaDeliveryZoneSelection'
+import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
+import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
 import {
   MapPin,
   Sparkles,
@@ -189,6 +191,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   const { t, getLocalized } = useLanguage()
   const d = t.deliveryPage
   const lp = t.locationPicker
+  const a = t.siteAria
 
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
   const [cities, setCities] = useState<City[]>([])
@@ -202,41 +205,24 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   const [deliveryHeroVideoFailed, setDeliveryHeroVideoFailed] = useState(false)
   const [deliveryHeroVideoIndex, setDeliveryHeroVideoIndex] = useState(0)
   const deliveryHeroVideoRef = useRef<HTMLVideoElement | null>(null)
+  const deliveryHeroVideoCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const deliveryHeroVideoSrc =
     DELIVERY_HERO_VIDEO_SOURCES[deliveryHeroVideoIndex] ?? DELIVERY_HERO_VIDEO_SOURCES[0]
 
   useEffect(() => {
     if (deliveryHeroVideoFailed) return
     const video = deliveryHeroVideoRef.current
-    if (!video) return
-
-    const safePlay = () => {
-      const p = video.play()
-      if (p && typeof p.catch === 'function') {
-        p.catch(() => {})
-      }
-    }
-
-    if (video.readyState >= 2) safePlay()
-    const timer = window.setTimeout(safePlay, 120)
-    const onCanPlay = () => safePlay()
-    const onLoadedData = () => safePlay()
-    const onPageShow = () => safePlay()
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') safePlay()
-    }
-
-    video.addEventListener('canplay', onCanPlay)
-    video.addEventListener('loadeddata', onLoadedData)
-    window.addEventListener('pageshow', onPageShow)
-    document.addEventListener('visibilitychange', onVisibility)
-
+    const canvas = deliveryHeroVideoCanvasRef.current
+    if (!video || !canvas) return
+    const stack = video.closest('.welcome-hero-video-stack-web')
+    const offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
+    const offAutoplay = bindHeroVideoAutoplay(video, {
+      extendedRetries: true,
+      blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
+    })
     return () => {
-      window.clearTimeout(timer)
-      video.removeEventListener('canplay', onCanPlay)
-      video.removeEventListener('loadeddata', onLoadedData)
-      window.removeEventListener('pageshow', onPageShow)
-      document.removeEventListener('visibilitychange', onVisibility)
+      offMirror()
+      offAutoplay()
     }
   }, [deliveryHeroVideoSrc, deliveryHeroVideoFailed])
 
@@ -545,7 +531,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     <section
       ref={menuWelcomeHeroRef}
       className={`welcome-hero-section-web menu-snap-section-welcome-web${embedInMenu ? ' delivery-page-hero-embed-web' : ' delivery-page-hero-standalone-web delivery-page-hero-split-panel-web'}`}
-      aria-label="Hero video"
+      aria-label={a.heroVideo}
     >
       <div className="welcome-hero-video-fill-web">
         {deliveryHeroVideoFailed ? (
@@ -556,32 +542,63 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
             aria-hidden
           />
         ) : (
-          <video
-            key={deliveryHeroVideoSrc}
-            ref={deliveryHeroVideoRef}
-            className="welcome-video-native-web"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            tabIndex={-1}
-            aria-hidden
-            onError={() => {
-              setDeliveryHeroVideoIndex((prev) => {
-                if (prev < DELIVERY_HERO_VIDEO_SOURCES.length - 1) return prev + 1
-                setDeliveryHeroVideoFailed(true)
-                return prev
-              })
-            }}
-            onEnded={(e) => {
-              const el = e.currentTarget
-              el.currentTime = 0
-              void el.play()
-            }}
-          >
-            <source src={deliveryHeroVideoSrc} type="video/mp4" />
-          </video>
+          <div className="welcome-hero-video-stack-web">
+            <video
+              key={deliveryHeroVideoSrc}
+              ref={deliveryHeroVideoRef}
+              className="welcome-video-native-web welcome-hero-video-source-for-canvas-web"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls={false}
+              disablePictureInPicture
+              preload="auto"
+              tabIndex={-1}
+              aria-hidden
+              onContextMenu={(e) => e.preventDefault()}
+              onError={() => {
+                setDeliveryHeroVideoIndex((prev) => {
+                  if (prev < DELIVERY_HERO_VIDEO_SOURCES.length - 1) return prev + 1
+                  setDeliveryHeroVideoFailed(true)
+                  return prev
+                })
+              }}
+              onEnded={(e) => {
+                const el = e.currentTarget
+                el.currentTime = 0
+                void el.play()
+              }}
+            >
+              <source src={deliveryHeroVideoSrc} type="video/mp4" />
+            </video>
+            <canvas
+              ref={deliveryHeroVideoCanvasRef}
+              className="welcome-hero-video-canvas-mirror-web"
+              aria-hidden
+            />
+            <div
+              className="welcome-hero-video-input-shield-web"
+              aria-hidden
+              role="presentation"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onAuxClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onDoubleClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+            />
+          </div>
         )}
       </div>
     </section>
@@ -871,7 +888,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
               </div>
             </section>
 
-            <section className="delivery-watta-map-section" aria-label="Map">
+            <section className="delivery-watta-map-section" aria-label={a.map}>
               {showInteractiveZonesMap && (
                 <>
                   <h2 className="delivery-watta-zones-map-hero-title">{d.zonesMapHeroTitle}</h2>

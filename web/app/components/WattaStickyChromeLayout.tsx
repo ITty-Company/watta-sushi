@@ -17,26 +17,42 @@ type WattaStickyChromeLayoutProps = {
   chromeClassName: string
   /** Для виміру висоти (scroll-padding, /menu) */
   innerRef?: RefObject<HTMLDivElement>
+  /**
+   * Віднімається від висоти chrome (offsetHeight, floor), щоб наступний контент не лишав білу смугу під fixed.
+   * На головній з героєм — більше, ніж дефолт 10 (напр. 32–40).
+   */
+  flowHeightFudgePx?: number
 }
 
 /**
  * Мінімальна поправка до грубого ceil(getBoundingClientRect) — тіні / WebKit
  * залишали в потоці на ~1–2 px зайвого місця, інколи виглядали як 10–32 px «повітря» до героя.
  */
-const chromeFlowLayoutHeightFudgePx = 10
+const defaultFlowHeightFudgePx = 10
+/** Захист від рідких стрибків виміру (ResizeObserver/WebKit), що створювали величезний порожній відступ. */
+const MAX_FLOW_LAYOUT_HEIGHT = 220
 
 /**
  * Липка верхня зона: fixed до viewport + резерв висоти в потоці, щоб контент не їхав під шапку.
  * Надійніше, ніж position: sticky, при nested overflow / WebKit.
  */
-export default function WattaStickyChromeLayout({ children, chromeClassName, innerRef }: WattaStickyChromeLayoutProps) {
+export default function WattaStickyChromeLayout({
+  children,
+  chromeClassName,
+  innerRef,
+  flowHeightFudgePx = defaultFlowHeightFudgePx,
+}: WattaStickyChromeLayoutProps) {
   const [flowH, setFlowH] = useState(0)
   const localRef = useRef<HTMLDivElement | null>(null)
 
-  const toFlowLayoutHeight = useCallback((raw: number) => {
-    if (raw < 8) return 0
-    return Math.max(8, Math.ceil(raw) - chromeFlowLayoutHeightFudgePx)
-  }, [])
+  const toFlowLayoutHeight = useCallback(
+    (raw: number) => {
+      if (raw < 8) return 0
+      /* floor — менший резерв, ніж ceil; менше «зайвого повітря» до героя */
+      return Math.min(MAX_FLOW_LAYOUT_HEIGHT, Math.max(8, Math.floor(raw) - flowHeightFudgePx))
+    },
+    [flowHeightFudgePx]
+  )
 
   const setInnerNode = useCallback(
     (el: HTMLDivElement | null) => {
@@ -45,7 +61,7 @@ export default function WattaStickyChromeLayout({ children, chromeClassName, inn
         (innerRef as MutableRefObject<HTMLDivElement | null>).current = el
       }
       if (el) {
-        const h = toFlowLayoutHeight(el.getBoundingClientRect().height)
+        const h = toFlowLayoutHeight(el.offsetHeight)
         if (h >= 8) {
           setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
         }
@@ -58,7 +74,7 @@ export default function WattaStickyChromeLayout({ children, chromeClassName, inn
     const el = localRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
     const measure = () => {
-      const h = toFlowLayoutHeight(el.getBoundingClientRect().height)
+      const h = toFlowLayoutHeight(el.offsetHeight)
       if (h < 8) return
       setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
     }
@@ -72,7 +88,7 @@ export default function WattaStickyChromeLayout({ children, chromeClassName, inn
       ro.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [children, chromeClassName, toFlowLayoutHeight])
+  }, [children, chromeClassName, toFlowLayoutHeight, flowHeightFudgePx])
 
   return (
     <div

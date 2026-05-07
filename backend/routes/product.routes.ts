@@ -5,6 +5,18 @@ import { checkAdmin } from '../authMiddleware';
 const router = Router();
 const prisma = new PrismaClient();
 
+const MAX_PRODUCT_GALLERY = 24;
+
+/** Порядок URL у каруселі; якщо масив порожній — одне головне фото з imageUrl */
+function normalizeProductImageList(imageUrls: unknown, imageUrl: unknown): string[] {
+  const fromArray = Array.isArray(imageUrls)
+    ? imageUrls.map((x) => (x == null ? '' : String(x).trim())).filter((s) => s.length > 0)
+    : [];
+  if (fromArray.length > 0) return fromArray.slice(0, MAX_PRODUCT_GALLERY);
+  const single = imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : '';
+  return single ? [single] : [];
+}
+
 /** Доступність у місті: явне додавання в ProductCity АБО «усі міста» (нема жодного зв’язку). */
 function whereVisibleInCity(cityId: number | null) {
   if (cityId == null || !Number.isFinite(cityId) || cityId <= 0) return undefined;
@@ -95,16 +107,42 @@ router.post('/categories', checkAdmin, async (req: Request, res: Response) => {
   }
 });
 
+/** Слаг для маршрутів /menu; «-» або порожнє ламають фронт. */
+function safeCategorySlug(input: unknown, name_ru: string | undefined): string {
+  const base = (name_ru || 'category')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'category';
+  if (input == null || String(input).trim() === '') return base;
+  const s = String(input)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  if (s.length < 2 || s === '-' || s === '—') return base;
+  return s;
+}
+
 // 2.2. Обновить категорию
 router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations } = req.body;
-    
+    const existing = await prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Категория не найдена' });
+    }
+    const nameForSlug = name_ru != null && String(name_ru).trim() !== '' ? String(name_ru) : existing.name_ru;
+    const finalSlug = safeCategorySlug(slug, nameForSlug);
+
     const category = await prisma.category.update({
       where: { id },
       data: {
-        name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive,
+        name_ru, name_ua, name_en, name_nl, slug: finalSlug, emoji, order, isActive,
         ...(allowRecommendations !== undefined ? { allowRecommendations: Boolean(allowRecommendations) } : {})
       }
     });
@@ -140,46 +178,97 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
       name_ru, name_ua, name_en, name_nl, 
       price, 
       description_ru, description_ua, description_en, description_nl,
-      categoryId, imageUrl,
+      categoryId, imageUrl, imageUrls: imageUrlsBody,
       cityIds, // массив ID городов
       ingredientIds, // массив ID ингредиентов
       isPopular,
-      isRecommended,
+      isHomeHit,
+      isCartRecommend,
       recommendOrder,
+      cartRecommendOrder,
       promoDiscountPercent
     } = req.body;
 
-    const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)));
+    const nameRuT = [name_ru, name_ua, name_en, name_nl]
+      .map((s) => (s != null && String(s).trim() !== '' ? String(s).trim() : ''))
+      .find((s) => s !== '')
+    if (!nameRuT) {
+      return res.status(400).json({
+        error: 'Введите название товара (хотя бы на одном языке).',
+        message: 'name_required',
+      })
+    }
+
+    const cid = parseInt(String(categoryId), 10)
+    if (!Number.isFinite(cid) || cid < 1) {
+      return res.status(400).json({
+        error: 'Выберите категорию из списка.',
+        message: 'categoryId_invalid',
+      })
+    }
+
+    const priceN = Number(price)
+    if (!Number.isFinite(priceN) || priceN < 0) {
+      return res.status(400).json({
+        error: 'Укажите корректную цену (число ≥ 0).',
+        message: 'price_invalid',
+      })
+    }
+
+    const cityIdsNorm =
+      cityIds && Array.isArray(cityIds)
+        ? cityIds
+            .map((x: unknown) => parseInt(String(x), 10))
+            .filter((n) => Number.isFinite(n) && n > 0)
+        : []
+
+    const ingredientIdsNorm =
+      ingredientIds && Array.isArray(ingredientIds)
+        ? ingredientIds
+            .map((x: unknown) => parseInt(String(x), 10))
+            .filter((n) => Number.isFinite(n) && n > 0)
+        : []
+
+    const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)))
+
+    const gallery = normalizeProductImageList(imageUrlsBody, imageUrl);
+    const img = gallery[0] ?? null;
+
+    const descRu = description_ru != null ? String(description_ru) : ''
+    const nonEmpty = (s: unknown) => (s != null && String(s).trim() !== '' ? String(s) : '')
 
     const product = await prisma.product.create({
       data: {
-        name_ru,
-        name_ua: name_ua || name_ru,
-        name_en: name_en || name_ru,
-        name_nl: name_nl || name_ru,
-        price: Number(price),
-        description_ru: description_ru || "", 
-        description_ua: description_ua || description_ru || "",
-        description_en: description_en || description_ru || "",
-        description_nl: description_nl || description_ru || "",
-        categoryId: parseInt(categoryId as string), // Исправили ошибку типов
-        imageUrl,
+        name_ru: name_ru && String(name_ru).trim() !== '' ? String(name_ru).trim() : nameRuT,
+        name_ua: nonEmpty(name_ua) || nameRuT,
+        name_en: nonEmpty(name_en) || nameRuT,
+        name_nl: nonEmpty(name_nl) || nameRuT,
+        price: priceN,
+        description_ru: descRu,
+        description_ua: nonEmpty(description_ua) || descRu,
+        description_en: nonEmpty(description_en) || descRu,
+        description_nl: nonEmpty(description_nl) || descRu,
+        categoryId: cid,
+        imageUrl: img,
+        imageUrls: gallery,
         isPopular: Boolean(isPopular),
-        isRecommended: Boolean(isRecommended),
+        isHomeHit: Boolean(isHomeHit),
+        isCartRecommend: Boolean(isCartRecommend),
         recommendOrder: Math.round(Number(recommendOrder) || 0),
+        cartRecommendOrder: Math.round(Number(cartRecommendOrder) || 0),
         promoDiscountPercent: promoPct,
         
-        // Связь с городами
-        cities: cityIds && Array.isArray(cityIds) && cityIds.length > 0 ? {
-          create: cityIds.map((cityId: any) => ({
-            cityId: parseInt(cityId)
-          }))
-        } : undefined,
+        cities:
+          cityIdsNorm.length > 0
+            ? {
+                create: cityIdsNorm.map((cityId) => ({ cityId })),
+              }
+            : undefined,
 
-        // Связь с ингредиентами
-        ingredients: ingredientIds && Array.isArray(ingredientIds) && ingredientIds.length > 0 ? {
-            connect: ingredientIds.map((id: any) => ({ id: Number(id) }))
-        } : undefined
+        ingredients:
+          ingredientIdsNorm.length > 0
+            ? { connect: ingredientIdsNorm.map((id) => ({ id })) }
+            : undefined
       },
       include: {
         cities: { include: { city: true } },
@@ -187,9 +276,16 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
       }
     });
     res.json(product);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ error: 'Ошибка создания товара' });
+    const hint =
+      typeof error?.code === 'string' && error.code.startsWith('P')
+        ? ` (Prisma ${error.code})`
+        : ''
+    res.status(500).json({
+      error: 'Ошибка создания товара',
+      message: error?.message ? `${String(error.message)}${hint}` : 'Проверьте категорию, города и миграции БД.',
+    });
   }
 });
 
@@ -201,16 +297,19 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
       name_ru, name_ua, name_en, name_nl,
       price, 
       description_ru, description_ua, description_en, description_nl,
-      imageUrl, categoryId,
+      imageUrl, imageUrls: imageUrlsBody, categoryId,
       cityIds,
       ingredientIds, // массив ID ингредиентов
       isPopular,
-      isRecommended,
+      isHomeHit,
+      isCartRecommend,
       recommendOrder,
+      cartRecommendOrder,
       promoDiscountPercent
     } = req.body;
 
     const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)));
+    const gallery = normalizeProductImageList(imageUrlsBody, imageUrl);
 
     // Сначала удаляем все связи с городами (старый метод)
     await prisma.productCity.deleteMany({
@@ -225,10 +324,13 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
         name_ru, name_ua, name_en, name_nl,
         price: Number(price),
         description_ru, description_ua, description_en, description_nl,
-        imageUrl: imageUrl || '',
+        imageUrl: gallery[0] || '',
+        imageUrls: gallery,
         isPopular: Boolean(isPopular),
-        isRecommended: Boolean(isRecommended),
+        isHomeHit: Boolean(isHomeHit),
+        isCartRecommend: Boolean(isCartRecommend),
         recommendOrder: Math.round(Number(recommendOrder) || 0),
+        cartRecommendOrder: Math.round(Number(cartRecommendOrder) || 0),
         promoDiscountPercent: promoPct,
         category: { connect: { id: parseInt(categoryId as string) } },
         
@@ -282,7 +384,7 @@ router.get('/recommendations', async (req: any, res: any) => {
       cityId && Number.isFinite(cityId) && cityId > 0 ? whereVisibleInCity(cityId) : undefined;
 
     const baseWhere: any = {
-      isRecommended: true,
+      isCartRecommend: true,
       category: { is: { allowRecommendations: true } },
       ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
       ...(cityScope || {}),
@@ -292,7 +394,7 @@ router.get('/recommendations', async (req: any, res: any) => {
       where: baseWhere,
       take,
       include: { category: true, ingredients: true },
-      orderBy: [{ recommendOrder: 'asc' }, { id: 'asc' }],
+      orderBy: [{ cartRecommendOrder: 'asc' }, { recommendOrder: 'asc' }, { id: 'asc' }],
     });
 
     if (recommendations.length === 0) {

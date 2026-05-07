@@ -21,7 +21,7 @@ function MarqueeRow({ phrases }: { phrases: string[] }) {
   )
 }
 
-/** Горизонтальна бігуча смуга одразу під hero-відео на головній. */
+/** Горизонтальна бігуча смуга на головній: одразу після welcome hero-відео, перед блоком рекомендацій. */
 export default function WattaHeroMarqueeBar() {
   const { t } = useLanguage()
   const phrases = useMemo(

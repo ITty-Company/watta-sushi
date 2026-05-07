@@ -15,8 +15,8 @@ export type WattaMenuProductCardModel = {
   emoji?: string
   imageUrl?: string
   isTop?: boolean
-  /** Рекомендована позиція з адмінки — окремий бейдж на картці */
-  isRecommended?: boolean
+  /** «Наші хіти» з адмінки (стрічка на головній) — бейдж на картці */
+  isHomeHit?: boolean
   promoDiscountPercent?: number
 }
 
@@ -31,6 +31,10 @@ type Props = {
   onBeforeNavigateToProduct?: () => void
 }
 
+/**
+ * Єдина візуальна картка товару на сайті: стрічка на головній і сітка в меню/кошику
+ * використовують ті самі `home-menu-product-*` стилі; `variant` лише вмикає ширину в горизонтальному ряді.
+ */
 export function WattaMenuProductCard({
   product,
   onAddToCart,
@@ -47,7 +51,7 @@ export function WattaMenuProductCard({
   const orderLabel = t.menuView.fullMenuWant
 
   const pillHit =
-    'rounded-lg bg-[#eef6f3] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
+    'rounded-lg bg-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
   const pillRec =
     'rounded-lg bg-indigo-50 px-2 py-0.5 text-[10px] font-extrabold text-indigo-800 ring-1 ring-indigo-200/80'
   const pillPromo =
@@ -56,7 +60,7 @@ export function WattaMenuProductCard({
   const pills = (
     <div className="pointer-events-none absolute left-2 top-2 z-[2] flex max-w-[calc(100%-3rem)] flex-wrap gap-1">
       {product.isTop ? <span className={pillHit}>{t.popular}</span> : null}
-      {product.isRecommended ? <span className={pillRec}>{t.menuView.recommendedPill}</span> : null}
+      {product.isHomeHit ? <span className={pillRec}>{t.menuView.recommendedPill}</span> : null}
       {promoPct > 0 ? <span className={pillPromo}>−{promoPct}%</span> : null}
     </div>
   )
@@ -66,7 +70,7 @@ export function WattaMenuProductCard({
       type="button"
       onClick={toggle}
       className={cn(
-        'flex h-9 w-9 items-center justify-center rounded-full border border-white/90 bg-white/95 text-neutral-500 shadow-md transition hover:scale-[1.03] active:scale-[0.98]',
+        'flex h-9 w-9 items-center justify-center rounded-full border border-white/90 bg-white/95 text-neutral-500 transition hover:scale-[1.03] active:scale-[0.98]',
         liked && 'text-red-500',
       )}
       aria-label={t.navigation.favorites}
@@ -79,7 +83,7 @@ export function WattaMenuProductCard({
     </button>
   )
 
-  const mediaRail = (
+  const media = (
     <div className="relative">
       {pills}
       <div className="absolute right-2 top-2 z-[3]">{heartBtn}</div>
@@ -93,6 +97,8 @@ export function WattaMenuProductCard({
             src={product.imageUrl}
             alt=""
             className="home-menu-product-card-img-web h-full w-full object-cover"
+            decoding="async"
+            loading="lazy"
           />
         ) : (
           <div className="home-menu-product-card-placeholder-web">{emoji}</div>
@@ -102,131 +108,48 @@ export function WattaMenuProductCard({
     </div>
   )
 
-  const mediaGrid = (
-    <div className="relative">
-      {pills}
-      <div className="absolute right-2 top-2 z-[3]">{heartBtn}</div>
-      <Link
-        href={`/product/${product.id}`}
-        className="group/media relative block aspect-[4/3] overflow-hidden rounded-t-2xl bg-[#eef2ef] sm:rounded-t-2xl"
-        onClick={() => onBeforeNavigateToProduct?.()}
-      >
-        {product.imageUrl ? (
-          <img
-            src={product.imageUrl}
-            alt=""
-            className="h-full w-full object-cover transition duration-300 group-hover/media:scale-[1.03]"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-5xl opacity-40">{emoji}</div>
-        )}
-      </Link>
-    </div>
-  )
-
-  const titleBlock = (
-    <>
-      <Link
-        href={`/product/${product.id}`}
-        className={variant === 'rail' ? 'home-menu-product-card-title-link-web' : ''}
-        onClick={() => onBeforeNavigateToProduct?.()}
-      >
-        <h2
-          className={cn(
-            variant === 'rail' ? 'home-menu-product-card-title-web' : 'text-sm font-bold leading-snug text-[#0f241e] transition group-hover:text-[#145142] sm:text-base',
-          )}
-        >
-          {product.name}
-        </h2>
-      </Link>
-      {subtitleLine ? (
-        <p className="mt-0.5 text-xs font-semibold text-[#e85d2a]">{subtitleLine}</p>
-      ) : null}
-      {product.description ? (
-        <p
-          className={cn(
-            variant === 'rail'
-              ? 'home-menu-product-card-desc-web'
-              : 'text-xs leading-relaxed text-[#4a5560] sm:text-[13px] line-clamp-2',
-          )}
-        >
-          {product.description}
-        </p>
-      ) : null}
-    </>
-  )
-
-  const priceFooter = (
-    <div
-      className={cn(
-        variant === 'rail'
-          ? 'home-menu-product-card-footer-web'
-          : 'mt-auto flex items-center justify-between gap-2 border-t border-[#145142]/08 pt-3',
-      )}
-    >
-      <div className={variant === 'rail' ? 'home-menu-product-price-stack-web' : ''}>
-        {promoPct > 0 ? (
-          <span
-            className={variant === 'rail' ? 'home-menu-product-price-old-web' : 'text-sm font-semibold text-[#94a3b8] line-through'}
-          >
-            {product.price} €
-          </span>
-        ) : null}
-        <span
-          className={variant === 'rail' ? 'home-menu-product-price-web' : 'text-base font-extrabold tabular-nums text-[#0f241e] sm:text-lg'}
-        >
-          {eff} €
-        </span>
-      </div>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onAddToCart()
-        }}
-        className={variant === 'rail' ? 'home-menu-product-add-web' : 'rounded-full border border-[#145142]/20 bg-[#f4faf8] px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142] hover:bg-[#145142] hover:text-white active:scale-[0.98] sm:px-4 sm:text-sm'}
-        aria-label={orderLabel}
-      >
-        {variant === 'rail' ? (
-          <>
-            <Plus className="home-menu-product-add-icon-web" size={20} strokeWidth={2.5} aria-hidden />
-            <span className="home-menu-product-add-text-web">{orderLabel}</span>
-          </>
-        ) : (
-          orderLabel
-        )}
-      </button>
-    </div>
-  )
-
-  if (variant === 'rail') {
-    return (
-      <article
-        data-menu-product-id={product.id}
-        className={cn('home-menu-product-card-web home-menu-product-card--rail-web group', className)}
-      >
-        {mediaRail}
-        <div className="home-menu-product-card-body-web">
-          {titleBlock}
-          {priceFooter}
-        </div>
-      </article>
-    )
-  }
-
   return (
     <article
       data-menu-product-id={product.id}
       className={cn(
-        'group flex flex-col overflow-hidden rounded-2xl border border-[#145142]/10 bg-white shadow-[0_6px_24px_rgba(20,81,66,0.06)] transition hover:-translate-y-0.5 hover:border-[#145142]/22 hover:shadow-[0_14px_40px_rgba(20,81,66,0.1)]',
+        'home-menu-product-card-web group',
+        variant === 'rail' && 'home-menu-product-card--rail-web',
         className,
       )}
     >
-      {mediaGrid}
-      <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
-        {titleBlock}
-        {priceFooter}
+      {media}
+      <div className="home-menu-product-card-body-web">
+        <Link
+          href={`/product/${product.id}`}
+          className="home-menu-product-card-title-link-web"
+          onClick={() => onBeforeNavigateToProduct?.()}
+        >
+          <h2 className="home-menu-product-card-title-web">{product.name}</h2>
+        </Link>
+        {subtitleLine ? <p className="home-menu-product-card-subline-web">{subtitleLine}</p> : null}
+        {product.description ? <p className="home-menu-product-card-desc-web">{product.description}</p> : null}
+
+        <div className="home-menu-product-card-footer-web">
+          <div className="home-menu-product-price-stack-web">
+            {promoPct > 0 ? (
+              <span className="home-menu-product-price-old-web">{product.price} €</span>
+            ) : null}
+            <span className="home-menu-product-price-web">{eff} €</span>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onAddToCart()
+            }}
+            className="home-menu-product-add-web"
+            aria-label={orderLabel}
+          >
+            <Plus className="home-menu-product-add-icon-web" size={16} strokeWidth={2.4} aria-hidden />
+            <span className="home-menu-product-add-text-web">{orderLabel}</span>
+          </button>
+        </div>
       </div>
     </article>
   )

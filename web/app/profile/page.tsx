@@ -89,7 +89,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-[100dvh] flex-1 items-center justify-center bg-[#f2f5f3] text-[#145142]">
+      <div className="flex min-h-[100dvh] flex-1 items-center justify-center watta-page-bg text-[#145142]">
         {cp.loading}
       </div>
     )
@@ -119,7 +119,7 @@ export default function ProfilePage() {
           : 'ring-gray-200/80 hover:ring-[#145142]/25'
 
   return (
-    <div className="watta-public-page-shell relative flex min-h-[100dvh] flex-1 flex-col overflow-x-hidden bg-[#f2f5f3] pb-16 pt-2 sm:pb-20 sm:pt-3">
+    <div className="watta-public-page-shell relative flex min-h-[100dvh] flex-1 flex-col overflow-x-hidden watta-page-bg pb-16 pt-2 sm:pb-20 sm:pt-3">
       <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.14]">
         <LogoBackground />
       </div>

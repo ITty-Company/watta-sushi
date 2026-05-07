@@ -207,7 +207,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       id="about-page-container"
       className={cn(
         'relative min-h-screen w-full overflow-x-hidden pb-16',
-        embedded ? 'bg-white' : 'bg-transparent',
+        embedded ? 'watta-page-bg' : 'bg-transparent',
       )}
     >
       {embedded ? (
@@ -270,7 +270,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
             'relative z-[1] mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:gap-16',
             embedded
               ? 'py-14 sm:py-20'
-              : 'pb-14 pt-10 sm:pb-20 sm:pt-14 md:pt-16',
+              : 'pb-14 pt-0 sm:pb-20 sm:pt-0 md:pt-0',
           )}
         >
           <div>
@@ -299,7 +299,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
 
       {/* Філософія + слайди-картки */}
       <section
-        className="relative z-10 w-full bg-white px-4 py-16 sm:px-6 sm:py-20"
+        className="relative z-10 w-full watta-page-bg px-4 py-16 sm:px-6 sm:py-20"
         aria-labelledby="about-philosophy-heading"
       >
         <div className="mx-auto max-w-6xl">
@@ -337,7 +337,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Арт-блок + «плаваюче» зображення */}
-      <section className="relative z-10 border-y border-gray-100 bg-white">
+      <section className="relative z-10 border-y border-gray-100 watta-page-bg">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1fr_0.9fr] lg:gap-14">
           <motion.div {...fade} viewport={{ once: true }} transition={{ duration: 0.5 }}>
             <p className="text-3xl font-black leading-[1.12] tracking-tight text-gray-900 sm:text-4xl md:text-[2.75rem] lg:text-5xl">
@@ -374,8 +374,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
 
       {/* Що всередині ролу */}
       <section
-        className="relative z-10 py-16 sm:py-20"
-        style={{ backgroundColor: '#f3f3f5' }}
+        className="relative z-10 watta-page-bg py-16 sm:py-20"
         aria-labelledby="about-inside-heading"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -404,7 +403,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Статистика */}
-      <section className="relative z-10 w-full bg-white px-4 pt-14 sm:px-6 sm:pt-20">
+      <section className="relative z-10 w-full watta-page-bg px-4 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
           {stats.map((s, i) => (
             <motion.div
@@ -423,7 +422,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Історія */}
-      <section className="relative z-10 w-full bg-white px-4 pt-20 sm:px-6">
+      <section className="relative z-10 w-full watta-page-bg px-4 pt-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
         <motion.h3
           className="mb-6 text-3xl font-black text-gray-900 sm:text-4xl"
@@ -447,7 +446,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Команда */}
-      <section className="relative z-10 w-full bg-white px-4 pt-24 sm:px-6">
+      <section className="relative z-10 w-full watta-page-bg px-4 pt-24 sm:px-6">
         <div className="mx-auto max-w-6xl">
         <motion.h3
           className="mb-8 text-center text-3xl font-black text-gray-900 sm:text-4xl"
@@ -510,7 +509,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Візит / контакти */}
-      <section className="relative z-10 w-full bg-white px-4 pt-20 sm:px-6">
+      <section className="relative z-10 w-full watta-page-bg px-4 pt-20 sm:px-6">
         <div className="mx-auto max-w-6xl">
         <motion.h3
           className="mb-6 text-center text-2xl font-black text-gray-900 sm:text-3xl"
@@ -543,7 +542,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Нижні CTA */}
-      <section className="relative z-10 w-full bg-white px-4 pb-8 pt-16 sm:px-6">
+      <section className="relative z-10 w-full watta-page-bg px-4 pb-8 pt-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
         <motion.div
           className="flex flex-col items-center justify-center gap-4 rounded-[24px] border border-gray-200 bg-gray-50/80 px-6 py-10 text-center sm:flex-row sm:flex-wrap sm:gap-6"

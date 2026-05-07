@@ -1,8 +1,12 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '../context/LanguageContext'
+import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
+import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
+import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
+import { getApiUrl } from '@/lib/utils'
 
 type MenuCategory = {
   id: string
@@ -13,26 +17,36 @@ type MenuCategory = {
   subcategories: { id: string; name: string; items: unknown[] }[]
 }
 
-const defaultCategories: MenuCategory[] = [
-  { id: 'rolls', key: 'rolls', name: 'Роллы', emoji: '🍣', subcategories: [] },
-  { id: 'sushi', key: 'sushi', name: 'Суши', emoji: '🍙', subcategories: [] },
-  { id: 'sets', key: 'sets', name: 'Сеты', emoji: '🍱', subcategories: [] },
-  { id: 'soups', key: 'soups', name: 'Супы', emoji: '🍜', subcategories: [] },
-  { id: 'bowls', key: 'bowls', name: 'Боули', emoji: '🥗', subcategories: [] },
-  { id: 'snacks', key: 'snacks', name: 'Закуски', emoji: '🍤', subcategories: [] },
-  { id: 'drinks', key: 'drinks', name: 'Напитки', emoji: '🧃', subcategories: [] },
-  { id: 'sauces', key: 'sauces', name: 'Соуси', emoji: '🌶️', subcategories: [] },
-]
+/** Збігається з `FULL_MENU_ALL_SLUG` у FullMenuPageClient */
+const FULL_MENU_ALL_SLUG = '__all__'
+
+/** Лише після кліку по стрічці: скрол до секції на /menu. «Подивитися всі» з головної — без скролу, зверху сторінки. */
+const MENU_SCROLL_TO_CAT_INTENT_KEY = 'watta_menu_scroll_to_cat'
 
 /**
- * Горизонтальна панель категорій як на головній: для сторінок без MenuView (кошик тощо).
- * Клік веде на /menu/category/[slug].
+ * Синх з головною: горизонтальні категорії.
+ * Підсвічування: URL (/menu?cat=, /menu/category/…, /product/:id) або скрол на /menu (подія з FullMenuPageClient).
  */
-export function WattaMenuCategoryStrip() {
+function WattaMenuCategoryStripInner() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { language, t } = useLanguage()
-  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([])
-  const [selectedCategory, setSelectedCategory] = useState('')
+  const fallbackCategories = useMemo<MenuCategory[]>(
+    () =>
+      MENU_CATEGORY_FALLBACK_SLUGS.map((key) => ({
+        id: key,
+        key,
+        name: t.categories[key],
+        emoji: MENU_CATEGORY_EMOJI[key],
+        subcategories: [],
+      })),
+    [t.categories]
+  )
+  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(fallbackCategories)
+  const [urlHighlight, setUrlHighlight] = useState<string | null>(null)
+  const [productHighlight, setProductHighlight] = useState<string | null>(null)
+  const [menuScrollHint, setMenuScrollHint] = useState<string | null>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -40,107 +54,131 @@ export function WattaMenuCategoryStrip() {
   const scrollPositionRef = useRef(0)
   const isUserScrollingRef = useRef(false)
   const restorePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const productReqRef = useRef(0)
+
+  /** Підсвічування: на /menu — скрол; інакше URL або slug категорії з картки товару. */
+  const activeKey = (() => {
+    if (pathname === '/menu' && menuScrollHint != null) return menuScrollHint
+    if (urlHighlight != null) return urlHighlight
+    if (productHighlight != null) return productHighlight
+    return ''
+  })()
+
+  useEffect(() => {
+    const p = pathname || ''
+    if (!p.match(/^\/product\/\d+/)) {
+      setProductHighlight(null)
+    }
+    if (p !== '/menu') {
+      setMenuScrollHint(null)
+    }
+  }, [pathname])
+
+  useEffect(() => {
+    const p = pathname || ''
+    setUrlHighlight(null)
+    if (p.startsWith('/menu/category/')) {
+      const raw = p.slice('/menu/category/'.length)
+      try {
+        setUrlHighlight(decodeURIComponent(raw).trim() || null)
+      } catch {
+        setUrlHighlight(raw.trim() || null)
+      }
+      return
+    }
+    if (p === '/menu') {
+      const c = searchParams.get('cat')?.trim()
+      if (c) {
+        setUrlHighlight(c)
+      } else {
+        setUrlHighlight(FULL_MENU_ALL_SLUG)
+      }
+      return
+    }
+    const pm = p.match(/^\/product\/(\d+)$/)
+    if (pm) {
+      const id = pm[1]
+      const my = ++productReqRef.current
+      setUrlHighlight(null)
+      fetch(getApiUrl(`/api/products/${id}`))
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: { category?: { slug?: string } } | null) => {
+          if (my !== productReqRef.current) return
+          const slug = data?.category?.slug
+          setProductHighlight(typeof slug === 'string' && slug.trim() ? slug.trim() : null)
+        })
+        .catch(() => {
+          if (my !== productReqRef.current) return
+          setProductHighlight(null)
+        })
+      return
+    }
+    setUrlHighlight(null)
+  }, [pathname, searchParams])
+
+  useEffect(() => {
+    const h = (ev: Event) => {
+      if ((pathname || '') !== '/menu') return
+      const slug = (ev as CustomEvent<{ slug?: string }>).detail?.slug
+      if (typeof slug === 'string' && slug) {
+        setMenuScrollHint(slug)
+      }
+    }
+    window.addEventListener('wattaMenuCategoryHighlight', h)
+    return () => window.removeEventListener('wattaMenuCategoryHighlight', h)
+  }, [pathname])
 
   const loadCategories = useCallback(() => {
-    const cacheKey = `menu_categories_${language}`
+    const cacheKey = menuCategoriesSessionKey()
     const cached = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
     const cacheTime = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`${cacheKey}_time`) : null
     const now = Date.now()
     const CACHE_TTL = 5 * 60 * 1000
 
+    const mapApi = (data: Record<string, unknown>[]) =>
+      buildMenuCategoriesFromApi(data, language, t.categories as Record<string, string>)
+
     const applyCategories = (categories: MenuCategory[]) => {
       setMenuCategories(categories)
-      setSelectedCategory((prev) => {
-        if (categories.length > 0) {
-          const exists = categories.find((c) => c.key === prev)
-          if (!exists || !prev) return categories[0].key
-        }
-        return prev || (categories.length > 0 ? categories[0].key : '')
-      })
     }
 
-    if (cached && cacheTime && now - parseInt(cacheTime, 10) < CACHE_TTL) {
-      try {
-        const categories = JSON.parse(cached) as MenuCategory[]
-        if (Array.isArray(categories) && categories.length > 0) {
-          applyCategories(categories)
-          fetch('/api/products/categories')
-            .then((res) => res.json())
-            .then((data) => {
-              const next = data
-                .filter((cat: { isActive?: boolean }) => cat.isActive !== false)
-                .map((cat: Record<string, unknown>) => ({
-                  id: String(cat.id),
-                  key: String(cat.slug),
-                  slug: String(cat.slug),
-                  name:
-                    language === 'uk' && cat.name_ua
-                      ? String(cat.name_ua)
-                      : language === 'en' && cat.name_en
-                        ? String(cat.name_en)
-                        : language === 'nl' && cat.name_nl
-                          ? String(cat.name_nl)
-                          : String(cat.name_ru),
-                  emoji: (cat.emoji as string) || '🍣',
-                  subcategories: [],
-                }))
-                .sort((a: MenuCategory, b: MenuCategory) => {
-                  const catA = data.find((c: { slug?: string }) => c.slug === a.key)
-                  const catB = data.find((c: { slug?: string }) => c.slug === b.key)
-                  return (catA?.order || 0) - (catB?.order || 0)
-                })
-              sessionStorage.setItem(cacheKey, JSON.stringify(next))
+    if (cached && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_TTL) {
+      const raw = parseCategoriesCacheJson(cached)
+      if (raw) {
+        applyCategories(mapApi(raw))
+        fetch('/api/products/categories', { cache: 'no-store' })
+          .then((res) => res.json())
+          .then((data) => {
+            const list = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+            if (typeof sessionStorage !== 'undefined' && list.length > 0) {
+              sessionStorage.setItem(cacheKey, JSON.stringify(list))
               sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
-              applyCategories(next)
-            })
-            .catch(() => {})
-          return
-        }
-      } catch {
-        /* ignore */
+            }
+            if (list.length > 0) applyCategories(mapApi(list))
+          })
+          .catch(() => {})
+        return
       }
     }
 
-    fetch('/api/products/categories')
+    fetch('/api/products/categories', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
-        const categories = data
-          .filter((cat: { isActive?: boolean }) => cat.isActive !== false)
-          .map((cat: Record<string, unknown>) => ({
-            id: String(cat.id),
-            key: String(cat.slug),
-            slug: String(cat.slug),
-            name:
-              language === 'uk' && cat.name_ua
-                ? String(cat.name_ua)
-                : language === 'en' && cat.name_en
-                  ? String(cat.name_en)
-                  : language === 'nl' && cat.name_nl
-                    ? String(cat.name_nl)
-                    : String(cat.name_ru),
-            emoji: (cat.emoji as string) || '🍣',
-            subcategories: [],
-          }))
-          .sort((a: MenuCategory, b: MenuCategory) => {
-            const catA = data.find((c: { slug?: string }) => c.slug === a.key)
-            const catB = data.find((c: { slug?: string }) => c.slug === b.key)
-            return (catA?.order || 0) - (catB?.order || 0)
-          })
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(cacheKey, JSON.stringify(categories))
+        const list = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+        if (typeof sessionStorage !== 'undefined' && list.length > 0) {
+          sessionStorage.setItem(cacheKey, JSON.stringify(list))
           sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
         }
-        applyCategories(categories)
+        if (list.length > 0) {
+          applyCategories(mapApi(list))
+          return
+        }
+        setMenuCategories(fallbackCategories)
       })
       .catch(() => {
-        const fallback = defaultCategories.map((cat) => ({
-          ...cat,
-          name: t.categories[cat.key as keyof typeof t.categories] || cat.name,
-        }))
-        setMenuCategories(fallback)
-        setSelectedCategory(fallback[0]?.key ?? '')
+        setMenuCategories(fallbackCategories)
       })
-  }, [language, t.categories])
+  }, [fallbackCategories, language, t.categories])
 
   useEffect(() => {
     loadCategories()
@@ -198,7 +236,7 @@ export function WattaMenuCategoryStrip() {
       clearTimeout(t2)
       clearTimeout(t3)
     }
-  }, [selectedCategory, menuCategories])
+  }, [activeKey, menuCategories])
 
   useEffect(() => {
     const panel = categoriesPanelRef.current
@@ -213,7 +251,7 @@ export function WattaMenuCategoryStrip() {
       clearTimeout(t2)
       ro.disconnect()
     }
-  }, [menuCategories.length, selectedCategory, checkScrollButtons])
+  }, [menuCategories.length, activeKey, checkScrollButtons])
 
   const scrollPanelBy = (direction: 'left' | 'right') => {
     const panel = categoriesPanelRef.current
@@ -223,7 +261,34 @@ export function WattaMenuCategoryStrip() {
     ;[150, 350, 550].forEach((ms) => setTimeout(() => checkScrollButtons(panel), ms))
   }
 
-  if (menuCategories.length === 0) return null
+  const onCategoryClick = (key: string) => {
+    if (categoriesPanelRef.current) {
+      scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+    }
+    const p = pathname || ''
+    if (p === '/menu') {
+      if (key === FULL_MENU_ALL_SLUG) {
+        try {
+          sessionStorage.removeItem(MENU_SCROLL_TO_CAT_INTENT_KEY)
+        } catch {
+          /* ignore */
+        }
+        router.push('/menu')
+        return
+      }
+      try {
+        sessionStorage.setItem(MENU_SCROLL_TO_CAT_INTENT_KEY, key)
+      } catch {
+        /* ignore */
+      }
+      router.push(`/menu?cat=${encodeURIComponent(key)}`)
+      return
+    }
+    router.push(`/menu/category/${encodeURIComponent(key)}`)
+  }
+
+  const onFullMenu = pathname === '/menu'
+  const mv = t.menuView
 
   return (
     <>
@@ -240,19 +305,44 @@ export function WattaMenuCategoryStrip() {
         </button>
 
         <div ref={categoriesPanelRef} className="categories-panel-web" onScroll={handleScroll}>
+          {onFullMenu ? (
+            <button
+              key="full-menu-all"
+              type="button"
+              className={`category-button-web ${activeKey === FULL_MENU_ALL_SLUG ? 'category-button-active-web' : ''}`}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onCategoryClick(FULL_MENU_ALL_SLUG)
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                if (categoriesPanelRef.current) {
+                  scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+                }
+              }}
+              onFocus={(e) => {
+                e.preventDefault()
+                e.currentTarget.blur()
+              }}
+              tabIndex={-1}
+              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
+            >
+              <div className="category-button-icon-web" aria-hidden>
+                🍱
+              </div>
+              <span className="category-button-label-web">{mv.fullMenuAllTab}</span>
+            </button>
+          ) : null}
           {menuCategories.map((category) => (
             <button
               key={category.key}
               type="button"
-              className={`category-button-web ${selectedCategory === category.key ? 'category-button-active-web' : ''}`}
+              className={`category-button-web ${activeKey === category.key ? 'category-button-active-web' : ''}`}
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                if (categoriesPanelRef.current) {
-                  scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-                }
-                setSelectedCategory(category.key)
-                router.push(`/menu/category/${encodeURIComponent(category.key)}`)
+                onCategoryClick(category.key)
               }}
               onMouseDown={(e) => {
                 e.preventDefault()
@@ -286,5 +376,13 @@ export function WattaMenuCategoryStrip() {
       </div>
       <div className="categories-panel-spacer-web" aria-hidden />
     </>
+  )
+}
+
+export function WattaMenuCategoryStrip() {
+  return (
+    <Suspense fallback={null}>
+      <WattaMenuCategoryStripInner />
+    </Suspense>
   )
 }

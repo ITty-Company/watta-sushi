@@ -35,7 +35,7 @@ export default function ReviewsPageClient() {
   }, [])
 
   return (
-    <main className="watta-public-page-shell flex min-h-screen flex-1 flex-col py-12 sm:py-16 px-4">
+    <main className="watta-public-page-shell watta-page-bg flex min-h-screen flex-1 flex-col py-12 sm:py-16 px-4">
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -44,7 +44,7 @@ export default function ReviewsPageClient() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#145142]/10 text-[#145142] text-sm font-bold mb-4">
             <Sparkles className="w-4 h-4" />
-            Watta Sushi
+            {t.common.brandName}
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#145142] tracking-tight">
             {t.reviewsPublic.title}

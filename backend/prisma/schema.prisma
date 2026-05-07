@@ -45,7 +45,7 @@ model Category {
   emoji    String?   @default("🍣") // Эмодзи для категории
   order    Int       @default(0) // Порядок отображения
   isActive Boolean   @default(true) // Активна ли категория
-  /// Якщо false — товари з цієї категорії не потрапляють у блок «рекомендуємо» (навіть з isRecommended)
+  /// Якщо false — товари з цієї категорії не в «хітах» на головній і не в рекомендаціях кошика
   allowRecommendations Boolean @default(true)
   products Product[]
 }
@@ -120,11 +120,17 @@ model Product {
 
   price     Float
   imageUrl  String?
+  /// Галерея фото (порядок = порядок у каруселі); перше = обкладинка в меню
+  imageUrls Json     @default("[]")
   isPopular Boolean @default(false)
-  /// Блок «Watta рекомендує» на сторінці товару (керується з адмінки)
-  isRecommended        Boolean @default(false)
-  /// Порядок у списку рекомендацій (менше — раніше)
-  recommendOrder       Int     @default(0)
+  /// «Наші хіти» — стрічка на головній, сортування в каталозі, бейдж (окремо від кошика)
+  isHomeHit   Boolean @default(false)
+  /// Рекомендації після додавання в кошик (GET /api/products/recommendations)
+  isCartRecommend     Boolean @default(false)
+  /// Порядок у блоці «хіти» на головній (менше — раніше)
+  recommendOrder      Int     @default(0)
+  /// Порядок у рекомендаціях кошика
+  cartRecommendOrder    Int     @default(0)
   /// Акційна знижка у % (0 = без акції); ціна зі знижкою рахується на клієнті
   promoDiscountPercent Int     @default(0)
 

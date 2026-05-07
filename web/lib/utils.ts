@@ -7,18 +7,20 @@ export function cn(...inputs: ClassValue[]) {
 
 // Получить базовый URL API
 export function getApiUrl(path: string = ''): string {
-  // В браузере используем переменную окружения или относительный путь
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+
   if (typeof window !== 'undefined') {
+    // У dev: однакові origin-запити → Next rewrites на Express (і на LAN-телефоні не 127.0.0.1).
+    if (process.env.NODE_ENV === 'development') {
+      return cleanPath
+    }
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || ''
     if (apiBaseUrl) {
-      // Убираем trailing slash если есть
       const base = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl
-      // Убираем leading slash из path если есть
-      const cleanPath = path.startsWith('/') ? path : `/${path}`
       return `${base}${cleanPath}`
     }
   }
-  // Для серверного рендеринга или если переменная не установлена, используем относительный путь
-  return path.startsWith('/') ? path : `/${path}`
+  // SSR або прод без змінної — відносний шлях
+  return cleanPath
 }
 

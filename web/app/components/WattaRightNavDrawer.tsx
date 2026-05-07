@@ -358,7 +358,7 @@ export default function WattaRightNavDrawer() {
                     className="font-serif text-[clamp(1.05rem,4.2vw,1.25rem)] font-bold leading-tight tracking-tight text-[#0f241e]"
                     style={{ fontFamily: 'var(--font-brand-playfair), Georgia, serif' }}
                   >
-                    Watta Sushi
+                    {t.common.brandName}
                   </p>
                   <p className="mt-1 max-w-[13rem] text-[11px] font-medium leading-snug text-[#145142]/75">
                     {nav.drawerBrandLine}
@@ -383,7 +383,7 @@ export default function WattaRightNavDrawer() {
           <DrawerWaveDivider />
 
           {/* Тіло — світле повітряне меню */}
-          <div className="relative flex min-h-0 flex-1 flex-col bg-[#f6faf8]">
+          <div className="relative flex min-h-0 flex-1 flex-col watta-page-bg">
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.5]"
               style={{

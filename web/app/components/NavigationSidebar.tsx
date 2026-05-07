@@ -43,6 +43,9 @@ export default function NavigationSidebar({
   onOpenNotifications,
 }: NavigationSidebarProps) {
   const { t } = useLanguage()
+  const brandParts = t.common.brandName.trim().split(/\s+/)
+  const brandTitle = (brandParts[0] ?? 'Watta').toUpperCase()
+  const brandSub = (brandParts.slice(1).join(' ') || 'Sushi').toUpperCase()
 
   const run = (fn: () => void) => (e: React.MouseEvent) => {
     e.preventDefault()
@@ -79,15 +82,15 @@ export default function NavigationSidebar({
               />
             </div>
             <div className="watta-nav-sidebar-brand-text">
-              <span className="watta-nav-sidebar-brand-title">WATTA</span>
-              <span className="watta-nav-sidebar-brand-sub">SUSHI</span>
+              <span className="watta-nav-sidebar-brand-title">{brandTitle}</span>
+              <span className="watta-nav-sidebar-brand-sub">{brandSub}</span>
             </div>
           </div>
           <button
             type="button"
             className="watta-nav-sidebar-x"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t.siteAria.close}
           >
             <X size={20} strokeWidth={2.25} />
           </button>

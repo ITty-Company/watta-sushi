@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
+import { getRequestLocale } from '@/lib/i18n/serverLocale'
+import { getBlogNotFoundTitle } from '@/lib/i18n/seo'
 import { getFallbackBlogArticle, isFallbackBlogSlug } from '@/app/lib/blogFallbackContent'
 import BlogBackToIndex from '../BlogBackToIndex'
 import BlogArticleInner from '../BlogArticleInner'
@@ -37,6 +39,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const lang = await getRequestLocale()
   const apiPost = await getPost(params.slug)
   if (apiPost) {
     return {
@@ -44,19 +47,20 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: apiPost.content.slice(0, 160),
     }
   }
-  const fb = getFallbackBlogArticle(params.slug, 'uk')
+  const fb = getFallbackBlogArticle(params.slug, lang)
   if (fb) {
     return {
       title: fb.title,
       description: fb.excerpt.slice(0, 160),
     }
   }
-  return { title: 'Статья не найдена' }
+  return { title: getBlogNotFoundTitle(lang) }
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const lang = await getRequestLocale()
   const apiPost = await getPost(params.slug)
-  const fbUk = !apiPost ? getFallbackBlogArticle(params.slug, 'uk') : null
+  const fbUk = !apiPost ? getFallbackBlogArticle(params.slug, lang) : null
   const post =
     apiPost ??
     (fbUk
@@ -78,7 +82,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <main
-      className="watta-public-page-shell flex min-h-screen flex-1 flex-col bg-[#f2f5f3] px-4 pb-12 pt-2 sm:px-6 sm:pb-16 sm:pt-3"
+      className="watta-public-page-shell flex min-h-screen flex-1 flex-col watta-page-bg px-4 pb-12 pt-2 sm:px-6 sm:pb-16 sm:pt-3"
     >
       <div className="mx-auto mb-6 max-w-4xl">
         <BlogBackToIndex />

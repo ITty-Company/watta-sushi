@@ -188,7 +188,7 @@ export default function AdminDashboardStudio({
       <motion.section
         {...fadeUp}
         transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-[1.35rem] border border-[#145142]/14 bg-gradient-to-br from-white/95 via-[#f6fbf8]/98 to-[#eef6f2]/95 p-5 shadow-[0_20px_50px_-24px_rgba(20,81,66,0.35)] sm:p-7 md:p-8"
+        className="relative overflow-hidden rounded-[1.35rem] border border-[#145142]/14 bg-white p-5 shadow-[0_20px_50px_-24px_rgba(20,81,66,0.35)] sm:p-7 md:p-8"
       >
         <div
           className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#ff6b35]/12 blur-3xl"

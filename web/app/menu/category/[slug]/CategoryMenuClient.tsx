@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -8,6 +8,7 @@ import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import LogoBackground from '../../../components/LogoBackground'
 import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
+import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 
 interface MenuItem {
   id: number
@@ -20,21 +21,22 @@ interface MenuItem {
   emoji: string
   imageUrl?: string
   isTop?: boolean
-  isRecommended?: boolean
+  isHomeHit?: boolean
   recommendOrder?: number
   allowRecommendations?: boolean
   promoDiscountPercent?: number
 }
 
 interface MenuCategoryRow {
+  id: number
   slug: string
   name: string
 }
 
 function sortCategoryItems(arr: MenuItem[]): MenuItem[] {
   return [...arr].sort((a, b) => {
-    const aRec = a.isRecommended === true && a.allowRecommendations !== false
-    const bRec = b.isRecommended === true && b.allowRecommendations !== false
+    const aRec = a.isHomeHit === true && a.allowRecommendations !== false
+    const bRec = b.isHomeHit === true && b.allowRecommendations !== false
     if (aRec !== bRec) return aRec ? -1 : 1
     if (aRec && bRec) return (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0)
     return a.id - b.id
@@ -47,6 +49,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
   const [items, setItems] = useState<MenuItem[]>([])
   const [categoryTitle, setCategoryTitle] = useState('')
   const [loading, setLoading] = useState(true)
+  const categoryRowsRef = useRef<MenuCategoryRow[]>([])
 
   const normalizedSlug = useMemo(() => {
     try {
@@ -63,45 +66,41 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
         name: getLocalized(p, 'name'),
         description: getLocalized(p, 'description') || '',
         price: p.price,
-        category: getLocalized(p.category, 'name') || 'Роллы',
+        category: p.category
+          ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)
+          : t.categories.rolls,
         categorySlug: p.category?.slug || 'rolls',
         categoryId: p.categoryId,
         emoji: '🍣',
         imageUrl: p.imageUrl,
         isTop: p.isPopular,
-        isRecommended: p.isRecommended === true,
+        isHomeHit: p.isHomeHit === true,
         recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
         allowRecommendations: p.category?.allowRecommendations !== false,
         promoDiscountPercent:
           typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
       })),
-    [getLocalized]
+    [getLocalized, t.categories, language]
   )
 
   const loadCategoriesTitle = useCallback(async () => {
     try {
-      const res = await fetch(getApiUrl('/api/products/categories'))
+      const res = await fetch(getApiUrl('/api/products/categories'), { cache: 'no-store' })
       if (!res.ok) return
       const data = await res.json()
       const rows: MenuCategoryRow[] = (data || [])
         .filter((cat: any) => cat.isActive !== false)
         .map((cat: any) => {
-          const name =
-            language === 'uk' && cat.name_ua
-              ? cat.name_ua
-              : language === 'en' && cat.name_en
-                ? cat.name_en
-                : language === 'nl' && cat.name_nl
-                  ? cat.name_nl
-                  : cat.name_ru
-          return { slug: cat.slug, name }
+          const name = getMenuCategoryDisplayName(cat, language, t.categories) || String(cat.name_ru ?? '')
+          return { id: Number(cat.id) || 0, slug: String(cat.slug ?? ''), name }
         })
+      categoryRowsRef.current = rows
       const hit = rows.find((c) => c.slug === normalizedSlug)
       if (hit?.name) setCategoryTitle(hit.name)
     } catch {
       /* ignore */
     }
-  }, [language, normalizedSlug])
+  }, [language, t.categories, normalizedSlug])
 
   const loadProducts = useCallback(async () => {
     setLoading(true)
@@ -109,14 +108,53 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
       const rawCity =
         typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
       const cityId = rawCity ? parseInt(rawCity, 10) : NaN
-      const url =
-        Number.isFinite(cityId) && cityId > 0
-          ? getApiUrl(`/api/products?cityId=${cityId}`)
-          : getApiUrl('/api/products')
-      const res = await fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
-      const data = res.ok ? await res.json() : []
-      const mapped = mapProductsToItems(Array.isArray(data) ? data : [])
-      setItems(sortCategoryItems(mapped.filter((i) => i.categorySlug === normalizedSlug)))
+      const hasCity = Number.isFinite(cityId) && cityId > 0
+      const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
+      const scopedRes = await fetch(scopedUrl, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      })
+      const scopedData = scopedRes.ok ? await scopedRes.json() : []
+      const scopedList = Array.isArray(scopedData) ? scopedData : []
+      const rawProducts =
+        hasCity && scopedList.length === 0
+          ? await (async () => {
+              const fallbackRes = await fetch(getApiUrl('/api/products'), {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' },
+              })
+              const fallbackData = fallbackRes.ok ? await fallbackRes.json() : []
+              return Array.isArray(fallbackData) ? fallbackData : []
+            })()
+          : scopedList
+      const mapped = mapProductsToItems(rawProducts)
+      const byId = new Map<number, string>()
+      const byName = new Map<string, string>()
+      for (const c of categoryRowsRef.current) {
+        if (c.id > 0) byId.set(c.id, c.slug)
+        if (c.name) byName.set(c.name.trim().toLowerCase(), c.slug)
+      }
+      const filtered = mapped.filter((i) => {
+        if (i.categorySlug === normalizedSlug) return true
+        if (i.categoryId && byId.get(i.categoryId) === normalizedSlug) return true
+        if (i.category && byName.get(i.category.trim().toLowerCase()) === normalizedSlug) return true
+        return false
+      })
+      if (process.env.NODE_ENV !== 'production' && mapped.length > 0 && filtered.length === 0) {
+        console.warn('[CategoryMenuClient] no products matched category slug', {
+          slug: normalizedSlug,
+          totalMapped: mapped.length,
+          categoryRows: categoryRowsRef.current.slice(0, 20),
+          sampleProducts: mapped.slice(0, 10).map((p) => ({
+            id: p.id,
+            name: p.name,
+            categorySlug: p.categorySlug,
+            categoryId: p.categoryId,
+            category: p.category,
+          })),
+        })
+      }
+      setItems(sortCategoryItems(filtered.length > 0 ? filtered : mapped))
     } catch {
       setItems([])
     } finally {
@@ -155,19 +193,19 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     const n = cart.filter((x: { id?: number }) => x?.id === item.id).length
     if (n >= 99) {
-      toast.error('Максимальна кількість товару — 99 шт.')
+      toast.error(t.appToasts.maxCartQty)
       return
     }
     cart.push(item)
     localStorage.setItem('cart', JSON.stringify(cart))
     window.dispatchEvent(new CustomEvent('cartUpdated'))
-    toast.success(t.addToCart || 'Додано!')
+    toast.success(t.addToCart)
   }
 
   const displayTitle = categoryTitle || normalizedSlug
 
   return (
-    <div className="watta-public-page-shell relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-3 font-sans text-[#145142] sm:pt-4">
+    <div className="watta-public-page-shell watta-page-bg relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-3 font-sans text-[#145142] sm:pt-4">
       <LogoBackground />
       <div className="relative z-10 mx-auto max-w-[1200px] px-4 sm:px-6">
         <div className="mb-4 flex min-w-0 items-center gap-3">

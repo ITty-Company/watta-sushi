@@ -4,7 +4,6 @@ import * as React from 'react'
 import { useEffect, useRef, useCallback } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getMenuScrollParent } from '@/lib/menuScroll'
 import { useLanguage } from '@/app/context/LanguageContext'
@@ -29,7 +28,8 @@ const STYLES = `
 }
 
 .cinematic-footer-wrapper.cinematic-footer--calm {
-  background-color: #eef1ef !important;
+  /* Один фон зі сторінкою — без «шва» до сусідніх секцій */
+  background: var(--watta-page-gradient) !important;
 }
 
 /* Великий «WATTA» на фоні — саме брендовий #145142, помітно, але без «крику» */
@@ -128,109 +128,105 @@ const STYLES = `
   .animate-footer-grid-pan,
   .footer-heading-flow,
   .footer-cta-solid::after,
-  .footer-heading-accent--hero,
-  .footer-ready-title {
+  .footer-ready-grad {
     animation: none !important;
   }
 }
 
-@keyframes footer-hero-line-shimmer {
-  0%,
-  100% {
-    opacity: 0.88;
-    filter: brightness(1);
-  }
-  50% {
-    opacity: 1;
-    filter: brightness(1.12);
-  }
-}
-
-.footer-hero-line-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  margin-bottom: 0.15rem;
-}
-
-/* Відступ під діагональну маркіз — заголовок не піднімається під неї */
-.footer-hero-line-wrap--title-offset {
-  margin-top: 0;
-}
-
-@media (min-width: 640px) {
-  .footer-hero-line-wrap--title-offset {
-    margin-top: 0;
-  }
-}
-
-.footer-heading-accent--hero {
-  width: min(18rem, 78vw);
-  height: 4px;
-  border-radius: 9999px;
-  animation: footer-hero-line-shimmer 4.5s ease-in-out infinite;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsl(var(--primary) / 0.12) 10%,
-    hsl(var(--primary) / 0.82) 48%,
-    hsl(var(--primary) / 0.82) 52%,
-    hsl(var(--primary) / 0.12) 90%,
-    transparent 100%
-  );
-  box-shadow:
-    0 0 32px hsl(var(--primary) / 0.38),
-    0 0 1px hsl(var(--primary) / 0.45);
-}
-
-.footer-hero-line-cap {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 14px hsl(var(--primary) / 0.55);
-}
-
-/* Заголовок «Готові замовити?» + підказка під каруселями */
+/* Один ряд: бейдж + роздільник + градієнт — по центру, без «прилипання» вліво */
 .footer-ready-block {
   width: 100%;
-  max-width: 42rem;
-  margin-left: auto;
-  margin-right: auto;
+  display: flex;
+  justify-content: center;
+  padding-inline: 0.5rem;
+  box-sizing: border-box;
 }
 
-.footer-ready-ornament {
+.footer-ready-heading {
+  margin: 0;
+  font: inherit;
   display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.footer-ready-line {
+  display: inline-flex;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
-  margin-bottom: 0.9rem;
+  gap: 0.45rem 0.7rem;
 }
 
-.footer-ready-ornament .footer-heading-accent--hero {
-  width: min(13rem, 52vw);
-  height: 3px;
+@media (min-width: 480px) {
+  .footer-ready-line {
+    gap: 0.5rem 0.9rem;
+  }
+}
+
+/* Бейдж — фірмовий зелений, білий текст */
+.footer-ready-kicker {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: clamp(0.58rem, 1.1vw, 0.7rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 0.45em 0.95em 0.48em;
+  border-radius: 9999px;
+  line-height: 1;
+  background: linear-gradient(165deg, #1a7a63 0%, #145142 46%, #0d3d32 100%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 6px 20px rgba(20, 81, 66, 0.28);
 }
 
-.footer-ready-title {
-  margin: 0;
+.footer-ready-divider {
+  flex-shrink: 0;
+  width: 1px;
+  min-height: 0.9em;
+  height: 1.15em;
+  align-self: center;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(20, 81, 66, 0.2) 18%,
+    rgba(20, 81, 66, 0.55) 50%,
+    rgba(20, 81, 66, 0.2) 82%,
+    transparent 100%
+  );
+  border-radius: 1px;
+  opacity: 0.9;
+}
+
+.footer-ready-grad {
+  flex: 0 1 auto;
+  min-width: 0;
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.85rem, 6.2vw, 2.85rem);
+  font-size: clamp(0.8rem, 2.1vw, 1.5rem);
   font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  background: linear-gradient(118deg, #0c3229 0%, #145142 38%, #1f7a63 72%, #145142 100%);
-  background-size: 160% 100%;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  text-align: center;
+  text-wrap: balance;
+  background: linear-gradient(118deg, #0c3229 0%, #145142 36%, #228f72 64%, #145142 100%);
+  background-size: 180% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 2px 14px rgba(20, 81, 66, 0.12));
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.4));
 }
 
 @supports not (background-clip: text) {
-  .footer-ready-title {
+  .footer-ready-grad {
     color: #145142;
     background: none;
     -webkit-text-fill-color: #145142;
@@ -238,88 +234,18 @@ const STYLES = `
   }
 }
 
-/* Підзаголовок під «Готові замовити?» — звичайний текст, без «картки» / цитати */
-.footer-ready-hint {
-  margin: 0.65rem auto 0;
-  width: 100%;
-  max-width: min(42rem, 100%);
-  padding: 0;
-  box-sizing: border-box;
-  text-align: center;
-  font-size: clamp(0.8125rem, 2.15vw, 1rem);
-  font-weight: 500;
-  line-height: 1.5;
-  color: rgba(32, 52, 46, 0.82);
-  text-wrap: balance;
-}
-
-.footer-ready-hint-line {
-  display: block;
-}
-
-.footer-ready-hint-line + .footer-ready-hint-line {
-  margin-top: 0.28em;
-}
-
-/* Декоративна підказка «гортайте вліво-вправо» над стрічками */
-.footer-ready-swipe-cue {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  margin-top: 0.55rem;
-  margin-bottom: 0.1rem;
-  color: rgba(20, 81, 66, 0.52);
-  pointer-events: none;
-}
-
-.footer-ready-swipe-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex-shrink: 0;
-}
-
-.footer-ready-swipe-icon--l {
-  animation: footer-ready-swipe-l 2.1s ease-in-out infinite;
-}
-
-.footer-ready-swipe-icon--r {
-  animation: footer-ready-swipe-r 2.1s ease-in-out infinite;
-}
-
-.footer-ready-swipe-track {
-  width: 1.75rem;
-  height: 2px;
-  border-radius: 9999px;
-  background: linear-gradient(
-    90deg,
-    rgba(20, 81, 66, 0.12),
-    rgba(20, 81, 66, 0.32),
-    rgba(20, 81, 66, 0.12)
-  );
-}
-
-@keyframes footer-ready-swipe-l {
-  0%,
-  100% {
-    transform: translateX(0);
-    opacity: 0.55;
+/* Дуже вузько — не ламати в один ряд, зменшуємо тільки шрифт */
+@media (max-width: 400px) {
+  .footer-ready-grad {
+    font-size: clamp(0.68rem, 2.2vw, 0.9rem);
   }
-  50% {
-    transform: translateX(-5px);
-    opacity: 1;
+  .footer-ready-kicker {
+    font-size: 0.52rem;
+    padding: 0.45em 0.75em 0.48em;
+    letter-spacing: 0.1em;
   }
-}
-
-@keyframes footer-ready-swipe-r {
-  0%,
-  100% {
-    transform: translateX(0);
-    opacity: 0.55;
-  }
-  50% {
-    transform: translateX(5px);
-    opacity: 1;
+  .footer-ready-line {
+    gap: 0.35rem 0.5rem;
   }
 }
 
@@ -700,134 +626,6 @@ const STYLES = `
   }
 }
 
-.footer-about-block {
-  margin-top: 1.75rem;
-  position: relative;
-  overflow: hidden;
-  padding: 1.35rem 1.2rem 1.45rem 1.35rem;
-  padding-left: max(1.35rem, calc(0.85rem + env(safe-area-inset-left, 0px)));
-  padding-right: max(1.2rem, env(safe-area-inset-right, 0px));
-  border-radius: 1.35rem;
-  border: 1px solid rgba(20, 81, 66, 0.14);
-  background: linear-gradient(
-    152deg,
-    rgba(255, 255, 255, 0.97) 0%,
-    rgba(240, 246, 242, 0.92) 42%,
-    rgba(255, 255, 255, 0.94) 100%
-  );
-  box-shadow:
-    0 22px 56px -24px rgba(20, 81, 66, 0.22),
-    0 1px 0 rgba(255, 255, 255, 0.98) inset,
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  text-align: left;
-  width: 100%;
-  max-width: 42rem;
-  box-sizing: border-box;
-}
-
-.footer-about-block::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 1rem;
-  bottom: 1rem;
-  width: 4px;
-  border-radius: 0 4px 4px 0;
-  background: linear-gradient(180deg, #0f3d34 0%, #145142 38%, #1f7a63 72%, #145142 100%);
-  box-shadow: 0 0 20px rgba(20, 81, 66, 0.25);
-}
-
-.footer-about-quote-bg {
-  position: absolute;
-  top: -0.15rem;
-  left: 0.85rem;
-  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-size: clamp(3.75rem, 19vw, 6rem);
-  font-weight: 700;
-  line-height: 1;
-  color: rgba(20, 81, 66, 0.07);
-  pointer-events: none;
-  user-select: none;
-  z-index: 0;
-}
-
-.footer-about-quote-inner {
-  position: relative;
-  z-index: 1;
-}
-
-.footer-about-quote-text {
-  margin: 0;
-  padding: 0;
-  border: none;
-}
-
-.footer-about-quote-text p:last-child {
-  margin-bottom: 0;
-}
-
-@media (max-width: 480px) {
-  .footer-about-block {
-    padding: 1.2rem 1rem 1.35rem 1.15rem;
-    padding-left: max(1.15rem, calc(0.75rem + env(safe-area-inset-left, 0px)));
-  }
-
-  .footer-about-block::before {
-    top: 0.75rem;
-    bottom: 0.75rem;
-  }
-}
-
-.footer-about-title {
-  position: relative;
-  font-size: clamp(0.72rem, 2.15vw, 0.82rem);
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  text-transform: none;
-  line-height: 1.35;
-  color: #145142;
-  margin: 0 0 1rem;
-  padding-bottom: 0.65rem;
-  border-bottom: 1px solid rgba(20, 81, 66, 0.12);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-
-.footer-about-lead {
-  margin: 0 0 0;
-  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(1.18rem, 3.5vw, 1.42rem);
-  font-weight: 600;
-  font-style: italic;
-  line-height: 1.45;
-  letter-spacing: 0.01em;
-  color: #142922;
-}
-
-.footer-about-body {
-  margin: 0.95rem 0 0;
-  padding-top: 0.95rem;
-  border-top: 1px solid rgba(20, 81, 66, 0.08);
-  font-size: clamp(0.875rem, 2.2vw, 0.94rem);
-  line-height: 1.68;
-  font-weight: 500;
-  color: rgba(30, 50, 44, 0.88);
-}
-
-.footer-about-quote-close {
-  display: block;
-  margin-top: 0.65rem;
-  text-align: right;
-  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-size: 2.15rem;
-  font-weight: 700;
-  line-height: 1;
-  color: rgba(20, 81, 66, 0.14);
-  pointer-events: none;
-  user-select: none;
-}
-
 .footer-animation-slot {
   min-height: min(56vw, 300px);
   border-radius: 1.5rem;
@@ -1015,16 +813,6 @@ const STYLES = `
   padding-top: clamp(0.65rem, 2.2vw, 1.15rem);
 }
 
-.cinematic-footer-wrap--compact .footer-ready-hint {
-  margin-top: 0.45rem;
-  margin-bottom: 0.2rem;
-}
-
-.cinematic-footer-wrap--compact .footer-ready-swipe-cue {
-  margin-top: 0.35rem;
-  margin-bottom: clamp(0.25rem, 1vw, 0.55rem);
-}
-
 .footer-catalog-carousel {
   display: flex;
   gap: 0.65rem;
@@ -1104,11 +892,186 @@ const STYLES = `
   margin-top: 0;
 }
 
-.cinematic-footer-wrap--compact .footer-about-block {
-  margin-bottom: 0.25rem;
+/* ——— Рекомендовані: широка смуга, картки з виступом по краях ——— */
+.footer-cinematic-rail--recommended {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* На всю ширину вікна, але з боковими «повітряними» полями — не впритик до краю */
+.footer-cinematic-rail--recommended .footer-promo-section-fullbleed {
+  width: 100vw;
+  max-width: 100vw;
+  position: relative;
+  left: auto;
+  right: auto;
+  transform: none;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: max(0.85rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.85rem, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .footer-cinematic-rail--recommended .footer-promo-section-fullbleed {
+    padding-left: max(1.1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.1rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .footer-cinematic-rail--recommended .footer-promo-section-fullbleed {
+    padding-left: max(1.35rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.35rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* Трохи більше зазору між стрілками й каруселлю, ніж у звичайній стрічці */
+.cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-rail {
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-rail {
+    gap: 0.6rem;
+  }
+}
+
+/* Картка в стрічці рекомендацій: товщіша рамка-градієнт, м'якша тінь */
+.footer-cinematic-rail--recommended .footer-promo-card--watta-grid {
+  position: relative;
+  border-radius: 1.15rem;
+}
+
+.footer-cinematic-rail--recommended .footer-promo-card--watta-grid::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 1.2rem;
+  background: linear-gradient(145deg, rgba(20, 81, 66, 0.5), rgba(40, 160, 130, 0.22), rgba(20, 81, 66, 0.32));
+  z-index: -1;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.footer-cinematic-rail--recommended .footer-promo-card--watta-grid .group {
+  box-shadow: none;
+  border-color: rgba(20, 81, 66, 0.12);
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .footer-cinematic-rail--recommended .footer-promo-card--watta-grid:hover .group {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: none;
+  }
+}
+
+/* Рекомендовані: телефон — майже на всю ширину; sm+ — ширші картки, сильніший виступ по краях вікна */
+.cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+  flex: 0 0 min(17.5rem, 92vw);
+  max-width: none;
+  scroll-snap-align: center;
+}
+
+.cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+  gap: 0.8rem;
+  padding: 0.45rem 0 0.55rem;
+  scroll-padding-inline: 0.35rem;
+}
+
+@media (min-width: 640px) {
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+    flex: 0 0 clamp(14.75rem, 32vw, 19rem);
+    scroll-snap-align: start;
+  }
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+    gap: 0.95rem;
+    scroll-padding-inline: 0.4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+    scroll-padding-inline: 0.45rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+    flex: 0 0 clamp(16rem, 26vw, 20.5rem);
+  }
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+    gap: 1.05rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+    flex: 0 0 clamp(17rem, 21vw, 22rem);
+  }
+}
+
+@media (min-width: 1536px) {
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+    flex: 0 0 clamp(17.5rem, 18vw, 23.5rem);
+  }
+}
+
+/* Трохи крупніше типографія й відступи в картці на планшеті+ */
+@media (min-width: 640px) {
+  .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
+    padding: 1.05rem 1.2rem 1.25rem;
+    gap: 0.4rem;
+  }
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-desc-web {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-web {
+    font-size: 1.15rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
+    font-size: 1.1rem;
+  }
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-web {
+    font-size: 1.2rem;
+  }
+}
+
+.cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail {
+  width: 2.2rem;
+  height: 2.2rem;
+  background: #ffffff;
+  color: #145142;
+  border: 1.5px solid rgba(20, 81, 66, 0.35);
+  box-shadow: 0 4px 18px rgba(20, 81, 66, 0.18);
+}
+
+.cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail:hover {
+  background: linear-gradient(160deg, #145142 0%, #1a6b58 100%);
+  color: #fff;
+  border-color: rgba(20, 81, 66, 0.55);
+  box-shadow: 0 8px 24px rgba(20, 81, 66, 0.35);
+}
+
+/* Медіа-кут у стрічці рекомендацій: той самий паперовий тон, що й сторінка (без м’ятно-зеленого плейсхолдера) */
+.footer-cinematic-rail--recommended .footer-rec-watta-card a[class*='group'] {
+  background: var(--watta-page-fill) !important;
 }
 
 `
+
 
 /** Товар у стрічках «Акції» / «Рекомендовані» (дані з API / адмінки). */
 export type CinematicFooterAdminProduct = {
@@ -1131,14 +1094,14 @@ export type CinematicFooterProps = {
   className?: string
   /** Товари з promoDiscountPercent > 0 з адмінки */
   adminPromoProducts?: CinematicFooterAdminProduct[]
-  /** Товари з isRecommended з адмінки */
+  /** Товари з isHomeHit з адмінки (стрічка «хіти») */
   adminRecommendedProducts?: CinematicFooterAdminProduct[]
   /** Додати в кошик зі стрічки, без переходу на сторінку страви */
   onAdminProductAddToCart: (productId: number) => void
   onBeforeNavigateToProduct?: () => void
   /**
    * fullscreen — окремий повноекранний скрол-блок.
-   * compact — компактна стрічка (заголовок, стрічки, цитата) одразу над баннерами.
+   * compact — компактна стрічка (заголовок і стрічки товарів) одразу над баннерами.
    */
   layout?: 'fullscreen' | 'compact'
 }
@@ -1162,6 +1125,7 @@ function AdminProductStrip({
   prevLabel,
   nextLabel,
   cinematicRail,
+  stripKind = 'promo',
 }: {
   title: string
   ariaLabel: string
@@ -1174,70 +1138,90 @@ function AdminProductStrip({
   nextLabel: string
   /** Для відновлення горизонтального скролу після повернення з картки товару */
   cinematicRail?: 'recommended' | 'promo'
+  /** Окремий вигляд для «Рекомендовані» */
+  stripKind?: 'recommended' | 'promo'
 }) {
   if (items.length === 0) return null
+  const isRec = stripKind === 'recommended'
+
+  const railInner = (
+    <div className="footer-promo-section-fullbleed mt-1">
+      <div className="footer-promo-rail">
+        <button
+          type="button"
+          className="footer-promo-nav footer-promo-nav--rail footer-promo-nav--prev flex"
+          onClick={() => onScroll(-1)}
+          aria-label={prevLabel}
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="footer-promo-rail__track">
+          <div
+            ref={carouselRef as React.Ref<HTMLDivElement>}
+            className="footer-promo-carousel"
+            data-cinematic-rail={cinematicRail}
+          >
+            {items.map((p) => {
+              const promoPct =
+                p.discountPercent && p.discountPercent > 0 ? Math.round(p.discountPercent) : undefined
+              return (
+                <div
+                  key={p.id}
+                  className="footer-promo-card footer-promo-card--watta-grid text-left"
+                >
+                  <WattaMenuProductCard
+                    variant="grid"
+                    className={cn('w-full min-w-0 flex-1', isRec && 'footer-rec-watta-card')}
+                    product={{
+                      id: p.id,
+                      name: (p.label || '').trim() || '—',
+                      description: p.description ?? '',
+                      price: p.price ?? 0,
+                      emoji: p.emoji ?? '🍣',
+                      imageUrl: p.imageUrl,
+                      isTop: p.isPopular === true,
+                      isHomeHit: isRec,
+                      promoDiscountPercent: promoPct,
+                    }}
+                    subtitleLine={p.subtitleLine}
+                    onAddToCart={() => onProductAddToCart(p.id)}
+                    onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        <button
+          type="button"
+          className="footer-promo-nav footer-promo-nav--rail footer-promo-nav--next flex"
+          onClick={() => onScroll(1)}
+          aria-label={nextLabel}
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+
+  if (isRec) {
+    return (
+      <div className="w-full footer-cinematic-rail--recommended" role="region" aria-label={ariaLabel}>
+        {railInner}
+      </div>
+    )
+  }
+
   return (
     <div className="w-full" role="region" aria-label={ariaLabel}>
       <h3 className="mb-3 px-2 text-center font-sans text-base font-bold tracking-tight text-[#145142] sm:text-lg">
         {title}
       </h3>
-      <div className="footer-promo-section-fullbleed mt-1">
-        <div className="footer-promo-rail">
-          <button
-            type="button"
-            className="footer-promo-nav footer-promo-nav--rail footer-promo-nav--prev flex"
-            onClick={() => onScroll(-1)}
-            aria-label={prevLabel}
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div className="footer-promo-rail__track">
-            <div
-              ref={carouselRef as React.Ref<HTMLDivElement>}
-              className="footer-promo-carousel"
-              data-cinematic-rail={cinematicRail}
-            >
-              {items.map((p) => {
-                const promoPct =
-                  p.discountPercent && p.discountPercent > 0 ? Math.round(p.discountPercent) : undefined
-                return (
-                  <div key={p.id} className="footer-promo-card footer-promo-card--watta-grid text-left">
-                    <WattaMenuProductCard
-                      variant="grid"
-                      className="w-full min-w-0 flex-1 rounded-[1.25rem] border-[#145142]/14 shadow-[0_16px_44px_-14px_rgba(20,81,66,0.22)]"
-                      product={{
-                        id: p.id,
-                        name: (p.label || '').trim() || '—',
-                        description: p.description ?? '',
-                        price: p.price ?? 0,
-                        emoji: p.emoji ?? '🍣',
-                        imageUrl: p.imageUrl,
-                        isTop: p.isPopular === true,
-                        promoDiscountPercent: promoPct,
-                      }}
-                      subtitleLine={p.subtitleLine}
-                      onAddToCart={() => onProductAddToCart(p.id)}
-                      onBeforeNavigateToProduct={onBeforeNavigateToProduct}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="footer-promo-nav footer-promo-nav--rail footer-promo-nav--next flex"
-            onClick={() => onScroll(1)}
-            aria-label={nextLabel}
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      {railInner}
     </div>
   )
 }
@@ -1383,10 +1367,10 @@ export function CinematicFooter({
         <footer
           ref={footerRef}
           className={cn(
-            'cinematic-footer-wrapper cinematic-footer--calm flex w-full flex-col overflow-hidden bg-background text-foreground',
+            'cinematic-footer-wrapper cinematic-footer--calm flex w-full flex-col overflow-hidden text-foreground',
             isCompact
-              ? 'cinematic-footer--ribbon relative min-h-0'
-              : 'absolute inset-0 min-h-0 justify-between',
+              ? 'cinematic-footer--ribbon relative min-h-0 bg-transparent'
+              : 'absolute inset-0 min-h-0 justify-between bg-background',
           )}
         >
           <div className="footer-bg-mesh animate-footer-mesh-drift pointer-events-none absolute inset-0 z-0" />
@@ -1425,7 +1409,7 @@ export function CinematicFooter({
             className={cn(
               'relative z-10 mx-auto flex w-full max-w-[100rem] flex-col items-center gap-8 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]',
               isCompact
-                ? 'flex-none py-5 pb-10 pt-1.5 sm:gap-9 sm:py-8 sm:pb-12 sm:pt-2 md:px-8 lg:gap-10 lg:px-10 lg:pb-14 xl:px-14'
+                ? 'flex-none gap-6 py-3 pb-2 pt-1.5 sm:gap-8 sm:py-4 sm:pb-2 sm:pt-2 md:px-8 lg:gap-9 lg:px-10 lg:pb-3 xl:px-14'
                 : 'flex-1 justify-center pb-[max(2rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] pt-1 sm:mt-12 sm:gap-10 sm:pb-[max(2.5rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] sm:pl-8 sm:pr-8 md:mt-16 md:pl-10 md:pr-10 lg:mt-[4.5rem] lg:gap-12 lg:px-12 lg:pb-[max(3rem,calc(1rem+env(safe-area-inset-bottom,0px)))] xl:gap-14 xl:px-16 2xl:px-24',
             )}
           >
@@ -1442,28 +1426,14 @@ export function CinematicFooter({
                   isCompact ? 'gap-2.5 sm:gap-3' : 'gap-8',
                 )}
               >
-                <div className="footer-ready-block flex flex-col items-center px-1 sm:px-2">
-                  <div className="footer-ready-ornament" aria-hidden>
-                    <span className="footer-hero-line-cap" />
-                    <div className="footer-heading-accent--hero" />
-                    <span className="footer-hero-line-cap" />
-                  </div>
-                  <h2 className="footer-ready-title text-center">{cf.readyTitle}</h2>
-                  <p className="footer-ready-hint font-sans">
-                    {cf.promoPickHint
-                      .split('\n')
-                      .filter(Boolean)
-                      .map((line, i) => (
-                        <span key={i} className="footer-ready-hint-line">
-                          {line}
-                        </span>
-                      ))}
-                  </p>
-                  <div className="footer-ready-swipe-cue" aria-hidden>
-                    <ChevronLeft className="footer-ready-swipe-icon footer-ready-swipe-icon--l" strokeWidth={2.25} />
-                    <span className="footer-ready-swipe-track" />
-                    <ChevronRight className="footer-ready-swipe-icon footer-ready-swipe-icon--r" strokeWidth={2.25} />
-                  </div>
+                <div className="footer-ready-block">
+                  <h2 className="footer-ready-heading w-full min-w-0 text-center">
+                    <span className="footer-ready-line">
+                      <span className="footer-ready-kicker">{cf.readyTitleKicker}</span>
+                      <span className="footer-ready-divider" aria-hidden="true" />
+                      <span className="footer-ready-grad">{cf.readyTitleSub}</span>
+                    </span>
+                  </h2>
                 </div>
 
                 <div
@@ -1483,6 +1453,7 @@ export function CinematicFooter({
                     prevLabel={cf.prevPromo}
                     nextLabel={cf.nextPromo}
                     cinematicRail="recommended"
+                    stripKind="recommended"
                   />
 
                   <AdminProductStrip
@@ -1499,22 +1470,6 @@ export function CinematicFooter({
                   />
                 </div>
               </div>
-
-              <aside className="footer-about-block mt-2 w-full max-w-xl text-left">
-                <span className="footer-about-quote-bg" aria-hidden>
-                  «
-                </span>
-                <div className="footer-about-quote-inner">
-                  <h3 className="footer-about-title">{cf.aboutTitle}</h3>
-                  <blockquote className="footer-about-quote-text">
-                    <p className="footer-about-lead">{cf.aboutLead}</p>
-                    <p className="footer-about-body">{cf.aboutBody}</p>
-                  </blockquote>
-                  <span className="footer-about-quote-close" aria-hidden>
-                    »
-                  </span>
-                </div>
-              </aside>
             </div>
           </div>
         </footer>

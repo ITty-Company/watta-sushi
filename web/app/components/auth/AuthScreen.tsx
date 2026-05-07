@@ -42,7 +42,7 @@ export default function AuthScreen(props: AuthScreenProps) {
     return <AuthScreenBody {...props} returnUrl="/" />
   }
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-[#f6f8f7]" aria-hidden />}>
+    <Suspense fallback={<div className="min-h-[100dvh] watta-page-bg" aria-hidden />}>
       <AuthScreenPageSuspended {...props} />
     </Suspense>
   )
@@ -97,6 +97,19 @@ function AuthScreenBody({
     }
   }, [variant])
 
+  /** Сторінки /login і /register: без «скролу в нікуди» — тільки внутрішня зона форми */
+  useEffect(() => {
+    if (variant !== 'page') return
+    const prevHtml = document.documentElement.style.overflow
+    const prevBody = document.body.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.style.overflow = prevHtml
+      document.body.style.overflow = prevBody
+    }
+  }, [variant])
+
   const goAfterAuth = () => {
     if (onSuccess) {
       onSuccess()
@@ -111,13 +124,7 @@ function AuthScreenBody({
     e.preventDefault()
     const { email, password, confirmPassword, name, phone } = formData
     if (password !== confirmPassword) {
-      toast.error(
-        language === 'uk'
-          ? 'Паролі не збігаються'
-          : language === 'en'
-            ? 'Passwords do not match'
-            : 'Пароли не совпадают'
-      )
+      toast.error(t.auth.passwordMismatch)
       return
     }
     setIsLoading(true)
@@ -140,7 +147,7 @@ function AuthScreenBody({
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.phone) {
-      toast.error('Помилка: телефон втрачено. Спробуйте ще раз.')
+      toast.error(t.auth.phoneLost)
       setIsVerifying(false)
       return
     }
@@ -158,10 +165,10 @@ function AuthScreenBody({
           localStorage.setItem('currentUser', JSON.stringify(data.user))
         }
         window.dispatchEvent(new Event('userChanged'))
-        toast.success(language === 'uk' ? 'Вітаємо!' : language === 'en' ? 'Welcome!' : 'Добро пожаловать!')
+        toast.success(t.auth.welcomeAfterVerify)
         goAfterAuth()
       } else {
-        toast.error((data.message as string) || 'Невірний код')
+        toast.error((data.message as string) || t.auth.wrongVerificationCode)
         setVerificationCode('')
       }
     } catch {
@@ -188,7 +195,7 @@ function AuthScreenBody({
         localStorage.setItem('currentUser', JSON.stringify(data.user))
       }
       window.dispatchEvent(new Event('userChanged'))
-      toast.success(language === 'uk' ? 'Ви увійшли' : language === 'en' ? 'Signed in' : 'Вы вошли')
+      toast.success(t.auth.signedInToast)
       goAfterAuth()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t.auth.errors.generic)
@@ -232,10 +239,10 @@ function AuthScreenBody({
 
   if (isVerifying) {
     return (
-      <div className="auth-watta-root auth-watta-page-shell flex flex-col relative overflow-hidden bg-[#f6f8f7]">
+      <div className="auth-watta-root auth-watta-page-shell auth-watta-page-lock flex flex-col relative overflow-hidden">
         <LogoBackground />
-        <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
-          <div className="w-full max-w-md shrink-0 rounded-2xl border border-[#145142]/10 bg-white/95 p-5 shadow-xl backdrop-blur-md sm:p-6">
+        <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-3 py-2 sm:px-4 sm:py-4">
+          <div className="auth-watta-verify-card w-full max-w-md shrink-0 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
             <div className="mb-2 flex justify-center text-[#145142]">
               <ShieldCheck className="h-11 w-11 sm:h-12 sm:w-12" strokeWidth={1.25} />
             </div>
@@ -282,15 +289,16 @@ function AuthScreenBody({
 
   const shellClass =
     variant === 'page'
-      ? 'auth-watta-root auth-watta-page-shell flex flex-col relative overflow-hidden bg-[#f6f8f7]'
+      ? 'auth-watta-root auth-watta-page-shell auth-watta-page-lock flex flex-col relative overflow-hidden'
       : 'auth-watta-root min-h-[100dvh] h-[100dvh] flex flex-col relative overflow-hidden'
 
   return (
     <div className={shellClass}>
       <LogoBackground />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/50 via-transparent to-[#145142]/[0.06]" aria-hidden />
 
       {variant === 'page' ? (
-        <header className="relative z-20 flex shrink-0 items-center justify-between gap-2 px-3 py-2 sm:px-5 sm:py-2.5">
+        <header className="auth-watta-top-bar relative z-20 flex shrink-0 items-center justify-between gap-2 border-b border-[#145142]/[0.08] bg-white/70 px-3 py-2 backdrop-blur-md sm:px-5 sm:py-2.5">
           <Link
             href="/"
             className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold text-[#0f3d32] transition-opacity hover:opacity-80 sm:gap-2 sm:text-sm"
@@ -301,8 +309,8 @@ function AuthScreenBody({
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <img
               src="/logo.png"
-              alt="Watta Sushi"
-              className="h-8 w-auto object-contain sm:h-9"
+              alt={t.common.brandName}
+              className="h-7 w-auto object-contain sm:h-9"
               width={100}
               height={34}
             />
@@ -322,7 +330,18 @@ function AuthScreenBody({
         </div>
       )}
 
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-0 px-3 sm:px-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-3 lg:px-6">
+      {variant === 'page' && (
+        <div
+          className="auth-watta-mobile-brand relative z-10 flex shrink-0 items-center gap-2 border-b border-[#145142]/10 bg-gradient-to-r from-[#0d3d32] via-[#145142] to-[#1a6b58] px-3 py-1.5 text-white shadow-md lg:hidden"
+          role="note"
+          aria-label={t.auth.promoStrip}
+        >
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-200/90" strokeWidth={2} />
+          <p className="min-w-0 flex-1 text-[11px] font-semibold leading-tight tracking-wide text-white/95">{t.auth.promoStrip}</p>
+        </div>
+      )}
+
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-0 px-2.5 sm:px-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-3 lg:px-6">
         {/* Ліва колонка — бренд (десктоп) */}
         <div className="relative m-1 hidden flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#062a22] via-[#145142] to-[#1a7a63] p-8 text-white shadow-2xl lg:flex xl:p-10">
           <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/5 blur-2xl" />
@@ -330,37 +349,30 @@ function AuthScreenBody({
           <div className="relative">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-100 sm:mb-5 sm:px-3 sm:py-1 sm:text-xs">
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              Watta Sushi
+              {t.common.brandName}
             </div>
             <h2 className="mb-3 text-2xl font-bold leading-tight xl:text-3xl">
-              {language === 'uk'
-                ? 'Улюблені роли — у кілька кліків'
-                : language === 'en'
-                  ? 'Your favourite rolls in a few taps'
-                  : 'Любимые роллы — в пару кликов'}
+              {t.auth.desktopHeroTitle}
             </h2>
             <p className="max-w-md text-sm leading-relaxed text-white/85 xl:text-base">
-              {language === 'uk'
-                ? 'Збережіть акаунт — історія замовлень, бонуси та швидке оформлення доставки.'
-                : language === 'en'
-                  ? 'Keep an account — order history, bonuses and faster checkout.'
-                  : 'Аккаунт — история заказов, бонусы и быстрее оформление.'}
+              {t.auth.desktopHeroSub}
             </p>
           </div>
           <p className="relative text-sm text-white/60">
-            © {new Date().getFullYear()} Watta Sushi
+            © {new Date().getFullYear()} {t.common.brandName}
           </p>
         </div>
 
-        {/* Форма — без дубля логотипу: на мобільному він у шапці */}
-        <div className="flex min-h-0 flex-1 flex-col justify-center py-1 sm:py-2 lg:py-6 lg:pl-2">
-          <div className="auth-watta-form-card mx-auto w-full max-w-md shrink-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-lg sm:p-5">
-            <div className="mb-3 flex rounded-xl bg-[#f0f4f2] p-0.5 sm:mb-4">
+        {/* Форма: на мобільному прокрутка лише в середині картки (поля), вкладки й кнопка залишаються в полі зору */}
+        <div className="flex min-h-0 flex-1 flex-col justify-stretch py-1 sm:justify-center sm:py-2 lg:py-6 lg:pl-2">
+          <div className="auth-watta-form-card auth-watta-form-card--page mx-auto flex w-full max-w-md min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-xl backdrop-blur-md sm:max-h-none sm:flex-none sm:rounded-2xl sm:p-5 lg:min-h-0 lg:flex-none">
+            <div className="shrink-0 p-3 pb-0 pt-2 sm:p-5 sm:pb-0 sm:pt-5">
+            <div className="mb-2 flex rounded-xl bg-[#e8f0ec]/90 p-0.5 sm:mb-4">
               {variant === 'page' ? (
                 <>
                   <Link
                     href={returnUrl !== '/' ? `/login?return=${encodeURIComponent(returnUrl)}` : '/login'}
-                    className={`flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                    className={`flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
                       !isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
                     }`}
                   >
@@ -368,7 +380,7 @@ function AuthScreenBody({
                   </Link>
                   <Link
                     href={returnUrl !== '/' ? `/register?return=${encodeURIComponent(returnUrl)}` : '/register'}
-                    className={`flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                    className={`flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
                       isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
                     }`}
                   >
@@ -405,25 +417,27 @@ function AuthScreenBody({
               )}
             </div>
 
-            <h1 className="mb-0.5 text-xl font-bold text-[#0f3d32] sm:text-2xl">
+            <h1 className="mb-0 text-lg font-bold leading-tight text-[#0f3d32] sm:mb-0.5 sm:text-2xl">
               {isRegister ? t.auth.registerTitle : t.auth.loginTitle}
             </h1>
-            <p className="auth-watta-form-desc mb-3 line-clamp-2 text-xs leading-snug text-gray-600 sm:mb-4 sm:text-sm">
+            <p className="auth-watta-form-desc mt-1 line-clamp-2 text-[11px] leading-snug text-gray-600 sm:mt-0 sm:mb-4 sm:text-sm">
               {isRegister ? t.auth.registerDescription : t.auth.loginDescription}
             </p>
 
             {error && (
               <div
                 role="alert"
-                className="mb-2 max-h-[4.25rem] overflow-y-auto rounded-xl border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs leading-snug text-red-800 sm:px-3 sm:py-2 sm:text-[13px]"
+                className="mt-2 max-h-[3.5rem] overflow-y-auto rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[11px] leading-snug text-red-800 sm:mb-2 sm:max-h-[4.25rem] sm:rounded-xl sm:px-3 sm:py-2 sm:text-[13px]"
               >
                 {error}
               </div>
             )}
+            </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+            <div className="auth-watta-form-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-1 sm:px-5 sm:pb-2 lg:flex-none lg:overflow-visible">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-1.5 sm:gap-2">
               {isRegister && (
-                <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
                   <label className="auth-watta-label min-w-0">
                     <span className="auth-watta-label-text">{t.auth.name}</span>
                     <span className="auth-watta-input-wrap">
@@ -519,7 +533,7 @@ function AuthScreenBody({
                 </label>
               )}
 
-              <button type="submit" disabled={isLoading} className="auth-watta-btn-primary mt-1">
+              <button type="submit" disabled={isLoading} className="auth-watta-btn-primary mt-0.5 sm:mt-1">
                 {isLoading
                   ? '…'
                   : isRegister
@@ -527,9 +541,10 @@ function AuthScreenBody({
                     : t.auth.submit}
               </button>
             </form>
+            </div>
 
             {variant === 'page' && (
-              <p className="mt-3 text-center text-[11px] leading-tight text-gray-600 sm:mt-4 sm:text-xs">
+              <p className="shrink-0 border-t border-gray-100/90 bg-white/80 px-3 py-2 text-center text-[10px] leading-tight text-gray-600 backdrop-blur-sm sm:mt-4 sm:border-0 sm:bg-transparent sm:px-5 sm:py-3 sm:text-xs">
                 {isRegister ? (
                   <>
                     {t.auth.haveAccount}{' '}
@@ -558,7 +573,7 @@ function AuthScreenBody({
                   setIsRegister(!isRegister)
                   setError(null)
                 }}
-                className="mt-6 w-full text-center text-sm font-medium text-[#145142] hover:underline"
+                className="mt-4 w-full shrink-0 text-center text-sm font-medium text-[#145142] hover:underline sm:mt-6"
               >
                 {isRegister ? t.auth.haveAccount : t.auth.noAccount}
               </button>

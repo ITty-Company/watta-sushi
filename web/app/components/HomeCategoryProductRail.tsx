@@ -10,7 +10,7 @@ export type HomeCategoryRailProduct = WattaMenuProductCardModel & {
   categorySlug?: string
   categoryId?: number
   subcategory?: string
-  isRecommended?: boolean
+  isHomeHit?: boolean
   recommendOrder?: number
   allowRecommendations?: boolean
 }
