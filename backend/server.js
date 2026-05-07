@@ -40,9 +40,16 @@ try {
 }
 
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
-const dotenvResult = dotenv.config({ override: false });
+// Явный путь: при запуске не з каталога backend (../) dotenv знайшов б 0 змін
+const envPath = path.join(__dirname, '.env');
+const dotenvResult = dotenv.config({ path: envPath, override: false });
 if (dotenvResult.error && process.env.NODE_ENV !== 'production') {
-  console.warn('⚠️  Не удалось загрузить .env файл:', dotenvResult.error.message);
+  console.warn('⚠️  Не удалось загрузить .env файл:', dotenvResult.error.message, `(чекайте: ${envPath})`);
+} else if (!dotenvResult.error) {
+  const n = dotenvResult.parsed ? Object.keys(dotenvResult.parsed).length : 0;
+  if (n > 0) {
+    console.log(`📦 Загружено ${n} переменных из ${path.basename(envPath)}`);
+  }
 }
 
 // Диагностика переменных
@@ -125,9 +132,11 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // --- 2. ПАРСИНГ И ЛОГИРОВАНИЕ ---
-// Великі файли — через multipart (multer) на відповідних роутах; JSON 50mb = легка DoS-мишень
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Адмінка може слати в JSON base64-фото (галерея товару) — 10mb часто мало (413 request entity too large).
+// Multer/окремі upload-роуты — для великих файлів; JSON лімит обмежуйте в nginx/Render за потреби.
+const jsonBodyLimit = String(process.env.JSON_BODY_LIMIT || '50mb').trim() || '50mb';
+app.use(express.json({ limit: jsonBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: jsonBodyLimit }));
 
 // Логирование запросов
 app.use((req, res, next) => {

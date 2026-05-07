@@ -103,7 +103,7 @@ export default function FavoritesPage() {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     const n = cart.filter((x: { id?: number }) => x?.id === item.id).length
     if (n >= 99) {
-      toast.error('Максимальна кількість товару — 99 шт.')
+      toast.error(t.appToasts.maxCartQty)
       return
     }
     cart.push({
@@ -122,7 +122,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="watta-public-page-shell flex min-h-[100dvh] flex-1 flex-col overflow-x-hidden bg-[#f2f5f3] pb-12 pt-6 sm:pt-8">
+    <div className="watta-public-page-shell flex min-h-[100dvh] flex-1 flex-col overflow-x-hidden watta-page-bg pb-12 pt-6 sm:pt-8">
       <div className="mx-auto w-full max-w-[1200px] px-4">
         <div className="mb-8 flex flex-wrap items-center gap-4">
           <button

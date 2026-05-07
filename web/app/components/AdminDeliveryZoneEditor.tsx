@@ -296,7 +296,7 @@ export default function AdminDeliveryZoneEditor({
           {zones.map((z) => (
             <li
               key={z.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-[#f7fbf9] px-3 py-2 text-sm"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-white px-3 py-2 text-sm"
             >
               <span className="font-semibold text-[#155044]">{z.name}</span>
               <button

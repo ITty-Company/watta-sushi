@@ -1,13 +1,44 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react'
+import {
+  type WattaLanguage,
+  WATTA_LANG_COOKIE,
+  WATTA_LANG_MAX_AGE,
+  parseWattaLanguage,
+  wattaToHtmlLang,
+} from '@/lib/i18n/language'
+import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 
-export type Language = 'uk' | 'en' | 'ru' | 'nl'
+export type Language = WattaLanguage
 
 /** Мова інтерфейсу адмін-панелі (окремо від мови сайту). */
 export type AdminUiLanguage = 'uk' | 'ru'
 
 interface Translations {
+  common: {
+    brandName: string
+    brandShort: string
+  }
+  /** Доступність: кнопки, карусель, медіа (не плутати з брендом) */
+  siteAria: {
+    phone: string
+    favorites: string
+    cart: string
+    profile: string
+    menu: string
+    close: string
+    scrollLeft: string
+    scrollRight: string
+    heroVideo: string
+    map: string
+    previousSlide: string
+    nextSlide: string
+    remove: string
+    removeLine: string
+    loading: string
+    profileNav: string
+  }
   // Простые ключи
   menu: string
   cart: string
@@ -239,6 +270,8 @@ interface Translations {
     distanceMatrixError: string
     promoInvalidFallback: string
     toastMaxQty: string
+    /** Пам’ять браузера для кошика вичерпана */
+    toastStorageQuota: string
     /** {{code}} */
     toastPromoOk: string
     toastPromoNetwork: string
@@ -329,6 +362,11 @@ interface Translations {
     piecesFallback: string
     toCart: string
     addedHint: string
+    /** Галерея фото на сторінці товару */
+    galleryPrev: string
+    galleryNext: string
+    /** Підпис «{n} з {m}» для крапок / лічильника */
+    galleryProgress: string
   }
   auth: {
     login: string
@@ -346,6 +384,12 @@ interface Translations {
     createAccount: string
     noAccount: string
     haveAccount: string
+    /** Мобільна стрічка / note над формою */
+    promoStrip: string
+    /** Десктоп: заголовок у лівій колонці */
+    desktopHeroTitle: string
+    /** Десктоп: підзаголовок */
+    desktopHeroSub: string
     errors: {
       pattern: string
       emailInvalid: string
@@ -358,6 +402,29 @@ interface Translations {
       timeout: string
       generic: string
     }
+    /** Toasts / одноразові повідомлення входу */
+    passwordMismatch: string
+    phoneLost: string
+    welcomeAfterVerify: string
+    wrongVerificationCode: string
+    signedInToast: string
+  }
+  /** global-error.tsx (без LanguageProvider) — дублюємо по мовах через cookie */
+  errorPage: {
+    title: string
+    body: string
+    retry: string
+  }
+  /** Клієнтські спливаючі повідомлення (кошик, відгуки, тощо) */
+  appToasts: {
+    maxCartQty: string
+    fileTooBig: string
+    loginAgain: string
+    reviewNeedText: string
+    reviewSaveError: string
+    reviewThanks: string
+    networkError: string
+    removeFavoriteError: string
   }
   aboutPage: {
     title: string
@@ -530,6 +597,8 @@ interface Translations {
     favoritesTitle: string
     favEmpty: string
     favToMenu: string
+    /** Тост, якщо натиснули «обране» без сесії */
+    loginToAddFavorites: string
     addrTitle: string
     addrSub: string
     addrEmptyTitle: string
@@ -625,6 +694,9 @@ interface Translations {
     bottomCta: string
     scrollHint: string
     addressLine: string
+    ariaTelegram: string
+    ariaWhatsapp: string
+    ariaInstagram: string
   }
   /** Сторінка політики конфіденційності */
   privacyPage: {
@@ -822,7 +894,7 @@ interface Translations {
     fullMenuAllTab: string
     /** Aria для горизонтальної стрічки страв у категорії на головній */
     categoryRailAria: string
-    /** Бейдж на картці товару, якщо isRecommended в адмінці */
+    /** Бейдж на картці товару, якщо в адмінці ввімкнено «хіти на головній» */
     recommendedPill: string
     /** Заголовок поверх фото-банера на головній */
     heroBannerOverlayTitle: string
@@ -832,9 +904,14 @@ interface Translations {
     heroBannerSmsSender: string
     heroBannerSmsBadge: string
     heroBannerSmsTime: string
+    /** Aria: секція промо-банерів (видимий заголовок знято) */
+    heroBannersSectionAria: string
   }
   cinematicFooter: {
-    readyTitle: string
+    /** Короткий кікер (бейдж) у блоці над стрічками */
+    readyTitleKicker: string
+    /** Друга частина — в один ряд з кікером */
+    readyTitleSub: string
     ctaBanners: string
     ctaMenu: string
     ctaCatalog: string
@@ -857,11 +934,8 @@ interface Translations {
     recommendedStripAria: string
     popularStripAria: string
     categoriesStripAria: string
-    aboutTitle: string
-    aboutLead: string
-    aboutBody: string
     animationSlotAria: string
-    /** Фрази бігучого рядка під hero-відео, через | */
+    /** Фрази бігучого рядка після hero-відео, через | */
     heroMarquee: string
   }
   adminCategory: {
@@ -875,6 +949,28 @@ interface Translations {
 
 const translations: Record<Language, Translations> = {
   uk: {
+    common: {
+      brandName: 'Watta Sushi',
+      brandShort: 'Watta',
+    },
+    siteAria: {
+      phone: 'Телефон',
+      favorites: 'Вибране',
+      cart: 'Кошик',
+      profile: 'Профіль',
+      menu: 'Меню',
+      close: 'Закрити',
+      scrollLeft: 'Прокрутити вліво',
+      scrollRight: 'Прокрутити вправо',
+      heroVideo: 'Відео в шапці сторінки',
+      map: 'Карта',
+      previousSlide: 'Попередній слайд',
+      nextSlide: 'Наступний слайд',
+      remove: 'Видалити',
+      removeLine: 'Видалити позицію з кошика',
+      loading: 'Завантаження',
+      profileNav: 'Навігація профілю',
+    },
     menu: "Меню",
     cart: "Кошик",
     profile: "Профіль",
@@ -926,10 +1022,10 @@ const translations: Record<Language, Translations> = {
       hoursRange: '14:00 — 21:00',
       howTitle: 'Як замовити',
       stepWeb: 'На сайті',
-      stepApp: 'У застосунку',
+      stepApp: 'Instagram',
       stepPhone: 'Телефоном',
       stepWebDesc: 'Меню, кошик, оплата й адреса — усе в один клік, без зайвих кроків.',
-      stepAppDesc: 'Той самий зручний досвід у застосунку — швидке повторення улюблених замовлень.',
+      stepAppDesc: 'Напишіть нам в Instagram — підкажемо по меню, зоні й часу доставки.',
       stepPhoneDesc: 'Зателефонуйте — підкажемо по меню, зонах і часу доставки.',
       kitchenMapCaption: 'Наша кухня на карті',
       conditionsKicker: 'Сервіс',
@@ -1083,6 +1179,8 @@ const translations: Record<Language, Translations> = {
       distanceMatrixError: 'Не вдалося розрахувати відстань',
       promoInvalidFallback: 'Невірний код',
       toastMaxQty: 'Максимум 99 шт. одного товару',
+      toastStorageQuota:
+        'Пам’ять браузера переповнена. Очистіть кошик або видаліть частину товарів і спробуйте знову.',
       toastPromoOk: 'Промокод {{code}} застосовано',
       toastPromoNetwork: 'Помилка з’єднання',
       toastUpsellAdded: '{{name}} додано зі знижкою {{percent}}%',
@@ -1159,6 +1257,9 @@ const translations: Record<Language, Translations> = {
       piecesFallback: '8 шт',
       toCart: 'У кошик',
       addedHint: 'Додано в кошик',
+      galleryPrev: 'Попереднє фото',
+      galleryNext: 'Наступне фото',
+      galleryProgress: '{n} з {m}',
     },
     auth: {
       login: 'Вхід',
@@ -1176,6 +1277,9 @@ const translations: Record<Language, Translations> = {
       createAccount: 'Створити акаунт',
       noAccount: 'Немає акаунта? Зареєструватися',
       haveAccount: 'Є акаунт? Увійти',
+      promoStrip: 'Роли та суші — швидке замовлення',
+      desktopHeroTitle: 'Улюблені роли — у кілька кліків',
+      desktopHeroSub: 'Збережіть акаунт — історія замовлень, бонуси та швидке оформлення доставки.',
       errors: {
         pattern: 'Перевірте правильність введених даних',
         emailInvalid: 'Введіть коректну email адресу',
@@ -1187,7 +1291,27 @@ const translations: Record<Language, Translations> = {
         required: 'Заповніть всі обов\'язкові поля',
         timeout: 'Перевищено час очікування. Перевірте підключення до інтернету',
         generic: 'Сталася помилка'
-      }
+      },
+      passwordMismatch: 'Паролі не збігаються',
+      phoneLost: 'Помилка: телефон втрачено. Спробуйте ще раз.',
+      welcomeAfterVerify: 'Вітаємо!',
+      wrongVerificationCode: 'Невірний код',
+      signedInToast: 'Ви увійшли'
+    },
+    errorPage: {
+      title: 'Щось пішло не так',
+      body: 'Оновіть сторінку або спробуйте пізніше.',
+      retry: 'Оновити'
+    },
+    appToasts: {
+      maxCartQty: 'Максимальна кількість товару — 99 шт.',
+      fileTooBig: 'Файл завеликий (макс. ~2 МБ)',
+      loginAgain: 'Увійдіть знову',
+      reviewNeedText: 'Додайте трохи тексту до відгуку',
+      reviewSaveError: 'Не вдалося зберегти',
+      reviewThanks: 'Дякуємо!',
+      networkError: 'Помилка мережі',
+      removeFavoriteError: 'Не вдалося видалити з обраного'
     },
     aboutPage: {
       title: "Про нас",
@@ -1300,19 +1424,19 @@ const translations: Record<Language, Translations> = {
       welcomeBadgeAria: 'Вітання різними мовами та назва бренду',
       welcomeScrollDownAria: 'Прокрутити до наступного екрана',
       gastronomyTitle: 'Японська гастрономія',
-      homeCatalogTitle: 'Усе меню',
+      homeCatalogTitle: 'Меню',
       catalogOnCategoryPageHint:
         'Страви обраної категорії відкриваються на окремій сторінці — натисніть тип у сітці нижче або в панелі категорій.',
       categoryPageBack: 'На головну',
       categoryPageEmpty: 'У цій категорії поки немає позицій.',
       categoryPageOpenCart: 'Кошик',
-      fullMenuTitle: 'Повне меню',
+      fullMenuTitle: 'Меню',
       fullMenuSub: 'Усі категорії та страви на одній сторінці. Оберіть категорію зверху — список прокрутиться до потрібного блоку.',
       fullMenuWant: 'Замовити',
       fullMenuCategoriesAria: 'Категорії меню',
       fullMenuLoading: 'Завантаження меню…',
       fullMenuEmpty: 'Поки що немає страв у каталозі.',
-      fullMenuAllTab: 'Усі',
+      fullMenuAllTab: 'Меню',
       categoryRailAria: 'горизонтальна стрічка страв — гортайте вліво та вправо; натисніть картку, щоб відкрити страву',
       recommendedPill: 'Від Watta',
       heroBannerOverlayTitle: 'Проводьте час разом із\u00A0нами',
@@ -1320,12 +1444,14 @@ const translations: Record<Language, Translations> = {
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'щойно',
+      heroBannersSectionAria: 'Промо-банери',
     },
     cinematicFooter: {
-      readyTitle: 'Готові замовити?',
+      readyTitleKicker: 'Наші хіти',
+      readyTitleSub: 'які гості обирають знову і знову',
       ctaBanners: 'До банерів і акцій',
       ctaMenu: 'Відкрити меню',
-      ctaCatalog: 'Каталог страв',
+      ctaCatalog: 'Меню',
       ctaOffers: 'Пропозиції',
       promoCarouselAria: 'Акційні пропозиції — гортайте вліво-вправо',
       promoPickHint: 'Нижче — рекомендовані страви та акційні пропозиції з меню.',
@@ -1342,11 +1468,6 @@ const translations: Record<Language, Translations> = {
       recommendedStripAria: 'Рекомендовані страви',
       popularStripAria: 'Популярні страви — гортайте вліво та вправо',
       categoriesStripAria: 'Категорії меню — натисніть, щоб перейти до розділу в каталозі',
-      aboutTitle: 'WATTA — СМАК БЕЗ ЗАЙВОГО ШУМУ',
-      aboutLead:
-        'Ми не граємо в «японську кухню з доставкою» — ми про точність рецепту, свіжість і сервіс, яким можна пишатися.',
-      aboutBody:
-        'Роли збираємо на замовлення, тримаємо дисципліну температури для рису й соусів, а команда чесно підкаже, що обрати під ваш настрій. Це не фастфуд — це швидка гастрономія з характером.',
       animationSlotAria: 'Місце для анімації бренду',
       heroMarquee:
         "З любов'ю до смаку|Watta Sushi|Свіжі роли|Швидка доставка|Преміум інгредієнти",
@@ -1414,6 +1535,7 @@ const translations: Record<Language, Translations> = {
       favoritesTitle: 'Обрані товари',
       favEmpty: 'У вас поки немає обраних товарів',
       favToMenu: 'Перейти до меню',
+      loginToAddFavorites: 'Увійдіть, щоб додавати в обране',
       addrTitle: 'Мої адреси',
       addrSub: 'Збережені адреси доставки',
       addrEmptyTitle: 'Адреси не збережені',
@@ -1505,6 +1627,9 @@ const translations: Record<Language, Translations> = {
       bottomCta: 'Перейти до меню',
       scrollHint: 'Гортайте вниз',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+      ariaTelegram: 'Telegram',
+      ariaWhatsapp: 'WhatsApp',
+      ariaInstagram: 'Instagram',
     },
     privacyPage: {
       title: 'Політика конфіденційності',
@@ -1657,6 +1782,28 @@ const translations: Record<Language, Translations> = {
     }
   },
   ru: {
+    common: {
+      brandName: 'Watta Sushi',
+      brandShort: 'Watta',
+    },
+    siteAria: {
+      phone: 'Телефон',
+      favorites: 'Избранное',
+      cart: 'Корзина',
+      profile: 'Профиль',
+      menu: 'Меню',
+      close: 'Закрыть',
+      scrollLeft: 'Прокрутить влево',
+      scrollRight: 'Прокрутить вправо',
+      heroVideo: 'Видео в шапке страницы',
+      map: 'Карта',
+      previousSlide: 'Предыдущий слайд',
+      nextSlide: 'Следующий слайд',
+      remove: 'Удалить',
+      removeLine: 'Удалить позицию из корзины',
+      loading: 'Загрузка',
+      profileNav: 'Навигация профиля',
+    },
     menu: "Меню",
     cart: "Корзина",
     profile: "Профиль",
@@ -1708,10 +1855,10 @@ const translations: Record<Language, Translations> = {
       hoursRange: '14:00 — 21:00',
       howTitle: 'Как заказать',
       stepWeb: 'На сайте',
-      stepApp: 'В приложении',
+      stepApp: 'Instagram',
       stepPhone: 'По телефону',
       stepWebDesc: 'Меню, корзина, оплата и адрес — всё на сайте без лишних шагов.',
-      stepAppDesc: 'Тот же удобный опыт в приложении — быстрый повтор любимых заказов.',
+      stepAppDesc: 'Напишите нам в Instagram — подскажем по меню, зоне и времени доставки.',
       stepPhoneDesc: 'Позвоните — подскажем по меню, зонам и времени доставки.',
       kitchenMapCaption: 'Наша кухня на карте',
       conditionsKicker: 'Сервис',
@@ -1864,6 +2011,8 @@ const translations: Record<Language, Translations> = {
       distanceMatrixError: 'Не удалось рассчитать расстояние',
       promoInvalidFallback: 'Неверный код',
       toastMaxQty: 'Максимум 99 шт. одного товара',
+      toastStorageQuota:
+        'Память браузера переполнена. Очистите корзину или удалите часть товаров и попробуйте снова.',
       toastPromoOk: 'Промокод {{code}} применён',
       toastPromoNetwork: 'Ошибка соединения',
       toastUpsellAdded: '{{name}} добавлено со скидкой {{percent}}%',
@@ -1940,6 +2089,9 @@ const translations: Record<Language, Translations> = {
       piecesFallback: '8 шт',
       toCart: 'В корзину',
       addedHint: 'Добавлено в корзину',
+      galleryPrev: 'Предыдущее фото',
+      galleryNext: 'Следующее фото',
+      galleryProgress: '{n} из {m}',
     },
     auth: {
       login: 'Вход',
@@ -1957,6 +2109,9 @@ const translations: Record<Language, Translations> = {
       createAccount: 'Создать аккаунт',
       noAccount: 'Нет аккаунта? Зарегистрироваться',
       haveAccount: 'Есть аккаунт? Войти',
+      promoStrip: 'Роллы и суши — быстрый заказ',
+      desktopHeroTitle: 'Любимые роллы — в пару кликов',
+      desktopHeroSub: 'Аккаунт — история заказов, бонусы и быстрее оформление.',
       errors: {
         pattern: 'Проверьте правильность введенных данных',
         emailInvalid: 'Введите корректный email адрес',
@@ -1968,7 +2123,27 @@ const translations: Record<Language, Translations> = {
         required: 'Заполните все обязательные поля',
         timeout: 'Превышено время ожидания. Проверьте подключение к интернету',
         generic: 'Произошла ошибка'
-      }
+      },
+      passwordMismatch: 'Пароли не совпадают',
+      phoneLost: 'Ошибка: телефон не найден. Попробуйте снова.',
+      welcomeAfterVerify: 'Добро пожаловать!',
+      wrongVerificationCode: 'Неверный код',
+      signedInToast: 'Вы вошли'
+    },
+    errorPage: {
+      title: 'Что-то пошло не так',
+      body: 'Обновите страницу или попробуйте позже.',
+      retry: 'Обновить'
+    },
+    appToasts: {
+      maxCartQty: 'Максимум 99 шт. одного товара',
+      fileTooBig: 'Файл слишком большой (макс. ~2 МБ)',
+      loginAgain: 'Войдите снова',
+      reviewNeedText: 'Добавьте немного текста к отзыву',
+      reviewSaveError: 'Не удалось сохранить',
+      reviewThanks: 'Спасибо!',
+      networkError: 'Ошибка сети',
+      removeFavoriteError: 'Не удалось убрать из избранного'
     },
     aboutPage: {
       title: "О нас",
@@ -2081,19 +2256,19 @@ const translations: Record<Language, Translations> = {
       welcomeBadgeAria: 'Приветствие на языках сайта и название бренда',
       welcomeScrollDownAria: 'Прокрутить к следующему экрану',
       gastronomyTitle: 'Японская гастрономия',
-      homeCatalogTitle: 'Всё меню',
+      homeCatalogTitle: 'Меню',
       catalogOnCategoryPageHint:
         'Блюда категории открываются на отдельной странице — выберите тип в сетке ниже или в панели категорий.',
       categoryPageBack: 'На главную',
       categoryPageEmpty: 'В этой категории пока нет позиций.',
       categoryPageOpenCart: 'Корзина',
-      fullMenuTitle: 'Полное меню',
+      fullMenuTitle: 'Меню',
       fullMenuSub: 'Все категории и блюда на одной странице. Выберите категорию сверху — список прокрутится к нужному блоку.',
       fullMenuWant: 'Заказать',
       fullMenuCategoriesAria: 'Категории меню',
       fullMenuLoading: 'Загрузка меню…',
       fullMenuEmpty: 'Пока нет блюд в каталоге.',
-      fullMenuAllTab: 'Все',
+      fullMenuAllTab: 'Меню',
       categoryRailAria: 'горизонтальная лента блюд — листайте влево и вправо; нажмите карточку, чтобы открыть блюдо',
       recommendedPill: 'Watta+',
       heroBannerOverlayTitle: 'Проводите время вместе с\u00A0нами',
@@ -2101,12 +2276,14 @@ const translations: Record<Language, Translations> = {
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'сейчас',
+      heroBannersSectionAria: 'Промо-баннеры',
     },
     cinematicFooter: {
-      readyTitle: 'Готовы заказать?',
+      readyTitleKicker: 'Наши хиты',
+      readyTitleSub: 'которые заказывают снова и снова',
       ctaBanners: 'К баннерам и акциям',
       ctaMenu: 'Открыть меню',
-      ctaCatalog: 'Каталог блюд',
+      ctaCatalog: 'Меню',
       ctaOffers: 'Предложения',
       promoCarouselAria: 'Акции — листайте влево и вправо',
       promoPickHint: 'Ниже — рекомендуемые блюда и акционные предложения из меню.',
@@ -2123,11 +2300,6 @@ const translations: Record<Language, Translations> = {
       recommendedStripAria: 'Рекомендуемые блюда',
       popularStripAria: 'Популярные блюда — листайте влево и вправо',
       categoriesStripAria: 'Категории меню — нажмите, чтобы перейти к разделу в каталоге',
-      aboutTitle: 'WATTA — ВКУС БЕЗ ЛИШНЕГО ШУМА',
-      aboutLead:
-        'Мы не играем в «японскую кухню с доставкой» — мы про точность рецепта, свежесть и сервис, которым можно гордиться.',
-      aboutBody:
-        'Роллы собираем под заказ, держим дисциплину температуры для риса и соусов, а команда честно подскажет, что выбрать под ваше настроение. Это не фастфуд — это быстрая гастрономия с характером.',
       animationSlotAria: 'Место для бренд-анимации',
       heroMarquee:
         'С любовью к вкусу|Watta Sushi|Свежие роллы|Быстрая доставка|Премиум ингредиенты',
@@ -2195,6 +2367,7 @@ const translations: Record<Language, Translations> = {
       favoritesTitle: 'Избранные товары',
       favEmpty: 'У вас пока нет избранных товаров',
       favToMenu: 'Перейти в меню',
+      loginToAddFavorites: 'Войдите, чтобы добавлять в избранное',
       addrTitle: 'Мои адреса',
       addrSub: 'Сохранённые адреса доставки',
       addrEmptyTitle: 'Адреса не сохранены',
@@ -2286,6 +2459,9 @@ const translations: Record<Language, Translations> = {
       bottomCta: 'Перейти в меню',
       scrollHint: 'Листайте вниз',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+      ariaTelegram: 'Telegram',
+      ariaWhatsapp: 'WhatsApp',
+      ariaInstagram: 'Instagram',
     },
     privacyPage: {
       title: 'Политика конфиденциальности',
@@ -2438,6 +2614,28 @@ const translations: Record<Language, Translations> = {
     }
   },
   en: {
+    common: {
+      brandName: 'Watta Sushi',
+      brandShort: 'Watta',
+    },
+    siteAria: {
+      phone: 'Phone',
+      favorites: 'Favorites',
+      cart: 'Cart',
+      profile: 'Profile',
+      menu: 'Menu',
+      close: 'Close',
+      scrollLeft: 'Scroll left',
+      scrollRight: 'Scroll right',
+      heroVideo: 'Hero video',
+      map: 'Map',
+      previousSlide: 'Previous slide',
+      nextSlide: 'Next slide',
+      remove: 'Remove',
+      removeLine: 'Remove line from cart',
+      loading: 'Loading',
+      profileNav: 'Profile navigation',
+    },
     menu: "Menu",
     cart: "Cart",
     profile: "Profile",
@@ -2489,10 +2687,10 @@ const translations: Record<Language, Translations> = {
       hoursRange: '14:00 — 21:00',
       howTitle: 'How to order',
       stepWeb: 'On the website',
-      stepApp: 'In the app',
+      stepApp: 'Instagram',
       stepPhone: 'By phone',
       stepWebDesc: 'Menu, cart, payment and address — all in one flow, no extra steps.',
-      stepAppDesc: 'The same smooth experience in the app — reorder your favourites in seconds.',
+      stepAppDesc: 'Message us on Instagram - we will help with menu, delivery area, and timing.',
       stepPhoneDesc: 'Call us — we help with the menu, zones and delivery times.',
       kitchenMapCaption: 'Our kitchen on the map',
       conditionsKicker: 'Service',
@@ -2645,6 +2843,8 @@ const translations: Record<Language, Translations> = {
       distanceMatrixError: 'Could not calculate distance',
       promoInvalidFallback: 'Invalid code',
       toastMaxQty: 'Maximum 99 of the same item',
+      toastStorageQuota:
+        'Browser storage is full. Remove some cart items or clear the cart, then try again.',
       toastPromoOk: 'Promo {{code}} applied',
       toastPromoNetwork: 'Connection error',
       toastUpsellAdded: '{{name}} added with {{percent}}% off',
@@ -2720,6 +2920,9 @@ const translations: Record<Language, Translations> = {
       piecesFallback: '8 pcs',
       toCart: 'Add to cart',
       addedHint: 'Added to cart',
+      galleryPrev: 'Previous photo',
+      galleryNext: 'Next photo',
+      galleryProgress: '{n} of {m}',
     },
     auth: {
       login: 'Login',
@@ -2737,6 +2940,9 @@ const translations: Record<Language, Translations> = {
       createAccount: 'Create account',
       noAccount: 'No account? Register',
       haveAccount: 'Have an account? Login',
+      promoStrip: 'Rolls & sushi — order fast',
+      desktopHeroTitle: 'Your favourite rolls in a few taps',
+      desktopHeroSub: 'Keep an account — order history, bonuses and faster checkout.',
       errors: {
         pattern: 'Please check the entered data',
         emailInvalid: 'Enter a valid email address',
@@ -2748,7 +2954,27 @@ const translations: Record<Language, Translations> = {
         required: 'Fill in all required fields',
         timeout: 'Request timeout. Check your internet connection',
         generic: 'An error occurred'
-      }
+      },
+      passwordMismatch: 'Passwords do not match',
+      phoneLost: 'Error: phone number lost. Please try again.',
+      welcomeAfterVerify: 'Welcome!',
+      wrongVerificationCode: 'Invalid code',
+      signedInToast: 'Signed in'
+    },
+    errorPage: {
+      title: 'Something went wrong',
+      body: 'Refresh the page or try again later.',
+      retry: 'Refresh'
+    },
+    appToasts: {
+      maxCartQty: 'Maximum 99 units of the same product',
+      fileTooBig: 'File is too large (max. ~2 MB)',
+      loginAgain: 'Please sign in again',
+      reviewNeedText: 'Add a few words to your review',
+      reviewSaveError: 'Could not save',
+      reviewThanks: 'Thank you!',
+      networkError: 'Network error',
+      removeFavoriteError: 'Could not remove from saved'
     },
     aboutPage: {
       title: "About Us",
@@ -2861,19 +3087,19 @@ const translations: Record<Language, Translations> = {
       welcomeBadgeAria: 'Welcome in each site language and brand name',
       welcomeScrollDownAria: 'Scroll to the next screen',
       gastronomyTitle: 'Japanese gastronomy',
-      homeCatalogTitle: 'Full menu',
+      homeCatalogTitle: 'Menu',
       catalogOnCategoryPageHint:
         'Dishes open on a separate page — pick a type in the grid below or in the category bar.',
       categoryPageBack: 'Home',
       categoryPageEmpty: 'No dishes in this category yet.',
       categoryPageOpenCart: 'Cart',
-      fullMenuTitle: 'Full menu',
+      fullMenuTitle: 'Menu',
       fullMenuSub: 'All categories and dishes on one page. Pick a category in the bar above — we scroll to that section.',
       fullMenuWant: 'Order',
       fullMenuCategoriesAria: 'Menu categories',
       fullMenuLoading: 'Loading menu…',
       fullMenuEmpty: 'No dishes in the catalog yet.',
-      fullMenuAllTab: 'All',
+      fullMenuAllTab: 'Menu',
       categoryRailAria: 'horizontal dish row — swipe left or right; tap a card to open the dish',
       recommendedPill: 'Staff pick',
       heroBannerOverlayTitle: 'Spend time with us',
@@ -2881,12 +3107,14 @@ const translations: Record<Language, Translations> = {
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'now',
+      heroBannersSectionAria: 'Promotional banners',
     },
     cinematicFooter: {
-      readyTitle: 'Ready to order?',
+      readyTitleKicker: 'Our hits',
+      readyTitleSub: 'reordered on repeat',
       ctaBanners: 'Banners & offers',
       ctaMenu: 'Open menu',
-      ctaCatalog: 'Full catalog',
+      ctaCatalog: 'Menu',
       ctaOffers: 'Offers',
       promoCarouselAria: 'Swipe or use arrows to browse offers',
       promoPickHint: 'Below — recommended dishes and special offers from the menu.',
@@ -2903,11 +3131,6 @@ const translations: Record<Language, Translations> = {
       recommendedStripAria: 'Recommended dishes',
       popularStripAria: 'Popular dishes — swipe left and right',
       categoriesStripAria: 'Menu categories — tap to jump to that section in the catalog',
-      aboutTitle: 'WATTA — FLAVOUR WITHOUT THE NOISE',
-      aboutLead:
-        'We are not playing “Japanese food to your door” — we care about recipe precision, freshness, and service you can brag about.',
-      aboutBody:
-        'Rolls are built to order; we keep rice and sauces on a tight temperature routine, and the team will honestly steer you to what fits your mood. Not fast food — fast gastronomy with attitude.',
       animationSlotAria: 'Brand animation area',
       heroMarquee:
         'With love for taste|Watta Sushi|Fresh rolls|Fast delivery|Premium ingredients',
@@ -2975,6 +3198,7 @@ const translations: Record<Language, Translations> = {
       favoritesTitle: 'Saved dishes',
       favEmpty: 'No saved dishes yet',
       favToMenu: 'Go to menu',
+      loginToAddFavorites: 'Sign in to add favorites',
       addrTitle: 'My addresses',
       addrSub: 'Saved delivery addresses',
       addrEmptyTitle: 'No saved address',
@@ -3066,6 +3290,9 @@ const translations: Record<Language, Translations> = {
       bottomCta: 'Browse the menu',
       scrollHint: 'Scroll to explore',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+      ariaTelegram: 'Telegram',
+      ariaWhatsapp: 'WhatsApp',
+      ariaInstagram: 'Instagram',
     },
     privacyPage: {
       title: 'Privacy policy',
@@ -3218,6 +3445,28 @@ const translations: Record<Language, Translations> = {
     }
   },
   nl: {
+    common: {
+      brandName: 'Watta Sushi',
+      brandShort: 'Watta',
+    },
+    siteAria: {
+      phone: 'Telefoon',
+      favorites: 'Favorieten',
+      cart: 'Winkelwagen',
+      profile: 'Profiel',
+      menu: 'Menu',
+      close: 'Sluiten',
+      scrollLeft: 'Naar links scrollen',
+      scrollRight: 'Naar rechts scrollen',
+      heroVideo: 'Hero-video',
+      map: 'Kaart',
+      previousSlide: 'Vorige dia',
+      nextSlide: 'Volgende dia',
+      remove: 'Verwijderen',
+      removeLine: 'Regel uit winkelwagen verwijderen',
+      loading: 'Laden',
+      profileNav: 'Profielnavigatie',
+    },
     menu: "Menu",
     cart: "Winkelwagen",
     profile: "Profiel",
@@ -3269,10 +3518,10 @@ const translations: Record<Language, Translations> = {
       hoursRange: '14:00 — 21:00',
       howTitle: 'Hoe bestellen',
       stepWeb: 'Op de site',
-      stepApp: 'In de app',
+      stepApp: 'Instagram',
       stepPhone: 'Per telefoon',
       stepWebDesc: 'Menu, winkelwagen, betaling en adres — alles in één flow.',
-      stepAppDesc: 'Dezelfde fijne ervaring in de app — favorieten snel opnieuw bestellen.',
+      stepAppDesc: 'Stuur ons een bericht op Instagram - we helpen met menu, bezorggebied en timing.',
       stepPhoneDesc: 'Bel ons — we helpen met menu, zones en bezorgtijden.',
       kitchenMapCaption: 'Onze keuken op de kaart',
       conditionsKicker: 'Service',
@@ -3425,6 +3674,8 @@ const translations: Record<Language, Translations> = {
       distanceMatrixError: 'Kon de afstand niet berekenen',
       promoInvalidFallback: 'Ongeldige code',
       toastMaxQty: 'Maximaal 99 stuks van hetzelfde product',
+      toastStorageQuota:
+        'De browservullage is vol. Verwijder enkele items uit de winkelwagen of leeg de winkelwagen en probeer opnieuw.',
       toastPromoOk: 'Promocode {{code}} toegepast',
       toastPromoNetwork: 'Verbindingsfout',
       toastUpsellAdded: '{{name}} toegevoegd met {{percent}}% korting',
@@ -3499,7 +3750,10 @@ const translations: Record<Language, Translations> = {
       weightFallback: '250 g',
       piecesFallback: '8 st.',
       toCart: 'In winkelwagen',
-      addedHint: 'Toegevoegd',
+      addedHint: 'Toegevoegd aan de winkelwagen',
+      galleryPrev: 'Vorige foto',
+      galleryNext: 'Volgende foto',
+      galleryProgress: '{n} van {m}',
     },
     auth: {
       login: 'Inloggen',
@@ -3517,6 +3771,9 @@ const translations: Record<Language, Translations> = {
       createAccount: 'Account aanmaken',
       noAccount: 'Geen account? Registreren',
       haveAccount: 'Heeft u een account? Inloggen',
+      promoStrip: 'Rolls en sushi — snel bestellen',
+      desktopHeroTitle: 'Favoriete rolls in een paar tikken',
+      desktopHeroSub: 'Met een account: bestelhistorie, bonussen en sneller afrekenen.',
       errors: {
         pattern: 'Controleer de ingevoerde gegevens',
         emailInvalid: 'Voer een geldig e-mailadres in',
@@ -3528,7 +3785,27 @@ const translations: Record<Language, Translations> = {
         required: 'Vul alle verplichte velden in',
         timeout: 'Verzoek time-out. Controleer uw internetverbinding',
         generic: 'Er is een fout opgetreden'
-      }
+      },
+      passwordMismatch: 'Wachtwoorden komen niet overeen',
+      phoneLost: 'Fout: telefoon verloren. Probeer opnieuw.',
+      welcomeAfterVerify: 'Welkom!',
+      wrongVerificationCode: 'Ongeldige code',
+      signedInToast: 'U bent ingelogd'
+    },
+    errorPage: {
+      title: 'Er ging iets mis',
+      body: 'Vernieuw de pagina of probeer het later opnieuw.',
+      retry: 'Vernieuwen'
+    },
+    appToasts: {
+      maxCartQty: 'Maximaal 99 stuks van hetzelfde product',
+      fileTooBig: 'Bestand is te groot (max. ~2 MB)',
+      loginAgain: 'Log opnieuw in',
+      reviewNeedText: 'Voeg wat tekst toe aan je beoordeling',
+      reviewSaveError: 'Opslaan mislukt',
+      reviewThanks: 'Dank u!',
+      networkError: 'Netwerkfout',
+      removeFavoriteError: 'Verwijderen uit favorieten mislukt'
     },
     aboutPage: {
       title: "Over ons",
@@ -3641,19 +3918,19 @@ const translations: Record<Language, Translations> = {
       welcomeBadgeAria: 'Welkom in elke sitetaal en de merknaam',
       welcomeScrollDownAria: 'Naar het volgende scherm scrollen',
       gastronomyTitle: 'Japanse gastronomie',
-      homeCatalogTitle: 'Volledig menu',
+      homeCatalogTitle: 'Menu',
       catalogOnCategoryPageHint:
         'Gerechten van de categorie openen op een aparte pagina — kies een type in het raster hieronder of in de categoriebalk.',
       categoryPageBack: 'Naar home',
       categoryPageEmpty: 'Nog geen gerechten in deze categorie.',
       categoryPageOpenCart: 'Winkelwagen',
-      fullMenuTitle: 'Volledig menu',
+      fullMenuTitle: 'Menu',
       fullMenuSub: 'Alle categorieën en gerechten op één pagina. Kies een categorie in de balk hierboven — we scrollen naar dat blok.',
       fullMenuWant: 'Bestellen',
       fullMenuCategoriesAria: 'Menucategorieën',
       fullMenuLoading: 'Menu laden…',
       fullMenuEmpty: 'Nog geen gerechten in de catalogus.',
-      fullMenuAllTab: 'Alles',
+      fullMenuAllTab: 'Menu',
       categoryRailAria: 'horizontale rij met gerechten — veeg links en rechts; tik op een kaart om het gerecht te openen',
       recommendedPill: 'Aanrader',
       heroBannerOverlayTitle: 'Breng tijd met ons door',
@@ -3661,12 +3938,14 @@ const translations: Record<Language, Translations> = {
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'zojuist',
+      heroBannersSectionAria: 'Promotiebanners',
     },
     cinematicFooter: {
-      readyTitle: 'Klaar om te bestellen?',
+      readyTitleKicker: 'Onze hits',
+      readyTitleSub: 'keer op keer besteld',
       ctaBanners: 'Naar banners & acties',
       ctaMenu: 'Menu openen',
-      ctaCatalog: 'Volledige catalogus',
+      ctaCatalog: 'Menu',
       ctaOffers: 'Aanbiedingen',
       promoCarouselAria: 'Veeg of gebruik pijlen voor acties',
       promoPickHint: 'Hieronder — aanbevolen gerechten en acties uit het menu.',
@@ -3683,11 +3962,6 @@ const translations: Record<Language, Translations> = {
       recommendedStripAria: 'Aanbevolen gerechten',
       popularStripAria: 'Populaire gerechten — veeg links en rechts',
       categoriesStripAria: 'Menucategorieën — tik om naar dat deel van de catalogus te gaan',
-      aboutTitle: 'WATTA — SMAAK ZONDER RUIS',
-      aboutLead:
-        'We doen niet alsof we “Japanse keuken aan huis” zijn — we gaan voor precisie in het recept, versheid en service om trots op te zijn.',
-      aboutBody:
-        'Rolls worden op bestelling gemaakt; rijst en sauzen houden we strak op temperatuur en het team helpt eerlijk kiezen wat bij je stemming past. Geen fastfood — wel snelle gastronomie met karakter.',
       animationSlotAria: 'Ruimte voor merk-animatie',
       heroMarquee:
         'Met liefde voor smaak|Watta Sushi|Verse rolls|Snelle bezorging|Premium ingrediënten',
@@ -3755,6 +4029,7 @@ const translations: Record<Language, Translations> = {
       favoritesTitle: 'Favoriete gerechten',
       favEmpty: 'Nog geen favorieten',
       favToMenu: 'Naar menu',
+      loginToAddFavorites: 'Log in om favorieten toe te voegen',
       addrTitle: 'Mijn adressen',
       addrSub: 'Opgeslagen bezorgadressen',
       addrEmptyTitle: 'Geen adres opgeslagen',
@@ -3846,6 +4121,9 @@ const translations: Record<Language, Translations> = {
       bottomCta: 'Naar het menu',
       scrollHint: 'Scroll verder',
       addressLine: 'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands',
+      ariaTelegram: 'Telegram',
+      ariaWhatsapp: 'WhatsApp',
+      ariaInstagram: 'Instagram',
     },
     privacyPage: {
       title: 'Privacybeleid',
@@ -4010,24 +4288,37 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
+function applyClientLanguage(lang: Language) {
+  if (typeof document === 'undefined') return
+  const safe = parseWattaLanguage(lang)
+  document.documentElement.lang = wattaToHtmlLang(safe)
+  document.cookie = `${WATTA_LANG_COOKIE}=${safe}; path=/; max-age=${WATTA_LANG_MAX_AGE}; SameSite=Lax`
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   // Всегда начинаем с 'uk' на сервере и клиенте для избежания проблем с гидратацией
   const [language, setLanguageState] = useState<Language>('uk')
   const [adminUiLanguage, setAdminUiLanguageState] = useState<AdminUiLanguage>('uk')
 
   useEffect(() => {
-    // Загружаем язык из localStorage только после монтирования на клиенте
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const saved = localStorage.getItem('language') as any
-      if (saved === 'ua') {
-        setLanguageState('uk')
-      } else if (saved && ['uk', 'en', 'ru', 'nl'].includes(saved)) {
-        setLanguageState(saved as Language)
-      }
-      const adminSaved = localStorage.getItem('adminUiLang')
-      if (adminSaved === 'ru' || adminSaved === 'uk') {
-        setAdminUiLanguageState(adminSaved)
-      }
+    if (typeof window === 'undefined' || !window.localStorage) return
+    let next: Language = 'uk'
+    const saved = localStorage.getItem('language') as string | null
+    if (saved === 'ua') {
+      next = 'uk'
+    } else if (saved && ['uk', 'en', 'ru', 'nl'].includes(saved)) {
+      next = saved as Language
+    } else {
+      const m = document.cookie.match(
+        new RegExp(`(?:^|; )${WATTA_LANG_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`),
+      )
+      if (m?.[1]) next = parseWattaLanguage(decodeURIComponent(m[1]))
+    }
+    setLanguageState(next)
+    applyClientLanguage(next)
+    const adminSaved = localStorage.getItem('adminUiLang')
+    if (adminSaved === 'ru' || adminSaved === 'uk') {
+      setAdminUiLanguageState(adminSaved)
     }
   }, [])
 
@@ -4036,6 +4327,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem('language', lang)
     }
+    applyClientLanguage(lang)
   }
 
   const setAdminUiLanguage = (lang: AdminUiLanguage) => {
@@ -4045,11 +4337,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const getLocalized = (obj: any, field: string) => {
-    if (!obj) return ''
-    const suffix = language === 'uk' ? 'ua' : language;
-    return obj[`${field}_${suffix}`] || obj[`${field}_${language}`] || obj[`${field}_ru`] || ''
-  }
+  const getLocalized = (obj: any, field: string) =>
+    getLocalizedField(obj as Record<string, unknown>, field, language)
 
   const mergedT = useMemo((): Translations => {
     const base = translations[language]
@@ -4083,7 +4372,12 @@ const defaultContextValue: LanguageContextType = {
   adminUiLanguage: 'uk',
   setAdminUiLanguage: () => {},
   t: translations.uk,
-  getLocalized: (obj: any, field: string) => (obj ? (obj[`${field}_ua`] || obj[`${field}_uk`] || obj[`${field}_ru`] || '') : ''),
+  getLocalized: (obj: any, field: string) => getLocalizedField(obj as Record<string, unknown> | null, field, 'uk'),
+}
+
+/** Тексти global-error.tsx поза LanguageProvider */
+export function getErrorPageForLanguage(lang: WattaLanguage): Translations['errorPage'] {
+  return translations[lang].errorPage
 }
 
 export function useLanguage() {

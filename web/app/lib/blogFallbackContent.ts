@@ -1,4 +1,4 @@
-import type { Language } from '@/app/context/LanguageContext'
+import type { WattaLanguage as Language } from '@/lib/i18n/language'
 
 /** Fallback-статті блогу шефа, коли API порожній або запис не знайдено (за slug). */
 

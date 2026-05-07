@@ -65,7 +65,7 @@ export default function WattaPublicBottomBar() {
 
   return (
     <nav
-      className="watta-public-bottom-bar lg:hidden"
+      className="watta-public-bottom-bar"
       aria-label={t.navigation.bottomNavAria}
     >
       <div className="watta-public-bottom-bar__inner">

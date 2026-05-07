@@ -14,7 +14,9 @@ import {
   Sparkles,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import type { Language } from '@/app/context/LanguageContext'
+import { useLanguage, type Language } from '@/app/context/LanguageContext'
+import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
+import type { WattaLanguage } from '@/lib/i18n/language'
 
 export interface ProfileOrderItem {
   id: number
@@ -63,10 +65,9 @@ function productLineName(
   p: ProfileOrderItem['product'],
   lang: Language
 ): string {
-  if (lang === 'uk') return p.name_ua || p.name_ru
-  if (lang === 'en') return p.name_en || p.name_ru
-  if (lang === 'nl') return p.name_nl || p.name_ru
-  return p.name_ru
+  return (
+    getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang as WattaLanguage) || p.name_ru
+  )
 }
 
 const stepIcons = [Clock, Check, ChefHat, Truck, Package]
@@ -118,6 +119,7 @@ export default function ClientProfileOrders({
   onReorder,
   onReviewSubmitted,
 }: Props) {
+  const { t: siteT } = useLanguage()
   const [reviewOrder, setReviewOrder] = useState<ProfileOrder | null>(null)
   const [reviewText, setReviewText] = useState('')
   const [reviewRating, setReviewRating] = useState(5)
@@ -148,7 +150,7 @@ export default function ClientProfileOrders({
       const f = files[i]
       if (!f.type.startsWith('image/')) continue
       if (f.size > 2_000_000) {
-        toast.error('Файл завеликий (макс. ~2 МБ)')
+        toast.error(siteT.appToasts.fileTooBig)
         continue
       }
       const reader = new FileReader()
@@ -167,12 +169,12 @@ export default function ClientProfileOrders({
     if (!reviewOrder) return
     const token = localStorage.getItem('token')
     if (!token) {
-      toast.error('Увійдіть знову')
+      toast.error(siteT.appToasts.loginAgain)
       return
     }
     const txt = reviewText.trim()
     if (txt.length < 3) {
-      toast.error('Додайте трохи тексту до відгуку')
+      toast.error(siteT.appToasts.reviewNeedText)
       return
     }
     setSubmitting(true)
@@ -192,10 +194,10 @@ export default function ClientProfileOrders({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error(data.message || 'Не вдалося зберегти')
+        toast.error((data.message as string) || siteT.appToasts.reviewSaveError)
         return
       }
-      toast.success('Дякуємо!')
+      toast.success(siteT.appToasts.reviewThanks)
       onReviewSubmitted(reviewOrder.id, {
         id: data.id,
         rating: data.rating,
@@ -204,7 +206,7 @@ export default function ClientProfileOrders({
       })
       closeModal()
     } catch {
-      toast.error('Помилка мережі')
+      toast.error(siteT.appToasts.networkError)
     } finally {
       setSubmitting(false)
     }
@@ -285,7 +287,7 @@ export default function ClientProfileOrders({
                   type="button"
                   onClick={closeModal}
                   className="p-2 rounded-xl hover:bg-gray-100 text-gray-500"
-                  aria-label="Close"
+                  aria-label={siteT.siteAria.close}
                 >
                   <X className="w-5 h-5" />
                 </button>

@@ -1,15 +1,17 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { AuthPageLoader } from '../components/auth/AuthPageLoader'
+import { getRequestLocale } from '@/lib/i18n/serverLocale'
+import { buildSubpageMetadata } from '@/lib/i18n/seo'
 
-export const metadata: Metadata = {
-  title: 'Реєстрація',
-  description: 'Створіть акаунт Watta Sushi.',
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getRequestLocale()
+  return buildSubpageMetadata(lang, 'register')
 }
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-[#f6f8f7]" aria-hidden />}>
+    <Suspense fallback={<div className="min-h-[100dvh] watta-page-bg" aria-hidden />}>
       <AuthPageLoader mode="register" />
     </Suspense>
   )

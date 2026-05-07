@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, startTransition, useState } from 'react'
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Heart,
   Minus,
   Plus,
@@ -12,10 +13,14 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import { cn, getApiUrl } from '@/lib/utils'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { useProductFavorite } from '@/hooks/useProductFavorite'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
+import { ProductImageGallery } from './ProductImageGallery'
+import { productGalleryFromApi } from '@/lib/productGallery'
 import toast from 'react-hot-toast'
 
 interface ProductViewProps {
@@ -42,9 +47,19 @@ interface Product {
   description_nl?: string
   price: number
   imageUrl?: string
+  imageUrls?: unknown
   categoryId: number
   isPopular?: boolean
   promoDiscountPercent?: number
+  category?: {
+    id: number
+    slug?: string
+    name_ru: string
+    name_ua?: string
+    name_en?: string
+    name_nl?: string
+    emoji?: string | null
+  }
   ingredients?: {
     id: number
     name_ru: string
@@ -76,6 +91,8 @@ function parseSpecsFromDescription(
 export default function ProductView({ productId, onBack }: ProductViewProps) {
   const { t, language } = useLanguage()
   const pd = t.productDetail
+  const cs = t.cartSection
+  const a = t.siteAria
   const [product, setProduct] = useState<Product | null>(null)
   const [recommendations, setRecommendations] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -83,70 +100,111 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   const { liked: isFavorite, toggle: toggleFavorite } = useProductFavorite(Number(productId))
   const [isAdding, setIsAdding] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
-  const compScrollRef = useRef<HTMLDivElement>(null)
   const recScrollRef = useRef<HTMLDivElement>(null)
 
-  const pickLoc = (row: Record<string, unknown>, key: string, fallback: string) => {
-    const v = row[key]
-    return typeof v === 'string' && v.trim() ? v : fallback
+  const lang = language as WattaLanguage
+
+  const getName = (p: Product) => getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang)
+  const getDesc = (p: Product) =>
+    getLocalizedField(p as unknown as Record<string, unknown>, 'description', lang) || (p.description_ru ?? '')
+  const getIngName = (ing: IngredientRow) =>
+    getLocalizedField(ing as unknown as Record<string, unknown>, 'name', lang)
+  const getCategoryLabel = (p: Product) => {
+    const c = p.category
+    if (!c) return ''
+    return getLocalizedField(c as unknown as Record<string, unknown>, 'name', lang)
   }
 
-  const getName = (p: Product) => pickLoc(p as unknown as Record<string, unknown>, `name_${language}`, p.name_ru)
-  const getDesc = (p: Product) =>
-    pickLoc(p as unknown as Record<string, unknown>, `description_${language}`, p.description_ru || '')
-  const getIngName = (ing: IngredientRow) =>
-    pickLoc(ing as unknown as Record<string, unknown>, `name_${language}`, ing.name_ru)
+  useEffect(() => {
+    const ac = new AbortController()
+    let cancelled = false
 
-  const fetchProductData = useCallback(async () => {
     setIsLoading(true)
-    try {
-      const res = await fetch(getApiUrl(`/api/products/${productId}`))
-      if (res.ok) {
-        const data = await res.json()
-        setProduct(data)
-      } else {
+    setProduct(null)
+    setRecommendations([])
+
+    const productUrl = getApiUrl(`/api/products/${productId}`)
+    const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
+    const cityId = rawCity ? parseInt(rawCity, 10) : NaN
+    const recQ = new URLSearchParams({ excludeId: String(productId), limit: '24' })
+    if (Number.isFinite(cityId) && cityId > 0) recQ.set('cityId', String(cityId))
+    const recUrl = getApiUrl(`/api/products/recommendations?${recQ.toString()}`)
+
+    const productFetch = fetch(productUrl, { signal: ac.signal, headers: { 'Cache-Control': 'max-age=60' } })
+    const recFetch = fetch(recUrl, { signal: ac.signal, headers: { 'Cache-Control': 'max-age=60' } })
+
+    void productFetch
+      .then(async (res) => {
+        if (cancelled) return
+        if (res.ok) {
+          setProduct((await res.json()) as Product)
+        } else {
+          setProduct(null)
+        }
+      })
+      .catch((e) => {
+        if (cancelled) return
+        if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') return
+        console.error(e)
         setProduct(null)
-      }
-    } catch (e) {
-      console.error(e)
-      setProduct(null)
-    } finally {
-      setIsLoading(false)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+
+    void recFetch
+      .then(async (res) => {
+        if (cancelled) return
+        if (!res.ok) return
+        const data = (await res.json()) as Product[]
+        const next = Array.isArray(data) ? data.slice(0, 12) : []
+        startTransition(() => {
+          if (cancelled) return
+          setRecommendations(next)
+        })
+      })
+      .catch((e) => {
+        if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') return
+        console.error(e)
+      })
+
+    return () => {
+      cancelled = true
+      ac.abort()
     }
   }, [productId])
-
-  const fetchRecommendations = useCallback(async () => {
-    try {
-      const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
-      const cityId = rawCity ? parseInt(rawCity, 10) : NaN
-      const q = new URLSearchParams({ excludeId: String(productId), limit: '24' })
-      if (Number.isFinite(cityId) && cityId > 0) q.set('cityId', String(cityId))
-      const res = await fetch(getApiUrl(`/api/products/recommendations?${q.toString()}`))
-      if (!res.ok) return
-      const data = (await res.json()) as Product[]
-      setRecommendations(Array.isArray(data) ? data.slice(0, 12) : [])
-    } catch (e) {
-      console.error(e)
-    }
-  }, [productId])
-
-  useEffect(() => {
-    fetchProductData()
-  }, [productId, fetchProductData])
-
-  useEffect(() => {
-    void fetchRecommendations()
-  }, [fetchRecommendations])
 
   const addToCart = () => {
     if (!product) return
     setIsAdding(true)
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    for (let i = 0; i < quantity; i++) {
-      cart.push(product)
+    const cover =
+      (product.imageUrl && String(product.imageUrl).trim()) ||
+      productGalleryFromApi({ imageUrl: product.imageUrl, imageUrls: product.imageUrls })[0]
+    const line = {
+      id: product.id,
+      name: getName(product),
+      description: getDesc(product),
+      price: product.price,
+      category: getCategoryLabel(product) || '',
+      emoji: product.category?.emoji || '🍣',
+      imageUrl: cover,
+      promoDiscountPercent: product.promoDiscountPercent,
     }
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    for (let i = 0; i < quantity; i++) {
+      cart.push(line)
+    }
+    try {
+      localStorage.setItem('cart', JSON.stringify(cart))
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        toast.error(cs.toastStorageQuota)
+        setIsAdding(false)
+        return
+      }
+      throw e
+    }
     setTimeout(() => {
       setIsAdding(false)
       setJustAdded(true)
@@ -159,26 +217,31 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     const n = cart.filter((x: { id?: number }) => x?.id === rec.id).length
     if (n >= 99) return
+    const cover =
+      (rec.imageUrl && String(rec.imageUrl).trim()) ||
+      productGalleryFromApi({ imageUrl: rec.imageUrl, imageUrls: rec.imageUrls })[0]
     const cartItem = {
       id: rec.id,
       name: getName(rec),
       description: getDesc(rec),
       price: rec.price,
-      category: '',
-      emoji: '🍣',
-      imageUrl: rec.imageUrl,
+      category: getCategoryLabel(rec) || '',
+      emoji: rec.category?.emoji || '🍣',
+      imageUrl: cover,
       promoDiscountPercent: rec.promoDiscountPercent,
     }
     cart.push(cartItem)
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    try {
+      localStorage.setItem('cart', JSON.stringify(cart))
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        toast.error(cs.toastStorageQuota)
+        return
+      }
+      throw e
+    }
     toast.success(t.addToCart)
-  }
-
-  const scrollComp = (dir: -1 | 1) => {
-    const el = compScrollRef.current
-    if (!el) return
-    el.scrollBy({ left: dir * Math.min(280, el.clientWidth * 0.85), behavior: 'smooth' })
   }
 
   const scrollRec = (dir: -1 | 1) => {
@@ -187,17 +250,40 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     el.scrollBy({ left: dir * Math.min(300, el.clientWidth * 0.8), behavior: 'smooth' })
   }
 
+  const galleryImages = useMemo(
+    () => (product ? productGalleryFromApi(product) : []),
+    [product],
+  )
+
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-1 flex-col items-center justify-center bg-white font-semibold text-[#145142]">
-        {pd.loading}
+      <div className="relative flex min-h-[min(100dvh,56rem)] flex-1 flex-col watta-page-bg pb-24">
+        <div className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="mb-5 flex min-w-0 items-center gap-3 sm:mb-6">
+            <div className="h-11 w-11 shrink-0 rounded-2xl border border-[#145142]/10 bg-white/60 animate-pulse" />
+            <div className="h-4 min-w-0 flex-1 max-w-sm rounded-md bg-[#145142]/10 animate-pulse" />
+          </div>
+          <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-12">
+            <div className="w-full lg:w-[46%] shrink-0">
+              <div className="overflow-hidden rounded-[26px] border border-[#145142]/8 bg-white/50 sm:rounded-[30px]">
+                <div className="aspect-square w-full bg-gradient-to-br from-[#e8f0ec] to-[#f4f6f4] animate-pulse" />
+              </div>
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-5">
+              <div className="h-9 w-4/5 max-w-md rounded-lg bg-[#145142]/12 animate-pulse" />
+              <div className="h-9 w-1/2 max-w-xs rounded-lg bg-[#145142]/8 animate-pulse" />
+              <div className="h-20 w-full rounded-2xl bg-[#145142]/6 animate-pulse" />
+              <p className="text-xs font-semibold text-[#145142]/70">{pd.loading}</p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
   if (!product) {
     return (
-      <div className="flex min-h-screen flex-1 flex-col items-center justify-center bg-white text-[#145142]">
-        {pd.notFound}
+      <div className="flex min-h-screen flex-1 flex-col items-center justify-center watta-page-bg px-6 text-center">
+        <p className="text-lg font-semibold text-[#145142]">{pd.notFound}</p>
       </div>
     )
   }
@@ -207,113 +293,126 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   const ingredients = product.ingredients && product.ingredients.length > 0 ? product.ingredients : []
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
   const unitEffective = effectiveUnitPrice(product.price, promoPct)
+  const lineTotal = Math.round(product.price * quantity * 100) / 100
+  const totalEffective = Math.round(unitEffective * quantity * 100) / 100
 
   /** Від низу viewport — висота глобальної панелі (див. globals `.watta-app-with-public-bottom-bar main`) */
   const globalBottomBarOffset = 'calc(54px + env(safe-area-inset-bottom, 0px))'
 
+  const categoryLabel = getCategoryLabel(product)
+  const categoryEmoji = product.category?.emoji || '🍣'
+
   return (
     <div
-      className="relative flex min-h-screen flex-1 flex-col bg-white pb-[calc(9.5rem+54px+env(safe-area-inset-bottom,0px))] md:pb-16"
+      className="relative flex min-h-screen flex-1 flex-col watta-page-bg pb-[calc(9.5rem+54px+env(safe-area-inset-bottom,0px))] md:pb-16"
     >
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-6 pt-3 sm:px-6 sm:pb-10 sm:pt-4">
-        <div className="mb-4 flex min-w-0 items-center gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-black/[0.06] bg-white text-neutral-800 shadow-sm transition hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/30"
-            aria-label={t.auth.back}
-          >
-            <ArrowLeft className="h-5 w-5" strokeWidth={2.2} />
-          </button>
-          <p className="line-clamp-1 min-w-0 flex-1 text-sm font-semibold text-neutral-900 sm:text-base">
-            {getName(product)}
-          </p>
+      <div className="relative mx-auto w-full max-w-6xl flex-1 px-4 pb-6 pt-4 sm:px-6 sm:pb-10 sm:pt-5">
+        <div className="mb-5 flex min-w-0 flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#145142]/15 bg-white text-neutral-800 transition hover:border-[#145142]/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/35"
+              aria-label={t.auth.back}
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={2.2} />
+            </button>
+            <p className="line-clamp-1 min-w-0 flex-1 text-sm font-semibold text-neutral-900 sm:text-base">
+              {getName(product)}
+            </p>
+          </div>
+          {categoryLabel ? (
+            <span className="inline-flex w-fit items-center gap-2 self-start rounded-full border border-[#145142]/15 bg-white px-3.5 py-1.5 text-xs font-bold text-[#145142] sm:self-center">
+              <span className="text-base leading-none" aria-hidden>
+                {categoryEmoji}
+              </span>
+              {categoryLabel}
+            </span>
+          ) : null}
         </div>
-        <div className="flex flex-col gap-8 lg:flex-row lg:gap-14">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-12 xl:gap-16">
           {/* Image */}
-          <div className="w-full lg:w-[48%] lg:shrink-0">
-            <div className="relative overflow-hidden rounded-[24px] bg-[#f4f6f5] shadow-[0_20px_60px_rgba(15,40,32,0.08)] sm:rounded-[28px]">
-              <div className="aspect-square w-full">
-                {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={getName(product)}
-                    className="h-full w-full object-contain p-4 sm:p-8"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-7xl">🍱</div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => toggleFavorite()}
-                className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-black/[0.06] bg-white shadow-md transition active:scale-95"
-                aria-pressed={isFavorite}
-              >
-                <Heart
-                  className={cn('h-6 w-6 transition-colors', isFavorite ? 'fill-red-500 text-red-500' : 'text-neutral-400')}
+          <div className="w-full lg:w-[46%] lg:shrink-0">
+            <div className="relative">
+              <div className="relative overflow-hidden rounded-[26px] border border-[#145142]/12 bg-white sm:rounded-[30px]">
+                <ProductImageGallery
+                  images={galleryImages}
+                  alt={getName(product)}
+                  labels={{
+                    prev: pd.galleryPrev,
+                    next: pd.galleryNext,
+                    progress: pd.galleryProgress,
+                  }}
                 />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite()}
+                  className="absolute right-4 top-4 z-[2] flex h-12 w-12 items-center justify-center rounded-full border border-[#145142]/15 bg-white text-neutral-500 transition hover:scale-105 active:scale-95"
+                  aria-pressed={isFavorite}
+                >
+                  <Heart
+                    className={cn(
+                      'h-6 w-6 transition-colors',
+                      isFavorite ? 'fill-red-500 text-red-500' : 'text-neutral-400',
+                    )}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Info */}
-          <div className="flex min-w-0 flex-1 flex-col gap-6">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+          <div className="flex min-w-0 flex-1 flex-col gap-7">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-baseline gap-3">
+                <h1 className="text-[1.75rem] font-extrabold leading-tight tracking-tight text-[#0a1814] sm:text-4xl lg:text-[2.35rem]">
                   {getName(product)}
                 </h1>
                 {promoPct > 0 ? (
-                  <span className="rounded-full bg-[#fff0e8] px-2.5 py-0.5 text-xs font-extrabold text-[#c45a12] ring-1 ring-[#f5c4a8]">
+                  <span className="rounded-full border border-[#f0b090]/60 bg-[#fff4ed] px-3 py-1 text-xs font-extrabold text-[#b54a0a]">
                     −{promoPct}%
                   </span>
                 ) : null}
               </div>
-              <p className="mt-2 text-base font-bold text-[#e85d2a] sm:text-lg">
-                {weightLine} / {piecesLine}
-              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full border border-[#e85d2a]/25 bg-[#fff8f3] px-3.5 py-1.5 text-sm font-bold text-[#c95a1a]">
+                  {weightLine}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-[#145142]/15 bg-[#f0f7f3] px-3.5 py-1.5 text-sm font-bold text-[#145142]">
+                  {piecesLine}
+                </span>
+              </div>
             </div>
 
             {ingredients.length > 0 && (
-              <section className="rounded-[20px] border border-black/[0.05] bg-[#fafbfb] p-4 sm:p-5">
-                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-neutral-500">
-                  {pd.composition}
-                </h2>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => scrollComp(-1)}
-                    className="absolute -left-1 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-black/[0.08] bg-white shadow-md sm:flex"
-                    aria-label="Scroll left"
-                  >
-                    <ChevronLeft className="h-5 w-5 text-neutral-600" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollComp(1)}
-                    className="absolute -right-1 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-black/[0.08] bg-white shadow-md sm:flex"
-                    aria-label="Scroll right"
-                  >
-                    <ChevronRight className="h-5 w-5 text-neutral-600" />
-                  </button>
-                  <div
-                    ref={compScrollRef}
-                    className="flex gap-3 overflow-x-auto pb-1 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-10 [&::-webkit-scrollbar]:hidden"
-                  >
+              <section className="h-fit min-h-0 w-full max-w-full overflow-hidden rounded-[22px] border border-[#145142]/20 bg-white sm:rounded-[24px]">
+                <div className="flex items-center gap-2 border-b border-[#145142]/12 bg-white px-3 py-2.5 sm:px-4 sm:py-2.5">
+                  <Sparkles className="h-4 w-4 shrink-0 text-[#e85d2a]" strokeWidth={2.4} aria-hidden />
+                  <h2 className="text-sm font-extrabold uppercase tracking-[0.12em] text-[#145142]">
+                    {pd.composition}
+                  </h2>
+                </div>
+                <div className="bg-white px-2 pt-1.5 pb-2 sm:px-3 sm:pt-2 sm:pb-2.5">
+                  <div className="flex min-h-0 w-full flex-wrap content-start items-start justify-center gap-x-4 gap-y-2.5 sm:gap-x-5 sm:gap-y-3">
                     {ingredients.map((ing) => (
                       <div
                         key={ing.id}
-                        className="w-[132px] shrink-0 rounded-2xl border border-white bg-white p-3 text-center shadow-sm"
+                        className="flex h-fit w-[5.5rem] max-w-full shrink-0 flex-col items-center self-start text-center sm:w-24"
                       >
-                        <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-xl bg-[#f4f6f5]">
+                        <div className="mb-0.5 flex h-12 w-full max-w-[4.5rem] shrink-0 items-center justify-center sm:h-14 sm:max-w-20">
                           {ing.imageUrl ? (
-                            <img src={ing.imageUrl} alt="" className="max-h-14 max-w-14 object-contain" />
+                            <img
+                              src={ing.imageUrl}
+                              alt=""
+                              className="h-full w-full object-contain"
+                              decoding="async"
+                              loading="lazy"
+                            />
                           ) : (
-                            <span className="text-2xl">🥢</span>
+                            <span className="text-xl">🥢</span>
                           )}
                         </div>
-                        <p className="line-clamp-2 text-xs font-semibold leading-snug text-neutral-800">
+                        <p className="line-clamp-2 w-full text-[11px] font-bold leading-tight text-[#0f241e] sm:text-xs">
                           {getIngName(ing)}
                         </p>
                       </div>
@@ -324,61 +423,75 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
             )}
 
             {desc ? (
-              <p className="text-base leading-relaxed text-neutral-600">{desc}</p>
+              <div className="rounded-2xl border border-[#145142]/10 border-l-4 border-l-[#145142] bg-white py-4 pl-5 pr-4 sm:pl-6 sm:pr-5">
+                <p className="text-[0.95rem] leading-[1.75] text-neutral-700 sm:text-base">{desc}</p>
+              </div>
             ) : null}
 
-            <div className="hidden items-center gap-2 text-sm font-semibold text-neutral-500 md:flex">
-              <span className="rounded-xl bg-[#f4f6f5] px-3 py-1.5">⏱ {pd.prepTime}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-2xl border border-[#145142]/10 bg-white px-4 py-2 text-sm font-semibold text-neutral-600">
+                <Clock className="h-4 w-4 text-[#145142]" strokeWidth={2.2} aria-hidden />
+                {pd.prepTime}
+              </span>
             </div>
 
             {/* Desktop CTA */}
-            <div className="mt-2 hidden md:block">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  {promoPct > 0 ? (
-                    <span className="text-xl font-semibold text-neutral-400 line-through">{product.price} €</span>
-                  ) : null}
-                  <p className="text-3xl font-bold text-neutral-900">{unitEffective} €</p>
-                </div>
-                <div className="flex flex-1 items-center gap-3 min-w-[280px]">
-                  <div className="flex items-center rounded-[18px] border border-black/[0.06] bg-[#f4f6f5] p-1">
+            <div className="mt-1 hidden md:block">
+              <div className="rounded-[22px] border border-[#145142]/10 bg-white p-5 sm:p-6">
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    {promoPct > 0 ? (
+                      <span className="text-2xl font-semibold text-neutral-400 line-through">
+                        {lineTotal} €
+                      </span>
+                    ) : null}
+                    <p className="text-4xl font-black tabular-nums tracking-tight text-[#0a1814]">
+                      {totalEffective}{' '}
+                      <span className="text-2xl font-bold text-[#145142]/90">€</span>
+                    </p>
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-3 xl:max-w-xl">
+                    <div className="flex items-center justify-center rounded-2xl border border-[#145142]/12 bg-white p-1 sm:justify-start">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f0f5f2] text-[#145142] transition hover:bg-[#e4ede8]"
+                      >
+                        <Minus className="h-5 w-5" strokeWidth={2.5} />
+                      </button>
+                      <span className="min-w-[2.75rem] text-center text-lg font-black text-neutral-900">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.min(99, quantity + 1))}
+                        className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#145142] text-white transition hover:bg-[#104034]"
+                      >
+                        <Plus className="h-5 w-5" strokeWidth={2.5} />
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-white text-[#145142] shadow-sm transition hover:bg-neutral-50"
+                      onClick={() => toggleFavorite()}
+                      className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl border-2 border-[#145142]/15 bg-white text-[#145142] transition hover:border-[#145142]/35 hover:bg-[#145142]/5"
                     >
-                      <Minus className="h-5 w-5" strokeWidth={2.5} />
+                      <Heart className={cn('h-6 w-6', isFavorite && 'fill-red-500 text-red-500')} />
                     </button>
-                    <span className="min-w-[2.5rem] text-center text-lg font-bold text-neutral-900">{quantity}</span>
                     <button
                       type="button"
-                      onClick={() => setQuantity(Math.min(99, quantity + 1))}
-                      className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#145142] text-white shadow-md transition hover:bg-[#104034]"
+                      onClick={addToCart}
+                      disabled={isAdding}
+                      className="flex min-h-[52px] flex-1 items-center justify-center gap-2.5 rounded-2xl bg-[#145142] px-6 text-lg font-bold text-white transition hover:bg-[#104034] active:scale-[0.99] disabled:opacity-70"
                     >
-                      <Plus className="h-5 w-5" strokeWidth={2.5} />
+                      <ShoppingBag className="h-5 w-5 shrink-0" />
+                      {isAdding ? pd.adding : pd.toCart}
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleFavorite()}
-                    className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] border-2 border-[#145142]/20 bg-white text-[#145142] transition hover:bg-[#145142]/5"
-                  >
-                    <Heart className={cn('h-6 w-6', isFavorite && 'fill-red-500 text-red-500')} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={addToCart}
-                    disabled={isAdding}
-                    className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-[18px] bg-[#145142] px-6 text-lg font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-[#104034] disabled:opacity-70"
-                  >
-                    <ShoppingBag className="h-5 w-5" />
-                    {isAdding ? pd.adding : pd.toCart}
-                  </button>
                 </div>
+                {justAdded ? (
+                  <p className="mt-4 text-center text-sm font-semibold text-[#145142] xl:text-left">{pd.addedHint}</p>
+                ) : null}
               </div>
-              {justAdded ? (
-                <p className="mt-3 text-sm font-semibold text-[#145142]">{pd.addedHint}</p>
-              ) : null}
             </div>
           </div>
         </div>
@@ -386,26 +499,19 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
         {/* Recommendations */}
         {recommendations.length > 0 && (
           <section className="relative mt-14 sm:mt-20" aria-labelledby="product-recommendations-heading">
-            <div className="pointer-events-none absolute -inset-x-4 -top-6 bottom-0 sm:-inset-x-8">
-              <div className="absolute left-0 top-0 h-72 w-72 -translate-x-1/3 rounded-full bg-[#145142]/[0.07] blur-3xl" />
-              <div className="absolute bottom-0 right-0 h-64 w-64 translate-x-1/4 rounded-full bg-[#e85d2a]/[0.08] blur-3xl" />
-            </div>
-
-            <div className="relative rounded-[28px] bg-gradient-to-br from-[#145142]/18 via-[#e85d2a]/10 to-[#145142]/12 p-[1px] shadow-[0_24px_80px_rgba(20,81,66,0.08)]">
-              <div className="overflow-hidden rounded-[27px] bg-gradient-to-br from-[#f6fbf9] via-white to-[#fffaf7] px-4 py-8 sm:px-8 sm:py-10">
+            <div className="relative rounded-[28px] border border-[#145142]/10 bg-white">
+              <div className="overflow-hidden rounded-[27px] px-4 py-8 sm:px-8 sm:py-10">
                 <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
                   <div className="min-w-0 space-y-2">
-                    <p className="inline-flex items-center gap-2 rounded-full border border-[#145142]/15 bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#145142] shadow-sm backdrop-blur-sm sm:text-[11px]">
+                    <p className="inline-flex items-center gap-2 rounded-full border border-[#145142]/15 bg-white px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#145142] sm:text-[11px]">
                       <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#e85d2a]" strokeWidth={2.4} aria-hidden />
-                      <span className="truncate">{pd.recommendsTitle.split(/\s+/)[0] ?? 'Watta'}</span>
+                      <span className="truncate">{pd.recommendsTitle.split(/\s+/)[0] ?? t.common.brandShort}</span>
                     </p>
                     <h2
                       id="product-recommendations-heading"
                       className="text-[1.65rem] font-black leading-tight tracking-tight text-[#0f241e] sm:text-4xl sm:leading-[1.1]"
                     >
-                      <span className="bg-gradient-to-r from-[#0f241e] via-[#145142] to-[#0d3d32] bg-clip-text text-transparent">
-                        {pd.recommendsTitle}
-                      </span>
+                      <span className="text-[#0f241e]">{pd.recommendsTitle}</span>
                     </h2>
                     <p className="max-w-lg text-sm leading-relaxed text-neutral-500">
                       {pd.recommendsHint}
@@ -415,16 +521,16 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                     <button
                       type="button"
                       onClick={() => scrollRec(-1)}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#145142]/18 bg-white text-[#145142] shadow-md shadow-[#145142]/10 transition hover:scale-[1.05] hover:border-[#145142] hover:bg-[#145142] hover:text-white hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/35"
-                      aria-label="Scroll left"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#145142]/18 bg-white text-[#145142] transition hover:scale-[1.05] hover:border-[#145142] hover:bg-[#145142] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/35"
+                      aria-label={a.scrollLeft}
                     >
                       <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
                     </button>
                     <button
                       type="button"
                       onClick={() => scrollRec(1)}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#145142]/18 bg-white text-[#145142] shadow-md shadow-[#145142]/10 transition hover:scale-[1.05] hover:border-[#145142] hover:bg-[#145142] hover:text-white hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/35"
-                      aria-label="Scroll right"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#145142]/18 bg-white text-[#145142] transition hover:scale-[1.05] hover:border-[#145142] hover:bg-[#145142] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/35"
+                      aria-label={a.scrollRight}
                     >
                       <ChevronRight className="h-5 w-5" strokeWidth={2.4} />
                     </button>
@@ -432,14 +538,6 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                 </div>
 
                 <div className="relative -mx-1">
-                  <div
-                    className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-6 bg-gradient-to-r from-[#f6fbf9] to-transparent sm:w-10"
-                    aria-hidden
-                  />
-                  <div
-                    className="pointer-events-none absolute inset-y-0 right-0 z-[1] w-6 bg-gradient-to-l from-[#fffaf7] to-transparent sm:w-10"
-                    aria-hidden
-                  />
                   <div
                     ref={recScrollRef}
                     className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-1 pb-1 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-5 sm:px-2 [&::-webkit-scrollbar]:hidden"
@@ -451,7 +549,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                       >
                         <WattaMenuProductCard
                           variant="grid"
-                          className="w-[min(292px,82vw)] shrink-0 rounded-[22px] border-[#145142]/12 shadow-[0_14px_44px_rgba(20,81,66,0.11)] ring-1 ring-black/[0.03] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_56px_rgba(20,81,66,0.15)]"
+                          className="w-[min(292px,82vw)] shrink-0 rounded-[22px] border-[#145142]/12 transition duration-300 hover:-translate-y-1"
                           product={{
                             id: rec.id,
                             name: getName(rec),
@@ -480,25 +578,25 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
 
       {/* Mobile sticky bar — щільно над глобальною нижньою навігацією, без зазору під «чолкою» */}
       <div
-        className="fixed inset-x-0 z-[100] box-border border-t border-black/[0.06] bg-white px-4 py-3 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 z-[100] box-border border-t border-[#145142]/10 bg-white px-4 py-3 md:hidden"
         style={{ bottom: globalBottomBarOffset }}
       >
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">
             {promoPct > 0 ? (
               <p className="text-sm font-medium text-neutral-400 line-through">
-                {Math.round(product.price * quantity * 100) / 100} €
+                {lineTotal} €
               </p>
             ) : null}
-            <p className="text-lg font-bold text-neutral-900">
-              {Math.round(unitEffective * quantity * 100) / 100} €
+            <p className="text-lg font-black tabular-nums text-[#0a1814]">
+              {totalEffective} €
             </p>
             {justAdded ? <p className="text-xs font-semibold text-[#145142]">{pd.addedHint}</p> : null}
           </div>
           <button
             type="button"
             onClick={() => toggleFavorite()}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-black/[0.08] bg-white"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#145142]/12 bg-[#f6faf8] text-[#145142]"
           >
             <Heart className={cn('h-6 w-6', isFavorite ? 'fill-red-500 text-red-500' : 'text-neutral-400')} />
           </button>
@@ -506,7 +604,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
             type="button"
             onClick={addToCart}
             disabled={isAdding}
-            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#145142] px-4 text-base font-bold text-white shadow-md disabled:opacity-70"
+            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#145142] px-4 text-base font-bold text-white hover:bg-[#104034] disabled:opacity-70"
           >
             <ShoppingBag className="h-5 w-5 shrink-0" />
             {isAdding ? pd.adding : pd.toCart}
@@ -516,11 +614,11 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
           <button
             type="button"
             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f4f6f5] text-[#145142]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#145142]/10 bg-white text-[#145142]"
           >
             <Minus className="h-4 w-4" strokeWidth={2.5} />
           </button>
-          <span className="w-8 text-center text-sm font-bold">{quantity}</span>
+          <span className="w-8 text-center text-sm font-black text-neutral-900">{quantity}</span>
           <button
             type="button"
             onClick={() => setQuantity(Math.min(99, quantity + 1))}

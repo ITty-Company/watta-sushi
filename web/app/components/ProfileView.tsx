@@ -14,6 +14,8 @@ import LogoBackground from './LogoBackground'
 import Footer from './Footer'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
+import type { WattaLanguage } from '@/lib/i18n/language'
 
 const HERO_BG =
   'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
@@ -26,7 +28,13 @@ interface OrderItem {
   productId?: number
   product: {
     name_ru: string
+    name_ua?: string | null
+    name_en?: string | null
+    name_nl?: string | null
     description_ru?: string
+    description_ua?: string | null
+    description_en?: string | null
+    description_nl?: string | null
     imageUrl?: string
   }
 }
@@ -78,6 +86,7 @@ export default function ProfileView({
 }: ProfileViewProps) {
   const router = useRouter()
   const { t, language } = useLanguage()
+  const a = t.siteAria
   const rightNavDrawer = useOptionalRightNavDrawer()
   const [profileAllowed, setProfileAllowed] = useState<boolean | null>(null)
 
@@ -182,15 +191,23 @@ export default function ProfileView({
   )
 
   const handleReorder = (order: Order) => {
+    const lang = language as WattaLanguage
     const reorderedItems = order.items.flatMap((item) => {
       const itemId = Number(item.productId ?? item.id)
       const qty = Math.max(1, Number(item.quantity || 1))
+      const prod = item.product as Record<string, unknown> | undefined
       const cartItem = {
         id: itemId,
-        name: item.product?.name_ru || 'Товар',
-        description: item.product?.description_ru || '',
+        name:
+          (prod && getLocalizedField(prod, 'name', lang)) ||
+          item.product?.name_ru ||
+          t.clientProfile.orderLabel,
+        description:
+          (prod && getLocalizedField(prod, 'description', lang)) ||
+          item.product?.description_ru ||
+          '',
         price: Number(item.price || 0),
-        category: 'Повторный заказ',
+        category: t.clientProfile.reorder,
         emoji: '🍣',
         imageUrl: item.product?.imageUrl,
       }
@@ -244,7 +261,7 @@ export default function ProfileView({
       if (!userStr) return
       const auth = getBearerAuthHeaders()
       if (Object.keys(auth as Record<string, string>).length === 0) {
-        toast.error(t.clientProfile.redirectLogin || 'Увійдіть знову')
+        toast.error(t.clientProfile.redirectLogin || t.appToasts.loginAgain)
         return
       }
 
@@ -263,21 +280,21 @@ export default function ProfileView({
       // Обновляем глобальное состояние (если нужно)
       window.dispatchEvent(new Event('favoritesUpdated'))
     } catch (e) {
-      toast.error('Ошибка удаления')
+      toast.error(t.appToasts.removeFavoriteError)
     }
   }
 
 
   if (profileAllowed === null) {
     return (
-      <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center bg-[#f2f5f3]">
+      <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center watta-page-bg">
         <p className="text-[#145142] font-medium">{t.clientProfile.loading}</p>
       </div>
     )
   }
   if (!profileAllowed) {
     return (
-      <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center bg-[#f2f5f3] px-6 text-center">
+      <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center watta-page-bg px-6 text-center">
         <p className="text-[#145142] font-medium">{t.clientProfile.redirectLogin}</p>
       </div>
     )
@@ -342,7 +359,7 @@ export default function ProfileView({
   )
 
   return (
-    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#f2f5f3] pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
+    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden watta-page-bg pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
       <LogoBackground />
       <div className="relative z-10">
         <Header />
@@ -441,7 +458,7 @@ export default function ProfileView({
               </p>
             </div>
 
-            <nav className="flex flex-col gap-1 border-t border-gray-100 pt-2" aria-label="Profile">
+            <nav className="flex flex-col gap-1 border-t border-gray-100 pt-2" aria-label={a.profileNav}>
               {(
                 [
                   { id: 'history' as const, icon: Clock, label: t.clientProfile.tabHistory },
@@ -564,7 +581,7 @@ export default function ProfileView({
                           type="button"
                           onClick={() => removeFavorite(item.id)}
                           className="absolute right-2 top-2 rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label="Remove"
+                          aria-label={a.remove}
                         >
                           <X size={18} />
                         </button>
@@ -574,7 +591,7 @@ export default function ProfileView({
                             // addToCart(item)
                           }}
                           className="shrink-0 rounded-lg border border-gray-200 p-2 text-[#145142] transition hover:border-[#145142]/40 hover:bg-[#145142]/5"
-                          aria-label="Cart"
+                          aria-label={a.cart}
                         >
                           <ShoppingBag size={18} />
                         </button>

@@ -21,7 +21,7 @@ export default function PrivacyPolicyView() {
         }
 
   return (
-    <main className="relative min-h-0 flex-1 overflow-x-hidden bg-white text-gray-900">
+    <main className="relative min-h-0 flex-1 overflow-x-hidden watta-page-bg text-gray-900">
       <div className="relative z-[1] mx-auto max-w-3xl px-4 py-8 pb-28 sm:px-6 sm:py-12 sm:pb-32">
         <div className="mb-8 flex flex-wrap items-center gap-3">
           <button

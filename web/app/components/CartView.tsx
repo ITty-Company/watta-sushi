@@ -18,6 +18,9 @@ import {
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import { useLanguage } from '../context/LanguageContext'
+import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
+import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import {
   buildAmsterdamSlots,
   type DeliveryDay,
@@ -122,14 +125,10 @@ interface CityOption {
 }
 
 function cityDisplayName(language: string, row: Record<string, unknown>): string {
-  const suffix = language === 'uk' ? 'ua' : language
-  return String(
-    row[`name_${suffix}`] ??
-      row[`name_${language}`] ??
-      row.name_ru ??
-      row.name ??
-      '',
-  ).trim()
+  return (
+    getLocalizedField(row, 'name', language as WattaLanguage) ||
+    String(row.name ?? row.name_ru ?? '').trim()
+  )
 }
 
 // Пропсы для навигации
@@ -150,9 +149,10 @@ export default function CartView({
   onOpenNotifications, 
   onMenuClick 
 }: CartViewProps) {
-  const { t, language } = useLanguage()
+  const { t, language, getLocalized } = useLanguage()
   const pd = t.productDetail
   const cs = t.cartSection
+  const a = t.siteAria
   const router = useRouter()
   const recScrollRef = useRef<HTMLDivElement>(null)
 
@@ -267,18 +267,22 @@ export default function CartView({
       fetch(getApiUrl(`/api/products/recommendations?${q.toString()}`))
         .then((res) => res.json())
         .then((data) => {
-          const list: MenuItem[] = (Array.isArray(data) ? data : []).map((p: Record<string, unknown>) => ({
-            id: Number(p.id),
-            name: String((p as { name_ru?: string }).name_ru ?? ''),
-            description: String((p as { description_ru?: string }).description_ru || ''),
-            price: Number(p.price),
-            category: String((p as { category?: { name_ru?: string } }).category?.name_ru || ''),
-            emoji: '🍱',
-            imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
-            isTop: p.isPopular === true,
-            promoDiscountPercent:
-              typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
-          }))
+          const list: MenuItem[] = (Array.isArray(data) ? data : []).map((p: Record<string, unknown>) => {
+            const cat = p.category as Record<string, unknown> | undefined
+            return {
+              id: Number(p.id),
+              name: getLocalized(p as never, 'name'),
+              description: getLocalized(p as never, 'description') || '',
+              price: Number(p.price),
+              category:
+                getMenuCategoryDisplayName((cat || {}) as Record<string, unknown>, language, t.categories) || '',
+              emoji: '🍱',
+              imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+              isTop: p.isPopular === true,
+              promoDiscountPercent:
+                typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
+            }
+          })
           setRecommendations(list)
         })
         .catch(() => setRecommendations([]))
@@ -287,7 +291,7 @@ export default function CartView({
     if (typeof window === 'undefined') return undefined
     window.addEventListener('cityChanged', loadRecs)
     return () => window.removeEventListener('cityChanged', loadRecs)
-  }, [])
+  }, [getLocalized, language, t.categories])
 
   useEffect(() => {
     fetch('/api/cities')
@@ -811,7 +815,7 @@ export default function CartView({
   const isEmpty = cartItems.length === 0
 
   return (
-    <div className="watta-public-page-shell relative flex w-full min-h-0 max-w-[100vw] flex-1 flex-col overflow-x-hidden bg-[#f4f6f4] font-sans">
+    <div className="watta-public-page-shell watta-page-bg relative flex w-full min-h-0 max-w-[100vw] flex-1 flex-col overflow-x-hidden font-sans">
       <LogoBackground />
 
       <div
@@ -878,8 +882,8 @@ export default function CartView({
               </div>
             </div>
           ) : (
-            <div className="grid w-full min-w-0 grid-cols-1 items-start gap-8 pb-8 lg:grid-cols-[1fr_minmax(300px,380px)] lg:gap-10">
-              <div className="flex min-w-0 flex-col gap-8">
+            <div className="grid w-full min-w-0 grid-cols-1 items-start gap-5 pb-6 lg:grid-cols-[1fr_minmax(300px,380px)] lg:gap-6">
+              <div className="flex min-w-0 flex-col gap-5">
                 <div className={CHECKOUT_CARD_CLASS}>
                   <ul className="divide-y divide-neutral-100">
                     {uniqueItems.map((item) => (
@@ -940,7 +944,7 @@ export default function CartView({
                             type="button"
                             onClick={() => removeAllItem(item.id)}
                             className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-red-50 hover:text-red-600"
-                            aria-label="Remove line"
+                            aria-label={a.removeLine}
                           >
                             <Trash2 className="h-4 w-4" strokeWidth={2.2} />
                           </button>
@@ -954,6 +958,12 @@ export default function CartView({
                       </li>
                     ))}
                   </ul>
+                  <div className="mt-4 border-t border-neutral-200 pt-3">
+                    <div className="flex items-center justify-between text-sm sm:text-base">
+                      <span className="font-semibold text-neutral-600">Общая сумма товаров</span>
+                      <span className="text-lg font-bold tabular-nums text-[#145142]">{finalPrice.toFixed(2)} €</span>
+                    </div>
+                  </div>
                 </div>
 
                 {filteredRecommendations.length > 0 ? (
@@ -984,7 +994,7 @@ export default function CartView({
                         </button>
                       </div>
                     </div>
-                    <div className="relative -mx-1">
+                    <div id="cart-recommendations-rail" className="relative -mx-1">
                       <div
                         ref={recScrollRef}
                         className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
@@ -996,29 +1006,26 @@ export default function CartView({
                           >
                             <WattaMenuProductCard
                               variant="grid"
-                              className={cn(
-                                'w-[min(260px,78vw)] shrink-0 rounded-xl border border-neutral-200',
-                                'shadow-sm transition hover:shadow-md',
-                              )}
-                                  product={{
-                                    id: item.id,
-                                    name: item.name,
-                                    description: item.description,
-                                    price: item.price,
-                                    emoji: item.emoji,
-                                    imageUrl: item.imageUrl,
-                                    isTop: item.isTop,
-                                    promoDiscountPercent: item.promoDiscountPercent,
-                                  }}
-                                  subtitleLine={
-                                    parseSpecsFromDescription(
-                                      item.description,
-                                      pd.weightFallback,
-                                      pd.piecesFallback,
-                                    ).weightLine
-                                  }
-                                  onAddToCart={() => handleAddRecommendation(item)}
-                                />
+                              className="w-[min(260px,78vw)] shrink-0"
+                              product={{
+                                id: item.id,
+                                name: item.name,
+                                description: item.description,
+                                price: item.price,
+                                emoji: item.emoji,
+                                imageUrl: item.imageUrl,
+                                isTop: item.isTop,
+                                promoDiscountPercent: item.promoDiscountPercent,
+                              }}
+                              subtitleLine={
+                                parseSpecsFromDescription(
+                                  item.description,
+                                  pd.weightFallback,
+                                  pd.piecesFallback,
+                                ).weightLine
+                              }
+                              onAddToCart={() => handleAddRecommendation(item)}
+                            />
                           </div>
                         ))}
                       </div>
@@ -1027,9 +1034,9 @@ export default function CartView({
                 ) : null}
               </div>
 
-              <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-[10.5rem] lg:z-20 lg:self-start">
+              <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[10.5rem] lg:z-20 lg:self-start">
                 <form
-                  className="flex min-w-0 flex-col gap-5"
+                  className="flex min-w-0 flex-col gap-4"
                   onSubmit={handleCheckoutSubmit}
                   noValidate
                 >

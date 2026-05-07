@@ -9,6 +9,7 @@ import { promoGalleryUrls, promoTpl } from '@/app/lib/promoDisplay'
 // @ts-ignore
 import LogoBackground from './LogoBackground'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
+import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { getClientFallbackPromotionById, isClientFallbackPromoId } from '@/app/lib/demoPromotionsFallback'
 
 interface OfferProduct {
@@ -52,6 +53,7 @@ export default function PromotionsDetailView({
   const { t, getLocalized, language } = useLanguage()
   const rightNavDrawer = useOptionalRightNavDrawer()
   const p = t.promotionsPage
+  const a = t.siteAria
   const [promo, setPromo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -83,10 +85,10 @@ export default function PromotionsDetailView({
     <div className="absolute top-4 left-0 right-0 w-[95%] max-w-[1800px] h-[80px] mx-auto bg-white rounded-[20px] shadow-lg flex items-center justify-between px-4 sm:px-6 z-[1000]">
       <div className="flex items-center gap-2 cursor-pointer" onClick={onBack}>
         <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
-        <img src="/1.jpg" alt="Watta Sushi" className="h-6 w-auto object-contain hidden sm:block" />
+        <img src="/1.jpg" alt={t.common.brandName} className="h-6 w-auto object-contain hidden sm:block" />
       </div>
       <div className="flex items-center gap-2 sm:gap-3 md:gap-6 text-gray-700">
-        <button type="button" onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full" aria-label="Phone"><Phone size={22}/></button>
+        <button type="button" onClick={onOpenPhone} className="hover:bg-gray-100 p-2 rounded-full" aria-label={a.phone}><Phone size={22}/></button>
         {onOpenNotifications ? (
           <button
             type="button"
@@ -97,10 +99,10 @@ export default function PromotionsDetailView({
             <Bell size={22} strokeWidth={2.25} />
           </button>
         ) : null}
-        <button type="button" onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full hidden sm:inline-flex" aria-label="Favorites"><Heart size={22}/></button>
-        <button type="button" className="hover:bg-gray-100 p-2 rounded-full text-[#145142] hidden sm:inline-flex" aria-label="Cart"><ShoppingBag size={22}/></button>
-        <button type="button" onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full" aria-label="Profile"><User size={22}/></button>
-        <button type="button" onClick={handleGlobalNavMenu} className="hover:bg-gray-100 p-2 rounded-full" aria-label="Menu"><Menu size={22}/></button>
+        <button type="button" onClick={onOpenFavorites} className="hover:bg-gray-100 p-2 rounded-full hidden sm:inline-flex" aria-label={a.favorites}><Heart size={22}/></button>
+        <button type="button" className="hover:bg-gray-100 p-2 rounded-full text-[#145142] hidden sm:inline-flex" aria-label={a.cart}><ShoppingBag size={22}/></button>
+        <button type="button" onClick={onOpenProfile} className="hover:bg-gray-100 p-2 rounded-full" aria-label={a.profile}><User size={22}/></button>
+        <button type="button" onClick={handleGlobalNavMenu} className="hover:bg-gray-100 p-2 rounded-full" aria-label={a.menu}><Menu size={22}/></button>
       </div>
     </div>
   )
@@ -138,7 +140,7 @@ export default function PromotionsDetailView({
       const cart = JSON.parse(localStorage.getItem('cart') || '[]')
       const n = cart.filter((x: { id?: number }) => x?.id === product.id).length
       if (n >= 99) {
-        toast.error('Максимальна кількість товару — 99 шт.')
+        toast.error(t.appToasts.maxCartQty)
         return
       }
       cart.push({
@@ -146,7 +148,11 @@ export default function PromotionsDetailView({
         name,
         description: desc,
         price: pct > 0 && base > 0 ? deal : base,
-        category: product.category?.name_ru || '',
+        category:
+          (product.category &&
+            getMenuCategoryDisplayName(product.category as Record<string, unknown>, language, t.categories)) ||
+          product.category?.name_ru ||
+          '',
         emoji: '🍣',
         imageUrl: product.imageUrl ?? undefined,
         promoDiscountPercent: 0,
@@ -155,28 +161,15 @@ export default function PromotionsDetailView({
       window.dispatchEvent(new CustomEvent('cartUpdated'))
       toast.success(t.addToCart)
     },
-    [getLocalized, t.addToCart],
+    [getLocalized, t.addToCart, t.categories, language],
   )
 
   const shellClass = embedded
-    ? 'relative w-full px-3 pb-12 pt-2 sm:px-4'
-    : 'menu-page-web relative min-h-screen px-3 pb-20 pt-[120px] sm:px-4'
+    ? 'relative w-full px-3 pb-12 pt-2 sm:px-4 watta-page-bg'
+    : 'menu-page-web watta-page-bg relative min-h-screen px-3 pb-20 pt-[120px] sm:px-4'
 
   return (
-    <div
-      className={shellClass}
-      style={
-        embedded
-          ? { backgroundColor: '#f5f5f7' }
-          : {
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.9)), url('/background.jpg')",
-              backgroundRepeat: 'repeat',
-              backgroundSize: '300px',
-              backgroundAttachment: 'fixed',
-            }
-      }
-    >
+    <div className={shellClass}>
       {!embedded ? (
         <>
           <div className="pointer-events-none absolute inset-0 z-0 opacity-50">

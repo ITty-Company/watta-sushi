@@ -12,7 +12,7 @@ export default function NotificationsPage() {
   const n = t.notifications
 
   return (
-    <div className="watta-public-page-shell min-h-screen flex-1 px-4 py-8 sm:py-10" style={{ backgroundColor: '#f5f5f7' }}>
+    <div className="watta-public-page-shell watta-page-bg min-h-screen flex-1 px-4 py-8 sm:py-10">
       <div className="mx-auto max-w-md">
         <div className="mb-8 flex items-center gap-3">
           <button

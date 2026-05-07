@@ -28,10 +28,17 @@ export function scrollMenuToTop(behavior: ScrollBehavior = 'smooth') {
  */
 export function scrollEntireAppToTop() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
-  window.scrollTo(0, 0)
-  document.documentElement.scrollTop = 0
-  document.body.scrollTop = 0
-  document.querySelectorAll<HTMLElement>('.content-web').forEach((el) => {
-    el.scrollTop = 0
+  const reset = () => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    document.querySelectorAll<HTMLElement>('.content-web').forEach((el) => {
+      el.scrollTop = 0
+    })
+  }
+  reset()
+  /* Другий кадр: дочірні useEffect інколи крутять скрол після батьківського useLayoutEffect */
+  requestAnimationFrame(() => {
+    requestAnimationFrame(reset)
   })
 }

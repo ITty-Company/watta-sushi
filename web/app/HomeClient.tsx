@@ -7,21 +7,27 @@ import MenuView from './components/MenuView'
 import { NotificationsView } from './components/NotificationsView'
 import WattaLoadScreen from './components/WattaLoadScreen'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
+import { useLanguage } from './context/LanguageContext'
+import { useRouter } from 'next/navigation'
 
 const MIN_BOOT_SPLASH_MS = 1650
+/** Якщо прогрес-бар застряг (таймери/замикання), не залишаємо користувача на білому екрані */
+const BOOT_SPLASH_FAILSAFE_MS = 12_000
 
 export default function HomeClient() {
-  /** Після гідратації — уникнення mismatch (динамічні віджети / розширення / dev-оверлеї) */
-  const [clientReady, setClientReady] = useState(false)
+  const { t } = useLanguage()
+  const router = useRouter()
+  /** Після commit на клієнті; ref — щоб інтервал не читав застаріле замикання `clientReady` */
+  const clientReadyRef = useRef(false)
   const [bootProgress, setBootProgress] = useState(0)
   const [showBootSplash, setShowBootSplash] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const bootStartedAtRef = useRef<number | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     bootStartedAtRef.current = Date.now()
-    setClientReady(true)
+    clientReadyRef.current = true
   }, [])
 
   /** Під час білого сплешу — не показувати глобальні FAB (Instagram тощо) з AppClient */
@@ -45,10 +51,11 @@ export default function HomeClient() {
       setBootProgress((prev) => {
         if (prev >= 100) return 100
 
-        const cap = clientReady ? 100 : 78
-        const step = clientReady ? 5.5 : 0.55
+        const ready = clientReadyRef.current
+        const cap = ready ? 100 : 78
+        const step = ready ? 5.5 : 0.55
         let next = prev + step
-        if (!clientReady) next = Math.min(cap, next)
+        if (!ready) next = Math.min(cap, next)
         else next = Math.min(100, next)
 
         if (next >= 100) {
@@ -63,13 +70,27 @@ export default function HomeClient() {
       })
     }, 36)
     return () => clearInterval(id)
-  }, [showBootSplash, clientReady])
+  }, [showBootSplash])
+
+  /** Якщо щось пішло не так з інтервалом/гідратацією — показуємо меню */
+  useEffect(() => {
+    if (!showBootSplash) return
+    const fail = window.setTimeout(() => {
+      setShowBootSplash(false)
+      setBootProgress(100)
+    }, BOOT_SPLASH_FAILSAFE_MS)
+    return () => clearTimeout(fail)
+  }, [showBootSplash])
 
   const handleSwitchTab = useCallback((tab: number) => {
+    if (tab === 1) {
+      router.push('/cart')
+      return
+    }
     if (tab >= 0 && tab <= 2) {
       setActiveTab(tab)
     }
-  }, [])
+  }, [router])
 
   /** Меню / кошик / профіль — зверху контейнера, щоб була видима початкова секція. */
   useLayoutEffect(() => {
@@ -84,7 +105,7 @@ export default function HomeClient() {
   const handleOpenNotifications = useCallback(() => setNotificationsOpen(true), [])
   const handleMenuClick = useCallback(() => {}, [])
   const handleProfileBack = useCallback(() => setActiveTab(0), [])
-  const handleOpenCart = useCallback(() => setActiveTab(1), [])
+  const handleOpenCart = useCallback(() => router.push('/cart'), [router])
   const handleSelectCategory = useCallback(() => setActiveTab(0), [])
   const handleOpenAdmin = useCallback(() => {}, [])
 
@@ -129,9 +150,20 @@ export default function HomeClient() {
 
   if (showBootSplash) {
     return (
-      <div className="app-web min-h-[100dvh] bg-white" suppressHydrationWarning>
+      <div className="app-web min-h-[100dvh] watta-page-bg" suppressHydrationWarning>
         <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden">
-          <WattaLoadScreen className="min-h-[100dvh]" progress={bootProgress} />
+          <WattaLoadScreen
+            className="min-h-[100dvh]"
+            progress={bootProgress}
+            label={
+              <>
+                {t.siteAria.loading}
+                <span className="watta-dot">.</span>
+                <span className="watta-dot">.</span>
+                <span className="watta-dot">.</span>
+              </>
+            }
+          />
         </div>
       </div>
     )

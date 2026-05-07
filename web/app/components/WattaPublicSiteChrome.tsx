@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
 import WattaStickyChromeLayout from './WattaStickyChromeLayout'
@@ -12,6 +12,8 @@ import WattaStickyChromeLayout from './WattaStickyChromeLayout'
  */
 export default function WattaPublicSiteChrome() {
   const router = useRouter()
+  const pathname = usePathname() || '/'
+  const hideCategoryStrip = pathname === '/about'
 
   const onCityChange = useCallback((cityId: number) => {
     if (typeof window !== 'undefined') {
@@ -29,8 +31,9 @@ export default function WattaPublicSiteChrome() {
         onCartClick={() => router.push('/cart')}
         onMenuClick={() => router.push('/')}
         onProfileClick={() => router.push('/profile')}
+        onFavoritesClick={() => router.push('/favorites')}
       />
-      <WattaMenuCategoryStrip />
+      {!hideCategoryStrip ? <WattaMenuCategoryStrip /> : null}
     </WattaStickyChromeLayout>
   )
 }

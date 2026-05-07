@@ -23,9 +23,8 @@ import {
 } from '@/lib/wattaRestaurantLocation'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 
-/** Спокійний тон (як фон сайту), без контрастного «кінематографічного» зеленого */
-const HERO_BG =
-  'linear-gradient(165deg, #f2f6f4 0%, #e8f0ec 42%, #dfe9e4 78%, #eef3f0 100%)'
+/** Головний фон сторінки — білий (узгоджено з --watta-page-gradient) */
+const HERO_BG = '#ffffff'
 
 function IconTelegram({ className }: { className?: string }) {
   return (
@@ -156,7 +155,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
   ]
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-x-hidden bg-white pb-24">
+    <div className="relative min-h-[100dvh] w-full overflow-x-hidden watta-page-bg pb-24">
       {embedded && onBack ? (
         <div className="border-b border-gray-100 bg-white px-4 py-4 sm:px-6">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
@@ -301,7 +300,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
       </section>
 
       {/* Канали звʼязку */}
-      <section className="border-t border-gray-100 bg-[#f5f5f7] py-16 sm:py-20">
+      <section className="border-t border-gray-100 watta-page-bg py-16 sm:py-20">
         <motion.div
           className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
@@ -375,7 +374,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#229ED9] text-white shadow-lg transition hover:scale-110"
-                  aria-label="Telegram"
+                  aria-label={c.ariaTelegram}
                 >
                   <IconTelegram className="h-7 w-7" />
                 </a>
@@ -386,7 +385,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#25D366] text-white shadow-lg transition hover:scale-110"
-                  aria-label="WhatsApp"
+                  aria-label={c.ariaWhatsapp}
                 >
                   <IconWhatsApp className="h-7 w-7" />
                 </a>
@@ -397,7 +396,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] text-white shadow-lg transition hover:scale-110"
-                  aria-label="Instagram"
+                  aria-label={c.ariaInstagram}
                 >
                   <Instagram className="h-7 w-7" strokeWidth={2} />
                 </a>
@@ -431,7 +430,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
         </motion.div>
       </section>
 
-      <section className="border-t border-gray-100 bg-[#f5f5f7] py-16 sm:py-20">
+      <section className="border-t border-gray-100 watta-page-bg py-16 sm:py-20">
         <motion.div
           className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
@@ -477,7 +476,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
         >
-          <div className="overflow-hidden rounded-[28px] border border-gray-200/90 bg-gradient-to-br from-white via-[#f8fbf9] to-[#eef6f1] p-6 shadow-[0_20px_70px_rgba(20,81,66,0.1)] sm:p-10 lg:max-w-4xl">
+          <div className="overflow-hidden rounded-[28px] border border-gray-200/90 bg-white p-6 shadow-[0_20px_70px_rgba(20,81,66,0.1)] sm:p-10 lg:max-w-4xl">
             <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.formTitle}</h2>
             <p className="mb-8 text-gray-600 sm:text-lg">{c.formSub}</p>
             <form onSubmit={submitForm} className="grid gap-5">
@@ -561,7 +560,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
         </motion.div>
       </section>
 
-      <div className="border-t border-gray-100 bg-[#f5f5f7] px-4 py-12 sm:px-6 sm:py-16">
+      <div className="border-t border-gray-100 watta-page-bg px-4 py-12 sm:px-6 sm:py-16">
         <motion.div
           className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] border border-[#145142]/25 bg-[#145142] p-8 text-center text-white shadow-[0_20px_60px_rgba(20,81,66,0.35)] sm:p-12"
           {...fadeUp}

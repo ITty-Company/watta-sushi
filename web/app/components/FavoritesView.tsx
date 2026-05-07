@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import toast from 'react-hot-toast'
+import { useLanguage } from '@/app/context/LanguageContext'
 
 interface FavoritesViewProps {
   onBack: () => void
@@ -23,6 +24,8 @@ interface MenuItem {
 }
 
 export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProps) {
+  const { t } = useLanguage()
+  const cp = t.clientProfile
   const [favorites, setFavorites] = useState<MenuItem[]>([])
 
   // Загрузка избранного
@@ -52,11 +55,11 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
   const addToCart = (item: MenuItem) => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     // Нормализуем имя для корзины (если есть name_ru, используем его)
-    const cartItem = { ...item, name: item.name_ru || item.name }
+    const cartItem = { ...item, name: item.name }
     cart.push(cartItem)
     localStorage.setItem('cart', JSON.stringify(cart))
     window.dispatchEvent(new CustomEvent('cartUpdated'))
-    toast.success('Добавлено в корзину!')
+    toast.success(t.productDetail.addedHint)
   }
 
   // --- ХЕДЕР (Как в Профиле) ---
@@ -73,13 +76,13 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
         
         <div className="flex items-center gap-2 select-none">
           <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
-          <img src="/1.jpg" alt="Watta Sushi" className="h-6 w-auto object-contain hidden md:block" />
+          <img src="/1.jpg" alt={t.common.brandName} className="h-6 w-auto object-contain hidden md:block" />
         </div>
       </div>
 
       {/* Правая часть: Заголовок */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 text-xl font-bold text-black">
-        Избранное
+        {t.navigation.favorites}
       </div>
 
       {/* Пустое место справа для баланса или доп иконок */}
@@ -88,7 +91,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
   )
 
   return (
-    <div className="watta-public-page-shell relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-[120px] font-sans text-[#145142]">
+    <div className="watta-public-page-shell watta-page-bg relative flex min-h-screen flex-1 flex-col overflow-x-hidden pb-20 pt-[120px] font-sans text-[#145142]">
       <LogoBackground />
       <div className="relative z-10">
         <Header />
@@ -99,13 +102,12 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
               <Heart size={40} className="text-gray-300" />
             </div>
-            <h2 className="text-3xl font-bold text-black mb-2">В избранном пусто</h2>
-            <p className="text-gray-500 mb-8">Добавляйте любимые блюда, чтобы не потерять их</p>
+            <h2 className="text-3xl font-bold text-black mb-2">{cp.favEmpty}</h2>
             <button 
               onClick={onBack}
               className="bg-[#145142] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#0f3d32] transition shadow-lg"
             >
-              Перейти в меню
+              {cp.goMenu}
             </button>
           </div>
         ) : (
@@ -136,7 +138,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
                   {/* Инфо */}
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-black mb-2 leading-tight">
-                      {item.name_ru || item.name}
+                      {item.name}
                     </h3>
                     <p className="text-gray-500 text-sm line-clamp-2 mb-4">
                       {item.description}

@@ -141,10 +141,9 @@ export default function LogoBackground() {
             // Разные углы поворота для визуального интереса
             const rotation = (Math.random() - 0.5) * 50
             
-            // Разная прозрачность для создания глубины
-            const baseOpacity = 0.08
+            const baseOpacity = 0.025
             const sizeFactor = (logoSize - minSize) / (maxSize - minSize)
-            const opacity = baseOpacity + (sizeFactor * 0.06) // От 0.08 до 0.14
+            const opacity = baseOpacity + (sizeFactor * 0.025)
             
             newLogos.push({ 
               x, 
@@ -205,7 +204,7 @@ export default function LogoBackground() {
           
           if (checkDistance(centerX, centerY, logoSize)) {
             const rotation = (Math.random() - 0.5) * 50
-            const opacity = 0.06 + Math.random() * 0.04 // От 0.06 до 0.1 для меньших логотипов
+            const opacity = 0.02 + Math.random() * 0.02 // Ледь помітні водяні знаки — без «плям»
             
             newLogos.push({ 
               x: bestX, 
@@ -362,7 +361,6 @@ export default function LogoBackground() {
             decoding="async"
             fetchPriority="low"
             style={{
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
               willChange: 'auto',
               contentVisibility: 'auto'
             }}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '../context/LanguageContext'
 import AdminView from '../components/AdminView'
 
 function readIsAdmin(): boolean {
@@ -17,6 +18,7 @@ function readIsAdmin(): boolean {
 }
 
 export default function AdminPage() {
+  const { t } = useLanguage()
   const router = useRouter()
   const [allowed, setAllowed] = useState(false)
 
@@ -37,9 +39,9 @@ export default function AdminPage() {
   if (!allowed) {
     return (
       <div
-        className="flex min-h-[100dvh] w-full items-center justify-center bg-[#f2f5f3]"
+        className="flex min-h-[100dvh] w-full items-center justify-center watta-page-bg"
         aria-busy="true"
-        aria-label="Loading"
+        aria-label={t.siteAria.loading}
       >
         <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#145142]/20 border-t-[#145142]" />
       </div>
@@ -47,7 +49,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex w-full max-w-[100vw] flex-1 flex-col bg-[#f5f7f6]">
+    <div className="watta-page-bg flex w-full max-w-[100vw] flex-1 flex-col">
       <AdminView onBack={() => router.push('/')} onSiteMenuClick={() => router.push('/')} />
     </div>
   )

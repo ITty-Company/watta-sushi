@@ -127,7 +127,7 @@ export default function Footer() {
 
   return (
     <footer
-      className="site-footer-watta site-footer-watta--light mt-auto shrink-0 w-full"
+      className="site-footer-watta site-footer-watta--light shrink-0 w-full"
       style={{
         /* Нижня навігація прихована в CSS — великий запас більше не потрібен; лишаємо safe-area + невеликий відступ */
         paddingBottom:

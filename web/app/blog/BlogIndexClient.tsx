@@ -81,7 +81,7 @@ export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] })
                     <img src={post.imageUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-sm text-gray-400">
-                      Watta
+                      {t.common.brandShort}
                     </div>
                   )}
                 </div>

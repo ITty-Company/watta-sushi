@@ -1,5 +1,24 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import {
+  WATTA_LANG_COOKIE,
+  parseWattaLanguage,
+  wattaToHtmlLang,
+  type WattaLanguage,
+} from '@/lib/i18n/language'
+import { getErrorPageForLanguage } from './context/LanguageContext'
+
+function readLangFromCookie(): WattaLanguage {
+  if (typeof document === 'undefined') return 'uk'
+  const raw = document.cookie || ''
+  const m = raw.match(
+    new RegExp(`(?:^|; )${WATTA_LANG_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`),
+  )
+  const v = m?.[1] ? decodeURIComponent(m[1]) : ''
+  return parseWattaLanguage(v)
+}
+
 export default function GlobalError({
   error,
   reset,
@@ -7,9 +26,15 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const [lang, setLang] = useState<WattaLanguage>('uk')
+  useEffect(() => {
+    setLang(readLangFromCookie())
+  }, [])
+  const e = getErrorPageForLanguage(lang)
+  void error
   return (
-    <html lang="ru">
-      <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif', background: '#f5f5f5' }}>
+    <html lang={wattaToHtmlLang(lang)}>
+      <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif', background: '#ffffff' }}>
         <div
           style={{
             minHeight: '100vh',
@@ -21,10 +46,8 @@ export default function GlobalError({
             color: '#333',
           }}
         >
-          <h1 style={{ color: '#145142', marginBottom: 16 }}>Что-то пошло не так</h1>
-          <p style={{ marginBottom: 24, textAlign: 'center' }}>
-            Обновите страницу или попробуйте позже.
-          </p>
+          <h1 style={{ color: '#145142', marginBottom: 16 }}>{e.title}</h1>
+          <p style={{ marginBottom: 24, textAlign: 'center' }}>{e.body}</p>
           <button
             type="button"
             onClick={() => reset()}
@@ -38,7 +61,7 @@ export default function GlobalError({
               fontSize: 16,
             }}
           >
-            Обновить
+            {e.retry}
           </button>
         </div>
       </body>

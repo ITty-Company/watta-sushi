@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
+import { getRequestLocale } from '@/lib/i18n/serverLocale'
+import { buildSubpageMetadata } from '@/lib/i18n/seo'
 import BlogIndexClient from './BlogIndexClient'
 
 interface BlogPost {
@@ -12,9 +14,9 @@ interface BlogPost {
   createdAt: string
 }
 
-export const metadata: Metadata = {
-  title: 'Блог і рецепти шефа | Watta Sushi',
-  description: 'Корисні статті про суші, рецепти та поради від команди Watta Sushi.',
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getRequestLocale()
+  return buildSubpageMetadata(lang, 'blog')
 }
 
 async function getPosts(): Promise<BlogPost[]> {
@@ -34,7 +36,7 @@ export default async function BlogPage() {
 
   return (
     <main
-      className="watta-public-page-shell flex min-h-screen flex-1 flex-col bg-[#f2f5f3] px-4 pb-12 pt-2 sm:px-6 sm:pb-16 sm:pt-3"
+      className="watta-public-page-shell flex min-h-screen flex-1 flex-col watta-page-bg px-4 pb-12 pt-2 sm:px-6 sm:pb-16 sm:pt-3"
     >
       <BlogIndexClient posts={posts} />
     </main>
