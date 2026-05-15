@@ -21,9 +21,11 @@ import {
 import { useLanguage } from '../context/LanguageContext'
 import { useRightNavDrawer } from '../context/RightNavDrawerContext'
 import { CountryCitySelector } from './CountryCitySelector'
+import { LanguageSelector } from './LanguageSelector'
 import { cn } from '@/lib/utils'
 import { useFavoriteCount } from '@/hooks/useFavoriteCount'
 import { mergeServerFavoritesIntoLocal } from '@/lib/favoritesStorage'
+import { readIsAdminFromCurrentUserJson } from '@/lib/isAdminRole'
 
 const EDGE_PX = 28
 const OPEN_SWIPE_PX = 56
@@ -133,12 +135,7 @@ export default function WattaRightNavDrawer() {
     const readAdmin = () => {
       try {
         const raw = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
-        if (!raw) {
-          setIsAdmin(false)
-          return
-        }
-        const p = JSON.parse(raw) as { role?: string }
-        setIsAdmin(p?.role === 'ADMIN')
+        setIsAdmin(readIsAdminFromCurrentUserJson(raw))
       } catch {
         setIsAdmin(false)
       }
@@ -411,6 +408,15 @@ export default function WattaRightNavDrawer() {
                       cityChangeHandlerRef.current?.(cityId)
                     }}
                   />
+                </div>
+              </div>
+
+              <div className="relative z-[2] mb-3 min-[1025px]:hidden">
+                <p className="mb-2 px-1 text-[9px] font-black uppercase tracking-[0.35em] text-[#145142]/50">
+                  {nav.drawerLanguageTitle}
+                </p>
+                <div className="rounded-2xl border border-[#145142]/10 bg-white/95 p-2.5 shadow-sm flex justify-center">
+                  <LanguageSelector />
                 </div>
               </div>
 

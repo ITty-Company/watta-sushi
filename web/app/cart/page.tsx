@@ -12,7 +12,7 @@ export default function CartPage() {
   const handleFavorites = () => router.push('/favorites')
   const handleNotifications = () => router.push('/notifications')
   const handleMenu = () => router.push('/menu')
-  const handlePhone = () => window.location.href = 'tel:+380930000000' // Ваш номер
+  const handlePhone = () => window.location.href = 'tel:+31649326549' // Ваш номер
 
   return (
     <>

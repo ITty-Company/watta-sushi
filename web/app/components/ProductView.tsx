@@ -296,15 +296,15 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   const lineTotal = Math.round(product.price * quantity * 100) / 100
   const totalEffective = Math.round(unitEffective * quantity * 100) / 100
 
-  /** Від низу viewport — висота глобальної панелі (див. globals `.watta-app-with-public-bottom-bar main`) */
-  const globalBottomBarOffset = 'calc(54px + env(safe-area-inset-bottom, 0px))'
+  /** Від низу viewport — лише safe-area (глобальної нижньої таб-панелі немає) */
+  const mobileStickyBarBottom = 'env(safe-area-inset-bottom, 0px)'
 
   const categoryLabel = getCategoryLabel(product)
   const categoryEmoji = product.category?.emoji || '🍣'
 
   return (
     <div
-      className="relative flex min-h-screen flex-1 flex-col watta-page-bg pb-[calc(9.5rem+54px+env(safe-area-inset-bottom,0px))] md:pb-16"
+      className="relative flex min-h-screen flex-1 flex-col watta-page-bg pb-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:pb-16"
     >
       <div className="relative mx-auto w-full max-w-6xl flex-1 px-4 pb-6 pt-4 sm:px-6 sm:pb-10 sm:pt-5">
         <div className="mb-5 flex min-w-0 flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
@@ -576,10 +576,10 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
         )}
       </div>
 
-      {/* Mobile sticky bar — щільно над глобальною нижньою навігацією, без зазору під «чолкою» */}
+      {/* Mobile sticky bar — прижата до низу з урахуванням safe-area */}
       <div
         className="fixed inset-x-0 z-[100] box-border border-t border-[#145142]/10 bg-white px-4 py-3 md:hidden"
-        style={{ bottom: globalBottomBarOffset }}
+        style={{ bottom: mobileStickyBarBottom }}
       >
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">

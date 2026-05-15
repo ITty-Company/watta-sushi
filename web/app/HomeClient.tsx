@@ -1,86 +1,109 @@
 'use client'
 
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
-import CartView from './components/CartView'
-import ProfileView from './components/ProfileView'
+import { useState, useEffect, useLayoutEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import MenuView from './components/MenuView'
-import { NotificationsView } from './components/NotificationsView'
-import WattaLoadScreen from './components/WattaLoadScreen'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
-import { useLanguage } from './context/LanguageContext'
 import { useRouter } from 'next/navigation'
 
-const MIN_BOOT_SPLASH_MS = 1650
-/** Якщо прогрес-бар застряг (таймери/замикання), не залишаємо користувача на білому екрані */
-const BOOT_SPLASH_FAILSAFE_MS = 12_000
+/** Лише джерело hero на головній (не fallback-div, не інші сторінки). */
+const WELCOME_HERO_VIDEO_SELECTOR =
+  'section.welcome-hero-section-web.menu-snap-section-welcome-web:not(.delivery-page-hero-embed-web) video.watta-home-hero-native-video'
+
+/** Один прохід nudge на hero-`<video>`: muted autoplay + play(). */
+function kickWelcomeHeroVideoPlayOnce() {
+  const v = document.querySelector<HTMLVideoElement>(WELCOME_HERO_VIDEO_SELECTOR)
+  if (!v) return false
+  try {
+    v.defaultMuted = true
+    v.muted = true
+    v.volume = 0
+    v.playsInline = true
+    void v.play().catch(() => {})
+  } catch {
+    /* ignore */
+  }
+  return true
+}
+
+/** Тривала серія nudge — для випадків SPA-back / bfcache / battery-saver, коли
+ *  одного play() мало (browser policy відкидає перший виклик). */
+function kickWelcomeHeroVideoPlayBurst() {
+  kickWelcomeHeroVideoPlayOnce()
+  const delays = [16, 80, 200, 500, 1000, 2000]
+  const ids = delays.map((ms) => window.setTimeout(kickWelcomeHeroVideoPlayOnce, ms))
+  return () => ids.forEach((id) => window.clearTimeout(id))
+}
+
+/**
+ * Перший екран — лише `MenuView`. `CartView`/`ProfileView`/`NotificationsView`
+ * тягнемо `next/dynamic` (без SSR): головна не несе сотні КБ JS, які
+ * не потрібні до першого кліка користувача.
+ */
+const CartView = dynamic(() => import('./components/CartView'), { ssr: false })
+const ProfileView = dynamic(() => import('./components/ProfileView'), { ssr: false })
+/**
+ * Named export → обовʼязково обертаємо в `{ default: ... }`. Без цього `next/dynamic`
+ * (Next 14.2) інколи кидає `Unsupported Server Component type: undefined` після hot-reload.
+ */
+const NotificationsView = dynamic(
+  () =>
+    import('./components/NotificationsView').then((m) => ({
+      default: m.NotificationsView,
+    })),
+  { ssr: false }
+)
 
 export default function HomeClient() {
-  const { t } = useLanguage()
   const router = useRouter()
-  /** Після commit на клієнті; ref — щоб інтервал не читав застаріле замикання `clientReady` */
-  const clientReadyRef = useRef(false)
-  const [bootProgress, setBootProgress] = useState(0)
-  const [showBootSplash, setShowBootSplash] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const bootStartedAtRef = useRef<number | null>(null)
 
-  useLayoutEffect(() => {
-    bootStartedAtRef.current = Date.now()
-    clientReadyRef.current = true
-  }, [])
+  /**
+   * Гідратація + повернення з іншої сторінки (SPA-back / bfcache / pageshow).
+   * Серія nudge: queueMicrotask + rAF + delays до 2s. Це окрема страховка від
+   * `bindHeroVideoAutoplay` всередині `MenuView`: при mount після SPA-back браузер
+   * інколи відкидає перший play() (autoplay-policy after navigation), і binding
+   * сам не встигає підхопити video у paused-стані.
+   */
+  useEffect(() => {
+    queueMicrotask(kickWelcomeHeroVideoPlayOnce)
+    const raf = requestAnimationFrame(() => {
+      kickWelcomeHeroVideoPlayOnce()
+    })
+    const cancelBurst = kickWelcomeHeroVideoPlayBurst()
 
-  /** Під час білого сплешу — не показувати глобальні FAB (Instagram тощо) з AppClient */
-  useLayoutEffect(() => {
-    if (typeof document === 'undefined') return
-    const root = document.documentElement
-    if (showBootSplash) {
-      root.setAttribute('data-watta-boot-splash', '1')
-    } else {
-      root.removeAttribute('data-watta-boot-splash')
+    /* `popstate` — back/forward через історію браузера, `pageshow` — повернення з
+       bfcache (Safari/Firefox). Обидва зазвичай лишають hero у paused-стані. */
+    const onPopState = () => {
+      kickWelcomeHeroVideoPlayBurst()
     }
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        /* bfcache restore — найчастіше autoplay блокований до user-gesture */
+        kickWelcomeHeroVideoPlayBurst()
+      } else {
+        kickWelcomeHeroVideoPlayOnce()
+      }
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        kickWelcomeHeroVideoPlayBurst()
+      }
+    }
+
+    window.addEventListener('popstate', onPopState)
+    window.addEventListener('pageshow', onPageShow)
+    document.addEventListener('visibilitychange', onVisible)
+
     return () => {
-      root.removeAttribute('data-watta-boot-splash')
+      cancelAnimationFrame(raf)
+      cancelBurst()
+      window.removeEventListener('popstate', onPopState)
+      window.removeEventListener('pageshow', onPageShow)
+      document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [showBootSplash])
-
-  /** Полоса до 100%; після reload на проді даємо мінімальний час, щоб сплеш завжди був помітний */
-  useEffect(() => {
-    if (!showBootSplash) return
-    const id = window.setInterval(() => {
-      setBootProgress((prev) => {
-        if (prev >= 100) return 100
-
-        const ready = clientReadyRef.current
-        const cap = ready ? 100 : 78
-        const step = ready ? 5.5 : 0.55
-        let next = prev + step
-        if (!ready) next = Math.min(cap, next)
-        else next = Math.min(100, next)
-
-        if (next >= 100) {
-          clearInterval(id)
-          const started = bootStartedAtRef.current ?? Date.now()
-          const minUntil = started + MIN_BOOT_SPLASH_MS
-          const extra = Math.max(520, minUntil - Date.now() + 480)
-          window.setTimeout(() => setShowBootSplash(false), extra)
-          return 100
-        }
-        return next
-      })
-    }, 36)
-    return () => clearInterval(id)
-  }, [showBootSplash])
-
-  /** Якщо щось пішло не так з інтервалом/гідратацією — показуємо меню */
-  useEffect(() => {
-    if (!showBootSplash) return
-    const fail = window.setTimeout(() => {
-      setShowBootSplash(false)
-      setBootProgress(100)
-    }, BOOT_SPLASH_FAILSAFE_MS)
-    return () => clearTimeout(fail)
-  }, [showBootSplash])
+  }, [])
 
   const handleSwitchTab = useCallback((tab: number) => {
     if (tab === 1) {
@@ -94,9 +117,8 @@ export default function HomeClient() {
 
   /** Меню / кошик / профіль — зверху контейнера, щоб була видима початкова секція. */
   useLayoutEffect(() => {
-    if (showBootSplash) return
     scrollEntireAppToTop()
-  }, [activeTab, showBootSplash])
+  }, [activeTab])
 
   const handleBack = useCallback(() => setActiveTab(0), [])
   const handleOpenProfile = useCallback(() => setActiveTab(2), [])
@@ -109,65 +131,41 @@ export default function HomeClient() {
   const handleSelectCategory = useCallback(() => setActiveTab(0), [])
   const handleOpenAdmin = useCallback(() => {}, [])
 
+  /**
+   * Тільки події: подія `storage` спрацьовує сама при зміні з іншої вкладки;
+   * `switchTab` — наш кастомний CustomEvent. Жодного `setInterval` (раніше 400 ms
+   * без потреби крутив `setState` на кожному кадрі).
+   */
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const handleCartUpdate = () => {}
-    window.addEventListener('cartUpdated', handleCartUpdate)
+
+    const applySwitchTabFromStorage = () => {
+      const tab = localStorage.getItem('switchToTab')
+      if (tab === null) return
+      const tabNumber = parseInt(tab, 10)
+      if (!Number.isNaN(tabNumber) && tabNumber >= 0 && tabNumber <= 2) {
+        handleSwitchTab(tabNumber)
+        localStorage.removeItem('switchToTab')
+      }
+    }
+
     const handleSwitchTabEvent = (e: Event) => {
       const customEvent = e as CustomEvent<number>
-      if (customEvent.detail !== undefined && typeof customEvent.detail === 'number') {
+      if (typeof customEvent.detail === 'number') {
         handleSwitchTab(customEvent.detail)
-        if (typeof window !== 'undefined' && window.localStorage) {
-          localStorage.removeItem('switchToTab')
-        }
+        localStorage.removeItem('switchToTab')
       }
     }
+
     window.addEventListener('switchTab', handleSwitchTabEvent)
-    const handleStorageChange = () => {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const tab = localStorage.getItem('switchToTab')
-        if (tab !== null) {
-          const tabNumber = parseInt(tab)
-          if (!isNaN(tabNumber) && tabNumber >= 0 && tabNumber <= 2) {
-            handleSwitchTab(tabNumber)
-            localStorage.removeItem('switchToTab')
-          }
-        }
-      }
-    }
-    window.addEventListener('storage', handleStorageChange)
-    handleStorageChange()
-    const intervalId = setInterval(handleStorageChange, 400)
+    window.addEventListener('storage', applySwitchTabFromStorage)
+    applySwitchTabFromStorage()
+
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('cartUpdated', handleCartUpdate)
-        window.removeEventListener('switchTab', handleSwitchTabEvent)
-        window.removeEventListener('storage', handleStorageChange)
-      }
-      clearInterval(intervalId)
+      window.removeEventListener('switchTab', handleSwitchTabEvent)
+      window.removeEventListener('storage', applySwitchTabFromStorage)
     }
   }, [handleSwitchTab])
-
-  if (showBootSplash) {
-    return (
-      <div className="app-web min-h-[100dvh] watta-page-bg" suppressHydrationWarning>
-        <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden">
-          <WattaLoadScreen
-            className="min-h-[100dvh]"
-            progress={bootProgress}
-            label={
-              <>
-                {t.siteAria.loading}
-                <span className="watta-dot">.</span>
-                <span className="watta-dot">.</span>
-                <span className="watta-dot">.</span>
-              </>
-            }
-          />
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="app-web" suppressHydrationWarning>

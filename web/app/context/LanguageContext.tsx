@@ -1,11 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react'
+import { createContext, useContext, useState, useLayoutEffect, useMemo, ReactNode } from 'react'
 import {
   type WattaLanguage,
+  WATTA_DEFAULT_SITE_LANGUAGE,
   WATTA_LANG_COOKIE,
+  WATTA_LANG_EXPLICIT_COOKIE,
   WATTA_LANG_MAX_AGE,
   parseWattaLanguage,
+  resolveWattaSiteLanguageFromDocumentCookie,
   wattaToHtmlLang,
 } from '@/lib/i18n/language'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
@@ -318,6 +321,8 @@ interface Translations {
     drawerBrandLine: string
     /** Заголовок блоку вибору міста в правому drawer (мобільна навігація) */
     drawerLocationTitle: string
+    /** Заголовок блоку мови інтерфейсу в drawer / бічному меню */
+    drawerLanguageTitle: string
   }
   /** Розширений підвал (білий фон, колонки) */
   siteFooter: {
@@ -331,8 +336,6 @@ interface Translations {
     reviews: string
     news: string
     phone1: string
-    phone2: string
-    phone3: string
     hoursLine: string
     /** Якщо з API ще немає міст */
     locationsEmpty: string
@@ -344,8 +347,9 @@ interface Translations {
     /** Підпис під бейджами Visa / Mastercard / iDEAL */
     paymentsMethodsNote: string
     instagramAria: string
-    facebookAria: string
     tiktokAria: string
+    telegramAria: string
+    emailAria: string
   }
   /** Сторінка товару /product/[id] */
   productDetail: {
@@ -894,8 +898,6 @@ interface Translations {
     fullMenuAllTab: string
     /** Aria для горизонтальної стрічки страв у категорії на головній */
     categoryRailAria: string
-    /** Бейдж на картці товару, якщо в адмінці ввімкнено «хіти на головній» */
-    recommendedPill: string
     /** Заголовок поверх фото-банера на головній */
     heroBannerOverlayTitle: string
     /** Підзаголовок / коротка «цитата» під заголовком на банері */
@@ -906,6 +908,19 @@ interface Translations {
     heroBannerSmsTime: string
     /** Aria: секція промо-банерів (видимий заголовок знято) */
     heroBannersSectionAria: string
+    /** Головна: API меню недоступне — порожній каталог */
+    homeMenuApiUnavailableTitle: string
+    homeMenuApiUnavailableHint: string
+    /** Aria: текст під hero-відео, перед блоком хітів */
+    homeAfterHeroIntroAria: string
+    /** Короткий рядок-акцент (кирилиця / латиниця — під мову) */
+    homeAfterHeroIntroKicker: string
+    /** Заголовок вступу */
+    homeAfterHeroIntroTitle: string
+    /** Основний абзац */
+    homeAfterHeroIntroBody: string
+    /** Якщо міста ще не підвантажились — підстановка замість {{city}} */
+    homeAfterHeroIntroCityPlaceholder: string
   }
   cinematicFooter: {
     /** Короткий кікер (бейдж) у блоці над стрічками */
@@ -923,7 +938,15 @@ interface Translations {
     nextPromo: string
     /** Блок товарів зі знижкою з адмінки */
     sectionPromoTitle: string
+    /** Підзаголовок під «Новинки» на /menu */
+    sectionNewInMenuLead: string
+    /** Блок «Новинки» на /menu (isMenuNew) */
+    sectionNewInMenu: string
+    /** Кнопка після прев’ю хітів на головній */
+    seeFullMenu: string
     sectionRecommendedTitle: string
+    /** Підзаголовок під «Наші хіти» на /menu */
+    sectionRecommendedLead: string
     /** Популярні / хіти з адмінки (isPopular) */
     sectionPopularTitle: string
     /** Горизонтальний ряд чипів категорій під підказкою */
@@ -931,6 +954,8 @@ interface Translations {
     recommendedBadge: string
     popularBadge: string
     promoStripAria: string
+    /** Підзаголовок під блоком акцій на /menu */
+    sectionPromoLead: string
     recommendedStripAria: string
     popularStripAria: string
     categoriesStripAria: string
@@ -1216,6 +1241,7 @@ const translations: Record<Language, Translations> = {
       drawerExploreTitle: 'Сторінки сайту',
       drawerBrandLine: 'Доставка найсмачніших суші',
       drawerLocationTitle: 'Ваше місто',
+      drawerLanguageTitle: 'Мова сайту',
     },
     siteFooter: {
       navAria: 'Навігація в підвалі сайту',
@@ -1227,9 +1253,7 @@ const translations: Record<Language, Translations> = {
       blog: 'Блог',
       reviews: 'Відгуки',
       news: 'Новини',
-      phone1: '+38 (067) 000 00 01',
-      phone2: '+38 (066) 000 00 02',
-      phone3: '+38 (093) 000 00 03',
+      phone1: '+31649326549',
       hoursLine: 'щодня 14:00 — 21:00',
       locationsEmpty: 'Міста з’являться після додавання в адмін-панелі.',
       appStore: 'App Store',
@@ -1237,11 +1261,11 @@ const translations: Record<Language, Translations> = {
       support: 'Підтримка',
       privacy: 'Політика конфіденційності',
       paymentsAria: 'Способи оплати',
-      paymentsMethodsNote:
-        'Оплата банківською карткою та через iDEAL у Нідерландах.',
+      paymentsMethodsNote: '',
       instagramAria: 'Instagram',
-      facebookAria: 'Facebook',
       tiktokAria: 'TikTok',
+      telegramAria: 'Telegram',
+      emailAria: 'Електронна пошта',
     },
     productDetail: {
       loading: 'Завантаження…',
@@ -1438,17 +1462,26 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'Поки що немає страв у каталозі.',
       fullMenuAllTab: 'Меню',
       categoryRailAria: 'горизонтальна стрічка страв — гортайте вліво та вправо; натисніть картку, щоб відкрити страву',
-      recommendedPill: 'Від Watta',
       heroBannerOverlayTitle: 'Проводьте час разом із\u00A0нами',
       heroBannerOverlaySub: 'Свіжі роли, тепла зустріч і смак, яким хочеться ділитися.',
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'щойно',
       heroBannersSectionAria: 'Промо-банери',
+      homeMenuApiUnavailableTitle: 'Меню не завантажилось',
+      homeMenuApiUnavailableHint:
+        'Сервер з товарами не відповідає (часто порт 5050). Запустіть backend з кореня: npm run local:backend:quick, або лише фронт з моками: npm run local:web:mock. Потім оновіть сторінку.',
+      homeAfterHeroIntroAria:
+        'Короткий текст про доставку суші в обраному місті ({{city}}) перед відео та добіркою хітів меню',
+      homeAfterHeroIntroKicker: '{{city}} · доставка до столу',
+      homeAfterHeroIntroTitle: 'Доставка суші — {{city}}\nвід Watta Sushi',
+      homeAfterHeroIntroBody:
+        'У нашому асортименті — роли, суші, сети й\nнапої\u00A0на будь-який смак. Радимо обов’язково спробувати топ\u2011позиції\u00A0меню — саме їх гості обирають знову\u00A0й\u00A0знову.',
+      homeAfterHeroIntroCityPlaceholder: 'обраному місті',
     },
     cinematicFooter: {
       readyTitleKicker: 'Наші хіти',
-      readyTitleSub: 'які гості обирають знову і знову',
+      readyTitleSub: 'Те, що гості обирають знову\u00A0і\u00A0знову',
       ctaBanners: 'До банерів і акцій',
       ctaMenu: 'Відкрити меню',
       ctaCatalog: 'Меню',
@@ -1459,13 +1492,18 @@ const translations: Record<Language, Translations> = {
       prevPromo: 'Попередня',
       nextPromo: 'Наступна',
       sectionPromoTitle: 'Акції',
-      sectionRecommendedTitle: 'Рекомендовані',
+      sectionNewInMenuLead: 'Що нещодавно з’явилось у меню.',
+      sectionNewInMenu: 'Новинки',
+      seeFullMenu: 'Дивитись усе меню',
+      sectionRecommendedTitle: 'Наші хіти',
+      sectionRecommendedLead: 'Популярні позиції — їх замовляють частіше за інші.',
       sectionPopularTitle: 'Хіти та топ',
       sectionCategoriesTitle: 'Категорії',
       recommendedBadge: 'Топ',
       popularBadge: 'ХІТ',
       promoStripAria: 'Страви зі знижкою зараз',
-      recommendedStripAria: 'Рекомендовані страви',
+      sectionPromoLead: 'Знижка на обрані страви — поки триває акція.',
+      recommendedStripAria: 'Страви з меню',
       popularStripAria: 'Популярні страви — гортайте вліво та вправо',
       categoriesStripAria: 'Категорії меню — натисніть, щоб перейти до розділу в каталозі',
       animationSlotAria: 'Місце для анімації бренду',
@@ -2048,6 +2086,7 @@ const translations: Record<Language, Translations> = {
       drawerExploreTitle: 'Страницы сайта',
       drawerBrandLine: 'Доставка самых вкусных суши',
       drawerLocationTitle: 'Ваш город',
+      drawerLanguageTitle: 'Язык сайта',
     },
     siteFooter: {
       navAria: 'Навигация в подвале сайта',
@@ -2059,9 +2098,7 @@ const translations: Record<Language, Translations> = {
       blog: 'Блог',
       reviews: 'Отзывы',
       news: 'Новости',
-      phone1: '+38 (067) 000 00 01',
-      phone2: '+38 (066) 000 00 02',
-      phone3: '+38 (093) 000 00 03',
+      phone1: '+31649326549',
       hoursLine: 'ежедневно 14:00 — 21:00',
       locationsEmpty: 'Города появятся после добавления в админ-панели.',
       appStore: 'App Store',
@@ -2069,11 +2106,11 @@ const translations: Record<Language, Translations> = {
       support: 'Поддержка',
       privacy: 'Политика конфиденциальности',
       paymentsAria: 'Способы оплаты',
-      paymentsMethodsNote:
-        'Оплата банковской картой и через iDEAL в Нидерландах.',
+      paymentsMethodsNote: '',
       instagramAria: 'Instagram',
-      facebookAria: 'Facebook',
       tiktokAria: 'TikTok',
+      telegramAria: 'Telegram',
+      emailAria: 'Электронная почта',
     },
     productDetail: {
       loading: 'Загрузка…',
@@ -2270,17 +2307,26 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'Пока нет блюд в каталоге.',
       fullMenuAllTab: 'Меню',
       categoryRailAria: 'горизонтальная лента блюд — листайте влево и вправо; нажмите карточку, чтобы открыть блюдо',
-      recommendedPill: 'Watta+',
       heroBannerOverlayTitle: 'Проводите время вместе с\u00A0нами',
       heroBannerOverlaySub: 'Свежие роллы, тёплая встреча и вкус, которым хочется делиться.',
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'сейчас',
       heroBannersSectionAria: 'Промо-баннеры',
+      homeMenuApiUnavailableTitle: 'Меню не загрузилось',
+      homeMenuApiUnavailableHint:
+        'Сервер с товарами не отвечает (часто порт 5050). Запустите backend из корня: npm run local:backend:quick, или только фронт с моками: npm run local:web:mock. Затем обновите страницу.',
+      homeAfterHeroIntroAria:
+        'Краткий текст о доставке суши в выбранном городе ({{city}}) перед видео и подборкой хитов меню',
+      homeAfterHeroIntroKicker: '{{city}} · доставка к столу',
+      homeAfterHeroIntroTitle: 'Доставка суши — {{city}}\nот Watta Sushi',
+      homeAfterHeroIntroBody:
+        'В нашем ассортименте — роллы, суши, сеты и\nнапитки\u00A0на любой вкус. Обязательно попробуйте топ\u2011позиции\u00A0меню — именно их гости заказывают снова\u00A0и\u00A0снова.',
+      homeAfterHeroIntroCityPlaceholder: 'вашем городе',
     },
     cinematicFooter: {
       readyTitleKicker: 'Наши хиты',
-      readyTitleSub: 'которые заказывают снова и снова',
+      readyTitleSub: 'То, что гости заказывают снова\u00A0и\u00A0снова',
       ctaBanners: 'К баннерам и акциям',
       ctaMenu: 'Открыть меню',
       ctaCatalog: 'Меню',
@@ -2291,12 +2337,17 @@ const translations: Record<Language, Translations> = {
       prevPromo: 'Назад',
       nextPromo: 'Вперёд',
       sectionPromoTitle: 'Акции',
-      sectionRecommendedTitle: 'Рекомендуем',
+      sectionNewInMenuLead: 'Недавно добавили в меню.',
+      sectionNewInMenu: 'Новинки',
+      seeFullMenu: 'Смотреть всё меню',
+      sectionRecommendedTitle: 'Наши хиты',
+      sectionRecommendedLead: 'Популярные позиции — их заказывают чаще остальных.',
       sectionPopularTitle: 'Хиты и топ',
       sectionCategoriesTitle: 'Категории',
       recommendedBadge: 'Топ',
       popularBadge: 'ХИТ',
       promoStripAria: 'Блюда со скидкой',
+      sectionPromoLead: 'Скидка на выбранные блюда — пока действует акция.',
       recommendedStripAria: 'Рекомендуемые блюда',
       popularStripAria: 'Популярные блюда — листайте влево и вправо',
       categoriesStripAria: 'Категории меню — нажмите, чтобы перейти к разделу в каталоге',
@@ -2880,6 +2931,7 @@ const translations: Record<Language, Translations> = {
       drawerExploreTitle: 'Site pages',
       drawerBrandLine: 'Delivery of the tastiest sushi',
       drawerLocationTitle: 'Your city',
+      drawerLanguageTitle: 'Site language',
     },
     siteFooter: {
       navAria: 'Site footer navigation',
@@ -2891,9 +2943,7 @@ const translations: Record<Language, Translations> = {
       blog: 'Blog',
       reviews: 'Reviews',
       news: 'News',
-      phone1: '+38 (067) 000 00 01',
-      phone2: '+38 (066) 000 00 02',
-      phone3: '+38 (093) 000 00 03',
+      phone1: '+31649326549',
       hoursLine: 'daily 14:00 — 21:00',
       locationsEmpty: 'Cities will appear here after you add them in the admin panel.',
       appStore: 'App Store',
@@ -2901,10 +2951,11 @@ const translations: Record<Language, Translations> = {
       support: 'Support',
       privacy: 'Privacy policy',
       paymentsAria: 'Payment methods',
-      paymentsMethodsNote: 'Pay by bank card and with iDEAL in the Netherlands.',
+      paymentsMethodsNote: '',
       instagramAria: 'Instagram',
-      facebookAria: 'Facebook',
       tiktokAria: 'TikTok',
+      telegramAria: 'Telegram',
+      emailAria: 'Email',
     },
     productDetail: {
       loading: 'Loading…',
@@ -3101,17 +3152,26 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'No dishes in the catalog yet.',
       fullMenuAllTab: 'Menu',
       categoryRailAria: 'horizontal dish row — swipe left or right; tap a card to open the dish',
-      recommendedPill: 'Staff pick',
       heroBannerOverlayTitle: 'Spend time with us',
       heroBannerOverlaySub: 'Fresh rolls, good company, and flavours worth sharing.',
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'now',
       heroBannersSectionAria: 'Promotional banners',
+      homeMenuApiUnavailableTitle: 'Menu could not load',
+      homeMenuApiUnavailableHint:
+        'The products API is not responding (often port 5050). Start the backend from the repo root: npm run local:backend:quick, or frontend-only mocks: npm run local:web:mock. Then refresh the page.',
+      homeAfterHeroIntroAria:
+        'Short introduction to sushi delivery in the selected city ({{city}}) before the hero video and menu hits section',
+      homeAfterHeroIntroKicker: '{{city}} · delivered to your table',
+      homeAfterHeroIntroTitle: 'Sushi delivery in {{city}}\nby Watta Sushi',
+      homeAfterHeroIntroBody:
+        'Our range includes rolls, sushi, sets, and\ndrinks\u00A0for every taste. Be sure to try the top\u00A0picks from our menu — they are the dishes guests reorder again\u00A0and\u00A0again.',
+      homeAfterHeroIntroCityPlaceholder: 'your city',
     },
     cinematicFooter: {
       readyTitleKicker: 'Our hits',
-      readyTitleSub: 'reordered on repeat',
+      readyTitleSub: 'What guests order again\u00A0and\u00A0again',
       ctaBanners: 'Banners & offers',
       ctaMenu: 'Open menu',
       ctaCatalog: 'Menu',
@@ -3122,12 +3182,17 @@ const translations: Record<Language, Translations> = {
       prevPromo: 'Previous',
       nextPromo: 'Next',
       sectionPromoTitle: 'On offer',
-      sectionRecommendedTitle: 'Recommended',
+      sectionNewInMenuLead: 'Recently added to the menu.',
+      sectionNewInMenu: 'New on the menu',
+      seeFullMenu: 'See full menu',
+      sectionRecommendedTitle: 'Our hits',
+      sectionRecommendedLead: 'Guest favourites — ordered more often than the rest.',
       sectionPopularTitle: 'Hits & top picks',
       sectionCategoriesTitle: 'Categories',
       recommendedBadge: 'Top pick',
       popularBadge: 'HIT',
       promoStripAria: 'Discounted dishes',
+      sectionPromoLead: 'Selected dishes on offer — while the promotion lasts.',
       recommendedStripAria: 'Recommended dishes',
       popularStripAria: 'Popular dishes — swipe left and right',
       categoriesStripAria: 'Menu categories — tap to jump to that section in the catalog',
@@ -3711,6 +3776,7 @@ const translations: Record<Language, Translations> = {
       drawerExploreTitle: 'Pagina’s',
       drawerBrandLine: 'Bezorging van de lekkerste sushi',
       drawerLocationTitle: 'Jouw stad',
+      drawerLanguageTitle: 'Taal van de site',
     },
     siteFooter: {
       navAria: 'Voeternavigatie',
@@ -3722,9 +3788,7 @@ const translations: Record<Language, Translations> = {
       blog: 'Blog',
       reviews: 'Reviews',
       news: 'Nieuws',
-      phone1: '+38 (067) 000 00 01',
-      phone2: '+38 (066) 000 00 02',
-      phone3: '+38 (093) 000 00 03',
+      phone1: '+31649326549',
       hoursLine: 'dagelijks 14:00 — 21:00',
       locationsEmpty: 'Steden verschijnen hier na toevoegen in het beheerpaneel.',
       appStore: 'App Store',
@@ -3732,10 +3796,11 @@ const translations: Record<Language, Translations> = {
       support: 'Support',
       privacy: 'Privacybeleid',
       paymentsAria: 'Betaalmethoden',
-      paymentsMethodsNote: 'Betalen met pinpas/bankkaart en iDEAL (Nederland).',
+      paymentsMethodsNote: '',
       instagramAria: 'Instagram',
-      facebookAria: 'Facebook',
       tiktokAria: 'TikTok',
+      telegramAria: 'Telegram',
+      emailAria: 'E-mail',
     },
     productDetail: {
       loading: 'Laden…',
@@ -3932,17 +3997,26 @@ const translations: Record<Language, Translations> = {
       fullMenuEmpty: 'Nog geen gerechten in de catalogus.',
       fullMenuAllTab: 'Menu',
       categoryRailAria: 'horizontale rij met gerechten — veeg links en rechts; tik op een kaart om het gerecht te openen',
-      recommendedPill: 'Aanrader',
       heroBannerOverlayTitle: 'Breng tijd met ons door',
       heroBannerOverlaySub: 'Verse rolls, gezelschap en smaken om te delen.',
       heroBannerSmsSender: 'Watta Sushi',
       heroBannerSmsBadge: 'SMS',
       heroBannerSmsTime: 'zojuist',
       heroBannersSectionAria: 'Promotiebanners',
+      homeMenuApiUnavailableTitle: 'Menu laadt niet',
+      homeMenuApiUnavailableHint:
+        'De producten-API reageert niet (vaak poort 5050). Start de backend vanaf de root: npm run local:backend:quick, of alleen de frontend met mocks: npm run local:web:mock. Vernieuw daarna de pagina.',
+      homeAfterHeroIntroAria:
+        'Korte introductie over sushibezorging in de gekozen stad ({{city}}) vóór de hero-video en het menuhits-gedeelte',
+      homeAfterHeroIntroKicker: '{{city}} · bij u op tafel',
+      homeAfterHeroIntroTitle: 'Sushibezorging in {{city}}\ndoor Watta Sushi',
+      homeAfterHeroIntroBody:
+        'In ons assortiment: rolls, sushi, sets en\ndrankjes\u00A0voor elke smaak. Probeer vooral de topgerechten uit\u00A0ons menu — daar vragen gasten steeds\u00A0opnieuw\u00A0om.',
+      homeAfterHeroIntroCityPlaceholder: 'uw stad',
     },
     cinematicFooter: {
       readyTitleKicker: 'Onze hits',
-      readyTitleSub: 'keer op keer besteld',
+      readyTitleSub: 'Waar gasten keer op keer voor kiezen',
       ctaBanners: 'Naar banners & acties',
       ctaMenu: 'Menu openen',
       ctaCatalog: 'Menu',
@@ -3953,12 +4027,17 @@ const translations: Record<Language, Translations> = {
       prevPromo: 'Vorige',
       nextPromo: 'Volgende',
       sectionPromoTitle: 'Acties',
-      sectionRecommendedTitle: 'Aanbevolen',
+      sectionNewInMenuLead: 'Onlangs toegevoegd aan het menu.',
+      sectionNewInMenu: 'Nieuw in het menu',
+      seeFullMenu: 'Hele menu bekijken',
+      sectionRecommendedTitle: 'Onze hits',
+      sectionRecommendedLead: 'Gastfavorieten — vaker besteld dan de rest.',
       sectionPopularTitle: 'Hits & topkeuzes',
       sectionCategoriesTitle: 'Categorieën',
       recommendedBadge: 'Top',
       popularBadge: 'HIT',
       promoStripAria: 'Gerechten met korting',
+      sectionPromoLead: 'Korting op geselecteerde gerechten — zolang de actie loopt.',
       recommendedStripAria: 'Aanbevolen gerechten',
       popularStripAria: 'Populaire gerechten — veeg links en rechts',
       categoriesStripAria: 'Menucategorieën — tik om naar dat deel van de catalogus te gaan',
@@ -4288,37 +4367,48 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
-function applyClientLanguage(lang: Language) {
+function applyClientLanguage(lang: Language, opts?: { markExplicitChoice?: boolean }) {
   if (typeof document === 'undefined') return
   const safe = parseWattaLanguage(lang)
   document.documentElement.lang = wattaToHtmlLang(safe)
   document.cookie = `${WATTA_LANG_COOKIE}=${safe}; path=/; max-age=${WATTA_LANG_MAX_AGE}; SameSite=Lax`
+  if (opts?.markExplicitChoice) {
+    document.cookie = `${WATTA_LANG_EXPLICIT_COOKIE}=1; path=/; max-age=${WATTA_LANG_MAX_AGE}; SameSite=Lax`
+  }
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  // Всегда начинаем с 'uk' на сервере и клиенте для избежания проблем с гидратацией
-  const [language, setLanguageState] = useState<Language>('uk')
+export function LanguageProvider({
+  children,
+  initialLocale,
+}: {
+  children: ReactNode
+  /** З `getRequestLocale()` у root layout — збіг SSR / cookie з першим кадром клієнта */
+  initialLocale: WattaLanguage
+}) {
+  const [language, setLanguageState] = useState<Language>(initialLocale)
   const [adminUiLanguage, setAdminUiLanguageState] = useState<AdminUiLanguage>('uk')
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    let next: Language = 'uk'
-    const saved = localStorage.getItem('language') as string | null
-    if (saved === 'ua') {
-      next = 'uk'
-    } else if (saved && ['uk', 'en', 'ru', 'nl'].includes(saved)) {
-      next = saved as Language
-    } else {
-      const m = document.cookie.match(
-        new RegExp(`(?:^|; )${WATTA_LANG_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`),
-      )
-      if (m?.[1]) next = parseWattaLanguage(decodeURIComponent(m[1]))
-    }
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    /**
+     * Те саме, що `getRequestLocale` на сервері: `resolveWattaSiteLanguage` + cookies.
+     * До `useLayoutEffect` перший кадр уже з `initialLocale` (SSR), uk/ru без explicit → nl.
+     */
+    const next = resolveWattaSiteLanguageFromDocumentCookie(document.cookie || '')
     setLanguageState(next)
     applyClientLanguage(next)
-    const adminSaved = localStorage.getItem('adminUiLang')
-    if (adminSaved === 'ru' || adminSaved === 'uk') {
-      setAdminUiLanguageState(adminSaved)
+    try {
+      if (window.localStorage) localStorage.setItem('language', next)
+    } catch {
+      /* ignore quota / private mode */
+    }
+    try {
+      const adminSaved = window.localStorage?.getItem('adminUiLang')
+      if (adminSaved === 'ru' || adminSaved === 'uk') {
+        setAdminUiLanguageState(adminSaved)
+      }
+    } catch {
+      /* ignore */
     }
   }, [])
 
@@ -4327,7 +4417,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem('language', lang)
     }
-    applyClientLanguage(lang)
+    applyClientLanguage(lang, { markExplicitChoice: true })
   }
 
   const setAdminUiLanguage = (lang: AdminUiLanguage) => {
@@ -4367,12 +4457,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 }
 
 const defaultContextValue: LanguageContextType = {
-  language: 'uk',
+  language: WATTA_DEFAULT_SITE_LANGUAGE,
   setLanguage: () => {},
   adminUiLanguage: 'uk',
   setAdminUiLanguage: () => {},
-  t: translations.uk,
-  getLocalized: (obj: any, field: string) => getLocalizedField(obj as Record<string, unknown> | null, field, 'uk'),
+  t: translations[WATTA_DEFAULT_SITE_LANGUAGE],
+  getLocalized: (obj: any, field: string) =>
+    getLocalizedField(obj as Record<string, unknown> | null, field, WATTA_DEFAULT_SITE_LANGUAGE),
 }
 
 /** Тексти global-error.tsx поза LanguageProvider */

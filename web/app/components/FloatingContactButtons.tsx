@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
 import { Instagram } from 'lucide-react'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 import { useLanguage } from '@/app/context/LanguageContext'
@@ -9,10 +8,6 @@ import { useLanguage } from '@/app/context/LanguageContext'
 /** Лише Instagram (без Telegram / WhatsApp), щоб не дублювати кошик і месенджери внизу екрана */
 export default function FloatingContactButtons() {
   const { t } = useLanguage()
-  const pathname = usePathname() || '/'
-  const isHomeRoute = pathname === '/'
-  const isAdminShellRoute = pathname === '/admin' || pathname.startsWith('/admin/')
-  const liftForBottomBar = !isAdminShellRoute && !isHomeRoute
   const [instagramUrl, setInstagramUrl] = useState(WATTA_INSTAGRAM_URL)
 
   useEffect(() => {
@@ -24,9 +19,8 @@ export default function FloatingContactButtons() {
       .catch(() => {})
   }, [])
 
-  const bottomPos = liftForBottomBar
-    ? 'bottom-[calc(max(1rem,env(safe-area-inset-bottom,0px))+54px+14px)] md:bottom-[calc(max(1.25rem,env(safe-area-inset-bottom,0px))+54px+14px)] lg:bottom-[calc(max(1.25rem,env(safe-area-inset-bottom,0px))+14px)]'
-    : 'bottom-[calc(1.25rem+14px)] md:bottom-[calc(1.5rem+14px)]'
+  const bottomPos =
+    'bottom-[calc(max(1rem,env(safe-area-inset-bottom,0px))+14px)] md:bottom-[calc(max(1.25rem,env(safe-area-inset-bottom,0px))+14px)]'
 
   return (
     <div

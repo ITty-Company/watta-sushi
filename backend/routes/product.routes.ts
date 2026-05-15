@@ -182,6 +182,7 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
       cityIds, // массив ID городов
       ingredientIds, // массив ID ингредиентов
       isPopular,
+      isMenuNew,
       isHomeHit,
       isCartRecommend,
       recommendOrder,
@@ -252,12 +253,8 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
         imageUrl: img,
         imageUrls: gallery,
         isPopular: Boolean(isPopular),
+        isMenuNew: Boolean(isMenuNew),
         isHomeHit: Boolean(isHomeHit),
-        isCartRecommend: Boolean(isCartRecommend),
-        recommendOrder: Math.round(Number(recommendOrder) || 0),
-        cartRecommendOrder: Math.round(Number(cartRecommendOrder) || 0),
-        promoDiscountPercent: promoPct,
-        
         cities:
           cityIdsNorm.length > 0
             ? {
@@ -301,6 +298,7 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
       cityIds,
       ingredientIds, // массив ID ингредиентов
       isPopular,
+      isMenuNew,
       isHomeHit,
       isCartRecommend,
       recommendOrder,
@@ -327,12 +325,9 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
         imageUrl: gallery[0] || '',
         imageUrls: gallery,
         isPopular: Boolean(isPopular),
+        isMenuNew: Boolean(isMenuNew),
         isHomeHit: Boolean(isHomeHit),
         isCartRecommend: Boolean(isCartRecommend),
-        recommendOrder: Math.round(Number(recommendOrder) || 0),
-        cartRecommendOrder: Math.round(Number(cartRecommendOrder) || 0),
-        promoDiscountPercent: promoPct,
-        category: { connect: { id: parseInt(categoryId as string) } },
         
         // Обновляем связи с городами
         cities: cityIds && Array.isArray(cityIds) && cityIds.length > 0 ? {

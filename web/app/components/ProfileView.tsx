@@ -14,6 +14,7 @@ import LogoBackground from './LogoBackground'
 import Footer from './Footer'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { isAdminRole } from '@/lib/isAdminRole'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import type { WattaLanguage } from '@/lib/i18n/language'
 
@@ -153,8 +154,11 @@ export default function ProfileView({
         try {
           const parsed = JSON.parse(savedUser)
           setUser(parsed)
-          setIsAdmin(parsed.role === 'ADMIN' || false)
+          setIsAdmin(isAdminRole(parsed.role))
         } catch (e) {}
+      } else {
+        setUser(null)
+        setIsAdmin(false)
       }
 
       const savedFav = localStorage.getItem('favorites')
@@ -359,7 +363,7 @@ export default function ProfileView({
   )
 
   return (
-    <div className="menu-page-web relative min-h-screen w-full max-w-[100vw] overflow-x-hidden watta-page-bg pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
+    <div className="menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden watta-page-bg pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
       <LogoBackground />
       <div className="relative z-10">
         <Header />

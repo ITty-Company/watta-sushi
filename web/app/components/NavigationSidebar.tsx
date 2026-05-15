@@ -19,6 +19,7 @@ import {
   MapPin,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import { LanguageSelector } from './LanguageSelector'
 
 export interface NavigationSidebarProps {
   isOpen: boolean
@@ -133,6 +134,13 @@ export default function NavigationSidebar({
             >
               <Heart size={20} strokeWidth={2.2} />
             </button>
+          </div>
+
+          <div className="mb-4 px-1">
+            <p className="watta-nav-sidebar-kicker mb-2">{t.navigation.drawerLanguageTitle}</p>
+            <div className="flex justify-center rounded-2xl border border-[#145142]/12 bg-white/90 px-2 py-2 shadow-sm">
+              <LanguageSelector />
+            </div>
           </div>
 
           <nav className="watta-nav-sidebar-nav" aria-label={t.menu}>

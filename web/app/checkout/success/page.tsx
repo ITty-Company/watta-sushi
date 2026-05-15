@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import LogoBackground from '../../components/LogoBackground'
+import WattaAppRouteLoading from '../../components/WattaAppRouteLoading'
 
 function clearClientCart() {
   if (typeof window === 'undefined') return
@@ -60,21 +61,9 @@ function CheckoutSuccessContent() {
   )
 }
 
-function SuccessFallback() {
-  const { t } = useLanguage()
-  return (
-    <div className="min-h-screen flex items-center justify-center watta-page-bg">
-      <div
-        className="h-10 w-10 rounded-full border-2 border-[#145142] border-t-transparent animate-spin"
-        aria-label={t.siteAria.loading}
-      />
-    </div>
-  )
-}
-
 export default function CheckoutSuccessPage() {
   return (
-    <Suspense fallback={<SuccessFallback />}>
+    <Suspense fallback={<WattaAppRouteLoading />}>
       <CheckoutSuccessContent />
     </Suspense>
   )

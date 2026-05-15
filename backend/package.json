@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "postinstall": "prisma generate",
-    "dev": "prisma generate && prisma migrate deploy && tsx watch server.js",
+    "dev": "export NODE_ENV=development && export DOTENV_CONFIG_QUIET=1 && prisma generate && prisma migrate deploy && tsx watch server.js",
+    "dev:quick": "export NODE_ENV=development && export DOTENV_CONFIG_QUIET=1 && prisma generate && tsx watch server.js",
     "start": "npm run init-db && npx tsx server.js",
     "start:single": "npm run init-db && npx tsx server.js",
     "migrate": "prisma migrate deploy",
@@ -25,6 +26,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
@@ -51,6 +53,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.0.0",
     "@types/node-cron": "^3.0.11",

@@ -236,6 +236,9 @@ router.post('/', async (req: Request, res: Response) => {
           restaurantPickupAddress: '',
           freeDeliveryThreshold: 1000,
           deliveryFee: 50,
+          deliveryKitchenAddress: 'Helicopterstraat 20, 1059 CG Amsterdam, Netherlands',
+          deliveryTariffStepKm: 3,
+          deliveryTariffStepEur: 1.5,
         },
       });
     }

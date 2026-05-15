@@ -5,6 +5,39 @@ import { authenticateUser, AuthRequest } from '../authMiddleware';
 const router = Router();
 const prisma = new PrismaClient();
 
+/** Публічно: скільки користувачів додали товар у обране (для лічильника на картці). ids=1,2,3 */
+router.get('/counts-by-product', async (req, res) => {
+  try {
+    const raw = req.query.ids;
+    const ids =
+      typeof raw === 'string'
+        ? raw
+            .split(',')
+            .map((x) => parseInt(x.trim(), 10))
+            .filter((n) => Number.isFinite(n) && n > 0)
+        : [];
+    if (ids.length === 0) {
+      return res.json({});
+    }
+    const grouped = await prisma.favorite.groupBy({
+      by: ['productId'],
+      where: { productId: { in: ids } },
+      _count: { _all: true },
+    });
+    const out: Record<string, number> = {};
+    for (const id of ids) {
+      out[String(id)] = 0;
+    }
+    for (const row of grouped) {
+      out[String(row.productId)] = row._count._all;
+    }
+    res.json(out);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({});
+  }
+});
+
 router.get('/', authenticateUser, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id;
@@ -36,12 +69,14 @@ router.post('/toggle', authenticateUser, async (req: AuthRequest, res) => {
       await prisma.favorite.delete({
         where: { userId_productId: { userId, productId } }
       });
-      return res.json({ added: false });
+      const count = await prisma.favorite.count({ where: { productId } });
+      return res.json({ added: false, count });
     }
     await prisma.favorite.create({
       data: { userId, productId }
     });
-    return res.json({ added: true });
+    const count = await prisma.favorite.count({ where: { productId } });
+    return res.json({ added: true, count });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: 'Error' });

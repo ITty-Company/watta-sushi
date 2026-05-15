@@ -1189,8 +1189,8 @@
 @keyframes locationPickerModalIn {
   from {
     opacity: 0;
-    transform: translateY(32px) scale(0.92) rotateX(6deg);
-    filter: blur(4px);
+    transform: translateY(14px) scale(0.97) rotateX(3deg);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
@@ -1264,7 +1264,7 @@
 }
 
 .location-picker-backdrop {
-  animation: locationPickerBackdropIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: locationPickerBackdropIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   background:
     radial-gradient(ellipse 90% 55% at 50% -5%, rgba(20, 81, 66, 0.38) 0%, transparent 58%),
     radial-gradient(ellipse 55% 45% at 95% 90%, rgba(20, 81, 66, 0.18) 0%, transparent 50%),
@@ -1275,7 +1275,7 @@
 }
 
 .location-picker-modal {
-  animation: locationPickerModalIn 0.58s cubic-bezier(0.34, 1.25, 0.64, 1) forwards;
+  animation: locationPickerModalIn 0.26s cubic-bezier(0.34, 1.15, 0.55, 1) forwards;
   transform-origin: 50% 8%;
   perspective: 1400px;
   font-family:
@@ -1587,8 +1587,8 @@
 }
 
 .location-picker-trigger--loading {
-  pointer-events: none;
-  opacity: 0.92;
+  cursor: pointer;
+  opacity: 0.96;
 }
 
 .location-picker-trigger--pulse {
@@ -1597,7 +1597,12 @@
 
 .location-picker-trigger__pin {
   position: relative;
-  top: 3px;
+  top: 0;
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .location-picker-trigger__label {
@@ -1614,6 +1619,11 @@
 
 .location-picker-trigger__chev {
   flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
   transition: transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
   color: #145142;
 }
@@ -1882,17 +1892,22 @@
 html.watta-light-chrome {
   color-scheme: only light;
   background: var(--watta-page-gradient) !important;
-  /* hidden по осі X змушує WebKit вважати root scrollport — ламає position:sticky у дочірніх до body */
-  overflow-x: clip;
+  /* visible: горизонтальні стрічки товарів (full-bleed) не обрізаються по краях вікна; clip ламав «вилазання» карток */
+  overflow-x: visible;
   overflow-y: visible;
   overscroll-behavior-y: none;
 }
 
 /* Оболонка AppClient: не overflow-x-hidden — інакше sticky-шапка/категорії не липнуть до вікна при скролі body */
 .watta-app-shell-root {
-  overflow-x: clip;
+  overflow-x: visible;
   overflow-y: visible;
   max-width: 100vw;
+}
+
+/* Герой (100vw + margin) може виходити за flex-min ширину; не кліпаємо main — інакше смуги по боках відео. */
+.watta-app-shell-root > main {
+  overflow-x: visible;
 }
 
 html.watta-light-chrome body {
@@ -1906,7 +1921,8 @@ html.watta-light-chrome body {
   padding: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow-x: clip;
+  /* visible: узгоджено з html/.app-web — інакше full-bleed rail (100vw) обрізався по body */
+  overflow-x: visible;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: none;
@@ -2640,13 +2656,13 @@ html.watta-light-chrome body {
 /* Панель категорий на полностраничных страницах */
 .full-page-web .categories-panel-wrapper-web {
   margin: 0 auto;
-  padding: 0 max(6px, env(safe-area-inset-left, 0px)) 0 max(6px, env(safe-area-inset-right, 0px));
+  padding: 0 max(16px, env(safe-area-inset-left, 0px)) 0 max(16px, env(safe-area-inset-right, 0px));
 }
 
 @media (max-width: 768px) {
   .full-page-web .categories-panel-wrapper-web {
     margin: 0 auto;
-    padding: 0 max(4px, env(safe-area-inset-left, 0px)) 0 max(4px, env(safe-area-inset-right, 0px));
+    padding: 0 max(14px, env(safe-area-inset-left, 0px)) 0 max(14px, env(safe-area-inset-right, 0px));
   }
 }
 
@@ -2691,114 +2707,6 @@ html.watta-light-chrome body {
   }
 }
 
-/* Відступ контенту над фіксованою нижньою панеллю (на всіх ширинах). */
-.watta-app-with-public-bottom-bar main {
-  padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px));
-}
-
-/* Нижня панель: Головна / Меню / Кошик / Профіль — фон і safe-area на зовнішньому nav, щоб під панеллю не було «дірки» / сторінкового фону */
-.watta-public-bottom-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 92;
-  pointer-events: none;
-  box-sizing: border-box;
-  width: 100%;
-  margin: 0;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: #ffffff;
-  border-top: 1px solid rgba(20, 81, 66, 0.12);
-  box-shadow: 0 -10px 36px rgba(20, 81, 66, 0.07);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.watta-public-bottom-bar__inner {
-  pointer-events: auto;
-  display: flex;
-  align-items: stretch;
-  justify-content: space-around;
-  gap: 2px;
-  max-width: 100vw;
-  margin: 0 auto;
-  padding: 6px max(6px, env(safe-area-inset-left, 0px)) 8px max(6px, env(safe-area-inset-right, 0px));
-  background: transparent;
-  border-top: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.watta-public-bottom-bar__item {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 4px 2px;
-  text-decoration: none;
-  color: rgba(55, 72, 66, 0.72);
-  font-family: Inter, system-ui, sans-serif;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-radius: 12px;
-  transition:
-    color 0.2s ease,
-    background 0.2s ease;
-}
-
-.watta-public-bottom-bar__item--active {
-  color: #145142;
-  background: rgba(20, 81, 66, 0.08);
-}
-
-.watta-public-bottom-bar__ico-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-}
-
-.watta-public-bottom-bar__ico {
-  width: 22px;
-  height: 22px;
-}
-
-.watta-public-bottom-bar__badge {
-  position: absolute;
-  top: -4px;
-  right: -8px;
-  min-width: 1.1rem;
-  height: 1.1rem;
-  padding: 0 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: #e85d2a;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.watta-public-bottom-bar__label {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 2px;
-}
-
 .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
   position: relative !important;
   top: auto !important;
@@ -2822,14 +2730,30 @@ html.watta-light-chrome body {
   top: auto !important;
 }
 
-/* Усі сторінки з sticky-chrome: білий лише header + внутрішня .categories-panel-web */
+/* Усі сторінки з sticky-chrome: білий лише header + внутрішня .categories-panel-web; position — для full-bleed лінії */
 .watta-full-menu-sticky-chrome .menu-fixed-header-shell-web,
 .watta-public-sticky-chrome .menu-fixed-header-shell-web {
   background: #ffffff !important;
+  position: relative;
 }
-.watta-full-menu-sticky-chrome .app-header-web,
-.watta-public-sticky-chrome .app-header-web {
+/* Шапка в chrome: без скруглень; лінія-розділювач на всю ширину екрана (псевдо на оболонці, не padding хедера) */
+.watta-full-menu-sticky-chrome .menu-fixed-header-shell-web .app-header-web,
+.watta-public-sticky-chrome .menu-fixed-header-shell-web .app-header-web {
+  border-radius: 0;
   border-bottom: none;
+}
+.watta-full-menu-sticky-chrome .menu-fixed-header-shell-web::after,
+.watta-public-sticky-chrome .menu-fixed-header-shell-web::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 1px;
+  background: rgba(20, 81, 66, 0.1);
+  pointer-events: none;
+  z-index: 25;
 }
 .watta-full-menu-sticky-chrome .categories-panel-web,
 .watta-public-sticky-chrome .categories-panel-web {
@@ -2912,9 +2836,187 @@ html.watta-light-chrome body {
   margin-top: 0 !important;
 }
 
-/* /menu: притискаємо hero-видео до верхньої панелі (без білого зазору). */
-.watta-full-menu-page .watta-full-menu-intro {
-  margin-top: -36px !important;
+/* /menu: intro (герой + смуга) — edge-to-edge, як у `.menu-page-web .welcome-hero-section-web` на десктопі/планшеті */
+@media (min-width: 481px) {
+  .watta-full-menu-page .watta-full-menu-intro {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    box-sizing: border-box;
+  }
+}
+
+/*
+ * /menu (FullMenuPage): кадр на всю ширину вікна — cover замість contain (без «паперових» смуг по боках).
+ * `heroVideoMirrorToCanvas` читає object-fit з <video> — canvas підтягується автоматично.
+ */
+@media (min-width: 481px) {
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-video-native-web,
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .watta-full-menu-intro-video-el {
+    object-fit: cover !important;
+    object-position: center 60% !important;
+  }
+
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-fallback-image-web {
+    background-size: cover !important;
+    background-position: center 60% !important;
+  }
+}
+
+/*
+ * /menu: герой майже на всю висоту вікна (мінус ~sticky chrome) + кадр cover на всю площину.
+ * Перебиває загальні max-height для `.menu-page-web` лише на сторінці повного меню.
+ */
+/* Без flex-grow: інакше в колонці flex (Safari/WebKit) intro з min-height ~100vh забирав увесь простір,
+ * а блок каталогу з overflow:hidden опинявся з нульовою видимою висотою — порожня сторінка під «Меню». */
+.watta-full-menu-page.menu-page-web .watta-full-menu-intro {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0 !important;
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: calc(100svh - 76px) !important;
+}
+
+@supports (height: 100dvh) {
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+    min-height: calc(100dvh - 76px) !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+    min-height: max(78svh, calc(100svh - 76px)) !important;
+  }
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-fill-web {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border-top-left-radius: clamp(16px, 1.6vw, 26px);
+  border-top-right-radius: clamp(16px, 1.6vw, 26px);
+  border-bottom-left-radius: clamp(8px, 0.9vw, 12px);
+  border-bottom-right-radius: clamp(8px, 0.9vw, 12px);
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  height: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
+  border-top-left-radius: clamp(16px, 1.6vw, 26px);
+  border-top-right-radius: clamp(16px, 1.6vw, 26px);
+  border-bottom-left-radius: clamp(8px, 0.9vw, 12px);
+  border-bottom-right-radius: clamp(8px, 0.9vw, 12px);
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web
+  .welcome-video-native-web,
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web
+  .welcome-hero-video-canvas-mirror-web,
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web
+  .watta-full-menu-intro-video-el {
+  border-radius: clamp(16px, 1.6vw, 26px) clamp(16px, 1.6vw, 26px) clamp(8px, 0.9vw, 12px) clamp(8px, 0.9vw, 12px);
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web
+  .welcome-hero-video-input-shield-web {
+  border-radius: clamp(16px, 1.6vw, 26px) clamp(16px, 1.6vw, 26px) clamp(8px, 0.9vw, 12px) clamp(8px, 0.9vw, 12px);
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-video-native-web,
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .watta-full-menu-intro-video-el {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: cover !important;
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web
+  .welcome-hero-video-canvas-mirror-web {
+  max-height: none !important;
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-fallback-image-web {
+  flex: 1 1 auto !important;
+  min-height: min(72vh, 720px) !important;
+  max-height: none !important;
+  background-size: cover !important;
+}
+
+/* /menu: блоки категорій — легке «скло» та глибина (головна в .menu-page-web без watta-full-menu-page лишається плоскою) */
+.watta-full-menu-page .home-menu-cat-band-web {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    0 14px 44px -28px rgba(15, 36, 30, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@media (min-width: 640px) {
+  .watta-full-menu-page .home-menu-cat-band-web {
+    border-radius: 1.35rem;
+    padding: 1.25rem 1.35rem 1.35rem 1.25rem;
+  }
+}
+
+/* Повне меню: window scroll + fixed chrome — як на головній у `.content-web--watta-craft` */
+@media (max-width: 768px) {
+  html:has(.watta-full-menu-page) {
+    scroll-padding-top: calc(148px + env(safe-area-inset-top, 0px));
+  }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+  html:has(.watta-full-menu-page) {
+    scroll-padding-top: calc(118px + env(safe-area-inset-top, 0px));
+  }
 }
 
 .page-content-inner-web {
@@ -2946,7 +3048,9 @@ html.watta-light-chrome body {
   max-width: 100%;
   /* Фон тільки на html/body — тут прозоро */
   background: transparent;
-  overflow: hidden;
+  /* Горизонтально visible: full-bleed стрічка товарів у HomeClient не обрізається по краях */
+  overflow-x: visible;
+  overflow-y: hidden;
 }
 
 .content-web {
@@ -2962,6 +3066,19 @@ html.watta-light-chrome body {
 /* Головне меню: без «гумової» прокрутки за межі контенту; футер — кінець сторінки */
 .content-web--watta-craft:has(.menu-page-web) {
   overscroll-behavior-y: none;
+  overflow-x: visible;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Мінімум на всю висоту скрол-контейнера — футер лишається внизу без зайвого «повітря», коли контент коротший */
+.content-web--watta-craft:has(> .menu-page-web) > .menu-page-web {
+  min-height: 100%;
+}
+
+.content-web--watta-craft:has(> .menu-page-web) > .menu-page-web > .site-footer-watta {
+  margin-top: auto;
 }
 
 /* Головна: вертикальний snap вимкнено — на Safari/WebKit клієнт «застрягав» після банерів, каталог не прокручувався/не був видимий. */
@@ -2970,13 +3087,6 @@ html.watta-light-chrome body {
     scroll-snap-type: none;
     /* Щоб snap не підтягував секцію під fixed шапку + категорії (збіг з JS у MenuView) */
     scroll-padding-top: calc(148px + env(safe-area-inset-top, 0px));
-  }
-
-  /* Планшет: компактніший chrome — менший відступ для snap */
-  @media (min-width: 768px) {
-    .content-web--watta-craft:has(.menu-page-web) {
-      scroll-padding-top: calc(118px + env(safe-area-inset-top, 0px));
-    }
   }
 
   .menu-snap-section-welcome-web {
@@ -2992,6 +3102,13 @@ html.watta-light-chrome body {
   .menu-snap-section-brand-web {
     scroll-snap-align: start;
     scroll-snap-stop: normal;
+  }
+}
+
+/* Планшет 768–1024: компактніший chrome — менший scroll-padding (без вкладеного @media — сумісність з Turbopack). */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .content-web--watta-craft:has(.menu-page-web) {
+    scroll-padding-top: calc(118px + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -3051,7 +3168,141 @@ html.watta-light-chrome body {
   display: none;
 }
 
+/*
+ * Головна: відступ перед блоком «хіти». Без вступного #home-after-hero-intro лишається більший зазор
+ * після відео; якщо секція з текстом є — перебиваємо нижче через :has() (компактніше).
+ */
+.menu-page-web:not(.watta-full-menu-page) > #menu-cinematic-block {
+  margin-top: clamp(84px, 11vh, 168px) !important;
+}
+
+@media (min-width: 769px) {
+  .menu-page-web:not(.watta-full-menu-page) > #menu-cinematic-block {
+    margin-top: clamp(100px, 11.5vh, 196px) !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .menu-page-web:not(.watta-full-menu-page) > #menu-cinematic-block {
+    margin-top: clamp(112px, 11vh, 216px) !important;
+  }
+}
+
+/* Під hero-відео — менший зазор до «Рекомендовані / хіти» (без великої білої смуги), коли є вступний текст на головній */
+.menu-page-web:not(.watta-full-menu-page):has(#home-after-hero-intro) > #menu-cinematic-block {
+  margin-top: clamp(18px, 2.8vh, 40px) !important;
+}
+
+@media (min-width: 769px) {
+  .menu-page-web:not(.watta-full-menu-page):has(#home-after-hero-intro) > #menu-cinematic-block {
+    margin-top: clamp(22px, 3vh, 48px) !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .menu-page-web:not(.watta-full-menu-page):has(#home-after-hero-intro) > #menu-cinematic-block {
+    margin-top: clamp(26px, 2.8vh, 52px) !important;
+  }
+}
+
+.menu-page-web:not(.watta-full-menu-page) #menu-cinematic-block .cinematic-footer-wrap--compact .footer-ready-block {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page) #menu-cinematic-block .cinematic-footer-wrap--compact .footer-ready-heading {
+  margin-bottom: 0 !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  #menu-cinematic-block
+  .cinematic-footer-wrap--compact
+  .footer-cinematic-strip-stack {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  #menu-cinematic-block
+  .cinematic-footer-wrap--compact
+  .cinematic-footer-wrapper
+  > div.relative.z-10 {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+@media (max-width: 1024px) {
+  .menu-page-web .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-top: 4px !important;
+  }
+
+  .menu-page-web .welcome-hero-section-web.menu-snap-section-welcome-web {
+    margin-bottom: 0 !important;
+  }
+}
+
 /* Після cinematic — без зазору до банера (сусідні секції в MenuView) */
+@media (max-width: 480px) {
+  .menu-page-web .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-top: 0 !important;
+  }
+}
+
+/* Вступ на головній: на телефоні — над відео; на планшеті+ — під відео (той самий блок #home-after-hero-intro) */
+.home-after-hero-intro-web {
+  background: var(--watta-page-fill, #ffffff);
+  border-top: 1px solid color-mix(in srgb, #145142 10%, transparent);
+}
+
+/* Головне меню: без лінії між hero і вступом на всіх ширинах */
+.menu-page-web:not(.watta-full-menu-page) .home-after-hero-intro-web {
+  border-top: none !important;
+}
+
+/* Відступ «чіпи → вступ» у ритмі «шапка → чіпи» (margin-top панелі категорій у chrome); без дубля .menu-content-top-gap */
+.menu-page-web:not(.watta-full-menu-page):has(> #home-after-hero-intro) > .menu-content-top-gap-web {
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  background-color: transparent !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  #home-after-hero-intro.home-after-hero-intro-web
+  .home-after-hero-intro-inner-web--home-menu {
+  padding-top: clamp(5px, 1.05vh, 11px);
+}
+
+@media (min-width: 1025px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: calc(4px + var(--menu-header-cat-gap-web, 10px));
+  }
+}
+
+.home-after-hero-intro-kicker-web {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: clamp(0.62rem, 1.05vw, 0.72rem);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #145142;
+  opacity: 0.92;
+}
+
+.home-after-hero-intro-title-web {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-feature-settings: 'liga' 1, 'kern' 1;
+}
+
+.home-after-hero-intro-body-web {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
 #menu-cinematic-block + #hero-banners.home-brand-story-section-web {
   margin-top: 0;
 }
@@ -3071,28 +3322,12 @@ html.watta-light-chrome body {
   }
 }
 
-/* М’яке «проявлення» секцій при скролі (герой не чіпаємо — він одразу на екрані) */
-@media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    .content-web--watta-craft:has(.menu-page-web) .menu-snap-section-cinematic-web,
-    .content-web--watta-craft:has(.menu-page-web) .menu-snap-section-brand-web {
-      animation: home-section-reveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 38%;
-    }
-  }
-
-}
-
-@keyframes home-section-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(36px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Cinematic + банери на головній: без view()-анімації — Safari лишав opacity:0. */
+.content-web--watta-craft:has(.menu-page-web) .menu-snap-section-cinematic-web,
+.content-web--watta-craft:has(.menu-page-web) .menu-snap-section-brand-web {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 /* Каталог меню: без scroll-timeline (Safari: view() нерідко залишав #home-menu-catalog з keyframes from → opacity:0). */
@@ -3103,6 +3338,22 @@ html.watta-light-chrome body {
   animation: none !important;
   z-index: 2;
   isolation: isolate;
+  /* Той самий кліп, що на /menu: flex + overflow:hidden обрізали сітку/стрічку товарів. */
+  overflow: visible !important;
+  flex-shrink: 0;
+}
+
+/* /menu: той самий захист для секції з товарами (клас лишаємо для семантики / пошуку в коді). */
+.watta-full-menu-page .home-menu-catalog-section-web.watta-full-menu-catalog-reveal-web {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+/* /menu: базовий overflow:hidden на .home-menu-catalog-section-web інколи обрізає сітку в колонці flex (WebKit). */
+.watta-full-menu-page .home-menu-catalog-section-web {
+  overflow: visible !important;
 }
 
 /* Отступ под фиксированным хедером */
@@ -3252,6 +3503,15 @@ html.watta-light-chrome body {
 }
 
 @media (min-width: 1025px) {
+  .app-header-web {
+    padding: 22px 36px;
+  }
+
+  .header-center-nav-inner-web {
+    gap: clamp(8px, 0.9vw, 16px);
+    padding: 0 clamp(8px, 1vw, 20px);
+  }
+
   .header-center-nav-web {
     display: flex !important;
     flex: 1 1 auto;
@@ -3261,48 +3521,88 @@ html.watta-light-chrome body {
 
   .header-center-nav-web .header-center-nav-tight-web,
   .header-center-nav-web .header-nav-contacts-txt {
-    font-size: clamp(11px, 0.85vw, 14px) !important;
+    font-size: clamp(14px, 1.05vw, 17px) !important;
   }
 
   .header-center-nav-web .header-nav-contacts-link-web {
-    padding: 2px 4px;
+    padding: 4px 8px;
     border-radius: 6px;
     min-width: 0;
   }
 
-  .location-section-web {
-    display: none;
+  .header-center-nav-web .location-picker-trigger {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px 6px 10px;
+    gap: 7px;
+    max-width: min(220px, 22vw);
+    min-height: 36px;
   }
-  
-  /* Скрываем иконки профиля, телефона, уведомлений и избранного в правой части на десктопе */
-  .header-actions-web .header-profile-btn,
-  .header-actions-web .header-phone-btn,
-  .header-actions-web .header-notifications-btn,
-  .header-actions-web .header-favorites-btn {
-    display: none !important;
+
+  .header-center-nav-web .location-picker-trigger__label {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .header-center-nav-web .location-picker-trigger__chev {
+    width: 15px;
+    height: 15px;
+  }
+
+  .header-center-nav-web .location-picker-trigger__pin svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .header-actions-web .header-profile-btn-web,
+  .header-actions-web .header-favorites-btn-web,
+  .header-actions-web .header-menu-btn-web,
+  .header-actions-web .header-cart-btn-text-web {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    box-sizing: border-box !important;
+    border-radius: 11px !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    box-sizing: border-box !important;
+    border-radius: 11px !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button svg {
+    width: 15px !important;
+    height: 15px !important;
   }
 }
 
-/* 1025–1320px: уміщаємо хедер (планшет / вузький laptop): компактніше меню, кошик-іконка */
+/* 1025–1320px: вузький laptop — трохи компактніше, але не «дрібний» рядок */
 @media (min-width: 1025px) and (max-width: 1320px) {
   .header-content-web {
-    gap: 6px;
+    gap: 8px;
   }
 
   .logo-text-image-web {
-    max-width: min(120px, 16vw) !important;
+    max-width: min(140px, 17vw) !important;
     height: auto !important;
   }
 
   .header-center-nav-inner-web {
-    gap: 3px 5px;
-    padding: 0 4px;
+    gap: 6px 8px;
+    padding: 0 6px;
   }
 
   .header-center-nav-web .location-picker-trigger {
     max-width: min(200px, 24vw);
-    padding: 5px 8px;
-    min-height: 0;
+    padding: 5px 11px 5px 9px;
+    min-height: 34px;
+    font-size: 12px;
+    gap: 6px;
   }
 
   .header-center-nav-web .location-picker-trigger__label {
@@ -3412,6 +3712,18 @@ html.watta-light-chrome body {
   
   .logo-text-image-web {
     max-width: 150px;
+  }
+}
+
+/* Телефон: у шапці лише піктограма-логотип; зображення з написом бренду приховано */
+@media (max-width: 767px) {
+  .logo-text-images-web {
+    display: none !important;
+  }
+
+  .logo-section-web {
+    gap: 0;
+    padding-inline: 4px;
   }
 }
 
@@ -3595,20 +3907,22 @@ html.watta-light-chrome body {
   flex-shrink: 0;
 }
 
-/* Кнопка выбора языка в хедере: та же ширина и высота, что й інші квадрати */
+/* Кнопка выбора языка в хедере: той самий квадрат, що й інші кнопки дій (40×40) */
 .header-actions-web .header-lang-wrap-web button {
-  width: 36px !important;
-  min-width: 36px !important;
-  height: 36px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
   padding: 0 !important;
   border-radius: 10px !important;
   border: 2px solid #145142 !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   gap: 2px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   box-shadow: 0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1) !important;
+  box-sizing: border-box !important;
 }
 
 .header-actions-web .header-lang-wrap-web button svg {
@@ -3631,9 +3945,16 @@ html.watta-light-chrome body {
   margin-right: 0 !important;
 }
 
+/* Після базового font-size: літери мови трохи більші на laptop / desktop */
+@media (min-width: 1025px) {
+  .header-actions-web .header-lang-wrap-web button {
+    font-size: 13px !important;
+  }
+}
+
 .header-favorites-btn-web {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   transition: background 0.2s, box-shadow 0.2s;
 }
 
@@ -3682,6 +4003,8 @@ html.watta-light-chrome body {
 }
 
 .header-cart-btn-text-web {
+  position: relative;
+  overflow: visible;
   transition: background 0.2s, box-shadow 0.2s;
 }
 
@@ -3773,7 +4096,7 @@ html.watta-light-chrome body {
 
 /* Стили для счетчика корзины */
 .cart-badge-web {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   border-radius: 12px;
   display: flex;
@@ -3784,6 +4107,13 @@ html.watta-light-chrome body {
   z-index: 10;
   white-space: nowrap;
   animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* У шапки позиция задаётся інлайном; pulse перезаписує transform і збиває кут */
+.header-favorites-btn-web .cart-badge-web,
+.header-favorites-btn-web .favorites-badge-web,
+.header-cart-btn-text-web .cart-badge-web {
+  animation: none;
 }
 
 @keyframes badgePulse {
@@ -4088,9 +4418,9 @@ html.watta-light-chrome body {
   justify-content: center;
   gap: 8px;
   margin: 0 auto;
-  padding: 10px max(8px, env(safe-area-inset-left, 0px)) 10px max(8px, env(safe-area-inset-right, 0px));
+  padding: 10px max(20px, env(safe-area-inset-left, 0px)) 10px max(20px, env(safe-area-inset-right, 0px));
   width: fit-content;
-  max-width: calc(100% - 12px);
+  max-width: calc(100% - 56px);
   position: sticky;
   top: var(--watta-cat-sticky-top);
   left: auto;
@@ -4111,10 +4441,10 @@ html.watta-light-chrome body {
   .categories-panel-wrapper-web {
     margin: 0 auto;
     width: fit-content;
-    max-width: calc(100% - 12px);
+    max-width: calc(100% - 56px);
     gap: 0;
     min-height: 48px;
-    padding: 6px max(8px, env(safe-area-inset-left, 0px)) 6px max(8px, env(safe-area-inset-right, 0px));
+    padding: 6px max(20px, env(safe-area-inset-left, 0px)) 6px max(20px, env(safe-area-inset-right, 0px));
   }
 
   /* Головна /menu: компактніший рядок під fixed — менше білого над панеллю категорій */
@@ -4146,10 +4476,10 @@ html.watta-light-chrome body {
 
   /* Ноутбук / ПК: невеликий зазор між шапкою та панеллю категорій; компактна панель */
   .categories-panel-wrapper-web {
-    padding: 6px max(8px, env(safe-area-inset-left, 0px)) 6px max(8px, env(safe-area-inset-right, 0px));
+    padding: 6px max(20px, env(safe-area-inset-left, 0px)) 6px max(20px, env(safe-area-inset-right, 0px));
     min-height: 0;
     gap: 6px;
-    max-width: calc(100% - 12px);
+    max-width: calc(100% - 56px);
     border-radius: 14px;
     box-shadow:
       0 3px 16px rgba(20, 81, 66, 0.05),
@@ -4184,21 +4514,111 @@ html.watta-light-chrome body {
   display: block !important;
 }
 
-/* Головна: додатково підтягуємо потік під fixed (offsetHeight + fudge інколи залишають смугу) */
-.menu-page-web .watta-sticky-chrome-flow-anchor {
-  margin-bottom: -28px !important;
+/* Головна: відео вище — мінімальний зазор під chrome; суцільний білий фон під панеллю */
+.menu-page-web:not(.watta-full-menu-page) > .menu-content-top-gap-web {
+  height: clamp(0px, 0.45vh, 8px) !important;
+  min-height: clamp(0px, 0.45vh, 8px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  line-height: 1 !important;
+  font-size: 1px !important;
+  flex-shrink: 0 !important;
+  background-color: #ffffff;
 }
 
-/* Планшет: лінія кадру вище. translateY залишав пусте місце в потоці — компенсуємо margin-bottom */
-@media (min-width: 481px) and (max-width: 1024px) {
-  .menu-page-web .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
-    --watta-menu-hero-lift: clamp(32px, 3.5vw, 56px);
-    margin-top: -8px !important;
-    padding-top: 0 !important;
-    transform: translateY(calc(-1 * var(--watta-menu-hero-lift)));
-    margin-bottom: calc(-1 * var(--watta-menu-hero-lift)) !important;
+/* Телефон / планшет: явний зазор після панелі категорій — відео нижче, не під нею */
+@media (max-width: 768px) {
+  .menu-page-web .categories-panel-spacer-web {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    line-height: 1 !important;
+    font-size: 1px !important;
+  }
+
+  /* Головна на телефоні: тонкий зазор під чіпами — відео ближче до панелі */
+  .menu-page-web:not(.watta-full-menu-page) .categories-panel-spacer-web {
+    height: 6px !important;
+    min-height: 6px !important;
+  }
+
+  /*
+   * Головна MenuView (≤768): категорії винесені з fixed-chrome — один стовпчик «біла смуга + відео».
+   * Прибираємо зайвий спейсер і підклеюємо hero до панелі чіпів; чіпи лишаються sticky під шапкою.
+   */
+  .menu-page-web .menu-home-narrow-strip-hero-web {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    background: #ffffff;
+  }
+
+  .menu-page-web .menu-home-narrow-strip-hero-web .categories-panel-spacer-web {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+  }
+
+  .menu-page-web .menu-home-narrow-strip-hero-web .categories-panel-wrapper-web {
+    position: sticky !important;
+    top: calc(env(safe-area-inset-top, 0px) + clamp(48px, 12.5vw, 64px)) !important;
+    z-index: 85;
+    margin-bottom: 0 !important;
+    /* Без окремої «лінії» між білими чіпами та тайлом відео */
+    border-bottom: none !important;
+    border-radius: 14px 14px 0 0 !important;
+    box-shadow: 0 3px 16px rgba(20, 81, 66, 0.05) !important;
+  }
+
+  .menu-page-web .menu-home-narrow-strip-hero-web .welcome-hero-section-web {
+    margin-top: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .menu-page-web .menu-home-narrow-strip-hero-web
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .menu-page-web .menu-home-narrow-strip-hero-web
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-top: 0 !important;
+    border: none !important;
+    border-radius: 0 0 var(--watta-home-hero-card-r, clamp(12px, 2.8vw, 20px))
+      var(--watta-home-hero-card-r, clamp(12px, 2.8vw, 20px)) !important;
+    box-shadow: none !important;
+  }
+
+  /* Вступ перед блоком чіпів+відео — менший нижній відступ, без «подвійної білої плитки» */
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
+    .home-after-hero-intro-inner-web {
+    padding-bottom: 0.65rem !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    + .menu-home-narrow-strip-hero-web {
+    margin-top: 0 !important;
   }
 }
+
+/* Підйом героя під fixed chrome (шапка + категорії) — @media (min-width: 769px) у блоці «full-bleed герой» нижче */
 
 /* Контент після відео: свій фон і z-index, щоб банер/меню не «просвічували» крізь відео */
 .menu-after-welcome-web {
@@ -4281,7 +4701,7 @@ html.watta-light-chrome body {
 }
 
 .home-full-menu-catalog-web {
-  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+  padding-bottom: clamp(1.1rem, 2.8vw, 2rem);
 }
 
 /* Заголовок секції — по центру, serif + коротка смужка під текстом */
@@ -4311,13 +4731,8 @@ html.watta-light-chrome body {
 }
 
 .home-full-menu-catalog-title-web::after {
-  content: '';
-  display: block;
-  width: min(4.5rem, 28vw);
-  height: 3px;
-  margin: 0.55rem auto 0;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #145142 0%, rgba(20, 81, 66, 0.35) 100%);
+  content: none;
+  display: none;
 }
 
 .home-menu-cat-list-web {
@@ -4336,24 +4751,19 @@ html.watta-light-chrome body {
   }
 }
 
-/* Категорія: м’яка смуга + лівий акцент (не біла «картка») */
+/* Категорія на головній — без підсвітки / смуги під заголовком.
+ * Горизонтальний padding лише зверху/знизу: стрічка товарів тягнеться на всю ширину секції без «втоплення» в бік. */
 .home-menu-cat-band-web {
   margin: 0;
-  padding: 1rem 0.85rem 1.1rem 1rem;
-  border-radius: 0 1.15rem 1.15rem 0;
+  padding: 1rem 0 1.1rem;
+  border-radius: 0;
   border: none;
-  border-left: 4px solid rgba(20, 81, 66, 0.35);
-  background: linear-gradient(
-    105deg,
-    rgba(20, 81, 66, 0.07) 0%,
-    rgba(20, 81, 66, 0.02) 42%,
-    transparent 72%
-  );
+  background: transparent;
 }
 
 @media (min-width: 640px) {
   .home-menu-cat-band-web {
-    padding: 1.15rem 1.25rem 1.2rem 1.15rem;
+    padding: 1.15rem 0 1.2rem;
   }
 }
 
@@ -4371,7 +4781,7 @@ html.watta-light-chrome body {
   font-size: clamp(1.75rem, 4vw, 2.1rem);
   line-height: 1.1;
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 1px rgba(20, 81, 66, 0.08));
+  filter: none;
 }
 
 .home-menu-cat-heading-text-web {
@@ -4403,13 +4813,13 @@ html.watta-light-chrome body {
 }
 
 .home-menu-cat-rail-inset-web {
-  margin: 0 -0.2rem 0;
-  padding: 0 0.1rem 0.15rem 0.15rem;
+  margin: 0;
+  padding: 0 0 0.15rem;
 }
 
 @media (min-width: 640px) {
   .home-menu-cat-rail-inset-web {
-    margin: 0 -0.15rem 0;
+    margin: 0;
   }
 }
 
@@ -4426,37 +4836,48 @@ html.watta-light-chrome body {
 .home-menu-cat-view-all-wrap-web {
   display: flex;
   justify-content: center;
-  margin-top: clamp(0.65rem, 2vw, 1rem);
-  padding-top: 0.15rem;
+  margin-top: clamp(0.45rem, 1.4vw, 0.75rem);
+  padding-top: 0.1rem;
 }
 
+/* Пилюля «усе меню» — той самий вигляд, що кнопка під стеком «Наші хіти» на телефоні */
+.footer-hits-see-all-cta,
 .home-menu-cat-view-all-btn-web {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.65rem;
-  padding: 0.55rem 1.5rem;
+  min-height: 0;
+  padding: 0.5rem 0.875rem;
   border-radius: 9999px;
   border: 1px solid rgba(20, 81, 66, 0.22);
-  background: #ffffff;
+  background: rgba(20, 81, 66, 0.05);
   font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
   color: #145142;
-  box-shadow: none;
+  text-decoration: none;
+  box-shadow:
+    0 0 0 1px rgba(20, 81, 66, 0.1),
+    0 1px 0 rgba(20, 81, 66, 0.06);
   transition:
     border-color 0.2s ease,
-    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
     transform 0.15s ease;
 }
 
+.footer-hits-see-all-cta:hover,
 .home-menu-cat-view-all-btn-web:hover {
-  border-color: rgba(20, 81, 66, 0.38);
-  color: #0f3d32;
-  background: rgba(20, 81, 66, 0.04);
+  border-color: rgba(20, 81, 66, 0.4);
+  background: rgba(20, 81, 66, 0.1);
+  box-shadow:
+    0 0 0 1px rgba(20, 81, 66, 0.18),
+    0 1px 0 rgba(20, 81, 66, 0.06);
 }
 
+.footer-hits-see-all-cta:active,
 .home-menu-cat-view-all-btn-web:active {
   transform: scale(0.98);
 }
@@ -4466,6 +4887,31 @@ html.watta-light-chrome body {
   position: relative;
 }
 
+/*
+ * Full-bleed відносно #home-menu-catalog: картки можна догортати до краю вікна,
+ * без обрізання батьківським max-width / padding смуги.
+ */
+#home-menu-catalog .home-menu-category-rail-outer-web {
+  position: relative;
+  width: 100vw;
+  max-width: 100vw;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+
+/* /menu — блок «новинки / хіти / акції» під hero: той самий full-bleed для горизонтальної стрічки */
+.watta-full-menu-page #menu-cinematic-block .home-menu-category-rail-outer-web {
+  position: relative;
+  width: 100vw;
+  max-width: 100vw;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+
 .home-menu-category-rail-web {
   display: flex;
   flex-direction: row;
@@ -4473,12 +4919,27 @@ html.watta-light-chrome body {
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: 4px;
+  scroll-padding-inline: max(1rem, env(safe-area-inset-left, 0px));
   -webkit-overflow-scrolling: touch;
   padding-bottom: 0.35rem;
+  padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
   scrollbar-width: none;
   -ms-overflow-style: none;
   overscroll-behavior-x: contain;
+}
+
+@media (min-width: 640px) {
+  #home-menu-catalog .home-menu-category-rail-web {
+    scroll-padding-inline: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-inline: max(1.5rem, env(safe-area-inset-left, 0px)) max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 768px) {
+  #home-menu-catalog .home-menu-category-rail-web {
+    scroll-padding-inline: max(2rem, env(safe-area-inset-left, 0px));
+    padding-inline: max(2rem, env(safe-area-inset-left, 0px)) max(2rem, env(safe-area-inset-right, 0px));
+  }
 }
 
 .home-menu-category-rail-web::-webkit-scrollbar {
@@ -4507,30 +4968,142 @@ html.watta-light-chrome body {
     border-color 0.25s ease;
 }
 
-/* У стрічці: одна «порція» на телефоні з ледь помітним зазором наступної картки */
+/* У стрічці: на телефоні 1 повна картка + половина наступної (натяк на свайп); 1 зазор 1rem між ними */
 .home-menu-product-card--rail-web {
-  flex: 0 0 min(300px, 88%);
+  flex: 0 0 calc((100% - 1rem) / 1.5);
   scroll-snap-align: start;
   scroll-snap-stop: normal;
   min-width: 0;
 }
 
-@media (min-width: 640px) {
-  .home-menu-product-card--rail-web {
-    flex: 0 0 calc((100% - 1rem) / 2);
+/* Фото в горизонтальній стрічці — ближче до квадрата (загальне 4:3 лишається для сітки) */
+.home-menu-product-card--rail-web .home-menu-product-card-media-web {
+  aspect-ratio: 1 / 1;
+}
+
+/* Планшет 768–1023: 2 повні + половина третьої (gap 1rem у rail) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #home-menu-catalog .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 2rem) / 2.5);
+    max-width: calc((100% - 2rem) / 2.5);
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-media-web {
+    aspect-ratio: 1 / 1;
+    max-height: none;
+    padding: 0 !important;
+    line-height: 0;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-body-web {
+    padding: 0.72rem 0.82rem 0.82rem;
+    gap: 0.32rem;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-title-web {
+    font-size: 0.98rem;
+    line-height: 1.26;
+    -webkit-line-clamp: 2;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-desc-web {
+    -webkit-line-clamp: 1;
+    line-height: 1.35;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-footer-web {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.45rem;
+    padding-top: 0.45rem;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-price-stack-web {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-price-web {
+    font-size: 1.05rem;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-add-web {
+    flex-shrink: 0;
+    min-height: 1.95rem;
+    padding: 0.26rem 0.5rem 0.26rem 0.42rem;
+    font-size: 0.6rem;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-add-text-web {
+    max-width: 5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-@media (min-width: 900px) {
-  .home-menu-product-card--rail-web {
-    flex: 0 0 calc((100% - 2rem) / 3);
-  }
-}
-
-/* Ноутбук і десктоп — чотири картки в видимій зоні, решта — прокрутка */
+/* Ноутбук і десктоп: 3 повні + половина четвертої; 3 зазори по 1rem */
 @media (min-width: 1024px) {
-  .home-menu-product-card--rail-web {
-    flex: 0 0 calc((100% - 3rem) / 4);
+  #home-menu-catalog .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 3rem) / 3.5);
+    max-width: calc((100% - 3rem) / 3.5);
+  }
+
+  #home-menu-catalog .home-menu-category-rail-web {
+    padding-bottom: 0.75rem;
+  }
+
+  /* Квадратне прев’ю; компактний текст і футер */
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-media-web {
+    aspect-ratio: 1 / 1;
+    max-height: none;
+    padding: 0 !important;
+    line-height: 0;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-body-web {
+    padding: 0.75rem 0.85rem 0.85rem;
+    gap: 0.35rem;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-title-web {
+    font-size: clamp(0.92rem, 1.35vw, 1.05rem);
+    -webkit-line-clamp: 2;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-desc-web {
+    -webkit-line-clamp: 1;
+    line-height: 1.35;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-footer-web {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.45rem;
+    padding-top: 0.5rem;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-price-stack-web {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-price-web {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-add-web {
+    flex-shrink: 0;
+    min-height: 2rem;
+    padding: 0.28rem 0.55rem 0.28rem 0.45rem;
+    font-size: 0.62rem;
+  }
+
+  #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-add-text-web {
+    max-width: 5.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -4561,26 +5134,6 @@ html.watta-light-chrome body {
 @media (hover: hover) and (pointer: fine) {
   .home-menu-product-card-media-web.group\/media:hover .home-menu-product-card-img-web {
     transform: scale(1.05);
-  }
-}
-
-.home-menu-product-card-shine-web {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    125deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.2) 48%,
-    transparent 56%
-  );
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .home-menu-product-card-media-web.group\/media:hover .home-menu-product-card-shine-web {
-    opacity: 1;
   }
 }
 
@@ -4627,6 +5180,161 @@ html.watta-light-chrome body {
   flex-direction: column;
   gap: 0.45rem;
   padding: 1rem 1.1rem 1.05rem;
+}
+
+/* Сітка на телефоні: картка не тягнеться на висоту рядка; нижче фото та менше тексту */
+@media (max-width: 639px) {
+  .home-menu-product-card--grid-web .home-menu-product-card-body-web {
+    flex: 0 1 auto;
+    padding: 0.62rem 0.72rem 0.72rem;
+    gap: 0.28rem;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-card-media-web {
+    aspect-ratio: 16 / 11;
+    border-radius: 1.15rem 1.15rem 0 0;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-card-title-web {
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-card-desc-web {
+    font-size: 0.74rem;
+    line-height: 1.38;
+    -webkit-line-clamp: 1;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-card-footer-web {
+    margin-top: 0.35rem;
+    padding-top: 0.42rem;
+    gap: 0.4rem;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-add-web {
+    min-height: 1.85rem;
+    padding: 0.2rem 0.45rem 0.2rem 0.38rem;
+    font-size: 0.58rem;
+  }
+}
+
+/* Блоки «новинки / хіти / акції» на /menu — компактніші картки й більший відступ від країв стрічки */
+.menu-highlight-stack-web .home-menu-product-card-web {
+  border-radius: 1.12rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-media-web {
+  aspect-ratio: 2 / 1;
+  border-radius: 0.95rem 0.95rem 0 0;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-body-web {
+  flex: 0 1 auto;
+  padding: 0.45rem 0.55rem 0.52rem;
+  gap: 0.18rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-title-web {
+  font-size: 0.8rem;
+  line-height: 1.18;
+  -webkit-line-clamp: 2;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-subline-web {
+  margin-top: 0.04rem;
+  font-size: 0.65rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-desc-web {
+  display: none;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-footer-web {
+  margin-top: 0.22rem;
+  padding-top: 0.32rem;
+  gap: 0.28rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-price-old-web {
+  font-size: 0.68rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-price-web {
+  font-size: 0.92rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-add-web {
+  min-height: 1.52rem;
+  padding: 0.12rem 0.36rem 0.12rem 0.3rem;
+  font-size: 0.52rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-add-icon-web {
+  width: 13px;
+  height: 13px;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .absolute.right-2.top-2 button {
+  height: 2rem;
+  width: 2rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--grid-web .absolute.right-2.top-2 svg {
+  width: 15px;
+  height: 15px;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-media-web {
+  aspect-ratio: 1 / 1;
+  max-height: 7.25rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-body-web {
+  padding: 0.5rem 0.58rem 0.58rem;
+  gap: 0.22rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-title-web {
+  font-size: 0.84rem;
+  line-height: 1.2;
+  -webkit-line-clamp: 2;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-desc-web {
+  display: none;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-subline-web {
+  font-size: 0.68rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-footer-web {
+  margin-top: 0.28rem;
+  padding-top: 0.36rem;
+  gap: 0.32rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-price-web {
+  font-size: 0.95rem;
+}
+
+.menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-add-web {
+  min-height: 1.58rem;
+  padding: 0.14rem 0.42rem 0.14rem 0.34rem;
+  font-size: 0.54rem;
+}
+
+.watta-full-menu-page #menu-cinematic-block .menu-highlight-stack-web .home-menu-category-rail-web {
+  scroll-padding-inline: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-inline: max(1.25rem, env(safe-area-inset-left, 0px)) max(1.25rem, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 640px) {
+  .watta-full-menu-page #menu-cinematic-block .menu-highlight-stack-web .home-menu-category-rail-web {
+    scroll-padding-inline: max(1.75rem, env(safe-area-inset-left, 0px));
+    padding-inline: max(1.75rem, env(safe-area-inset-left, 0px)) max(1.75rem, env(safe-area-inset-right, 0px));
+  }
 }
 
 .home-menu-product-card-title-link-web {
@@ -5108,9 +5816,12 @@ html.watta-light-chrome body {
     0 2px 14px rgba(0, 0, 0, 0.35);
 }
 
-/* Горизонтальний свайп по банеру: вертикальний скрол сторінки лишається за браузером */
+/*
+ * Свайп по банеру (JS): дозволяємо pan-x + pan-y, щоб iOS/Android коректно
+ * віддавали горизонтальний жест; переважно вертикальні рухи й далі відсікає код у MenuView.
+ */
 .hero-banner-swipe-web {
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -5206,12 +5917,12 @@ html.watta-light-chrome body {
 
   .menu-page-web--hero-phase-mobile .welcome-video-native-web {
     object-fit: contain !important;
-    object-position: center center !important;
+    object-position: center top !important;
   }
 
   .menu-page-web--hero-phase-mobile .welcome-hero-fallback-image-web {
     background-size: contain !important;
-    background-position: center center !important;
+    background-position: center top !important;
   }
 
   .categories-panel-spacer-web--hero-phase-mobile {
@@ -5233,7 +5944,7 @@ html.watta-light-chrome body {
 
 /* Перша секція: герой; на головній (.menu-page-web) без нахльосту — див. блок «Головна: герой… під панеллю» */
 .welcome-hero-section-web {
-  /* Негативний margin-top через --welcome-cat-overlap; на / для menu-page вимкнено */
+  /* Негативний margin-top через --welcome-cat-overlap; для головної з глобальним chrome — окремий блок нижче */
   --welcome-cat-overlap: clamp(128px, 26vw, 176px);
   position: relative;
   isolation: isolate;
@@ -5248,8 +5959,47 @@ html.watta-light-chrome body {
   background: var(--watta-page-fill);
 }
 
+/*
+ * Головна: шапка + категорії в `WattaPublicSiteChrome` (fixed) і резерв висоти вже в `main`.
+ * Негативний overlap / translateY (історично — «підтягнути» кадр під стрічку категорій у потоці menu-page)
+ * тягне секцію вгору й обрізає її зверху в `.content-web` (overflow) — виглядає як «немає відео».
+ */
+.menu-page-web:not(.watta-full-menu-page) .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+  --welcome-cat-overlap: 0px !important;
+  /* Однакові радіуси плитки героя (відео + бігуча смуга) — усі кути однакові, див. використання нижче */
+  --watta-home-hero-card-r: clamp(14px, 2.4vw, 26px);
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/*
+ * Головна MenuView: без canvas-mirror (див. MenuView.tsx) — на десктопі примусово
+ * показуємо нативний <video> (opacity 1), інакше лишається правило 0.001 + порожній canvas.
+ */
+@media (min-width: 769px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .welcome-hero-video-canvas-mirror-web {
+    display: none !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
 @media (min-width: 1025px) {
-  .welcome-hero-section-web {
+  .welcome-hero-section-web:not(.watta-home-hero-as-card-web) {
     min-height: calc(100svh - env(safe-area-inset-top, 0px) - 80px);
     /* На великих екранах теж папіревий тон, не #0c0c0c */
     background: var(--watta-page-fill);
@@ -5260,6 +6010,103 @@ html.watta-light-chrome body {
   position: absolute;
   inset: 0;
   line-height: 0;
+  /* Постер як фон контейнера: мить SSR + першого hydrate видно картинку, поки декодер mp4 не вискочив. */
+  background-image: url('/watta-sushi.jpg');
+  background-size: cover;
+  background-position: center 18%;
+  background-repeat: no-repeat;
+}
+
+/* Головна (не /menu): без фото-фону під відео — лише папір секції */
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-fill-web {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+/*
+ * Головна: плитка з відео — cover у 16∶9, без білих смуг letterbox; без великої drop-тіні (сіра смуга під карткою).
+ */
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+  position: relative !important;
+  isolation: isolate;
+  background: #ffffff !important;
+  margin-top: 0 !important;
+  /* Не успадковувати ~100svh від `.welcome-hero-section-web` — інакше плитка «тонка», а секція біла на всю висоту */
+  min-height: 0 !important;
+  height: auto !important;
+  z-index: 2 !important;
+  /* Повний кадр не обрізається overflow секції */
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  padding: clamp(0px, 0.35vh, 6px) clamp(12px, 3vw, 28px) clamp(10px, 1.5vh, 22px) !important;
+  box-sizing: border-box;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-fill-web {
+  position: relative !important;
+  width: 100% !important;
+  max-width: min(100%, 1120px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 0 !important;
+  z-index: 2 !important;
+  border-radius: var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)) !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(20, 81, 66, 0.18) !important;
+  /* Без великої нижньої тіні — інакше на білому блоці під відео виглядає як сіра смуга */
+  box-shadow: none !important;
+}
+
+/*
+ * Головна: плитка з відео — контейнер має стабільну висоту (16∶9 + min-height), інакше <video height:auto>
+ * згортається в «смужку» до loadedmetadata. Усередині — cover = кадр на всю плитку без білих полів.
+ */
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web {
+  position: relative !important;
+  width: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  min-height: min(240px, 52vw, 48vh) !important;
+  max-height: min(86dvh, calc(100svh - 168px)) !important;
+  height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  border-radius: inherit;
+  line-height: 0 !important;
+  background: #0c1210 !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web
+  .watta-home-hero-native-video {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center 18% !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web
+  .welcome-hero-video-input-shield-web {
+  z-index: 4 !important;
 }
 
 /* Стек відео + прозорий шар: Safari/Mac інакше отримує клік на <video> і toggle play/pause */
@@ -5282,9 +6129,10 @@ html.watta-light-chrome body {
 }
 
 @media (min-width: 1025px) {
+  /* Без scale/Ken Burns на canvas — додаткове масштабування розмазує drawImage. */
   .welcome-hero-video-stack-web .welcome-hero-video-canvas-mirror-web {
-    transform: scale(1.02);
-    animation: welcomeVideoKen 28s ease-in-out infinite alternate;
+    transform: none;
+    animation: none;
   }
 }
 
@@ -5295,11 +6143,110 @@ html.watta-light-chrome body {
   }
 }
 
-.welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
-.welcome-hero-video-source-for-canvas-web.watta-full-menu-intro-video-el {
-  opacity: 0 !important;
+/*
+ * Головна картка (MenuView): `bindHeroVideoMirrorToCanvas` вимкнено — `<canvas>` не оновлюється,
+ * але на широкому екрані лишався шар із `scale(1.02)` / Ken Burns поверх нативного `<video>`.
+ * У WebKit це виглядає як суцільна чорна смуга зверху кадру.
+ */
+.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) .welcome-hero-video-canvas-mirror-web {
+  display: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+/*
+ * Майже прозоре відео лише там, де реально малюється canvas-mirror (drawImage).
+ * Головна MenuView: mirror вимкнений — глобальне 0.001 тут лишало ролик «невидимим» на частині десктопів.
+ */
+.watta-full-menu-page .welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
+.welcome-hero-video-source-for-canvas-web.watta-full-menu-intro-video-el,
+.delivery-page-hero-embed-web .welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
+.delivery-page-hero-standalone-web .welcome-hero-video-source-for-canvas-web.welcome-video-native-web {
+  /* Не 0: WebKit часто не віддає пікселі в canvas.drawImage, якщо відео повністю прозоре — «мертве» герой-відео. */
+  opacity: 0.001 !important;
   animation: none !important;
   transform: none !important;
+}
+
+/*
+ * iOS Safari (Mobile): майже-прозорі / перекриті <video> часто НЕ автостартують
+ * (Low Power Mode + WebKit Heuristics). Тому на тач-пристроях показуємо нативний
+ * <video> напряму (object-fit: cover) і ховаємо canvas-mirror — ніяких Ken Burns
+ * ефектів там і так не вмикали. Поріг 1024px збігається з логікою у медіазапитах
+ * нижче, де canvas-анімація вже вимкнена.
+ */
+@media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video,
+  .welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
+  .welcome-hero-video-source-for-canvas-web.watta-full-menu-intro-video-el {
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+  }
+
+  /* Картка головної: той самий cover, що на широкому екрані — без білих смуг letterbox */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center 18% !important;
+  }
+
+  .welcome-hero-video-stack-web .welcome-hero-video-canvas-mirror-web {
+    display: none !important;
+  }
+
+  /* Шит над відео лишаємо — він блокує тап-toggle-play, але вже не закриває
+     візуально нативний <video>. */
+  .welcome-hero-video-stack-web .welcome-hero-video-input-shield-web {
+    z-index: 3 !important;
+    background: transparent !important;
+  }
+}
+
+/*
+ * Десктоп + миша: як на touch — нативне <video> (GPU, повний DPR), canvas приховано.
+ * JS не викликає bindHeroVideoMirrorToCanvas при цьому matchMedia.
+ */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  .watta-full-menu-page .welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
+  .welcome-hero-video-source-for-canvas-web.watta-full-menu-intro-video-el,
+  .delivery-page-hero-embed-web .welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
+  .delivery-page-hero-standalone-web .welcome-hero-video-source-for-canvas-web.welcome-video-native-web {
+    opacity: 1 !important;
+    visibility: visible !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .welcome-hero-video-stack-web .welcome-hero-video-canvas-mirror-web {
+    display: none !important;
+  }
+
+  .welcome-hero-video-stack-web .welcome-hero-video-input-shield-web {
+    z-index: 3 !important;
+    background: transparent !important;
+  }
 }
 
 .welcome-hero-video-input-shield-web {
@@ -5365,6 +6312,14 @@ html.watta-light-chrome body {
   outline: none;
 }
 
+/* Головна: без класу `welcome-hero-video-source-for-canvas-web` — повна видимість на всіх ширинах */
+.watta-home-hero-native-video {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: none !important;
+  transform: none !important;
+}
+
 /* Заміна відео, якщо файл відсутній на хостингу (репо без великих mp4) */
 .welcome-hero-fallback-image-web {
   background-size: cover;
@@ -5379,7 +6334,8 @@ html.watta-light-chrome body {
 
 /* Телефон + планшет: звичайний формат — на всю ширину вікна, висота як у ролика */
 @media (max-width: 1024px) {
-  .welcome-hero-section-web {
+  /* Картка головної — своя висота від плитки 16∶9; без цього успадковується великий min-height і «біле поле» */
+  .welcome-hero-section-web:not(.watta-home-hero-as-card-web) {
     --welcome-cat-overlap: clamp(56px, 11vw, 88px);
     /* Було min-height: 0 — блок схлопувався, поки відео не дало висоту або при помилці завантаження */
     min-height: clamp(220px, 58vw, 72vh);
@@ -5494,16 +6450,17 @@ html.watta-light-chrome body {
 }
 
 /*
- * Головна: герой після панелі (flow + flowHeightFudge у MenuView) — див. також −2px з 481px.
- * Висота секції — за кадром відео (contain).
+ * Головна: герой після панелі (flow + flowHeightFudge у MenuView).
+ * З 769px — edge-to-edge і підйом під fixed chrome (блок «full-bleed герой» нижче); тут — спільні кольори секції.
  */
 .menu-page-web .welcome-hero-section-web {
   --welcome-cat-overlap: 0px !important;
   margin-top: 0 !important;
-  background: var(--watta-page-gradient) !important;
+  background: #ffffff !important;
 }
 
-.menu-page-web .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web) {
   min-height: 0 !important;
 }
 
@@ -5514,112 +6471,187 @@ html.watta-light-chrome body {
   }
 }
 
-/* Ноут / планшет / ПК: як раніше — повний кадр (contain), без обрізання по висоті */
-@media (min-width: 481px) {
-  .menu-page-web .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+/* Усі ширини: герой у MenuView має бути в потоці (relative fill/stack), інакше при ≤480 без min(481px) секція з min-height:0 зникає повністю */
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web) {
+  position: relative !important;
+  isolation: isolate;
+  overflow: hidden !important;
+}
+
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+  .welcome-hero-video-fill-web {
+  position: relative !important;
+  inset: auto !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+}
+
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+  .welcome-hero-video-stack-web {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  min-height: 0 !important;
+}
+
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+  .welcome-video-native-web,
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+  .watta-full-menu-intro-video-el {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: min(96vh, 1200px) !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+  .welcome-hero-fallback-image-web {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: min(96vh, 1200px) !important;
+  aspect-ratio: 16 / 9 !important;
+  background-size: contain !important;
+  background-position: center center !important;
+}
+
+.menu-page-web
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+  .welcome-hero-video-stack-web
+  .welcome-hero-video-canvas-mirror-web {
+  transform: none !important;
+  animation: none !important;
+}
+
+/*
+ * Телефон / планшет (≤768): без «lift» під категоріями — відео починається нижче панелі, не нахльостом.
+ */
+@media (max-width: 768px) {
+  .menu-page-web .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+    --watta-menu-hero-lift: 0px !important;
+    margin-top: 0 !important;
+    /* Резерв висоти вже дає `.watta-sticky-chrome-flow-anchor` — без додаткового білого поля над відео */
+    padding-top: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    margin-bottom: 0 !important;
+    /* Висоту дає плитка відео; min-height з clamp роздував секцію — білий зазор під marquee */
+    min-height: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
     position: relative !important;
     isolation: isolate;
-    overflow: hidden !important;
+    z-index: 2 !important;
   }
 
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .welcome-hero-video-fill-web {
-    position: relative !important;
-    inset: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .welcome-hero-video-stack-web {
-    position: relative !important;
-    inset: auto !important;
-    width: 100% !important;
-    min-height: 0 !important;
-  }
-
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .welcome-video-native-web,
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .watta-full-menu-intro-video-el {
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    max-height: min(96vh, 1200px) !important;
-    object-fit: contain !important;
-    object-position: center top !important;
-    transform: none !important;
-    animation: none !important;
-  }
-
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .welcome-hero-fallback-image-web {
-    min-height: 0 !important;
-    height: auto !important;
-    max-height: min(96vh, 1200px) !important;
-    aspect-ratio: 16 / 9 !important;
-    background-size: contain !important;
-    background-position: center top !important;
-  }
-
-  .menu-page-web
+  /* Висота стеку для головної — у блоках ≤768 / ≥769; тут лишаємо лише canvas прихованим */
+  .menu-page-web:not(.watta-full-menu-page)
     .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
     .welcome-hero-video-stack-web
     .welcome-hero-video-canvas-mirror-web {
     transform: none !important;
     animation: none !important;
+    display: none !important;
+  }
+
+  .menu-page-web .home-hero-after-marquee-wrap-web {
+    flex-shrink: 0;
   }
 }
 
-/* Ноут/ПК: full-bleed + підйом; contain без max-height (інакше кадр стискається вшир — «поля» зліва/справа) */
-@media (min-width: 1025px) {
-  .menu-page-web .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
-    --watta-menu-hero-lift: clamp(56px, 5.5vw, 88px);
+/*
+ * Планшет (≥769), ноут, ПК: зазор під fixed chrome (шапка + категорії), базовий layout героя;
+ * ширина колонки + object-fit: cover для відео — у наступному @media (min-width: 769px) «стрічка».
+ */
+@media (min-width: 769px) {
+  /* Головна: панель категорій (спейсер у chrome) — окремо; відступ героя — лише для положення відео */
+  .menu-page-web:not(.watta-full-menu-page) {
+    --watta-home-cat-spacer-h: clamp(4px, 0.85vw, 10px);
+  }
+
+  /* /menu: підтягування потоку під fixed chrome; головна — margin-bottom 0 (див. блок вище для .menu-page-web:not(.watta-full-menu-page)) */
+  .menu-page-web.watta-full-menu-page .watta-sticky-chrome-flow-anchor {
+    margin-bottom: calc(-1 * clamp(72px, 12vh, 148px)) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
+  }
+
+  /* Головна: спейсер у fixed chrome — лише під панеллю, не керує padding героя */
+  .menu-page-web:not(.watta-full-menu-page) .categories-panel-spacer-web {
+    height: var(--watta-home-cat-spacer-h) !important;
+    min-height: var(--watta-home-cat-spacer-h) !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    line-height: 1 !important;
+    font-size: 1px !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+    --watta-menu-hero-lift: 0px !important;
     margin-top: 0 !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    /* Менше порожньої висоти — менше світлого поля; для картки `.watta-home-hero-as-card-web` перебивається min-height:0 */
+    min-height: min(32vh, 420px) !important;
     padding-top: 0 !important;
     width: 100vw;
     max-width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
-    min-height: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
     box-sizing: border-box;
-    transform: translateY(calc(-1 * var(--watta-menu-hero-lift)));
-    margin-bottom: calc(-1 * var(--watta-menu-hero-lift)) !important;
+    transform: none !important;
+    margin-bottom: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    border-radius: 0 !important;
   }
 
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .welcome-hero-video-fill-web {
-    width: 100vw !important;
-    max-width: none !important;
-    margin-left: calc(50% - 50vw) !important;
-    margin-right: calc(50% - 50vw) !important;
+  /* Картка героя: на планшеті / ПК — колонка як текст під героєм (max-w-7xl), без розтягування на всю ширину вікна */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    width: 100% !important;
+    max-width: min(100% - 32px, 1280px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 0 !important;
+    min-height: 0 !important;
+    padding-left: max(3rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(3rem, env(safe-area-inset-right, 0px)) !important;
   }
 
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .welcome-video-native-web,
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .watta-full-menu-intro-video-el {
-    max-width: none !important;
-    max-height: none !important;
-  }
+  /* Плитка відео + стек: див. нижче другий блок «Головна ≥769: висота секції = padding-top + плитка 16∶9» */
 
-  .menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-    .welcome-hero-fallback-image-web {
-    max-width: none !important;
-    max-height: none !important;
+  .menu-page-web .home-hero-after-marquee-wrap-web {
+    flex-shrink: 0;
   }
 }
 
@@ -5639,6 +6671,26 @@ html.watta-light-chrome body {
   line-height: 0;
 }
 
+/* Бігуча смуга поверх низу кадру героя — лінія завжди на «горизонті» відео, чіткий верхній край */
+.welcome-hero-section-web:not(.delivery-page-hero-embed-web) .home-hero-marquee-over-video-web .watta-hero-marquee-bar {
+  border-top-width: 1px !important;
+  border-top-style: solid !important;
+  border-top-color: rgba(255, 255, 255, 0.32) !important;
+  box-shadow:
+    0 -12px 32px rgba(4, 18, 14, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Низ картки героя — нижні кути смуги збігаються з радіусом плитки (разом з overflow на стеку) */
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .home-hero-marquee-over-video-web
+  .watta-hero-marquee-bar {
+  border-radius: 0 0 var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px))
+    var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)) !important;
+  overflow: hidden;
+}
+
 /* Декоративне hero-відео: без кліків і без паузи з UI (JS додатково відновлює play) */
 .welcome-hero-section-web video.welcome-video-native-web {
   pointer-events: none;
@@ -5647,20 +6699,305 @@ html.watta-light-chrome body {
 }
 
 @media (max-width: 480px) {
-  .menu-page-web .welcome-video-native-web {
+  /* Лише embed-доставка в меню — contain; головна та /menu керуються окремими блоками (cover / повна висота). */
+  .menu-page-web .delivery-page-hero-embed-web .welcome-video-native-web {
     object-fit: contain !important;
     object-position: center center !important;
   }
 
-  .menu-page-web .welcome-hero-fallback-image-web {
+  .menu-page-web .delivery-page-hero-embed-web .welcome-hero-fallback-image-web {
     background-position: center center !important;
+  }
+}
+
+/*
+ * Головна ≤768: без flex-grow і без min-height ≈100vh — інакше під плиткою героя «роздувається» пустий блок.
+ * Мінімальну висоту секції задає раніший блок ≤768 (clamp) + висота плитки відео.
+ */
+@media (max-width: 768px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 0 1 auto !important;
+  }
+}
+
+/* Планшет (≥769), ноут, ПК: головна — та сама обмежена «стрічка» контенту, без великих порожніх полів зліва/справа */
+@media (min-width: 769px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+    width: min(100% - 48px, 1240px) !important;
+    max-width: min(100% - 48px, 1240px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .welcome-video-native-web,
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-full-menu-intro-video-el {
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-fallback-image-web {
+    background-size: contain !important;
+    background-position: center center !important;
+  }
+
+  /* Картка головної: перебиваємо contain вище — відео на всю плитку */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video {
+    object-fit: cover !important;
+    object-position: center 18% !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) #menu-cinematic-block {
+    box-sizing: border-box;
+    width: min(100% - 48px, 1240px) !important;
+    max-width: min(100% - 48px, 1240px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) #hero-banners.home-brand-story-section-web {
+    box-sizing: border-box;
+    width: min(100% - 48px, 1240px) !important;
+    max-width: min(100% - 48px, 1240px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Margin над панеллю категорій — лише --watta-home-cat-spacer-h (герой окремо) */
+  .menu-page-web:not(.watta-full-menu-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-top: var(--watta-home-cat-spacer-h) !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+}
+
+/* Головна (не /menu): широкий екран — full-bleed лише без картки `.watta-home-hero-as-card-web` */
+@media (min-width: 1025px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web) {
+    --watta-menu-hero-lift: 0px !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    /* Поки mp4 ще без метаданих — не згортаємо секцію в нуль */
+    min-height: min(52vh, 640px) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box;
+    transform: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .welcome-hero-video-fill-web {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .welcome-video-native-web,
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .watta-full-menu-intro-video-el {
+    max-width: none !important;
+    max-height: none !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .welcome-hero-fallback-image-web {
+    max-width: none !important;
+    max-height: none !important;
+  }
+}
+
+/* Головна ≤768: телефон — плитка відео одразу під chrome; висота через padding-bottom (надійніше за aspect-ratio з absolute дітьми) */
+@media (max-width: 768px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
+    height: auto !important;
+    /* min-height не задавати 0 — див. перший блок ≤768 (clamp); інакше відео зникає */
+    max-height: none !important;
+    flex: 0 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    /* Відступ після відео — лише margin на #menu-cinematic-block (без дубля padding-bottom) */
+    padding-bottom: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .welcome-hero-video-fill-web {
+    position: relative !important;
+    inset: auto !important;
+    width: calc(100% - 24px) !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 0 !important;
+    overflow: hidden !important;
+    border-radius: var(--watta-home-hero-card-r) !important;
+    box-shadow: none !important;
+    flex: 0 1 auto !important;
+    /* Висота від ширини — стабільно для absolute-стеку з <video> */
+    height: 0 !important;
+    padding-bottom: 56.25% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: unset !important;
+    box-sizing: border-box !important;
+    background: var(--watta-page-fill, #ffffff) !important;
+    display: block !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    background: var(--watta-page-fill, #ffffff) !important;
+    padding-left: clamp(6px, 2.2vw, 16px) !important;
+    padding-right: clamp(6px, 2.2vw, 16px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web {
+    position: relative !important;
+    inset: auto !important;
+    width: calc(100% - 24px) !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 0 !important;
+    height: auto !important;
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    border-radius: var(--watta-home-hero-card-r) !important;
+    background: var(--watta-page-fill, #ffffff) !important;
+    border: 1px solid rgba(20, 81, 66, 0.18) !important;
+    box-shadow: none !important;
+    flex: 0 1 auto !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .welcome-hero-video-stack-web {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    flex: none !important;
+    overflow: hidden !important;
+    border-radius: var(--watta-home-hero-card-r) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .welcome-hero-video-stack-web
+    .welcome-video-native-web.watta-home-hero-native-video,
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web):not(.watta-home-hero-as-card-web)
+    .welcome-hero-video-stack-web
+    .welcome-hero-fallback-image-web {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    background-size: contain !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 1 !important;
+    border-radius: var(--watta-home-hero-card-r) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fail-wrap-web {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    border-radius: var(--watta-home-hero-card-r) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fail-wrap-web
+    .welcome-hero-fallback-image-web {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: unset !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    border-radius: var(--watta-home-hero-card-r) !important;
+  }
+
+  /* Прозорий шит поверх <video> — той самий радіус, що й у плитки (WebKit без «квадрата» поверх кадру) */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .welcome-hero-video-input-shield-web {
+    border-radius: var(--watta-home-hero-card-r) !important;
   }
 }
 
 /*
  * Сторінка /delivery (без embed у меню): глобальна шапка + spacer уже дають відступ.
  * Без від’ємного margin і без «нахльосту» як у menu-page — відео починається одразу під шапкою і
- * показується повністю (object-fit: contain), як зручний перегляд на головній у вузьких вікнах.
+ * показується повністю (object-fit: contain) на вузьких вікнах.
  */
 .delivery-page-hero-standalone-web.welcome-hero-section-web {
   margin-top: 0 !important;
@@ -5712,6 +7049,132 @@ html.watta-light-chrome body {
  */
 .delivery-page-root-web {
   padding-top: 0;
+}
+
+/*
+ * Доставка (standalone): ≤1024 — дві колонки (відео | текст), як раніше split.
+ * ≥1025 — як головна: повноширинне відео під шапкою + зелена бігуча смуга + текст нижче.
+ */
+.delivery-page-hero-adaptive-shell {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+.delivery-page-hero-adaptive-grid {
+  display: grid;
+  max-width: 1600px;
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  grid-template-areas: 'heroVideo heroCopy';
+  align-items: stretch;
+  min-height: min(76vh, 700px);
+  gap: 0;
+  background: var(--watta-page-fill);
+}
+
+.delivery-page-hero-ad-cell--video {
+  grid-area: heroVideo;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: min(48vh, 420px);
+  background: var(--watta-page-fill);
+}
+
+@media (max-width: 1024px) {
+  .delivery-page-hero-ad-cell--video {
+    border-right: 1px solid rgba(20, 81, 66, 0.12);
+  }
+}
+
+.delivery-page-hero-ad-cell--marquee {
+  display: none;
+}
+
+.delivery-page-hero-ad-cell--copy {
+  grid-area: heroCopy;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 20px 18px 28px;
+  background: var(--watta-page-fill);
+}
+
+@media (min-width: 1024px) {
+  .delivery-page-hero-ad-cell--copy {
+    padding: 28px 32px 36px 36px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .delivery-page-hero-adaptive-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'heroVideo'
+      'heroMarquee'
+      'heroCopy';
+    min-height: 0;
+    max-width: none;
+    width: 100%;
+  }
+
+  .delivery-page-hero-ad-cell--marquee {
+    display: block;
+    grid-area: heroMarquee;
+  }
+
+  .delivery-page-hero-ad-cell--video {
+    flex-direction: column;
+    min-height: 0;
+    border-right: none;
+  }
+
+  .delivery-page-hero-ad-cell--video .delivery-page-hero-split-rail {
+    display: none !important;
+  }
+
+  .delivery-page-hero-ad-cell--video .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    width: 100%;
+  }
+
+  .delivery-page-hero-ad-cell--video .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web .welcome-hero-video-fill-web {
+    border-radius: 0 !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+    max-height: min(42svh, 460px) !important;
+  }
+
+  .delivery-page-hero-ad-cell--video .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web .welcome-hero-video-stack-web {
+    max-height: min(42svh, 460px) !important;
+  }
+
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-video-native-web,
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-fallback-image-web {
+    max-height: min(42svh, 460px) !important;
+  }
+
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-canvas-mirror-web {
+    max-height: min(42svh, 460px) !important;
+  }
+
+  .delivery-page-hero-ad-cell--copy {
+    max-width: min(1040px, 100%);
+    margin: 0 auto;
+    width: 100%;
+    padding: 22px 32px 34px;
+    border-top: 1px solid rgba(20, 81, 66, 0.1);
+  }
 }
 
 /* /delivery: двоколонковий герой — відео зліва, текст справа (не в embed меню) */
@@ -6132,20 +7595,32 @@ html.watta-light-chrome body {
   }
 }
 
-@media (max-width: 768px) {
-  /* Планшет / вузька ширина: ті ж стрілки розміром, що на ноуті; чипи крупніше + горизонтальний скрол */
-  .categories-scroll-btn-web {
-    display: flex;
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    font-size: 16px;
-    flex-shrink: 0;
-    border-radius: 50%;
+/* Телефон і планшет: без зелених стрілок прокрутки — лише свайп/горизонтальний скрол */
+@media (max-width: 1024px) {
+  .categories-panel-wrapper-web .categories-scroll-btn-web {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    pointer-events: none !important;
+    position: absolute !important;
   }
 
   .categories-panel-wrapper-web {
-    gap: 8px;
+    gap: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Вузька ширина: без стрілок (див. max-width 1024); вужчі чипи + горизонтальний скрол */
+  .categories-panel-wrapper-web {
     align-items: center;
   }
 
@@ -6157,7 +7632,7 @@ html.watta-light-chrome body {
     min-width: 0;
     width: 100%;
     max-width: none;
-    padding: 8px 4px;
+    padding: 8px 14px;
     gap: 8px;
     border-radius: 14px;
     overflow-x: auto;
@@ -6168,23 +7643,23 @@ html.watta-light-chrome body {
     scroll-snap-align: start;
     flex-shrink: 0;
     flex-grow: 0;
-    min-width: 64px;
+    min-width: 48px;
     width: auto;
-    max-width: min(112px, 30vw);
+    max-width: min(84px, 24vw);
     box-sizing: border-box;
-    padding: 9px 6px;
-    gap: 4px;
-    border-radius: 12px;
+    padding: 7px 4px;
+    gap: 3px;
+    border-radius: 11px;
   }
 
   .category-button-icon-web {
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     line-height: 1;
-    max-height: 1.35em;
+    max-height: 1.3em;
   }
 
   .category-button-label-web {
-    font-size: 8.5px;
+    font-size: 8px;
   }
 }
 
@@ -6239,7 +7714,7 @@ html.watta-light-chrome body {
 .categories-panel-web::before {
   content: '';
   flex-shrink: 0;
-  width: 8px;
+  width: 14px;
   display: block;
   order: -1;
 }
@@ -6247,12 +7722,19 @@ html.watta-light-chrome body {
 .categories-panel-web::after {
   content: '';
   flex-shrink: 0;
-  width: 8px;
+  width: 14px;
   display: block;
 }
 
 /* Верхняя панель на мобильном/планшете: без черты — один белый фон (0–768px) */
 @media (max-width: 768px) {
+  .menu-fixed-header-shell-web.watta-chrome-header-shell-bg {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    transition: none !important;
+  }
+
   .app-header-web,
   .app-header-web .header-content-web {
     background: #ffffff !important;
@@ -6263,6 +7745,7 @@ html.watta-light-chrome body {
     -webkit-box-shadow: none !important;
     backdrop-filter: none !important;
     outline: none;
+    transition: none !important;
   }
   .app-header-web::before {
     box-shadow: none !important;
@@ -6270,6 +7753,33 @@ html.watta-light-chrome body {
   }
   .app-header-web::after {
     display: none !important;
+  }
+
+  /* Плоские кнопки шапки: без зелёной тіні на :hover (на тачі виглядає як «миготіння») */
+  .header-profile-btn-web:hover,
+  .header-favorites-btn-web:hover,
+  .header-menu-btn-web:hover,
+  .header-actions-web .header-cart-btn-text-web:hover,
+  .header-actions-web .header-lang-wrap-web button:hover {
+    box-shadow: none !important;
+  }
+
+  .header-profile-btn-web,
+  .header-favorites-btn-web,
+  .header-menu-btn-web,
+  .header-actions-web .header-cart-btn-text-web {
+    transition: none !important;
+  }
+
+  /* Поверх «border: none» вище — тонка межа під шапкою в fixed-chrome (на всю ширину — псевдо на .menu-fixed-header-shell-web) */
+  .watta-full-menu-sticky-chrome .menu-fixed-header-shell-web::after,
+  .watta-public-sticky-chrome .menu-fixed-header-shell-web::after {
+    background: rgba(20, 81, 66, 0.12);
+  }
+
+  .watta-full-menu-sticky-chrome .app-header-web,
+  .watta-public-sticky-chrome .app-header-web {
+    border-bottom: none !important;
   }
 }
 
@@ -6302,7 +7812,7 @@ html.watta-light-chrome body {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 4px max(4px, env(safe-area-inset-left, 0px)) 4px max(4px, env(safe-area-inset-right, 0px)) !important;
+    padding: 4px max(18px, env(safe-area-inset-left, 0px)) 4px max(18px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
     z-index: 85;
@@ -6321,15 +7831,20 @@ html.watta-light-chrome body {
   }
   
   .categories-panel-web {
-    --cat-gap: 5px;
+    --cat-gap: 6px;
+    --cat-edge: 12px;
+    /* ~5½ круглих чипів; відступ зліва/справа = gap між чипами */
+    --watta-cat-peek: 5.5;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 3px 3px !important;
+    padding: 7px var(--cat-edge) !important;
     border-radius: 11px;
     gap: var(--cat-gap) !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
+    align-items: center;
+    scroll-padding-inline: var(--cat-edge) !important;
 
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -6360,52 +7875,64 @@ html.watta-light-chrome body {
   
   .category-button-web {
     scroll-snap-align: start;
-    flex: 0 0 auto !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.5)) !important;
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
-    /* Не вміщати «9 в ряд» — великі чипи, зайве листається горизонтально */
-    min-width: 68px !important;
+    min-width: 0 !important;
     width: auto !important;
-    max-width: min(110px, 32vw) !important;
-    padding: 8px 6px 9px;
+    max-width: none !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center;
+    padding: 6px 5px !important;
     font-size: 0.58rem;
-    border-radius: 12px;
-    gap: 3px;
+    border-radius: 50% !important;
+    gap: 3px !important;
     border-width: 1.5px;
+    justify-content: center;
+    overflow: hidden !important;
     box-shadow:
       0 1px 5px rgba(0, 0, 0, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.88);
   }
   
   .category-button-icon-web {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     line-height: 1;
-    max-height: 1.4em;
+    max-height: 1.45em;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   
   .category-button-label-web {
-    font-size: 8.5px;
-    line-height: 1.12;
+    font-size: 9px;
+    line-height: 1.1;
     white-space: normal;
     overflow-wrap: break-word;
     word-break: break-word;
     hyphens: auto;
     max-width: 100%;
+    max-height: 2.5em;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-align: center;
     font-weight: 600;
     letter-spacing: -0.02em;
   }
   
   .categories-panel-web::before,
   .categories-panel-web::after {
-    width: 0;
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    flex: 0 0 0 !important;
   }
 }
 
-/* Альбомний телефон 481–767: та сама логіка, що в портреті — повна ширина, 4½ чипа, тінь як на десктопі */
+/* Альбомний телефон 481–767: повна ширина; круглі чипи як на ≤480, решта — свайп */
 @media (min-width: 481px) and (max-width: 767px) {
   .categories-panel-wrapper-web {
     position: sticky !important;
@@ -6415,7 +7942,7 @@ html.watta-light-chrome body {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 6px max(6px, env(safe-area-inset-left, 0px)) 6px max(6px, env(safe-area-inset-right, 0px)) !important;
+    padding: 6px max(18px, env(safe-area-inset-left, 0px)) 6px max(18px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
     z-index: 85;
@@ -6434,20 +7961,54 @@ html.watta-light-chrome body {
 
   .categories-panel-web {
     --cat-gap: 6px;
+    --cat-edge: 12px;
+    --watta-cat-peek: 5.5;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 5px 6px !important;
+    padding: 7px var(--cat-edge) !important;
     gap: var(--cat-gap) !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
+    align-items: center;
+    scroll-padding-inline: var(--cat-edge) !important;
   }
 
   .category-button-web {
-    flex: 0 0 auto !important;
-    min-width: 68px !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.5)) !important;
+    min-width: 0 !important;
     width: auto !important;
-    max-width: min(112px, 30vw) !important;
+    max-width: none !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center;
+    padding: 6px 5px !important;
+    border-radius: 50% !important;
+    gap: 3px !important;
+    justify-content: center;
+    overflow: hidden !important;
+  }
+
+  .category-button-icon-web {
+    font-size: 1.15rem;
+  }
+
+  .category-button-label-web {
+    font-size: 9px;
+    line-height: 1.1;
+    max-height: 2.5em;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .categories-panel-web::before,
+  .categories-panel-web::after {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    flex: 0 0 0 !important;
   }
 
   .menu-content-top-gap-web {
@@ -6456,13 +8017,12 @@ html.watta-light-chrome body {
   }
 }
 
-/* Планшет 768–1024: ширші чипи. 481–767 (телефон альбом) лишається компактнішим — правила max-width 768 вище */
+/* Планшет 768–1024: компактніші чипи; стрілки приховані (див. max-width 1024px) */
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* Планшет: вікно категорій + горизонтальний скрол; стрілки — глобальні (темно-зелені) */
   .categories-panel-wrapper-web {
     width: fit-content;
-    max-width: calc(100% - 12px);
-    padding: 0 max(8px, env(safe-area-inset-left, 0px)) 0 max(8px, env(safe-area-inset-right, 0px));
+    max-width: calc(100% - 56px);
+    padding: 0 max(18px, env(safe-area-inset-left, 0px)) 0 max(18px, env(safe-area-inset-right, 0px));
     margin: 0 auto;
     left: auto;
     right: auto;
@@ -6471,18 +8031,23 @@ html.watta-light-chrome body {
     align-items: center;
     gap: 0;
     justify-content: center;
+    /* Нижче за загальне 481–1024 (48px) — компактніший ряд під шапкою */
+    min-height: 40px;
   }
 
   .categories-panel-web {
-    --tab-cat-chip: 68px;
-    --tab-cat-chip-max: 102px;
-    --tab-cat-gap: 7px;
-    /* 9 чипів у вікні, решта — свайп */
-    max-width: calc(var(--tab-cat-chip-max) * 9 + var(--tab-cat-gap) * 8 + 10px);
+    --tab-cat-chip: 50px;
+    --tab-cat-chip-max: 82px;
+    --tab-cat-gap: 5px;
+    /* Без бокових стрілок — майже вся ширина вікна */
+    max-width: min(
+      calc(100vw - 52px),
+      calc(var(--tab-cat-chip-max) * 14 + var(--tab-cat-gap) * 13 + 8px)
+    );
     width: 100%;
     margin: 0 auto;
-    padding: 10px 6px;
-    border-radius: 16px;
+    padding: 5px 14px;
+    border-radius: 12px;
     gap: var(--tab-cat-gap);
     min-width: 0;
     flex: 0 1 auto;
@@ -6522,20 +8087,22 @@ html.watta-light-chrome body {
     min-width: var(--tab-cat-chip);
     width: auto;
     max-width: var(--tab-cat-chip-max);
-    padding: 11px 6px;
-    gap: 6px;
-    border-radius: 14px;
+    padding: 7px 5px;
+    gap: 4px;
+    border-radius: 11px;
     scroll-margin: 0 !important;
     scroll-padding: 0 !important;
   }
 
   .category-button-icon-web {
-    font-size: 1.35rem;
+    font-size: 1.1rem;
+    line-height: 1;
   }
 
   .category-button-label-web {
-    font-size: 9px;
-    line-height: 1.15;
+    font-size: 8px;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
   }
 
   .categories-panel-web {
@@ -6568,11 +8135,11 @@ html.watta-light-chrome body {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 10px max(14px, env(safe-area-inset-left, 0px)) 12px max(14px, env(safe-area-inset-right, 0px)) !important;
+    padding: 10px max(22px, env(safe-area-inset-left, 0px)) 10px max(22px, env(safe-area-inset-right, 0px)) !important;
     min-height: 0 !important;
     border-radius: 0 !important;
     overflow: visible;
-    gap: 6px;
+    gap: 0;
     align-items: center !important;
     justify-content: center !important;
     background: transparent !important;
@@ -6580,83 +8147,78 @@ html.watta-light-chrome body {
     box-shadow: none !important;
   }
 
-  .menu-page-web .categories-scroll-btn-web {
-    width: 28px !important;
-    min-width: 28px !important;
-    height: 28px !important;
-    font-size: 16px !important;
-  }
-
   .menu-page-web .categories-panel-web {
+    --cat-gap: 6px;
+    --cat-edge: 12px;
+    --watta-cat-peek: 5.5;
+    align-items: center;
     flex: 0 1 auto !important;
     min-width: 0 !important;
     width: 100% !important;
-    max-width: min(calc(100vw - 32px), 40rem) !important;
+    max-width: min(calc(100vw - 48px), 40rem) !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    padding: 8px 10px !important;
-    scroll-padding-inline: 10px;
+    padding: 8px var(--cat-edge) !important;
+    scroll-padding-inline: var(--cat-edge) !important;
     border-radius: 16px !important;
-    gap: 6px !important;
+    gap: var(--cat-gap) !important;
     background: var(--watta-page-gradient) !important;
     border: 1px solid rgba(20, 81, 66, 0.09) !important;
     box-shadow:
       0 4px 20px rgba(20, 81, 66, 0.06),
       0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
-    mask-image: linear-gradient(
-      90deg,
-      transparent 0,
-      #000 10px,
-      #000 calc(100% - 10px),
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      transparent 0,
-      #000 10px,
-      #000 calc(100% - 10px),
-      transparent 100%
-    );
-    mask-size: 100% 100%;
-    -webkit-mask-size: 100% 100%;
   }
 
   .menu-page-web .categories-panel-web::before,
   .menu-page-web .categories-panel-web::after {
-    width: 8px !important;
-    min-width: 8px !important;
-    display: block !important;
-    flex-shrink: 0 !important;
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    flex: 0 0 0 !important;
   }
 
   .menu-page-web .category-button-web {
-    min-width: 68px !important;
-    max-width: min(110px, 32vw) !important;
-    padding: 8px 6px 9px !important;
-    border-radius: 12px !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.5)) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    padding: 6px 5px !important;
+    border-radius: 50% !important;
     gap: 3px !important;
+    justify-content: center !important;
+    overflow: hidden !important;
     scroll-snap-align: start;
   }
 
   .menu-page-web .category-button-icon-web {
-    font-size: 1.2rem !important;
+    font-size: 1.15rem !important;
   }
 
   .menu-page-web .category-button-label-web {
-    font-size: 8.5px !important;
-    line-height: 1.12 !important;
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    max-height: 2.5em !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+    text-align: center !important;
   }
 }
 
 @media (min-width: 1025px) {
-  /* Рівно 9 категорій у вікні; далі — стрілки / скрол */
+  /* Ширше вікно: до ~14 чипів або майже вся ширина вікна — довгі списки категорій видно без зайвого обрізання */
   .categories-panel-web {
     --desk-cat-chip: 56px;
     --desk-cat-chip-max: 108px;
     --desk-cat-gap: 7px;
-    max-width: calc(var(--desk-cat-chip-max) * 9 + var(--desk-cat-gap) * 8 + 8px);
+    max-width: min(
+      calc(100vw - 128px),
+      calc(var(--desk-cat-chip-max) * 14 + var(--desk-cat-gap) * 13 + 8px)
+    );
     width: 100%;
-    padding: 6px 2px;
+    padding: 6px 16px;
     gap: var(--desk-cat-gap);
     scroll-snap-type: x mandatory;
     border-radius: 12px;
@@ -6664,7 +8226,7 @@ html.watta-light-chrome body {
 
   .categories-panel-web::before,
   .categories-panel-web::after {
-    width: 4px;
+    width: 12px;
     flex-shrink: 0;
   }
 }
@@ -6693,14 +8255,14 @@ html.watta-light-chrome body {
 }
 
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* Збігається з «вікном» 5½ категорій у .categories-panel-web */
+  /* Змінні --tab-cat-* на батьківському .categories-panel-web */
   .category-button-web {
-    padding: 12px 6px;
-    min-width: var(--tab-cat-chip, 80px);
+    padding: 7px 5px;
+    min-width: var(--tab-cat-chip, 50px);
     width: auto;
-    max-width: var(--tab-cat-chip-max, 118px);
-    gap: 6px;
-    border-radius: 14px;
+    max-width: var(--tab-cat-chip-max, 82px);
+    gap: 4px;
+    border-radius: 11px;
     box-sizing: border-box;
   }
 }
@@ -6708,22 +8270,320 @@ html.watta-light-chrome body {
 @media (min-width: 1025px) {
   .category-button-web {
     box-sizing: border-box;
-    padding: 9px 6px;
+    padding: 7px 6px;
     min-width: var(--desk-cat-chip, 56px);
     width: auto;
     max-width: var(--desk-cat-chip-max, 112px);
-    gap: 5px;
+    gap: 4px;
     border-radius: 12px;
     scroll-snap-align: start;
   }
 
   .category-button-icon-web {
-    font-size: 1.25rem;
+    font-size: 1.42rem;
   }
 
   .category-button-label-web {
-    font-size: 9.5px;
+    font-size: 11.5px;
     line-height: 1.12;
+  }
+}
+
+/*
+ * Панель категорій — один вигляд «як на телефоні» на всіх ширинах і сторінках
+ * (круглі чипи, повна ширина, без стрілок, ті самі відступи). Перебиває блоки 481–1024 / 1025+ вище.
+ */
+@media (min-width: 0) {
+  .categories-panel-wrapper-web .categories-scroll-btn-web {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    pointer-events: none !important;
+    position: absolute !important;
+  }
+
+  .categories-panel-wrapper-web {
+    gap: 0 !important;
+    justify-content: stretch !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 4px max(18px, env(safe-area-inset-left, 0px)) 4px max(18px, env(safe-area-inset-right, 0px)) !important;
+    min-height: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(20, 81, 66, 0.09) !important;
+    background: var(--watta-page-gradient) !important;
+    box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
+  }
+
+  /* У fixed chrome — прозорий зовнішній контейнер + картка всередині (.categories-panel-web), як на моб. головній */
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
+    position: relative !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 4px 0 0 !important;
+    padding: 4px max(14px, env(safe-area-inset-left, 0px)) 4px max(14px, env(safe-area-inset-right, 0px)) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .menu-page-web .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    padding: 10px max(22px, env(safe-area-inset-left, 0px)) 10px max(22px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .categories-panel-web {
+    --cat-gap: 6px !important;
+    --cat-edge: 12px !important;
+    --watta-cat-peek: 5.5 !important;
+    display: flex !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 7px var(--cat-edge) !important;
+    gap: var(--cat-gap) !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    align-items: center !important;
+    border-radius: 11px !important;
+    scroll-padding-inline: var(--cat-edge) !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    overscroll-behavior-x: contain !important;
+    touch-action: pan-x manipulation !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    max-width: min(calc(100vw - 48px), 40rem) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 8px var(--cat-edge) !important;
+    border-radius: 16px !important;
+    background: var(--watta-page-gradient) !important;
+    border: 1px solid rgba(20, 81, 66, 0.09) !important;
+    box-shadow:
+      0 4px 20px rgba(20, 81, 66, 0.06),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
+  }
+
+  .category-button-web {
+    scroll-snap-align: start !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.5)) !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    padding: 7px 6px !important;
+    font-size: 0.58rem !important;
+    border-radius: 50% !important;
+    gap: 4px !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    border-width: 1.5px !important;
+    box-shadow:
+      0 1px 5px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+  }
+
+  .category-button-icon-web {
+    font-size: 1.32rem !important;
+    line-height: 1 !important;
+    max-height: 1.58em !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .category-button-label-web {
+    font-size: 10.5px !important;
+    line-height: 1.12 !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    hyphens: auto !important;
+    max-width: 100% !important;
+    max-height: 2.65em !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    overflow: hidden !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .categories-panel-web::before,
+  .categories-panel-web::after {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    flex: 0 0 0 !important;
+  }
+}
+
+/* Планшет / ноут / ПК: компактніша панель категорій (менші поля, дрібніші чипи) */
+@media (min-width: 481px) {
+  .categories-panel-wrapper-web {
+    padding: 1px max(12px, env(safe-area-inset-left, 0px)) 1px max(12px, env(safe-area-inset-right, 0px)) !important;
+    border-radius: 11px !important;
+  }
+
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
+    margin: 1px 0 0 !important;
+    padding: 1px max(8px, env(safe-area-inset-left, 0px)) 1px max(8px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .menu-page-web .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    padding: 4px max(14px, env(safe-area-inset-left, 0px)) 4px max(14px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .categories-panel-web {
+    --cat-gap: 3px !important;
+    --cat-edge: 6px !important;
+    --watta-cat-peek: 7.5 !important;
+    padding: 3px var(--cat-edge) !important;
+    gap: var(--cat-gap) !important;
+    border-radius: 8px !important;
+  }
+
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    max-width: min(calc(100vw - 36px), 34rem) !important;
+    padding: 4px var(--cat-edge) !important;
+    border-radius: 11px !important;
+  }
+
+  .category-button-web {
+    padding: 6px 5px !important;
+    gap: 3px !important;
+    border-width: 1px !important;
+  }
+
+  .category-button-icon-web {
+    font-size: 1.32rem !important;
+    max-height: 1.55em !important;
+  }
+
+  .category-button-label-web {
+    font-size: 10.5px !important;
+    line-height: 1.11 !important;
+    max-height: 2.6em !important;
+  }
+}
+
+/* Ноут / ПК: той самий ритм, що й планшет (481px), трохи крупніший масштаб */
+@media (min-width: 1025px) {
+  .categories-panel-wrapper-web {
+    padding: 2px max(13px, env(safe-area-inset-left, 0px)) 2px max(13px, env(safe-area-inset-right, 0px)) !important;
+    border-radius: 12px !important;
+  }
+
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
+    margin: 2px 0 0 !important;
+    padding: 2px max(9px, env(safe-area-inset-left, 0px)) 2px max(9px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .menu-page-web .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    padding: 5px max(15px, env(safe-area-inset-left, 0px)) 5px max(15px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .categories-panel-web {
+    --cat-gap: 4px !important;
+    --cat-edge: 7px !important;
+    /* Трохи ширший чип — місце під крупніший емодзі */
+    --watta-cat-peek: 7.28 !important;
+    padding: 4px var(--cat-edge) !important;
+    gap: var(--cat-gap) !important;
+    border-radius: 9px !important;
+  }
+
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    max-width: min(calc(100vw - 38px), 36rem) !important;
+    padding: 5px var(--cat-edge) !important;
+    border-radius: 12px !important;
+  }
+
+  .category-button-web {
+    padding: 7px 6px !important;
+    gap: 4px !important;
+    border-width: 1px !important;
+  }
+
+  .category-button-icon-web {
+    font-size: 1.42rem !important;
+    max-height: 1.62em !important;
+  }
+
+  .category-button-label-web {
+    font-size: 11.5px !important;
+    line-height: 1.12 !important;
+    max-height: 2.7em !important;
+  }
+}
+
+@media (min-width: 1440px) {
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    max-width: min(calc(100vw - 40px), 38rem) !important;
+    padding: 6px var(--cat-edge) !important;
+    border-radius: 12px !important;
+  }
+
+  .categories-panel-web {
+    --watta-cat-peek: 7.12 !important;
+    --cat-gap: 4px !important;
+    --cat-edge: 8px !important;
+  }
+
+  .category-button-web {
+    padding: 7px 6px !important;
+    gap: 4px !important;
+    border-width: 1px !important;
+  }
+
+  .category-button-icon-web {
+    font-size: 1.5rem !important;
+    max-height: 1.65em !important;
+  }
+
+  .category-button-label-web {
+    font-size: 12px !important;
+    line-height: 1.12 !important;
+    max-height: 2.75em !important;
   }
 }
 
@@ -6758,36 +8618,13 @@ html.watta-light-chrome body {
   border-color: rgba(20, 81, 66, 0.22);
 }
 
-/* Активна категорія: лише вузьке тёмно-зелене світіння по контуру кнопки (без великих «плям») */
+/* Активна категорія — без пульсуючого світіння */
 .category-button-active-web {
   background: #ffffff;
   border-color: rgba(20, 81, 66, 0.88);
   border-width: 2px;
-  box-shadow:
-    0 0 0 1px rgba(15, 61, 52, 0.35),
-    0 0 0 2px rgba(20, 81, 66, 0.28),
-    0 0 6px 0 rgba(20, 81, 66, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
   transform: none;
-  animation: activeCategoryGlow 2.4s ease-in-out infinite;
-}
-
-@keyframes activeCategoryGlow {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px rgba(15, 61, 52, 0.32),
-      0 0 0 2px rgba(20, 81, 66, 0.22),
-      0 0 5px 0 rgba(20, 81, 66, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.92);
-  }
-  50% {
-    box-shadow:
-      0 0 0 1px rgba(15, 61, 52, 0.45),
-      0 0 0 2px rgba(20, 81, 66, 0.38),
-      0 0 9px 0 rgba(20, 81, 66, 0.52),
-      inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  }
 }
 
 .category-button-active-web::after {
@@ -6795,15 +8632,11 @@ html.watta-light-chrome body {
 }
 
 .category-button-active-web:hover {
-  background: linear-gradient(145deg, #fafcfb 0%, #f2f7f4 52%, #fafcfb 100%);
+  background: #fafcfb;
   border-color: rgba(20, 81, 66, 0.95);
   border-width: 2px;
   transform: none;
-  box-shadow:
-    0 0 0 1px rgba(15, 61, 52, 0.42),
-    0 0 0 2px rgba(20, 81, 66, 0.4),
-    0 0 8px 0 rgba(20, 81, 66, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .category-button-icon-web {
@@ -6824,34 +8657,34 @@ html.watta-light-chrome body {
 
 @media (max-width: 480px) {
   .category-button-icon-web {
-    font-size: 1.35rem;
+    font-size: 1.42rem;
   }
 }
 
 @media (min-width: 481px) and (max-width: 1024px) {
   .category-button-icon-web {
-    font-size: 26px;
+    font-size: 30px;
   }
 }
 
 @media (min-width: 1025px) {
   .category-button-icon-web {
-    font-size: 28px;
+    font-size: 1.42rem;
   }
 }
 
 .category-button-active-web .category-button-icon-web {
   transform: none;
-  filter: drop-shadow(0 1px 1px rgba(15, 61, 52, 0.25));
+  filter: none;
 }
 
 .category-button-active-web:hover .category-button-icon-web {
   transform: none;
-  filter: drop-shadow(0 1px 2px rgba(15, 61, 52, 0.32));
+  filter: none;
 }
 
 .category-button-label-web {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #194A38;
   text-align: center;
@@ -6872,21 +8705,21 @@ html.watta-light-chrome body {
 
 @media (max-width: 480px) {
   .category-button-label-web {
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.2px;
   }
 }
 
 @media (min-width: 481px) and (max-width: 1024px) {
   .category-button-label-web {
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0.25px;
   }
 }
 
 @media (min-width: 1025px) {
   .category-button-label-web {
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0.25px;
   }
 }
@@ -7312,16 +9145,17 @@ html.watta-light-chrome body {
 
 /* Кошик у шапці — компактна іконка (підпис приховано, є aria-label) */
 .header-actions-web .header-cart-btn-text-web {
-  width: 36px !important;
-  min-width: 36px !important;
-  max-width: 36px !important;
-  height: 36px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
   padding: 0 !important;
   gap: 0 !important;
   font-size: 12px !important;
   border-radius: 10px !important;
   justify-content: center !important;
   align-items: center !important;
+  box-sizing: border-box !important;
 }
 
 .header-actions-web .header-cart-btn-text-web .header-cart-label-web {
@@ -7382,18 +9216,25 @@ html.watta-light-chrome body {
     gap: 5px;
   }
 
-  /* Кнопки хедера: одна висота */
+  /* Лише кошик, обране, меню — профіль і мова в бургер-панелі (правий drawer / сайдбар) */
+  .header-actions-web .header-profile-btn-web,
+  .header-actions-web .header-lang-wrap-web {
+    display: none !important;
+  }
+
+  /* Компактніші кнопки хедера */
   .header-actions-web .header-cart-btn-text-web {
-    width: 34px !important;
-    min-width: 34px !important;
-    max-width: 34px !important;
-    height: 34px !important;
+    width: 33px !important;
+    min-width: 33px !important;
+    max-width: 33px !important;
+    height: 33px !important;
     padding: 0 !important;
     gap: 0 !important;
     font-size: 12px !important;
-    border-radius: 10px !important;
+    border-radius: 9px !important;
     justify-content: center !important;
     align-items: center !important;
+    box-sizing: border-box !important;
   }
 
   .header-actions-web .header-cart-btn-text-web .header-cart-label-web {
@@ -7406,41 +9247,28 @@ html.watta-light-chrome body {
   }
 
   .header-actions-web .header-cart-icon-web {
-    width: 18px !important;
-    height: 18px !important;
+    width: 17px !important;
+    height: 17px !important;
   }
 
   .header-menu-btn-web,
-  .header-profile-btn-web,
   .header-favorites-btn-web {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
+    width: 33px !important;
+    height: 33px !important;
+    min-width: 33px !important;
+    max-width: 33px !important;
     border-radius: 9px !important;
+    box-sizing: border-box !important;
   }
 
-  .header-profile-icon-web {
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  .header-actions-web .header-lang-wrap-web button {
-    width: 34px !important;
-    min-width: 34px !important;
-    height: 34px !important;
-    border-radius: 9px !important;
-    font-size: 9px !important;
-    gap: 2px !important;
-  }
-
-  .header-actions-web .header-lang-wrap-web button svg {
-    width: 11px !important;
-    height: 11px !important;
+  .header-favorites-icon-web {
+    width: 17px !important;
+    height: 17px !important;
   }
 
   .header-menu-icon-web {
-    width: 18px !important;
-    height: 18px !important;
+    width: 17px !important;
+    height: 17px !important;
   }
 
   .location-section-web {
@@ -7454,12 +9282,12 @@ html.watta-light-chrome body {
     display: none !important;
   }
   
-  .cart-badge-web {
+  .header-actions-web .cart-badge-web,
+  .header-actions-web .favorites-badge-web {
     font-size: 9px !important;
-    min-height: 14px !important;
-    min-width: 14px !important;
-    top: -5px !important;
-    right: -5px !important;
+    min-height: 16px !important;
+    min-width: 16px !important;
+    padding: 2px 4px !important;
   }
 }
 
@@ -7491,47 +9319,57 @@ html.watta-light-chrome body {
   }
 
   .header-actions-web .header-cart-btn-text-web {
-    width: 36px !important;
-    min-width: 36px !important;
-    max-width: 36px !important;
-    height: 36px !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 42px !important;
     padding: 0 !important;
     gap: 0 !important;
     font-size: 12px !important;
-    border-radius: 10px !important;
+    border-radius: 11px !important;
+    box-sizing: border-box !important;
+  }
+
+  .header-actions-web .header-cart-icon-web {
+    width: 22px !important;
+    height: 22px !important;
   }
 
   .header-menu-btn-web,
   .header-profile-btn-web,
   .header-favorites-btn-web {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    border-radius: 10px !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    border-radius: 11px !important;
+    box-sizing: border-box !important;
   }
 
   .header-profile-icon-web {
-    width: 20px !important;
-    height: 20px !important;
+    width: 22px !important;
+    height: 22px !important;
   }
 
   .header-actions-web .header-lang-wrap-web button {
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    border-radius: 10px !important;
-    font-size: 10px !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 42px !important;
+    border-radius: 11px !important;
+    font-size: 12px !important;
     gap: 2px !important;
+    box-sizing: border-box !important;
   }
 
   .header-actions-web .header-lang-wrap-web button svg {
-    width: 12px !important;
-    height: 12px !important;
+    width: 13px !important;
+    height: 13px !important;
   }
 
   .header-menu-icon-web {
-    width: 18px !important;
-    height: 18px !important;
+    width: 22px !important;
+    height: 22px !important;
   }
 
   .location-section-web {
@@ -7545,9 +9383,9 @@ html.watta-light-chrome body {
   
   .header-actions-web .cart-badge-web,
   .header-actions-web .favorites-badge-web {
-    font-size: 9px !important;
-    min-height: 15px !important;
-    min-width: 15px !important;
+    font-size: 11px !important;
+    min-height: 19px !important;
+    min-width: 19px !important;
   }
 }
 
@@ -7575,6 +9413,34 @@ html.watta-light-chrome body {
   
   .header-actions-web {
     gap: 8px;
+  }
+
+  /* Планшет: усі кнопки дій однакового розміру (як desktop squircle 40px) */
+  .header-actions-web .header-profile-btn-web,
+  .header-actions-web .header-favorites-btn-web,
+  .header-actions-web .header-menu-btn-web,
+  .header-actions-web .header-cart-btn-text-web {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    font-size: 12px !important;
   }
   
   .location-section-web {
@@ -11952,11 +13818,14 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 
 /* Menu / профіль у вкладці — без власної підкладки: фон і смуга з .content-web--watta-craft, водяні знаки LogoBackground */
 .menu-page-web {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   background: transparent;
   position: relative;
-  /* Не `overflow-x: hidden` з Tailwind: інакше за правилами CSS y-вісь стає scrollport і ламає position:sticky (Safari/WebKit) відносно .content-web */
-  overflow-x: clip;
+  /* Не `overflow-x: hidden`: ламає sticky у WebKit. `clip` обрізає full-bleed героя (100vw + margin) — лишаємо visible. */
+  overflow-x: visible;
   overflow-y: visible;
   /* Відступ для home indicator лише в підвалі (.site-footer-watta), інакше під футером з’являлась світла смуга */
   padding-bottom: 0;
@@ -11980,7 +13849,7 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   .logo-section-web {
     flex: 1 1 auto;
     min-width: 0;
-    max-width: calc(100vw - 156px);
+    max-width: calc(100vw - 200px);
     padding-left: 2px;
     padding-right: 4px;
   }
@@ -12014,6 +13883,18 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
     margin: 4px 12px 18px !important;
     width: calc(100% - 24px) !important;
     border-radius: 16px !important;
+  }
+
+  /* Головний слайдер у «склі»: поля дає shell + `.home-brand-inner-web`; горизонтальні margin тут
+     з width:100% ламали рівновагу (margin-right перераховувався) — виглядало зсувом вліво. */
+  .home-brand-banner-shell-web .hero-banner-web.hero-banner-image-bg-web {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
   }
 
   .hero-banner-web.hero-banner-image-bg-web:active {
@@ -12133,22 +14014,26 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   margin-bottom: 0;
   overflow: hidden;
   background: var(--watta-page-gradient);
-  border-top: 1px solid rgba(20, 81, 66, 0.1);
-  box-shadow: 0 -8px 40px rgba(20, 81, 66, 0.04);
+  border-top: none;
+  box-shadow: none;
 }
 
 .site-footer-watta__inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: clamp(1.75rem, 4vw, 2.75rem) clamp(1rem, 4vw, 2rem)
-    clamp(1.5rem, 3vw, 2.25rem);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-top: clamp(0.85rem, 2.2vw, 1.35rem);
+  padding-bottom: 0;
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
 .site-footer-watta__hero-row {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 1.25rem;
+  gap: 0.75rem;
 }
 
 @media (min-width: 1024px) {
@@ -12156,15 +14041,15 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem 1.25rem;
+    justify-content: flex-start;
+    gap: 0.65rem 1rem;
   }
 }
 
 .site-footer-watta__brand-block {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.65rem;
   min-width: 0;
 }
 
@@ -12173,12 +14058,12 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: #ffffff;
   border: 1px solid rgba(20, 81, 66, 0.12);
-  box-shadow: 0 4px 16px rgba(20, 81, 66, 0.08);
+  box-shadow: 0 2px 10px rgba(20, 81, 66, 0.06);
 }
 
 .site-footer-watta__logo-img {
@@ -12194,19 +14079,19 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   margin: 0;
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
   font-weight: 700;
-  font-size: clamp(1.35rem, 2.8vw, 1.75rem);
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
   letter-spacing: 0.02em;
-  line-height: 1.15;
+  line-height: 1.12;
   color: #0f241e;
 }
 
 .site-footer-watta__tagline {
-  margin: 0.3rem 0 0;
+  margin: 0.2rem 0 0;
   font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-size: clamp(0.82rem, 1.65vw, 0.95rem);
   font-weight: 500;
   font-style: italic;
-  line-height: 1.35;
+  line-height: 1.3;
   color: rgba(55, 72, 66, 0.78);
 }
 
@@ -12214,27 +14099,27 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 0.4rem 0.5rem;
+  justify-content: flex-start;
+  gap: 0.3rem 0.4rem;
 }
 
 @media (min-width: 1024px) {
   .site-footer-watta__pills {
-    flex: 1 1 auto;
-    justify-content: center;
-    max-width: min(52rem, 100%);
+    flex: 0 1 auto;
+    justify-content: flex-start;
+    min-width: 0;
   }
 }
 
 .site-footer-watta__pill {
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 0.65rem;
+  font-size: 0.58rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   text-decoration: none;
   color: #145142;
-  padding: 0.5rem 0.75rem;
+  padding: 0.38rem 0.55rem;
   border-radius: 999px;
   border: 1px solid rgba(20, 81, 66, 0.14);
   background: #ffffff;
@@ -12261,6 +14146,11 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   margin: 0;
   padding: 0.5rem 0.85rem;
   border-radius: 999px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.45rem;
   font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
   font-size: 0.8rem;
   font-style: italic;
@@ -12272,30 +14162,85 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   border: 1px solid rgba(20, 81, 66, 0.1);
 }
 
+.site-footer-watta__legal-pill-text {
+  text-wrap: balance;
+}
+
+.site-footer-watta__legal-pill-sep {
+  font-style: normal;
+  font-weight: 500;
+  color: rgba(45, 62, 56, 0.45);
+  user-select: none;
+}
+
+.site-footer-watta__legal-pill-privacy {
+  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+  font-size: inherit;
+  font-style: italic;
+  font-weight: 700;
+  color: #145142;
+  text-decoration: underline;
+  text-decoration-color: rgba(20, 81, 66, 0.35);
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.site-footer-watta__legal-pill-privacy:hover {
+  color: #0f3d32;
+  text-decoration-color: rgba(20, 81, 66, 0.55);
+}
+
+.site-footer-watta__legal-pill-privacy:focus-visible {
+  outline: 2px solid rgba(20, 81, 66, 0.45);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 @media (min-width: 1024px) {
   .site-footer-watta__legal-pill {
     flex: 0 0 auto;
-    max-width: 16rem;
+    max-width: min(26rem, 100%);
     text-align: center;
   }
-}
-
-.site-footer-watta__divider {
-  height: 1px;
-  margin: clamp(1.25rem, 3vw, 1.75rem) 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(20, 81, 66, 0.12) 20%,
-    rgba(20, 81, 66, 0.12) 80%,
-    transparent
-  );
 }
 
 .site-footer-watta__grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem 1.5rem;
+  gap: 0.75rem 0.85rem;
+  box-sizing: border-box;
+  margin-top: clamp(0.45rem, 1.4vw, 0.75rem);
+  /* Тонка межа як під шапкою (.menu-fixed-header-shell-web::after — 1px, rgba(20,81,66,.1)) */
+  padding-top: clamp(0.5rem, 1.2vw, 0.75rem);
+  border-top: 1px solid rgba(20, 81, 66, 0.1);
+}
+
+/* © / privacy — окремий ряд сітки: лівий край збігається з «Оформити замовлення» / «Наші міста» */
+.site-footer-watta__grid-colophon {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+  justify-self: stretch;
+  box-sizing: border-box;
+}
+
+/* Телефон + години + міста — один стек на вузьких екранах; на широкому десктопі «розпаковується» в колонки сітки */
+.site-footer-watta__order-loc-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.85rem, 2.4vw, 1.25rem);
+  min-width: 0;
+}
+
+@media (min-width: 1280px) {
+  .site-footer-watta__order-loc-wrap {
+    display: contents;
+  }
+}
+
+/* Дозволяє колонкам стискатися рівномірно (інакше «Навігація» роздуває сітку). */
+.site-footer-watta__col {
+  min-width: 0;
 }
 
 @media (min-width: 640px) {
@@ -12304,22 +14249,35 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .site-footer-watta__grid {
-    grid-template-columns: 1.15fr repeat(5, minmax(0, 1fr));
-    gap: 1.5rem 1.25rem;
     align-items: start;
+    column-gap: clamp(0.85rem, 1.6vw, 1.35rem);
+    row-gap: 0.35rem;
+  }
+
+  .site-footer-watta__grid--cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .site-footer-watta__grid--cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 .site-footer-watta__col-title {
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.5rem;
   font-family: Inter, system-ui, sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(100, 116, 110, 0.95);
+}
+
+/* Другий заголовок у тій самій колонці (напр. «Час роботи» після телефону) */
+.site-footer-watta__col-title.site-footer-watta__col-title--stacked {
+  margin-top: 0.9rem;
 }
 
 .site-footer-watta__list {
@@ -12328,12 +14286,83 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.28rem;
+}
+
+/** Дві колонки посилань у блоці «Навігація» футера */
+.site-footer-watta__nav-two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.28rem clamp(0.5rem, 2vw, 0.85rem);
+  align-items: start;
+}
+
+/* © та політика — без лінії зверху; додатковий відступ зверху + знизу як у gap сітки */
+.site-footer-watta__nav-colophon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  column-gap: 0.38rem;
+  row-gap: 0.2rem;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0.55rem 0 0.75rem;
+  padding: 0;
+  border-top: none;
+}
+
+@media (min-width: 1280px) {
+  .site-footer-watta__nav-colophon {
+    margin-top: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+}
+
+.site-footer-watta__nav-colophon-copy {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(15, 36, 30, 0.55);
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+}
+
+.site-footer-watta__nav-colophon-sep {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(15, 36, 30, 0.35);
+  user-select: none;
+}
+
+.site-footer-watta__nav-colophon-link {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #145142;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.site-footer-watta__nav-colophon-link:hover {
+  color: #0f3d32;
+  text-decoration: underline;
+  text-decoration-color: rgba(20, 81, 66, 0.42);
+  text-underline-offset: 2px;
+}
+
+.site-footer-watta__nav-colophon-link:focus-visible {
+  outline: 2px solid rgba(20, 81, 66, 0.4);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .site-footer-watta__text-link {
   font-family: Inter, system-ui, sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #0f241e;
   text-decoration: none;
@@ -12356,10 +14385,10 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 .site-footer-watta__body-strong {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
-  font-size: 0.92rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #0f241e;
-  line-height: 1.45;
+  line-height: 1.38;
 }
 
 .site-footer-watta__app-row {
@@ -12412,20 +14441,163 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   color: #145142;
 }
 
+.site-footer-watta__col--social {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/*
+ * Планшет / середня ширина: один ряд — контакти+міста | навігація | соц/оплата.
+ */
+@media (min-width: 640px) and (max-width: 1279px) {
+  .site-footer-watta__inner {
+    padding-top: clamp(0.5rem, 1.4vw, 0.75rem);
+    padding-left: max(0.85rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.85rem, env(safe-area-inset-right, 0px));
+  }
+
+  .site-footer-watta__hero-row {
+    gap: 0.45rem;
+  }
+
+  .site-footer-watta__logo-ring {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .site-footer-watta__title {
+    font-size: clamp(0.98rem, 2.1vw, 1.22rem);
+  }
+
+  .site-footer-watta__tagline {
+    font-size: clamp(0.74rem, 1.45vw, 0.86rem);
+    margin-top: 0.12rem;
+  }
+
+  .site-footer-watta__pills {
+    gap: 0.32rem 0.48rem;
+  }
+
+  .site-footer-watta__pill {
+    font-size: 0.52rem;
+    padding: 0.3rem 0.48rem;
+    letter-spacing: 0.1em;
+  }
+
+  .site-footer-watta__grid.site-footer-watta__grid--cols-4,
+  .site-footer-watta__grid.site-footer-watta__grid--cols-3 {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.22fr) minmax(0, 0.88fr);
+    grid-template-areas: 'ft-stack ft-nav ft-social';
+    row-gap: 0.32rem;
+    column-gap: clamp(0.55rem, 1.8vw, 1rem);
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    align-items: start;
+  }
+
+  .site-footer-watta__grid.site-footer-watta__grid--cols-4 .site-footer-watta__order-loc-wrap,
+  .site-footer-watta__grid.site-footer-watta__grid--cols-3 .site-footer-watta__order-loc-wrap {
+    grid-area: ft-stack;
+  }
+
+  .site-footer-watta__grid.site-footer-watta__grid--cols-4 .site-footer-watta__col--nav,
+  .site-footer-watta__grid.site-footer-watta__grid--cols-3 .site-footer-watta__col--nav {
+    grid-area: ft-nav;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .site-footer-watta__grid.site-footer-watta__grid--cols-4 .site-footer-watta__col--social,
+  .site-footer-watta__grid.site-footer-watta__grid--cols-3 .site-footer-watta__col--social {
+    grid-area: ft-social;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .site-footer-watta__order-loc-wrap {
+    gap: clamp(0.8rem, 2.2vw, 1.15rem);
+  }
+
+  .site-footer-watta__col-title {
+    font-size: 0.56rem;
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.09em;
+  }
+
+  .site-footer-watta__col-title.site-footer-watta__col-title--stacked {
+    margin-top: 0.75rem;
+  }
+
+  .site-footer-watta__text-link,
+  .site-footer-watta__body-strong {
+    font-size: 0.7rem;
+    line-height: 1.28;
+  }
+
+  .site-footer-watta__list {
+    gap: 0.16rem;
+  }
+
+  .site-footer-watta__nav-two-cols {
+    gap: 0.16rem 0.55rem;
+  }
+
+  .site-footer-watta__social-row {
+    flex-wrap: wrap;
+    gap: 0.32rem;
+    margin-bottom: 0.28rem;
+  }
+
+  .site-footer-watta__icon-btn {
+    width: 1.95rem;
+    height: 1.95rem;
+    border-radius: 9px;
+  }
+
+  .site-footer-watta__pay-row {
+    flex-wrap: wrap;
+    gap: 0.32rem;
+  }
+
+  .site-footer-watta__pay-mark {
+    padding: 0.22rem 0.36rem;
+    font-size: 0.52rem;
+  }
+
+  .site-footer-watta__payments-note {
+    margin-top: 0.24rem;
+    font-size: 0.55rem;
+    max-width: none;
+    line-height: 1.28;
+  }
+
+  .site-footer-watta__nav-colophon-copy,
+  .site-footer-watta__nav-colophon-sep {
+    font-size: 0.62rem;
+  }
+
+  .site-footer-watta__nav-colophon-link {
+    font-size: 0.66rem;
+  }
+}
+
 .site-footer-watta__social-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 0.35rem;
+  margin-bottom: 0.32rem;
 }
 
 .site-footer-watta__icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 12px;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 10px;
   color: rgba(75, 90, 85, 0.9);
   border: 1px solid rgba(20, 81, 66, 0.14);
   background: #fafcfb;
@@ -12469,16 +14641,16 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .site-footer-watta__pay-mark {
   font-family: Inter, system-ui, sans-serif;
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 900;
-  letter-spacing: 0.06em;
-  padding: 0.35rem 0.5rem;
-  border-radius: 6px;
+  letter-spacing: 0.05em;
+  padding: 0.28rem 0.42rem;
+  border-radius: 5px;
   border: 1px solid rgba(20, 81, 66, 0.12);
 }
 
@@ -12500,11 +14672,11 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 }
 
 .site-footer-watta__payments-note {
-  margin: 0.5rem 0 0;
-  max-width: 16rem;
-  font-size: 0.7rem;
-  line-height: 1.35;
-  color: rgba(20, 81, 66, 0.72);
+  margin: 0.22rem 0 0;
+  max-width: 14.5rem;
+  font-size: 0.62rem;
+  line-height: 1.32;
+  color: rgba(20, 81, 66, 0.7);
 }
 
 .delivery-watta-noise {

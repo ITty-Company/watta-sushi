@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { useLanguage } from '../context/LanguageContext'
-import AdminView from '../components/AdminView'
+import { readIsAdminFromCurrentUserJson } from '@/lib/isAdminRole'
+
+/**
+ * AdminView — найбільший компонент (~6000+ рядків + recharts/stripe). Тягнемо лише після
+ * перевірки ролі, інакше будь-який вхід на /admin (включно з редиректами на /login)
+ * грузив сотні КБ JS, які ніколи не виконуються.
+ */
+const AdminView = dynamic(() => import('../components/AdminView'), { ssr: false })
 
 function readIsAdmin(): boolean {
   if (typeof window === 'undefined') return false
-  try {
-    const raw = localStorage.getItem('currentUser')
-    if (!raw) return false
-    const p = JSON.parse(raw) as { role?: string }
-    return p?.role === 'ADMIN'
-  } catch {
-    return false
-  }
+  return readIsAdminFromCurrentUserJson(localStorage.getItem('currentUser'))
 }
 
 export default function AdminPage() {

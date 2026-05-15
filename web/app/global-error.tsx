@@ -2,21 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import {
-  WATTA_LANG_COOKIE,
-  parseWattaLanguage,
+  WATTA_DEFAULT_SITE_LANGUAGE,
+  resolveWattaSiteLanguageFromDocumentCookie,
   wattaToHtmlLang,
   type WattaLanguage,
 } from '@/lib/i18n/language'
 import { getErrorPageForLanguage } from './context/LanguageContext'
 
 function readLangFromCookie(): WattaLanguage {
-  if (typeof document === 'undefined') return 'uk'
-  const raw = document.cookie || ''
-  const m = raw.match(
-    new RegExp(`(?:^|; )${WATTA_LANG_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`),
-  )
-  const v = m?.[1] ? decodeURIComponent(m[1]) : ''
-  return parseWattaLanguage(v)
+  if (typeof document === 'undefined') return WATTA_DEFAULT_SITE_LANGUAGE
+  return resolveWattaSiteLanguageFromDocumentCookie(document.cookie || '')
 }
 
 export default function GlobalError({
@@ -26,7 +21,7 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  const [lang, setLang] = useState<WattaLanguage>('uk')
+  const [lang, setLang] = useState<WattaLanguage>(WATTA_DEFAULT_SITE_LANGUAGE)
   useEffect(() => {
     setLang(readLangFromCookie())
   }, [])

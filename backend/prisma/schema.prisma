@@ -123,6 +123,8 @@ model Product {
   /// Галерея фото (порядок = порядок у каруселі); перше = обкладинка в меню
   imageUrls Json     @default("[]")
   isPopular Boolean @default(false)
+  /// Бейдж «Новинка» + блок «Новинки» на сторінці /menu (окремо від хітів)
+  isMenuNew   Boolean @default(false)
   /// «Наші хіти» — стрічка на головній, сортування в каталозі, бейдж (окремо від кошика)
   isHomeHit   Boolean @default(false)
   /// Рекомендації після додавання в кошик (GET /api/products/recommendations)
@@ -238,6 +240,15 @@ model SiteSetting {
   restaurantPickupAddress String @default("")
   freeDeliveryThreshold   Float  @default(1000) // merchandise total >= this => free delivery
   deliveryFee             Float  @default(50) // fixed fee if below threshold
+
+  /// Адреса кухні (відправлення) для розрахунку доставки по NL; геокодується при збереженні в адмінці
+  deliveryKitchenAddress String @default("Helicopterstraat 20, 1059 CG Amsterdam, Netherlands")
+  deliveryKitchenLat     Float?
+  deliveryKitchenLng     Float?
+  /// Кожні N км додається один «крок» тарифу (округлення вгору по відстані)
+  deliveryTariffStepKm   Float @default(3)
+  /// Вартість одного кроку, €
+  deliveryTariffStepEur  Float @default(1.5)
 }
 
 // --- КОМАНДА ---

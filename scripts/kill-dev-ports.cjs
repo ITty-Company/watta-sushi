@@ -17,3 +17,9 @@ for (const port of ports) {
     /* ignore */
   }
 }
+
+try {
+  execSync('sleep 1', { stdio: 'ignore', shell: '/bin/sh' })
+} catch (_) {
+  /* ignore */
+}

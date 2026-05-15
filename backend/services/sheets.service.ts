@@ -24,9 +24,12 @@ if (process.env.GOOGLE_CREDS) {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         creds = require('../google-service-account.json');
     } catch {
-        console.warn(
+        // Не шумим в локальной разработке, где интеграция часто не настроена.
+        if (process.env.NODE_ENV === 'production') {
+          console.warn(
             'Google Sheets: немає облікових даних (GOOGLE_CREDS або backend/google-service-account.json). Експорт замовлень у таблицю вимкнено.'
-        );
+          );
+        }
     }
 }
 

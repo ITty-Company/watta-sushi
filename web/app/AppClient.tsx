@@ -1,7 +1,8 @@
 'use client'
 
-import { ReactNode, useEffect, useLayoutEffect } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { ReactNode, useEffect, useLayoutEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import LanguageProviderWrapper from './components/LanguageProviderWrapper'
 import FloatingContactButtons from './components/FloatingContactButtons'
 import Footer from './components/Footer'
@@ -10,60 +11,84 @@ import WattaPublicSiteChrome from './components/WattaPublicSiteChrome'
 import { RightNavDrawerProvider } from './context/RightNavDrawerContext'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 
-export default function AppClient({ children }: { children: ReactNode }) {
+export default function AppClient({
+  children,
+  initialLocale,
+}: {
+  children: ReactNode
+  initialLocale: WattaLanguage
+}) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const prevPathnameForScrollRef = useRef<string | null>(null)
   const isHomeRoute = pathname === '/'
   const isAuthRoute = pathname === '/login' || pathname === '/register'
   const isAdminShellRoute = pathname === '/admin' || pathname?.startsWith('/admin/')
   const showPublicNavChrome = !isAuthRoute
-  /** Шапка + панель категорій: не дублюємо головну (MenuView), /menu (FullMenuPage), auth, admin */
-  /** /menu: ті сама шапка + стрічка категорій, що й на інших публічних сторінках (WattaPublicSiteChrome). */
-  const showGlobalSiteChrome = !isHomeRoute && !isAuthRoute && !isAdminShellRoute
   /**
-   * Після зміни URL — одразу зверху (до малювання кадру).
-   * На `/` скрол у `.content-web`, не в window — тому скидаємо обидва через scrollEntireAppToTop.
+   * Шапка + категорії: на `/` їх рендерить `MenuView` (`WattaStickyChromeLayout` усередині `.content-web`),
+   * щоб fixed-зона йшла в одному скролі з героєм. На інших публічних маршрутах — `WattaPublicSiteChrome`.
+   */
+  const showGlobalSiteChrome = !isAuthRoute && !isAdminShellRoute && !isHomeRoute
+  /**
+   * Скрол наверх лише при зміні pathname; raніше тригерилось і на кожну зміну `searchParams`
+   * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.
    */
   useLayoutEffect(() => {
+    const path = pathname ?? '/'
+    const prev = prevPathnameForScrollRef.current
+    prevPathnameForScrollRef.current = path
+    if (prev === path) return
+    if (path === '/menu' && prev === '/menu') return
     scrollEntireAppToTop()
-  }, [pathname, searchParams])
+  }, [pathname])
 
+  /**
+   * Одноразова міграція схеми кешу меню. Запускається через requestIdleCallback,
+   * щоб не блокувати перший корисний кадр на головній.
+   */
   useEffect(() => {
     if (typeof window === 'undefined') return
     const stampKey = 'watta_menu_cache_schema_v3'
     if (localStorage.getItem(stampKey) === '1') return
 
-    const purgeByPrefix = (store: Storage, prefixes: string[]) => {
-      for (let i = store.length - 1; i >= 0; i -= 1) {
-        const k = store.key(i)
-        if (!k) continue
-        if (prefixes.some((p) => k.startsWith(p))) {
-          store.removeItem(k)
+    const runMigration = () => {
+      const purgeByPrefix = (store: Storage, prefixes: string[]) => {
+        for (let i = store.length - 1; i >= 0; i -= 1) {
+          const k = store.key(i)
+          if (!k) continue
+          if (prefixes.some((p) => k.startsWith(p))) store.removeItem(k)
         }
       }
+      const prefixes = ['menu_items_', 'menu_categories_']
+      purgeByPrefix(sessionStorage, prefixes)
+      purgeByPrefix(localStorage, prefixes)
+      sessionStorage.removeItem('cities_cache')
+      sessionStorage.removeItem('cities_cache_time')
+      localStorage.removeItem('watta_cities_cache')
+      localStorage.removeItem('watta_cities_cache_time')
+      localStorage.setItem(stampKey, '1')
     }
 
-    const prefixes = ['menu_items_', 'menu_categories_']
-    purgeByPrefix(sessionStorage, prefixes)
-    purgeByPrefix(localStorage, prefixes)
-    sessionStorage.removeItem('cities_cache')
-    sessionStorage.removeItem('cities_cache_time')
-    localStorage.removeItem('watta_cities_cache')
-    localStorage.removeItem('watta_cities_cache_time')
-    localStorage.setItem(stampKey, '1')
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+    }
+    const w = window as IdleWindow
+    if (typeof w.requestIdleCallback === 'function') {
+      w.requestIdleCallback(runMigration, { timeout: 2000 })
+    } else {
+      window.setTimeout(runMigration, 800)
+    }
   }, [])
 
   return (
-    <LanguageProviderWrapper>
+    <LanguageProviderWrapper initialLocale={initialLocale}>
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
         {/* Мінімум висоти вікна: футер лишається внизу; фон сторінки — як у шапки контенту */}
-        <div
-          className="watta-app-shell-root watta-page-bg flex min-h-[100dvh] min-h-[100svh] flex-col"
-        >
-          {/* Контент займає вільне місце між шапкою сторінки та глобальним футером */}
-          <main className="flex min-h-0 w-full max-w-[100vw] flex-col">
+        <div className="watta-app-shell-root watta-page-bg flex min-h-[100dvh] min-h-[100svh] flex-col">
+          {/* flex-1: основний блок забирає вільну висоту до min-h екрана — інакше «повітря» лишалось під футером */}
+          <main className="flex min-h-0 w-full max-w-[100vw] flex-1 flex-col">
             {showGlobalSiteChrome ? <WattaPublicSiteChrome /> : null}
-            <div className="relative z-0 flex min-h-0 min-w-0 flex-col">
+            <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col">
               {children}
             </div>
           </main>

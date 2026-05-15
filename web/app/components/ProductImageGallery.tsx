@@ -83,7 +83,8 @@ export function ProductImageGallery({ images, alt, labels, className }: ProductI
       <div
         ref={scrollerRef}
         className={cn(
-          'flex w-full touch-pan-x snap-x snap-mandatory overflow-x-auto scroll-smooth',
+          'flex w-full snap-x snap-mandatory overflow-x-auto scroll-smooth overscroll-x-contain',
+          '[touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch]',
           '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         )}
       >
