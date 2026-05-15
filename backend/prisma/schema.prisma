@@ -234,6 +234,11 @@ model SiteSetting {
   id             Int @id @default(1) // Всегда ID=1 (синглтон)
   bannerInterval Int @default(5000) // Интервал в миллисекундах (по умолчанию 5 сек)
 
+  /// Головна: перше hero-відео (зворотна сумісність; дублює [0] з homeHeroVideoUrls)
+  homeHeroVideoUrl String @default("/watta-sushi-2-hero.mp4")
+  /// JSON-масив до 3 шляхів (/uploads/… або /…mp4) — порядок відтворення на головній
+  homeHeroVideoUrls String @default("[]")
+
   telegramUrl             String @default("")
   whatsappUrl             String @default("")
   instagramUrl            String @default("")

@@ -624,6 +624,8 @@ export function listRecommendations() {
 export const mockSiteSettings = {
   id: 1,
   bannerInterval: 5000,
+  homeHeroVideoUrl: '/watta-sushi-2-hero.mp4',
+  homeHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   telegramUrl: 'https://t.me/wattasushiwork',
   whatsappUrl: 'https://wa.me/380000000000',
   instagramUrl: WATTA_INSTAGRAM_URL,

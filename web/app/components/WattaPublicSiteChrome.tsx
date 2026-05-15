@@ -34,7 +34,6 @@ export default function WattaPublicSiteChrome() {
     <WattaStickyChromeLayout chromeClassName="watta-full-menu-sticky-chrome" flowHeightFudgePx={12}>
       <WattaGlobalSiteHeader
         disableSticky
-        logoHref="/"
         onCityChange={onCityChange}
         deliveryEmbeddedActive={pathname === '/' && homeDeliveryEmbed}
         onPromotionsClick={() => router.push('/promotions')}
