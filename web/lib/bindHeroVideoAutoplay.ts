@@ -10,10 +10,26 @@
  */
 export function bindHeroVideoAutoplay(
   video: HTMLVideoElement,
-  options?: { extendedRetries?: boolean; blockInteractionRoot?: HTMLElement | null }
+  options?: {
+    extendedRetries?: boolean
+    blockInteractionRoot?: HTMLElement | null
+    /** false — плейлист з адмінки: onEnded перемикає наступний ролик */
+    loop?: boolean
+  },
 ): () => void {
   const extendedRetries = options?.extendedRetries ?? false
   const blockRoot = options?.blockInteractionRoot ?? null
+  const shouldLoop = options?.loop !== false
+
+  const applyLoopMode = () => {
+    try {
+      video.loop = shouldLoop
+      if (shouldLoop) video.setAttribute('loop', '')
+      else video.removeAttribute('loop')
+    } catch {
+      /* ignore */
+    }
+  }
 
   const safePlay = () => {
     /* 24/7: не блокуємо play() навіть коли `document.hidden`. Хром/Safari у фоні
@@ -25,8 +41,7 @@ export function bindHeroVideoAutoplay(
       video.volume = 0
       video.playsInline = true
       video.autoplay = true
-      video.loop = true
-      video.setAttribute('loop', '')
+      applyLoopMode()
       video.controls = false
       video.removeAttribute('controls')
       video.disablePictureInPicture = true

@@ -1903,6 +1903,11 @@ html.watta-light-chrome {
   overflow-x: visible;
   overflow-y: visible;
   max-width: 100vw;
+  --watta-floating-fab-size: 3.25rem;
+  --watta-floating-fab-lift: calc(max(1rem, env(safe-area-inset-bottom, 0px)) + 14px);
+  --watta-floating-fab-clearance: calc(
+    var(--watta-floating-fab-size) + var(--watta-floating-fab-lift) + 0.65rem
+  );
 }
 
 /* Герой (100vw + margin) може виходити за flex-min ширину; не кліпаємо main — інакше смуги по боках відео. */
@@ -2678,9 +2683,9 @@ html.watta-light-chrome body {
   box-shadow: none;
 }
 
-/* Шапка: той самий паперовий фон, що сторінка (мобільний і десктоп) */
+/* Шапка: білий фон (без градієнта / «паперового» відтінку) */
 .watta-chrome-header-shell-bg {
-  background: var(--watta-page-gradient) !important;
+  background: #ffffff !important;
 }
 
 /* Глобальний chrome (AppClient): шапка + категорії */
@@ -3087,6 +3092,8 @@ html.watta-light-chrome body {
     scroll-snap-type: none;
     /* Щоб snap не підтягував секцію під fixed шапку + категорії (збіг з JS у MenuView) */
     scroll-padding-top: calc(148px + env(safe-area-inset-top, 0px));
+    /* Кінець сторінки: юридичний ряд футера + FAB Instagram не обрізаються */
+    scroll-padding-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
   }
 
   .menu-snap-section-welcome-web {
@@ -3250,7 +3257,7 @@ html.watta-light-chrome body {
   }
 }
 
-/* Вступ на головній: на телефоні — над відео; на планшеті+ — під відео (той самий блок #home-after-hero-intro) */
+/* Вступ на головній: на телефоні й планшеті (≤1024) — над відео; на десктопі — під відео */
 .home-after-hero-intro-web {
   background: var(--watta-page-fill, #ffffff);
   border-top: 1px solid color-mix(in srgb, #145142 10%, transparent);
@@ -3272,7 +3279,38 @@ html.watta-light-chrome body {
 .menu-page-web:not(.watta-full-menu-page)
   #home-after-hero-intro.home-after-hero-intro-web
   .home-after-hero-intro-inner-web--home-menu {
-  padding-top: clamp(5px, 1.05vh, 11px);
+  padding-top: clamp(8px, 1.35vh, 14px);
+}
+
+/* Телефон / планшет: трохи більше повітря під панеллю категорій (fixed chrome) до вступного тексту */
+@media (max-width: 1024px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(14px, 2.1vh, 22px);
+  }
+
+  /* Вступ → відео (текст над hero): зазор під абзацем і перед блоком відео */
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .welcome-hero-section-web)
+    .home-after-hero-intro-inner-web--home-menu,
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
+    .home-after-hero-intro-inner-web,
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-bottom: clamp(0.6rem, 1.5vh, 0.9rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .welcome-hero-section-web)
+    + .welcome-hero-section-web,
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
+    + .menu-home-narrow-strip-hero-web {
+    margin-top: clamp(6px, 1vh, 11px) !important;
+  }
 }
 
 @media (min-width: 1025px) {
@@ -3296,6 +3334,17 @@ html.watta-light-chrome body {
 .home-after-hero-intro-title-web {
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
   font-feature-settings: 'liga' 1, 'kern' 1;
+}
+
+/* Планшет: один рядок — «Доставка суші — Amsterdam від Watta Sushi» */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .home-after-hero-intro-title-web > span {
+    display: inline !important;
+  }
+
+  .home-after-hero-intro-title-web > span + span::before {
+    content: ' ';
+  }
 }
 
 .home-after-hero-intro-body-web {
@@ -4526,26 +4575,30 @@ html.watta-light-chrome body {
   background-color: #ffffff;
 }
 
-/* Телефон / планшет: явний зазор після панелі категорій — відео нижче, не під нею */
+/* Телефон / планшет: без білої смуги під панеллю — просвічує hero */
 @media (max-width: 768px) {
   .menu-page-web .categories-panel-spacer-web {
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: none !important;
-    overflow: visible !important;
-    line-height: 1 !important;
-    font-size: 1px !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
   }
 
-  /* Головна на телефоні: тонкий зазор під чіпами — відео ближче до панелі */
   .menu-page-web:not(.watta-full-menu-page) .categories-panel-spacer-web {
-    height: 6px !important;
-    min-height: 6px !important;
+    height: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) > .menu-content-top-gap-web {
+    background-color: transparent !important;
+    height: 0 !important;
+    min-height: 0 !important;
   }
 
   /*
-   * Головна MenuView (≤768): категорії винесені з fixed-chrome — один стовпчик «біла смуга + відео».
-   * Прибираємо зайвий спейсер і підклеюємо hero до панелі чіпів; чіпи лишаються sticky під шапкою.
+   * Головна MenuView (≤768): категорії над hero — прозорий стовпчик, картка лише на чипах.
    */
   .menu-page-web .menu-home-narrow-strip-hero-web {
     display: flex;
@@ -4553,7 +4606,7 @@ html.watta-light-chrome body {
     align-items: stretch;
     width: 100%;
     box-sizing: border-box;
-    background: #ffffff;
+    background: transparent;
   }
 
   .menu-page-web .menu-home-narrow-strip-hero-web .categories-panel-spacer-web {
@@ -4573,10 +4626,18 @@ html.watta-light-chrome body {
     top: calc(env(safe-area-inset-top, 0px) + clamp(48px, 12.5vw, 64px)) !important;
     z-index: 85;
     margin-bottom: 0 !important;
-    /* Без окремої «лінії» між білими чіпами та тайлом відео */
-    border-bottom: none !important;
-    border-radius: 14px 14px 0 0 !important;
-    box-shadow: 0 3px 16px rgba(20, 81, 66, 0.05) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding-bottom: 0 !important;
+  }
+
+  .menu-page-web .menu-home-narrow-strip-hero-web .categories-panel-web {
+    border-radius: 14px !important;
+    box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
   }
 
   .menu-page-web .menu-home-narrow-strip-hero-web .welcome-hero-section-web {
@@ -4604,17 +4665,21 @@ html.watta-light-chrome body {
     box-shadow: none !important;
   }
 
-  /* Вступ перед блоком чіпів+відео — менший нижній відступ, без «подвійної білої плитки» */
+}
+
+/* Планшет 769–1024: вступ перед звичайним hero (не narrow-strip) */
+@media (min-width: 769px) and (max-width: 1024px) {
   .menu-page-web:not(.watta-full-menu-page)
-    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
-    .home-after-hero-intro-inner-web {
-    padding-bottom: 0.65rem !important;
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(18px, 2.4vh, 26px) !important;
+    padding-bottom: clamp(0.7rem, 1.8vh, 1rem) !important;
   }
 
   .menu-page-web:not(.watta-full-menu-page)
-    #home-after-hero-intro.home-after-hero-intro-web
-    + .menu-home-narrow-strip-hero-web {
-    margin-top: 0 !important;
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
+    + .welcome-hero-section-web {
+    margin-top: clamp(8px, 1.15vh, 13px) !important;
   }
 }
 
@@ -7726,8 +7791,14 @@ html.watta-light-chrome body {
   display: block;
 }
 
-/* Верхняя панель на мобильном/планшете: без черты — один белый фон (0–768px) */
+/* Верхня панель на телефоні / планшеті: білий лише header; під категоріями — прозоро (видно hero) */
 @media (max-width: 768px) {
+  .watta-full-menu-sticky-chrome,
+  .watta-public-sticky-chrome {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
   .menu-fixed-header-shell-web.watta-chrome-header-shell-bg {
     background: #ffffff !important;
     box-shadow: none !important;
@@ -7744,8 +7815,32 @@ html.watta-light-chrome body {
     box-shadow: none !important;
     -webkit-box-shadow: none !important;
     backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     outline: none;
     transition: none !important;
+  }
+
+  .categories-panel-wrapper-web,
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+
+  .categories-panel-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    background: var(--watta-page-gradient) !important;
+    border: 1px solid rgba(20, 81, 66, 0.09) !important;
+    border-radius: 14px !important;
+    box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
+    -webkit-box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
   }
   .app-header-web::before {
     box-shadow: none !important;
@@ -7803,8 +7898,10 @@ html.watta-light-chrome body {
   
   /* Стрілки: див. глобальне правило max-width 1024px */
   
-  /* Телефон: панель на всю ширину (лише safe-area), компактніша висота */
-  .categories-panel-wrapper-web {
+  /* Телефон: зовнішня оболонка прозора; «картка» лише на .categories-panel-web з чипами */
+  .categories-panel-wrapper-web,
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
     position: sticky !important;
     left: 0 !important;
     right: 0 !important;
@@ -7812,16 +7909,14 @@ html.watta-light-chrome body {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 4px max(18px, env(safe-area-inset-left, 0px)) 4px max(18px, env(safe-area-inset-right, 0px)) !important;
+    padding: 4px max(18px, env(safe-area-inset-left, 0px)) 0 max(18px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
     z-index: 85;
-    background: var(--watta-page-gradient) !important;
-    border: 1px solid rgba(20, 81, 66, 0.09) !important;
-    border-radius: 14px !important;
-    box-shadow:
-      0 3px 16px rgba(20, 81, 66, 0.05),
-      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     overflow: visible;
     gap: 0;
     display: flex !important;
@@ -7830,21 +7925,28 @@ html.watta-light-chrome body {
     box-sizing: border-box !important;
   }
   
-  .categories-panel-web {
-    --cat-gap: 6px;
+  .categories-panel-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    --cat-gap: 7px;
     --cat-edge: 12px;
-    /* ~5½ круглих чипів; відступ зліва/справа = gap між чипами */
-    --watta-cat-peek: 5.5;
+    /* ~5 круглих чипів (менше peek — трохи більші кола на телефоні) */
+    --watta-cat-peek: 5;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 7px var(--cat-edge) !important;
-    border-radius: 11px;
+    padding: 8px var(--cat-edge) !important;
+    border-radius: 14px !important;
     gap: var(--cat-gap) !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
     align-items: center;
     scroll-padding-inline: var(--cat-edge) !important;
+    background: var(--watta-page-gradient) !important;
+    border: 1px solid rgba(20, 81, 66, 0.09) !important;
+    box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
 
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -7856,8 +7958,11 @@ html.watta-light-chrome body {
     scrollbar-width: none;
     -ms-overflow-style: none;
     display: flex;
-    background: transparent;
-    box-shadow: none;
+  }
+
+  .categories-panel-spacer-web {
+    height: 0 !important;
+    min-height: 0 !important;
   }
   
   .categories-panel-web::-webkit-scrollbar {
@@ -7875,7 +7980,7 @@ html.watta-light-chrome body {
   
   .category-button-web {
     scroll-snap-align: start;
-    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.5)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5)) !important;
     flex-shrink: 0;
     flex-grow: 0;
     box-sizing: border-box;
@@ -7884,10 +7989,10 @@ html.watta-light-chrome body {
     max-width: none !important;
     aspect-ratio: 1 / 1 !important;
     align-self: center;
-    padding: 6px 5px !important;
-    font-size: 0.58rem;
+    padding: 7px 6px !important;
+    font-size: 0.62rem;
     border-radius: 50% !important;
-    gap: 3px !important;
+    gap: 4px !important;
     border-width: 1.5px;
     justify-content: center;
     overflow: hidden !important;
@@ -7897,17 +8002,17 @@ html.watta-light-chrome body {
   }
   
   .category-button-icon-web {
-    font-size: 1.15rem;
+    font-size: 1.35rem;
     line-height: 1;
-    max-height: 1.45em;
+    max-height: 1.55em;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   
   .category-button-label-web {
-    font-size: 9px;
-    line-height: 1.1;
+    font-size: 10px;
+    line-height: 1.12;
     white-space: normal;
     overflow-wrap: break-word;
     word-break: break-word;
@@ -7934,7 +8039,9 @@ html.watta-light-chrome body {
 
 /* Альбомний телефон 481–767: повна ширина; круглі чипи як на ≤480, решта — свайп */
 @media (min-width: 481px) and (max-width: 767px) {
-  .categories-panel-wrapper-web {
+  .categories-panel-wrapper-web,
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
     position: sticky !important;
     left: 0 !important;
     right: 0 !important;
@@ -7942,16 +8049,14 @@ html.watta-light-chrome body {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 6px max(18px, env(safe-area-inset-left, 0px)) 6px max(18px, env(safe-area-inset-right, 0px)) !important;
+    padding: 6px max(18px, env(safe-area-inset-left, 0px)) 0 max(18px, env(safe-area-inset-right, 0px)) !important;
     transform: none !important;
     min-height: 0 !important;
     z-index: 85;
-    background: var(--watta-page-gradient) !important;
-    border: 1px solid rgba(20, 81, 66, 0.09) !important;
-    border-radius: 14px !important;
-    box-shadow:
-      0 3px 16px rgba(20, 81, 66, 0.05),
-      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     display: flex !important;
     justify-content: stretch !important;
     align-items: center !important;
@@ -7959,42 +8064,50 @@ html.watta-light-chrome body {
     box-sizing: border-box !important;
   }
 
-  .categories-panel-web {
-    --cat-gap: 6px;
+  .categories-panel-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    --cat-gap: 7px;
     --cat-edge: 12px;
-    --watta-cat-peek: 5.5;
+    --watta-cat-peek: 5;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 7px var(--cat-edge) !important;
+    padding: 8px var(--cat-edge) !important;
     gap: var(--cat-gap) !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
     align-items: center;
     scroll-padding-inline: var(--cat-edge) !important;
+    background: var(--watta-page-gradient) !important;
+    border: 1px solid rgba(20, 81, 66, 0.09) !important;
+    border-radius: 14px !important;
+    box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
   }
 
   .category-button-web {
-    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.5)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5)) !important;
     min-width: 0 !important;
     width: auto !important;
     max-width: none !important;
     aspect-ratio: 1 / 1 !important;
     align-self: center;
-    padding: 6px 5px !important;
+    padding: 7px 6px !important;
     border-radius: 50% !important;
-    gap: 3px !important;
+    gap: 4px !important;
     justify-content: center;
     overflow: hidden !important;
   }
 
   .category-button-icon-web {
-    font-size: 1.15rem;
+    font-size: 1.35rem;
   }
 
   .category-button-label-web {
-    font-size: 9px;
-    line-height: 1.1;
+    font-size: 10px;
+    line-height: 1.12;
     max-height: 2.5em;
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -8449,6 +8562,32 @@ html.watta-light-chrome body {
     width: 0 !important;
     min-width: 0 !important;
     flex: 0 0 0 !important;
+  }
+}
+
+/* Телефон / планшет: оболонка прозора; картка категорій — на .categories-panel-web */
+@media (max-width: 768px) {
+  .categories-panel-wrapper-web,
+  .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+  .watta-public-sticky-chrome .categories-panel-wrapper-web {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+
+  .categories-panel-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    background: var(--watta-page-gradient) !important;
+    border: 1px solid rgba(20, 81, 66, 0.09) !important;
+    border-radius: 14px !important;
+    box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
+    -webkit-box-shadow:
+      0 3px 16px rgba(20, 81, 66, 0.05),
+      0 1px 0 rgba(255, 255, 255, 0.75) inset !important;
   }
 }
 
@@ -9208,12 +9347,12 @@ html.watta-light-chrome body {
   }
 
   .logo-text-image-web {
-    max-width: 132px !important;
+    max-width: 124px !important;
     height: 34px !important;
   }
   
   .header-actions-web {
-    gap: 5px;
+    gap: 6px;
   }
 
   /* Лише кошик, обране, меню — профіль і мова в бургер-панелі (правий drawer / сайдбар) */
@@ -9222,16 +9361,16 @@ html.watta-light-chrome body {
     display: none !important;
   }
 
-  /* Компактніші кнопки хедера */
+  /* Три кнопки хедера (кошик, обране, меню) — трохи більші для зручного натиску */
   .header-actions-web .header-cart-btn-text-web {
-    width: 33px !important;
-    min-width: 33px !important;
-    max-width: 33px !important;
-    height: 33px !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    height: 38px !important;
     padding: 0 !important;
     gap: 0 !important;
     font-size: 12px !important;
-    border-radius: 9px !important;
+    border-radius: 10px !important;
     justify-content: center !important;
     align-items: center !important;
     box-sizing: border-box !important;
@@ -9247,28 +9386,28 @@ html.watta-light-chrome body {
   }
 
   .header-actions-web .header-cart-icon-web {
-    width: 17px !important;
-    height: 17px !important;
+    width: 20px !important;
+    height: 20px !important;
   }
 
   .header-menu-btn-web,
   .header-favorites-btn-web {
-    width: 33px !important;
-    height: 33px !important;
-    min-width: 33px !important;
-    max-width: 33px !important;
-    border-radius: 9px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    border-radius: 10px !important;
     box-sizing: border-box !important;
   }
 
   .header-favorites-icon-web {
-    width: 17px !important;
-    height: 17px !important;
+    width: 20px !important;
+    height: 20px !important;
   }
 
   .header-menu-icon-web {
-    width: 17px !important;
-    height: 17px !important;
+    width: 20px !important;
+    height: 20px !important;
   }
 
   .location-section-web {
@@ -13849,14 +13988,14 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   .logo-section-web {
     flex: 1 1 auto;
     min-width: 0;
-    max-width: calc(100vw - 200px);
+    max-width: calc(100vw - 218px);
     padding-left: 2px;
     padding-right: 4px;
   }
 
   .header-actions-web {
     flex-shrink: 0;
-    gap: 5px;
+    gap: 6px;
   }
 
   /* Активная категория — тот же размер; свечение из глобальных стилей */
@@ -14297,20 +14436,27 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   align-items: start;
 }
 
-/* © та політика — без лінії зверху; додатковий відступ зверху + знизу як у gap сітки */
+/* © та політика — по центру внизу, скляна «док-панель» */
 .site-footer-watta__nav-colophon {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: flex-start;
-  column-gap: 0.38rem;
-  row-gap: 0.2rem;
+  align-items: center;
+  justify-content: center;
+  column-gap: 0.4rem;
+  row-gap: 0.28rem;
   box-sizing: border-box;
-  width: 100%;
-  max-width: none;
-  margin: 0.55rem 0 0.75rem;
-  padding: 0;
+  width: fit-content;
+  max-width: min(100%, 42rem);
+  margin: clamp(0.5rem, 1.2vw, 0.75rem) auto 0.75rem;
+  padding: clamp(0.55rem, 1.35vw, 0.78rem) clamp(0.85rem, 2vw, 1.12rem);
+  text-align: center;
   border-top: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  box-shadow: 0 4px 22px rgba(20, 81, 66, 0.055);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 @media (min-width: 1280px) {
@@ -14322,16 +14468,16 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 
 .site-footer-watta__nav-colophon-copy {
   font-family: Inter, system-ui, sans-serif;
-  font-size: 0.68rem;
+  font-size: clamp(0.74rem, 1.55vw, 0.82rem);
   font-weight: 500;
-  color: rgba(15, 36, 30, 0.55);
+  color: rgba(15, 36, 30, 0.62);
   letter-spacing: 0.02em;
   line-height: 1.45;
 }
 
 .site-footer-watta__nav-colophon-sep {
   flex-shrink: 0;
-  font-size: 0.68rem;
+  font-size: clamp(0.74rem, 1.55vw, 0.82rem);
   font-weight: 600;
   color: rgba(15, 36, 30, 0.35);
   user-select: none;
@@ -14339,12 +14485,17 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 
 .site-footer-watta__nav-colophon-link {
   font-family: Inter, system-ui, sans-serif;
-  font-size: 0.72rem;
+  font-size: clamp(0.76rem, 1.65vw, 0.84rem);
   font-weight: 600;
   color: #145142;
   text-decoration: none;
-  letter-spacing: 0.01em;
-  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .site-footer-watta__nav-colophon-link:hover {
@@ -14352,6 +14503,7 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   text-decoration: underline;
   text-decoration-color: rgba(20, 81, 66, 0.42);
   text-underline-offset: 2px;
+  border-bottom-color: rgba(20, 81, 66, 0.35);
 }
 
 .site-footer-watta__nav-colophon-link:focus-visible {
@@ -14576,11 +14728,43 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 
   .site-footer-watta__nav-colophon-copy,
   .site-footer-watta__nav-colophon-sep {
-    font-size: 0.62rem;
+    font-size: clamp(0.7rem, 1.45vw, 0.78rem);
   }
 
   .site-footer-watta__nav-colophon-link {
-    font-size: 0.66rem;
+    font-size: clamp(0.72rem, 1.5vw, 0.8rem);
+  }
+}
+
+/* Телефон: юридичний ряд не під FAB Instagram і не під home indicator */
+@media (max-width: 767px) {
+  .site-footer-watta.site-footer-watta--light {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .site-footer-watta__inner {
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .site-footer-watta__nav-colophon {
+    width: 100%;
+    max-width: min(100%, calc(100% - 0.5rem));
+    margin-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .site-footer-watta__nav-colophon-copy,
+  .site-footer-watta__nav-colophon-sep {
+    font-size: clamp(0.76rem, 3.4vw, 0.84rem);
+  }
+
+  .site-footer-watta__nav-colophon-link {
+    font-size: clamp(0.78rem, 3.6vw, 0.86rem);
+  }
+
+  html.watta-light-chrome body:has(.site-footer-watta) {
+    scroll-padding-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
   }
 }
 

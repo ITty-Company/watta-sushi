@@ -1035,10 +1035,10 @@ const STYLES = `
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-  /* Планшет: 2 повні + половина третьої; 2 зазори (gap 0.95rem) */
+  /* Планшет: 4 повні + половина п’ятої; 4 зазори (gap 0.95rem) */
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-    flex: 0 0 calc((100% - (0.95rem * 2)) / 2.5);
-    max-width: calc((100% - (0.95rem * 2)) / 2.5);
+    flex: 0 0 calc((100% - (0.95rem * 4)) / 4.5);
+    max-width: calc((100% - (0.95rem * 4)) / 4.5);
     scroll-snap-align: start;
   }
 
@@ -1078,24 +1078,25 @@ const STYLES = `
   }
 
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-text-web {
-    max-width: 5rem;
+    max-width: 3.75rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
-    font-size: 0.98rem;
-    line-height: 1.26;
+    font-size: 0.88rem;
+    line-height: 1.22;
+    -webkit-line-clamp: 2;
   }
 
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-web {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
   }
 
   .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
-    padding: 0.72rem 0.82rem 0.82rem;
-    gap: 0.32rem;
+    padding: 0.62rem 0.68rem 0.72rem;
+    gap: 0.28rem;
   }
 }
 

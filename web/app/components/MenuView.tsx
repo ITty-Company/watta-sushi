@@ -32,7 +32,12 @@ import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayNam
 import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
-import { WATTA_HOME_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
+import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
+import {
+  buildHomeHeroPlaylist,
+  buildHomeHeroVideoSources,
+  WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
+} from '@/lib/wattaHeroVideo'
 import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
 
 /**
@@ -217,7 +222,6 @@ const DEFAULT_HOME_BANNERS: Array<{
 ]
 
 /** Головна: ocean hero + запасні (`wattaHeroVideo` — окремо від сторінки `/menu`). */
-const HERO_VIDEO_SOURCES_MENU = WATTA_HOME_HERO_VIDEO_SOURCES
 
 function WelcomeHeroSection({
   sectionRef,
@@ -228,6 +232,7 @@ function WelcomeHeroSection({
   heroVideoCanvasRef,
   heroVideoSrc,
   videoSources,
+  playlistLength,
   children,
 }: {
   sectionRef: React.Ref<HTMLElement>
@@ -238,8 +243,10 @@ function WelcomeHeroSection({
   heroVideoCanvasRef: React.RefObject<HTMLCanvasElement>
   heroVideoSrc: string
   videoSources: readonly string[]
+  playlistLength: number
   children?: React.ReactNode
 }) {
+  const heroVideoLoop = playlistLength <= 1
   const { t } = useLanguage()
   return (
     <section
@@ -270,7 +277,7 @@ function WelcomeHeroSection({
               src={heroVideoSrc}
               autoPlay
               muted
-              loop
+              loop={heroVideoLoop}
               playsInline
               controls={false}
               disablePictureInPicture
@@ -288,10 +295,9 @@ function WelcomeHeroSection({
                   return prev
                 })
               }}
-              onEnded={(e) => {
-                const el = e.currentTarget
-                el.currentTime = 0
-                void el.play()
+              onEnded={() => {
+                if (playlistLength <= 1) return
+                setHeroVideoSourceIndex((prev) => (prev + 1) % playlistLength)
               }}
             />
             <canvas
@@ -346,11 +352,33 @@ export default function MenuView() {
   const [activePage, setActivePage] = useState<string | null>(null)
   /** ≤768px: головне меню без оверлею — категорії + hero в одному блоці під шапкою (відео одразу після білої панелі). */
   const [isNarrowViewport, setIsNarrowViewport] = useState(false)
+  /** ≤767px: «Наші хіти» вертикальним стеком; з 768 — горизонтальна стрічка (3+½ на планшеті) */
+  const [isPhoneViewport, setIsPhoneViewport] = useState(false)
+  /** ≤1024px: вступ «Доставка суші…» над відео; на десктопі — під відео */
+  const [homeIntroBeforeHero, setHomeIntroBeforeHero] = useState(false)
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return
     const mq = window.matchMedia('(max-width: 768px)')
     const apply = () => setIsNarrowViewport(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 767px)')
+    const apply = () => setIsPhoneViewport(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 1024px)')
+    const apply = () => setHomeIntroBeforeHero(mq.matches)
     apply()
     mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
@@ -411,6 +439,15 @@ export default function MenuView() {
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
 
   const [bannerInterval, setBannerInterval] = useState(5000)
+  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>([])
+  const homeHeroPlaylist = useMemo(
+    () => buildHomeHeroPlaylist(homeHeroVideoUrls),
+    [homeHeroVideoUrls],
+  )
+  const heroVideoSources = useMemo(
+    () => buildHomeHeroVideoSources(homeHeroVideoUrls),
+    [homeHeroVideoUrls],
+  )
 
   /** Якщо mp4 немає на сервері — показуємо постер-зображення */
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
@@ -419,7 +456,10 @@ export default function MenuView() {
   const heroVideoCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const heroVideoSrc =
-    HERO_VIDEO_SOURCES_MENU[heroVideoSourceIndex] ?? HERO_VIDEO_SOURCES_MENU[0]
+    homeHeroPlaylist[heroVideoSourceIndex] ??
+    heroVideoSources[heroVideoSourceIndex] ??
+    heroVideoSources[0]
+  const heroVideoShouldLoop = homeHeroPlaylist.length <= 1
 
   const homeNarrowStripHero = isNarrowViewport && activePage === null
 
@@ -439,7 +479,7 @@ export default function MenuView() {
   useEffect(() => {
     setHeroVideoSourceIndex(0)
     setHeroVideoFailed(false)
-  }, [activePage])
+  }, [activePage, homeHeroVideoUrls])
 
   useLayoutEffect(() => {
     if (heroVideoFailed) return
@@ -481,12 +521,13 @@ export default function MenuView() {
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
       blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
+      loop: heroVideoShouldLoop,
     })
     return () => {
       offMirror()
       offAutoplay()
     }
-  }, [heroVideoSrc, heroVideoFailed, activePage])
+  }, [heroVideoSrc, heroVideoFailed, activePage, heroVideoShouldLoop])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.localStorage) return
@@ -581,16 +622,34 @@ export default function MenuView() {
   }, [])
 
   useEffect(() => {
+    const applySettings = (data: {
+      bannerInterval?: number
+      homeHeroVideoUrl?: string
+      homeHeroVideoUrls?: string[]
+    }) => {
+      if (data.bannerInterval) setBannerInterval(data.bannerInterval)
+      setHomeHeroVideoUrls(parseHomeHeroVideoUrlsFromApi(data))
+    }
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/settings')
-        if (res.ok) {
-          const data = await res.json()
-          if (data.bannerInterval) setBannerInterval(data.bannerInterval)
-        }
-      } catch (e) { console.error('Error loading settings', e) }
+        const res = await fetch('/api/settings', { cache: 'no-store' })
+        if (res.ok) applySettings(await res.json())
+      } catch (e) {
+        console.error('Error loading settings', e)
+      }
     }
-    fetchSettings()
+    const onHeroUpdated = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ url?: string; urls?: string[] }>).detail
+      const fromEvent = parseHomeHeroVideoUrlsFromApi({
+        homeHeroVideoUrls: detail?.urls,
+        homeHeroVideoUrl: detail?.url,
+      })
+      if (fromEvent.length > 0) setHomeHeroVideoUrls(fromEvent)
+      else void fetchSettings()
+    }
+    void fetchSettings()
+    window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+    return () => window.removeEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
   }, [])
 
   // --- ЗАГРУЗКА БАННЕРОВ ---
@@ -1961,7 +2020,7 @@ export default function MenuView() {
   // ============================================
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
-  /** Текст «доставка суші…» після героя: на телефоні — над відео (вузька смуга), на планшеті+ — під відео. */
+  /** Текст «доставка суші…»: на телефоні й планшеті (≤1024) — над відео; на десктопі — під відео. */
   const homeAfterHeroIntroTitleLines = fillHomeAfterHeroCity(t.menuView.homeAfterHeroIntroTitle)
     .split(/\n/)
     .map((s) => s.trim())
@@ -2063,7 +2122,7 @@ export default function MenuView() {
         <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
       )}
 
-      {isNarrowViewport ? homeAfterHeroIntroSection : null}
+      {homeIntroBeforeHero ? homeAfterHeroIntroSection : null}
 
       {homeNarrowStripHero ? (
         <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
@@ -2075,7 +2134,8 @@ export default function MenuView() {
             heroVideoRef={heroVideoRef}
             heroVideoCanvasRef={heroVideoCanvasRef}
             heroVideoSrc={heroVideoSrc}
-            videoSources={HERO_VIDEO_SOURCES_MENU}
+            videoSources={heroVideoSources}
+            playlistLength={homeHeroPlaylist.length}
           >
             <div
               ref={marqueeBarRef}
@@ -2094,7 +2154,8 @@ export default function MenuView() {
           heroVideoRef={heroVideoRef}
           heroVideoCanvasRef={heroVideoCanvasRef}
           heroVideoSrc={heroVideoSrc}
-          videoSources={HERO_VIDEO_SOURCES_MENU}
+          videoSources={heroVideoSources}
+          playlistLength={homeHeroPlaylist.length}
         >
           {/* Смуга на нижньому краї кадру — видно без прокрутки «під відео» */}
           <div
@@ -2106,7 +2167,7 @@ export default function MenuView() {
         </WelcomeHeroSection>
       )}
 
-      {!isNarrowViewport ? homeAfterHeroIntroSection : null}
+      {!homeIntroBeforeHero ? homeAfterHeroIntroSection : null}
 
       {cinematicAdminRecommendedProducts.length > 0 ? (
         <div
@@ -2116,7 +2177,7 @@ export default function MenuView() {
           <CinematicFooter
             layout="compact"
             homeRecommendedStack={
-              isNarrowViewport
+              isPhoneViewport
                 ? {
                     maxItems: 4,
                     seeAllHref: '/menu',

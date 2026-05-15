@@ -132,13 +132,7 @@ export default function Footer() {
   }, [language])
 
   return (
-    <footer
-      className="site-footer-watta site-footer-watta--light shrink-0 w-full"
-      style={{
-        /* Лише safe-area (home indicator), без додаткового «повітря» під панеллю */
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      }}
-    >
+    <footer className="site-footer-watta site-footer-watta--light shrink-0 w-full">
       <div className="site-footer-watta__inner">
         <div className="site-footer-watta__hero-row">
           <div className="site-footer-watta__brand-block">

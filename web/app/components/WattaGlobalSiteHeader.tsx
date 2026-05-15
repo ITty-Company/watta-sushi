@@ -2,8 +2,9 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react'
 import { readFavoriteIds } from '@/lib/favoritesStorage'
 import { useLanguage } from '../context/LanguageContext'
@@ -103,8 +104,7 @@ export type WattaGlobalSiteHeaderProps = {
   onMenuClick: () => void
   onProfileClick: () => void
   onFavoritesClick: () => void
-  /** Якщо задано — логотип веде на головну; інакше клік через onLogoClick */
-  logoHref?: '/'
+  /** Додаткова дія на головній (закрити вбудовані сторінки тощо) перед скролом наверх */
   onLogoClick?: () => void
 }
 
@@ -117,10 +117,10 @@ export default function WattaGlobalSiteHeader({
   onMenuClick,
   onProfileClick,
   onFavoritesClick,
-  logoHref,
   onLogoClick,
 }: WattaGlobalSiteHeaderProps) {
   const { t } = useLanguage()
+  const router = useRouter()
   const rightNavDrawer = useOptionalRightNavDrawer()
   const pathname = usePathname()
   const cartCount = useLiveCartCount()
@@ -141,6 +141,14 @@ export default function WattaGlobalSiteHeader({
     if (rightNavDrawer?.enabled) rightNavDrawer.open()
     else onMenuClick()
   }
+
+  const handleLogoClick = useCallback(() => {
+    onLogoClick?.()
+    if (pathname !== '/') {
+      router.push('/')
+    }
+    scrollEntireAppToTop()
+  }, [onLogoClick, pathname, router])
 
   const a = t.siteAria
 
@@ -193,15 +201,22 @@ export default function WattaGlobalSiteHeader({
     >
       <header className="app-header-web relative z-10 max-w-[100vw]">
         <div className="header-content-web">
-          {logoHref ? (
-            <Link href={logoHref} className="logo-section-web" style={{ cursor: 'pointer' }}>
-              {logoInner}
-            </Link>
-          ) : (
-            <div className="logo-section-web" onClick={onLogoClick} style={{ cursor: 'pointer' }}>
-              {logoInner}
-            </div>
-          )}
+          <div
+            className="logo-section-web"
+            onClick={handleLogoClick}
+            style={{ cursor: 'pointer' }}
+            role="link"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleLogoClick()
+              }
+            }}
+            aria-label={t.common.brandName}
+          >
+            {logoInner}
+          </div>
 
           <div className="header-center-nav-web">
             <div className="header-center-nav-inner-web">
@@ -267,7 +282,7 @@ export default function WattaGlobalSiteHeader({
               aria-label={a.profile}
               style={headerSquircleStyle()}
             >
-              <User size={18} className="header-profile-icon-web" style={{ color: '#145142', strokeWidth: 2.25 }} />
+              <User size={20} className="header-profile-icon-web" style={{ color: '#145142', strokeWidth: 2.25 }} />
             </button>
 
             <button
@@ -278,7 +293,7 @@ export default function WattaGlobalSiteHeader({
               style={headerSquircleStyle({ overflow: 'visible', zIndex: 2 })}
             >
               <Heart
-                size={18}
+                size={20}
                 className="header-favorites-icon-web"
                 aria-hidden
                 style={{
@@ -311,7 +326,7 @@ export default function WattaGlobalSiteHeader({
               })}
             >
               <ShoppingBag
-                size={18}
+                size={20}
                 className="header-cart-icon-web"
                 style={{
                   color: '#145142',
@@ -332,7 +347,7 @@ export default function WattaGlobalSiteHeader({
               aria-label={a.menu}
               style={headerSquircleStyle()}
             >
-              <Menu size={18} className="header-menu-icon-web" style={{ color: '#145142', strokeWidth: 2.25 }} />
+              <Menu size={20} className="header-menu-icon-web" style={{ color: '#145142', strokeWidth: 2.25 }} />
             </button>
           </div>
         </div>
