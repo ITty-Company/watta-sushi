@@ -7,24 +7,27 @@ const DEV_TS = /^dev-\d{4}-\d{2}-\d{2}T[\d:.]+Z$/
 
 export default function DevNoiseCleanup() {
   useEffect(() => {
-    const strip = () => {
-      document.querySelectorAll('body *').forEach((node) => {
-        if (node.nodeType !== Node.ELEMENT_NODE) return
-        const el = node as HTMLElement
-        if (el.children.length > 0) return
-        const text = el.textContent?.trim() ?? ''
-        if (!DEV_TS.test(text)) return
-        el.remove()
-      })
+    /** Перевіряти лише вузли в одному MutationRecord, а не обходити все DOM-дерево — десятки мс на heavy сторінках. */
+    const checkNode = (el: Element) => {
+      if (el.children.length > 0) return
+      const text = el.textContent?.trim() ?? ''
+      if (!DEV_TS.test(text)) return
+      el.remove()
     }
-    strip()
-    const mo = new MutationObserver(strip)
+
+    document.querySelectorAll('body *').forEach((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) checkNode(node as Element)
+    })
+
+    const mo = new MutationObserver((records) => {
+      for (const r of records) {
+        r.addedNodes.forEach((n) => {
+          if (n.nodeType === Node.ELEMENT_NODE) checkNode(n as Element)
+        })
+      }
+    })
     mo.observe(document.body, { childList: true, subtree: true })
-    const id = window.setInterval(strip, 1500)
-    return () => {
-      mo.disconnect()
-      window.clearInterval(id)
-    }
+    return () => mo.disconnect()
   }, [])
   return null
 }

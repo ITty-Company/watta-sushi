@@ -52,19 +52,27 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
+    /** 30 діб кеша оптимізованих варіантів — Next переоптимізує тільки коли джерело змінилось. */
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
   // Оптимизация компиляции
   swcMinify: true,
-  
-  // Экспериментальные функции для производительности
-  // optimizeCss отключен, так как требует модуль 'critters'
-  // experimental: {
-  //   optimizeCss: true,
-  // },
+  productionBrowserSourceMaps: false,
+
+  /**
+   * `optimizePackageImports` ВКЛЮЧЕНО ТІЛЬКИ ДЛЯ `lucide-react`:
+   * це безпечний пакет (named exports тільки прості React-компоненти).
+   * Раніше у списку були `react-hot-toast` / `sonner` / `date-fns` — Next 14.2 barrel optimizer
+   * для них іноді віддавав `undefined` замість named export (`Toaster`),
+   * що валило сторінку через `Unsupported Server Component type: undefined`.
+   */
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+    scrollRestoration: true,
+  },
   
   async rewrites() {
     // Локальна вёрстка без Express: middleware + route handlers, без проксі на :5000
@@ -105,12 +113,30 @@ const nextConfig = {
       { key: 'Accept-Ranges', value: 'bytes' },
     ];
 
+    /** 1 рік immutable — стандартний шаблон для /_next/static у prod. Підходить будь-яким assets у /public, які не міняються. */
+    const longImmutable = [
+      { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+    ];
+
     return [
       // Спочатку явні шляхи — щоб Cache-Control для чанків не «губився» після catch-all
       { source: '/_next/static/:path*', headers: nextStaticCache },
       { source: '/watta-sushi-2-hero.mp4', headers: heroVideoHeaders },
       { source: '/welcome.mp4', headers: heroVideoHeaders },
-      { source: '/logo.png', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+      { source: '/hero-untitled-design.mp4', headers: heroVideoHeaders },
+      /* Картинки/іконки — імутабельні. При заміні файлу — оновити ім'я або bust через query. */
+      { source: '/logo.png', headers: longImmutable },
+      { source: '/logo.webp', headers: longImmutable },
+      { source: '/logo-splash-1x.webp', headers: longImmutable },
+      { source: '/logo-splash.webp', headers: longImmutable },
+      { source: '/sushi.png', headers: longImmutable },
+      { source: '/sushi.webp', headers: longImmutable },
+      { source: '/watta-sushi.jpg', headers: longImmutable },
+      { source: '/favicon.ico', headers: longImmutable },
+      { source: '/apple-touch-icon.png', headers: longImmutable },
+      { source: '/apple-touch-icon-precomposed.png', headers: longImmutable },
+      { source: '/watta-page-texture.png', headers: longImmutable },
+      { source: '/uploads/:path*', headers: longImmutable },
       // Не кешировать API: иначе CDN/edge отдаёт чужие или устаревшие 401/403 и ломает админку.
       {
         source: '/api/:path*',

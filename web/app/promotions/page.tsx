@@ -12,7 +12,7 @@ export default function PromotionsRoutePage() {
       onBack={() => router.push('/')}
       onMenuClick={() => router.push('/menu')}
       onOpenPhone={() => {
-        window.location.href = 'tel:+380930000000'
+        window.location.href = 'tel:+31649326549'
       }}
       onOpenNotifications={() => router.push('/notifications')}
       onOpenFavorites={() => router.push('/favorites')}

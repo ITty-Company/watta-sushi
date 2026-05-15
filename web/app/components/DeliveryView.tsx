@@ -16,8 +16,11 @@ import {
   feeModeFromZone,
   writeWattaDeliveryZoneSelection,
 } from '@/lib/wattaDeliveryZoneSelection'
+import { resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
+import { subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
+import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
 import {
   MapPin,
   Sparkles,
@@ -215,12 +218,21 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     const canvas = deliveryHeroVideoCanvasRef.current
     if (!video || !canvas) return
     const stack = video.closest('.welcome-hero-video-stack-web')
-    const offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
+    let offMirror: () => void = () => {}
+    const armMirror = (preferNative: boolean) => {
+      offMirror()
+      offMirror = () => {}
+      if (!preferNative) {
+        offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
+      }
+    }
+    const unsubNative = subscribeHeroVideoNativeOnDesktop(armMirror)
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
       blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
     })
     return () => {
+      unsubNative()
       offMirror()
       offAutoplay()
     }
@@ -253,13 +265,10 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
             typeof window !== 'undefined' && window.localStorage
               ? localStorage.getItem('selectedCityId')
               : null
-          const matched = saved ? formattedCities.find((c) => c.id === saved) : null
-          if (matched) {
-            setSelectedCity(matched)
-          } else if (formattedCities.length > 0) {
-            setSelectedCity(formattedCities[0])
-          } else {
-            setSelectedCity(null)
+          const chosen = resolveCityFromSavedId(formattedCities, saved)
+          setSelectedCity(chosen)
+          if (chosen && typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('selectedCityId', String(chosen.id))
           }
         } else {
           setCities(defaultCities)
@@ -267,8 +276,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
             typeof window !== 'undefined' && window.localStorage
               ? localStorage.getItem('selectedCityId')
               : null
-          const matched = saved ? defaultCities.find((c) => c.id === saved) : null
-          setSelectedCity(matched ?? defaultCities[0] ?? null)
+          setSelectedCity(resolveCityFromSavedId(defaultCities, saved) ?? defaultCities[0] ?? null)
         }
       } catch (error) {
         console.error('Ошибка загрузки данных доставки:', error)
@@ -277,12 +285,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
           typeof window !== 'undefined' && window.localStorage
             ? localStorage.getItem('selectedCityId')
             : null
-        const matched = saved ? defaultCities.find((c) => c.id === saved) : null
-        if (matched) {
-          setSelectedCity(matched)
-        } else {
-          setSelectedCity(defaultCities[0] ?? null)
-        }
+        setSelectedCity(resolveCityFromSavedId(defaultCities, saved) ?? defaultCities[0] ?? null)
       } finally {
         setLoading(false)
       }
@@ -293,12 +296,9 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   const syncCityFromStorage = useCallback(() => {
     if (typeof window === 'undefined' || !window.localStorage || cities.length === 0) return
     const savedCityId = localStorage.getItem('selectedCityId')
-    if (!savedCityId) {
-      setSelectedCity(cities[0] ?? null)
-      return
-    }
-    const city = cities.find((c) => c.id === savedCityId)
-    setSelectedCity(city ?? null)
+    const chosen = resolveCityFromSavedId(cities, savedCityId)
+    setSelectedCity(chosen)
+    if (chosen) localStorage.setItem('selectedCityId', String(chosen.id))
   }, [cities])
 
   useEffect(() => {
@@ -547,6 +547,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
               key={deliveryHeroVideoSrc}
               ref={deliveryHeroVideoRef}
               className="welcome-video-native-web welcome-hero-video-source-for-canvas-web"
+              src={deliveryHeroVideoSrc}
               autoPlay
               muted
               loop
@@ -569,9 +570,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
                 el.currentTime = 0
                 void el.play()
               }}
-            >
-              <source src={deliveryHeroVideoSrc} type="video/mp4" />
-            </video>
+            />
             <canvas
               ref={deliveryHeroVideoCanvasRef}
               className="welcome-hero-video-canvas-mirror-web"
@@ -609,15 +608,22 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
       {embedInMenu ? (
         deliveryHeroVideoBlock
       ) : (
-        <div className="delivery-page-hero-split-web">
-          <div className="delivery-page-hero-split-grid">
-            <div className="delivery-page-hero-split-video-col">
+        <div className="delivery-page-hero-adaptive-shell menu-page-web">
+          <div className="delivery-page-hero-adaptive-grid">
+            <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--video">
               <p className="delivery-page-hero-split-rail" aria-hidden>
                 {d.splitHeroVideoRail}
               </p>
               {deliveryHeroVideoBlock}
             </div>
-            <div className="delivery-page-hero-split-copy-col">{deliveryHeroHeader}</div>
+            <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--marquee">
+              <div className="home-hero-after-marquee-wrap-web w-full shrink-0">
+                <WattaHeroMarqueeBar />
+              </div>
+            </div>
+            <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--copy">
+              {deliveryHeroHeader}
+            </div>
           </div>
         </div>
       )}

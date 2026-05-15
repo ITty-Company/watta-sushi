@@ -20,7 +20,7 @@ async function main() {
     },
     create: {
       email: 'admin@sushi.com',
-      phone: '+380000000000', // <--- ДОБАВЬТЕ ЭТУ СТРОКУ (Любой номер)
+      phone: '+31649326549',
       name: 'Администратор',
       password: hashedPassword,
       role: 'ADMIN',

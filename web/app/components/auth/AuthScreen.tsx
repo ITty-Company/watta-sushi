@@ -15,6 +15,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import LogoBackground from '../LogoBackground'
+import WattaAppRouteLoading from '../WattaAppRouteLoading'
 import { useLanguage } from '../../context/LanguageContext'
 import toast from 'react-hot-toast'
 
@@ -42,7 +43,7 @@ export default function AuthScreen(props: AuthScreenProps) {
     return <AuthScreenBody {...props} returnUrl="/" />
   }
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] watta-page-bg" aria-hidden />}>
+    <Suspense fallback={<WattaAppRouteLoading />}>
       <AuthScreenPageSuspended {...props} />
     </Suspense>
   )

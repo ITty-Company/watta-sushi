@@ -6,6 +6,12 @@ import { ChevronDown, MapPin, X } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { LocationPickerMascot } from './LocationPickerMascot'
 import { cn } from '@/lib/utils'
+import {
+  getCountriesCatalog,
+  getCountriesCatalogIfCached,
+  invalidateCountriesCatalogCache,
+} from '@/lib/fetchCountriesCatalog'
+import { findPreferredDefaultCityInCountries, nlAmsterdamOverridesNonNlSaved } from '@/lib/wattaPreferredDefaultCity'
 
 const COUNTRIES_CATALOG_EVENT = 'countriesCatalogUpdated'
 
@@ -128,6 +134,16 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
       for (const country of activeList) {
         const city = country.cities?.find((c) => c.id === wantId && c.isActive)
         if (city) {
+          const ams = findPreferredDefaultCityInCountries(activeList)
+          if (ams && nlAmsterdamOverridesNonNlSaved(country, city, ams)) {
+            setSelectedCountry(ams.country)
+            setSelectedCity(ams.city as City)
+            if (typeof window !== 'undefined' && window.localStorage) {
+              localStorage.setItem('selectedCityId', String(ams.city.id))
+            }
+            notifyCity(ams.city.id)
+            return
+          }
           setSelectedCountry(country)
           setSelectedCity(city)
           if (typeof window !== 'undefined' && window.localStorage) {
@@ -140,6 +156,17 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem('selectedCityId')
       }
+    }
+
+    const ams = findPreferredDefaultCityInCountries(activeList)
+    if (ams) {
+      setSelectedCountry(ams.country)
+      setSelectedCity(ams.city as City)
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('selectedCityId', String(ams.city.id))
+      }
+      notifyCity(ams.city.id)
+      return
     }
 
     const firstCountry =
@@ -159,31 +186,35 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
 
   useEffect(() => {
     let dead = false
-    const ac = new AbortController()
-    const timeoutMs = 45000
-    const timeoutId = window.setTimeout(() => ac.abort(), timeoutMs)
+
+    const hydrateFromRows = (rows: Record<string, unknown>[]) => {
+      const list = rows.map((row) => normalizeCountry(row))
+      applyResolvedList(list)
+    }
+
+    const cached = typeof window !== 'undefined' ? getCountriesCatalogIfCached() : null
+    if (cached && cached.length > 0) {
+      hydrateFromRows(cached)
+      setLoadError(false)
+      setLoading(false)
+    }
 
     ;(async () => {
+      if (!cached || cached.length === 0) {
+        setLoading(true)
+      }
       setLoadError(false)
-      setLoading(true)
       try {
-        const res = await fetch('/api/countries', { signal: ac.signal })
-        window.clearTimeout(timeoutId)
+        const rows = await getCountriesCatalog()
         if (dead) return
-        if (res.ok) {
-          const data = await res.json()
-          if (dead) return
-          const list = (Array.isArray(data) ? data : []).map((row: Record<string, unknown>) =>
-            normalizeCountry(row)
-          )
-          applyResolvedList(list)
-        } else {
-          console.error('Ошибка загрузки стран:', res.status, res.statusText)
+        hydrateFromRows(rows)
+        if (!Array.isArray(rows) || rows.length === 0) {
           setCountries([])
           setLoadError(true)
+        } else {
+          setLoadError(false)
         }
       } catch (error) {
-        window.clearTimeout(timeoutId)
         if (dead) return
         console.error('Ошибка загрузки стран и городов:', error)
         setCountries([])
@@ -195,24 +226,18 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
 
     return () => {
       dead = true
-      window.clearTimeout(timeoutId)
-      ac.abort()
     }
   }, [applyResolvedList])
 
-  const refreshCatalog = useCallback(() => {
+  const refreshCatalogAfterAdmin = useCallback(() => {
     ;(async () => {
       setCatalogRefreshing(true)
       try {
-        const res = await fetch('/api/countries')
-        if (res.ok) {
-          const data = await res.json()
-          const list = (Array.isArray(data) ? data : []).map((row: Record<string, unknown>) =>
-            normalizeCountry(row)
-          )
-          applyResolvedList(list)
-          setLoadError(false)
-        }
+        invalidateCountriesCatalogCache()
+        const rows = await getCountriesCatalog()
+        const list = rows.map((row) => normalizeCountry(row))
+        applyResolvedList(list)
+        setLoadError(list.length === 0)
       } catch (e) {
         console.error('Catalog refresh failed', e)
       } finally {
@@ -222,18 +247,24 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
   }, [applyResolvedList])
 
   useEffect(() => {
-    const onCatalog = () => refreshCatalog()
+    const onCatalog = () => refreshCatalogAfterAdmin()
     window.addEventListener(COUNTRIES_CATALOG_EVENT, onCatalog)
     return () => window.removeEventListener(COUNTRIES_CATALOG_EVENT, onCatalog)
-  }, [refreshCatalog])
+  }, [refreshCatalogAfterAdmin])
 
   useEffect(() => {
     const onVis = () => {
-      if (document.visibilityState === 'visible') refreshCatalog()
+      if (document.visibilityState !== 'visible') return
+      void getCountriesCatalog()
+        .then((rows) => {
+          const list = rows.map((row) => normalizeCountry(row))
+          applyResolvedList(list)
+        })
+        .catch(() => {})
     }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
-  }, [refreshCatalog])
+  }, [applyResolvedList])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -296,29 +327,8 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
     setIsOpen(false)
   }
 
-  if (loading) {
-    return (
-      <div
-        className={cn(
-          'location-picker-trigger location-picker-trigger--loading',
-          'flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-bold text-[#145142]'
-        )}
-        style={{
-          background: 'linear-gradient(135deg, rgba(20,81,66,0.15) 0%, rgba(20,81,66,0.1) 100%)',
-          boxShadow: '0 2px 6px rgba(20,81,66,0.2), inset 0 1px 0 rgba(255,255,255,0.4)',
-          backdropFilter: 'blur(8px)',
-          minWidth: '120px',
-        }}
-        aria-busy="true"
-      >
-        <div
-          className="h-3 w-3 shrink-0 rounded-full border-2 border-[#145142]/30 border-t-[#145142]"
-          style={{ animation: 'countryCityModalSpin 0.8s linear infinite' }}
-        />
-        {lp.loading}
-      </div>
-    )
-  }
+  /** Перший запит ще без рядків — компактний спінер у тригері, але клік відкриває модалку одразу */
+  const triggerAwaitingCatalog = loading && countries.length === 0
 
   const cityL = selectedCity ? labelCity(selectedCity) : ''
   const countryL = selectedCountry ? labelCountry(selectedCountry) : ''
@@ -335,6 +345,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
         data-open={isOpen ? 'true' : 'false'}
         className={cn(
           'location-picker-trigger',
+          triggerAwaitingCatalog && 'location-picker-trigger--loading',
           catalogRefreshing && 'location-picker-trigger--pulse'
         )}
         onClick={(e) => {
@@ -345,10 +356,24 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={lp.ariaOpen}
+        aria-busy={triggerAwaitingCatalog}
       >
-        <MapPin size={17} className="location-picker-trigger__pin shrink-0 text-[#145142]" strokeWidth={2.25} />
-        <span className="location-picker-trigger__label">{displayText}</span>
-        <ChevronDown size={15} className="location-picker-trigger__chev" strokeWidth={2.5} />
+        {triggerAwaitingCatalog ? (
+          <>
+            <span
+              className="location-picker-trigger__spin h-3.5 w-3.5 shrink-0 rounded-full border-2 border-[#145142]/30 border-t-[#145142]"
+              style={{ animation: 'countryCityModalSpin 0.75s linear infinite' }}
+              aria-hidden
+            />
+            <span className="location-picker-trigger__label min-w-0 truncate">{lp.loading}</span>
+          </>
+        ) : (
+          <>
+            <MapPin size={17} className="location-picker-trigger__pin shrink-0 text-[#145142]" strokeWidth={2.25} />
+            <span className="location-picker-trigger__label">{displayText}</span>
+            <ChevronDown size={15} className="location-picker-trigger__chev" strokeWidth={2.5} />
+          </>
+        )}
       </button>
 
       {isOpen &&
@@ -413,7 +438,18 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
                   </div>
                 )}
 
-                <section className="location-picker-section">
+                {triggerAwaitingCatalog ? (
+                  <div className="flex flex-col items-center justify-center gap-3 px-4 py-14 text-center">
+                    <span
+                      className="inline-block h-9 w-9 rounded-full border-2 border-[#145142]/22 border-t-[#145142]"
+                      style={{ animation: 'countryCityModalSpin 0.7s linear infinite' }}
+                      aria-hidden
+                    />
+                    <p className="m-0 text-sm font-semibold text-[#145142]">{lp.loading}</p>
+                  </div>
+                ) : null}
+
+                <section className="location-picker-section" hidden={triggerAwaitingCatalog}>
                   <div className="location-picker-section__head">
                     <span className="location-picker-section__icon" aria-hidden>
                       <MapPin size={17} strokeWidth={2.25} />

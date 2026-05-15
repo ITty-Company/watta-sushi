@@ -1,14 +1,43 @@
 /**
- * Доставка для Амстердама (NL): відстань від кухні Watta + тариф €/км.
- * Координати збігаються з web/lib/wattaRestaurantLocation.ts
+ * Точка відправлення за замовчуванням (Helicopterstraat 20, 1059 CG — орієнтовно).
+ * У проді координати краще тримати в SiteSetting після геокодування адреси кухні в адмінці.
  */
 export const WATTA_KITCHEN_AMSTERDAM = {
-  lat: 52.35685,
-  lng: 4.85335,
+  lat: 52.3389,
+  lng: 4.8512,
 } as const
 
-/** € за 1 км (пряма відстань від кухні до геоточки індексу). */
+/** € за 1 км (legacy UA/зони; для NL використовується кроковий тариф з SiteSetting). */
 export const AMSTERDAM_EUR_PER_KM = 2
+
+/** Округлення вгору: ceil(km / stepKm) * stepEur */
+export function deliveryFeeSteppedEur(distanceKm: number, stepKm: number, stepEur: number): number {
+  const km = Number(distanceKm)
+  const sk = Number(stepKm)
+  const se = Number(stepEur)
+  if (!Number.isFinite(km) || km <= 0) return 0
+  if (!Number.isFinite(sk) || sk <= 0 || !Number.isFinite(se) || se < 0) return 0
+  return Math.round(Math.ceil(km / sk) * se * 100) / 100
+}
+
+/** Грубий bbox Нідерландів (якщо геокодер не дав country_code). */
+export function inNetherlandsRoughBbox(lat: number, lng: number): boolean {
+  return lat >= 50.65 && lat <= 53.75 && lng >= 3.2 && lng <= 7.35
+}
+
+export function netherlandsDeliveryAllowed(
+  lat: number,
+  lng: number,
+  address: Record<string, string> | undefined,
+  displayName: string
+): boolean {
+  const cc = address?.country_code?.toLowerCase()
+  if (cc === 'nl') return true
+  const country = address?.country?.toLowerCase()
+  if (country && /netherlands|nederland|the netherlands/.test(country)) return true
+  if (/\b(netherlands|nederland)\b/i.test(displayName)) return true
+  return inNetherlandsRoughBbox(lat, lng)
+}
 
 /** Мінімальна сума замовлення залежно від відстані від кухні (спільне правило для відповіді /check). */
 export const DELIVERY_MIN_ORDER_DISTANCE_KM = 20

@@ -13,13 +13,15 @@ import {
   LogOut,
   MapPin,
   MessageCircle,
-  Sparkles,
+  Shield,
   ShoppingBag,
+  Sparkles,
   UtensilsCrossed,
   User,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { mergeServerFavoritesIntoLocal } from '@/lib/favoritesStorage'
+import { isAdminRole } from '@/lib/isAdminRole'
 import LogoBackground from '../components/LogoBackground'
 
 const HERO_BG =
@@ -38,9 +40,13 @@ export default function ProfilePage() {
   const pp = t.profilePage
   const cp = t.clientProfile
   const nav = t.navigation
-  const [user, setUser] = useState<{ name?: string; email?: string; phone?: string; id?: number } | null>(
-    null,
-  )
+  const [user, setUser] = useState<{
+    name?: string
+    email?: string
+    phone?: string
+    id?: number
+    role?: string
+  } | null>(null)
   const [bonus, setBonus] = useState<number | null>(null)
 
   useEffect(() => {
@@ -97,8 +103,12 @@ export default function ProfilePage() {
 
   const displayName = (user.name || '').trim() || cp.notSpecified
   const firstLine = user.email?.trim() || user.phone?.trim() || '—'
+  const profileIsAdmin = isAdminRole(user.role)
 
   const dockItems: DockItem[] = [
+    ...(profileIsAdmin
+      ? [{ href: '/admin', label: t.admin, Icon: Shield, tone: 'green' as const } satisfies DockItem]
+      : []),
     { href: '/menu', label: cp.goMenu, Icon: UtensilsCrossed, tone: 'green' },
     { href: '/cart', label: t.cart, Icon: ShoppingBag, tone: 'orange' },
     { href: '/favorites', label: cp.tabFavorites, Icon: Heart, tone: 'neutral' },

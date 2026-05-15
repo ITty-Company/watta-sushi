@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
+import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { cn } from '@/lib/utils'
@@ -128,17 +129,17 @@ const STYLES = `
   .animate-footer-grid-pan,
   .footer-heading-flow,
   .footer-cta-solid::after,
-  .footer-ready-grad {
+  .footer-ready-display {
     animation: none !important;
   }
 }
 
-/* Один ряд: бейдж + роздільник + градієнт — по центру, без «прилипання» вліво */
+/* Заголовок над стрічками: Playfair (як бренд) + спокійний sans для підзаголовка */
 .footer-ready-block {
   width: 100%;
   display: flex;
   justify-content: center;
-  padding-inline: 0.5rem;
+  padding-inline: clamp(0.5rem, 2vw, 1rem);
   box-sizing: border-box;
 }
 
@@ -150,83 +151,40 @@ const STYLES = `
   justify-content: center;
 }
 
-.footer-ready-line {
-  display: inline-flex;
-  width: auto;
-  max-width: 100%;
-  min-width: 0;
-  margin: 0 auto;
-  flex-wrap: nowrap;
+.footer-ready-stack {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.45rem 0.7rem;
+  text-align: center;
+  gap: 0.45rem;
+  max-width: min(100%, 34rem);
 }
 
-@media (min-width: 480px) {
-  .footer-ready-line {
-    gap: 0.5rem 0.9rem;
+@media (min-width: 640px) {
+  .footer-ready-stack {
+    gap: 0.5rem;
   }
 }
 
-/* Бейдж — фірмовий зелений, білий текст */
-.footer-ready-kicker {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: clamp(0.58rem, 1.1vw, 0.7rem);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #fff;
-  padding: 0.45em 0.95em 0.48em;
-  border-radius: 9999px;
-  line-height: 1;
-  background: linear-gradient(165deg, #1a7a63 0%, #145142 46%, #0d3d32 100%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.2) inset,
-    0 6px 20px rgba(20, 81, 66, 0.28);
-}
-
-.footer-ready-divider {
-  flex-shrink: 0;
-  width: 1px;
-  min-height: 0.9em;
-  height: 1.15em;
-  align-self: center;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(20, 81, 66, 0.2) 18%,
-    rgba(20, 81, 66, 0.55) 50%,
-    rgba(20, 81, 66, 0.2) 82%,
-    transparent 100%
-  );
-  border-radius: 1px;
-  opacity: 0.9;
-}
-
-.footer-ready-grad {
-  flex: 0 1 auto;
-  min-width: 0;
+.footer-ready-display {
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-size: clamp(0.8rem, 2.1vw, 1.5rem);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-  text-align: center;
+  font-feature-settings: 'liga' 1, 'kern' 1;
+  font-size: clamp(1.38rem, 4.4vw, 2.45rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   text-wrap: balance;
-  background: linear-gradient(118deg, #0c3229 0%, #145142 36%, #228f72 64%, #145142 100%);
-  background-size: 180% 100%;
+  background: linear-gradient(118deg, #0c3229 0%, #145142 38%, #1f7a62 62%, #145142 100%);
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.4));
+  animation: footer-heading-flow 8s ease-in-out infinite;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35));
 }
 
 @supports not (background-clip: text) {
-  .footer-ready-grad {
+  .footer-ready-display {
     color: #145142;
     background: none;
     -webkit-text-fill-color: #145142;
@@ -234,18 +192,29 @@ const STYLES = `
   }
 }
 
-/* Дуже вузько — не ламати в один ряд, зменшуємо тільки шрифт */
+.footer-ready-lede {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: clamp(0.8rem, 1.75vw, 1.02rem);
+  font-weight: 500;
+  line-height: 1.38;
+  letter-spacing: 0.01em;
+  color: rgba(20, 81, 66, 0.78);
+  max-width: 28em;
+  text-wrap: balance;
+  -webkit-font-smoothing: antialiased;
+}
+
 @media (max-width: 400px) {
-  .footer-ready-grad {
-    font-size: clamp(0.68rem, 2.2vw, 0.9rem);
+  .footer-ready-display {
+    font-size: clamp(1.22rem, 5.5vw, 1.65rem);
+    letter-spacing: -0.025em;
   }
-  .footer-ready-kicker {
-    font-size: 0.52rem;
-    padding: 0.45em 0.75em 0.48em;
-    letter-spacing: 0.1em;
+  .footer-ready-lede {
+    font-size: clamp(0.76rem, 3.6vw, 0.92rem);
+    line-height: 1.4;
   }
-  .footer-ready-line {
-    gap: 0.35rem 0.5rem;
+  .footer-ready-stack {
+    gap: 0.38rem;
   }
 }
 
@@ -431,7 +400,7 @@ const STYLES = `
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.18),
     0 10px 30px rgba(20, 81, 66, 0.42);
-  transform: scale(1.07);
+  transform: scale(1.03);
 }
 
 .footer-promo-rail {
@@ -497,8 +466,15 @@ const STYLES = `
 }
 
 .cinematic-footer-wrap--compact .footer-promo-rail .footer-promo-nav--rail {
-  width: 2.05rem;
-  height: 2.05rem;
+  width: 1.72rem;
+  height: 1.72rem;
+  min-width: 1.72rem;
+  min-height: 1.72rem;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-nav--rail svg {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 @media (min-width: 480px) {
@@ -513,8 +489,15 @@ const STYLES = `
   }
 
   .cinematic-footer-wrap--compact .footer-promo-rail .footer-promo-nav--rail {
-    width: 2.35rem;
-    height: 2.35rem;
+    width: 1.88rem;
+    height: 1.88rem;
+    min-width: 1.88rem;
+    min-height: 1.88rem;
+  }
+
+  .cinematic-footer-wrap--compact .footer-promo-nav--rail svg {
+    width: 0.92rem;
+    height: 0.92rem;
   }
 }
 
@@ -805,12 +788,27 @@ const STYLES = `
 }
 
 .cinematic-footer-wrap--compact .cinematic-footer-wrapper.cinematic-footer--ribbon {
-  background: var(--watta-page-gradient) !important;
+  background: transparent !important;
   box-shadow: none;
 }
 
+/* Компактний cinematic: стрілки каруселі збоку — без overflow:hidden на footer (інакше обрізаються) */
+.cinematic-footer-wrap--compact .cinematic-footer-wrapper {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
 .cinematic-footer-wrap--compact .footer-ready-block {
-  padding-top: clamp(0.65rem, 2.2vw, 1.15rem);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.cinematic-footer-wrap--compact .footer-ready-display {
+  font-size: clamp(1.2rem, 3.5vw, 1.85rem);
+}
+
+.cinematic-footer-wrap--compact .footer-ready-lede {
+  font-size: clamp(0.76rem, 1.55vw, 0.92rem);
 }
 
 .footer-catalog-carousel {
@@ -885,7 +883,7 @@ const STYLES = `
 
 /* Заголовок «Готові замовити?» → одразу стрічки акцій / рекомендацій */
 .cinematic-footer-wrap--compact .footer-cinematic-strip-stack [role='region'] h3 {
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.3rem !important;
 }
 
 .cinematic-footer-wrap--compact .footer-cinematic-strip-stack [role='region']:first-of-type .footer-promo-section-fullbleed {
@@ -900,7 +898,7 @@ const STYLES = `
   overflow: visible;
 }
 
-/* На всю ширину вікна, але з боковими «повітряними» полями — не впритик до краю */
+/* На всю ширину вікна; мінімальні поля — лише safe-area + трохи повітря, картки ближче до лівого/правого краю */
 .footer-cinematic-rail--recommended .footer-promo-section-fullbleed {
   width: 100vw;
   max-width: 100vw;
@@ -910,33 +908,46 @@ const STYLES = `
   transform: none;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  padding-left: max(0.85rem, env(safe-area-inset-left, 0px));
-  padding-right: max(0.85rem, env(safe-area-inset-right, 0px));
+  padding-left: max(0.35rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.35rem, env(safe-area-inset-right, 0px));
   box-sizing: border-box;
 }
 
 @media (min-width: 640px) {
   .footer-cinematic-rail--recommended .footer-promo-section-fullbleed {
-    padding-left: max(1.1rem, env(safe-area-inset-left, 0px));
-    padding-right: max(1.1rem, env(safe-area-inset-right, 0px));
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
   }
 }
 
 @media (min-width: 1024px) {
   .footer-cinematic-rail--recommended .footer-promo-section-fullbleed {
-    padding-left: max(1.35rem, env(safe-area-inset-left, 0px));
-    padding-right: max(1.35rem, env(safe-area-inset-right, 0px));
+    padding-left: max(0.65rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.65rem, env(safe-area-inset-right, 0px));
   }
 }
 
-/* Трохи більше зазору між стрілками й каруселлю, ніж у звичайній стрічці */
+/* Вертикальний stack «хіти» на головній: fullbleed інакше дає ~0.35rem до краю екрана */
+.footer-cinematic-rail--recommended .footer-promo-section-fullbleed.footer-promo-section-fullbleed--hits-stack {
+  padding-left: max(1.375rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.375rem, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 480px) {
+  .footer-cinematic-rail--recommended .footer-promo-section-fullbleed.footer-promo-section-fullbleed--hits-stack {
+    padding-left: max(1.625rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.625rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* Менший зазор стрілки — карусель: картки ближче до країв поруч із кнопками */
 .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-rail {
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 @media (min-width: 640px) {
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-rail {
-    gap: 0.6rem;
+    gap: 0.42rem;
   }
 }
 
@@ -970,59 +981,190 @@ const STYLES = `
   }
 }
 
-/* Рекомендовані: телефон — майже на всю ширину; sm+ — ширші картки, сильніший виступ по краях вікна */
+/* «Хіти»: зона фото ≈ квадрат, зображення на всю ширину/висоту блоку (cover) */
+.footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-web {
+  display: block !important;
+  aspect-ratio: 1 / 1;
+  max-height: none;
+  padding: 0 !important;
+  line-height: 0;
+}
+
+.footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-img-web {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .footer-cinematic-rail--recommended
+    .footer-rec-watta-card
+    .home-menu-product-card-media-web.group\/media:hover
+    .home-menu-product-card-img-web {
+    transform: scale(1.03);
+  }
+}
+
+/* Рекомендовані / хіти: телефон — 1 картка + половина наступної, решта — свайп */
 .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-  flex: 0 0 min(17.5rem, 92vw);
+  flex: 0 0 calc((100% - 0.8rem) / 1.5);
   max-width: none;
-  scroll-snap-align: center;
+  scroll-snap-align: start;
 }
 
 .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
   gap: 0.8rem;
   padding: 0.45rem 0 0.55rem;
-  scroll-padding-inline: 0.35rem;
+  scroll-padding-inline: max(0.2rem, env(safe-area-inset-left, 0px));
 }
 
 @media (min-width: 640px) {
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-    flex: 0 0 clamp(14.75rem, 32vw, 19rem);
+    flex: 0 0 calc((100% - 0.95rem) / 1.5);
+    max-width: none;
     scroll-snap-align: start;
   }
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
     gap: 0.95rem;
-    scroll-padding-inline: 0.4rem;
+    scroll-padding-inline: max(0.28rem, env(safe-area-inset-left, 0px));
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Планшет: 2 повні + половина третьої; 2 зазори (gap 0.95rem) */
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+    flex: 0 0 calc((100% - (0.95rem * 2)) / 2.5);
+    max-width: calc((100% - (0.95rem * 2)) / 2.5);
+    scroll-snap-align: start;
+  }
+
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+    gap: 0.95rem;
+    scroll-padding-inline: max(0.28rem, env(safe-area-inset-left, 0px));
+    padding-bottom: 0.5rem;
+  }
+
+  .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-web {
+    aspect-ratio: 1 / 1;
+    max-height: none;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-desc-web {
+    -webkit-line-clamp: 1;
+    line-height: 1.35;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-footer-web {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.45rem;
+    padding-top: 0.45rem;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-stack-web {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-web {
+    flex-shrink: 0;
+    min-height: 1.95rem;
+    padding: 0.26rem 0.5rem 0.26rem 0.42rem;
+    font-size: 0.6rem;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-text-web {
+    max-width: 5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
+    font-size: 0.98rem;
+    line-height: 1.26;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-web {
+    font-size: 1.05rem;
+  }
+
+  .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
+    padding: 0.72rem 0.82rem 0.82rem;
+    gap: 0.32rem;
   }
 }
 
 @media (min-width: 1024px) {
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
-    scroll-padding-inline: 0.45rem;
+    gap: 0.75rem;
+    padding-bottom: 0.65rem;
+    scroll-padding-inline: max(0.32rem, env(safe-area-inset-left, 0px));
   }
-}
 
-@media (min-width: 900px) {
+  /* 3 повні + половина четвертої; 3 зазори між видимими «частинами» */
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-    flex: 0 0 clamp(16rem, 26vw, 20.5rem);
+    flex: 0 0 calc((100% - (0.75rem * 3)) / 3.5);
+    max-width: calc((100% - (0.75rem * 3)) / 3.5);
   }
-  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
-    gap: 1.05rem;
+
+  .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-web {
+    aspect-ratio: 1 / 1;
+    max-height: none;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-desc-web {
+    -webkit-line-clamp: 1;
+    line-height: 1.35;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-footer-web {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.45rem;
+    padding-top: 0.5rem;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-stack-web {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-web {
+    flex-shrink: 0;
+    min-height: 2rem;
+    padding: 0.28rem 0.55rem 0.28rem 0.45rem;
+    font-size: 0.62rem;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-text-web {
+    max-width: 5.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
+    font-size: 1.05rem;
+    line-height: 1.28;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-web {
+    font-size: 1.12rem;
+  }
+
+  .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
+    padding: 0.75rem 0.85rem 0.85rem;
+    gap: 0.35rem;
   }
 }
 
-@media (min-width: 1200px) {
-  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-    flex: 0 0 clamp(17rem, 21vw, 22rem);
-  }
-}
-
-@media (min-width: 1536px) {
-  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-    flex: 0 0 clamp(17.5rem, 18vw, 23.5rem);
-  }
-}
-
-/* Трохи крупніше типографія й відступи в картці на планшеті+ */
-@media (min-width: 640px) {
+/* Трохи крупніше типографія й відступи в картці — лише вузький планшет 640–767 (на 768–1023 «хіти» компактніші) */
+@media (min-width: 640px) and (max-width: 767px) {
   .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
     padding: 1.05rem 1.2rem 1.25rem;
     gap: 0.4rem;
@@ -1040,22 +1182,20 @@ const STYLES = `
   }
 }
 
-@media (min-width: 1024px) {
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
-    font-size: 1.1rem;
-  }
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-web {
-    font-size: 1.2rem;
-  }
-}
-
 .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail {
-  width: 2.2rem;
-  height: 2.2rem;
+  width: 1.78rem;
+  height: 1.78rem;
+  min-width: 1.78rem;
+  min-height: 1.78rem;
   background: #ffffff;
   color: #145142;
-  border: 1.5px solid rgba(20, 81, 66, 0.35);
-  box-shadow: 0 4px 18px rgba(20, 81, 66, 0.18);
+  border: 1px solid rgba(20, 81, 66, 0.32);
+  box-shadow: 0 3px 14px rgba(20, 81, 66, 0.14);
+}
+
+.cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail svg {
+  width: 0.82rem;
+  height: 0.82rem;
 }
 
 .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail:hover {
@@ -1065,9 +1205,68 @@ const STYLES = `
   box-shadow: 0 8px 24px rgba(20, 81, 66, 0.35);
 }
 
+@media (min-width: 1024px) {
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail {
+    width: 1.82rem;
+    height: 1.82rem;
+    min-width: 1.82rem;
+    min-height: 1.82rem;
+  }
+
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+}
+
 /* Медіа-кут у стрічці рекомендацій: той самий паперовий тон, що й сторінка (без м’ятно-зеленого плейсхолдера) */
 .footer-cinematic-rail--recommended .footer-rec-watta-card a[class*='group'] {
   background: var(--watta-page-fill) !important;
+}
+
+.cinematic-footer-wrap--compact .footer-promo-carousel--stack {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  grid-template-columns: unset !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  scroll-snap-type: none !important;
+  gap: 0.75rem !important;
+  padding-bottom: 0.35rem;
+}
+
+@media (min-width: 480px) {
+  .cinematic-footer-wrap--compact .footer-promo-carousel--stack {
+    gap: 0.85rem !important;
+  }
+}
+
+.cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-promo-card {
+  flex: unset !important;
+  max-width: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Прев’ю хітів (stack): нижча зона фото на вузькому телефоні + трохи щільніший текстовий блок */
+@media (max-width: 479.98px) {
+  .cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-rec-watta-card .home-menu-product-card-media-web {
+    aspect-ratio: 16 / 9 !important;
+    border-radius: 1.08rem 1.08rem 0 0 !important;
+  }
+
+  .cinematic-footer-wrap--compact .footer-promo-carousel--stack article.group.footer-rec-watta-card > div:last-child {
+    padding: 0.5rem 0.62rem 0.62rem !important;
+    gap: 0.2rem !important;
+  }
+}
+
+@media (min-width: 480px) {
+  .cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-rec-watta-card .home-menu-product-card-media-web {
+    aspect-ratio: 3 / 2 !important;
+    border-radius: 1.12rem 1.12rem 0 0 !important;
+  }
 }
 
 `
@@ -1085,6 +1284,10 @@ export type CinematicFooterAdminProduct = {
   price?: number
   /** Топ / хіт на картці */
   isPopular?: boolean
+  /** «Новинка» на /menu */
+  isMenuNew?: boolean
+  /** Показувати бейдж «хіт на головній» лише якщо true (стрічка рекомендацій) */
+  isHomeHit?: boolean
   emoji?: string
   /** Під назвою (вага / мл) */
   subtitleLine?: string
@@ -1104,6 +1307,12 @@ export type CinematicFooterProps = {
    * compact — компактна стрічка (заголовок і стрічки товарів) одразу над баннерами.
    */
   layout?: 'fullscreen' | 'compact'
+  /** Головна (compact): прев’ю хітів вертикально + кнопка «усе меню» */
+  homeRecommendedStack?: {
+    maxItems: number
+    seeAllHref: string
+    seeAllLabel: string
+  }
 }
 
 function scrollFooterStrip(el: HTMLDivElement | null, dir: -1 | 1, itemSelector: string = '.footer-promo-card') {
@@ -1126,6 +1335,8 @@ function AdminProductStrip({
   nextLabel,
   cinematicRail,
   stripKind = 'promo',
+  layoutMode = 'rail',
+  seeAllLink,
 }: {
   title: string
   ariaLabel: string
@@ -1136,13 +1347,75 @@ function AdminProductStrip({
   onBeforeNavigateToProduct?: () => void
   prevLabel: string
   nextLabel: string
-  /** Для відновлення горизонтального скролу після повернення з картки товару */
   cinematicRail?: 'recommended' | 'promo'
-  /** Окремий вигляд для «Рекомендовані» */
   stripKind?: 'recommended' | 'promo'
+  layoutMode?: 'rail' | 'stack'
+  seeAllLink?: { href: string; label: string }
 }) {
   if (items.length === 0) return null
   const isRec = stripKind === 'recommended'
+
+  const stripHeading =
+    title.trim().length > 0 ? (
+      <h3 className="mb-3 px-2 text-center font-sans text-base font-bold tracking-tight text-[#145142] sm:text-lg">
+        {title}
+      </h3>
+    ) : null
+
+  const cardShellClass =
+    layoutMode === 'stack'
+      ? 'footer-promo-card footer-promo-card--watta-grid w-full max-w-lg text-left'
+      : 'footer-promo-card footer-promo-card--watta-grid text-left'
+
+  const productCards = items.map((p) => {
+    const promoPct = p.discountPercent && p.discountPercent > 0 ? Math.round(p.discountPercent) : undefined
+    return (
+      <div key={p.id} className={cardShellClass}>
+        <WattaMenuProductCard
+          variant="grid"
+          className={cn('w-full min-w-0 flex-1', isRec && 'footer-rec-watta-card')}
+          product={{
+            id: p.id,
+            name: (p.label || '').trim() || '—',
+            description: p.description ?? '',
+            price: p.price ?? 0,
+            emoji: p.emoji ?? '🍣',
+            imageUrl: p.imageUrl,
+            isTop: p.isPopular === true,
+            isMenuNew: p.isMenuNew === true,
+            promoDiscountPercent: promoPct,
+          }}
+          subtitleLine={p.subtitleLine}
+          onAddToCart={() => onProductAddToCart(p.id)}
+          onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+        />
+      </div>
+    )
+  })
+
+  if (layoutMode === 'stack' && isRec) {
+    return (
+      <div className="footer-cinematic-rail--recommended w-full" role="region" aria-label={ariaLabel}>
+        {stripHeading}
+        <div className="footer-promo-section-fullbleed footer-promo-section-fullbleed--hits-stack mt-1 w-full">
+          <div
+            ref={carouselRef as React.Ref<HTMLDivElement>}
+            className="footer-promo-carousel footer-promo-carousel--stack mx-auto w-full max-w-lg px-0"
+            data-cinematic-rail={cinematicRail}
+          >
+            {productCards}
+          </div>
+          {seeAllLink ? (
+            <div className="mt-2.5 flex justify-center px-1 pb-0.5 sm:mt-3 sm:px-2 sm:pb-1">
+              <Link href={seeAllLink.href} className="footer-hits-see-all-cta">
+                {seeAllLink.label}
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    )
+  }
 
   const railInner = (
     <div className="footer-promo-section-fullbleed mt-1">
@@ -1163,35 +1436,7 @@ function AdminProductStrip({
             className="footer-promo-carousel"
             data-cinematic-rail={cinematicRail}
           >
-            {items.map((p) => {
-              const promoPct =
-                p.discountPercent && p.discountPercent > 0 ? Math.round(p.discountPercent) : undefined
-              return (
-                <div
-                  key={p.id}
-                  className="footer-promo-card footer-promo-card--watta-grid text-left"
-                >
-                  <WattaMenuProductCard
-                    variant="grid"
-                    className={cn('w-full min-w-0 flex-1', isRec && 'footer-rec-watta-card')}
-                    product={{
-                      id: p.id,
-                      name: (p.label || '').trim() || '—',
-                      description: p.description ?? '',
-                      price: p.price ?? 0,
-                      emoji: p.emoji ?? '🍣',
-                      imageUrl: p.imageUrl,
-                      isTop: p.isPopular === true,
-                      isHomeHit: isRec,
-                      promoDiscountPercent: promoPct,
-                    }}
-                    subtitleLine={p.subtitleLine}
-                    onAddToCart={() => onProductAddToCart(p.id)}
-                    onBeforeNavigateToProduct={onBeforeNavigateToProduct}
-                  />
-                </div>
-              )
-            })}
+            {productCards}
           </div>
         </div>
         <button
@@ -1209,18 +1454,27 @@ function AdminProductStrip({
   )
 
   if (isRec) {
+    const seeAllCta =
+      seeAllLink && layoutMode === 'rail' ? (
+        <div className="mt-2.5 flex justify-center px-1 pb-0.5 sm:mt-3 sm:px-2 sm:pb-1">
+          <Link href={seeAllLink.href} className="footer-hits-see-all-cta">
+            {seeAllLink.label}
+          </Link>
+        </div>
+      ) : null
+
     return (
-      <div className="w-full footer-cinematic-rail--recommended" role="region" aria-label={ariaLabel}>
+      <div className="footer-cinematic-rail--recommended w-full" role="region" aria-label={ariaLabel}>
+        {stripHeading}
         {railInner}
+        {seeAllCta}
       </div>
     )
   }
 
   return (
     <div className="w-full" role="region" aria-label={ariaLabel}>
-      <h3 className="mb-3 px-2 text-center font-sans text-base font-bold tracking-tight text-[#145142] sm:text-lg">
-        {title}
-      </h3>
+      {stripHeading}
       {railInner}
     </div>
   )
@@ -1233,9 +1487,30 @@ export function CinematicFooter({
   onAdminProductAddToCart,
   onBeforeNavigateToProduct,
   layout = 'fullscreen',
+  homeRecommendedStack,
 }: CinematicFooterProps) {
-  const cf = useLanguage().t.cinematicFooter
+  const { t } = useLanguage()
+  const cf = t.cinematicFooter
   const isCompact = layout === 'compact'
+
+  const compactRecItems = useMemo(() => {
+    if (!isCompact || !homeRecommendedStack) return adminRecommendedProducts
+    return adminRecommendedProducts.slice(0, homeRecommendedStack.maxItems)
+  }, [adminRecommendedProducts, homeRecommendedStack, isCompact])
+
+  const recLayoutMode: 'rail' | 'stack' = isCompact && homeRecommendedStack ? 'stack' : 'rail'
+  const recSeeAll = useMemo(() => {
+    if (isCompact && homeRecommendedStack) {
+      return { href: homeRecommendedStack.seeAllHref, label: homeRecommendedStack.seeAllLabel }
+    }
+    if (recLayoutMode === 'rail' && compactRecItems.length > 0) {
+      return { href: '/menu', label: cf.seeFullMenu }
+    }
+    return undefined
+  }, [isCompact, homeRecommendedStack, recLayoutMode, compactRecItems.length, cf.seeFullMenu])
+
+  /** Заголовок і підзаголовок лише в h2 зверху — без дубля в стрічці (і на вузькому екрані зі stack). */
+  const recommendedStripTitle = ''
 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLElement>(null)
@@ -1279,6 +1554,38 @@ export function CinematicFooter({
     if (typeof window === 'undefined') return
     const wrap = wrapperRef.current
     if (!wrap) return
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    /*
+     * Compact (головна під hero): без ScrollTrigger — блок одразу у вʼюпорті, інакше opacity:0
+     * тримається до «top 55%» і здається «порожнім» під відео.
+     */
+    if (layout === 'compact') {
+      const ctx = gsap.context(() => {
+        if (!leftColRef.current) return
+        const children = Array.from(leftColRef.current.children)
+        if (children.length === 0) return
+        if (reduceMotion) {
+          gsap.set(children, { opacity: 1, y: 0 })
+          return
+        }
+        gsap.fromTo(
+          children,
+          { y: 14, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            stagger: 0.05,
+            duration: 0.48,
+            ease: 'power2.out',
+            delay: 0.05,
+          },
+        )
+      }, wrap)
+
+      return () => ctx.revert()
+    }
 
     const scroller = getMenuScrollParent(wrap)
     if (!scroller) return
@@ -1407,31 +1714,30 @@ export function CinematicFooter({
 
           <div
             className={cn(
-              'relative z-10 mx-auto flex w-full max-w-[100rem] flex-col items-center gap-8 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]',
+              'relative z-10 mx-auto flex w-full max-w-[100rem] flex-col items-center gap-8',
               isCompact
-                ? 'flex-none gap-6 py-3 pb-2 pt-1.5 sm:gap-8 sm:py-4 sm:pb-2 sm:pt-2 md:px-8 lg:gap-9 lg:px-10 lg:pb-3 xl:px-14'
-                : 'flex-1 justify-center pb-[max(2rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] pt-1 sm:mt-12 sm:gap-10 sm:pb-[max(2.5rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] sm:pl-8 sm:pr-8 md:mt-16 md:pl-10 md:pr-10 lg:mt-[4.5rem] lg:gap-12 lg:px-12 lg:pb-[max(3rem,calc(1rem+env(safe-area-inset-bottom,0px)))] xl:gap-14 xl:px-16 2xl:px-24',
+                ? 'pl-[max(1.125rem,env(safe-area-inset-left,0px))] pr-[max(1.125rem,env(safe-area-inset-right,0px))] flex-none gap-2 py-0 pb-1 pt-0 sm:gap-4 sm:py-1 sm:pb-1.5 sm:pt-0 sm:pl-[max(1.375rem,env(safe-area-inset-left,0px))] sm:pr-[max(1.375rem,env(safe-area-inset-right,0px))] md:px-3 lg:gap-5 lg:px-4 lg:pb-1.5 xl:px-5'
+                : 'pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] flex-1 justify-center pb-[max(2rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] pt-1 sm:mt-12 sm:gap-10 sm:pb-[max(2.5rem,calc(0.5rem+env(safe-area-inset-bottom,0px)))] sm:pl-8 sm:pr-8 md:mt-16 md:pl-10 md:pr-10 lg:mt-[4.5rem] lg:gap-12 lg:px-12 lg:pb-[max(3rem,calc(1rem+env(safe-area-inset-bottom,0px)))] xl:gap-14 xl:px-16 2xl:px-24',
             )}
           >
             <div
               ref={leftColRef}
               className={cn(
                 'flex w-full max-w-3xl flex-col items-center text-center',
-                isCompact ? 'gap-5 sm:gap-6' : 'gap-8',
+                isCompact ? 'gap-2 sm:gap-3' : 'gap-8',
               )}
             >
               <div
                 className={cn(
                   'flex w-full flex-col items-center',
-                  isCompact ? 'gap-2.5 sm:gap-3' : 'gap-8',
+                  isCompact ? 'gap-2 sm:gap-3' : 'gap-8',
                 )}
               >
                 <div className="footer-ready-block">
                   <h2 className="footer-ready-heading w-full min-w-0 text-center">
-                    <span className="footer-ready-line">
-                      <span className="footer-ready-kicker">{cf.readyTitleKicker}</span>
-                      <span className="footer-ready-divider" aria-hidden="true" />
-                      <span className="footer-ready-grad">{cf.readyTitleSub}</span>
+                    <span className="footer-ready-stack">
+                      <span className="footer-ready-display">{cf.readyTitleKicker}</span>
+                      <span className="footer-ready-lede">{cf.readyTitleSub}</span>
                     </span>
                   </h2>
                 </div>
@@ -1439,13 +1745,13 @@ export function CinematicFooter({
                 <div
                   className={cn(
                     'footer-cinematic-strip-stack flex w-full flex-col items-center',
-                    isCompact ? 'gap-4 sm:gap-5' : 'gap-8',
+                    isCompact ? 'gap-3 sm:gap-4' : 'gap-8',
                   )}
                 >
                   <AdminProductStrip
-                    title={cf.sectionRecommendedTitle}
+                    title={recommendedStripTitle}
                     ariaLabel={cf.recommendedStripAria}
-                    items={adminRecommendedProducts}
+                    items={compactRecItems}
                     carouselRef={recCarouselRef}
                     onScroll={scrollRecStrip}
                     onProductAddToCart={onAdminProductAddToCart}
@@ -1454,6 +1760,8 @@ export function CinematicFooter({
                     nextLabel={cf.nextPromo}
                     cinematicRail="recommended"
                     stripKind="recommended"
+                    layoutMode={recLayoutMode}
+                    seeAllLink={recSeeAll}
                   />
 
                   <AdminProductStrip

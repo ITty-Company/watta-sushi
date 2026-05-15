@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../context/LanguageContext'
-import { ChevronDown } from 'lucide-react'
 
 export const LanguageSelector = () => {
   const { language, setLanguage } = useLanguage()
@@ -62,8 +61,7 @@ export const LanguageSelector = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '8px',
-          padding: '10px 18px',
+          padding: '10px 16px',
           borderRadius: '14px',
           border: '2px solid #145142',
           background: '#ffffff',
@@ -96,14 +94,6 @@ export const LanguageSelector = () => {
           letterSpacing: '0.3px',
           fontWeight: '600'
         }}>{currentLang.label}</span>
-        <ChevronDown 
-          size={16} 
-          style={{ 
-            transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            opacity: 0.85
-          }} 
-        />
       </button>
 
       {isOpen && mounted && createPortal(

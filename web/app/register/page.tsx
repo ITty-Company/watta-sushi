@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
+import WattaAppRouteLoading from '../components/WattaAppRouteLoading'
 import { AuthPageLoader } from '../components/auth/AuthPageLoader'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildSubpageMetadata } from '@/lib/i18n/seo'
@@ -11,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] watta-page-bg" aria-hidden />}>
+    <Suspense fallback={<WattaAppRouteLoading />}>
       <AuthPageLoader mode="register" />
     </Suspense>
   )

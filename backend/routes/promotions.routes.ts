@@ -11,6 +11,8 @@ const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 const router = Router();
+let promoGalleryUrlsMissing = false;
+let promoProductOffersMissing = false;
 
 const uploadDir = path.join(__dirname, '../../web/public/uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -67,11 +69,49 @@ function normalizeProductOffers(body: any): { productId: number; discountPercent
   return out;
 }
 
+const promoBaseSelect = {
+  id: true,
+  title: true,
+  description: true,
+  content: true,
+  imageUrl: true,
+  isHit: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+function withCompatGallery<T extends { imageUrl?: string | null }>(promo: T): T & { galleryUrls: string[] } {
+  const fromImage = promo.imageUrl ? [promo.imageUrl] : [];
+  return { ...promo, galleryUrls: fromImage };
+}
+
+function isMissingColumnError(e: unknown, column: 'galleryUrls' | 'productOffers'): boolean {
+  const err = e as { code?: string; meta?: { column?: string } };
+  return err?.code === 'P2022' && String(err?.meta?.column || '').includes(`Promo.${column}`);
+}
+
 router.get('/', async (_req: any, res: any) => {
   try {
-    const promos = await prisma.promo.findMany({ orderBy: { createdAt: 'desc' } });
-    res.json(promos);
+    const promos = await prisma.promo.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: promoBaseSelect,
+    });
+    res.json(promos.map((p) => withCompatGallery(p as any)));
   } catch (e) {
+    if (isMissingColumnError(e, 'galleryUrls') || isMissingColumnError(e, 'productOffers')) {
+      if (isMissingColumnError(e, 'galleryUrls')) promoGalleryUrlsMissing = true;
+      if (isMissingColumnError(e, 'productOffers')) promoProductOffersMissing = true;
+      try {
+        const promos = await prisma.promo.findMany({
+          orderBy: { createdAt: 'desc' },
+          select: promoBaseSelect,
+        });
+        res.json(promos.map((p) => withCompatGallery(p as any)));
+        return;
+      } catch (inner) {
+        console.error(inner);
+      }
+    }
     console.error(e);
     res.status(500).json({ error: 'Error fetching promos' });
   }
@@ -84,12 +124,12 @@ router.get('/:id', async (req: any, res: any) => {
       res.status(400).json({ error: 'Invalid id' });
       return;
     }
-    const promo = await prisma.promo.findUnique({ where: { id } });
+    const promo = await prisma.promo.findUnique({ where: { id }, select: promoBaseSelect });
     if (!promo) {
       res.status(404).json({ error: 'News not found' });
       return;
     }
-    const offers = normalizeProductOffers({ productOffers: promo.productOffers });
+    const offers = promoProductOffersMissing ? [] : normalizeProductOffers({ productOffers: (promo as any).productOffers });
     const ids = [...new Set(offers.map((o) => o.productId))];
     const products =
       ids.length > 0
@@ -102,8 +142,14 @@ router.get('/:id', async (req: any, res: any) => {
       ...p,
       offerDiscountPercent: offers.find((o) => o.productId === p.id)?.discountPercent ?? 0,
     }));
-    res.json({ ...promo, offerProducts });
+    res.json({ ...withCompatGallery(promo as any), offerProducts });
   } catch (e) {
+    if (isMissingColumnError(e, 'galleryUrls')) {
+      promoGalleryUrlsMissing = true;
+    }
+    if (isMissingColumnError(e, 'productOffers')) {
+      promoProductOffersMissing = true;
+    }
     res.status(500).json({ error: 'Error fetching promo' });
   }
 });
@@ -120,18 +166,47 @@ router.post('/', checkAdmin, uploadNews, async (req: any, res: any) => {
     const imageUrl = deduped[0] || null;
     const productOffers = normalizeProductOffers(req.body);
 
-    const promo = await prisma.promo.create({
-      data: {
-        title: String(title || '').trim(),
-        description: String(description || '').trim(),
-        content: content != null ? String(content) : String(description || '').trim(),
-        imageUrl,
-        galleryUrls: deduped as object,
-        productOffers: productOffers as object,
-        isHit: isHit === 'true' || isHit === true,
-      },
-    });
-    res.json(promo);
+    const createData: Record<string, unknown> = {
+      title: String(title || '').trim(),
+      description: String(description || '').trim(),
+      content: content != null ? String(content) : String(description || '').trim(),
+      imageUrl,
+      isHit: isHit === 'true' || isHit === true,
+    };
+    if (!promoGalleryUrlsMissing) {
+      createData.galleryUrls = deduped as object;
+    }
+    if (!promoProductOffersMissing) {
+      createData.productOffers = productOffers as object;
+    }
+    try {
+      const promo = await prisma.promo.create({
+        data: createData as any,
+        select: promoBaseSelect,
+      });
+      res.json(withCompatGallery(promo as any));
+    } catch (e) {
+      if (
+        (isMissingColumnError(e, 'galleryUrls') && !promoGalleryUrlsMissing) ||
+        (isMissingColumnError(e, 'productOffers') && !promoProductOffersMissing)
+      ) {
+        if (isMissingColumnError(e, 'galleryUrls')) {
+          promoGalleryUrlsMissing = true;
+          delete createData.galleryUrls;
+        }
+        if (isMissingColumnError(e, 'productOffers')) {
+          promoProductOffersMissing = true;
+          delete createData.productOffers;
+        }
+        const promo = await prisma.promo.create({
+          data: createData as any,
+          select: promoBaseSelect,
+        });
+        res.json(withCompatGallery(promo as any));
+        return;
+      }
+      throw e;
+    }
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Create error' });
@@ -154,16 +229,45 @@ router.put('/:id', checkAdmin, uploadNews, async (req: any, res: any) => {
       description: String(description || '').trim(),
       content: content != null ? String(content) : undefined,
       isHit: isHit === 'true' || isHit === true,
-      productOffers: normalizeProductOffers(req.body) as object,
-      galleryUrls: deduped as object,
       imageUrl: deduped.length > 0 ? deduped[0] : null,
     };
+    if (!promoGalleryUrlsMissing) {
+      updateData.galleryUrls = deduped as object;
+    }
+    if (!promoProductOffersMissing) {
+      updateData.productOffers = normalizeProductOffers(req.body) as object;
+    }
 
-    const promo = await prisma.promo.update({
-      where: { id },
-      data: updateData as any,
-    });
-    res.json(promo);
+    try {
+      const promo = await prisma.promo.update({
+        where: { id },
+        data: updateData as any,
+        select: promoBaseSelect,
+      });
+      res.json(withCompatGallery(promo as any));
+    } catch (e) {
+      if (
+        (isMissingColumnError(e, 'galleryUrls') && !promoGalleryUrlsMissing) ||
+        (isMissingColumnError(e, 'productOffers') && !promoProductOffersMissing)
+      ) {
+        if (isMissingColumnError(e, 'galleryUrls')) {
+          promoGalleryUrlsMissing = true;
+          delete updateData.galleryUrls;
+        }
+        if (isMissingColumnError(e, 'productOffers')) {
+          promoProductOffersMissing = true;
+          delete updateData.productOffers;
+        }
+        const promo = await prisma.promo.update({
+          where: { id },
+          data: updateData as any,
+          select: promoBaseSelect,
+        });
+        res.json(withCompatGallery(promo as any));
+        return;
+      }
+      throw e;
+    }
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Update error' });

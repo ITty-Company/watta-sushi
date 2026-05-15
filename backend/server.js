@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -42,7 +43,7 @@ try {
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
 // Явный путь: при запуске не з каталога backend (../) dotenv знайшов б 0 змін
 const envPath = path.join(__dirname, '.env');
-const dotenvResult = dotenv.config({ path: envPath, override: false });
+const dotenvResult = dotenv.config({ path: envPath, override: false, quiet: true });
 if (dotenvResult.error && process.env.NODE_ENV !== 'production') {
   console.warn('⚠️  Не удалось загрузить .env файл:', dotenvResult.error.message, `(чекайте: ${envPath})`);
 } else if (!dotenvResult.error) {
@@ -65,6 +66,10 @@ if (!process.env.DATABASE_URL?.trim()) {
 console.log('✅ DATABASE_URL найден');
 
 const isProd = process.env.NODE_ENV === 'production';
+const shouldLogApiRequests =
+  process.env.LOG_API_REQUESTS === '1' ||
+  process.env.LOG_API_REQUESTS === 'true' ||
+  isProd;
 if (isProd && !process.env.JWT_SECRET?.trim()) {
   console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: в production нужен JWT_SECRET');
   process.exit(1);
@@ -119,6 +124,24 @@ const corsOptions = isProd
 
 app.use(cors(corsOptions));
 
+// Gzip/Brotli-friendly smaller JSON over the wire — faster TTFB on slow links (Next proxy → API).
+app.use(
+  compression({
+    threshold: 1024,
+    level: isProd ? 6 : 3,
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) return false;
+      return compression.filter(req, res);
+    },
+  }),
+);
+
+/** Liveness for balancers / Render / uptime monitors — keep DB out of the hot path for speed */
+app.get('/health', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ ok: true, uptime: Math.round(process.uptime()), ts: Date.now() });
+});
+
 // Лимит запросов: в dev админка дергает десятки эндпоинтов подряд — 200/15мин даёт 429
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -140,6 +163,8 @@ app.use(express.urlencoded({ extended: true, limit: jsonBodyLimit }));
 
 // Логирование запросов
 app.use((req, res, next) => {
+  if (req.path === '/health') return next();
+  if (!shouldLogApiRequests && req.path.startsWith('/api/')) return next();
   console.log(`📡 [${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
   next();
 });
@@ -216,9 +241,25 @@ async function startServer() {
       }
     }
 
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Сервер запущен: http://localhost:${PORT} (0.0.0.0:${PORT})`);
     });
+
+    const shutdown = (signal) => {
+      console.log(`\n${signal}: graceful shutdown…`);
+      server.close(async () => {
+        try {
+          await prisma.$disconnect();
+          console.log('✅ Prisma disconnected');
+        } catch (e) {
+          console.error('Prisma disconnect:', e);
+        }
+        process.exit(0);
+      });
+      setTimeout(() => process.exit(1), 12_000).unref();
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 
   } catch (error) {
     console.error('❌ Ошибка при запуске сервера:', error);

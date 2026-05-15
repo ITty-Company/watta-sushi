@@ -22,6 +22,7 @@ interface MenuItem {
   imageUrl?: string
   isTop?: boolean
   isHomeHit?: boolean
+  isMenuNew?: boolean
   recommendOrder?: number
   allowRecommendations?: boolean
   promoDiscountPercent?: number
@@ -53,9 +54,9 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
 
   const normalizedSlug = useMemo(() => {
     try {
-      return decodeURIComponent(slug).trim()
+      return decodeURIComponent(slug).trim().toLowerCase()
     } catch {
-      return slug.trim()
+      return slug.trim().toLowerCase()
     }
   }, [slug])
 
@@ -69,12 +70,15 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
         category: p.category
           ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)
           : t.categories.rolls,
-        categorySlug: p.category?.slug || 'rolls',
+        categorySlug: String(p.category?.slug ?? 'rolls')
+          .trim()
+          .toLowerCase(),
         categoryId: p.categoryId,
         emoji: '🍣',
         imageUrl: p.imageUrl,
         isTop: p.isPopular,
         isHomeHit: p.isHomeHit === true,
+        isMenuNew: p.isMenuNew === true,
         recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
         allowRecommendations: p.category?.allowRecommendations !== false,
         promoDiscountPercent:
@@ -92,7 +96,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
         .filter((cat: any) => cat.isActive !== false)
         .map((cat: any) => {
           const name = getMenuCategoryDisplayName(cat, language, t.categories) || String(cat.name_ru ?? '')
-          return { id: Number(cat.id) || 0, slug: String(cat.slug ?? ''), name }
+          return { id: Number(cat.id) || 0, slug: String(cat.slug ?? '').trim().toLowerCase(), name }
         })
       categoryRowsRef.current = rows
       const hit = rows.find((c) => c.slug === normalizedSlug)
@@ -236,7 +240,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 items-start gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((item) => (
               <WattaMenuProductCard
                 key={item.id}

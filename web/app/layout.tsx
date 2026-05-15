@@ -49,7 +49,7 @@ export default async function RootLayout({
       addressCountry: 'UA',
     },
     priceRange: '$$',
-    telephone: '+380000000000',
+    telephone: '+31649326549',
   }
 
   return (
@@ -69,7 +69,7 @@ export default async function RootLayout({
             success: { iconTheme: { primary: '#145142', secondary: '#ffffff' } },
           }}
         />
-        <AppClient>{children}</AppClient>
+        <AppClient initialLocale={lang}>{children}</AppClient>
       </body>
     </html>
   )

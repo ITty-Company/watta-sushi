@@ -624,7 +624,7 @@ export function listRecommendations() {
 export const mockSiteSettings = {
   id: 1,
   bannerInterval: 5000,
-  telegramUrl: 'https://t.me/watta_sushi_mock',
+  telegramUrl: 'https://t.me/wattasushiwork',
   whatsappUrl: 'https://wa.me/380000000000',
   instagramUrl: WATTA_INSTAGRAM_URL,
   restaurantPickupAddress: 'Amstelveenseweg 192, 1075 XR Amsterdam (mock, самовивіз)',

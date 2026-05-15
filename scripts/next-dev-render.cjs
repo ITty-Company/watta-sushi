@@ -99,11 +99,11 @@ try {
   /* ignore */
 }
 
-const env = {
-  ...process.env,
-  NEXT_PUBLIC_API_URL: apiUrl,
-  WATCHPACK_POLLING: process.env.WATCHPACK_POLLING || 'true',
-};
+const env = { ...process.env, NEXT_PUBLIC_API_URL: apiUrl };
+const prevNo = process.env.NODE_OPTIONS || '';
+if (!String(prevNo).includes('max-old-space-size')) {
+  env.NODE_OPTIONS = `${prevNo} --max-old-space-size=8192`.trim();
+}
 
 const nextBin = path.join(webDir, 'node_modules', '.bin', 'next');
 const useNextBin = fs.existsSync(nextBin);

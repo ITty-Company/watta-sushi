@@ -47,6 +47,7 @@ import AdminDeliveryZoneEditor from './AdminDeliveryZoneEditor'
 import { useLanguage } from '../context/LanguageContext'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 import { productGalleryFromApi } from '@/lib/productGallery'
+import { isAdminRole } from '@/lib/isAdminRole'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
 
 function notifyCountriesCatalogUpdated() {
@@ -77,6 +78,7 @@ interface Product {
   imageUrls?: unknown
   isPopular: boolean
   isHomeHit?: boolean
+  isMenuNew?: boolean
   isCartRecommend?: boolean
   recommendOrder?: number
   /** Порядок у рекомендаціях кошика */
@@ -372,6 +374,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     ingredientIds: [] as number[],
     isPopular: false,
     isHomeHit: false,
+    isMenuNew: false,
     isCartRecommend: false,
     recommendOrder: '0',
     cartRecommendOrder: '0',
@@ -681,7 +684,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
     try {
       const parsed = JSON.parse(savedUser) as { role?: string }
-      if (parsed.role !== 'ADMIN') {
+      if (!isAdminRole(parsed.role)) {
         toast.error(t.adminPage.auth.adminOnly, { id: 'admin-panel-auth' })
         onBack()
         return
@@ -1109,6 +1112,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       ingredientIds: [],
       isPopular: false,
       isHomeHit: false,
+      isMenuNew: false,
       isCartRecommend: false,
       recommendOrder: '0',
       cartRecommendOrder: '0',
@@ -1155,6 +1159,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         ingredientIds: (productData.ingredients as { id: number }[] | undefined)?.map((i) => i.id) || [],
         isPopular: hitsOn,
         isHomeHit: hitsOn,
+        isMenuNew: Boolean((productData as { isMenuNew?: boolean }).isMenuNew),
         isCartRecommend: Boolean(productData.isCartRecommend),
         recommendOrder: String(productData.recommendOrder ?? 0),
         cartRecommendOrder: String(productData.cartRecommendOrder ?? 0),
@@ -1184,6 +1189,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         ingredientIds: [],
         isPopular: hitsOn,
         isHomeHit: hitsOn,
+        isMenuNew: Boolean((product as { isMenuNew?: boolean }).isMenuNew),
         isCartRecommend: Boolean(product.isCartRecommend),
         recommendOrder: String(product.recommendOrder ?? 0),
         cartRecommendOrder: String(product.cartRecommendOrder ?? 0),
@@ -4138,11 +4144,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           
                           <div className="flex items-center gap-2 mt-2">
                             <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-bold ${
-                              user.role === 'ADMIN' 
+                              isAdminRole(user.role) 
                                 ? 'bg-red-100 text-red-700' 
                                 : 'bg-green-100 text-green-700'
                             }`}>
-                              {user.role === 'ADMIN' ? '👑 Админ' : '👤 Пользователь'}
+                              {isAdminRole(user.role) ? '👑 Админ' : '👤 Пользователь'}
                             </span>
                             <span className="text-xs text-gray-500">
                               Заказов: {user._count.orders}
@@ -4947,6 +4953,20 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       <span className="block">Наші хіти / хіт продажів</span>
                       <span className="mt-0.5 block text-xs font-normal text-[#145142]/75">
                         Бейджі XIT і «Від Watta» на картці, стрічка на головній, пріоритет у каталозі — вмикаються разом
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex cursor-pointer items-start gap-2 text-sm font-semibold text-gray-800 sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.isMenuNew}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, isMenuNew: e.target.checked }))}
+                      className="h-4 w-4 mt-0.5 shrink-0 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
+                    />
+                    <span>
+                      <span className="block">«Новинка» — блок на сторінці /menu</span>
+                      <span className="mt-0.5 block text-xs font-normal text-[#145142]/75">
+                        Окремий зелений бейдж; показ у секції «Новинки» повного меню, якщо увімкнено
                       </span>
                     </span>
                   </label>

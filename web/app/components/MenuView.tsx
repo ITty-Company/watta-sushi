@@ -1,43 +1,52 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useLanguage } from '../context/LanguageContext'
-import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
-import WattaStickyChromeLayout from './WattaStickyChromeLayout'
-import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
-import LogoBackground from './LogoBackground'
-import PhoneView from './PhoneView'
-import { NotificationsView } from './NotificationsView';
-import FavoritesView from './FavoritesView'
-import ProfileView from './ProfileView'
-import DeliveryView from './DeliveryView'
-import AdminView from './AdminView'
-// --- ВАЖНО: Импорты новых страниц ---
-import PromotionsView from './PromotionsView'
-import CartView from './CartView'
-import PromotionsDetailView from './PromotionsDetailView'
-import Footer from './Footer'
-import NavigationSidebar from './NavigationSidebar'
-import { CinematicFooter, type CinematicFooterAdminProduct } from '@/components/ui/motion-footer'
-import toast from 'react-hot-toast'
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { useLanguage } from '../context/LanguageContext'
+import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
+import WattaStickyChromeLayout from './WattaStickyChromeLayout'
+import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
+import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
+import PhoneView from './PhoneView'
+import { NotificationsView } from './NotificationsView'
+import Footer from './Footer'
+import NavigationSidebar from './NavigationSidebar'
+import { HomeCategoryProductRail } from './HomeCategoryProductRail'
+import { CinematicFooter, type CinematicFooterAdminProduct } from '@/components/ui/motion-footer'
 import {
   MENU_BROWSE_RETURN_KEY,
   parseMenuBrowseReturn,
   shouldRestoreMenuBrowse,
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
-import { HomeCategoryProductRail } from './HomeCategoryProductRail'
+import { WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { isAdminRole } from '@/lib/isAdminRole'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
-import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
+import { WATTA_HOME_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
+import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
+
+/**
+ * Усе, що показується тільки при `activePage !== null` — тягнемо `next/dynamic` без SSR.
+ * Раніше всі ці екрани сиділи в основному бандлі головної (десятки КБ JS, recharts тощо).
+ * Тепер при першому заході на `/` користувач отримує лише `MenuView` + видимі чанки.
+ */
+const FavoritesView = dynamic(() => import('./FavoritesView'), { ssr: false })
+const ProfileView = dynamic(() => import('./ProfileView'), { ssr: false })
+const DeliveryView = dynamic(() => import('./DeliveryView'), { ssr: false })
+const AdminView = dynamic(() => import('./AdminView'), { ssr: false })
+const PromotionsView = dynamic(() => import('./PromotionsView'), { ssr: false })
+const CartView = dynamic(() => import('./CartView'), { ssr: false })
+const PromotionsDetailView = dynamic(() => import('./PromotionsDetailView'), { ssr: false })
 
 /** Скільки карток показувати в горизонтальній стрічці на головній; решта — через «Подивитися всі» на /menu */
 const HOME_CATEGORY_RAIL_PREVIEW_MAX = 12
@@ -49,6 +58,11 @@ function readCinematicRailScrolls(): { rec: number; promo: number } {
   const rec = root.querySelector<HTMLElement>('[data-cinematic-rail="recommended"]')
   const promo = root.querySelector<HTMLElement>('[data-cinematic-rail="promo"]')
   return { rec: rec?.scrollLeft ?? 0, promo: promo?.scrollLeft ?? 0 }
+}
+
+function queryGlobalCategoriesPanel(): HTMLDivElement | null {
+  if (typeof document === 'undefined') return null
+  return document.querySelector<HTMLDivElement>('.watta-full-menu-sticky-chrome .categories-panel-web')
 }
 
 function cinematicWeightSubtitle(
@@ -119,6 +133,8 @@ interface MenuItem {
   promoDiscountPercent?: number
   /** З адмінки: блок «рекомендовані» */
   isHomeHit?: boolean
+  /** Блок «Новинки» на /menu */
+  isMenuNew?: boolean
   recommendOrder?: number
   /** category.allowRecommendations !== false */
   allowRecommendations?: boolean
@@ -200,8 +216,8 @@ const DEFAULT_HOME_BANNERS: Array<{
   },
 ]
 
-/** Головна: як раніше (океан + лого). Відео доставки — у `DeliveryView`. */
-const HERO_VIDEO_SOURCES_MENU = ['/watta-sushi-2-hero.mp4', '/welcome.mp4'] as const
+/** Головна: ocean hero + запасні (`wattaHeroVideo` — окремо від сторінки `/menu`). */
+const HERO_VIDEO_SOURCES_MENU = WATTA_HOME_HERO_VIDEO_SOURCES
 
 function WelcomeHeroSection({
   sectionRef,
@@ -212,6 +228,7 @@ function WelcomeHeroSection({
   heroVideoCanvasRef,
   heroVideoSrc,
   videoSources,
+  children,
 }: {
   sectionRef: React.Ref<HTMLElement>
   heroVideoFailed: boolean
@@ -221,35 +238,46 @@ function WelcomeHeroSection({
   heroVideoCanvasRef: React.RefObject<HTMLCanvasElement>
   heroVideoSrc: string
   videoSources: readonly string[]
+  children?: React.ReactNode
 }) {
   const { t } = useLanguage()
   return (
     <section
       ref={sectionRef}
-      className="welcome-hero-section-web menu-snap-section-welcome-web menu-welcome-hero-tight-web"
+      className="watta-home-hero-as-card-web welcome-hero-section-web menu-snap-section-welcome-web menu-welcome-hero-tight-web shrink-0"
       aria-label={t.siteAria.heroVideo}
     >
       <div className="welcome-hero-video-fill-web">
         {heroVideoFailed ? (
-          <div
-            className="welcome-video-native-web welcome-hero-fallback-image-web"
-            style={{ backgroundImage: "url('/watta-sushi.jpg')" }}
-            role="img"
-            aria-hidden
-          />
+          <div className="welcome-hero-video-fail-wrap-web relative w-full shrink-0">
+            <div
+              className="welcome-video-native-web welcome-hero-fallback-image-web"
+              style={{ backgroundColor: 'var(--watta-page-fill, #ffffff)' }}
+              role="img"
+              aria-hidden
+            />
+            {children}
+          </div>
         ) : (
           <div className="welcome-hero-video-stack-web">
             <video
               key={heroVideoSrc}
               ref={heroVideoRef}
-              className="welcome-video-native-web welcome-hero-video-source-for-canvas-web"
+              className="welcome-video-native-web watta-home-hero-native-video"
+              width={1920}
+              height={1080}
+              poster="/sushi.webp"
+              src={heroVideoSrc}
               autoPlay
               muted
               loop
               playsInline
               controls={false}
               disablePictureInPicture
+              disableRemotePlayback
               preload="auto"
+              // @ts-expect-error fetchPriority для Chromium (працює, але типи React 18.2 не знають)
+              fetchPriority="high"
               tabIndex={-1}
               aria-hidden
               onContextMenu={(e) => e.preventDefault()}
@@ -265,9 +293,7 @@ function WelcomeHeroSection({
                 el.currentTime = 0
                 void el.play()
               }}
-            >
-              <source src={heroVideoSrc} type="video/mp4" />
-            </video>
+            />
             <canvas
               ref={heroVideoCanvasRef}
               className="welcome-hero-video-canvas-mirror-web"
@@ -295,6 +321,7 @@ function WelcomeHeroSection({
                 e.stopPropagation()
               }}
             />
+            {children}
           </div>
         )}
       </div>
@@ -317,6 +344,24 @@ export default function MenuView() {
   const welcomeHeroSectionRef = useRef<HTMLElement | null>(null)
   const marqueeBarRef = useRef<HTMLDivElement | null>(null)
   const [activePage, setActivePage] = useState<string | null>(null)
+  /** ≤768px: головне меню без оверлею — категорії + hero в одному блоці під шапкою (відео одразу після білої панелі). */
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false)
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 768px)')
+    const apply = () => setIsNarrowViewport(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('wattaHomeDeliveryEmbed', { detail: { active: activePage === 'delivery' } }),
+    )
+  }, [activePage])
 
   const scrollMainContentToTop = useCallback(() => {
     if (typeof document === 'undefined') return
@@ -329,7 +374,7 @@ export default function MenuView() {
     const el = document.getElementById(`home-menu-cat-${categoryKey}`)
     if (!root || !el) return
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200
-    /* збіг зі scroll-padding у globals: телефон 148, планшет 118, широкий 168 */
+    /* Збіг зі scroll-padding: ≤768 — шапка+категорії в fixed-chrome (148), планшет 118, широкий 168 */
     const headerOffset = w <= 768 ? 148 : w <= 1024 ? 118 : 168
     const top = el.getBoundingClientRect().top + root.scrollTop - headerOffset
     root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
@@ -346,6 +391,7 @@ export default function MenuView() {
         el.style.removeProperty('scroll-padding-top')
         return
       }
+      /* Шапка + категорії завжди в fixed-chrome — той самий резерв, що й без «вузької смуги» */
       el.style.scrollPaddingTop = 'calc(148px + env(safe-area-inset-top, 0px))'
     }
 
@@ -355,11 +401,13 @@ export default function MenuView() {
       mqNarrow.removeEventListener('change', apply)
       el.style.removeProperty('scroll-padding-top')
     }
-  }, [])
+  }, [isNarrowViewport, activePage])
 
   const [selectedPromoId, setSelectedPromoId] = useState<number | null>(null)
   // --- ГОРОДА ДОСТАВКИ ---
-  const [deliveryCities, setDeliveryCities] = useState<{id: number, name: string, name_nl?: string}[]>([])
+  const [deliveryCities, setDeliveryCities] = useState<
+    { id: number; name: string; name_ua?: string; name_en?: string; name_nl?: string }[]
+  >([])
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
 
   const [bannerInterval, setBannerInterval] = useState(5000)
@@ -373,18 +421,63 @@ export default function MenuView() {
   const heroVideoSrc =
     HERO_VIDEO_SOURCES_MENU[heroVideoSourceIndex] ?? HERO_VIDEO_SOURCES_MENU[0]
 
+  const homeNarrowStripHero = isNarrowViewport && activePage === null
+
+  const homeAfterHeroCityDisplay = useMemo(() => {
+    const list = deliveryCities
+    if (!list.length) return t.menuView.homeAfterHeroIntroCityPlaceholder
+    const id = selectedCityId ?? cityIdPreferAmsterdam(list) ?? list[0].id
+    const city = list.find((c) => c.id === id) ?? list[0]
+    return getLocalized(city, 'name') || city.name
+  }, [deliveryCities, selectedCityId, getLocalized, t.menuView.homeAfterHeroIntroCityPlaceholder, language])
+
+  const fillHomeAfterHeroCity = useCallback(
+    (template: string) => template.replace(/\{\{city\}\}/g, homeAfterHeroCityDisplay),
+    [homeAfterHeroCityDisplay],
+  )
+
   useEffect(() => {
     setHeroVideoSourceIndex(0)
     setHeroVideoFailed(false)
   }, [activePage])
 
+  useLayoutEffect(() => {
+    if (heroVideoFailed) return
+    const video = heroVideoRef.current
+    if (!video) return
+    const kick = () => {
+      try {
+        video.defaultMuted = true
+        video.muted = true
+        video.volume = 0
+        video.playsInline = true
+        video.preload = 'auto'
+        void video.play().catch(() => {})
+      } catch {
+        /* ignore */
+      }
+    }
+    /* Серія nudge: SPA-back / bfcache часто лишає video у paused — одного play() мало.
+       Тримаємо короткі retry до 2s, далі підхопить watchdog у bindHeroVideoAutoplay. */
+    kick()
+    const delays = [16, 60, 150, 400, 900, 1800]
+    const ids = delays.map((ms) => window.setTimeout(kick, ms))
+    return () => ids.forEach((id) => window.clearTimeout(id))
+  }, [heroVideoSrc, heroVideoFailed, activePage])
+
   useEffect(() => {
     if (heroVideoFailed) return
     const video = heroVideoRef.current
-    const canvas = heroVideoCanvasRef.current
-    if (!video || !canvas) return
+    if (!video) return
     const stack = video.closest('.welcome-hero-video-stack-web')
-    const offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
+
+    /*
+     * Головна (MenuView): завжди нативне <video> без canvas-mirror.
+     * На широкому десктопі mirror + opacity 0.001 на <video> іноді лишав лише
+     * постер / один кадр — виглядає як «немає відео», хоча `play()` ок.
+     * Ken Burns тут вимикаємо на користь стабільного руху кадрів.
+     */
+    const offMirror = () => {}
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
       blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
@@ -408,10 +501,19 @@ export default function MenuView() {
       }
     }
 
-    const pickCityForList = (list: { id: number }[]) => {
+    const pickCityForList = (
+      list: {
+        id: number
+        name?: string
+        name_en?: string
+        name_nl?: string
+        name_ua?: string
+        country?: { code?: string }
+      }[],
+    ) => {
       if (!list.length) return
-      const ids = new Set(list.map((c) => c.id))
-      const pick = savedCityId != null && ids.has(savedCityId) ? savedCityId : list[0].id
+      const resolved = resolveCityFromSavedId(list, savedCityId)
+      const pick = resolved?.id ?? cityIdPreferAmsterdam(list) ?? list[0].id
       setSelectedCityId(pick)
       localStorage.setItem('selectedCityId', String(pick))
     }
@@ -719,38 +821,48 @@ export default function MenuView() {
   }
   // --- ЗАГРУЗКА МЕНЮ С СЕРВЕРА ---
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  /** Мережа / 5xx / проксі без бекенда — на головній показуємо підказку замість порожнього блоку */
+  const [homeMenuProductsLoadFailed, setHomeMenuProductsLoadFailed] = useState(false)
   const [favorites, setFavorites] = useState<number[]>([]) // Храним ID лайкнутых товаров
   
   const mapProductsToItems = useCallback(
     (data: any[]) => {
-      return (data || []).map((p: any) => {
-        const promoPct =
-          typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0
-        return {
-          id: p.id,
-          name: getLocalized(p, 'name'),
-          description: getLocalized(p, 'description') || '',
-          price: p.price,
-          category: p.category
-            ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)
-            : t.categories.rolls,
-          categorySlug: p.category?.slug || 'rolls',
-          categoryId: p.categoryId,
-          emoji: '🍣',
-          imageUrl: p.imageUrl,
-          isTop: p.isPopular,
-          promoDiscountPercent: promoPct,
-          isHomeHit: p.isHomeHit === true,
-          recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
-          allowRecommendations: p.category?.allowRecommendations !== false,
-        }
-      })
+      return (data || [])
+        .map((p: any) => {
+          const promoPct =
+            typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0
+          const slugRaw = String(p.category?.slug ?? p.categorySlug ?? 'rolls')
+            .trim()
+            .toLowerCase()
+          const id = Number(p.id)
+          return {
+            id,
+            name: getLocalized(p, 'name'),
+            description: getLocalized(p, 'description') || '',
+            price: p.price,
+            category: p.category
+              ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)
+              : t.categories.rolls,
+            categorySlug: slugRaw.length > 0 ? slugRaw : 'rolls',
+            categoryId: p.categoryId,
+            emoji: '🍣',
+            imageUrl: p.imageUrl,
+            isTop: p.isPopular,
+            promoDiscountPercent: promoPct,
+            isHomeHit: p.isHomeHit === true,
+            isMenuNew: p.isMenuNew === true,
+            recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
+            allowRecommendations: p.category?.allowRecommendations !== false,
+          }
+        })
+        .filter((row: { id: number }) => Number.isFinite(row.id) && row.id > 0)
     },
     [getLocalized, t.categories, language],
   )
 
   const loadMenuItems = useCallback(() => {
-    const cityIdToUse = selectedCityId || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
+    setHomeMenuProductsLoadFailed(false)
+    const cityIdToUse = selectedCityId || cityIdPreferAmsterdam(deliveryCities) || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
     const url = cityIdToUse ? `/api/products?cityId=${cityIdToUse}` : '/api/products'
     const cacheKey = menuItemsSessionKey(cityIdToUse)
     const CACHE_TTL = 5 * 60 * 1000 // 5 минут
@@ -778,7 +890,13 @@ export default function MenuView() {
                     cache: 'no-store',
                     headers: { 'Cache-Control': 'no-cache' },
                   })
-                    .then((r) => (r.ok ? r.json() : []))
+                    .then((r) => {
+                      if (!r.ok) {
+                        setHomeMenuProductsLoadFailed(true)
+                        return Promise.resolve([] as unknown[])
+                      }
+                      return r.json() as Promise<unknown[]>
+                    })
                     .then((all) => {
                       const allList = Array.isArray(all) ? all : []
                       if (typeof sessionStorage !== 'undefined' && allList.length > 0) {
@@ -788,6 +906,7 @@ export default function MenuView() {
                       setMenuItems(mapProductsToItems(allList))
                     })
                     .catch(() => {
+                      setHomeMenuProductsLoadFailed(true)
                       setMenuItems([])
                     })
                   return
@@ -812,6 +931,7 @@ export default function MenuView() {
       .then(res => {
         if (!res.ok) {
           console.error('Ошибка загрузки товаров:', res.status, res.statusText)
+          setHomeMenuProductsLoadFailed(true)
           return []
         }
         return res.json()
@@ -823,7 +943,13 @@ export default function MenuView() {
             cache: 'no-store',
             headers: { 'Cache-Control': 'no-cache' },
           })
-            .then((r) => (r.ok ? r.json() : []))
+            .then((r) => {
+              if (!r.ok) {
+                setHomeMenuProductsLoadFailed(true)
+                return Promise.resolve([] as unknown[])
+              }
+              return r.json() as Promise<unknown[]>
+            })
             .then((all) => {
               const allList = Array.isArray(all) ? all : []
               if (typeof sessionStorage !== 'undefined' && allList.length > 0) {
@@ -834,6 +960,7 @@ export default function MenuView() {
             })
             .catch((err) => {
               console.error('Ошибка fallback загрузки меню:', err)
+              setHomeMenuProductsLoadFailed(true)
               setMenuItems([])
             })
           return
@@ -846,6 +973,7 @@ export default function MenuView() {
       })
       .catch(err => {
         console.error('Ошибка загрузки меню:', err)
+        setHomeMenuProductsLoadFailed(true)
         setMenuItems([])
       })
   }, [selectedCityId, deliveryCities, language, getLocalized, mapProductsToItems])
@@ -853,6 +981,10 @@ export default function MenuView() {
   useEffect(() => {
     loadMenuItems()
   }, [loadMenuItems]); // Используем мемоизированную функцию
+
+  useEffect(() => {
+    if (menuItems.length > 0) setHomeMenuProductsLoadFailed(false)
+  }, [menuItems.length])
   
   // Слушаем событие обновления товаров из админ-панели
   useEffect(() => {
@@ -872,21 +1004,6 @@ export default function MenuView() {
     return () => window.removeEventListener('productsUpdated', handleProductsUpdate)
   }, [loadMenuItems])
 
-  // --- КОРЗИНА ---
-  const [cartCount, setCartCount] = useState(0)
-
-  useEffect(() => {
-    const updateCount = () => {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-        setCartCount(cart.length)
-      }
-    }
-    updateCount()
-    window.addEventListener('cartUpdated', updateCount)
-    return () => window.removeEventListener('cartUpdated', updateCount)
-  }, [])
-
   const openCart = () => {
     router.push('/cart')
   }
@@ -905,8 +1022,13 @@ export default function MenuView() {
           try {
             const parsed = JSON.parse(savedUser)
             setCurrentUser(parsed)
-            setIsAdmin(parsed.role === 'ADMIN' || false)
-          } catch (e) { console.error(e) }
+            setIsAdmin(isAdminRole(parsed.role))
+          } catch (e) {
+            console.error(e)
+          }
+        } else {
+          setCurrentUser(null)
+          setIsAdmin(false)
         }
       }
     }
@@ -1032,7 +1154,9 @@ export default function MenuView() {
   useEffect(() => {
     browseStateRef.current = { selectedCategory, activePage, pathname }
   }, [selectedCategory, activePage, pathname])
-  
+
+  const homeStripScrollLockRef = useRef(false)
+
   const currentCategory = menuCategories.find(cat => cat.key === selectedCategory)
   
   // Фильтрация товаров - улучшенная логика
@@ -1053,13 +1177,19 @@ export default function MenuView() {
       return menuItems
     }
     
+    const slugEq = (a: string | undefined, b: string | undefined) =>
+      a != null &&
+      b != null &&
+      String(a).trim().toLowerCase() === String(b).trim().toLowerCase()
+
     const filtered = menuItems.filter(item => {
       // Приоритет 1: Используем slug категории для фильтрации (более надежно)
       if (item.categorySlug) {
         // Проверяем по key (slug) категории
-        const matchesSlug = item.categorySlug === selectedCategory || 
-                           item.categorySlug === selectedCat.key ||
-                           (selectedCat.slug && item.categorySlug === selectedCat.slug)
+        const matchesSlug =
+          slugEq(item.categorySlug, selectedCategory) ||
+          slugEq(item.categorySlug, selectedCat.key) ||
+          (selectedCat.slug && slugEq(item.categorySlug, selectedCat.slug))
         if (matchesSlug) {
           return true
         }
@@ -1113,6 +1243,11 @@ export default function MenuView() {
       map.set(cat.key, [])
     }
     /** Спочатку categoryId (з Prisma) — надійно навіть при кривому/порожньому slug у адмінці. */
+    const slugEq = (a: string | undefined, b: string | undefined) =>
+      a != null &&
+      b != null &&
+      String(a).trim().toLowerCase() === String(b).trim().toLowerCase()
+
     const resolveItemCategory = (item: MenuItem): MenuCategory | undefined => {
       if (item.categoryId != null) {
         const byId = menuCategories.find((c) => String(c.id) === String(item.categoryId))
@@ -1120,8 +1255,8 @@ export default function MenuView() {
       }
       for (const c of menuCategories) {
         if (item.categorySlug) {
-          if (item.categorySlug === c.key) return c
-          if (c.slug && item.categorySlug === c.slug) return c
+          if (slugEq(item.categorySlug, c.key)) return c
+          if (c.slug && slugEq(item.categorySlug, c.slug)) return c
         }
         if (item.category && c.name) {
           if (item.category.toLowerCase().trim() === c.name.toLowerCase().trim()) return c
@@ -1176,6 +1311,113 @@ export default function MenuView() {
       setSelectedCategory(categoriesForTopStrip[0].key)
     }
   }, [categoriesForTopStrip, selectedCategory])
+
+  useEffect(() => {
+    const onCity = (ev: Event) => {
+      const id = (ev as CustomEvent<{ cityId?: number }>).detail?.cityId
+      if (typeof id !== 'number' || !Number.isFinite(id) || id <= 0) return
+      setSelectedCityId(id)
+    }
+    window.addEventListener('cityChanged', onCity as EventListener)
+    return () => window.removeEventListener('cityChanged', onCity as EventListener)
+  }, [])
+
+  useEffect(() => {
+    const onHomeCat = (ev: Event) => {
+      let slug = (ev as CustomEvent<{ slug?: string }>).detail?.slug?.trim()
+      if (!slug) return
+      try {
+        slug = decodeURIComponent(slug).trim()
+      } catch {
+        /* keep slug */
+      }
+      if (!slug) return
+
+      const inStrip = categoriesForTopStrip.some((c) => c.key === slug)
+      const inCatalog = menuCategoriesWithItems.some((c) => c.key === slug)
+      if (!inStrip && !inCatalog) return
+
+      homeStripScrollLockRef.current = true
+      if (inStrip || inCatalog) {
+        setSelectedCategory(slug)
+      }
+      /* Одразу підсвітити ту саму категорію в панелі (підказка скролу під час lock не оновлюється) */
+      window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
+      setActivePage((p) => (p === 'delivery' ? null : p))
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToHomeCatalogCategory(slug)
+          window.setTimeout(() => {
+            homeStripScrollLockRef.current = false
+          }, 700)
+        })
+      })
+    }
+    window.addEventListener(WATTA_HOME_REQUEST_SCROLL_TO_CAT, onHomeCat as EventListener)
+    return () => window.removeEventListener(WATTA_HOME_REQUEST_SCROLL_TO_CAT, onHomeCat as EventListener)
+  }, [scrollToHomeCatalogCategory, categoriesForTopStrip, menuCategoriesWithItems])
+
+  useEffect(() => {
+    if (pathname !== '/') return
+    if (homeCatalogAsSingleList) return
+    if (menuCategoriesWithItems.length === 0) return
+
+    const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
+    if (!root) return
+
+    const scrollPad = () => {
+      const w = window.innerWidth
+      return w <= 768 ? 148 : w <= 1024 ? 118 : 168
+    }
+
+    const publish = (slug: string) => {
+      window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
+    }
+
+    const sync = () => {
+      if (homeStripScrollLockRef.current) return
+      const pad = scrollPad()
+      const first = menuCategoriesWithItems[0]
+      if (!first) return
+      const firstEl = document.getElementById(`home-menu-cat-${first.key}`)
+      if (!firstEl) return
+      if (firstEl.getBoundingClientRect().top > pad - 8) {
+        if (selectedCategory && menuCategoriesWithItems.some((c) => c.key === selectedCategory)) {
+          publish(selectedCategory)
+        } else {
+          publish(first.key)
+        }
+        return
+      }
+      let bestSlug: string | null = null
+      let bestScore = -1
+      const vh = window.innerHeight
+      for (const c of menuCategoriesWithItems) {
+        const el = document.getElementById(`home-menu-cat-${c.key}`)
+        if (!el) continue
+        const r = el.getBoundingClientRect()
+        const bandTop = Math.max(vh * 0.08, pad * 0.32)
+        const bandBot = vh * 0.58
+        const vis = Math.max(0, Math.min(r.bottom, bandBot) - Math.max(r.top, bandTop))
+        if (vis <= 0) continue
+        const score = vis + (r.top >= pad * 0.18 && r.top < vh * 0.42 ? 50 : 0)
+        if (score > bestScore) {
+          bestScore = score
+          bestSlug = c.key
+        }
+      }
+      if (bestSlug) publish(bestSlug)
+    }
+
+    root.addEventListener('scroll', sync, { passive: true })
+    window.addEventListener('resize', sync)
+    const id = window.requestAnimationFrame(sync)
+    return () => {
+      window.cancelAnimationFrame(id)
+      root.removeEventListener('scroll', sync)
+      window.removeEventListener('resize', sync)
+    }
+  }, [pathname, homeCatalogAsSingleList, menuCategoriesWithItems, selectedCategory])
 
   // Отладочный эффект для отслеживания изменений
   useEffect(() => {
@@ -1305,6 +1547,8 @@ export default function MenuView() {
         description: item.description,
         price: item.price,
         isPopular: item.isTop === true,
+        isHomeHit: true,
+        isMenuNew: item.isMenuNew === true,
         emoji: item.emoji,
         discountPercent: (item.promoDiscountPercent ?? 0) > 0 ? item.promoDiscountPercent : undefined,
         subtitleLine: cinematicWeightSubtitle(item.description, wf, language),
@@ -1453,22 +1697,13 @@ export default function MenuView() {
     setSelectedCity(updatedCities.find(c => c.id === selectedCity.id)!)
   }
 
-  // --- СКРОЛЛ КАТЕГОРИЙ ---
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(true)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const categoriesPanelRef = useRef<HTMLDivElement | null>(null)
-  const scrollPositionRef = useRef<number>(0)
-  const isUserScrollingRef = useRef<boolean>(false)
-  const restorePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
   const persistMenuBrowseReturnState = useCallback(() => {
     if (typeof document === 'undefined') return
     const { selectedCategory: cat, activePage: page, pathname: path } = browseStateRef.current
     if (path !== '/') return
     const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
     if (!root) return
-    const panel = categoriesPanelRef.current
+    const panel = queryGlobalCategoriesPanel()
     const { rec, promo } = readCinematicRailScrolls()
     writeMenuBrowseReturn({
       v: 2,
@@ -1514,10 +1749,9 @@ export default function MenuView() {
       const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
       if (!root) return
       root.scrollTop = scrollY
-      const panel = categoriesPanelRef.current
+      const panel = queryGlobalCategoriesPanel()
       if (panel) {
         panel.scrollLeft = panelLeft
-        scrollPositionRef.current = panelLeft
       }
       if (payload.v === 2) {
         const block = document.getElementById('menu-cinematic-block')
@@ -1548,109 +1782,6 @@ export default function MenuView() {
       window.clearTimeout(t3)
     }
   }, [pathname, menuCategories])
-
-  const checkScrollButtons = useCallback((element: HTMLElement) => {
-    if (element) {
-      const scrollLeft = element.scrollLeft
-      const scrollWidth = element.scrollWidth
-      const clientWidth = element.clientWidth
-      const threshold = 5 // Небольшой порог для предотвращения дёргания
-      
-      setCanScrollLeft(scrollLeft > threshold)
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - threshold)
-    }
-  }, [])
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    // Помечаем, что пользователь прокручивает
-    isUserScrollingRef.current = true
-    
-    // Сохраняем позицию прокрутки постоянно
-    const currentScroll = e.currentTarget.scrollLeft
-    scrollPositionRef.current = currentScroll
-    
-    // Отменяем предыдущий таймаут
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current)
-    }
-    
-    // Проверяем кнопки с небольшой задержкой для плавности
-    scrollTimeoutRef.current = setTimeout(() => {
-      checkScrollButtons(e.currentTarget)
-      // Сбрасываем флаг после завершения прокрутки
-      setTimeout(() => {
-        isUserScrollingRef.current = false
-      }, 150)
-    }, 50)
-  }, [checkScrollButtons])
-  
-  // Восстанавливаем позицию горизонтального скролла только после смены категории/меню (не мешаем ручному листанию)
-  useEffect(() => {
-    const panel = categoriesPanelRef.current
-    if (!panel) return
-
-    const savedPosition = scrollPositionRef.current
-
-    const restorePosition = () => {
-      if (!panel) return
-      if (isUserScrollingRef.current) return
-      const currentScroll = panel.scrollLeft
-      if (savedPosition > 0 && Math.abs(currentScroll - savedPosition) > 5) {
-        panel.scrollLeft = savedPosition
-      }
-    }
-
-    if (restorePositionTimeoutRef.current) {
-      clearTimeout(restorePositionTimeoutRef.current)
-    }
-    restorePositionTimeoutRef.current = setTimeout(restorePosition, 50)
-    const t1 = setTimeout(restorePosition, 100)
-    const t2 = setTimeout(restorePosition, 250)
-    const t3 = setTimeout(restorePosition, 500)
-
-    return () => {
-      if (restorePositionTimeoutRef.current) {
-        clearTimeout(restorePositionTimeoutRef.current)
-      }
-      clearTimeout(t1)
-      clearTimeout(t2)
-      clearTimeout(t3)
-    }
-  }, [selectedCategory, menuCategories])
-
-  // Очистка таймаута при размонтировании
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-    }
-  }, [])
-
-  // Начальная проверка стрелок и при изменении размера панели
-  useEffect(() => {
-    const panel = categoriesPanelRef.current
-    if (!panel) return
-    checkScrollButtons(panel)
-    const t1 = setTimeout(() => checkScrollButtons(panel), 100)
-    const t2 = setTimeout(() => checkScrollButtons(panel), 400)
-    const ro = new ResizeObserver(() => checkScrollButtons(panel))
-    ro.observe(panel)
-    return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-      ro.disconnect()
-    }
-  }, [menuCategories.length, selectedCategory, checkScrollButtons, activePage])
-
-  const scrollPanelBy = (direction: 'left' | 'right') => {
-    const panel = categoriesPanelRef.current
-    if (!panel) return
-    const amount = panel.clientWidth * 0.7
-    const scrollAmount = direction === 'left' ? -amount : amount
-    panel.scrollBy({ left: scrollAmount, behavior: 'smooth' })
-    ;[150, 350, 550].forEach((ms) => setTimeout(() => checkScrollButtons(panel), ms))
-  }
 
   // const CategoriesPanel = () => (
   //   <div className="categories-panel-wrapper-web">
@@ -1830,18 +1961,45 @@ export default function MenuView() {
   // ============================================
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
-  return (
-    <div className="menu-page-web relative w-full max-w-[100vw] bg-transparent">
-      <LogoBackground />
+  /** Текст «доставка суші…» після героя: на телефоні — над відео (вузька смуга), на планшеті+ — під відео. */
+  const homeAfterHeroIntroTitleLines = fillHomeAfterHeroCity(t.menuView.homeAfterHeroIntroTitle)
+    .split(/\n/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
 
-      {/* Фіксована верхня зона: шапка + категорії (WattaStickyChromeLayout — липне до вікна при скролі .content-web) */}
-      <WattaStickyChromeLayout
-        chromeClassName="watta-full-menu-sticky-chrome"
-        flowHeightFudgePx={36}
+  const homeAfterHeroIntroSection =
+    pathname === '/' ? (
+      <section
+        id="home-after-hero-intro"
+        className="home-after-hero-intro-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0"
+        aria-label={fillHomeAfterHeroCity(t.menuView.homeAfterHeroIntroAria)}
       >
+        <div className="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu relative z-[1] mx-auto max-w-7xl px-6 pb-4 sm:px-9 sm:pb-5 md:px-12 md:pb-6">
+          <h2
+            id="home-after-hero-intro-title"
+            className="home-after-hero-intro-title-web mx-auto max-w-3xl text-center text-[clamp(1.35rem,3.8vw,2.35rem)] font-semibold leading-[1.18] tracking-[-0.02em] text-[#0f2a22]"
+          >
+            {homeAfterHeroIntroTitleLines.map((line, i) => (
+              <span key={i} className="block">
+                {line}
+              </span>
+            ))}
+          </h2>
+          <p className="home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl whitespace-pre-line text-center text-[13px] leading-relaxed text-[#145142]/88 sm:mt-5 sm:text-[14px] sm:leading-relaxed md:max-w-[min(44rem,92vw)] md:whitespace-normal md:leading-snug md:text-balance">
+            {t.menuView.homeAfterHeroIntroBody}
+          </p>
+        </div>
+      </section>
+    ) : null
+
+  return (
+    <div
+      className="menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col bg-transparent"
+      data-watta-home-narrow-strip-hero={homeNarrowStripHero ? '1' : undefined}
+    >
+      <WattaStickyChromeLayout chromeClassName="watta-full-menu-sticky-chrome" flowHeightFudgePx={4}>
         <WattaGlobalSiteHeader
           disableSticky
-          cartCount={cartCount}
           onCityChange={(cityId: number) => {
             setSelectedCityId(cityId)
             loadMenuItems()
@@ -1855,88 +2013,10 @@ export default function MenuView() {
           onMenuClick={toggleSidebar}
           onProfileClick={() => openProfileTab('history')}
           onFavoritesClick={() => openProfileTab('favorites')}
-          favoritesCount={favorites.length}
           onLogoClick={handleClosePage}
         />
-
-          <div className="categories-panel-wrapper-web">
-            <button
-              type="button"
-              className={`categories-scroll-btn-web categories-scroll-left-web ${!canScrollLeft ? 'categories-scroll-btn-hidden-web' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                scrollPanelBy('left')
-              }}
-            >
-              ‹
-            </button>
-
-            <div ref={categoriesPanelRef} className="categories-panel-web" onScroll={handleScroll}>
-              {categoriesForTopStrip.map((category) => (
-                <button
-                  key={category.key}
-                  type="button"
-                  className={`category-button-web ${selectedCategory === category.key && activePage === null ? 'category-button-active-web' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-
-                    if (categoriesPanelRef.current) {
-                      scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-                    }
-
-                    if (activePage === 'delivery') setActivePage(null)
-
-                    setSelectedCategory(category.key)
-                    const scrollCatalog =
-                      pathname === '/' && (activePage === null || activePage === 'delivery')
-                    if (scrollCatalog) {
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => scrollToHomeCatalogCategory(category.key))
-                      })
-                    } else {
-                      navigateToCategoryPage(category.key)
-                    }
-
-                    const savedPosition = scrollPositionRef.current
-                    requestAnimationFrame(() => {
-                      if (categoriesPanelRef.current) categoriesPanelRef.current.scrollLeft = savedPosition
-                    })
-                    setTimeout(() => {
-                      if (categoriesPanelRef.current) categoriesPanelRef.current.scrollLeft = savedPosition
-                    }, 10)
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    if (categoriesPanelRef.current) scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-                  }}
-                  onFocus={(e) => {
-                    e.preventDefault()
-                    e.currentTarget.blur()
-                  }}
-                  tabIndex={-1}
-                  style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
-                >
-                  <div className="category-button-icon-web">{category.emoji}</div>
-                  <span className="category-button-label-web">{category.name}</span>
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className={`categories-scroll-btn-web categories-scroll-right-web ${!canScrollRight ? 'categories-scroll-btn-hidden-web' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                scrollPanelBy('right')
-              }}
-            >
-              ›
-            </button>
-          </div>
+        <WattaMenuCategoryStrip />
       </WattaStickyChromeLayout>
-
-          <div className="categories-panel-spacer-web" aria-hidden />
 
       {activePage === 'delivery' ? (
         <>
@@ -1979,39 +2059,81 @@ export default function MenuView() {
         </>
       ) : (
       <>
-      <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
+      {homeNarrowStripHero ? null : (
+        <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
+      )}
 
-      <WelcomeHeroSection
-        sectionRef={welcomeHeroSectionRef}
-        heroVideoFailed={heroVideoFailed}
-        setHeroVideoSourceIndex={setHeroVideoSourceIndex}
-        setHeroVideoFailed={setHeroVideoFailed}
-        heroVideoRef={heroVideoRef}
-        heroVideoCanvasRef={heroVideoCanvasRef}
-        heroVideoSrc={heroVideoSrc}
-        videoSources={HERO_VIDEO_SOURCES_MENU}
-      />
+      {isNarrowViewport ? homeAfterHeroIntroSection : null}
 
-      {/* Бігуча смуга одразу після hero-відео (не між шапкою/категоріями і відео) */}
-      <div ref={marqueeBarRef} className="home-hero-after-marquee-wrap-web w-full shrink-0">
-        <WattaHeroMarqueeBar />
-      </div>
+      {homeNarrowStripHero ? (
+        <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
+          <WelcomeHeroSection
+            sectionRef={welcomeHeroSectionRef}
+            heroVideoFailed={heroVideoFailed}
+            setHeroVideoSourceIndex={setHeroVideoSourceIndex}
+            setHeroVideoFailed={setHeroVideoFailed}
+            heroVideoRef={heroVideoRef}
+            heroVideoCanvasRef={heroVideoCanvasRef}
+            heroVideoSrc={heroVideoSrc}
+            videoSources={HERO_VIDEO_SOURCES_MENU}
+          >
+            <div
+              ref={marqueeBarRef}
+              className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full"
+            >
+              <WattaHeroMarqueeBar />
+            </div>
+          </WelcomeHeroSection>
+        </div>
+      ) : (
+        <WelcomeHeroSection
+          sectionRef={welcomeHeroSectionRef}
+          heroVideoFailed={heroVideoFailed}
+          setHeroVideoSourceIndex={setHeroVideoSourceIndex}
+          setHeroVideoFailed={setHeroVideoFailed}
+          heroVideoRef={heroVideoRef}
+          heroVideoCanvasRef={heroVideoCanvasRef}
+          heroVideoSrc={heroVideoSrc}
+          videoSources={HERO_VIDEO_SOURCES_MENU}
+        >
+          {/* Смуга на нижньому краї кадру — видно без прокрутки «під відео» */}
+          <div
+            ref={marqueeBarRef}
+            className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full"
+          >
+            <WattaHeroMarqueeBar />
+          </div>
+        </WelcomeHeroSection>
+      )}
 
-      <div
-        id="menu-cinematic-block"
-        className="menu-snap-section-cinematic-web menu-cinematic-block--ribbon w-full shrink-0"
-      >
-        <CinematicFooter
-          layout="compact"
-          adminPromoProducts={[]}
-          adminRecommendedProducts={cinematicAdminRecommendedProducts}
-          onAdminProductAddToCart={(productId) => {
-            const item = menuItems.find((i) => i.id === productId)
-            if (item) addToCart(item)
-          }}
-          onBeforeNavigateToProduct={persistMenuBrowseReturnState}
-        />
-      </div>
+      {!isNarrowViewport ? homeAfterHeroIntroSection : null}
+
+      {cinematicAdminRecommendedProducts.length > 0 ? (
+        <div
+          id="menu-cinematic-block"
+          className="menu-snap-section-cinematic-web menu-cinematic-block--ribbon w-full shrink-0"
+        >
+          <CinematicFooter
+            layout="compact"
+            homeRecommendedStack={
+              isNarrowViewport
+                ? {
+                    maxItems: 4,
+                    seeAllHref: '/menu',
+                    seeAllLabel: t.cinematicFooter.seeFullMenu,
+                  }
+                : undefined
+            }
+            adminPromoProducts={[]}
+            adminRecommendedProducts={cinematicAdminRecommendedProducts}
+            onAdminProductAddToCart={(productId) => {
+              const item = menuItems.find((i) => i.id === productId)
+              if (item) addToCart(item)
+            }}
+            onBeforeNavigateToProduct={persistMenuBrowseReturnState}
+          />
+        </div>
+      ) : null}
 
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">
@@ -2125,10 +2247,22 @@ export default function MenuView() {
         </div>
       </section>
 
+      {pathname === '/' && homeMenuProductsLoadFailed && !showHomeMenuCatalog ? (
+        <section
+          className="home-menu-api-unavailable-web menu-after-welcome-web relative z-[2] mx-auto w-full max-w-7xl shrink-0 px-4 pb-6 pt-2 sm:px-6 md:px-8"
+          aria-live="polite"
+        >
+          <div className="rounded-xl border border-amber-200/90 bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
+            <p className="font-semibold">{t.menuView.homeMenuApiUnavailableTitle}</p>
+            <p className="mt-1 text-[13px] leading-relaxed opacity-95">{t.menuView.homeMenuApiUnavailableHint}</p>
+          </div>
+        </section>
+      ) : null}
+
       {showHomeMenuCatalog ? (
       <section
         id="home-menu-catalog"
-        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] px-4 sm:px-6 md:px-8 pt-3 pb-12 sm:pt-5 sm:pb-16 md:pt-6"
+        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0 px-4 sm:px-6 md:px-8 pt-3 pb-6 sm:pt-5 sm:pb-8 md:pt-6 md:pb-10"
         aria-labelledby="home-menu-catalog-title"
       >
         <div className="home-menu-catalog-stack-web relative z-[1]">
@@ -2141,7 +2275,7 @@ export default function MenuView() {
             </h2>
           </header>
 
-          <div className="home-menu-cat-list-web mx-auto max-w-7xl">
+          <div className="home-menu-cat-list-web w-full max-w-none">
             {homeCatalogAsSingleList ? (
               <div
                 className="home-menu-cat-block-web"
@@ -2167,7 +2301,7 @@ export default function MenuView() {
                   </div>
                   <div className="home-menu-cat-view-all-wrap-web">
                     <Link href="/menu" className="home-menu-cat-view-all-btn-web">
-                      {t.menuView.seeAll}
+                      {t.cinematicFooter.seeFullMenu}
                     </Link>
                   </div>
                 </div>
@@ -2182,7 +2316,25 @@ export default function MenuView() {
                   className="home-menu-cat-block-web"
                 >
                   <div className="home-menu-cat-band-web">
-                    <div className="home-menu-cat-heading-web">
+                    <div
+                      className="home-menu-cat-heading-web cursor-pointer select-none rounded-xl outline-none transition hover:opacity-95 focus-visible:ring-2 focus-visible:ring-[#145142]/35 focus-visible:ring-offset-2"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={cat.name}
+                      onClick={() => {
+                        window.dispatchEvent(
+                          new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: cat.key } }),
+                        )
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          window.dispatchEvent(
+                            new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: cat.key } }),
+                          )
+                        }
+                      }}
+                    >
                       <span className="home-menu-cat-emoji-bare-web" aria-hidden>
                         {cat.emoji}
                       </span>
@@ -2206,7 +2358,7 @@ export default function MenuView() {
                         href={`/menu?cat=${encodeURIComponent(cat.key)}`}
                         className="home-menu-cat-view-all-btn-web"
                       >
-                        {t.menuView.seeAll}
+                        {t.cinematicFooter.seeFullMenu}
                       </Link>
                     </div>
                   </div>

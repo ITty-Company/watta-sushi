@@ -15,3 +15,10 @@ try {
 } catch (_) {
   /* ignore */
 }
+
+/* Дати ОС закрити файлові дескриптори `.next` перед наступним `rm`/новим dev — менше зламаних чанків. */
+try {
+  execSync('sleep 0.5', { stdio: 'ignore', shell: '/bin/sh' })
+} catch (_) {
+  /* ignore */
+}

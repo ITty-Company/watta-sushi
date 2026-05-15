@@ -28,17 +28,22 @@ export function buildMenuCategoriesFromApi(
 ) {
   return data
     .filter((cat) => cat.isActive !== false)
-    .map((cat) => ({
-      id: String(cat.id),
-      key: String(cat.slug),
-      slug: String(cat.slug),
-      name: getMenuCategoryDisplayName(cat, language, categoryLabels),
-      emoji: (cat.emoji as string) || '🍣',
-      subcategories: [],
-    }))
+    .map((cat) => {
+      const slugRaw = String(cat.slug ?? '')
+        .trim()
+        .toLowerCase()
+      return {
+        id: String(cat.id),
+        key: slugRaw.length > 0 ? slugRaw : `id-${String(cat.id)}`,
+        slug: slugRaw.length > 0 ? slugRaw : `id-${String(cat.id)}`,
+        name: getMenuCategoryDisplayName(cat, language, categoryLabels),
+        emoji: (cat.emoji as string) || '🍣',
+        subcategories: [],
+      }
+    })
     .sort((a, b) => {
-      const catA = data.find((c) => String(c.slug) === a.key)
-      const catB = data.find((c) => String(c.slug) === b.key)
+      const catA = data.find((c) => String(c.slug ?? '').trim().toLowerCase() === a.key)
+      const catB = data.find((c) => String(c.slug ?? '').trim().toLowerCase() === b.key)
       return (Number((catA as { order?: number })?.order) || 0) - (Number((catB as { order?: number })?.order) || 0)
     })
 }

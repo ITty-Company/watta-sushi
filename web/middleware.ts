@@ -85,31 +85,35 @@ export async function middleware(request: NextRequest) {
     }
 
     if (sub === 'delivery/check') {
-      let body: { cityId?: number; postalCode?: string } = {}
+      let body: { cityId?: number; postalCode?: string; locationQuery?: string } = {}
       try {
         body = await request.json()
       } catch {
         /* empty */
       }
       const cityId = Number(body.cityId)
-      const postal = String(body.postalCode ?? '').trim()
-      if (!cityId || !postal) {
+      const raw = String(body.locationQuery ?? body.postalCode ?? '').trim()
+      if (!cityId || raw.length < 3) {
         return NextResponse.json({ status: 'bad_request' }, { status: 400 })
       }
       return NextResponse.json({
-        status: postal.length >= 3 ? 'inside' : 'geocode_failed',
-        lat: 50.45,
-        lng: 30.52,
+        status: raw.length >= 3 ? 'nl_tariff_ok' : 'geocode_failed',
+        lat: 52.37,
+        lng: 4.9,
         placeLabel: 'Mock (local dev)',
         zoneName: 'Центр',
         zoneId: 1,
         zoneIsFreeDelivery: true,
         zoneFlatDeliveryFee: null,
-        pricePerKm: 10,
-        defaultDeliveryFee: 50,
+        pricePerKm: 0.5,
+        defaultDeliveryFee: 0,
         freeDeliveryThreshold: 1000,
-        estimatedDeliveryFee: postal.length >= 3 ? 0 : null,
-        distanceKm: postal.length >= 3 ? 2.5 : null,
+        deliveryTariffStepKm: 3,
+        deliveryTariffStepEur: 1.5,
+        estimatedDeliveryFee: raw.length >= 3 ? 1.5 : null,
+        distanceKm: raw.length >= 3 ? 2.5 : null,
+        routeDurationMinutes: raw.length >= 3 ? 18 : null,
+        minimumOrderEur: raw.length >= 3 ? 25 : null,
       })
     }
 

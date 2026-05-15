@@ -37,13 +37,16 @@ export default function WattaLoadScreen({
     >
       <div className="watta-load-screen-stack">
         <div className="watta-load-screen-logo-wrap">
+          {/* Logo для сплеша: 11 КБ WebP замість 121 КБ PNG, 2x для retina. PNG-fallback не потрібен — WebP підтримує iOS 14+. */}
           <img
-            src="/logo.png"
+            src="/logo-splash-1x.webp"
+            srcSet="/logo-splash-1x.webp 1x, /logo-splash.webp 2x"
             alt=""
             width={compact ? 140 : 240}
             height={compact ? 140 : 240}
             className="watta-load-screen-logo"
             decoding="async"
+            fetchPriority="high"
           />
         </div>
         <div className="watta-uiverse-loader">

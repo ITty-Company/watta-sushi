@@ -3,9 +3,15 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Facebook, Instagram, Send } from 'lucide-react'
+import { Instagram, Mail, Send } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
-import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
+import {
+  WATTA_EMAIL,
+  WATTA_INSTAGRAM_URL,
+  WATTA_PHONE_E164,
+  WATTA_TELEGRAM_URL,
+  WATTA_TIKTOK_URL,
+} from '@/lib/wattaSiteDefaults'
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -62,11 +68,7 @@ export default function Footer() {
   const legal = nav.footerLegal.replace('{{year}}', String(year))
   const [locationLines, setLocationLines] = useState<string[]>([])
 
-  const phones = [
-    { label: sf.phone1, href: 'tel:+380670000001' },
-    { label: sf.phone2, href: 'tel:+380660000002' },
-    { label: sf.phone3, href: 'tel:+380930000003' },
-  ]
+  const phones = [{ label: sf.phone1, href: `tel:${WATTA_PHONE_E164}` }]
 
   const pillLinks = [
     { href: '/menu', label: nav.menu },
@@ -95,6 +97,10 @@ export default function Footer() {
     { href: '/login', label: t.auth.login },
     { href: '/register', label: t.auth.register },
   ]
+
+  const navMid = Math.ceil(navLinks.length / 2)
+  const navLinksCol1 = navLinks.slice(0, navMid)
+  const navLinksCol2 = navLinks.slice(navMid)
 
   useEffect(() => {
     let dead = false
@@ -129,9 +135,8 @@ export default function Footer() {
     <footer
       className="site-footer-watta site-footer-watta--light shrink-0 w-full"
       style={{
-        /* Нижня навігація прихована в CSS — великий запас більше не потрібен; лишаємо safe-area + невеликий відступ */
-        paddingBottom:
-          'max(1rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)))',
+        /* Лише safe-area (home indicator), без додаткового «повітря» під панеллю */
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
       <div className="site-footer-watta__inner">
@@ -141,8 +146,8 @@ export default function Footer() {
               <Image
                 src="/logo.png"
                 alt=""
-                width={40}
-                height={40}
+                width={36}
+                height={36}
                 className="site-footer-watta__logo-img object-contain"
               />
             </div>
@@ -159,67 +164,67 @@ export default function Footer() {
               </Link>
             ))}
           </nav>
-
-          <p className="site-footer-watta__legal-pill" suppressHydrationWarning>
-            {legal}
-          </p>
         </div>
 
-        <div className="site-footer-watta__divider" aria-hidden />
-
-        <div className="site-footer-watta__grid">
-          {/* Колонка «Оформити замовлення» + телефони — перша (найширша на десктопі). */}
-          <div className="site-footer-watta__col">
-            <h3 className="site-footer-watta__col-title">{sf.colOrder}</h3>
-            <ul className="site-footer-watta__list">
-              {phones.map((p) => (
-                <li key={p.href}>
-                  <a href={p.href} className="site-footer-watta__text-link site-footer-watta__text-link--phone">
-                    {p.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="site-footer-watta__col">
-            <h3 className="site-footer-watta__col-title">{sf.colNav}</h3>
-            <ul className="site-footer-watta__list">
-              {navLinks.map(({ href, label }) => (
-                <li key={`${href}:${label}`}>
-                  <Link href={href} className="site-footer-watta__text-link">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="site-footer-watta__col site-footer-watta__col--brand">
-            <Link href="/privacy" className="site-footer-watta__privacy">
-              {sf.privacy}
-            </Link>
-          </div>
-
-          <div className="site-footer-watta__col">
-            <h3 className="site-footer-watta__col-title">{sf.colHours}</h3>
-            <p className="site-footer-watta__body-strong">{sf.hoursLine}</p>
-          </div>
-
-          {locationLines.length > 0 ? (
-            <div className="site-footer-watta__col">
-              <h3 className="site-footer-watta__col-title">{sf.colLocations}</h3>
+        <div
+          className={`site-footer-watta__grid site-footer-watta__grid--cols-${locationLines.length > 0 ? 4 : 3}`}
+        >
+          <div className="site-footer-watta__order-loc-wrap">
+            {/* Колонка «Оформити замовлення»: телефон + час роботи */}
+            <div className="site-footer-watta__col site-footer-watta__col--order">
+              <h3 className="site-footer-watta__col-title">{sf.colOrder}</h3>
               <ul className="site-footer-watta__list">
-                {locationLines.map((line) => (
-                  <li key={line}>
-                    <span className="site-footer-watta__text-link site-footer-watta__text-link--static">{line}</span>
+                {phones.map((p) => (
+                  <li key={p.href}>
+                    <a href={p.href} className="site-footer-watta__text-link site-footer-watta__text-link--phone">
+                      {p.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <h3 className="site-footer-watta__col-title site-footer-watta__col-title--stacked">{sf.colHours}</h3>
+              <p className="site-footer-watta__body-strong">{sf.hoursLine}</p>
+            </div>
+
+            {locationLines.length > 0 ? (
+              <div className="site-footer-watta__col site-footer-watta__col--locations">
+                <h3 className="site-footer-watta__col-title">{sf.colLocations}</h3>
+                <ul className="site-footer-watta__list">
+                  {locationLines.map((line) => (
+                    <li key={line}>
+                      <span className="site-footer-watta__text-link site-footer-watta__text-link--static">{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="site-footer-watta__col site-footer-watta__col--nav">
+            <h3 className="site-footer-watta__col-title">{sf.colNav}</h3>
+            <div className="site-footer-watta__nav-two-cols">
+              <ul className="site-footer-watta__list">
+                {navLinksCol1.map(({ href, label }) => (
+                  <li key={`${href}:${label}`}>
+                    <Link href={href} className="site-footer-watta__text-link">
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <ul className="site-footer-watta__list">
+                {navLinksCol2.map(({ href, label }) => (
+                  <li key={`${href}:${label}`}>
+                    <Link href={href} className="site-footer-watta__text-link">
+                      {label}
+                    </Link>
                   </li>
                 ))}
               </ul>
             </div>
-          ) : null}
+          </div>
 
-          <div className="site-footer-watta__col">
+          <div className="site-footer-watta__col site-footer-watta__col--social">
             <h3 className="site-footer-watta__col-title">{sf.colSocial}</h3>
             <div className="site-footer-watta__social-row">
               <a
@@ -229,42 +234,54 @@ export default function Footer() {
                 className="site-footer-watta__icon-btn"
                 aria-label={sf.instagramAria}
               >
-                <Instagram className="h-5 w-5" strokeWidth={2} />
+                <Instagram className="h-4 w-4" strokeWidth={2} />
               </a>
               <a
-                href="https://facebook.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="site-footer-watta__icon-btn"
-                aria-label={sf.facebookAria}
-              >
-                <Facebook className="h-5 w-5" strokeWidth={2} />
-              </a>
-              <a
-                href="https://tiktok.com/"
+                href={WATTA_TIKTOK_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="site-footer-watta__icon-btn"
                 aria-label={sf.tiktokAria}
               >
-                <TikTokIcon className="h-5 w-5" />
+                <TikTokIcon className="h-4 w-4" />
+              </a>
+              <a
+                href={WATTA_TELEGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="site-footer-watta__icon-btn"
+                aria-label={sf.telegramAria}
+              >
+                <Send className="h-4 w-4" strokeWidth={2} aria-hidden />
+              </a>
+              <a
+                href={`mailto:${WATTA_EMAIL}`}
+                className="site-footer-watta__icon-btn"
+                aria-label={sf.emailAria}
+              >
+                <Mail className="h-4 w-4" strokeWidth={2} aria-hidden />
               </a>
             </div>
-            <a
-              href="https://t.me/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="site-footer-watta__support-btn"
-            >
-              <Send className="h-4 w-4 shrink-0 text-[#229ED9]" strokeWidth={2.2} aria-hidden />
-              {sf.support}
-            </a>
             <div className="site-footer-watta__pay-row" role="group" aria-label={sf.paymentsAria}>
               <VisaMark />
               <MastercardMark />
               <IdealMark />
             </div>
-            <p className="site-footer-watta__payments-note">{sf.paymentsMethodsNote}</p>
+            {sf.paymentsMethodsNote.trim() ? (
+              <p className="site-footer-watta__payments-note">{sf.paymentsMethodsNote}</p>
+            ) : null}
+          </div>
+
+          <div className="site-footer-watta__nav-colophon site-footer-watta__grid-colophon">
+            <span className="site-footer-watta__nav-colophon-copy" suppressHydrationWarning>
+              {legal}
+            </span>
+            <span className="site-footer-watta__nav-colophon-sep" aria-hidden>
+              ·
+            </span>
+            <Link href="/privacy" className="site-footer-watta__nav-colophon-link">
+              {sf.privacy}
+            </Link>
           </div>
         </div>
       </div>

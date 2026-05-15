@@ -13,14 +13,7 @@ export default function PhoneView() {
           <div className="contact-icon-web">📞</div>
           <div className="contact-info-web">
             <h3>Телефон</h3>
-            <p>+380 (50) 123-45-67</p>
-          </div>
-        </div>
-        <div className="contact-item-web">
-          <div className="contact-icon-web">📱</div>
-          <div className="contact-info-web">
-            <h3>Мобильный</h3>
-            <p>+380 (67) 987-65-43</p>
+            <p>+31649326549</p>
           </div>
         </div>
         <div className="contact-item-web">
@@ -72,7 +65,7 @@ export default function PhoneView() {
             <p>info@wattasushi.com</p>
           </div>
         </div>
-        <a className="contact-call-btn-web" href="tel:+380501234567">
+        <a className="contact-call-btn-web" href="tel:+31649326549">
           Позвонить
         </a>
       </div>

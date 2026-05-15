@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Heart, Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
@@ -15,8 +16,10 @@ export type WattaMenuProductCardModel = {
   emoji?: string
   imageUrl?: string
   isTop?: boolean
-  /** «Наші хіти» з адмінки (стрічка на головній) — бейдж на картці */
+  /** Рекомендація з адмінки (порядок/блоки), без окремого бейджа на картці */
   isHomeHit?: boolean
+  /** Блок «Новинки» на /menu */
+  isMenuNew?: boolean
   promoDiscountPercent?: number
 }
 
@@ -49,18 +52,23 @@ export function WattaMenuProductCard({
   const eff = effectiveUnitPrice(product.price, promoPct)
   const emoji = product.emoji ?? '🍣'
   const orderLabel = t.menuView.fullMenuWant
+  const [imageError, setImageError] = useState(false)
+  useEffect(() => {
+    setImageError(false)
+  }, [product.id, product.imageUrl])
+  const showPhoto = Boolean(product.imageUrl) && !imageError
 
+  const pillNew =
+    'rounded-lg bg-[#e8f6f0] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
   const pillHit =
     'rounded-lg bg-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
-  const pillRec =
-    'rounded-lg bg-indigo-50 px-2 py-0.5 text-[10px] font-extrabold text-indigo-800 ring-1 ring-indigo-200/80'
   const pillPromo =
     'rounded-lg bg-[#fff3e8] px-2 py-0.5 text-[10px] font-extrabold text-[#c45a12] ring-1 ring-[#f5c4a8]'
 
   const pills = (
     <div className="pointer-events-none absolute left-2 top-2 z-[2] flex max-w-[calc(100%-3rem)] flex-wrap gap-1">
+      {product.isMenuNew ? <span className={pillNew}>{t.productDetail.badgeNew}</span> : null}
       {product.isTop ? <span className={pillHit}>{t.popular}</span> : null}
-      {product.isHomeHit ? <span className={pillRec}>{t.menuView.recommendedPill}</span> : null}
       {promoPct > 0 ? <span className={pillPromo}>−{promoPct}%</span> : null}
     </div>
   )
@@ -92,18 +100,18 @@ export function WattaMenuProductCard({
         className="home-menu-product-card-media-web group/media block"
         onClick={() => onBeforeNavigateToProduct?.()}
       >
-        {product.imageUrl ? (
+        {showPhoto ? (
           <img
             src={product.imageUrl}
             alt=""
             className="home-menu-product-card-img-web h-full w-full object-cover"
             decoding="async"
             loading="lazy"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="home-menu-product-card-placeholder-web">{emoji}</div>
         )}
-        <span className="home-menu-product-card-shine-web" aria-hidden />
       </Link>
     </div>
   )
@@ -114,6 +122,7 @@ export function WattaMenuProductCard({
       className={cn(
         'home-menu-product-card-web group',
         variant === 'rail' && 'home-menu-product-card--rail-web',
+        variant === 'grid' && 'home-menu-product-card--grid-web',
         className,
       )}
     >

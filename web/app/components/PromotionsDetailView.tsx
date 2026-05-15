@@ -234,7 +234,7 @@ export default function PromotionsDetailView({
               <h2 className="text-xl sm:text-2xl font-bold text-[#155044] mb-4 sm:mb-6">
                 {p.offersTitle}
               </h2>
-              <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 sm:gap-5">
+              <ul className="m-0 grid list-none grid-cols-1 items-start gap-4 p-0 sm:grid-cols-2 sm:gap-5">
                 {offerProducts.map((product) => {
                   const pct = Math.min(100, Math.max(0, Math.round(Number(product.offerDiscountPercent) || 0)))
                   const base = Number(product.price) || 0
