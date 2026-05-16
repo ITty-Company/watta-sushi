@@ -244,6 +244,11 @@ model SiteSetting {
   /// JSON-масив шляхів — порядок відтворення на сторінці доставки
   deliveryHeroVideoUrls String @default("[]")
 
+  /// Вхід / реєстрація: перше відео в симуляторі телефона (зворотна сумісність; дублює [0] з authHeroVideoUrls)
+  authHeroVideoUrl String @default("/watta-sushi-2-hero.mp4")
+  /// JSON-масив шляхів — плейлист у «телефоні» на /login та /register (лише планшет / десктоп)
+  authHeroVideoUrls String @default("[]")
+
   telegramUrl             String @default("")
   whatsappUrl             String @default("")
   instagramUrl            String @default("")

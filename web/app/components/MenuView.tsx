@@ -12,7 +12,6 @@ import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
 import PhoneView from './PhoneView'
 import { NotificationsView } from './NotificationsView'
-import Footer from './Footer'
 import NavigationSidebar from './NavigationSidebar'
 import { HomeCategoryProductRail } from './HomeCategoryProductRail'
 import { CinematicFooter, type CinematicFooterAdminProduct } from '@/components/ui/motion-footer'
@@ -2643,7 +2642,6 @@ export default function MenuView() {
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
       />
-      <Footer />
     </div>
   )
 }

@@ -1920,17 +1920,19 @@ html.watta-light-chrome {
   }
 }
 
-/* Герой (100vw + margin) може виходити за flex-min ширину; не кліпаємо main — інакше смуги по боках відео. */
+/* Герой (100vw + margin) може виходити за flex-min ширину; не кліпаємо main — інакше смуги по боках відео */
 .watta-app-shell-root > main {
   overflow-x: visible;
   position: relative;
   z-index: 1;
+  flex: 1 0 auto;
 }
 
-/* Глобальний підвал AppClient — під main (шапка + категорії + контент) */
-.watta-app-shell-root > .site-footer-watta {
+/* Підвал у main (публічні маршрути зі скролом body) */
+.watta-app-shell-root > main > .site-footer-watta {
   position: relative;
   z-index: 0;
+  flex-shrink: 0;
 }
 
 /*
@@ -3122,13 +3124,26 @@ html.watta-light-chrome body {
   min-height: 0;
 }
 
-/* Мінімум на всю висоту скрол-контейнера — футер лишається внизу без зайвого «повітря», коли контент коротший */
-.content-web--watta-craft:has(> .menu-page-web) > .menu-page-web {
+/* Головна: підвал у кінці скролу .content-web (не під viewport) */
+.content-web--watta-craft:has(> .site-footer-watta) {
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
 }
 
-.content-web--watta-craft:has(> .menu-page-web) > .menu-page-web > .site-footer-watta {
+.content-web--watta-craft:has(> .site-footer-watta) > *:not(.site-footer-watta) {
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+.content-web--watta-craft:has(> .site-footer-watta) > .site-footer-watta {
   margin-top: auto;
+  flex-shrink: 0;
+}
+
+/* Мінімум на всю висоту скрол-контейнера — футер лишається внизу, коли контент коротший */
+.content-web--watta-craft:has(> .site-footer-watta) > .menu-page-web {
+  min-height: 100%;
 }
 
 /* Головна: вертикальний snap вимкнено — на Safari/WebKit клієнт «застрягав» після банерів, каталог не прокручувався/не був видимий. */
@@ -18544,6 +18559,174 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* Панель входу: симулятор телефона (планшет / десктоп) */
+.auth-watta-cinema--phone {
+  background: linear-gradient(155deg, #0a2e26 0%, #145142 42%, #1a5c4a 72%, #0d2822 100%);
+}
+
+.auth-watta-cinema__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 60% at 22% 18%, rgba(255, 140, 80, 0.2) 0%, transparent 55%),
+    radial-gradient(65% 50% at 82% 72%, rgba(74, 222, 128, 0.14) 0%, transparent 58%);
+  pointer-events: none;
+}
+
+.auth-watta-cinema__copy--phone {
+  margin-top: 0;
+  padding-top: 0.5rem;
+}
+
+.auth-watta-phone-stage {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 1.25rem 1rem 0.5rem;
+  perspective: 1200px;
+}
+
+.auth-watta-phone-stage--static {
+  opacity: 0.85;
+}
+
+.auth-watta-phone-stage__poster {
+  max-height: min(52vh, 420px);
+  width: auto;
+  border-radius: 1.25rem;
+  object-fit: cover;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.auth-watta-phone-sim {
+  width: min(100%, 220px);
+  transform-style: preserve-3d;
+}
+
+.auth-watta-phone-sim--sway .auth-watta-phone-sim__tilt {
+  animation: auth-watta-phone-sway 7.5s ease-in-out infinite;
+}
+
+.auth-watta-phone-sim__tilt {
+  transform-style: preserve-3d;
+  transform: rotateX(6deg) rotateY(-4deg);
+}
+
+.auth-watta-phone-sim__device {
+  position: relative;
+  padding: 0.45rem;
+  border-radius: 2.35rem;
+  background: linear-gradient(145deg, #3d3d42 0%, #1c1c1f 38%, #0a0a0c 100%);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.12) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.35) inset,
+    0 32px 64px rgba(0, 0, 0, 0.55),
+    0 12px 28px rgba(6, 42, 34, 0.35);
+}
+
+.auth-watta-phone-sim__bezel {
+  position: relative;
+  border-radius: 2rem;
+  overflow: hidden;
+  background: #050505;
+}
+
+.auth-watta-phone-sim__island {
+  position: absolute;
+  top: 0.55rem;
+  left: 50%;
+  z-index: 4;
+  width: 28%;
+  min-width: 3.5rem;
+  max-width: 4.25rem;
+  height: 0.95rem;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: #0a0a0a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.auth-watta-phone-sim__screen {
+  position: relative;
+  aspect-ratio: 9 / 19.5;
+  overflow: hidden;
+  background: #0d2a22;
+}
+
+.auth-watta-phone-sim__poster,
+.auth-watta-phone-sim__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.auth-watta-phone-sim__poster--hidden {
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.auth-watta-phone-sim__video {
+  opacity: 0;
+  transition: opacity 0.85s ease;
+}
+
+.auth-watta-phone-sim__video--ready {
+  opacity: 1;
+}
+
+.auth-watta-phone-sim__screen-glare {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    transparent 38%,
+    transparent 62%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  pointer-events: none;
+}
+
+.auth-watta-phone-sim__home-bar {
+  display: block;
+  width: 32%;
+  height: 0.22rem;
+  margin: 0.4rem auto 0.35rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.auth-watta-cinema--phone .auth-watta-cinema__orbit-chip--1 {
+  top: 10%;
+  left: 4%;
+}
+
+.auth-watta-cinema--phone .auth-watta-cinema__orbit-chip--2 {
+  top: 16%;
+  right: 2%;
+}
+
+.auth-watta-cinema--phone .auth-watta-cinema__orbit-chip--3 {
+  bottom: 32%;
+  left: 6%;
+}
+
+@keyframes auth-watta-phone-sway {
+  0%,
+  100% {
+    transform: rotateX(5deg) rotateY(-10deg);
+  }
+  50% {
+    transform: rotateX(4deg) rotateY(10deg);
+  }
+}
+
 @keyframes auth-watta-cinema-kenburns {
   from {
     transform: scale(1.06) translate3d(0, 0, 0);
@@ -18602,8 +18785,13 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   .auth-watta-cinema__orbit-chip,
   .auth-watta-cinema__plate,
   .auth-watta-cinema__glow--warm,
-  .auth-watta-cinema__live {
+  .auth-watta-cinema__live,
+  .auth-watta-phone-sim--sway .auth-watta-phone-sim__tilt {
     animation: none !important;
+  }
+
+  .auth-watta-phone-sim__tilt {
+    transform: rotateX(4deg) rotateY(0deg);
   }
 
   .auth-watta-tabs__indicator {

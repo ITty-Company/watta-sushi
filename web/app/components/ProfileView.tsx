@@ -11,7 +11,6 @@ import {
   MapPin, Clock, Settings, LogOut, Shield, Mail, X, Sparkles
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
-import Footer from './Footer'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import {
@@ -724,7 +723,6 @@ export default function ProfileView({
       </div>
 
 
-      <Footer />
     </div>
    )
 }

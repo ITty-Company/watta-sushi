@@ -13,6 +13,7 @@ const prisma = new PrismaClient()
 const uploadDir = getUploadsDir()
 const DEFAULT_HOME_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const DEFAULT_DELIVERY_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
+const DEFAULT_AUTH_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const MAX_VIDEO_URL_LENGTH = 2048
 /** Захист від надто великого JSON у SiteSetting (адмінка без жорсткого ліміту в UI). */
 const MAX_HOME_HERO_VIDEOS = 100
@@ -135,6 +136,29 @@ function normalizeDeliveryHeroVideoUrls(input: unknown): string[] {
   return normalizeHomeHeroVideoUrls(input)
 }
 
+function parseStoredAuthHeroVideoUrls(raw: string | null | undefined): string[] {
+  return parseStoredHomeHeroVideoUrls(raw)
+}
+
+function serializeAuthHeroVideoUrls(urls: string[]): string {
+  return serializeHomeHeroVideoUrls(urls)
+}
+
+function normalizeAuthHeroVideoUrls(input: unknown): string[] {
+  return normalizeHomeHeroVideoUrls(input)
+}
+
+function effectiveAuthHeroVideoUrls(row: {
+  authHeroVideoUrls?: string | null
+  authHeroVideoUrl?: string | null
+}): string[] {
+  const fromJson = parseStoredAuthHeroVideoUrls(row.authHeroVideoUrls)
+  if (fromJson.length > 0) return fromJson
+  const single = row.authHeroVideoUrl?.trim()
+  if (single) return [single]
+  return [DEFAULT_AUTH_HERO_VIDEO]
+}
+
 function effectiveDeliveryHeroVideoUrls(row: {
   deliveryHeroVideoUrls?: string | null
   deliveryHeroVideoUrl?: string | null
@@ -155,12 +179,18 @@ function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) 
     deliveryHeroVideoUrls?: string | null
     deliveryHeroVideoUrl?: string | null
   })
+  const authHeroVideoUrls = effectiveAuthHeroVideoUrls(settings as {
+    authHeroVideoUrls?: string | null
+    authHeroVideoUrl?: string | null
+  })
   return {
     ...settings,
     homeHeroVideoUrls,
     homeHeroVideoUrl: homeHeroVideoUrls[0] ?? DEFAULT_HOME_HERO_VIDEO,
     deliveryHeroVideoUrls,
     deliveryHeroVideoUrl: deliveryHeroVideoUrls[0] ?? DEFAULT_DELIVERY_HERO_VIDEO,
+    authHeroVideoUrls,
+    authHeroVideoUrl: authHeroVideoUrls[0] ?? DEFAULT_AUTH_HERO_VIDEO,
   }
 }
 
@@ -171,6 +201,8 @@ const defaultSettings = {
   homeHeroVideoUrls: serializeHomeHeroVideoUrls([DEFAULT_HOME_HERO_VIDEO]),
   deliveryHeroVideoUrl: DEFAULT_DELIVERY_HERO_VIDEO,
   deliveryHeroVideoUrls: serializeDeliveryHeroVideoUrls([DEFAULT_DELIVERY_HERO_VIDEO]),
+  authHeroVideoUrl: DEFAULT_AUTH_HERO_VIDEO,
+  authHeroVideoUrls: serializeAuthHeroVideoUrls([DEFAULT_AUTH_HERO_VIDEO]),
   telegramUrl: 'https://t.me/wattasushiwork',
   whatsappUrl: '',
   instagramUrl: 'https://www.instagram.com/watta_sushi/',
@@ -286,6 +318,19 @@ router.post('/', checkAdmin, async (req, res) => {
       if (normalized) {
         update.deliveryHeroVideoUrl = normalized
         update.deliveryHeroVideoUrls = serializeDeliveryHeroVideoUrls([normalized])
+      }
+    }
+    if (b.authHeroVideoUrls !== undefined) {
+      const urls = normalizeAuthHeroVideoUrls(b.authHeroVideoUrls)
+      if (urls.length > 0) {
+        update.authHeroVideoUrls = serializeAuthHeroVideoUrls(urls)
+        update.authHeroVideoUrl = urls[0]
+      }
+    } else if (b.authHeroVideoUrl !== undefined) {
+      const normalized = normalizeHomeHeroVideoUrl(b.authHeroVideoUrl)
+      if (normalized) {
+        update.authHeroVideoUrl = normalized
+        update.authHeroVideoUrls = serializeAuthHeroVideoUrls([normalized])
       }
     }
     if (b.telegramUrl !== undefined) update.telegramUrl = String(b.telegramUrl ?? '')
