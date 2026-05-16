@@ -1,10 +1,17 @@
+/** Після заміни mp4 у `public/` — змініть, щоб браузер не тримав старий 480p у кеші. */
+export const WATTA_HOME_HERO_FALLBACK_CACHE_BUST = '1080p-20260516'
+
+const withHeroFallbackCacheBust = (path: string) =>
+  `${path}?${WATTA_HOME_HERO_FALLBACK_CACHE_BUST}`
+
+/** Єдиний запасний ролик — 1920×1080 у `public/watta-sushi-2-hero.mp4`. */
+export const WATTA_HOME_HERO_VIDEO_PATH = '/watta-sushi-2-hero.mp4' as const
+
 /**
- * Головна сторінка (`MenuView`): основний ocean hero + запасні mp4.
+ * Головна сторінка (`MenuView`): ocean hero + один HD-запасний mp4.
  */
 export const WATTA_HOME_HERO_VIDEO_FALLBACKS = [
-  '/watta-sushi-2-hero.mp4',
-  '/hero-untitled-design.mp4',
-  '/welcome.mp4',
+  withHeroFallbackCacheBust(WATTA_HOME_HERO_VIDEO_PATH),
 ] as const
 
 /** @deprecated use buildHomeHeroVideoSources */
@@ -13,11 +20,7 @@ export const WATTA_HOME_HERO_VIDEO_SOURCES = WATTA_HOME_HERO_VIDEO_FALLBACKS
 /**
  * Повний каталог `/menu` (`FullMenuPageClient`): окремий банерний ролик, далі той самий ланцюг запасних.
  */
-export const WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES = [
-  '/watta-sushi-2-hero.mp4',
-  '/hero-untitled-design.mp4',
-  '/welcome.mp4',
-] as const
+export const WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES = WATTA_HOME_HERO_VIDEO_FALLBACKS
 
 /** Preload на головній — перший кадр головного hero (не сторінка `/menu`). */
 export const WATTA_HERO_PRIMARY_MP4 = WATTA_HOME_HERO_VIDEO_FALLBACKS[0]
@@ -38,24 +41,33 @@ function dedupeAdminUrls(adminUrls?: readonly string[] | null): string[] {
 }
 
 /**
- * Плейлист головної: спочатку mp4 з `public/` (завжди на Render), потім URL з адмінки.
- * Інакше перший `/uploads/…` без диска дає синю заглушку, поки не спрацює onError.
+ * Плейлист головної:
+ * 1) URL з адмінки (файл 1:1 через multipart, без перекодування)
+ * 2) запасні mp4 з `public/` — лише якщо адмінського немає або onError
  */
 export function buildHomeHeroPlaylist(adminUrls?: readonly string[] | null): readonly string[] {
   const admin = dedupeAdminUrls(adminUrls)
   const seen = new Set<string>()
   const out: string[] = []
-  for (const fb of WATTA_HOME_HERO_VIDEO_FALLBACKS) {
-    if (seen.has(fb)) continue
-    seen.add(fb)
-    out.push(fb)
-  }
+
   for (const u of admin) {
     if (seen.has(u)) continue
     seen.add(u)
     out.push(u)
   }
+
+  for (const fb of WATTA_HOME_HERO_VIDEO_FALLBACKS) {
+    if (seen.has(fb)) continue
+    seen.add(fb)
+    out.push(fb)
+  }
+
   return out.length > 0 ? out : [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
+}
+
+/** Перший src для <video> / preload — завжди оригінал з адмінки, якщо є. */
+export function getPrimaryHomeHeroVideoSrc(adminUrls?: readonly string[] | null): string {
+  return buildHomeHeroPlaylist(adminUrls)[0] ?? WATTA_HERO_PRIMARY_MP4
 }
 
 /** Той самий ланцюг, що й плейлист (запасні вже на початку). */

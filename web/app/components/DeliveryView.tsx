@@ -17,6 +17,7 @@ import {
   writeWattaDeliveryZoneSelection,
 } from '@/lib/wattaDeliveryZoneSelection'
 import { resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
+import { DELIVERY_HERO_VIDEO_SOURCES } from '@/lib/deliveryHeroVideoSources'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
 import { subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
@@ -181,8 +182,6 @@ type DeliveryCheckResult = {
 }
 
 /** Перша секція доставки — той самий блок, що welcome на головній; основний ролик з `web/public`. */
-const DELIVERY_HERO_VIDEO_SOURCES = ['/hero-untitled-design.mp4', '/watta-sushi-2-hero.mp4', '/welcome.mp4'] as const
-
 type DeliveryViewProps = {
   /** Усередині головного меню: один фон з меню, без другої шапки / «картки» */
   embedInMenu?: boolean

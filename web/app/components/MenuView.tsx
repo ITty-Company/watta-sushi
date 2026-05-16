@@ -40,8 +40,8 @@ import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
 import { formatProductWeightSubtitle } from '@/lib/i18n/parseProductSpecsFromDescription'
 import {
   buildHomeHeroPlaylist,
-  WATTA_HOME_HERO_VIDEO_FALLBACKS,
   buildHomeHeroVideoSources,
+  getPrimaryHomeHeroVideoSrc,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
 } from '@/lib/wattaHeroVideo'
 import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
@@ -498,19 +498,18 @@ export default function MenuView() {
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
 
   const [bannerInterval, setBannerInterval] = useState(5000)
-  const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v1'
+  const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v2'
   const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
+    if (typeof window === 'undefined') return []
     try {
       const raw = sessionStorage.getItem(HOME_HERO_URLS_CACHE_KEY)
-      if (!raw) return [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
+      if (!raw) return []
       const parsed = JSON.parse(raw) as unknown
-      const cached = Array.isArray(parsed)
+      return Array.isArray(parsed)
         ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
         : []
-      return cached.length > 0 ? cached : [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
     } catch {
-      return [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
+      return []
     }
   })
   const homeHeroPlaylist = useMemo(
@@ -530,8 +529,26 @@ export default function MenuView() {
   const heroVideoSrc =
     homeHeroPlaylist[heroVideoSourceIndex] ??
     heroVideoSources[heroVideoSourceIndex] ??
-    heroVideoSources[0]
+    heroVideoSources[0] ??
+    getPrimaryHomeHeroVideoSrc(homeHeroVideoUrls)
   const heroVideoShouldLoop = homeHeroPlaylist.length <= 1
+
+  /** Preload поточного hero (оригінал з адмінки) — швидший старт без «розмитої» заглушки. */
+  useEffect(() => {
+    const src = heroVideoSrc
+    if (!src || typeof document === 'undefined') return
+    const id = 'watta-hero-video-preload'
+    let link = document.getElementById(id) as HTMLLinkElement | null
+    if (!link) {
+      link = document.createElement('link')
+      link.id = id
+      link.rel = 'preload'
+      link.as = 'video'
+      ;(link as HTMLLinkElement & { fetchPriority?: string }).fetchPriority = 'high'
+      document.head.appendChild(link)
+    }
+    if (link.href !== src) link.href = src
+  }, [heroVideoSrc])
 
   const homeNarrowStripHero = isNarrowViewport && activePage === null
 
