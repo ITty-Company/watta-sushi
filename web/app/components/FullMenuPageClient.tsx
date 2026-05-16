@@ -11,6 +11,7 @@ import { subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
 import { WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
+import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { MenuHighlightStack } from './MenuHighlightStack'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
@@ -159,7 +160,7 @@ export default function FullMenuPageClient() {
         .filter((c) => c.slug.length > 0)
         .sort((a, b) => a.order - b.order)
       if (rows.length > 0) {
-        setCategories(rows)
+        setCategories(filterNonAggregateCategoryRows(rows))
         return
       }
       setCategories(fallbackRows)

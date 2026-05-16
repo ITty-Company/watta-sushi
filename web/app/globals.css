@@ -15721,27 +15721,26 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   align-items: start;
 }
 
-/* © та політика — по центру внизу, скляна «док-панель» */
+/* © та політика — планшет / ноутбук / десктоп: зліва, без панелі */
 .site-footer-watta__nav-colophon {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   column-gap: 0.4rem;
   row-gap: 0.28rem;
   box-sizing: border-box;
-  width: fit-content;
-  max-width: min(100%, 42rem);
-  margin: clamp(0.5rem, 1.2vw, 0.75rem) auto 0.75rem;
-  padding: clamp(0.55rem, 1.35vw, 0.78rem) clamp(0.85rem, 2vw, 1.12rem);
-  text-align: center;
-  border-top: none;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.52);
-  border: 1px solid rgba(20, 81, 66, 0.1);
-  box-shadow: 0 4px 22px rgba(20, 81, 66, 0.055);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  width: 100%;
+  max-width: none;
+  margin: clamp(0.5rem, 1.2vw, 0.75rem) 0 0.65rem;
+  padding: 0;
+  text-align: left;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 @media (min-width: 1280px) {
@@ -16032,12 +16031,23 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
     padding-bottom: 0;
   }
 
+  /* Телефон: по центру, скляна «док-панель» */
   .site-footer-watta__nav-colophon {
+    justify-content: center;
+    text-align: center;
     width: 100%;
     max-width: min(100%, calc(100% - 0.5rem));
+    margin-left: auto;
+    margin-right: auto;
     margin-bottom: 0.75rem;
-    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
-    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+    padding: clamp(0.55rem, 1.35vw, 0.78rem) max(0.75rem, env(safe-area-inset-right, 0px))
+      clamp(0.55rem, 1.35vw, 0.78rem) max(0.75rem, env(safe-area-inset-left, 0px));
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.52);
+    border: 1px solid rgba(20, 81, 66, 0.1);
+    box-shadow: 0 4px 22px rgba(20, 81, 66, 0.055);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .site-footer-watta__nav-colophon-copy,
