@@ -5,9 +5,12 @@ import { useLanguage } from '../context/LanguageContext'
 import WattaLoadScreen from './WattaLoadScreen'
 import { WATTA_BOOT_SPLASH_ENDED_EVENT } from '@/lib/wattaHeroVideo'
 
-const MIN_BOOT_SPLASH_MS = 1650
-/** Якщо прогрес застряг — не залишаємо користувача на білому екрані */
-const BOOT_SPLASH_FAILSAFE_MS = 12_000
+const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
+/** Короткий бренд-сплеш при першому відкритті вкладки; повторно в сесії — без екрана */
+const MIN_BOOT_SPLASH_MS = 380
+const PROGRESS_TICK_MS = 16
+const PROGRESS_STEP = 28
+const BOOT_SPLASH_FAILSAFE_MS = 6_000
 
 type WattaBootSplashGateProps = {
   children: ReactNode
@@ -15,21 +18,39 @@ type WattaBootSplashGateProps = {
   onEnded?: () => void
 }
 
+function markBootSplashDone(): void {
+  try {
+    sessionStorage.setItem(BOOT_SPLASH_DONE_KEY, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
+function shouldSkipBootSplash(): boolean {
+  try {
+    return sessionStorage.getItem(BOOT_SPLASH_DONE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Початковий сплеш при повному завантаженні / reload: логотип + зелена смуга прогресу.
  */
 export default function WattaBootSplashGate({ children, onEnded }: WattaBootSplashGateProps) {
   const { t } = useLanguage()
-  const clientReadyRef = useRef(false)
   const [bootProgress, setBootProgress] = useState(0)
   const [showBootSplash, setShowBootSplash] = useState(true)
   const bootStartedAtRef = useRef<number | null>(null)
+  const dismissScheduledRef = useRef(false)
   const onEndedRef = useRef(onEnded)
   onEndedRef.current = onEnded
 
   useLayoutEffect(() => {
     bootStartedAtRef.current = Date.now()
-    clientReadyRef.current = true
+    if (shouldSkipBootSplash()) {
+      setShowBootSplash(false)
+    }
   }, [])
 
   useLayoutEffect(() => {
@@ -47,34 +68,37 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
 
   useEffect(() => {
     if (!showBootSplash) return
+
+    const scheduleDismiss = () => {
+      if (dismissScheduledRef.current) return
+      dismissScheduledRef.current = true
+      const started = bootStartedAtRef.current ?? Date.now()
+      const wait = Math.max(0, started + MIN_BOOT_SPLASH_MS - Date.now())
+      window.setTimeout(() => {
+        markBootSplashDone()
+        setShowBootSplash(false)
+      }, wait)
+    }
+
     const id = window.setInterval(() => {
       setBootProgress((prev) => {
         if (prev >= 100) return 100
-
-        const ready = clientReadyRef.current
-        const cap = ready ? 100 : 78
-        const step = ready ? 5.5 : 0.55
-        let next = prev + step
-        if (!ready) next = Math.min(cap, next)
-        else next = Math.min(100, next)
-
+        const next = Math.min(100, prev + PROGRESS_STEP)
         if (next >= 100) {
           clearInterval(id)
-          const started = bootStartedAtRef.current ?? Date.now()
-          const minUntil = started + MIN_BOOT_SPLASH_MS
-          const extra = Math.max(520, minUntil - Date.now() + 480)
-          window.setTimeout(() => setShowBootSplash(false), extra)
-          return 100
+          scheduleDismiss()
         }
         return next
       })
-    }, 36)
+    }, PROGRESS_TICK_MS)
+
     return () => clearInterval(id)
   }, [showBootSplash])
 
   useEffect(() => {
     if (!showBootSplash) return
     const fail = window.setTimeout(() => {
+      markBootSplashDone()
       setShowBootSplash(false)
       setBootProgress(100)
     }, BOOT_SPLASH_FAILSAFE_MS)
