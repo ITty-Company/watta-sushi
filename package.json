@@ -30,6 +30,7 @@
     "local:all": "node scripts/kill-dev-ports.cjs && npm run local:dev",
     "local:all:clean": "node scripts/kill-dev-ports.cjs && rm -rf web/.next web/node_modules/.cache && npm run local:dev",
     "local:repair": "node scripts/kill-dev-ports.cjs && rm -rf web/.next web/node_modules/.cache && npm run local:dev",
+    "fix:next": "node scripts/kill-dev-ports.cjs && node scripts/clear-next-dev-cache.cjs && echo '✅ Кеш Next очищено. Запустите: npm run local'",
     "local:stack": "node scripts/local-stack.cjs",
     "local": "npm run local:stack",
     "local:open": "node scripts/open-localhost.cjs",
