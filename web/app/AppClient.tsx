@@ -106,12 +106,11 @@ export default function AppClient({
             <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
               {children}
             </div>
+            {/* mt-auto: коротка сторінка — підвал внизу вікна; довга — після контенту при скролі body */}
+            {!isHomeRoute && !isAuthRoute && !isAdminShellRoute && !isCartRoute ? (
+              <Footer className="mt-auto" />
+            ) : null}
           </main>
-
-          {/* На головній футер у MenuView/HomeClient; на /cart /login /register — без глобального футера */}
-          {!isHomeRoute && !isAuthRoute && !isAdminShellRoute && !isCartRoute && (
-            <Footer compact={isFavoritesRoute} />
-          )}
 
           {showPublicNavChrome && <WattaRightNavDrawer />}
           {!isAuthRoute && !isAdminShellRoute && !isCartRoute && <FloatingContactButtons />}

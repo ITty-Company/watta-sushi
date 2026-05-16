@@ -61,11 +61,10 @@ function localizedName(
 }
 
 type FooterProps = {
-  /** Компактний підвал для /favorites — менше білого блоку внизу */
-  compact?: boolean
+  className?: string
 }
 
-export default function Footer({ compact = false }: FooterProps) {
+export default function Footer({ className }: FooterProps) {
   const { t, language } = useLanguage()
   const sf = t.siteFooter
   const nav = t.navigation
@@ -138,7 +137,9 @@ export default function Footer({ compact = false }: FooterProps) {
 
   return (
     <footer
-      className={`site-footer-watta site-footer-watta--light shrink-0 w-full${compact ? ' site-footer-watta--compact' : ''}`}
+      className={['site-footer-watta site-footer-watta--light shrink-0 w-full', className]
+        .filter(Boolean)
+        .join(' ')}
     >
       <div className="site-footer-watta__inner">
         <div className="site-footer-watta__hero-row">

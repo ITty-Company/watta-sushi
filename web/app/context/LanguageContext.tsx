@@ -851,6 +851,7 @@ interface Translations {
       addBtn: string; tabSubtitle: string; editTitle: string; newTitle: string; titleRu: string; titlePlaceholder: string;
       heroVideoTitle: string; heroVideoSubtitle: string;
       deliveryHeroVideoTitle: string; deliveryHeroVideoSubtitle: string;
+      authHeroVideoTitle: string; authHeroVideoSubtitle: string;
       heroVideoSlotLabel: string; heroVideoUpload: string;
       heroVideoSave: string; heroVideoSaving: string; heroVideoSaved: string; heroVideoError: string;
       heroVideoErrorAuth: string; heroVideoErrorMock: string; heroVideoErrorUpload: string;
@@ -1847,6 +1848,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Скільки завгодно роликів на головній. Перший — основний; якщо не завантажиться — підключиться наступний. Натисніть «Додати ролик» для нового слота.",
         deliveryHeroVideoTitle: "Відео на сторінці доставки",
         deliveryHeroVideoSubtitle: "Окремі ролики для /delivery — не плутати з головною. Перший — основний; далі запасні з public, якщо не завантажиться.",
+        authHeroVideoTitle: "Відео у «телефоні» на вході",
+        authHeroVideoSubtitle: "Ролики для /login та /register у симуляторі телефона (планшет і десктоп). Скільки завгодно слотів — відтворюються по черзі.",
         heroVideoAddBtn: "+ Додати ролик",
         heroVideoSlotLabel: "Відео {{n}}",
         heroVideoUpload: "Завантажити",
@@ -2724,6 +2727,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Сколько угодно роликов на главной. Первый — основной; если не загрузится — подключится следующий. Нажмите «Добавить ролик» для нового слота.",
         deliveryHeroVideoTitle: "Видео на странице доставки",
         deliveryHeroVideoSubtitle: "Отдельные ролики для /delivery — не путать с главной. Первый — основной; далее запасные из public, если не загрузится.",
+        authHeroVideoTitle: "Видео в «телефоне» на входе",
+        authHeroVideoSubtitle: "Ролики для /login и /register в симуляторе телефона (планшет и десктоп). Любое число слотов — по очереди.",
         heroVideoAddBtn: "+ Добавить ролик",
         heroVideoSlotLabel: "Видео {{n}}",
         heroVideoUpload: "Загрузить",
@@ -3601,6 +3606,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "As many clips as you need on the home page. First is primary; if it fails to load, the next plays. Click «Add clip» for a new slot.",
         deliveryHeroVideoTitle: "Delivery page hero video",
         deliveryHeroVideoSubtitle: "Separate clips for /delivery — not shared with home. First is primary; then public fallbacks if a clip fails.",
+        authHeroVideoTitle: "Login page phone simulator video",
+        authHeroVideoSubtitle: "Clips for /login and /register inside the phone mockup (tablet & desktop). Add as many slots as you need — they play in order.",
         heroVideoAddBtn: "+ Add clip",
         heroVideoSlotLabel: "Video {{n}}",
         heroVideoUpload: "Upload",
@@ -4478,6 +4485,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Zoveel clips als u wilt op de homepage. De eerste is primair; laadt die niet, dan de volgende. Klik op «Clip toevoegen» voor een nieuw slot.",
         deliveryHeroVideoTitle: "Hero-video bezorgpagina",
         deliveryHeroVideoSubtitle: "Aparte clips voor /delivery — niet dezelfde als homepage. Eerste is primair; daarna public-fallbacks bij laadfout.",
+        authHeroVideoTitle: "Video in telefoon op inlogpagina",
+        authHeroVideoSubtitle: "Clips voor /login en /register in de telefoonmockup (tablet & desktop). Zoveel slots als nodig — achter elkaar.",
         heroVideoAddBtn: "+ Clip toevoegen",
         heroVideoSlotLabel: "Video {{n}}",
         heroVideoUpload: "Uploaden",

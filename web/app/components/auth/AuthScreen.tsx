@@ -16,6 +16,8 @@ import {
 import LogoBackground from '../LogoBackground'
 import WattaAppRouteLoading from '../WattaAppRouteLoading'
 import AuthCinemaPanel from './AuthCinemaPanel'
+import { parseAuthHeroVideoUrlsFromApi } from '@/lib/authHeroVideoSettings'
+import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaAuthHeroVideo'
 import { useLanguage } from '../../context/LanguageContext'
 import toast from 'react-hot-toast'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
@@ -84,6 +86,38 @@ function AuthScreenBody({
 
   const [isVerifying, setIsVerifying] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
+  const [authHeroAdminUrls, setAuthHeroAdminUrls] = useState<string[]>([])
+
+  useEffect(() => {
+    if (variant !== 'page') return
+    const applySettings = (data: {
+      authHeroVideoUrl?: string
+      authHeroVideoUrls?: string[]
+    }) => {
+      const urls = parseAuthHeroVideoUrlsFromApi(data)
+      if (urls.length > 0) setAuthHeroAdminUrls(urls)
+    }
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' })
+        if (res.ok) applySettings(await res.json())
+      } catch {
+        /* ignore */
+      }
+    }
+    const onHeroUpdated = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ url?: string; urls?: string[] }>).detail
+      const fromEvent = parseAuthHeroVideoUrlsFromApi({
+        authHeroVideoUrls: detail?.urls,
+        authHeroVideoUrl: detail?.url,
+      })
+      if (fromEvent.length > 0) setAuthHeroAdminUrls(fromEvent)
+      else void fetchSettings()
+    }
+    void fetchSettings()
+    window.addEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+    return () => window.removeEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+  }, [variant])
 
   useEffect(() => {
     setIsRegister(initialRegister)
@@ -329,15 +363,16 @@ function AuthScreenBody({
 
       {backFab}
 
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-2 px-2.5 pt-12 sm:px-4 sm:pt-14 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-4 lg:px-6 lg:pt-14">
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-2 px-2.5 pt-12 sm:px-4 sm:pt-14 md:grid md:grid-cols-2 md:items-stretch md:gap-4 md:px-6 md:pt-14">
         {variant === 'page' && (
-          <div className="shrink-0 lg:hidden">
+          <div className="shrink-0 md:hidden">
             <AuthCinemaPanel
               compact
               title={t.auth.desktopHeroTitle}
               subtitle={t.auth.desktopHeroSub}
               brandName={t.common.brandName}
               benefits={cinemaBenefits}
+              videoUrls={authHeroAdminUrls}
             />
           </div>
         )}
@@ -348,6 +383,7 @@ function AuthScreenBody({
             subtitle={t.auth.desktopHeroSub}
             brandName={t.common.brandName}
             benefits={cinemaBenefits}
+            videoUrls={authHeroAdminUrls}
           />
         )}
 

@@ -628,6 +628,8 @@ export const mockSiteSettings = {
   homeHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   deliveryHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   deliveryHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
+  authHeroVideoUrl: '',
+  authHeroVideoUrls: [],
   telegramUrl: 'https://t.me/wattasushiwork',
   whatsappUrl: 'https://wa.me/380000000000',
   instagramUrl: WATTA_INSTAGRAM_URL,

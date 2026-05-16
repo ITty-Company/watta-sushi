@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import MenuView from './components/MenuView'
+import Footer from './components/Footer'
 import WattaBootSplashGate from './components/WattaBootSplashGate'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { kickWelcomeHeroVideoPlayBurst, kickWelcomeHeroVideoPlayOnce } from '@/lib/kickWelcomeHeroVideo'
@@ -174,6 +175,7 @@ export default function HomeClient() {
         {activeTab !== 0 ? (
           <NotificationsView isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
         ) : null}
+        <Footer className="mt-auto" />
       </div>
     </div>
     </WattaBootSplashGate>
