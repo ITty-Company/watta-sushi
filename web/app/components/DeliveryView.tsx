@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import type { Ref } from 'react'
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react'
 import { DeliveryExperienceBlocks } from './DeliveryExperienceBlocks'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
@@ -23,11 +23,15 @@ import {
   isCityChoiceExplicit,
   persistUserCityChoice,
 } from '@/lib/wattaSiteLocalePrefs'
-import { DELIVERY_HERO_VIDEO_SOURCES } from '@/lib/deliveryHeroVideoSources'
-import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
-import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
-import { getHeroVideoTouchLikeViewport, subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
+import { getDeliveryHeroVideoSources } from '@/lib/deliveryHeroVideoSources'
+import { parseDeliveryHeroVideoUrlsFromApi } from '@/lib/deliveryHeroVideoSettings'
+import {
+  WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT,
+  getPrimaryDeliveryHeroVideoSrc,
+} from '@/lib/wattaDeliveryHeroVideo'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
+import WattaSiteStickyChrome from './WattaSiteStickyChrome'
+import DeliveryWelcomeHeroSection from './DeliveryWelcomeHeroSection'
 import {
   MapPin,
   Sparkles,
@@ -210,53 +214,83 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   const [postalResult, setPostalResult] = useState<DeliveryCheckResult | null>(null)
   const [siteTariff, setSiteTariff] = useState({ defaultDeliveryFee: 50, freeDeliveryThreshold: 1000 })
 
+  const [deliveryHeroAdminUrls, setDeliveryHeroAdminUrls] = useState<string[]>([])
   const [deliveryHeroVideoFailed, setDeliveryHeroVideoFailed] = useState(false)
   const [deliveryHeroVideoIndex, setDeliveryHeroVideoIndex] = useState(0)
   const deliveryHeroVideoRef = useRef<HTMLVideoElement | null>(null)
-  const deliveryHeroVideoCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const deliveryHeroPlaylist = useMemo(
+    () => getDeliveryHeroVideoSources(deliveryHeroAdminUrls),
+    [deliveryHeroAdminUrls],
+  )
   const deliveryHeroVideoSrc =
-    DELIVERY_HERO_VIDEO_SOURCES[deliveryHeroVideoIndex] ?? DELIVERY_HERO_VIDEO_SOURCES[0]
+    deliveryHeroPlaylist[deliveryHeroVideoIndex] ?? deliveryHeroPlaylist[0] ?? getPrimaryDeliveryHeroVideoSrc()
+
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false)
+  const [deliveryIntroBeforeHero, setDeliveryIntroBeforeHero] = useState(false)
+  const deliveryNarrowStripHero = isNarrowViewport
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    const mqNarrow = window.matchMedia('(max-width: 768px)')
+    const applyNarrow = () => setIsNarrowViewport(mqNarrow.matches)
+    applyNarrow()
+    mqNarrow.addEventListener('change', applyNarrow)
+
+    const mqIntro = window.matchMedia('(max-width: 1024px)')
+    const applyIntro = () => setDeliveryIntroBeforeHero(mqIntro.matches)
+    applyIntro()
+    mqIntro.addEventListener('change', applyIntro)
+
+    return () => {
+      mqNarrow.removeEventListener('change', applyNarrow)
+      mqIntro.removeEventListener('change', applyIntro)
+    }
+  }, [])
 
   useEffect(() => {
-    if (deliveryHeroVideoFailed) return
-    const video = deliveryHeroVideoRef.current
-    const canvas = deliveryHeroVideoCanvasRef.current
-    if (!video || !canvas) return
-    const stack = video.closest('.welcome-hero-video-stack-web')
-    let offMirror: () => void = () => {}
-    const armMirror = (preferNative: boolean) => {
-      offMirror()
-      offMirror = () => {}
-      if (!preferNative) {
-        offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
-      }
-    }
-    const unsubNative = subscribeHeroVideoNativeOnDesktop(armMirror)
-    const offAutoplay = bindHeroVideoAutoplay(video, {
-      extendedRetries: true,
-      blockInteractionRoot:
-        !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
-    })
-    return () => {
-      unsubNative()
-      offMirror()
-      offAutoplay()
-    }
-  }, [deliveryHeroVideoSrc, deliveryHeroVideoFailed])
+    setDeliveryHeroVideoIndex(0)
+    setDeliveryHeroVideoFailed(false)
+  }, [deliveryHeroVideoSrc])
 
   const cityLabel = useCallback((c: City) => getLocalized(c, 'name') || c.name, [getLocalized])
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then((r) => (r.ok ? r.json() : {}))
-      .then((data: { deliveryFee?: number; freeDeliveryThreshold?: number }) => {
+    const applySettings = (data: {
+      deliveryFee?: number
+      freeDeliveryThreshold?: number
+      deliveryHeroVideoUrl?: string
+      deliveryHeroVideoUrls?: string[]
+    }) => {
+      if (typeof data.deliveryFee === 'number' || typeof data.freeDeliveryThreshold === 'number') {
         setSiteTariff({
           defaultDeliveryFee: typeof data.deliveryFee === 'number' ? data.deliveryFee : 50,
           freeDeliveryThreshold:
             typeof data.freeDeliveryThreshold === 'number' ? data.freeDeliveryThreshold : 1000,
         })
+      }
+      const urls = parseDeliveryHeroVideoUrlsFromApi(data)
+      if (urls.length > 0) setDeliveryHeroAdminUrls(urls)
+    }
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' })
+        if (res.ok) applySettings(await res.json())
+      } catch {
+        /* ignore */
+      }
+    }
+    const onHeroUpdated = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ url?: string; urls?: string[] }>).detail
+      const fromEvent = parseDeliveryHeroVideoUrlsFromApi({
+        deliveryHeroVideoUrls: detail?.urls,
+        deliveryHeroVideoUrl: detail?.url,
       })
-      .catch(() => {})
+      if (fromEvent.length > 0) setDeliveryHeroAdminUrls(fromEvent)
+      else void fetchSettings()
+    }
+    void fetchSettings()
+    window.addEventListener(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+    return () => window.removeEventListener(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
   }, [])
 
   useEffect(() => {
@@ -491,8 +525,26 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
       .replace(/\{\{km\}\}/g, String(postalResult.distanceKm))
   }, [postalResult, d.minOrderAfterCheck])
 
+  const deliveryIntroSection = (
+    <section
+      id="delivery-before-hero-intro"
+      className="home-after-hero-intro-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0"
+      aria-label={d.headlineLead}
+    >
+      <div className="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu relative z-[1] mx-auto max-w-7xl px-6 pb-4 sm:px-9 sm:pb-5 md:px-12 md:pb-6">
+        <h2 className="home-after-hero-intro-title-web mx-auto max-w-3xl text-center text-[clamp(1.35rem,3.8vw,2.35rem)] font-semibold leading-[1.18] tracking-[-0.02em] text-[#0f2a22]">
+          <span className="block">{d.headlineLead}</span>
+          <span className="block text-[#145142]">{d.headlineMark}</span>
+        </h2>
+        <p className="home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl whitespace-pre-line text-center text-[13px] leading-snug text-[#145142]/88 sm:mt-5 sm:text-[14px] max-xl:max-w-[min(52rem,96vw)] xl:max-w-2xl xl:whitespace-normal xl:leading-relaxed xl:text-balance">
+          {d.sub}
+        </p>
+      </div>
+    </section>
+  )
+
   const deliveryHeroHeader = (
-    <header className={`delivery-watta-hero${embedInMenu ? '' : ' delivery-watta-hero--split'}`}>
+    <header className="delivery-watta-hero">
       <div className="delivery-watta-hero-top">
         <span className="delivery-watta-kicker">{d.kicker}</span>
         <span className="delivery-watta-kicker-script" style={{ fontFamily: 'var(--font-brand-marck), cursive' }}>
@@ -531,109 +583,43 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   )
 
   const deliveryHeroVideoBlock = (
-    <section
-      ref={menuWelcomeHeroRef}
-      className={`welcome-hero-section-web menu-snap-section-welcome-web${embedInMenu ? ' delivery-page-hero-embed-web' : ' delivery-page-hero-standalone-web delivery-page-hero-split-panel-web'}`}
-      aria-label={a.heroVideo}
+    <DeliveryWelcomeHeroSection
+      sectionRef={menuWelcomeHeroRef}
+      embedInMenu={embedInMenu}
+      heroVideoFailed={deliveryHeroVideoFailed}
+      setHeroVideoSourceIndex={setDeliveryHeroVideoIndex}
+      setHeroVideoFailed={setDeliveryHeroVideoFailed}
+      heroVideoRef={deliveryHeroVideoRef}
+      heroVideoSrc={deliveryHeroVideoSrc}
+      videoSources={deliveryHeroPlaylist}
+      playlistLength={deliveryHeroPlaylist.length}
     >
-      <div className="welcome-hero-video-fill-web">
-        {deliveryHeroVideoFailed ? (
-          <div
-            className="welcome-video-native-web welcome-hero-fallback-image-web"
-            style={{ backgroundImage: "url('/watta-sushi.jpg')" }}
-            role="img"
-            aria-hidden
-          />
-        ) : (
-          <div className="welcome-hero-video-stack-web">
-            <video
-              key={deliveryHeroVideoSrc}
-              ref={deliveryHeroVideoRef}
-              className="welcome-video-native-web welcome-hero-video-source-for-canvas-web"
-              src={deliveryHeroVideoSrc}
-              autoPlay
-              muted
-              loop
-              playsInline
-              controls={false}
-              disablePictureInPicture
-              preload="auto"
-              tabIndex={-1}
-              aria-hidden
-              onContextMenu={(e) => e.preventDefault()}
-              onError={() => {
-                setDeliveryHeroVideoIndex((prev) => {
-                  if (prev < DELIVERY_HERO_VIDEO_SOURCES.length - 1) return prev + 1
-                  setDeliveryHeroVideoFailed(true)
-                  return prev
-                })
-              }}
-              onEnded={(e) => {
-                const el = e.currentTarget
-                el.currentTime = 0
-                void el.play()
-              }}
-            />
-            <canvas
-              ref={deliveryHeroVideoCanvasRef}
-              className="welcome-hero-video-canvas-mirror-web"
-              aria-hidden
-            />
-            <div
-              className="welcome-hero-video-input-shield-web"
-              aria-hidden
-              role="presentation"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onAuxClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onDoubleClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-            />
-          </div>
-        )}
-      </div>
-    </section>
+      {deliveryNarrowStripHero ? (
+        <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
+          <WattaHeroMarqueeBar />
+        </div>
+      ) : null}
+    </DeliveryWelcomeHeroSection>
   )
 
-  return (
+  const deliveryHeroStack = (
     <>
-      {embedInMenu ? (
-        deliveryHeroVideoBlock
-      ) : (
-        <div className="delivery-page-hero-adaptive-shell menu-page-web">
-          <div className="delivery-page-hero-adaptive-grid">
-            <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--video">
-              <p className="delivery-page-hero-split-rail" aria-hidden>
-                {d.splitHeroVideoRail}
-              </p>
-              {deliveryHeroVideoBlock}
-            </div>
-            <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--marquee">
-              <div className="home-hero-after-marquee-wrap-web w-full shrink-0">
-                <WattaHeroMarqueeBar />
-              </div>
-            </div>
-            <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--copy">
-              {deliveryHeroHeader}
-            </div>
-          </div>
+      {deliveryIntroBeforeHero ? deliveryIntroSection : null}
+      {deliveryNarrowStripHero ? (
+        <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
+          {deliveryHeroVideoBlock}
         </div>
+      ) : (
+        deliveryHeroVideoBlock
       )}
+      {!deliveryIntroBeforeHero ? deliveryIntroSection : null}
+    </>
+  )
 
+  const deliveryPageBody = (
     <div className={`delivery-watta-page relative${embedInMenu ? ' delivery-watta-page--embed' : ''}`}>
       <div className="relative z-[2]">
-        {embedInMenu && deliveryHeroHeader}
+        {deliveryHeroHeader}
 
         {loading ? (
           <div className="delivery-watta-loading">{d.loading}</div>
@@ -1014,6 +1000,23 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
         )}
       </div>
     </div>
-    </>
+  )
+
+  if (embedInMenu) {
+    return (
+      <>
+        {deliveryHeroStack}
+        {deliveryPageBody}
+      </>
+    )
+  }
+
+  return (
+    <div className="menu-page-web watta-delivery-page relative flex w-full max-w-[100vw] min-w-0 shrink-0 flex-col overflow-x-hidden watta-page-bg">
+      <WattaSiteStickyChrome flowHeightFudgePx={4} />
+      <div className="menu-content-top-gap-web w-full shrink-0 bg-transparent" aria-hidden />
+      {deliveryHeroStack}
+      {deliveryPageBody}
+    </div>
   )
 }

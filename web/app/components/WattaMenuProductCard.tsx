@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
+import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
 
 export type WattaMenuProductCardModel = {
   id: number
@@ -74,6 +75,7 @@ export function WattaMenuProductCard({
   const media = (
     <div className="relative">
       {pills}
+      <HomeMenuProductFavoriteButton productId={product.id} />
       <Link
         href={`/product/${product.id}`}
         className="home-menu-product-card-media-web group/media block"

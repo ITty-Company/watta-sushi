@@ -25,6 +25,9 @@ export const WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES = WATTA_HOME_HERO_VIDEO_FAL
 /** Preload на головній — перший кадр головного hero (не сторінка `/menu`). */
 export const WATTA_HERO_PRIMARY_MP4 = WATTA_HOME_HERO_VIDEO_FALLBACKS[0]
 
+/** Постер hero — миттєвий кадр до decode mp4 (телефон / планшет / reload). */
+export const WATTA_HOME_HERO_POSTER = '/watta-sushi.jpg' as const
+
 /** Після збереження hero-відео в адмінці — оновити MenuView без reload */
 export const WATTA_HOME_HERO_VIDEO_UPDATED_EVENT = 'watta:home-hero-video-updated' as const
 

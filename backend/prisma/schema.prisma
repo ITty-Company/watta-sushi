@@ -239,6 +239,11 @@ model SiteSetting {
   /// JSON-масив до 3 шляхів (/uploads/… або /…mp4) — порядок відтворення на головній
   homeHeroVideoUrls String @default("[]")
 
+  /// Доставка: перше hero-відео (зворотна сумісність; дублює [0] з deliveryHeroVideoUrls)
+  deliveryHeroVideoUrl String @default("/watta-sushi-2-hero.mp4")
+  /// JSON-масив шляхів — порядок відтворення на сторінці доставки
+  deliveryHeroVideoUrls String @default("[]")
+
   telegramUrl             String @default("")
   whatsappUrl             String @default("")
   instagramUrl            String @default("")

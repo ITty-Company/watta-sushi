@@ -10,11 +10,14 @@ import {
 } from '@/lib/kickWelcomeHeroVideo'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
-/** Швидке заповнення зеленої смуги */
-export const BOOT_SPLASH_FILL_MS = 700
-/** Коротка пауза на 100%, щоб смуга виглядала повністю заповненою */
-const BOOT_SPLASH_HOLD_FULL_MS = 120
-const BOOT_SPLASH_FAILSAFE_MS = 2_500
+/** Швидке заповнення зеленої смуги — не затримуємо hero довше за decode */
+export const BOOT_SPLASH_FILL_MS = 320
+/** Коротка пауза на 100%, якщо відео ще не готове */
+const BOOT_SPLASH_HOLD_FULL_MS = 60
+/** Якщо hero не віддав ready — все одно показуємо головну */
+const BOOT_SPLASH_FAILSAFE_MS = 1_200
+/** Мінімум для логотипу сплешу (уникнути миготіння) */
+const BOOT_SPLASH_MIN_MS = 120
 
 type WattaBootSplashGateProps = {
   children: ReactNode
@@ -79,7 +82,7 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     return () => root.removeAttribute('data-watta-boot-splash')
   }, [showBootSplash])
 
-  /** Смуга 0→100% (inline width), пауза на повній, потім головна */
+  /** Смуга 0→100%; як тільки hero ready — одразу головна (не чекаємо повної смуги). */
   useEffect(() => {
     if (!showBootSplash) return
 
@@ -90,19 +93,24 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     let holdId = 0
     let failId = 0
     let videoKickId = 0
+    let tickId = 0
+    let finished = false
 
     const kickHero = () => kickWelcomeHeroVideoPlayOnce()
 
     const finishAfterFullBar = () => {
-      if (gen !== splashRunRef.current) return
+      if (gen !== splashRunRef.current || finished) return
+      finished = true
       setBootProgress(100)
+      const elapsed = performance.now() - t0
+      const wait = Math.max(0, BOOT_SPLASH_MIN_MS - elapsed)
       holdId = window.setTimeout(() => {
         if (gen !== splashRunRef.current) return
         dismissSplash()
-      }, BOOT_SPLASH_HOLD_FULL_MS)
+      }, wait + BOOT_SPLASH_HOLD_FULL_MS)
     }
 
-    const tickId = window.setInterval(() => {
+    tickId = window.setInterval(() => {
       if (gen !== splashRunRef.current) return
       const elapsed = performance.now() - t0
       const pct = Math.min(100, (elapsed / BOOT_SPLASH_FILL_MS) * 100)
@@ -116,11 +124,13 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
 
     kickHero()
     queueMicrotask(kickHero)
-    videoKickId = window.setInterval(kickHero, 200)
+    videoKickId = window.setInterval(kickHero, 120)
 
     const onHeroReady = () => {
       kickHero()
       kickWelcomeHeroVideoPlayBurst()
+      window.clearInterval(tickId)
+      finishAfterFullBar()
     }
     window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
 
