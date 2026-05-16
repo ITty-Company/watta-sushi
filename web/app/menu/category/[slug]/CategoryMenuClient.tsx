@@ -10,6 +10,7 @@ import LogoBackground from '../../../components/LogoBackground'
 import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
+import { addToCartWithAuthGate } from '@/lib/cartStorage'
 
 interface MenuItem {
   id: number
@@ -200,16 +201,21 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
   }, [categoryTitle, items])
 
   const addToCart = (item: MenuItem) => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    const n = cart.filter((x: { id?: number }) => x?.id === item.id).length
-    if (n >= 99) {
+    const result = addToCartWithAuthGate(router, {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      emoji: item.emoji,
+      imageUrl: item.imageUrl,
+      promoDiscountPercent: item.promoDiscountPercent,
+    })
+    if (result === 'max') {
       toast.error(t.appToasts.maxCartQty)
       return
     }
-    cart.push(item)
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    if (result === 'auth_redirect') return
     toast.success(t.addToCart)
   }
 

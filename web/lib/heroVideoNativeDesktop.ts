@@ -6,6 +6,19 @@
 export const HERO_VIDEO_NATIVE_ON_DESKTOP_MEDIA =
   '(min-width: 1025px) and (hover: hover) and (pointer: fine)' as const
 
+/** Телефон / планшет — hero не перехоплює touch (вертикальний скрол сторінки). */
+export const HERO_VIDEO_TOUCH_LIKE_MEDIA =
+  '(max-width: 1024px), (hover: none) and (pointer: coarse)' as const
+
+export function getHeroVideoTouchLikeViewport(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    return window.matchMedia(HERO_VIDEO_TOUCH_LIKE_MEDIA).matches
+  } catch {
+    return true
+  }
+}
+
 export function getHeroVideoPrefersNativeOnDesktop(): boolean {
   if (typeof window === 'undefined') return false
   try {

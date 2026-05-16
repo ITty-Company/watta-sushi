@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import ProductView from '../../components/ProductView'
 import { readIsAdminFromCurrentUserJson } from '@/lib/isAdminRole'
 import { normalizeProductRouteId } from '@/lib/fetchProductById'
+import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 
 export default function ProductPage() {
   const router = useRouter()
@@ -24,11 +25,13 @@ export default function ProductPage() {
 
   // Функции навигации
   const handleBack = () => router.back()
-  const handleProfile = () => router.push('/profile')
-  const handleFavorites = () => router.push('/favorites')
+  const handleProfile = () =>
+    router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
+  const handleFavorites = () =>
+    router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
   const handleNotifications = () => router.push('/notifications')
   const handleMenu = () => router.push('/menu')
-  const handleCart = () => router.push('/cart')
+  const handleCart = () => router.push(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
   const handlePhone = () => window.location.href = 'tel:+31649326549'
 
   return (

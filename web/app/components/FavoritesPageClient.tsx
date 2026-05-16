@@ -1,10 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Heart, UtensilsCrossed } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
+import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
+import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { loadFavoriteProducts } from '@/lib/favoritesStorage'
 import WattaSiteStickyChrome from './WattaSiteStickyChrome'
 import { MenuHighlightStack, type MenuHighlightStackItem } from './MenuHighlightStack'
@@ -26,6 +29,7 @@ function FavoritesGridSkeleton() {
 }
 
 export default function FavoritesPageClient() {
+  const router = useRouter()
   const { t, getLocalized, language } = useLanguage()
   const cp = t.clientProfile
   const wf = t.productDetail.weightFallback
@@ -63,10 +67,15 @@ export default function FavoritesPageClient() {
   }, [mapRawToCard])
 
   useEffect(() => {
+    if (!isUserLoggedIn()) {
+      router.replace(getAuthUrl('/favorites'))
+      return
+    }
     void load()
-  }, [load, language])
+  }, [load, language, router])
 
   useEffect(() => {
+    if (!isUserLoggedIn()) return
     const onFav = () => void load()
     const onUser = () => void load()
     window.addEventListener('favoritesUpdated', onFav)
@@ -78,14 +87,7 @@ export default function FavoritesPageClient() {
   }, [load])
 
   const addToCart = (item: MenuHighlightStackItem | WattaMenuProductCardModel) => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    const n = cart.filter((x: { id?: number }) => x?.id === item.id).length
-    if (n >= 99) {
-      toast.error(t.appToasts.maxCartQty)
-      return
-    }
-    cart.push({
+    const result = addToCartWithAuthGate(router, {
       id: item.id,
       name: item.name,
       description: item.description,
@@ -95,8 +97,11 @@ export default function FavoritesPageClient() {
       imageUrl: item.imageUrl,
       promoDiscountPercent: item.promoDiscountPercent,
     })
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    if (result === 'max') {
+      toast.error(t.appToasts.maxCartQty)
+      return
+    }
+    if (result === 'auth_redirect') return
     toast.success(t.addToCart)
   }
 

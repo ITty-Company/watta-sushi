@@ -5,7 +5,7 @@
  * — Навіть у прихованій вкладці не викликаємо `pause()` самі: браузер сам гальмує декодер,
  *   якщо вирішить економити; як тільки вкладка знову видима — відео вже грає, без «розморозки».
  * — Після повернення на вкладку — серія відкладених `play()` (Safari часто лишає paused).
- * — Перехоплення подій на `blockInteractionRoot` — скрол не ламаємо; кліки не доходять до <video>.
+ * — На десктопі `blockInteractionRoot` ловить лише click (не touch) — скрол на телефоні/планшеті не блокується.
  * — Watchdog / burst + повторні play() після відхилення промісу.
  */
 export function bindHeroVideoAutoplay(
@@ -104,12 +104,8 @@ export function bindHeroVideoAutoplay(
     })
   }
 
-  const blockInteraction = (e: Event) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const blockUiClick = (e: Event) => {
+  /** Лише «клікоподібні» події — touchstart/touchmove з preventDefault ламають вертикальний скрол на iOS/Android. */
+  const blockTapOnVideo = (e: Event) => {
     e.preventDefault()
     e.stopPropagation()
   }
@@ -279,19 +275,13 @@ export function bindHeroVideoAutoplay(
   video.addEventListener('loadedmetadata', onLoadedMeta)
   video.addEventListener('pause', onPause)
   video.addEventListener('playing', onPlaying)
-  video.addEventListener('click', blockInteraction, captureOpts)
-  video.addEventListener('pointerdown', blockInteraction, captureOpts)
-  video.addEventListener('pointerup', blockInteraction, captureOpts)
-  video.addEventListener('mousedown', blockInteraction, captureOpts)
-  video.addEventListener('mouseup', blockInteraction, captureOpts)
-  video.addEventListener('touchstart', blockInteraction, captureOpts)
-  video.addEventListener('touchend', blockInteraction, captureOpts)
-  video.addEventListener('touchcancel', blockInteraction, captureOpts)
-  video.addEventListener('contextmenu', blockInteraction, captureOpts)
-  video.addEventListener('auxclick', blockInteraction, captureOpts)
-  video.addEventListener('dblclick', blockInteraction, captureOpts)
+  video.addEventListener('click', blockTapOnVideo, captureOpts)
+  video.addEventListener('mousedown', blockTapOnVideo, captureOpts)
+  video.addEventListener('mouseup', blockTapOnVideo, captureOpts)
+  video.addEventListener('contextmenu', blockTapOnVideo, captureOpts)
+  video.addEventListener('auxclick', blockTapOnVideo, captureOpts)
+  video.addEventListener('dblclick', blockTapOnVideo, captureOpts)
   video.addEventListener('keydown', blockKey, true)
-  video.addEventListener('gesturestart', blockInteraction, captureOpts)
   window.addEventListener('pageshow', onPageShow)
   window.addEventListener('focus', onWindowFocus)
   document.addEventListener('visibilitychange', onVisibility)
@@ -302,15 +292,10 @@ export function bindHeroVideoAutoplay(
 
   const rootClickOpts: AddEventListenerOptions = { capture: true, passive: false }
   if (blockRoot) {
-    blockRoot.addEventListener('click', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('dblclick', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('contextmenu', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('auxclick', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('pointerdown', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('pointerup', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('touchstart', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('touchend', blockUiClick, rootClickOpts)
-    blockRoot.addEventListener('pointercancel', blockUiClick, rootClickOpts)
+    blockRoot.addEventListener('click', blockTapOnVideo, rootClickOpts)
+    blockRoot.addEventListener('dblclick', blockTapOnVideo, rootClickOpts)
+    blockRoot.addEventListener('contextmenu', blockTapOnVideo, rootClickOpts)
+    blockRoot.addEventListener('auxclick', blockTapOnVideo, rootClickOpts)
   }
 
   return () => {
@@ -326,15 +311,10 @@ export function bindHeroVideoAutoplay(
     document.removeEventListener('touchstart', onAnyUserGesture, gestureOpts)
     document.removeEventListener('keydown', onAnyUserGesture, gestureOpts)
     if (blockRoot) {
-      blockRoot.removeEventListener('click', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('dblclick', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('contextmenu', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('auxclick', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('pointerdown', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('pointerup', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('touchstart', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('touchend', blockUiClick, rootClickOpts)
-      blockRoot.removeEventListener('pointercancel', blockUiClick, rootClickOpts)
+      blockRoot.removeEventListener('click', blockTapOnVideo, rootClickOpts)
+      blockRoot.removeEventListener('dblclick', blockTapOnVideo, rootClickOpts)
+      blockRoot.removeEventListener('contextmenu', blockTapOnVideo, rootClickOpts)
+      blockRoot.removeEventListener('auxclick', blockTapOnVideo, rootClickOpts)
     }
     video.removeEventListener('waiting', onWaiting)
     video.removeEventListener('stalled', onStalled)
@@ -345,19 +325,13 @@ export function bindHeroVideoAutoplay(
     video.removeEventListener('loadedmetadata', onLoadedMeta)
     video.removeEventListener('pause', onPause)
     video.removeEventListener('playing', onPlaying)
-    video.removeEventListener('click', blockInteraction, captureOpts)
-    video.removeEventListener('pointerdown', blockInteraction, captureOpts)
-    video.removeEventListener('pointerup', blockInteraction, captureOpts)
-    video.removeEventListener('mousedown', blockInteraction, captureOpts)
-    video.removeEventListener('mouseup', blockInteraction, captureOpts)
-    video.removeEventListener('touchstart', blockInteraction, captureOpts)
-    video.removeEventListener('touchend', blockInteraction, captureOpts)
-    video.removeEventListener('touchcancel', blockInteraction, captureOpts)
-    video.removeEventListener('contextmenu', blockInteraction, captureOpts)
-    video.removeEventListener('auxclick', blockInteraction, captureOpts)
-    video.removeEventListener('dblclick', blockInteraction, captureOpts)
+    video.removeEventListener('click', blockTapOnVideo, captureOpts)
+    video.removeEventListener('mousedown', blockTapOnVideo, captureOpts)
+    video.removeEventListener('mouseup', blockTapOnVideo, captureOpts)
+    video.removeEventListener('contextmenu', blockTapOnVideo, captureOpts)
+    video.removeEventListener('auxclick', blockTapOnVideo, captureOpts)
+    video.removeEventListener('dblclick', blockTapOnVideo, captureOpts)
     video.removeEventListener('keydown', blockKey, true)
-    video.removeEventListener('gesturestart', blockInteraction, captureOpts)
     window.removeEventListener('pageshow', onPageShow)
     window.removeEventListener('focus', onWindowFocus)
     document.removeEventListener('visibilitychange', onVisibility)

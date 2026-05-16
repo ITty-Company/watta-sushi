@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { ArrowLeft, Phone, Bell, Heart, ShoppingBag, User, Menu } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
@@ -50,6 +52,7 @@ export default function PromotionsDetailView({
   onOpenFavorites,
   onOpenProfile,
 }: PromotionsDetailViewProps) {
+  const router = useRouter()
   const { t, getLocalized, language } = useLanguage()
   const rightNavDrawer = useOptionalRightNavDrawer()
   const p = t.promotionsPage
@@ -137,13 +140,7 @@ export default function PromotionsDetailView({
       const deal = Math.round(base * (1 - pct / 100) * 100) / 100
       const name = getLocalized(product, 'name') || product.name_ru
       const desc = getLocalized(product, 'description') || product.description_ru || ''
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      const n = cart.filter((x: { id?: number }) => x?.id === product.id).length
-      if (n >= 99) {
-        toast.error(t.appToasts.maxCartQty)
-        return
-      }
-      cart.push({
+      const result = addToCartWithAuthGate(router, {
         id: product.id,
         name,
         description: desc,
@@ -157,11 +154,14 @@ export default function PromotionsDetailView({
         imageUrl: product.imageUrl ?? undefined,
         promoDiscountPercent: 0,
       })
-      localStorage.setItem('cart', JSON.stringify(cart))
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      if (result === 'max') {
+        toast.error(t.appToasts.maxCartQty)
+        return
+      }
+      if (result === 'auth_redirect') return
       toast.success(t.addToCart)
     },
-    [getLocalized, t.addToCart, t.categories, language],
+    [getLocalized, router, t.addToCart, t.appToasts.maxCartQty, t.categories, language],
   )
 
   const shellClass = embedded

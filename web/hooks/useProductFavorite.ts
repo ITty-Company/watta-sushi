@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { isUserLoggedIn, redirectToAuth, getCurrentReturnPath } from '@/lib/authGate'
 import { readFavoriteIds, syncFavoriteIdsToStorage } from '@/lib/favoritesStorage'
 import {
   requestFavoriteCount,
@@ -17,6 +19,7 @@ export function useProductFavorite(
   initialCount = 0,
   options?: UseProductFavoriteOptions,
 ) {
+  const router = useRouter()
   const [liked, setLiked] = useState(false)
   const [count, setCount] = useState(
     Number.isFinite(initialCount) ? Math.max(0, Number(initialCount)) : 0,
@@ -72,10 +75,13 @@ export function useProductFavorite(
       setLiked(!was)
       setCount((prev) => Math.max(0, prev + (was ? -1 : 1)))
 
-      const userStr =
-        typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+      if (!isUserLoggedIn()) {
+        redirectToAuth(router, getCurrentReturnPath())
+        return
+      }
+
       const auth = getBearerAuthHeaders()
-      if (userStr && Object.keys(auth as Record<string, string>).length > 0) {
+      if (Object.keys(auth as Record<string, string>).length > 0) {
         try {
           const res = await fetch('/api/favorites/toggle', {
             method: 'POST',
@@ -104,7 +110,7 @@ export function useProductFavorite(
         }
       }
     },
-    [productId, validId],
+    [productId, validId, router],
   )
 
   return { liked, toggle, count }

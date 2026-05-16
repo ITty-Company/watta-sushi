@@ -1908,6 +1908,16 @@ html.watta-light-chrome {
   --watta-floating-fab-clearance: calc(
     var(--watta-floating-fab-size) + var(--watta-floating-fab-lift) + 0.35rem
   );
+  /* Фото-банер головної: одна шкала висоти на телефоні, планшеті та десктопі */
+  --watta-hero-banner-max-h: min(52vh, 380px);
+  --watta-hero-banner-radius: 16px;
+}
+
+@media (min-width: 481px) {
+  :root {
+    --watta-hero-banner-max-h: min(50vh, 520px);
+    --watta-hero-banner-radius: 20px;
+  }
 }
 
 /* Герой (100vw + margin) може виходити за flex-min ширину; не кліпаємо main — інакше смуги по боках відео. */
@@ -4249,13 +4259,13 @@ html.watta-light-chrome body {
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .header-icon-btn-web {
-    width: 38px;
-    height: 38px;
+    width: 46px;
+    height: 46px;
   }
   
   .header-icon-btn-web svg {
-    width: 22px;
-    height: 22px;
+    width: 23px;
+    height: 23px;
   }
 }
 
@@ -5088,6 +5098,7 @@ html.watta-light-chrome body {
 .home-brand-story-section-web.menu-after-welcome-web {
   background: transparent;
   isolation: isolate;
+  overflow: visible;
 }
 
 .home-brand-story-bg-web {
@@ -5129,6 +5140,8 @@ html.watta-light-chrome body {
   box-shadow: none;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  padding: 0;
+  overflow: hidden;
 }
 
 .home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-banner-shell-web .hero-dot-web.active {
@@ -6161,7 +6174,8 @@ html.watta-light-chrome body {
   position: relative;
   z-index: 1;
   margin-top: clamp(1.75rem, 4.5vw, 2.75rem);
-  padding: clamp(10px, 1.8vw, 14px);
+  padding: 0;
+  overflow: hidden;
   border-radius: clamp(18px, 2.2vw, 26px);
   background: linear-gradient(
     135deg,
@@ -6187,6 +6201,15 @@ html.watta-light-chrome body {
 .home-brand-banner-shell-web .hero-banner-web.hero-banner-image-bg-web {
   width: 100% !important;
   max-width: none !important;
+  max-height: var(--watta-hero-banner-max-h) !important;
+  aspect-ratio: 16 / 9;
+  margin: 0 !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center center;
+  background-color: transparent !important;
+  border-radius: inherit !important;
+  overflow: hidden;
 }
 
 @media (min-width: 481px) {
@@ -6280,13 +6303,13 @@ html.watta-light-chrome body {
   user-select: none;
 }
 
-/* Планшет: менше «повітря» до/після слайдера, вищий банер, чіткіші крапки */
+/* Планшет: відступи секції; розмір кадру банера — з :root (--watta-hero-banner-max-h), як на телефоні/ПК */
 @media (min-width: 768px) and (max-width: 1024px) {
   .home-brand-inner-web {
-    padding-top: 1.65rem !important;
-    padding-bottom: 1.65rem !important;
-    padding-left: 1.15rem !important;
-    padding-right: 1.15rem !important;
+    padding-top: clamp(1.5rem, 2.5vw, 2rem) !important;
+    padding-bottom: clamp(1.5rem, 2.5vw, 2rem) !important;
+    padding-left: clamp(1rem, 2vw, 1.5rem) !important;
+    padding-right: clamp(1rem, 2vw, 1.5rem) !important;
   }
 
   .home-brand-editorial-head-web {
@@ -6308,25 +6331,20 @@ html.watta-light-chrome body {
   }
 
   .home-brand-banner-shell-web {
-    margin-top: 0.5rem;
-    padding: 5px 6px;
-    border-radius: 20px;
-    box-shadow:
-      0 20px 70px rgba(0, 0, 0, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    margin-top: clamp(0.35rem, 1.2vw, 0.75rem);
+    padding: 0;
+    border-radius: clamp(18px, 2.2vw, 26px);
+    overflow: hidden;
   }
 
   .home-brand-banner-shell-web .hero-banner-web.hero-banner-image-bg-web {
-    max-height: min(56vh, 600px) !important;
-    width: calc(100% - 8px) !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    border-radius: 17px !important;
-    box-shadow:
-      0 14px 40px rgba(0, 0, 0, 0.25),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+    width: 100% !important;
+    max-height: var(--watta-hero-banner-max-h) !important;
+    margin: 0 !important;
+    border-radius: var(--watta-hero-banner-radius) !important;
+    background-size: cover !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
   }
 
   .home-brand-banner-shell-web .hero-dots-banner-image-web {
@@ -6349,6 +6367,10 @@ html.watta-light-chrome body {
 
   .home-brand-story-section-web.home-brand-banner-stage-soft-web .home-brand-banner-shell-web {
     box-shadow: none;
+  }
+
+  #hero-banners.home-brand-story-section-web {
+    overflow: visible;
   }
 }
 
@@ -6667,11 +6689,22 @@ html.watta-light-chrome body {
     display: none !important;
   }
 
-  /* Шит над відео лишаємо — він блокує тап-toggle-play, але вже не закриває
-     візуально нативний <video>. */
+  /* Шит не ловить touch — свайп вниз скролить `.content-web`, а не «застрягає» на відео */
+  .welcome-hero-section-web .welcome-hero-video-fill-web,
+  .welcome-hero-section-web .welcome-hero-video-stack-web {
+    touch-action: pan-y;
+  }
+
   .welcome-hero-video-stack-web .welcome-hero-video-input-shield-web {
+    pointer-events: none !important;
+    touch-action: pan-y;
     z-index: 3 !important;
     background: transparent !important;
+  }
+
+  /* Бігуча смуга / діти поверх hero — клікабельні */
+  .welcome-hero-video-stack-web > *:not(.welcome-hero-video-input-shield-web):not(video):not(canvas) {
+    pointer-events: auto;
   }
 }
 
@@ -9539,17 +9572,17 @@ html.watta-light-chrome body {
   transform: scale(0.98);
 }
 
-/* Фото-баннер (background-image): один кадр 16∶9 + cover на всіх ширинах — як у адмінці «Як на сайті» */
+/* Фото-баннер (background-image): 16∶9, cover — фото на всі краї блоку без сірих смуг */
 .hero-banner-web.hero-banner-image-bg-web {
   min-height: 0 !important;
   aspect-ratio: 16 / 9;
-  max-height: min(52vh, 380px);
+  max-height: var(--watta-hero-banner-max-h);
   padding: 0 !important;
   margin-left: auto !important;
   margin-right: auto !important;
   width: calc(100% - 32px) !important;
   max-width: 1280px !important;
-  border-radius: 16px !important;
+  border-radius: var(--watta-hero-banner-radius) !important;
   box-sizing: border-box !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -9557,17 +9590,9 @@ html.watta-light-chrome body {
 
 @media (min-width: 481px) {
   .hero-banner-web.hero-banner-image-bg-web {
-    max-height: min(44vh, 440px) !important;
     width: calc(100% - 48px) !important;
     margin-top: 16px !important;
     margin-bottom: 16px !important;
-    border-radius: 20px !important;
-  }
-}
-
-@media (min-width: 1024px) {
-  .hero-banner-web.hero-banner-image-bg-web {
-    max-height: min(50vh, 520px) !important;
   }
 }
 
@@ -10069,35 +10094,48 @@ html.watta-light-chrome body {
   }
   
   .header-actions-web {
-    gap: 8px;
+    gap: 10px;
   }
 
-  /* Планшет: усі кнопки дій однакового розміру (як desktop squircle 40px) */
+  /* Планшет: кнопки дій трохи більші за ноут (зручніший tap) */
   .header-actions-web .header-profile-btn-web,
   .header-actions-web .header-favorites-btn-web,
   .header-actions-web .header-menu-btn-web,
   .header-actions-web .header-cart-btn-text-web {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
     padding: 0 !important;
     gap: 0 !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     box-sizing: border-box !important;
     justify-content: center !important;
     align-items: center !important;
   }
 
+  .header-actions-web .header-profile-btn-web svg,
+  .header-actions-web .header-favorites-btn-web svg,
+  .header-actions-web .header-menu-btn-web svg,
+  .header-actions-web .header-cart-btn-text-web svg {
+    width: 23px !important;
+    height: 23px !important;
+  }
+
   .header-actions-web .header-lang-wrap-web button {
-    width: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    height: 40px !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
+    height: 46px !important;
     padding: 0 !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     box-sizing: border-box !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
+  }
+
+  .header-actions-web .header-lang-wrap-web button svg {
+    width: 15px !important;
+    height: 15px !important;
   }
   
   .location-section-web {
@@ -12000,6 +12038,23 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 .floating-contact-ig-fab:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
+}
+
+/* Планшет: FAB Instagram трохи більший */
+@media (min-width: 768px) and (max-width: 1024px) {
+  :root {
+    --watta-floating-fab-size: 3.75rem;
+  }
+
+  .floating-contact-ig-fab {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+
+  .floating-contact-ig-fab__icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14748,20 +14803,11 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 /* Баннер в модалке: те же 16∶9 и лимит высоты, что у photo-hero на главной */
 .admin-banner-site-preview-frame-web {
   aspect-ratio: 16 / 9;
-  max-height: min(52vh, 380px);
-  border-radius: 16px;
-}
-
-@media (min-width: 640px) {
-  .admin-banner-site-preview-frame-web {
-    max-height: min(44vh, 440px);
-  }
-}
-
-@media (min-width: 1024px) {
-  .admin-banner-site-preview-frame-web {
-    max-height: min(50vh, 520px);
-  }
+  max-height: var(--watta-hero-banner-max-h);
+  border-radius: var(--watta-hero-banner-radius);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
 }
 
 /* Вкладка «Баннеры» и модалка: анимации в фирменном зелёном стиле */
@@ -15309,16 +15355,14 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
     border-radius: 16px !important;
   }
 
-  /* Головний слайдер у «склі»: поля дає shell + `.home-brand-inner-web`; горизонтальні margin тут
-     з width:100% ламали рівновагу (margin-right перераховувався) — виглядало зсувом вліво. */
+  /* Головний слайдер у shell: на всю ширину, cover без сірих смуг */
   .home-brand-banner-shell-web .hero-banner-web.hero-banner-image-bg-web {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    margin: 0 !important;
     width: 100% !important;
     max-width: none !important;
     box-sizing: border-box !important;
+    background-size: cover !important;
+    background-color: transparent !important;
   }
 
   .hero-banner-web.hero-banner-image-bg-web:active {
@@ -16017,6 +16061,159 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 
   .site-footer-watta__nav-colophon-link {
     font-size: clamp(0.72rem, 1.5vw, 0.8rem);
+  }
+}
+
+/* Планшет 768–1024: читабельніший підвал — більший текст, відступи між «замовлення / час / міста», крупніші кнопки */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .site-footer-watta__inner {
+    padding-top: clamp(1rem, 2vw, 1.35rem);
+    padding-left: max(1.1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.1rem, env(safe-area-inset-right, 0px));
+  }
+
+  .site-footer-watta__hero-row {
+    gap: 0.65rem;
+  }
+
+  .site-footer-watta__logo-ring {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+  }
+
+  .site-footer-watta__title {
+    font-size: clamp(1.12rem, 2.35vw, 1.38rem);
+  }
+
+  .site-footer-watta__tagline {
+    font-size: clamp(0.86rem, 1.65vw, 0.98rem);
+    margin-top: 0.18rem;
+  }
+
+  .site-footer-watta__pills {
+    gap: 0.42rem 0.55rem;
+  }
+
+  .site-footer-watta__pill {
+    font-size: 0.68rem;
+    padding: 0.46rem 0.72rem;
+    letter-spacing: 0.11em;
+    min-height: 2.05rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .site-footer-watta__grid.site-footer-watta__grid--cols-4,
+  .site-footer-watta__grid.site-footer-watta__grid--cols-3 {
+    column-gap: clamp(0.75rem, 2.2vw, 1.25rem);
+    row-gap: 0.55rem;
+    margin-top: clamp(0.55rem, 1.5vw, 0.85rem);
+    padding-top: clamp(0.65rem, 1.4vw, 0.9rem);
+  }
+
+  .site-footer-watta__order-loc-wrap {
+    gap: clamp(1.05rem, 2.8vw, 1.45rem);
+  }
+
+  .site-footer-watta__col--order {
+    padding-bottom: 0.15rem;
+  }
+
+  .site-footer-watta__col-title {
+    font-size: 0.72rem;
+    margin-bottom: 0.52rem;
+    letter-spacing: 0.11em;
+  }
+
+  .site-footer-watta__col-title.site-footer-watta__col-title--stacked {
+    margin-top: 1.15rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .site-footer-watta__col--locations {
+    margin-top: 0.2rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid rgba(20, 81, 66, 0.1);
+  }
+
+  .site-footer-watta__text-link,
+  .site-footer-watta__body-strong {
+    font-size: 0.92rem;
+    line-height: 1.42;
+  }
+
+  .site-footer-watta__text-link--phone {
+    font-size: 0.98rem;
+    font-weight: 700;
+  }
+
+  .site-footer-watta__list {
+    gap: 0.38rem;
+  }
+
+  .site-footer-watta__nav-two-cols {
+    gap: 0.38rem 0.85rem;
+  }
+
+  .site-footer-watta__text-link {
+    padding: 0.12rem 0;
+    min-height: 1.65rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .site-footer-watta__social-row {
+    gap: 0.48rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .site-footer-watta__icon-btn {
+    width: 2.65rem;
+    height: 2.65rem;
+    border-radius: 12px;
+  }
+
+  .site-footer-watta__icon-btn svg {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+  }
+
+  .site-footer-watta__pay-row {
+    gap: 0.45rem;
+  }
+
+  .site-footer-watta__pay-mark {
+    padding: 0.34rem 0.52rem;
+    font-size: 0.64rem;
+    border-radius: 7px;
+    min-height: 1.85rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .site-footer-watta__payments-note {
+    margin-top: 0.38rem;
+    font-size: 0.72rem;
+    line-height: 1.38;
+    max-width: none;
+  }
+
+  .site-footer-watta__nav-colophon {
+    margin-top: clamp(0.65rem, 1.5vw, 0.9rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .site-footer-watta__nav-colophon-copy,
+  .site-footer-watta__nav-colophon-sep {
+    font-size: clamp(0.8rem, 1.65vw, 0.88rem);
+  }
+
+  .site-footer-watta__nav-colophon-link {
+    font-size: clamp(0.82rem, 1.7vw, 0.9rem);
+    min-height: 1.75rem;
+    display: inline-flex;
+    align-items: center;
   }
 }
 

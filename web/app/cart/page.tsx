@@ -2,14 +2,16 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import CartView from '../components/CartView' 
+import CartView from '../components/CartView'
+import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 
 export default function CartPage() {
   const router = useRouter()
 
-  // Функции навигации для Хедера
-  const handleProfile = () => router.push('/profile')
-  const handleFavorites = () => router.push('/favorites')
+  const handleProfile = () =>
+    router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
+  const handleFavorites = () =>
+    router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
   const handleNotifications = () => router.push('/notifications')
   const handleMenu = () => router.push('/menu')
   const handlePhone = () => window.location.href = 'tel:+31649326549' // Ваш номер

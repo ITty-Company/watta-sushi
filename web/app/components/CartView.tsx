@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getDeliveryOriginAddress } from '@/lib/deliveryOrigin'
 import {
@@ -28,6 +29,7 @@ import {
 } from '@/lib/deliverySlotsAmsterdam'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { getApiUrl } from '@/lib/utils'
 import { cityIdPreferAmsterdam } from '@/lib/wattaPreferredDefaultCity'
 import {
@@ -148,6 +150,7 @@ export default function CartView({
   onOpenNotifications, 
   onMenuClick 
 }: CartViewProps) {
+  const router = useRouter()
   const { t, language, getLocalized } = useLanguage()
   const pd = t.productDetail
   const cs = t.cartSection
@@ -198,6 +201,12 @@ export default function CartView({
   const [bonusBalance, setBonusBalance] = useState(0)
   const [useBonuses, setUseBonuses] = useState(false)
   const [mapZoneSelection, setMapZoneSelection] = useState<WattaDeliveryZoneSelection | null>(null)
+
+  useEffect(() => {
+    if (!isUserLoggedIn()) {
+      router.replace(getAuthUrl('/cart'))
+    }
+  }, [router])
 
   // --- ЗАГРУЗКА ДАННЫХ ---
   useEffect(() => {
@@ -688,6 +697,10 @@ export default function CartView({
 
   // --- ОФОРМЛЕНИЕ ЗАКАЗА ---
  const handleOrder = async () => {
+    if (!isUserLoggedIn()) {
+      router.push(getAuthUrl('/cart'))
+      return
+    }
     if (fulfillment === 'delivery' && !formData.address.trim()) {
       toast.error(cs.toastAddressRequired)
       return
@@ -695,6 +708,11 @@ export default function CartView({
     setIsLoading(true)
     try {
       const authHeaders = getBearerAuthHeaders()
+      if (Object.keys(authHeaders as Record<string, string>).length === 0) {
+        router.push(getAuthUrl('/cart'))
+        setIsLoading(false)
+        return
+      }
       const promoPart = appliedPromo ? `(ПРОМОКОД: ${appliedPromo.code} -${appliedPromo.discount}%)` : ''
       const fulfillmentPart =
         fulfillment === 'pickup' ? `[${cs.fulfillmentPickup}]` : `[${cs.fulfillmentDelivery}]`
