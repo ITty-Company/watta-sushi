@@ -48,8 +48,10 @@ import AdminDeliveryZoneEditor from './AdminDeliveryZoneEditor'
 import { useLanguage } from '../context/LanguageContext'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
+import { parseDeliveryHeroVideoUrlsFromApi } from '@/lib/deliveryHeroVideoSettings'
 import { uploadHomeHeroVideoFile } from '@/lib/uploadHomeHeroVideo'
 import { WATTA_HOME_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaHeroVideo'
+import { WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaDeliveryHeroVideo'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import { isAdminRole } from '@/lib/isAdminRole'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
@@ -287,6 +289,8 @@ interface SiteSettings {
   bannerInterval: number
   homeHeroVideoUrl: string
   homeHeroVideoUrls?: string[]
+  deliveryHeroVideoUrl: string
+  deliveryHeroVideoUrls?: string[]
   telegramUrl: string
   whatsappUrl: string
   instagramUrl: string
@@ -296,9 +300,11 @@ interface SiteSettings {
 }
 
 const defaultSiteSettings: SiteSettings = {
-  bannerInterval: 5000,
+  bannerInterval: 4000,
   homeHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   homeHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
+  deliveryHeroVideoUrl: '/watta-sushi-2-hero.mp4',
+  deliveryHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   telegramUrl: '',
   whatsappUrl: '',
   instagramUrl: WATTA_INSTAGRAM_URL,
@@ -337,6 +343,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [heroVideoSaving, setHeroVideoSaving] = useState(false)
   const [heroVideoSlots, setHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [newHeroVideoSlot()])
   const heroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const [deliveryHeroVideoSaving, setDeliveryHeroVideoSaving] = useState(false)
+  const [deliveryHeroVideoSlots, setDeliveryHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [
+    newHeroVideoSlot(),
+  ])
+  const deliveryHeroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     const urls = parseHomeHeroVideoUrlsFromApi(settings)
@@ -345,6 +356,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       return heroVideoSlotsFromUrls(urls)
     })
   }, [settings.homeHeroVideoUrl, settings.homeHeroVideoUrls])
+
+  useEffect(() => {
+    const urls = parseDeliveryHeroVideoUrlsFromApi(settings)
+    setDeliveryHeroVideoSlots((prev) => {
+      prev.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
+      return heroVideoSlotsFromUrls(urls)
+    })
+  }, [settings.deliveryHeroVideoUrl, settings.deliveryHeroVideoUrls])
 
   // Состояния для модального окна БАННЕРОВ
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false)
@@ -2801,6 +2820,119 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       setHeroVideoSaving(false)
     }
   }
+
+  const handleDeliveryHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('video/')) {
+      toast.error(t.adminPanel.banners.heroVideoError)
+      return
+    }
+    if (file.size > 120 * 1024 * 1024) {
+      toast.error(t.adminPanel.banners.heroVideoTooLarge)
+      return
+    }
+    const previewUrl = URL.createObjectURL(file)
+    setDeliveryHeroVideoSlots((prev) =>
+      prev.map((slot) => {
+        if (slot.id !== slotId) return slot
+        revokeHeroPreviewUrl(slot.pendingPreviewUrl)
+        return { ...slot, pendingFile: file, pendingPreviewUrl: previewUrl }
+      }),
+    )
+  }
+
+  const addDeliveryHeroVideoSlot = () => {
+    setDeliveryHeroVideoSlots((prev) => [...prev, newHeroVideoSlot()])
+  }
+
+  const removeDeliveryHeroVideoSlot = (slotId: string) => {
+    setDeliveryHeroVideoSlots((prev) => {
+      const target = prev.find((s) => s.id === slotId)
+      revokeHeroPreviewUrl(target?.pendingPreviewUrl ?? null)
+      const next = prev.filter((s) => s.id !== slotId)
+      return next.length > 0 ? next : [newHeroVideoSlot()]
+    })
+  }
+
+  const deliveryHeroVideoHasFilledSlot = deliveryHeroVideoSlots.some(
+    (s) => Boolean(s.pendingFile) || Boolean(s.savedUrl?.trim()),
+  )
+
+  const handleSaveDeliveryHeroVideos = async () => {
+    if (!deliveryHeroVideoHasFilledSlot) {
+      toast.error(t.adminPanel.banners.heroVideoError)
+      return
+    }
+    setDeliveryHeroVideoSaving(true)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toastHeroVideoSaveError(401)
+        return
+      }
+      const payload: string[] = []
+      for (const slot of deliveryHeroVideoSlots) {
+        if (slot.pendingFile) {
+          const url = await uploadHomeHeroVideoFile(slot.pendingFile, token)
+          payload.push(url)
+        } else if (slot.savedUrl?.trim()) {
+          payload.push(slot.savedUrl.trim())
+        }
+      }
+      if (payload.length === 0) {
+        toast.error(t.adminPanel.banners.heroVideoError)
+        return
+      }
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ deliveryHeroVideoUrls: payload }),
+      })
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as { error?: string; message?: string } | null
+        toastHeroVideoSaveError(res.status, errBody?.error)
+        return
+      }
+      const saved = await res.json()
+      const urls = parseDeliveryHeroVideoUrlsFromApi(saved)
+      const primary = urls[0] ?? settings.deliveryHeroVideoUrl
+      setSettings((prev) => ({
+        ...prev,
+        deliveryHeroVideoUrl: primary,
+        deliveryHeroVideoUrls: urls.length > 0 ? urls : prev.deliveryHeroVideoUrls,
+      }))
+      setDeliveryHeroVideoSlots(() => {
+        deliveryHeroVideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
+        return heroVideoSlotsFromUrls(urls)
+      })
+      toast.success(t.adminPanel.banners.heroVideoSaved)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, {
+            detail: { urls, url: primary },
+          }),
+        )
+      }
+    } catch (err) {
+      console.error(err)
+      const code = err instanceof Error ? err.message : ''
+      if (code === 'upload_failed' || code === 'invalid_video_type' || code === 'no_file') {
+        toast.error(t.adminPanel.banners.heroVideoErrorUpload)
+      } else if (code === 'mock_mode_no_backend') {
+        toast.error(t.adminPanel.banners.heroVideoErrorMock)
+      } else {
+        toast.error(t.adminPanel.banners.heroVideoError)
+      }
+    } finally {
+      setDeliveryHeroVideoSaving(false)
+    }
+  }
+
   const dashboardMetrics = useMemo(() => {
     const sumCompletedLocal = orders
       .filter((o) => o.status === 'COMPLETED' || o.status === 'DELIVERED')
@@ -4257,6 +4389,122 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       {t.adminPanel.banners.heroVideoCurrent}: …
                     </p>
                   ) : null}
+                </div>
+              </div>
+
+              <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
+                <h3 className="text-lg font-bold text-[#155044] sm:text-xl">
+                  {t.adminPanel.banners.deliveryHeroVideoTitle}
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#145142]/75">
+                  {t.adminPanel.banners.deliveryHeroVideoSubtitle}
+                </p>
+<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  {deliveryHeroVideoSlots.map((slot, slotIndex) => {
+                    const previewSrc = slot.pendingPreviewUrl ?? slot.savedUrl
+                    const slotLabel = t.adminPanel.banners.heroVideoSlotLabel.replace(
+                      '{{n}}',
+                      String(slotIndex + 1),
+                    )
+                    return (
+                      <motion.div
+                        key={slot.id}
+                        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: slotIndex * 0.05 }}
+                        className="flex flex-col rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/80 p-3"
+                      >
+                        <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">
+                          {slotLabel}
+                        </p>
+                        <motion.div
+                          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                          className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5"
+                        >
+                          {previewSrc ? (
+                            <video
+                              key={previewSrc}
+                              src={previewSrc}
+                              className="aspect-video w-full bg-black object-cover"
+                              controls
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                          ) : (
+                            <motion.div
+                              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                              className="flex aspect-video w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45"
+                            >
+                              —
+                            </motion.div>
+                          )}
+                        </motion.div>
+                        {previewSrc && !slot.pendingFile ? (
+                          <p
+                            className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55"
+                            title={slot.savedUrl}
+                          >
+                            {slot.savedUrl}
+                          </p>
+                        ) : null}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <input
+                            ref={(el) => {
+                              deliveryHeroVideoFileInputRefs.current[slot.id] = el
+                            }}
+                            type="file"
+                            accept="video/mp4,video/webm,video/quicktime"
+                            className="hidden"
+                            onChange={(e) => handleDeliveryHeroVideoFileChange(slot.id, e)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => deliveryHeroVideoFileInputRefs.current[slot.id]?.click()}
+                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-[#145142]/5"
+                          >
+                            <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t.adminPanel.banners.heroVideoUpload}
+                          </button>
+                          {previewSrc || deliveryHeroVideoSlots.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => removeDeliveryHeroVideoSlot(slot.id)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-[#145142]/20 bg-white px-3 py-2 text-xs font-semibold text-[#145142]/80 transition hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              {t.adminPanel.banners.heroVideoRemove}
+                            </button>
+                          ) : null}
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+                                <button
+                  type="button"
+                  onClick={addDeliveryHeroVideoSlot}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-[#145142]/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-[#145142]/10 sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                  {t.adminPanel.banners.heroVideoAddBtn}
+                </button>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                  <button
+                    type="button"
+                    disabled={deliveryHeroVideoSaving || !deliveryHeroVideoHasFilledSlot}
+                    onClick={() => void handleSaveDeliveryHeroVideos()}
+                    className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4 shrink-0" aria-hidden />
+                    {deliveryHeroVideoSaving
+                      ? t.adminPanel.banners.heroVideoSaving
+                      : t.adminPanel.banners.heroVideoSave}
+                  </button>
                 </div>
               </div>
 

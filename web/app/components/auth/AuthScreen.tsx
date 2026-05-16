@@ -11,11 +11,11 @@ import {
   Eye,
   EyeOff,
   Phone,
-  Sparkles,
   ShieldCheck,
 } from 'lucide-react'
 import LogoBackground from '../LogoBackground'
 import WattaAppRouteLoading from '../WattaAppRouteLoading'
+import AuthCinemaPanel from './AuthCinemaPanel'
 import { useLanguage } from '../../context/LanguageContext'
 import toast from 'react-hot-toast'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
@@ -247,10 +247,30 @@ function AuthScreenBody({
           : 'Назад',
   }
 
+  const cinemaBenefits: [{ label: string }, { label: string }, { label: string }] = [
+    { label: t.auth.benefitHistory },
+    { label: t.auth.benefitBonuses },
+    { label: t.auth.benefitFast },
+  ]
+
+  const backFab =
+    variant === 'page' ? (
+      <Link href="/" className="auth-watta-back-fab" aria-label={t.auth.back}>
+        <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
+        <span>{t.auth.back}</span>
+      </Link>
+    ) : (
+      <button type="button" onClick={onBack} className="auth-watta-back-fab auth-watta-back-fab--modal">
+        <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
+        <span>{t.auth.back}</span>
+      </button>
+    )
+
   if (isVerifying) {
     return (
       <div className="auth-watta-root auth-watta-page-shell auth-watta-page-lock flex flex-col relative overflow-hidden">
         <LogoBackground />
+        {backFab}
         <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-3 py-2 sm:px-4 sm:py-4">
           <div className="auth-watta-verify-card w-full max-w-md shrink-0 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
             <div className="mb-2 flex justify-center text-[#145142]">
@@ -305,93 +325,57 @@ function AuthScreenBody({
   return (
     <div className={shellClass}>
       <LogoBackground />
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/50 via-transparent to-[#145142]/[0.06]" aria-hidden />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/40 via-transparent to-[#145142]/[0.08]" aria-hidden />
 
-      {variant === 'page' ? (
-        <header className="auth-watta-top-bar relative z-20 flex shrink-0 items-center justify-between gap-2 border-b border-[#145142]/[0.08] bg-white/70 px-3 py-2 backdrop-blur-md sm:px-5 sm:py-2.5">
-          <Link
-            href="/"
-            className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold text-[#0f3d32] transition-opacity hover:opacity-80 sm:gap-2 sm:text-sm"
-          >
-            <ArrowLeft className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-            <span className="truncate">{t.auth.back}</span>
-          </Link>
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-            <img
-              src="/logo.png"
-              alt={t.common.brandName}
-              className="h-7 w-auto object-contain sm:h-9"
-              width={100}
-              height={34}
+      {backFab}
+
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-2 px-2.5 pt-12 sm:px-4 sm:pt-14 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-4 lg:px-6 lg:pt-14">
+        {variant === 'page' && (
+          <div className="shrink-0 lg:hidden">
+            <AuthCinemaPanel
+              compact
+              title={t.auth.desktopHeroTitle}
+              subtitle={t.auth.desktopHeroSub}
+              brandName={t.common.brandName}
+              benefits={cinemaBenefits}
             />
-          </Link>
-          <div className="w-14 shrink-0 sm:w-20" aria-hidden />
-        </header>
-      ) : (
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-40">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0f3d32] px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-[#145142] transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t.auth.back}
-          </button>
-        </div>
-      )}
-
-      {variant === 'page' && (
-        <div
-          className="auth-watta-mobile-brand relative z-10 flex shrink-0 items-center gap-2 border-b border-[#145142]/10 bg-gradient-to-r from-[#0d3d32] via-[#145142] to-[#1a6b58] px-3 py-1.5 text-white shadow-md lg:hidden"
-          role="note"
-          aria-label={t.auth.promoStrip}
-        >
-          <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-200/90" strokeWidth={2} />
-          <p className="min-w-0 flex-1 text-[11px] font-semibold leading-tight tracking-wide text-white/95">{t.auth.promoStrip}</p>
-        </div>
-      )}
-
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-0 px-2.5 sm:px-4 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-3 lg:px-6">
-        {/* Ліва колонка — бренд (десктоп) */}
-        <div className="relative m-1 hidden flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#062a22] via-[#145142] to-[#1a7a63] p-8 text-white shadow-2xl lg:flex xl:p-10">
-          <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/5 blur-2xl" />
-          <div className="absolute -left-16 bottom-10 w-48 h-48 rounded-full bg-emerald-300/10 blur-2xl" />
-          <div className="relative">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-100 sm:mb-5 sm:px-3 sm:py-1 sm:text-xs">
-              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              {t.common.brandName}
-            </div>
-            <h2 className="mb-3 text-2xl font-bold leading-tight xl:text-3xl">
-              {t.auth.desktopHeroTitle}
-            </h2>
-            <p className="max-w-md text-sm leading-relaxed text-white/85 xl:text-base">
-              {t.auth.desktopHeroSub}
-            </p>
           </div>
-          <p className="relative text-sm text-white/60">
-            © {new Date().getFullYear()} {t.common.brandName}
-          </p>
-        </div>
+        )}
 
-        {/* Форма: на мобільному прокрутка лише в середині картки (поля), вкладки й кнопка залишаються в полі зору */}
-        <div className="flex min-h-0 flex-1 flex-col justify-stretch py-1 sm:justify-center sm:py-2 lg:py-6 lg:pl-2">
-          <div className="auth-watta-form-card auth-watta-form-card--page mx-auto flex w-full max-w-md min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-xl backdrop-blur-md sm:max-h-none sm:flex-none sm:rounded-2xl sm:p-5 lg:min-h-0 lg:flex-none">
+        {variant === 'page' && (
+          <AuthCinemaPanel
+            title={t.auth.desktopHeroTitle}
+            subtitle={t.auth.desktopHeroSub}
+            brandName={t.common.brandName}
+            benefits={cinemaBenefits}
+          />
+        )}
+
+        <div className="flex min-h-0 flex-1 flex-col justify-stretch py-0 sm:justify-center sm:py-2 lg:py-6 lg:pl-1">
+          <div className="auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated mx-auto flex w-full max-w-md min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/90 bg-white/[0.97] shadow-xl backdrop-blur-md sm:max-h-none sm:flex-none sm:rounded-[1.35rem] sm:p-5 lg:min-h-0 lg:flex-none">
             <div className="shrink-0 p-3 pb-0 pt-2 sm:p-5 sm:pb-0 sm:pt-5">
-            <div className="mb-2 flex rounded-xl bg-[#e8f0ec]/90 p-0.5 sm:mb-4">
+            <div className="auth-watta-tabs relative mb-2 flex rounded-xl bg-[#e8f0ec]/90 p-0.5 sm:mb-4">
+              {variant === 'page' && (
+                <span
+                  className="auth-watta-tabs__indicator"
+                  style={{ transform: isRegister ? 'translateX(100%)' : 'translateX(0)' }}
+                  aria-hidden
+                />
+              )}
               {variant === 'page' ? (
                 <>
                   <Link
                     href={returnUrl !== '/' ? `/login?return=${encodeURIComponent(returnUrl)}` : '/login'}
-                    className={`flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
-                      !isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
+                    className={`auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                      !isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
                     }`}
                   >
                     {t.auth.login}
                   </Link>
                   <Link
                     href={returnUrl !== '/' ? `/register?return=${encodeURIComponent(returnUrl)}` : '/register'}
-                    className={`flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
-                      isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
+                    className={`auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                      isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
                     }`}
                   >
                     {t.auth.register}

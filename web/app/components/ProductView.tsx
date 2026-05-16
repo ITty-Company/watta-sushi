@@ -386,6 +386,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                       onClick={() => toggleFavorite()}
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#145142]/12 bg-[#f6faf8] text-[#145142] transition hover:border-[#145142]/25 sm:h-11 sm:w-11 sm:rounded-xl"
                       aria-pressed={isFavorite}
+                      aria-label={a.favorites}
                     >
                       <Heart className={cn('h-4 w-4 sm:h-5 sm:w-5', isFavorite && 'fill-red-500 text-red-500')} />
                     </button>

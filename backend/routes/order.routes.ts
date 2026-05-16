@@ -302,7 +302,7 @@ router.post('/', async (req: Request, res: Response) => {
       siteSettings = await prisma.siteSetting.create({
         data: {
           id: 1,
-          bannerInterval: 5000,
+          bannerInterval: 4000,
           telegramUrl: '',
           whatsappUrl: '',
           instagramUrl: 'https://www.instagram.com/watta_sushi/',

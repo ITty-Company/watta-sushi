@@ -43,8 +43,14 @@ import {
   buildHomeHeroPlaylist,
   buildHomeHeroVideoSources,
   getPrimaryHomeHeroVideoSrc,
+  WATTA_HOME_HERO_POSTER,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
+  WATTA_HERO_OCEAN_GRADIENT,
 } from '@/lib/wattaHeroVideo'
+import {
+  HOME_BANNER_AUTO_INTERVAL_MS,
+  normalizeBannerIntervalMs,
+} from '@/lib/homeBannerCarousel'
 import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
 import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSiteLocalePrefs'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
@@ -221,6 +227,12 @@ const DEFAULT_HOME_BANNERS: Array<{
   },
 ]
 
+function homeBannerObjectPosition(b: { focalX?: number; focalY?: number }): string {
+  const fx = typeof b.focalX === 'number' ? Math.max(0, Math.min(100, b.focalX)) : 50
+  const fy = typeof b.focalY === 'number' ? Math.max(0, Math.min(100, b.focalY)) : 50
+  return `${fx}% ${fy}%`
+}
+
 /** Головна: ocean hero + запасні (`wattaHeroVideo` — окремо від сторінки `/menu`). */
 
 function WelcomeHeroSection({
@@ -246,7 +258,7 @@ function WelcomeHeroSection({
 }) {
   const heroVideoLoop = playlistLength <= 1
   const heroReadySentRef = useRef(false)
-  const [heroFrameReady, setHeroFrameReady] = useState(true)
+  const [heroFrameReady, setHeroFrameReady] = useState(false)
   const { t } = useLanguage()
 
   const notifyHeroVideoReady = useCallback(() => {
@@ -258,7 +270,7 @@ function WelcomeHeroSection({
 
   useEffect(() => {
     heroReadySentRef.current = false
-    setHeroFrameReady(true)
+    setHeroFrameReady(false)
   }, [heroVideoSrc])
 
   const attachHeroVideoRef = useCallback(
@@ -266,8 +278,11 @@ function WelcomeHeroSection({
       heroVideoRef.current = el
       if (!el) return
       primeHeroVideoElement(el)
+      if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        queueMicrotask(notifyHeroVideoReady)
+      }
     },
-    [heroVideoRef],
+    [heroVideoRef, notifyHeroVideoReady],
   )
 
   useEffect(() => {
@@ -299,12 +314,20 @@ function WelcomeHeroSection({
               className="welcome-video-native-web welcome-hero-fallback-image-web"
               role="img"
               aria-hidden
+              style={{ backgroundImage: `url('${WATTA_HOME_HERO_POSTER}')` }}
             />
             {children}
           </div>
         ) : (
           <div
             className={`welcome-hero-video-stack-web${heroFrameReady ? ' watta-hero-video--ready' : ''}`}
+            style={{
+              backgroundColor: WATTA_HERO_OCEAN_GRADIENT,
+              backgroundImage: `url('${WATTA_HOME_HERO_POSTER}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center 18%',
+              backgroundRepeat: 'no-repeat',
+            }}
           >
             <video
               key={heroVideoSrc}
@@ -313,6 +336,7 @@ function WelcomeHeroSection({
               width={1920}
               height={1080}
               src={heroVideoSrc}
+              poster={WATTA_HOME_HERO_POSTER}
               autoPlay
               muted
               loop={heroVideoLoop}
@@ -501,7 +525,8 @@ export default function MenuView() {
   >([])
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
 
-  const [bannerInterval, setBannerInterval] = useState(5000)
+  const [bannerInterval, setBannerInterval] = useState(HOME_BANNER_AUTO_INTERVAL_MS)
+  const bannerAutoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v2'
   const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
     if (typeof window === 'undefined') return []
@@ -721,7 +746,9 @@ export default function MenuView() {
       homeHeroVideoUrl?: string
       homeHeroVideoUrls?: string[]
     }) => {
-      if (data.bannerInterval) setBannerInterval(data.bannerInterval)
+      if (data.bannerInterval != null) {
+        setBannerInterval(normalizeBannerIntervalMs(data.bannerInterval))
+      }
       const urls = parseHomeHeroVideoUrlsFromApi(data)
       setHomeHeroVideoUrls(urls)
       try {
@@ -765,14 +792,42 @@ export default function MenuView() {
     focalX?: number
     focalY?: number
   }
-  
-  const [banners, setBanners] = useState<Banner[]>([])
+
+  const readCachedBanners = (): Banner[] => {
+    if (typeof window === 'undefined') return []
+    try {
+      const raw =
+        localStorage.getItem('watta_banners_v1') || sessionStorage.getItem('banners') || ''
+      if (!raw) return []
+      const data = JSON.parse(raw) as unknown
+      return Array.isArray(data) ? (data as Banner[]) : []
+    } catch {
+      return []
+    }
+  }
+
+  const [banners, setBanners] = useState<Banner[]>(() => readCachedBanners())
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
 
   const displayBanners = useMemo(
     () => (banners.length > 0 ? banners : DEFAULT_HOME_BANNERS),
     [banners]
   )
+
+  /** Підвантаження зображень банерів — без затримки при першому показі / свайпі. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const seen = new Set<string>()
+    for (const b of displayBanners) {
+      const url = b.imageUrl?.trim()
+      if (!url || seen.has(url)) continue
+      seen.add(url)
+      const img = new Image()
+      img.decoding = 'async'
+      img.fetchPriority = 'high'
+      img.src = url
+    }
+  }, [displayBanners])
 
   useEffect(() => {
     setCurrentBannerIndex((idx) => {
@@ -781,16 +836,42 @@ export default function MenuView() {
     })
   }, [displayBanners.length])
 
-  // Функции переключения (НОВОЕ)
-  const nextBanner = () => {
+  const clearBannerAutoplay = useCallback(() => {
+    if (bannerAutoplayRef.current) {
+      clearInterval(bannerAutoplayRef.current)
+      bannerAutoplayRef.current = null
+    }
+  }, [])
+
+  const startBannerAutoplay = useCallback(() => {
+    clearBannerAutoplay()
+    if (displayBanners.length <= 1) return
+    bannerAutoplayRef.current = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % displayBanners.length)
+    }, bannerInterval)
+  }, [bannerInterval, clearBannerAutoplay, displayBanners.length])
+
+  const goToBanner = useCallback(
+    (index: number) => {
+      if (displayBanners.length === 0) return
+      const safe = ((index % displayBanners.length) + displayBanners.length) % displayBanners.length
+      setCurrentBannerIndex(safe)
+      startBannerAutoplay()
+    },
+    [displayBanners.length, startBannerAutoplay],
+  )
+
+  const nextBanner = useCallback(() => {
     if (displayBanners.length <= 1) return
     setCurrentBannerIndex((prev) => (prev + 1) % displayBanners.length)
-  }
+    startBannerAutoplay()
+  }, [displayBanners.length, startBannerAutoplay])
 
-  const prevBanner = () => {
+  const prevBanner = useCallback(() => {
     if (displayBanners.length <= 1) return
     setCurrentBannerIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length)
-  }
+    startBannerAutoplay()
+  }, [displayBanners.length, startBannerAutoplay])
 
   // Функция загрузки данных
   const loadBanners = useCallback(() => {
@@ -898,26 +979,25 @@ export default function MenuView() {
     }
   }, [loadBanners])
 
-  // Авто-перемикання + скидання інтервалу після ручного свайпу
+  /** Автопрокрутка кожні N с (з адмінки); після свайпу / стрілок / точок — таймер з нуля. */
   useEffect(() => {
-    if (displayBanners.length <= 1) return
-
-    const interval = setInterval(() => {
-      nextBanner()
-    }, bannerInterval)
-
-    return () => clearInterval(interval)
-  }, [displayBanners.length, bannerInterval, currentBannerIndex, nextBanner])
+    startBannerAutoplay()
+    return clearBannerAutoplay
+  }, [startBannerAutoplay, clearBannerAutoplay])
 
   /** Свайп по банеру: touch + миша/тачпад (pointer), ігнор переважно вертикального скролу */
   const bannerSwipeRef = useRef<{ x: number; y: number } | null>(null)
-  const BANNER_SWIPE_MIN_PX = 48
-  const BANNER_SWIPE_VERTICAL_RATIO = 1.15
+  const BANNER_SWIPE_MIN_PX = 40
+  const BANNER_SWIPE_VERTICAL_RATIO = 1.25
 
   const bannerSwipeIgnoreTarget = (target: EventTarget | null) => {
     const el = target as HTMLElement | null
     if (!el) return true
-    return Boolean(el.closest('.hero-dots-web') || el.closest('button'))
+    return Boolean(
+      el.closest('.hero-dots-web') ||
+        el.closest('.hero-banner-nav-btn-web') ||
+        el.closest('button'),
+    )
   }
 
   const bannerSwipeStart = (clientX: number, clientY: number, target: EventTarget | null) => {
@@ -2305,35 +2385,37 @@ export default function MenuView() {
         <div className="home-brand-inner-web relative z-[1] mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:px-8 md:pb-16 md:pt-14">
           <div className="home-brand-banner-shell-web home-brand-banner-shell-web--section-lead">
       {displayBanners.length > 0 ? (
-        <div 
+        <div
           className="hero-banner-web hero-banner-image-bg-web hero-banner-swipe-web max-w-7xl mx-auto rounded-none sm:rounded-2xl overflow-hidden relative group"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label={t.menuView.heroBannersSectionAria}
           onTouchStart={onBannerTouchStart}
           onTouchEnd={onBannerTouchEnd}
           onTouchCancel={onBannerTouchCancel}
           onPointerDown={onBannerPointerDown}
           onPointerUp={onBannerPointerUp}
           onPointerCancel={onBannerPointerCancel}
-          style={{ 
-            backgroundImage: `url(${displayBanners[currentBannerIndex].imageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: (() => {
-              const b = displayBanners[currentBannerIndex]
-              const fx =
-                typeof b.focalX === 'number'
-                  ? Math.max(0, Math.min(100, b.focalX))
-                  : 50
-              const fy =
-                typeof b.focalY === 'number'
-                  ? Math.max(0, Math.min(100, b.focalY))
-                  : 50
-              return `${fx}% ${fy}%`
-            })(),
-            backgroundRepeat: 'no-repeat',
-            position: 'relative'
-          }}
         >
+          <div className="hero-banner-slides-web pointer-events-none absolute inset-0" aria-hidden>
+            {displayBanners.map((b, i) => (
+              <img
+                key={`${b.id}:${b.imageUrl}`}
+                src={b.imageUrl}
+                alt=""
+                width={1280}
+                height={720}
+                className={`hero-banner-slide-img-web${i === currentBannerIndex ? ' hero-banner-slide-img-web--active' : ''}`}
+                style={{ objectPosition: homeBannerObjectPosition(b) }}
+                loading="eager"
+                decoding="async"
+                draggable={false}
+              />
+            ))}
+          </div>
+
           {/* Затемнение для читаемості; на планшеті слабше — фото яскравіше */}
-          <div className="hero-banner-dim-web pointer-events-none absolute inset-0" />
+          <div className="hero-banner-dim-web pointer-events-none absolute inset-0 z-[1]" />
 
           {/* Контент баннера */}
           <div 
@@ -2341,40 +2423,48 @@ export default function MenuView() {
             style={{ pointerEvents: 'none', position: 'relative', zIndex: 2, minHeight: '100%' }}
           />
 
-          {/* --- ЛЕВАЯ СТРЕЛКА (Только ПК) --- */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              prevBanner();
-            }}
-            className="hidden md:flex absolute top-0 left-0 bottom-0 w-16 items-center justify-center text-white/50 hover:text-white hover:bg-black/10 transition-all z-10 opacity-0 group-hover:opacity-100"
-            aria-label={a.previousSlide}
-          >
-            <ChevronLeft size={48} strokeWidth={1.5} />
-          </button>
+          {displayBanners.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  prevBanner()
+                }}
+                className="hero-banner-nav-btn-web hero-banner-nav-btn-web--prev"
+                aria-label={a.previousSlide}
+              >
+                <ChevronLeft size={32} strokeWidth={1.5} className="md:hidden" />
+                <ChevronLeft size={48} strokeWidth={1.5} className="hidden md:block" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  nextBanner()
+                }}
+                className="hero-banner-nav-btn-web hero-banner-nav-btn-web--next"
+                aria-label={a.nextSlide}
+              >
+                <ChevronRight size={32} strokeWidth={1.5} className="md:hidden" />
+                <ChevronRight size={48} strokeWidth={1.5} className="hidden md:block" />
+              </button>
+            </>
+          ) : null}
 
-          {/* --- ПРАВАЯ СТРЕЛКА (Только ПК) --- */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              nextBanner();
-            }}
-            className="hidden md:flex absolute top-0 right-0 bottom-0 w-16 items-center justify-center text-white/50 hover:text-white hover:bg-black/10 transition-all z-10 opacity-0 group-hover:opacity-100"
-            aria-label={a.nextSlide}
-          >
-            <ChevronRight size={48} strokeWidth={1.5} />
-          </button>
-
-          {/* Точки (Dots) */}
           <div
-              className="hero-dots-web hero-dots-banner-image-web absolute bottom-3 left-0 right-0 z-[3] flex justify-center gap-2 md:bottom-4 min-[1025px]:!bottom-[-20px]"
-            >
+            className="hero-dots-web hero-dots-banner-image-web absolute bottom-3 left-0 right-0 z-[3] flex justify-center gap-2 md:bottom-4 min-[1025px]:!bottom-[-20px]"
+            role="tablist"
+          >
             {displayBanners.map((_, i) => (
-              <span 
-                key={i} 
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={i === currentBannerIndex}
+                aria-label={`${i + 1} / ${displayBanners.length}`}
                 className={`hero-dot-web ${i === currentBannerIndex ? 'active' : ''}`}
-                onClick={() => setCurrentBannerIndex(i)}
-                style={{ cursor: 'pointer' }}
+                onClick={() => goToBanner(i)}
               />
             ))}
           </div>

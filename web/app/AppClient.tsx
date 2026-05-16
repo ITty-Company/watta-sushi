@@ -24,16 +24,17 @@ export default function AppClient({
   const prevPathnameForScrollRef = useRef<string | null>(null)
   const isHomeRoute = pathname === '/'
   const isFavoritesRoute = pathname === '/favorites'
+  const isDeliveryRoute = pathname === '/delivery'
   const isCartRoute = pathname === '/cart'
   const isAuthRoute = pathname === '/login' || pathname === '/register'
   const isAdminShellRoute = pathname === '/admin' || pathname?.startsWith('/admin/')
   const showPublicNavChrome = !isAuthRoute
   /**
-   * Шапка + категорії: на `/` — `MenuView`, на `/favorites` — `FavoritesPageClient`.
+   * Шапка + категорії: на `/` — `MenuView`, на `/favorites` — `FavoritesPageClient`, на `/delivery` — `DeliveryView`.
    * На інших публічних маршрутах — `WattaPublicSiteChrome`.
    */
   const showGlobalSiteChrome =
-    !isAuthRoute && !isAdminShellRoute && !isHomeRoute && !isFavoritesRoute
+    !isAuthRoute && !isAdminShellRoute && !isHomeRoute && !isFavoritesRoute && !isDeliveryRoute
   /**
    * Скрол наверх лише при зміні pathname; raніше тригерилось і на кожну зміну `searchParams`
    * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.

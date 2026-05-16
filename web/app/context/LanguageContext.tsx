@@ -396,6 +396,10 @@ interface Translations {
     desktopHeroTitle: string
     /** Десктоп: підзаголовок */
     desktopHeroSub: string
+    /** Орбітальні чипи на cinema-панелі */
+    benefitHistory: string
+    benefitBonuses: string
+    benefitFast: string
     errors: {
       pattern: string
       emailInvalid: string
@@ -845,7 +849,9 @@ interface Translations {
     }
     banners: {
       addBtn: string; tabSubtitle: string; editTitle: string; newTitle: string; titleRu: string; titlePlaceholder: string;
-      heroVideoTitle: string; heroVideoSubtitle: string; heroVideoSlotLabel: string; heroVideoUpload: string;
+      heroVideoTitle: string; heroVideoSubtitle: string;
+      deliveryHeroVideoTitle: string; deliveryHeroVideoSubtitle: string;
+      heroVideoSlotLabel: string; heroVideoUpload: string;
       heroVideoSave: string; heroVideoSaving: string; heroVideoSaved: string; heroVideoError: string;
       heroVideoErrorAuth: string; heroVideoErrorMock: string; heroVideoErrorUpload: string;
       heroVideoTooLarge: string; heroVideoCurrent: string; heroVideoRemove: string; heroVideoAddBtn: string;
@@ -1318,6 +1324,9 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Роли та суші — швидке замовлення',
       desktopHeroTitle: 'Улюблені роли — у кілька кліків',
       desktopHeroSub: 'Збережіть акаунт — історія замовлень, бонуси та швидке оформлення доставки.',
+      benefitHistory: 'Історія замовлень',
+      benefitBonuses: 'Бонуси',
+      benefitFast: 'Швидке замовлення',
       errors: {
         pattern: 'Перевірте правильність введених даних',
         emailInvalid: 'Введіть коректну email адресу',
@@ -1836,6 +1845,8 @@ const translations: Record<Language, Translations> = {
         titlePlaceholder: "Наприклад: Суші-бургери: ідеальний перекус",
         heroVideoTitle: "Відео на головній",
         heroVideoSubtitle: "Скільки завгодно роликів на головній. Перший — основний; якщо не завантажиться — підключиться наступний. Натисніть «Додати ролик» для нового слота.",
+        deliveryHeroVideoTitle: "Відео на сторінці доставки",
+        deliveryHeroVideoSubtitle: "Окремі ролики для /delivery — не плутати з головною. Перший — основний; далі запасні з public, якщо не завантажиться.",
         heroVideoAddBtn: "+ Додати ролик",
         heroVideoSlotLabel: "Відео {{n}}",
         heroVideoUpload: "Завантажити",
@@ -2190,6 +2201,9 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Роллы и суши — быстрый заказ',
       desktopHeroTitle: 'Любимые роллы — в пару кликов',
       desktopHeroSub: 'Аккаунт — история заказов, бонусы и быстрее оформление.',
+      benefitHistory: 'История заказов',
+      benefitBonuses: 'Бонусы',
+      benefitFast: 'Быстрый заказ',
       errors: {
         pattern: 'Проверьте правильность введенных данных',
         emailInvalid: 'Введите корректный email адрес',
@@ -2708,6 +2722,8 @@ const translations: Record<Language, Translations> = {
         titlePlaceholder: "Например: Суши-бургеры: идеальный перекус",
         heroVideoTitle: "Видео на главной",
         heroVideoSubtitle: "Сколько угодно роликов на главной. Первый — основной; если не загрузится — подключится следующий. Нажмите «Добавить ролик» для нового слота.",
+        deliveryHeroVideoTitle: "Видео на странице доставки",
+        deliveryHeroVideoSubtitle: "Отдельные ролики для /delivery — не путать с главной. Первый — основной; далее запасные из public, если не загрузится.",
         heroVideoAddBtn: "+ Добавить ролик",
         heroVideoSlotLabel: "Видео {{n}}",
         heroVideoUpload: "Загрузить",
@@ -3062,6 +3078,9 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Rolls & sushi — order fast',
       desktopHeroTitle: 'Your favourite rolls in a few taps',
       desktopHeroSub: 'Keep an account — order history, bonuses and faster checkout.',
+      benefitHistory: 'Order history',
+      benefitBonuses: 'Bonuses',
+      benefitFast: 'Fast checkout',
       errors: {
         pattern: 'Please check the entered data',
         emailInvalid: 'Enter a valid email address',
@@ -3580,6 +3599,8 @@ const translations: Record<Language, Translations> = {
         titlePlaceholder: "e.g.: Sushi burgers: perfect snack",
         heroVideoTitle: "Home hero video",
         heroVideoSubtitle: "As many clips as you need on the home page. First is primary; if it fails to load, the next plays. Click «Add clip» for a new slot.",
+        deliveryHeroVideoTitle: "Delivery page hero video",
+        deliveryHeroVideoSubtitle: "Separate clips for /delivery — not shared with home. First is primary; then public fallbacks if a clip fails.",
         heroVideoAddBtn: "+ Add clip",
         heroVideoSlotLabel: "Video {{n}}",
         heroVideoUpload: "Upload",
@@ -3934,6 +3955,9 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Rolls en sushi — snel bestellen',
       desktopHeroTitle: 'Favoriete rolls in een paar tikken',
       desktopHeroSub: 'Met een account: bestelhistorie, bonussen en sneller afrekenen.',
+      benefitHistory: 'Bestelhistorie',
+      benefitBonuses: 'Bonussen',
+      benefitFast: 'Snel bestellen',
       errors: {
         pattern: 'Controleer de ingevoerde gegevens',
         emailInvalid: 'Voer een geldig e-mailadres in',
@@ -4452,6 +4476,8 @@ const translations: Record<Language, Translations> = {
         titlePlaceholder: "bijv.: Sushi burgers: perfecte snack",
         heroVideoTitle: "Homepage-hero-video",
         heroVideoSubtitle: "Zoveel clips als u wilt op de homepage. De eerste is primair; laadt die niet, dan de volgende. Klik op «Clip toevoegen» voor een nieuw slot.",
+        deliveryHeroVideoTitle: "Hero-video bezorgpagina",
+        deliveryHeroVideoSubtitle: "Aparte clips voor /delivery — niet dezelfde als homepage. Eerste is primair; daarna public-fallbacks bij laadfout.",
         heroVideoAddBtn: "+ Clip toevoegen",
         heroVideoSlotLabel: "Video {{n}}",
         heroVideoUpload: "Uploaden",

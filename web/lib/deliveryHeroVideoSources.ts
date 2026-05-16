@@ -1,4 +1,8 @@
-import { WATTA_HOME_HERO_VIDEO_FALLBACKS } from '@/lib/wattaHeroVideo'
+import { buildDeliveryHeroVideoSources } from '@/lib/wattaDeliveryHeroVideo'
 
-/** Hero доставки — той самий HD-запасний ролик, що й на головній. */
-export const DELIVERY_HERO_VIDEO_SOURCES = WATTA_HOME_HERO_VIDEO_FALLBACKS
+export { buildDeliveryHeroVideoSources, buildDeliveryHeroPlaylist } from '@/lib/wattaDeliveryHeroVideo'
+
+/** Плейлист hero доставки: спочатку URL з адмінки, далі запасні mp4. */
+export function getDeliveryHeroVideoSources(adminUrls?: readonly string[] | null): readonly string[] {
+  return buildDeliveryHeroVideoSources(adminUrls)
+}
