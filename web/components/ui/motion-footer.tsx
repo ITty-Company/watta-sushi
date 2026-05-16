@@ -8,7 +8,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { cn } from '@/lib/utils'
 import { getMenuScrollParent } from '@/lib/menuScroll'
 import { useLanguage } from '@/app/context/LanguageContext'
-import { Flame } from 'lucide-react'
 import { WattaMenuProductCard } from '@/app/components/WattaMenuProductCard'
 
 if (typeof window !== 'undefined') {
@@ -141,14 +140,12 @@ const STYLES = `
   .footer-heading-flow,
   .footer-cta-solid::after,
   .footer-ready-display,
-  .footer-ready-shell::before,
-  .footer-ready-spark,
-  .footer-ready-badge-icon {
+  .footer-ready-quote::before {
     animation: none !important;
   }
 }
 
-/* Заголовок «Наші хіти» над стрічками */
+/* Заголовок «Наші хіти» над стрічками — без картки-панелі */
 .footer-ready-block {
   width: 100%;
   display: flex;
@@ -157,123 +154,61 @@ const STYLES = `
   box-sizing: border-box;
 }
 
-.footer-ready-shell {
+.footer-ready-head {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: min(100%, 40rem);
-  padding: clamp(0.85rem, 2.8vw, 1.35rem) clamp(1rem, 3.5vw, 1.65rem);
-  border-radius: 1.35rem;
-  border: 1px solid rgba(20, 81, 66, 0.14);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 251, 248, 0.88) 48%, rgba(232, 245, 239, 0.82) 100%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.95) inset,
-    0 18px 48px -28px rgba(15, 61, 50, 0.28),
-    0 4px 14px -6px rgba(20, 81, 66, 0.12);
-  overflow: hidden;
-  isolation: isolate;
+  width: min(100%, 44rem);
+  padding: clamp(0.15rem, 1.2vw, 0.5rem) 0 clamp(0.35rem, 1.5vw, 0.65rem);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-.footer-ready-shell::before {
-  content: '';
-  position: absolute;
-  inset: -40% -20% auto;
-  height: 70%;
-  background: radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255, 140, 80, 0.14) 0%, transparent 68%);
-  pointer-events: none;
-  animation: footer-ready-glow 7s ease-in-out infinite;
-}
-
-.footer-ready-shell::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.45) 42%,
-    transparent 58%
-  );
-  transform: translateX(-120%);
-  animation: footer-cta-shine 9s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.footer-ready-ornaments {
-  position: absolute;
-  inset: 0.65rem 0.85rem auto;
-  display: flex;
-  justify-content: space-between;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.footer-ready-ornament {
-  display: block;
-  width: clamp(2.5rem, 12vw, 4.5rem);
-  height: 2px;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, transparent, rgba(20, 81, 66, 0.35), transparent);
-  opacity: 0.85;
-}
-
-.footer-ready-ornament--right {
-  background: linear-gradient(270deg, transparent, rgba(20, 81, 66, 0.35), transparent);
-}
-
-.footer-ready-badge {
-  position: relative;
-  z-index: 1;
+.footer-ready-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  margin: 0 auto 0.65rem;
-  padding: 0.28rem 0.72rem 0.28rem 0.55rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 107, 53, 0.28);
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.14) 0%, rgba(255, 255, 255, 0.75) 100%);
-  font-size: 0.62rem;
+  justify-content: center;
+  gap: clamp(0.5rem, 2.2vw, 0.85rem);
+  margin: 0 0 clamp(0.35rem, 1.2vw, 0.55rem);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: clamp(0.58rem, 1.35vw, 0.68rem);
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #c44f1a;
-  box-shadow: 0 6px 18px -10px rgba(255, 107, 53, 0.45);
+  text-wrap: balance;
 }
 
-.footer-ready-badge-icon {
-  width: 0.85rem;
-  height: 0.85rem;
-  color: #ff6b35;
-  animation: footer-ready-sparkle 2.8s ease-in-out infinite;
+.footer-ready-eyebrow-label {
+  background: linear-gradient(105deg, #c44f1a 0%, #ff6b35 42%, #ff8c4d 72%, #e85a24 100%);
+  background-size: 160% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 1px 8px rgba(255, 107, 53, 0.22));
 }
 
-.footer-ready-spark {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(0);
+@supports not (background-clip: text) {
+  .footer-ready-eyebrow-label {
+    color: #ff6b35;
+    background: none;
+    -webkit-text-fill-color: #ff6b35;
+    filter: none;
+  }
 }
 
-.footer-ready-spark--a {
-  top: 0.55rem;
-  right: 1.1rem;
-  width: 0.45rem;
-  height: 0.45rem;
-  background: rgba(255, 107, 53, 0.55);
-  box-shadow: 0 0 12px rgba(255, 107, 53, 0.5);
-  animation: footer-ready-sparkle 3.2s ease-in-out 0.4s infinite;
+.footer-ready-eyebrow-line {
+  display: block;
+  width: clamp(1.35rem, 6vw, 2.75rem);
+  height: 1px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 107, 53, 0.15) 35%, rgba(255, 107, 53, 0.65) 100%);
 }
 
-.footer-ready-spark--b {
-  bottom: 0.75rem;
-  left: 1.25rem;
-  width: 0.35rem;
-  height: 0.35rem;
-  background: rgba(74, 222, 128, 0.65);
-  box-shadow: 0 0 10px rgba(74, 222, 128, 0.45);
-  animation: footer-ready-sparkle 3.6s ease-in-out 1.1s infinite;
+.footer-ready-eyebrow-line--end {
+  background: linear-gradient(270deg, transparent 0%, rgba(255, 107, 53, 0.15) 35%, rgba(255, 107, 53, 0.65) 100%);
 }
 
 .footer-ready-heading {
@@ -286,13 +221,41 @@ const STYLES = `
   justify-content: center;
 }
 
-.footer-ready-stack {
+.footer-ready-title-stack {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 0.5rem;
+  gap: clamp(0.45rem, 1.6vw, 0.7rem);
+  width: 100%;
+  max-width: min(100%, 36rem);
+}
+
+.footer-ready-quote {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.12em;
   max-width: min(100%, 32rem);
+  text-align: left;
+}
+
+.footer-ready-quote::before {
+  content: '“';
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.65rem, 4.8vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #ff6b35;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 0.06em;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 1px 10px rgba(255, 107, 53, 0.28);
 }
 
 .footer-ready-display {
@@ -322,54 +285,40 @@ const STYLES = `
 }
 
 .footer-ready-lede {
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: clamp(0.82rem, 1.85vw, 1.05rem);
-  font-weight: 500;
-  line-height: 1.42;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.05rem, 2.35vw, 1.28rem);
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.35;
   letter-spacing: 0.015em;
-  color: rgba(20, 81, 66, 0.72);
-  max-width: 26em;
+  color: #0f3d32;
   text-wrap: balance;
   -webkit-font-smoothing: antialiased;
 }
 
-.footer-ready-lede::before {
-  content: '—';
-  margin-right: 0.35em;
-  color: rgba(255, 107, 53, 0.65);
-  font-weight: 700;
-}
-
-.footer-ready-lede::after {
-  content: '—';
-  margin-left: 0.35em;
-  color: rgba(255, 107, 53, 0.65);
-  font-weight: 700;
-}
-
 @media (max-width: 400px) {
-  .footer-ready-shell {
-    padding: 0.75rem 0.85rem 0.9rem;
-    border-radius: 1.15rem;
+  .footer-ready-head {
+    padding-bottom: 0.25rem;
   }
   .footer-ready-display {
     font-size: clamp(1.28rem, 5.8vw, 1.72rem);
     letter-spacing: -0.028em;
   }
   .footer-ready-lede {
-    font-size: clamp(0.78rem, 3.5vw, 0.94rem);
-    line-height: 1.45;
+    font-size: clamp(0.95rem, 3.8vw, 1.08rem);
+    line-height: 1.4;
   }
-  .footer-ready-lede::before,
-  .footer-ready-lede::after {
-    display: none;
+  .footer-ready-title-stack {
+    gap: 0.35rem;
   }
-  .footer-ready-stack {
-    gap: 0.4rem;
+  .footer-ready-quote::before {
+    font-size: clamp(1.45rem, 5.5vw, 1.85rem);
   }
-  .footer-ready-badge {
-    margin-bottom: 0.5rem;
-    font-size: 0.58rem;
+  .footer-ready-eyebrow {
+    letter-spacing: 0.2em;
+    font-size: 0.55rem;
   }
 }
 
@@ -958,13 +907,9 @@ const STYLES = `
   padding-bottom: 0;
 }
 
-.cinematic-footer-wrap--compact .footer-ready-shell {
+.cinematic-footer-wrap--compact .footer-ready-head {
   width: min(100%, 36rem);
-  padding: clamp(0.7rem, 2.2vw, 1rem) clamp(0.85rem, 3vw, 1.25rem);
-  border-radius: 1.2rem;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 12px 32px -22px rgba(15, 61, 50, 0.22);
+  padding: 0 0 clamp(0.2rem, 1vw, 0.35rem);
 }
 
 .cinematic-footer-wrap--compact .footer-ready-display {
@@ -972,12 +917,15 @@ const STYLES = `
 }
 
 .cinematic-footer-wrap--compact .footer-ready-lede {
-  font-size: clamp(0.78rem, 1.65vw, 0.95rem);
+  font-size: clamp(0.92rem, 1.85vw, 1.05rem);
+  color: #0f3d32;
 }
 
-.cinematic-footer-wrap--compact .footer-ready-ornaments {
-  inset: 0.5rem 0.65rem auto;
+.cinematic-footer-wrap--compact .footer-ready-quote::before {
+  font-size: clamp(1.35rem, 3.8vw, 1.75rem);
+  color: #ff6b35;
 }
+
 
 .footer-catalog-carousel {
   display: flex;
@@ -1903,23 +1851,20 @@ export function CinematicFooter({
                 )}
               >
                 <div className="footer-ready-block">
-                  <div className="footer-ready-shell">
-                    <div className="footer-ready-ornaments" aria-hidden>
-                      <span className="footer-ready-ornament footer-ready-ornament--left" />
-                      <span className="footer-ready-ornament footer-ready-ornament--right" />
-                    </div>
-                    <span className="footer-ready-spark footer-ready-spark--a" aria-hidden />
-                    <span className="footer-ready-spark footer-ready-spark--b" aria-hidden />
-                    <p className="footer-ready-badge">
-                      <Flame className="footer-ready-badge-icon" strokeWidth={2.4} aria-hidden />
-                      <span>{cf.recommendedBadge}</span>
+                  <div className="footer-ready-head">
+                    <p className="footer-ready-eyebrow">
+                      <span className="footer-ready-eyebrow-line" aria-hidden />
+                      <span className="footer-ready-eyebrow-label">{cf.readyTitleEyebrow}</span>
+                      <span className="footer-ready-eyebrow-line footer-ready-eyebrow-line--end" aria-hidden />
                     </p>
-                    <h2 className="footer-ready-heading w-full min-w-0 text-center">
-                      <span className="footer-ready-stack">
+                    <div className="footer-ready-title-stack">
+                      <h2 className="footer-ready-heading w-full min-w-0 text-center">
                         <span className="footer-ready-display">{cf.readyTitleKicker}</span>
-                        <span className="footer-ready-lede">{cf.readyTitleSub}</span>
-                      </span>
-                    </h2>
+                      </h2>
+                      <blockquote className="footer-ready-quote">
+                        <p className="footer-ready-lede">{cf.readyTitleSub}</p>
+                      </blockquote>
+                    </div>
                   </div>
                 </div>
 

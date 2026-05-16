@@ -942,6 +942,8 @@ interface Translations {
     homeAfterHeroIntroCityPlaceholder: string
   }
   cinematicFooter: {
+    /** Рядок над заголовком «Наші хіти» (без бейджа) */
+    readyTitleEyebrow: string
     /** Короткий кікер (бейдж) у блоці над стрічками */
     readyTitleKicker: string
     /** Друга частина — в один ряд з кікером */
@@ -1504,6 +1506,7 @@ const translations: Record<Language, Translations> = {
       homeAfterHeroIntroCityPlaceholder: 'обраному місті',
     },
     cinematicFooter: {
+      readyTitleEyebrow: 'Вибір гостей',
       readyTitleKicker: 'Наші хіти',
       readyTitleSub: 'Те, що гості обирають знову\u00A0і\u00A0знову',
       ctaBanners: 'До банерів і акцій',
@@ -2383,6 +2386,7 @@ const translations: Record<Language, Translations> = {
       homeAfterHeroIntroCityPlaceholder: 'вашем городе',
     },
     cinematicFooter: {
+      readyTitleEyebrow: 'Выбор гостей',
       readyTitleKicker: 'Наши хиты',
       readyTitleSub: 'То, что гости заказывают снова\u00A0и\u00A0снова',
       ctaBanners: 'К баннерам и акциям',
@@ -3262,6 +3266,7 @@ const translations: Record<Language, Translations> = {
       homeAfterHeroIntroCityPlaceholder: 'your city',
     },
     cinematicFooter: {
+      readyTitleEyebrow: 'Guest favourites',
       readyTitleKicker: 'Our hits',
       readyTitleSub: 'What guests order again\u00A0and\u00A0again',
       ctaBanners: 'Banners & offers',
@@ -4141,6 +4146,7 @@ const translations: Record<Language, Translations> = {
       homeAfterHeroIntroCityPlaceholder: 'uw stad',
     },
     cinematicFooter: {
+      readyTitleEyebrow: 'Favoriet van gasten',
       readyTitleKicker: 'Onze hits',
       readyTitleSub: 'Waar gasten keer op keer voor kiezen',
       ctaBanners: 'Naar banners & acties',
