@@ -72,8 +72,10 @@ router.post('/toggle', authenticateUser, async (req: AuthRequest, res) => {
       const count = await prisma.favorite.count({ where: { productId } });
       return res.json({ added: false, count });
     }
-    await prisma.favorite.create({
-      data: { userId, productId }
+    // skipDuplicates: паралельний sync після логіну не падає на P2002
+    await prisma.favorite.createMany({
+      data: [{ userId, productId }],
+      skipDuplicates: true,
     });
     const count = await prisma.favorite.count({ where: { productId } });
     return res.json({ added: true, count });

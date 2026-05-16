@@ -170,7 +170,7 @@ function AuthScreenBody({
           }
         }
         window.dispatchEvent(new Event('userChanged'))
-        void syncFavoritesAfterAuth()
+        await syncFavoritesAfterAuth()
         toast.success(t.auth.welcomeAfterVerify)
         goAfterAuth()
       } else {
@@ -204,7 +204,7 @@ function AuthScreenBody({
         }
       }
       window.dispatchEvent(new Event('userChanged'))
-      void syncFavoritesAfterAuth()
+      await syncFavoritesAfterAuth()
       toast.success(t.auth.signedInToast)
       goAfterAuth()
     } catch (err: unknown) {

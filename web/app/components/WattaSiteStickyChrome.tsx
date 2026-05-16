@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
 import WattaStickyChromeLayout from './WattaStickyChromeLayout'
@@ -41,10 +42,16 @@ export default function WattaSiteStickyChrome({ flowHeightFudgePx = 12 }: Props)
         onCityChange={onCityChange}
         deliveryEmbeddedActive={pathname === '/' && homeDeliveryEmbed}
         onPromotionsClick={() => router.push('/promotions')}
-        onCartClick={() => router.push('/cart')}
+        onCartClick={() =>
+          router.push(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
+        }
         onMenuClick={() => router.push('/')}
-        onProfileClick={() => router.push('/profile')}
-        onFavoritesClick={() => router.push('/favorites')}
+        onProfileClick={() =>
+          router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
+        }
+        onFavoritesClick={() =>
+          router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
+        }
       />
       <WattaMenuCategoryStrip />
     </WattaStickyChromeLayout>

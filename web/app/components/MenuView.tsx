@@ -31,6 +31,7 @@ import { kickWelcomeHeroVideoPlayBurst, primeHeroVideoElement } from '@/lib/kick
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
+import { getHeroVideoTouchLikeViewport } from '@/lib/heroVideoNativeDesktop'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
@@ -46,6 +47,8 @@ import {
 } from '@/lib/wattaHeroVideo'
 import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
 import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSiteLocalePrefs'
+import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
+import { addToCartWithAuthGate } from '@/lib/cartStorage'
 
 /**
  * Усе, що показується тільки при `activePage !== null` — тягнемо `next/dynamic` без SSR.
@@ -610,7 +613,9 @@ export default function MenuView() {
     const offMirror = () => {}
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
-      blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
+      /* На телефоні/планшеті не перехоплюємо touch — інакше не скролиться сторінка повз hero */
+      blockInteractionRoot:
+        !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
       loop: heroVideoShouldLoop,
     })
     return () => {
@@ -1157,7 +1162,7 @@ export default function MenuView() {
   }, [loadMenuItems])
 
   const openCart = () => {
-    router.push('/cart')
+    router.push(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
   }
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
@@ -1628,17 +1633,17 @@ export default function MenuView() {
       return
     }
     if (page === 'cartPublic') {
-      router.push('/cart')
+      router.push(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
       setIsSidebarOpen(false)
       return
     }
     if (page === 'favoritesPublic') {
-      router.push('/favorites')
+      router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
       setIsSidebarOpen(false)
       return
     }
     if (page === 'profilePublic') {
-      router.push('/profile')
+      router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
       setIsSidebarOpen(false)
       return
     }
@@ -1748,6 +1753,11 @@ export default function MenuView() {
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
   const openProfileTab = (tab: 'history' | 'address' | 'favorites') => {
+    if (!isUserLoggedIn()) {
+      router.push(getAuthUrl(tab === 'favorites' ? '/favorites' : '/profile'))
+      setIsSidebarOpen(false)
+      return
+    }
     if (tab === 'favorites') {
       router.push('/favorites')
       setIsSidebarOpen(false)
@@ -1795,14 +1805,22 @@ export default function MenuView() {
 
   // --- ДОБАВЛЕНИЕ В КОРЗИНУ ---
   const addToCart = (item: MenuItem) => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      cart.push(item)
-      localStorage.setItem('cart', JSON.stringify(cart))
-      const event = new CustomEvent('cartUpdated')
-      window.dispatchEvent(event)
-      toast.success(t.addToCart)
+    const result = addToCartWithAuthGate(router, {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category: item.category,
+      emoji: item.emoji,
+      imageUrl: item.imageUrl,
+      promoDiscountPercent: item.promoDiscountPercent,
+    })
+    if (result === 'max') {
+      toast.error(t.appToasts.maxCartQty)
+      return
     }
+    if (result === 'auth_redirect') return
+    toast.success(t.addToCart)
   }
   
   // --- АДМИНКА ЗОН ДОСТАВКИ ---
@@ -2146,8 +2164,13 @@ export default function MenuView() {
           onPromotionsClick={() => handlePageOpen('promotions')}
           onCartClick={openCart}
           onMenuClick={toggleSidebar}
-          onProfileClick={() => openProfileTab('history')}
-          onFavoritesClick={() => router.push('/favorites')}
+          onProfileClick={() => {
+            if (isUserLoggedIn()) openProfileTab('history')
+            else router.push(getAuthUrl('/profile'))
+          }}
+          onFavoritesClick={() =>
+            router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
+          }
           onLogoClick={handleClosePage}
         />
         <WattaMenuCategoryStrip />

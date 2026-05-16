@@ -1,13 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
-import { subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
+import { getHeroVideoTouchLikeViewport, subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
 import { WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
@@ -62,6 +64,7 @@ function normMenuSlug(s: string): string {
 }
 
 export default function FullMenuPageClient() {
+  const router = useRouter()
   const { t, language, getLocalized } = useLanguage()
   const mv = t.menuView
   const cf = t.cinematicFooter
@@ -246,7 +249,8 @@ export default function FullMenuPageClient() {
     const unsubNative = subscribeHeroVideoNativeOnDesktop(armMirror)
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
-      blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
+      blockInteractionRoot:
+        !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
     })
     return () => {
       unsubNative()
@@ -442,24 +446,29 @@ export default function FullMenuPageClient() {
 
   const addToCart = useCallback(
     (item: MenuItem | { id: number }) => {
-      if (typeof window === 'undefined' || !window.localStorage) return
       const full =
         'category' in item && item.category !== undefined
           ? (item as MenuItem)
           : items.find((x) => x.id === item.id)
       if (!full) return
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      const n = cart.filter((x: { id?: number }) => x?.id === full.id).length
-      if (n >= 99) {
+      const result = addToCartWithAuthGate(router, {
+        id: full.id,
+        name: full.name,
+        description: full.description,
+        price: full.price,
+        category: full.category,
+        emoji: full.emoji,
+        imageUrl: full.imageUrl,
+        promoDiscountPercent: full.promoDiscountPercent,
+      })
+      if (result === 'max') {
         toast.error(t.appToasts.maxCartQty)
         return
       }
-      cart.push(full)
-      localStorage.setItem('cart', JSON.stringify(cart))
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      if (result === 'auth_redirect') return
       toast.success(t.addToCart)
     },
-    [items, t.addToCart, t.appToasts.maxCartQty]
+    [items, router, t.addToCart, t.appToasts.maxCartQty]
   )
 
   const menuNewItems = useMemo(

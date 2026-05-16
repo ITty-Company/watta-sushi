@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, startTransition, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   ChevronLeft,
@@ -25,6 +26,7 @@ import { WattaMenuProductCard } from './WattaMenuProductCard'
 import { ProductImageGallery } from './ProductImageGallery'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import toast from 'react-hot-toast'
+import { addToCartWithAuthGate } from '@/lib/cartStorage'
 
 interface ProductViewProps {
   productId: string
@@ -76,6 +78,7 @@ interface Product {
 type IngredientRow = NonNullable<Product['ingredients']>[number]
 
 export default function ProductView({ productId, onBack }: ProductViewProps) {
+  const router = useRouter()
   const { t, language } = useLanguage()
   const pd = t.productDetail
   const cs = t.cartSection
@@ -165,7 +168,6 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   const addToCart = () => {
     if (!product) return
     setIsAdding(true)
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     const cover =
       (product.imageUrl && String(product.imageUrl).trim()) ||
       productGalleryFromApi({ imageUrl: product.imageUrl, imageUrls: product.imageUrls })[0]
@@ -179,19 +181,15 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       imageUrl: cover,
       promoDiscountPercent: product.promoDiscountPercent,
     }
-    for (let i = 0; i < quantity; i++) {
-      cart.push(line)
+    const result = addToCartWithAuthGate(router, line, { quantity })
+    if (result === 'max') {
+      toast.error(t.appToasts.maxCartQty)
+      setIsAdding(false)
+      return
     }
-    try {
-      localStorage.setItem('cart', JSON.stringify(cart))
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        toast.error(cs.toastStorageQuota)
-        setIsAdding(false)
-        return
-      }
-      throw e
+    if (result === 'auth_redirect') {
+      setIsAdding(false)
+      return
     }
     setTimeout(() => {
       setIsAdding(false)
@@ -201,14 +199,10 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   }
 
   const addRecToCart = (rec: Product) => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    const n = cart.filter((x: { id?: number }) => x?.id === rec.id).length
-    if (n >= 99) return
     const cover =
       (rec.imageUrl && String(rec.imageUrl).trim()) ||
       productGalleryFromApi({ imageUrl: rec.imageUrl, imageUrls: rec.imageUrls })[0]
-    const cartItem = {
+    const result = addToCartWithAuthGate(router, {
       id: rec.id,
       name: getName(rec),
       description: getDesc(rec),
@@ -217,18 +211,12 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       emoji: rec.category?.emoji || '🍣',
       imageUrl: cover,
       promoDiscountPercent: rec.promoDiscountPercent,
+    })
+    if (result === 'max') {
+      toast.error(t.appToasts.maxCartQty)
+      return
     }
-    cart.push(cartItem)
-    try {
-      localStorage.setItem('cart', JSON.stringify(cart))
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        toast.error(cs.toastStorageQuota)
-        return
-      }
-      throw e
-    }
+    if (result === 'auth_redirect') return
     toast.success(t.addToCart)
   }
 

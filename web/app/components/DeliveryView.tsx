@@ -26,7 +26,7 @@ import {
 import { DELIVERY_HERO_VIDEO_SOURCES } from '@/lib/deliveryHeroVideoSources'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
-import { subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
+import { getHeroVideoTouchLikeViewport, subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
 import {
   MapPin,
@@ -234,7 +234,8 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     const unsubNative = subscribeHeroVideoNativeOnDesktop(armMirror)
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
-      blockInteractionRoot: stack instanceof HTMLElement ? stack : null,
+      blockInteractionRoot:
+        !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
     })
     return () => {
       unsubNative()
