@@ -7,6 +7,7 @@ import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buil
 import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG, WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
+import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { getApiUrl } from '@/lib/utils'
 
 type MenuCategory = {
@@ -135,7 +136,7 @@ function WattaMenuCategoryStripInner() {
       buildMenuCategoriesFromApi(data, language, t.categories as Record<string, string>)
 
     const applyCategories = (categories: MenuCategory[]) => {
-      setMenuCategories(categories)
+      setMenuCategories(filterNonAggregateMenuCategories(categories))
     }
 
     if (cached && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_TTL) {
@@ -318,13 +319,25 @@ function WattaMenuCategoryStripInner() {
       scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
     }
     const p = pathname || ''
-    if (p === '/menu') {
-      if (key === FULL_MENU_ALL_SLUG) {
+
+    if (key === FULL_MENU_ALL_SLUG) {
+      if (p === '/menu') {
         router.push('/menu')
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.dispatchEvent(
+              new CustomEvent(WATTA_MENU_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }),
+            )
+          })
+        })
       } else {
-        router.push(`/menu?cat=${encodeURIComponent(key)}`)
+        router.push('/menu')
       }
-      /* Після `router.push` — після коміту React/Next, інакше слухач у FullMenuPageClient інколи не встигає / DOM ще старий */
+      return
+    }
+
+    if (p === '/menu') {
+      router.push(`/menu?cat=${encodeURIComponent(key)}`)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           window.dispatchEvent(
@@ -341,7 +354,6 @@ function WattaMenuCategoryStripInner() {
     router.push(`/menu/category/${encodeURIComponent(key)}`)
   }
 
-  const onFullMenu = pathname === '/menu'
   const mv = t.menuView
 
   return (
@@ -359,8 +371,7 @@ function WattaMenuCategoryStripInner() {
         </button>
 
         <div ref={categoriesPanelRef} className="categories-panel-web" onScroll={handleScroll}>
-          {onFullMenu ? (
-            <button
+          <button
               key="full-menu-all"
               type="button"
               data-watta-cat={FULL_MENU_ALL_SLUG}
@@ -388,7 +399,6 @@ function WattaMenuCategoryStripInner() {
               </div>
               <span className="category-button-label-web">{mv.fullMenuAllTab}</span>
             </button>
-          ) : null}
           {menuCategories.map((category) => (
             <button
               key={category.key}

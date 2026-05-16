@@ -22,7 +22,7 @@ import {
   shouldRestoreMenuBrowse,
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
-import { WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
+import { FULL_MENU_ALL_SLUG, WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
 import {
   WATTA_BOOT_SPLASH_ENDED_EVENT,
   WATTA_HERO_VIDEO_READY_EVENT,
@@ -1695,14 +1695,21 @@ export default function MenuView() {
     [menuCategories],
   )
 
-  const handleNavCategorySelect = useCallback((key: string) => {
-    setSelectedCategory(key)
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }),
-      )
-    }
-  }, [])
+  const handleNavCategorySelect = useCallback(
+    (key: string) => {
+      if (key === FULL_MENU_ALL_SLUG) {
+        router.push('/menu')
+        return
+      }
+      setSelectedCategory(key)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }),
+        )
+      }
+    },
+    [router],
+  )
 
   const handleSidebarCityChange = useCallback(
     (cityId: number) => {
