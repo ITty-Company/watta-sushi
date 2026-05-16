@@ -12129,21 +12129,43 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   animation: none;
 }
 
-/* Boot splash: швидке заповнення зеленої смуги, помітні білі смужки */
-.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-loading-bar--determinate {
-  transition: width 0.14s linear;
+/* Boot splash: гарантоване заповнення зеленої смуги (CSS + JS progress для a11y) */
+.watta-load-screen-root--boot-animate .watta-loading-bar--determinate {
+  width: 0%;
+  animation: wattaBootBarFill 0.9s ease-out forwards;
+  transition: none;
 }
 
-.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-white-bar {
-  animation: wattaUiverseBlink 0.7s ease-in-out infinite;
+@keyframes wattaBootBarFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
 }
 
-.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-white-bar:nth-child(3n + 2) {
-  animation-delay: 0.12s;
+.watta-load-screen-root--boot-animate .watta-white-bar {
+  opacity: 0.55;
+  animation: wattaBootStripePulse 0.65s ease-in-out infinite;
 }
 
-.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-white-bar:nth-child(3n) {
-  animation-delay: 0.24s;
+.watta-load-screen-root--boot-animate .watta-white-bar:nth-child(3n + 2) {
+  animation-delay: 0.1s;
+}
+
+.watta-load-screen-root--boot-animate .watta-white-bar:nth-child(3n) {
+  animation-delay: 0.2s;
+}
+
+@keyframes wattaBootStripePulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
 }
 
 .watta-white-bars-container {

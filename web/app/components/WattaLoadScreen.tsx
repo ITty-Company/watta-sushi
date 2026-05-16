@@ -8,6 +8,8 @@ type WattaLoadScreenProps = {
   progress: number
   /** Smaller logo + bar for hero overlay */
   compact?: boolean
+  /** Boot splash: CSS-анімація заповнення зеленої смуги (надійніше за лише width у JS) */
+  bootAnimate?: boolean
   label?: ReactNode
 }
 
@@ -18,6 +20,7 @@ export default function WattaLoadScreen({
   className = '',
   progress,
   compact = false,
+  bootAnimate = false,
   label = (
     <>
       Loading<span className="watta-dot">.</span>
@@ -30,7 +33,7 @@ export default function WattaLoadScreen({
 
   return (
     <div
-      className={`watta-load-screen-root ${compact ? 'watta-load-screen-root--compact' : ''} ${className}`.trim()}
+      className={`watta-load-screen-root ${compact ? 'watta-load-screen-root--compact' : ''} ${bootAnimate ? 'watta-load-screen-root--boot-animate' : ''} ${className}`.trim()}
       role="status"
       aria-live="polite"
       aria-busy={pct < 100}
@@ -61,7 +64,7 @@ export default function WattaLoadScreen({
           >
             <div
               className="watta-loading-bar watta-loading-bar--determinate"
-              style={{ width: `${pct}%` }}
+              style={bootAnimate ? undefined : { width: `${pct}%` }}
             >
               <div className="watta-white-bars-container" aria-hidden>
                 {Array.from({ length: 10 }).map((_, i) => (
