@@ -10,6 +10,8 @@ type WattaLoadScreenProps = {
   compact?: boolean
   /** Boot splash: CSS-анімація заповнення зеленої смуги (надійніше за лише width у JS) */
   bootAnimate?: boolean
+  /** Викликається, коли CSS-анімація смуги дійшла до 100% */
+  onBootFillComplete?: () => void
   label?: ReactNode
 }
 
@@ -21,6 +23,7 @@ export default function WattaLoadScreen({
   progress,
   compact = false,
   bootAnimate = false,
+  onBootFillComplete,
   label = (
     <>
       Loading<span className="watta-dot">.</span>
@@ -65,6 +68,10 @@ export default function WattaLoadScreen({
             <div
               className="watta-loading-bar watta-loading-bar--determinate"
               style={bootAnimate ? undefined : { width: `${pct}%` }}
+              onAnimationEnd={(e) => {
+                if (!bootAnimate || !onBootFillComplete) return
+                if (e.animationName === 'wattaBootBarFill') onBootFillComplete()
+              }}
             >
               <div className="watta-white-bars-container" aria-hidden>
                 {Array.from({ length: 10 }).map((_, i) => (

@@ -12130,10 +12130,21 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 }
 
 /* Boot splash: гарантоване заповнення зеленої смуги (CSS + JS progress для a11y) */
+.watta-load-screen-root--boot-animate {
+  --watta-boot-fill-ms: 900ms;
+}
+
 .watta-load-screen-root--boot-animate .watta-loading-bar--determinate {
   width: 0%;
-  animation: wattaBootBarFill 0.9s ease-out forwards;
+  animation: wattaBootBarFill var(--watta-boot-fill-ms, 900ms) ease-out forwards;
   transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-load-screen-root--boot-animate .watta-loading-bar--determinate {
+    animation: none;
+    width: 100%;
+  }
 }
 
 @keyframes wattaBootBarFill {
