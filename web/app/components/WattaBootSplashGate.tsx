@@ -4,12 +4,12 @@ import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } 
 import { useLanguage } from '../context/LanguageContext'
 import WattaLoadScreen from './WattaLoadScreen'
 import { WATTA_BOOT_SPLASH_ENDED_EVENT } from '@/lib/wattaHeroVideo'
-import { kickWelcomeHeroVideoPlayBurst, kickWelcomeHeroVideoPlayOnce } from '@/lib/kickWelcomeHeroVideo'
+import { kickWelcomeHeroVideoPlayBurst } from '@/lib/kickWelcomeHeroVideo'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
-/** Тривалість заповнення зеленої смуги — після 100% одразу показуємо сайт */
+/** Тривалість заповнення зеленої смуги (синхронно з CSS animation) */
 export const BOOT_SPLASH_FILL_MS = 900
-const BOOT_SPLASH_FAILSAFE_MS = 5_000
+const BOOT_SPLASH_FAILSAFE_MS = 4_000
 
 type WattaBootSplashGateProps = {
   children: ReactNode
@@ -33,8 +33,8 @@ function shouldSkipBootSplash(): boolean {
 }
 
 /**
- * Сплеш: зелена смуга 0→100%, потім одразу сайт (відео вже крутиться під сплешем).
- * Повторний візит у вкладці — без сплешу (sessionStorage).
+ * Сплеш: смуга 0→100%, потім одразу сайт. Закриття через setTimeout (Safari інколи
+ * не дає animationend на width) + запасний failsafe.
  */
 export default function WattaBootSplashGate({ children, onEnded }: WattaBootSplashGateProps) {
   const { t } = useLanguage()
@@ -43,22 +43,16 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     if (typeof window === 'undefined') return true
     return !shouldSkipBootSplash()
   })
-  const dismissScheduledRef = useRef(false)
-  const showBootSplashRef = useRef(showBootSplash)
+  const dismissedRef = useRef(false)
   const onEndedRef = useRef(onEnded)
-  showBootSplashRef.current = showBootSplash
   onEndedRef.current = onEnded
 
   const dismissSplash = useCallback(() => {
-    if (!showBootSplashRef.current || dismissScheduledRef.current) return
-    dismissScheduledRef.current = true
-    setBootProgress(100)
+    if (dismissedRef.current) return
+    dismissedRef.current = true
     markBootSplashDone()
-    kickWelcomeHeroVideoPlayOnce()
-    requestAnimationFrame(() => {
-      kickWelcomeHeroVideoPlayOnce()
-      setShowBootSplash(false)
-    })
+    setBootProgress(100)
+    setShowBootSplash(false)
   }, [])
 
   useLayoutEffect(() => {
@@ -74,35 +68,31 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     }
   }, [showBootSplash])
 
-  /** Прогрес для a11y; вхід на сайт — коли смуга 100% (animationend або rAF) */
-  useEffect(() => {
+  /** Прогрес для a11y + гарантоване закриття після заповнення смуги */
+  useLayoutEffect(() => {
     if (!showBootSplash) return
 
-    dismissScheduledRef.current = false
+    dismissedRef.current = false
     setBootProgress(0)
-    const start = performance.now()
-    let raf = 0
 
-    const tick = (now: number) => {
-      const elapsed = now - start
-      const pct = Math.min(100, (elapsed / BOOT_SPLASH_FILL_MS) * 100)
-      setBootProgress(pct)
-      if (pct < 100) {
-        raf = requestAnimationFrame(tick)
-        return
-      }
-      dismissSplash()
+    const started = Date.now()
+    const progressId = window.setInterval(() => {
+      const elapsed = Date.now() - started
+      setBootProgress(Math.min(100, (elapsed / BOOT_SPLASH_FILL_MS) * 100))
+    }, 40)
+
+    const doneId = window.setTimeout(dismissSplash, BOOT_SPLASH_FILL_MS)
+
+    return () => {
+      clearInterval(progressId)
+      clearTimeout(doneId)
     }
-
-    raf = requestAnimationFrame(tick)
-
-    return () => cancelAnimationFrame(raf)
   }, [showBootSplash, dismissSplash])
 
   useEffect(() => {
     if (!showBootSplash) return
-    const fail = window.setTimeout(dismissSplash, BOOT_SPLASH_FAILSAFE_MS)
-    return () => clearTimeout(fail)
+    const failId = window.setTimeout(dismissSplash, BOOT_SPLASH_FAILSAFE_MS)
+    return () => clearTimeout(failId)
   }, [showBootSplash, dismissSplash])
 
   useLayoutEffect(() => {
@@ -121,12 +111,14 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     onEndedRef.current?.()
   }, [showBootSplash])
 
+  const loadingLabel = t?.siteAria?.loading ?? 'Загрузка'
+
   return (
     <>
       {children}
       {showBootSplash ? (
         <div
-          className="fixed inset-0 z-[10050] flex w-full flex-col bg-white"
+          className="watta-boot-splash-overlay fixed inset-0 z-[10050] flex w-full flex-col bg-white"
           suppressHydrationWarning
           aria-hidden
         >
@@ -139,7 +131,7 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
                 onBootFillComplete={dismissSplash}
                 label={
                   <>
-                    {t.siteAria.loading}
+                    {loadingLabel}
                     <span className="watta-dot">.</span>
                     <span className="watta-dot">.</span>
                     <span className="watta-dot">.</span>

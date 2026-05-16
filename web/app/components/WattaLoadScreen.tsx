@@ -70,7 +70,11 @@ export default function WattaLoadScreen({
               style={bootAnimate ? undefined : { width: `${pct}%` }}
               onAnimationEnd={(e) => {
                 if (!bootAnimate || !onBootFillComplete) return
-                if (e.animationName === 'wattaBootBarFill') onBootFillComplete()
+                if (e.target !== e.currentTarget) return
+                const name = e.animationName || ''
+                if (name === 'wattaBootBarFill' || name.includes('wattaBootBarFill')) {
+                  onBootFillComplete()
+                }
               }}
             >
               <div className="watta-white-bars-container" aria-hidden>
