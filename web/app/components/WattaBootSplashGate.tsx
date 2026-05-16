@@ -4,12 +4,12 @@ import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } 
 import { useLanguage } from '../context/LanguageContext'
 import WattaLoadScreen from './WattaLoadScreen'
 import { WATTA_BOOT_SPLASH_ENDED_EVENT } from '@/lib/wattaHeroVideo'
-import { kickWelcomeHeroVideoPlayBurst } from '@/lib/kickWelcomeHeroVideo'
+import { kickWelcomeHeroVideoPlayBurst, kickWelcomeHeroVideoPlayOnce } from '@/lib/kickWelcomeHeroVideo'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
-/** Тривалість заповнення зеленої смуги (синхронно з CSS animation) */
-export const BOOT_SPLASH_FILL_MS = 900
-const BOOT_SPLASH_FAILSAFE_MS = 4_000
+/** Швидке заповнення смуги до 100%, потім одразу головна */
+export const BOOT_SPLASH_FILL_MS = 800
+const BOOT_SPLASH_FAILSAFE_MS = 3_500
 
 type WattaBootSplashGateProps = {
   children: ReactNode
@@ -32,10 +32,6 @@ function shouldSkipBootSplash(): boolean {
   }
 }
 
-/**
- * Сплеш: смуга 0→100%, потім одразу сайт. Закриття через setTimeout (Safari інколи
- * не дає animationend на width) + запасний failsafe.
- */
 export default function WattaBootSplashGate({ children, onEnded }: WattaBootSplashGateProps) {
   const { t } = useLanguage()
   const [bootProgress, setBootProgress] = useState(0)
@@ -63,36 +59,46 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     } else {
       root.removeAttribute('data-watta-boot-splash')
     }
-    return () => {
-      root.removeAttribute('data-watta-boot-splash')
-    }
+    return () => root.removeAttribute('data-watta-boot-splash')
   }, [showBootSplash])
 
-  /** Прогрес для a11y + гарантоване закриття після заповнення смуги */
-  useLayoutEffect(() => {
+  /** Смуга 0→100% (inline width) + відео під сплешем уже грає muted */
+  useEffect(() => {
     if (!showBootSplash) return
 
     dismissedRef.current = false
     setBootProgress(0)
 
-    const started = Date.now()
-    const progressId = window.setInterval(() => {
-      const elapsed = Date.now() - started
-      setBootProgress(Math.min(100, (elapsed / BOOT_SPLASH_FILL_MS) * 100))
-    }, 40)
+    const start = performance.now()
+    let raf = 0
+    let videoKickId = 0
 
-    const doneId = window.setTimeout(dismissSplash, BOOT_SPLASH_FILL_MS)
+    const tick = (now: number) => {
+      const elapsed = now - start
+      const pct = Math.min(100, (elapsed / BOOT_SPLASH_FILL_MS) * 100)
+      setBootProgress(pct)
+
+      if (pct < 100) {
+        raf = requestAnimationFrame(tick)
+        return
+      }
+
+      dismissSplash()
+    }
+
+    raf = requestAnimationFrame(tick)
+
+    videoKickId = window.setInterval(() => {
+      kickWelcomeHeroVideoPlayOnce()
+    }, 250)
+
+    const failId = window.setTimeout(dismissSplash, BOOT_SPLASH_FAILSAFE_MS)
 
     return () => {
-      clearInterval(progressId)
-      clearTimeout(doneId)
+      cancelAnimationFrame(raf)
+      clearInterval(videoKickId)
+      clearTimeout(failId)
     }
-  }, [showBootSplash, dismissSplash])
-
-  useEffect(() => {
-    if (!showBootSplash) return
-    const failId = window.setTimeout(dismissSplash, BOOT_SPLASH_FAILSAFE_MS)
-    return () => clearTimeout(failId)
   }, [showBootSplash, dismissSplash])
 
   useLayoutEffect(() => {
@@ -125,10 +131,8 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
           <div className="app-web flex min-h-[100dvh] flex-1 watta-page-bg">
             <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden">
               <WattaLoadScreen
-                className="min-h-[100dvh]"
+                className="min-h-[100dvh] watta-load-screen-root--boot-splash"
                 progress={bootProgress}
-                bootAnimate
-                onBootFillComplete={dismissSplash}
                 label={
                   <>
                     {loadingLabel}
