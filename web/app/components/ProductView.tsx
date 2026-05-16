@@ -18,6 +18,7 @@ import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFr
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { cn, getApiUrl } from '@/lib/utils'
 import { fetchProductById, normalizeProductRouteId } from '@/lib/fetchProductById'
+import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { useProductFavorite } from '@/hooks/useProductFavorite'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
@@ -117,10 +118,9 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     setProduct(null)
     setRecommendations([])
 
-    const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
-    const cityId = rawCity ? parseInt(rawCity, 10) : NaN
+    const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
     const recQ = new URLSearchParams({ excludeId: String(numericProductId), limit: '24' })
-    if (Number.isFinite(cityId) && cityId > 0) recQ.set('cityId', String(cityId))
+    if (cityId != null && cityId > 0) recQ.set('cityId', String(cityId))
     const recUrl = getApiUrl(`/api/products/recommendations?${recQ.toString()}`)
 
     const recFetch = fetch(recUrl, { signal: ac.signal, headers: { 'Cache-Control': 'no-cache' } })

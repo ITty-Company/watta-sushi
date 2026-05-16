@@ -17,6 +17,12 @@ import {
   writeWattaDeliveryZoneSelection,
 } from '@/lib/wattaDeliveryZoneSelection'
 import { resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
+import {
+  applyDefaultCityToStorage,
+  getExplicitSavedCityId,
+  isCityChoiceExplicit,
+  persistUserCityChoice,
+} from '@/lib/wattaSiteLocalePrefs'
 import { DELIVERY_HERO_VIDEO_SOURCES } from '@/lib/deliveryHeroVideoSources'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
@@ -260,31 +266,26 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
           const citiesData = await citiesRes.json()
           const formattedCities = formatCitiesFromApi(citiesData)
           setCities(formattedCities)
-          const saved =
-            typeof window !== 'undefined' && window.localStorage
-              ? localStorage.getItem('selectedCityId')
-              : null
-          const chosen = resolveCityFromSavedId(formattedCities, saved)
+          const chosen = resolveCityFromSavedId(formattedCities, getExplicitSavedCityId())
           setSelectedCity(chosen)
-          if (chosen && typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('selectedCityId', String(chosen.id))
+          if (chosen) {
+            if (isCityChoiceExplicit()) persistUserCityChoice(Number(chosen.id))
+            else applyDefaultCityToStorage(Number(chosen.id))
           }
         } else {
           setCities(defaultCities)
-          const saved =
-            typeof window !== 'undefined' && window.localStorage
-              ? localStorage.getItem('selectedCityId')
-              : null
-          setSelectedCity(resolveCityFromSavedId(defaultCities, saved) ?? defaultCities[0] ?? null)
+          setSelectedCity(
+            resolveCityFromSavedId(defaultCities, getExplicitSavedCityId()) ??
+              defaultCities[0] ??
+              null,
+          )
         }
       } catch (error) {
         console.error('Ошибка загрузки данных доставки:', error)
         setCities(defaultCities)
-        const saved =
-          typeof window !== 'undefined' && window.localStorage
-            ? localStorage.getItem('selectedCityId')
-            : null
-        setSelectedCity(resolveCityFromSavedId(defaultCities, saved) ?? defaultCities[0] ?? null)
+        setSelectedCity(
+          resolveCityFromSavedId(defaultCities, getExplicitSavedCityId()) ?? defaultCities[0] ?? null,
+        )
       } finally {
         setLoading(false)
       }
@@ -294,10 +295,12 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
 
   const syncCityFromStorage = useCallback(() => {
     if (typeof window === 'undefined' || !window.localStorage || cities.length === 0) return
-    const savedCityId = localStorage.getItem('selectedCityId')
-    const chosen = resolveCityFromSavedId(cities, savedCityId)
+    const chosen = resolveCityFromSavedId(cities, getExplicitSavedCityId())
     setSelectedCity(chosen)
-    if (chosen) localStorage.setItem('selectedCityId', String(chosen.id))
+    if (chosen) {
+      if (isCityChoiceExplicit()) persistUserCityChoice(Number(chosen.id))
+      else applyDefaultCityToStorage(Number(chosen.id))
+    }
   }, [cities])
 
   useEffect(() => {
@@ -330,8 +333,8 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
         setShowAllCities(true)
       }
       setPostalResult(null)
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('selectedCityId', cityId)
+      if (typeof window !== 'undefined') {
+        persistUserCityChoice(Number(cityId))
         window.dispatchEvent(new Event('cityChanged'))
       }
     }
@@ -434,8 +437,8 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
         flatAmount: mode === 'flat' ? flatAmt : null,
         updatedAt: Date.now(),
       })
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('selectedCityId', selectedCity.id)
+      if (typeof window !== 'undefined') {
+        persistUserCityChoice(Number(selectedCity.id))
         window.dispatchEvent(new Event('cityChanged'))
       }
       let feeLabel = d.zoneFeeStandard

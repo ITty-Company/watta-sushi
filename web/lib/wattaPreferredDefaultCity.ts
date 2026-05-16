@@ -27,9 +27,15 @@ export function cityIdPreferAmsterdam<
   return hit?.id ?? list[0].id
 }
 
-/** Каталог країн/міст: перша активна Амстердам, інакше — як раніше (перша активна країна + місто). */
+function countryCodeNorm(c: { code?: string }): string {
+  return String(c.code ?? '')
+    .trim()
+    .toUpperCase()
+}
+
+/** Каталог країн/міст: NL + Амстердам, інакше будь-який Амстердам, інакше перше місто NL. */
 export function findPreferredDefaultCityInCountries<
-  TCountry extends { cities?: readonly TCity[] },
+  TCountry extends { cities?: readonly TCity[]; code?: string },
   TCity extends {
     id: number
     countryId: number
@@ -40,20 +46,37 @@ export function findPreferredDefaultCityInCountries<
     isActive?: boolean
   },
 >(countries: readonly TCountry[]): { country: TCountry; city: TCity } | null {
-  for (const country of countries) {
+  const pickAmsterdamIn = (country: TCountry): { country: TCountry; city: TCity } | null => {
     for (const city of country.cities || []) {
       if (city.isActive === false) continue
-      if (nameFieldsMatchAmsterdam(city)) {
-        return { country, city }
-      }
+      if (nameFieldsMatchAmsterdam(city)) return { country, city }
     }
+    return null
   }
+
+  for (const country of countries) {
+    if (countryCodeNorm(country) !== 'NL') continue
+    const hit = pickAmsterdamIn(country)
+    if (hit) return hit
+  }
+
+  for (const country of countries) {
+    const hit = pickAmsterdamIn(country)
+    if (hit) return hit
+  }
+
+  for (const country of countries) {
+    if (countryCodeNorm(country) !== 'NL') continue
+    const first = country.cities?.find((c) => c.isActive !== false)
+    if (first) return { country, city: first }
+  }
+
   return null
 }
 
 /**
- * Вибір міста з плоского списку (GET /api/cities): збережений id, інакше Амстердам, інакше перший.
- * Якщо в каталозі є Амстердам (NL), а збережене місто з іншої країни — підставляємо Амстердам (міграція з UA тощо).
+ * Вибір міста з плоского списку (GET /api/cities).
+ * `savedId` — лише після явного вибору (`getExplicitSavedCityId`); інакше Амстердам (NL).
  */
 export function resolveCityFromSavedId<
   T extends {
@@ -66,7 +89,12 @@ export function resolveCityFromSavedId<
   },
 >(list: readonly T[], savedId: string | number | null | undefined): T | null {
   if (!list.length) return null
-  const ams = list.find((c) => nameFieldsMatchAmsterdam(c)) ?? null
+  const ams =
+    list.find(
+      (c) => nameFieldsMatchAmsterdam(c) && String(c.country?.code || '').toUpperCase() === 'NL',
+    ) ??
+    list.find((c) => nameFieldsMatchAmsterdam(c)) ??
+    null
 
   if (savedId == null || (typeof savedId === 'string' && savedId.trim() === '')) {
     return ams ?? list[0] ?? null
@@ -74,23 +102,7 @@ export function resolveCityFromSavedId<
 
   const sid = String(savedId)
   const matched = list.find((c) => String(c.id) === sid) ?? null
-  if (matched) {
-    const mCc = String(matched.country?.code || '').toUpperCase()
-    const aCc = String(ams?.country?.code || '').toUpperCase()
-    if (ams && aCc === 'NL' && mCc && mCc !== 'NL') return ams
-    return matched
-  }
+  if (matched) return matched
 
   return ams ?? list[0] ?? null
-}
-
-/** Каталог країн/міст: чи замінити збережене не-NL місто на Амстердам (NL), якщо він є в каталозі. */
-export function nlAmsterdamOverridesNonNlSaved<
-  TCity extends { name?: string; name_en?: string; name_nl?: string; name_ua?: string },
-  TCountry extends { code?: string },
->(savedCountry: TCountry, savedCity: TCity, ams: { country: TCountry; city: TCity } | null): boolean {
-  if (!ams || !nameFieldsMatchAmsterdam(ams.city)) return false
-  const s = String(savedCountry.code || '').toUpperCase()
-  const a = String(ams.country?.code || '').toUpperCase()
-  return a === 'NL' && s !== 'NL'
 }

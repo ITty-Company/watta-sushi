@@ -45,6 +45,7 @@ import {
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
 } from '@/lib/wattaHeroVideo'
 import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
+import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSiteLocalePrefs'
 
 /**
  * Усе, що показується тільки при `activePage !== null` — тягнемо `next/dynamic` без SSR.
@@ -621,15 +622,8 @@ export default function MenuView() {
   useEffect(() => {
     if (typeof window === 'undefined' || !window.localStorage) return
 
-    let savedCityId: number | null = null
-    const savedRaw = localStorage.getItem('selectedCityId')
-    if (savedRaw) {
-      const parsed = parseInt(savedRaw, 10)
-      if (Number.isFinite(parsed) && parsed > 0) {
-        savedCityId = parsed
-        setSelectedCityId(parsed)
-      }
-    }
+    const savedCityId = getExplicitSavedCityId()
+    if (savedCityId != null) setSelectedCityId(savedCityId)
 
     const pickCityForList = (
       list: {
@@ -643,9 +637,15 @@ export default function MenuView() {
     ) => {
       if (!list.length) return
       const resolved = resolveCityFromSavedId(list, savedCityId)
-      const pick = resolved?.id ?? cityIdPreferAmsterdam(list) ?? list[0].id
-      setSelectedCityId(pick)
-      localStorage.setItem('selectedCityId', String(pick))
+      const pick =
+        (typeof resolved?.id === 'number' ? resolved.id : Number(resolved?.id)) ||
+        cityIdPreferAmsterdam(list) ||
+        list[0]?.id
+      if (pick != null && Number.isFinite(Number(pick))) {
+        const id = Number(pick)
+        setSelectedCityId(id)
+        if (savedCityId == null) applyDefaultCityToStorage(id)
+      }
     }
 
     // Кэш городов: session + localStorage — переживает перезагрузку вкладки и перезапуск браузера (тот же origin)

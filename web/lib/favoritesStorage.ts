@@ -2,6 +2,7 @@
 
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { getApiUrl } from '@/lib/utils'
+import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 
 export function readFavoriteIds(): number[] {
   if (typeof window === 'undefined') return []
@@ -149,10 +150,9 @@ export async function loadFavoriteProducts<T extends ProductWithId>(
   const ids = readFavoriteIds()
   if (ids.length === 0) return []
 
-  const rawCity = localStorage.getItem('selectedCityId')
-  const cityId = rawCity ? parseInt(rawCity, 10) : NaN
+  const cityId = readCityIdForProductApi()
   const url =
-    Number.isFinite(cityId) && cityId > 0
+    cityId != null && cityId > 0
       ? getApiUrl(`/api/products?cityId=${cityId}`)
       : getApiUrl('/api/products')
   const res = await fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })

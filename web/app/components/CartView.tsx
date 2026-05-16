@@ -29,6 +29,11 @@ import {
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { getApiUrl } from '@/lib/utils'
+import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
+import {
+  getExplicitSavedCityId,
+  readCityIdForProductApi,
+} from '@/lib/wattaSiteLocalePrefs'
 import {
   CHECKOUT_PHONE_INPUT_MAX_LEN,
   isValidCheckoutPhone,
@@ -259,10 +264,9 @@ export default function CartView({
 
   useEffect(() => {
     const loadRecs = () => {
-      const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
-      const cityId = rawCity ? parseInt(rawCity, 10) : NaN
+      const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
       const q = new URLSearchParams({ limit: '20' })
-      if (Number.isFinite(cityId) && cityId > 0) q.set('cityId', String(cityId))
+      if (cityId != null && cityId > 0) q.set('cityId', String(cityId))
       fetch(getApiUrl(`/api/products/recommendations?${q.toString()}`))
         .then((res) => res.json())
         .then((data) => {
@@ -314,18 +318,17 @@ export default function CartView({
 
         if (loadedCities.length === 0) return
 
-        let wantId: number | null = null
-        try {
-          const raw =
-            typeof window !== 'undefined' ? window.localStorage.getItem('selectedCityId') : null
-          const n = raw ? parseInt(raw, 10) : NaN
-          if (Number.isFinite(n)) wantId = n
-        } catch {
-          /* ignore */
-        }
-
+        const resolved = resolveCityFromSavedId(
+          loadedCities.map((c) => ({
+            ...c,
+            country: undefined as { code?: string } | undefined,
+          })),
+          typeof window !== 'undefined' ? getExplicitSavedCityId() : null,
+        )
         const preferred =
-          (wantId != null ? loadedCities.find((c) => c.id === wantId) : null) ?? loadedCities[0]
+          (resolved ? loadedCities.find((c) => c.id === resolved.id) : null) ??
+          loadedCities.find((c) => c.id === cityIdPreferAmsterdam(loadedCities)) ??
+          loadedCities[0]
 
         setCities(loadedCities)
         setSelectedCity(preferred.name)
@@ -346,9 +349,9 @@ export default function CartView({
 
   useEffect(() => {
     if (cities.length === 0 || typeof window === 'undefined') return
-    const idRaw = localStorage.getItem('selectedCityId')
-    if (!idRaw) return
-    const found = cities.find((c) => String(c.id) === idRaw)
+    const cityId = readCityIdForProductApi()
+    if (cityId == null) return
+    const found = cities.find((c) => c.id === cityId)
     if (found) {
       setSelectedCity((prev) => (prev === found.name ? prev : found.name))
     }

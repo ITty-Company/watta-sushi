@@ -11,7 +11,13 @@ import {
   getCountriesCatalogIfCached,
   invalidateCountriesCatalogCache,
 } from '@/lib/fetchCountriesCatalog'
-import { findPreferredDefaultCityInCountries, nlAmsterdamOverridesNonNlSaved } from '@/lib/wattaPreferredDefaultCity'
+import { findPreferredDefaultCityInCountries } from '@/lib/wattaPreferredDefaultCity'
+import {
+  applyDefaultCityToStorage,
+  getExplicitSavedCityId,
+  isCityChoiceExplicit,
+  persistUserCityChoice,
+} from '@/lib/wattaSiteLocalePrefs'
 
 const COUNTRIES_CATALOG_EVENT = 'countriesCatalogUpdated'
 
@@ -123,43 +129,20 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
       return
     }
 
-    const fromStorage = () => {
-      try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
-        const n = raw ? parseInt(raw, 10) : NaN
-        return Number.isFinite(n) ? n : null
-      } catch {
-        return null
-      }
-    }
-
-    const wantId = selectedCityRef.current?.id ?? fromStorage()
+    const wantId = isCityChoiceExplicit()
+      ? selectedCityRef.current?.id ?? getExplicitSavedCityId()
+      : null
 
     if (wantId != null) {
       for (const country of activeList) {
         const city = country.cities?.find((c) => c.id === wantId && c.isActive)
         if (city) {
-          const ams = findPreferredDefaultCityInCountries(activeList)
-          if (ams && nlAmsterdamOverridesNonNlSaved(country, city, ams)) {
-            setSelectedCountry(ams.country)
-            setSelectedCity(ams.city as City)
-            if (typeof window !== 'undefined' && window.localStorage) {
-              localStorage.setItem('selectedCityId', String(ams.city.id))
-            }
-            notifyCity(ams.city.id)
-            return
-          }
           setSelectedCountry(country)
           setSelectedCity(city)
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('selectedCityId', String(city.id))
-          }
+          persistUserCityChoice(city.id)
           notifyCity(city.id)
           return
         }
-      }
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.removeItem('selectedCityId')
       }
     }
 
@@ -167,9 +150,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
     if (ams) {
       setSelectedCountry(ams.country)
       setSelectedCity(ams.city as City)
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('selectedCityId', String(ams.city.id))
-      }
+      applyDefaultCityToStorage(ams.city.id)
       notifyCity(ams.city.id)
       return
     }
@@ -180,9 +161,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
     const firstCity = firstCountry.cities?.find((c) => c.isActive)
     if (firstCity) {
       setSelectedCity(firstCity)
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('selectedCityId', String(firstCity.id))
-      }
+      applyDefaultCityToStorage(firstCity.id)
       notifyCity(firstCity.id)
     } else {
       setSelectedCity(null)
@@ -317,9 +296,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
     setSelectedCity(city)
     setIsOpen(false)
 
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem('selectedCityId', city.id.toString())
-    }
+    persistUserCityChoice(city.id)
 
     onCityChange?.(city.id)
 
