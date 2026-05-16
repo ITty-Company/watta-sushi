@@ -4,26 +4,16 @@ import { ReactNode, useMemo } from 'react'
 
 type WattaLoadScreenProps = {
   className?: string
-  /** 0–100: real fill; bar opens only after parent sets 100 and dismisses */
+  /** 0–100: ширина зеленої смуги */
   progress: number
-  /** Smaller logo + bar for hero overlay */
   compact?: boolean
-  /** Boot splash: CSS-анімація заповнення зеленої смуги (надійніше за лише width у JS) */
-  bootAnimate?: boolean
-  /** Викликається, коли CSS-анімація смуги дійшла до 100% */
-  onBootFillComplete?: () => void
   label?: ReactNode
 }
 
-/**
- * White splash: logo with loader directly underneath (Uiverse-style bar, brand green).
- */
 export default function WattaLoadScreen({
   className = '',
   progress,
   compact = false,
-  bootAnimate = false,
-  onBootFillComplete,
   label = (
     <>
       Loading<span className="watta-dot">.</span>
@@ -33,17 +23,17 @@ export default function WattaLoadScreen({
   ),
 }: WattaLoadScreenProps) {
   const pct = useMemo(() => Math.min(100, Math.max(0, progress)), [progress])
+  const bootSplash = className.includes('watta-load-screen-root--boot-splash')
 
   return (
     <div
-      className={`watta-load-screen-root ${compact ? 'watta-load-screen-root--compact' : ''} ${bootAnimate ? 'watta-load-screen-root--boot-animate' : ''} ${className}`.trim()}
+      className={`watta-load-screen-root ${compact ? 'watta-load-screen-root--compact' : ''} ${bootSplash ? 'watta-load-screen-root--boot-splash' : ''} ${className}`.trim()}
       role="status"
       aria-live="polite"
       aria-busy={pct < 100}
     >
       <div className="watta-load-screen-stack">
         <div className="watta-load-screen-logo-wrap">
-          {/* Logo для сплеша: 11 КБ WebP замість 121 КБ PNG, 2x для retina. PNG-fallback не потрібен — WebP підтримує iOS 14+. */}
           <img
             src="/logo-splash-1x.webp"
             srcSet="/logo-splash-1x.webp 1x, /logo-splash.webp 2x"
@@ -67,15 +57,7 @@ export default function WattaLoadScreen({
           >
             <div
               className="watta-loading-bar watta-loading-bar--determinate"
-              style={bootAnimate ? undefined : { width: `${pct}%` }}
-              onAnimationEnd={(e) => {
-                if (!bootAnimate || !onBootFillComplete) return
-                if (e.target !== e.currentTarget) return
-                const name = e.animationName || ''
-                if (name === 'wattaBootBarFill' || name.includes('wattaBootBarFill')) {
-                  onBootFillComplete()
-                }
-              }}
+              style={{ width: `${pct}%` }}
             >
               <div className="watta-white-bars-container" aria-hidden>
                 {Array.from({ length: 10 }).map((_, i) => (
