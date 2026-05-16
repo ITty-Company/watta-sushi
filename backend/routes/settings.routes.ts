@@ -5,30 +5,20 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { getUploadsDir } from '../lib/uploadsDir.js'
 
 const router = Router()
 const prisma = new PrismaClient()
 
-const uploadDir = path.join(__dirname, '../../web/public/uploads')
+const uploadDir = getUploadsDir()
 const DEFAULT_HOME_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const MAX_VIDEO_URL_LENGTH = 2048
 /** Захист від надто великого JSON у SiteSetting (адмінка без жорсткого ліміту в UI). */
 const MAX_HOME_HERO_VIDEOS = 100
 
-function ensureUploadDir() {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true })
-  }
-}
-
 const heroVideoUpload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => {
-      ensureUploadDir()
       cb(null, uploadDir)
     },
     filename: (_req, file, cb) => {
@@ -66,7 +56,6 @@ function persistDataUrlHeroVideo(dataUrl: string): string | null {
   if (buf.length < 1024) return null
   if (buf.length > 120 * 1024 * 1024) return null
 
-  ensureUploadDir()
   const name = `hero-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext === 'webm' ? 'webm' : ext === 'mov' ? 'mov' : 'mp4'}`
   const fp = path.join(uploadDir, name)
   try {

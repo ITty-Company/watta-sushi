@@ -30,15 +30,11 @@ import blogRoutes from './routes/blog.routes.ts';
 import reviewRoutes from './routes/review.routes.ts';
 import crmRoutes from './routes/crm.routes.ts';
 import contactRoutes from './routes/contact.routes.ts';
+import { getUploadsDir } from './lib/uploadsDir.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadsPublicDir = path.resolve(__dirname, '../web/public/uploads');
-try {
-  fs.mkdirSync(uploadsPublicDir, { recursive: true });
-} catch {
-  /* ignore */
-}
+const uploadsPublicDir = getUploadsDir();
 
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
 // Явный путь: при запуске не з каталога backend (../) dotenv знайшов б 0 змін
@@ -64,6 +60,7 @@ if (!process.env.DATABASE_URL?.trim()) {
   process.exit(1);
 }
 console.log('✅ DATABASE_URL найден');
+console.log('📁 Uploads directory:', uploadsPublicDir, process.env.UPLOAD_DIR ? '(UPLOAD_DIR)' : '(default)');
 
 const isProd = process.env.NODE_ENV === 'production';
 const shouldLogApiRequests =
