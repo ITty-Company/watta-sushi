@@ -22,8 +22,11 @@ export default function WattaLoadScreen({
     </>
   ),
 }: WattaLoadScreenProps) {
-  const pct = useMemo(() => Math.min(100, Math.max(0, progress)), [progress])
   const bootSplash = className.includes('watta-load-screen-root--boot-splash')
+  const pct = useMemo(() => {
+    const n = Math.min(100, Math.max(0, progress))
+    return bootSplash && n >= 99.5 ? 100 : n
+  }, [progress, bootSplash])
 
   return (
     <div

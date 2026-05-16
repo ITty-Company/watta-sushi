@@ -21,6 +21,7 @@
     "docker:db": "docker-compose up -d 2>/dev/null || docker compose up -d",
     "docker:db:down": "docker-compose down 2>/dev/null || docker compose down",
     "local:install": "npm install && cd web && npm install && cd ../backend && npm install",
+    "local:setup": "npm run local:install && npm run local:prepare",
     "local:prepare": "node scripts/local-prepare.cjs",
     "local:prepare:cloud": "SKIP_DOCKER=1 node scripts/local-prepare.cjs",
     "local:dev": "node scripts/local-dev.cjs",

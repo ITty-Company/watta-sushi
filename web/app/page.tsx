@@ -1,5 +1,5 @@
 import HomeClient from './HomeClient'
-import { WATTA_HERO_PRIMARY_MP4 } from '@/lib/wattaHeroVideo'
+import { WATTA_HOME_HERO_VIDEO_FALLBACKS, WATTA_HERO_PRIMARY_MP4 } from '@/lib/wattaHeroVideo'
 
 export default function Home() {
   return (
@@ -14,6 +14,9 @@ export default function Home() {
       />
       {/* Hero mp4 — паралельно з постером; декодер стартує одразу після hydration. */}
       <link rel="preload" as="video" type="video/mp4" href={WATTA_HERO_PRIMARY_MP4} fetchPriority="high" />
+      {WATTA_HOME_HERO_VIDEO_FALLBACKS.slice(1, 3).map((src) => (
+        <link key={src} rel="preload" as="video" type="video/mp4" href={src} />
+      ))}
       <HomeClient />
     </>
   )

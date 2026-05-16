@@ -3,13 +3,18 @@
 import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import WattaLoadScreen from './WattaLoadScreen'
-import { WATTA_BOOT_SPLASH_ENDED_EVENT } from '@/lib/wattaHeroVideo'
-import { kickWelcomeHeroVideoPlayBurst, kickWelcomeHeroVideoPlayOnce } from '@/lib/kickWelcomeHeroVideo'
+import { WATTA_BOOT_SPLASH_ENDED_EVENT, WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
+import {
+  kickWelcomeHeroVideoPlayBurst,
+  kickWelcomeHeroVideoPlayOnce,
+} from '@/lib/kickWelcomeHeroVideo'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
-/** Швидке заповнення смуги до 100%, потім одразу головна */
-export const BOOT_SPLASH_FILL_MS = 800
-const BOOT_SPLASH_FAILSAFE_MS = 3_500
+/** Швидке заповнення зеленої смуги */
+export const BOOT_SPLASH_FILL_MS = 700
+/** Коротка пауза на 100%, щоб смуга виглядала повністю заповненою */
+const BOOT_SPLASH_HOLD_FULL_MS = 120
+const BOOT_SPLASH_FAILSAFE_MS = 2_500
 
 type WattaBootSplashGateProps = {
   children: ReactNode
@@ -26,6 +31,12 @@ function markBootSplashDone(): void {
 
 function shouldSkipBootSplash(): boolean {
   try {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      process.env.NEXT_PUBLIC_WATTA_HOME_RELOAD_SPLASH === '1'
+    ) {
+      return false
+    }
     return sessionStorage.getItem(BOOT_SPLASH_DONE_KEY) === '1'
   } catch {
     return false
@@ -35,13 +46,19 @@ function shouldSkipBootSplash(): boolean {
 export default function WattaBootSplashGate({ children, onEnded }: WattaBootSplashGateProps) {
   const { t } = useLanguage()
   const [bootProgress, setBootProgress] = useState(0)
-  const [showBootSplash, setShowBootSplash] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return !shouldSkipBootSplash()
-  })
+  const [showBootSplash, setShowBootSplash] = useState(true)
   const dismissedRef = useRef(false)
+  const splashRunRef = useRef(0)
   const onEndedRef = useRef(onEnded)
   onEndedRef.current = onEnded
+
+  useLayoutEffect(() => {
+    if (shouldSkipBootSplash()) {
+      dismissedRef.current = true
+      setBootProgress(100)
+      setShowBootSplash(false)
+    }
+  }, [])
 
   const dismissSplash = useCallback(() => {
     if (dismissedRef.current) return
@@ -62,42 +79,63 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     return () => root.removeAttribute('data-watta-boot-splash')
   }, [showBootSplash])
 
-  /** Смуга 0→100% (inline width) + відео під сплешем уже грає muted */
+  /** Смуга 0→100% (inline width), пауза на повній, потім головна */
   useEffect(() => {
     if (!showBootSplash) return
 
-    dismissedRef.current = false
+    const gen = ++splashRunRef.current
     setBootProgress(0)
 
-    const start = performance.now()
-    let raf = 0
+    const t0 = performance.now()
+    let holdId = 0
+    let failId = 0
     let videoKickId = 0
 
-    const tick = (now: number) => {
-      const elapsed = now - start
+    const kickHero = () => kickWelcomeHeroVideoPlayOnce()
+
+    const finishAfterFullBar = () => {
+      if (gen !== splashRunRef.current) return
+      setBootProgress(100)
+      holdId = window.setTimeout(() => {
+        if (gen !== splashRunRef.current) return
+        dismissSplash()
+      }, BOOT_SPLASH_HOLD_FULL_MS)
+    }
+
+    const tickId = window.setInterval(() => {
+      if (gen !== splashRunRef.current) return
+      const elapsed = performance.now() - t0
       const pct = Math.min(100, (elapsed / BOOT_SPLASH_FILL_MS) * 100)
       setBootProgress(pct)
 
-      if (pct < 100) {
-        raf = requestAnimationFrame(tick)
-        return
+      if (pct >= 100) {
+        window.clearInterval(tickId)
+        finishAfterFullBar()
       }
+    }, 16)
 
-      dismissSplash()
+    kickHero()
+    queueMicrotask(kickHero)
+    videoKickId = window.setInterval(kickHero, 200)
+
+    const onHeroReady = () => {
+      kickHero()
+      kickWelcomeHeroVideoPlayBurst()
     }
+    window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
 
-    raf = requestAnimationFrame(tick)
-
-    videoKickId = window.setInterval(() => {
-      kickWelcomeHeroVideoPlayOnce()
-    }, 250)
-
-    const failId = window.setTimeout(dismissSplash, BOOT_SPLASH_FAILSAFE_MS)
+    failId = window.setTimeout(() => {
+      if (gen !== splashRunRef.current) return
+      window.clearInterval(tickId)
+      finishAfterFullBar()
+    }, BOOT_SPLASH_FAILSAFE_MS)
 
     return () => {
-      cancelAnimationFrame(raf)
-      clearInterval(videoKickId)
-      clearTimeout(failId)
+      window.clearInterval(tickId)
+      window.clearInterval(videoKickId)
+      window.clearTimeout(holdId)
+      window.clearTimeout(failId)
+      window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
     }
   }, [showBootSplash, dismissSplash])
 

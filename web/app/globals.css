@@ -6460,17 +6460,17 @@ html.watta-light-chrome body {
   position: absolute;
   inset: 0;
   line-height: 0;
-  background: radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%);
+  background: #0a1210;
   background-size: cover;
   background-position: center 18%;
   background-repeat: no-repeat;
 }
 
-/* Головна: океанський фон до першого кадру mp4 (без відсутнього jpg-постера) */
+/* Головна: темний фон до першого кадру mp4 (без синьої заглушки) */
 .menu-page-web:not(.watta-full-menu-page)
   .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
   .welcome-hero-video-fill-web {
-  background: radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%) !important;
+  background: #0a1210 !important;
 }
 
 /*
@@ -6505,7 +6505,7 @@ html.watta-light-chrome body {
   z-index: 2 !important;
   border-radius: var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)) !important;
   overflow: hidden !important;
-  background: radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%) !important;
+  background: #0a1210 !important;
   border: 1px solid rgba(20, 81, 66, 0.18) !important;
   /* Без великої нижньої тіні — інакше на білому блоці під відео виглядає як сіра смуга */
   box-shadow: none !important;
@@ -6530,14 +6530,7 @@ html.watta-light-chrome body {
   overflow: hidden !important;
   border-radius: inherit;
   line-height: 0 !important;
-  /* Не майже-чорний #0c1210: до першого кадру mp4 WebKit малює «дірку» — градієнт як вода, не пляма */
-  background: radial-gradient(
-    120% 90% at 50% 28%,
-    #6ec4dc 0%,
-    #3f94ae 38%,
-    #2a6f82 72%,
-    #1e5566 100%
-  ) !important;
+  background: #0a1210 !important;
 }
 
 .menu-page-web:not(.watta-full-menu-page)
@@ -6553,17 +6546,11 @@ html.watta-light-chrome body {
   max-height: none !important;
   object-fit: cover !important;
   object-position: center 18% !important;
-  opacity: 0 !important;
-  visibility: visible !important;
-  transition: opacity 0.28s ease-out;
-  background-color: #3a89a0 !important;
-}
-
-.menu-page-web:not(.watta-full-menu-page)
-  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
-  .welcome-hero-video-stack-web.watta-hero-video--ready
-  .watta-home-hero-native-video {
+  /* Одразу видиме: muted autoplay під сплешем; градієнт лишається під відео до першого кадру */
   opacity: 1 !important;
+  visibility: visible !important;
+  background-color: #0a1210 !important;
+  z-index: 2 !important;
 }
 
 .menu-page-web:not(.watta-full-menu-page)
@@ -6782,6 +6769,19 @@ html.watta-light-chrome body {
   visibility: visible !important;
   animation: none !important;
   transform: none !important;
+  pointer-events: none !important;
+}
+
+/* Safari: приховати велику кнопку Play, поки відео ще paused */
+.watta-home-hero-native-video::-webkit-media-controls-start-playback-button,
+.watta-home-hero-native-video::-webkit-media-controls-overlay-play-button,
+.watta-home-hero-native-video::-webkit-media-controls-play-button {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Заміна відео, якщо файл відсутній на хостингу (репо без великих mp4) */
@@ -12132,6 +12132,12 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 /* Boot splash: ширина смуги з JS (inline width), лише анімація смуг */
 .watta-load-screen-root--boot-splash .watta-loading-bar--determinate {
   transition: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.watta-load-screen-root--boot-splash .watta-loading-bar--determinate[style*='width: 100%'] {
+  width: 100% !important;
 }
 
 .watta-load-screen-root--boot-splash .watta-white-bar {
