@@ -4905,14 +4905,18 @@ html.watta-light-chrome body {
   .menu-page-web:not(.watta-full-menu-page)
     .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
     .welcome-hero-video-stack-web
-    .watta-home-hero-native-video,
+    .watta-home-hero-native-video {
+    object-fit: cover !important;
+    object-position: center 18% !important;
+  }
+
   .menu-page-web:not(.watta-full-menu-page)
     .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
     .welcome-hero-fallback-image-web {
-    object-fit: contain !important;
-    object-position: center center !important;
-    background-size: contain !important;
-    background-position: center center !important;
+    object-fit: cover !important;
+    object-position: center 18% !important;
+    background-size: cover !important;
+    background-position: center 18% !important;
   }
 
   .menu-page-web:not(.watta-full-menu-page) > #menu-cinematic-block {
@@ -6544,13 +6548,16 @@ html.watta-light-chrome body {
   height: 100% !important;
   max-width: none !important;
   max-height: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
   object-fit: cover !important;
-  object-position: center 18% !important;
-  /* Одразу видиме: muted autoplay під сплешем; градієнт лишається під відео до першого кадру */
+  object-position: center center !important;
   opacity: 1 !important;
   visibility: visible !important;
-  background-color: #0a1210 !important;
+  background-color: transparent !important;
   z-index: 2 !important;
+  transform: none !important;
+  filter: none !important;
 }
 
 .menu-page-web:not(.watta-full-menu-page)
@@ -6769,7 +6776,11 @@ html.watta-light-chrome body {
   visibility: visible !important;
   animation: none !important;
   transform: none !important;
+  -webkit-transform: none !important;
   pointer-events: none !important;
+  filter: none !important;
+  image-rendering: auto;
+  /* Нативний <video> 1:1 — без canvas-mirror і без scale/Ken Burns */
 }
 
 /* Safari: приховати велику кнопку Play, поки відео ще paused */

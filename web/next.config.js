@@ -125,8 +125,6 @@ const nextConfig = {
       // Спочатку явні шляхи — щоб Cache-Control для чанків не «губився» після catch-all
       { source: '/_next/static/:path*', headers: nextStaticCache },
       { source: '/watta-sushi-2-hero.mp4', headers: heroVideoHeaders },
-      { source: '/welcome.mp4', headers: heroVideoHeaders },
-      { source: '/hero-untitled-design.mp4', headers: heroVideoHeaders },
       /* Картинки/іконки — імутабельні. При заміні файлу — оновити ім'я або bust через query. */
       { source: '/logo.png', headers: longImmutable },
       { source: '/logo.webp', headers: longImmutable },
