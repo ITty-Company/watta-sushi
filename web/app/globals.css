@@ -6460,19 +6460,17 @@ html.watta-light-chrome body {
   position: absolute;
   inset: 0;
   line-height: 0;
-  /* Постер як фон контейнера: мить SSR + першого hydrate видно картинку, поки декодер mp4 не вискочив. */
-  background-image: url('/watta-sushi.jpg');
+  background: radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%);
   background-size: cover;
   background-position: center 18%;
   background-repeat: no-repeat;
 }
 
-/* Головна (не /menu): без фото-фону під відео — лише папір секції */
+/* Головна: океанський фон до першого кадру mp4 (без відсутнього jpg-постера) */
 .menu-page-web:not(.watta-full-menu-page)
   .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
   .welcome-hero-video-fill-web {
-  background-image: none !important;
-  background-color: transparent !important;
+  background: radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%) !important;
 }
 
 /*
@@ -6482,7 +6480,7 @@ html.watta-light-chrome body {
   .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
   position: relative !important;
   isolation: isolate;
-  background: #ffffff !important;
+  background: transparent !important;
   margin-top: 0 !important;
   /* Не успадковувати ~100svh від `.welcome-hero-section-web` — інакше плитка «тонка», а секція біла на всю висоту */
   min-height: 0 !important;
@@ -6507,7 +6505,7 @@ html.watta-light-chrome body {
   z-index: 2 !important;
   border-radius: var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)) !important;
   overflow: hidden !important;
-  background: #ffffff !important;
+  background: radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%) !important;
   border: 1px solid rgba(20, 81, 66, 0.18) !important;
   /* Без великої нижньої тіні — інакше на білому блоці під відео виглядає як сіра смуга */
   box-shadow: none !important;
@@ -6555,10 +6553,17 @@ html.watta-light-chrome body {
   max-height: none !important;
   object-fit: cover !important;
   object-position: center 18% !important;
-  opacity: 1 !important;
+  opacity: 0 !important;
   visibility: visible !important;
-  /* Підкладка під шар відео до декодування першого кадру */
+  transition: opacity 0.28s ease-out;
   background-color: #3a89a0 !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web.watta-hero-video--ready
+  .watta-home-hero-native-video {
+  opacity: 1 !important;
 }
 
 .menu-page-web:not(.watta-full-menu-page)

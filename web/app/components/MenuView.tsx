@@ -23,6 +23,7 @@ import {
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
 import { WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
+import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
@@ -237,7 +238,22 @@ function WelcomeHeroSection({
   children?: React.ReactNode
 }) {
   const heroVideoLoop = playlistLength <= 1
+  const heroReadySentRef = useRef(false)
+  const [heroFrameReady, setHeroFrameReady] = useState(false)
   const { t } = useLanguage()
+
+  const notifyHeroVideoReady = useCallback(() => {
+    if (heroReadySentRef.current) return
+    heroReadySentRef.current = true
+    setHeroFrameReady(true)
+    window.dispatchEvent(new CustomEvent(WATTA_HERO_VIDEO_READY_EVENT))
+  }, [])
+
+  useEffect(() => {
+    heroReadySentRef.current = false
+    setHeroFrameReady(false)
+  }, [heroVideoSrc])
+
   return (
     <section
       ref={sectionRef}
@@ -249,21 +265,21 @@ function WelcomeHeroSection({
           <div className="welcome-hero-video-fail-wrap-web relative w-full shrink-0">
             <div
               className="welcome-video-native-web welcome-hero-fallback-image-web"
-              style={{ backgroundColor: 'var(--watta-page-fill, #ffffff)' }}
               role="img"
               aria-hidden
             />
             {children}
           </div>
         ) : (
-          <div className="welcome-hero-video-stack-web">
+          <div
+            className={`welcome-hero-video-stack-web${heroFrameReady ? ' watta-hero-video--ready' : ''}`}
+          >
             <video
               key={heroVideoSrc}
               ref={heroVideoRef}
               className="welcome-video-native-web watta-home-hero-native-video"
               width={1920}
               height={1080}
-              poster="/watta-sushi.jpg"
               src={heroVideoSrc}
               autoPlay
               muted
@@ -278,6 +294,9 @@ function WelcomeHeroSection({
               tabIndex={-1}
               aria-hidden
               onContextMenu={(e) => e.preventDefault()}
+              onLoadedData={notifyHeroVideoReady}
+              onPlaying={notifyHeroVideoReady}
+              onCanPlay={notifyHeroVideoReady}
               onError={() => {
                 setHeroVideoSourceIndex((prev) => {
                   if (prev < videoSources.length - 1) return prev + 1
@@ -429,7 +448,18 @@ export default function MenuView() {
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
 
   const [bannerInterval, setBannerInterval] = useState(5000)
-  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>([])
+  const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v1'
+  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const raw = sessionStorage.getItem(HOME_HERO_URLS_CACHE_KEY)
+      if (!raw) return []
+      const parsed = JSON.parse(raw) as unknown
+      return Array.isArray(parsed) ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0) : []
+    } catch {
+      return []
+    }
+  })
   const homeHeroPlaylist = useMemo(
     () => buildHomeHeroPlaylist(homeHeroVideoUrls),
     [homeHeroVideoUrls],
@@ -618,7 +648,13 @@ export default function MenuView() {
       homeHeroVideoUrls?: string[]
     }) => {
       if (data.bannerInterval) setBannerInterval(data.bannerInterval)
-      setHomeHeroVideoUrls(parseHomeHeroVideoUrlsFromApi(data))
+      const urls = parseHomeHeroVideoUrlsFromApi(data)
+      setHomeHeroVideoUrls(urls)
+      try {
+        sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(urls))
+      } catch {
+        /* ignore */
+      }
     }
     const fetchSettings = async () => {
       try {

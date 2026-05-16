@@ -66,3 +66,10 @@ export function buildHomeHeroVideoSourcesFromSingle(adminUrl?: string | null): r
 
 /** Подія після зняття сплешу: MenuView / hero resume play одразу */
 export const WATTA_BOOT_SPLASH_ENDED_EVENT = 'watta:boot-splash-ended' as const
+
+/** Перший кадр hero готовий (loadeddata / playing) — сплеш можна прибрати */
+export const WATTA_HERO_VIDEO_READY_EVENT = 'watta:hero-video-ready' as const
+
+/** CSS-фон hero до декоду mp4 (немає залежності від відсутнього jpg-постера) */
+export const WATTA_HERO_OCEAN_GRADIENT =
+  'radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%)'
