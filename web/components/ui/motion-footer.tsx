@@ -8,6 +8,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { cn } from '@/lib/utils'
 import { getMenuScrollParent } from '@/lib/menuScroll'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { Flame } from 'lucide-react'
 import { WattaMenuProductCard } from '@/app/components/WattaMenuProductCard'
 
 if (typeof window !== 'undefined') {
@@ -91,6 +92,16 @@ const STYLES = `
   50% { background-position: 100% 50%; }
 }
 
+@keyframes footer-ready-glow {
+  0%, 100% { opacity: 0.55; transform: scale(1) translateY(0); }
+  50% { opacity: 0.9; transform: scale(1.06) translateY(-3%); }
+}
+
+@keyframes footer-ready-sparkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.85) rotate(0deg); }
+  50% { opacity: 0.95; transform: scale(1.1) rotate(12deg); }
+}
+
 @keyframes footer-cta-shine {
   0% { transform: translateX(-120%) skewX(-12deg); }
   100% { transform: translateX(220%) skewX(-12deg); }
@@ -129,21 +140,145 @@ const STYLES = `
   .animate-footer-grid-pan,
   .footer-heading-flow,
   .footer-cta-solid::after,
-  .footer-ready-display {
+  .footer-ready-display,
+  .footer-ready-shell::before,
+  .footer-ready-spark,
+  .footer-ready-badge-icon {
     animation: none !important;
   }
 }
 
-/* Заголовок над стрічками: Playfair (як бренд) + спокійний sans для підзаголовка */
+/* Заголовок «Наші хіти» над стрічками */
 .footer-ready-block {
   width: 100%;
   display: flex;
   justify-content: center;
-  padding-inline: clamp(0.5rem, 2vw, 1rem);
+  padding-inline: clamp(0.35rem, 2vw, 1rem);
   box-sizing: border-box;
 }
 
+.footer-ready-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 40rem);
+  padding: clamp(0.85rem, 2.8vw, 1.35rem) clamp(1rem, 3.5vw, 1.65rem);
+  border-radius: 1.35rem;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 251, 248, 0.88) 48%, rgba(232, 245, 239, 0.82) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 18px 48px -28px rgba(15, 61, 50, 0.28),
+    0 4px 14px -6px rgba(20, 81, 66, 0.12);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.footer-ready-shell::before {
+  content: '';
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 70%;
+  background: radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255, 140, 80, 0.14) 0%, transparent 68%);
+  pointer-events: none;
+  animation: footer-ready-glow 7s ease-in-out infinite;
+}
+
+.footer-ready-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 42%,
+    transparent 58%
+  );
+  transform: translateX(-120%);
+  animation: footer-cta-shine 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.footer-ready-ornaments {
+  position: absolute;
+  inset: 0.65rem 0.85rem auto;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.footer-ready-ornament {
+  display: block;
+  width: clamp(2.5rem, 12vw, 4.5rem);
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, rgba(20, 81, 66, 0.35), transparent);
+  opacity: 0.85;
+}
+
+.footer-ready-ornament--right {
+  background: linear-gradient(270deg, transparent, rgba(20, 81, 66, 0.35), transparent);
+}
+
+.footer-ready-badge {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 auto 0.65rem;
+  padding: 0.28rem 0.72rem 0.28rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 107, 53, 0.28);
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.14) 0%, rgba(255, 255, 255, 0.75) 100%);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c44f1a;
+  box-shadow: 0 6px 18px -10px rgba(255, 107, 53, 0.45);
+}
+
+.footer-ready-badge-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: #ff6b35;
+  animation: footer-ready-sparkle 2.8s ease-in-out infinite;
+}
+
+.footer-ready-spark {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(0);
+}
+
+.footer-ready-spark--a {
+  top: 0.55rem;
+  right: 1.1rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  background: rgba(255, 107, 53, 0.55);
+  box-shadow: 0 0 12px rgba(255, 107, 53, 0.5);
+  animation: footer-ready-sparkle 3.2s ease-in-out 0.4s infinite;
+}
+
+.footer-ready-spark--b {
+  bottom: 0.75rem;
+  left: 1.25rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  background: rgba(74, 222, 128, 0.65);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.45);
+  animation: footer-ready-sparkle 3.6s ease-in-out 1.1s infinite;
+}
+
 .footer-ready-heading {
+  position: relative;
+  z-index: 1;
   margin: 0;
   font: inherit;
   display: flex;
@@ -156,31 +291,25 @@ const STYLES = `
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.45rem;
-  max-width: min(100%, 34rem);
-}
-
-@media (min-width: 640px) {
-  .footer-ready-stack {
-    gap: 0.5rem;
-  }
+  gap: 0.5rem;
+  max-width: min(100%, 32rem);
 }
 
 .footer-ready-display {
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
   font-feature-settings: 'liga' 1, 'kern' 1;
-  font-size: clamp(1.38rem, 4.4vw, 2.45rem);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.45rem, 4.8vw, 2.55rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
   text-wrap: balance;
-  background: linear-gradient(118deg, #0c3229 0%, #145142 38%, #1f7a62 62%, #145142 100%);
-  background-size: 200% 100%;
+  background: linear-gradient(118deg, #0a2a22 0%, #145142 32%, #1f8f6e 55%, #145142 78%, #0c3229 100%);
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: footer-heading-flow 8s ease-in-out infinite;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35));
+  filter: drop-shadow(0 2px 12px rgba(20, 81, 66, 0.12));
 }
 
 @supports not (background-clip: text) {
@@ -194,27 +323,53 @@ const STYLES = `
 
 .footer-ready-lede {
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: clamp(0.8rem, 1.75vw, 1.02rem);
+  font-size: clamp(0.82rem, 1.85vw, 1.05rem);
   font-weight: 500;
-  line-height: 1.38;
-  letter-spacing: 0.01em;
-  color: rgba(20, 81, 66, 0.78);
-  max-width: 28em;
+  line-height: 1.42;
+  letter-spacing: 0.015em;
+  color: rgba(20, 81, 66, 0.72);
+  max-width: 26em;
   text-wrap: balance;
   -webkit-font-smoothing: antialiased;
 }
 
+.footer-ready-lede::before {
+  content: '—';
+  margin-right: 0.35em;
+  color: rgba(255, 107, 53, 0.65);
+  font-weight: 700;
+}
+
+.footer-ready-lede::after {
+  content: '—';
+  margin-left: 0.35em;
+  color: rgba(255, 107, 53, 0.65);
+  font-weight: 700;
+}
+
 @media (max-width: 400px) {
+  .footer-ready-shell {
+    padding: 0.75rem 0.85rem 0.9rem;
+    border-radius: 1.15rem;
+  }
   .footer-ready-display {
-    font-size: clamp(1.22rem, 5.5vw, 1.65rem);
-    letter-spacing: -0.025em;
+    font-size: clamp(1.28rem, 5.8vw, 1.72rem);
+    letter-spacing: -0.028em;
   }
   .footer-ready-lede {
-    font-size: clamp(0.76rem, 3.6vw, 0.92rem);
-    line-height: 1.4;
+    font-size: clamp(0.78rem, 3.5vw, 0.94rem);
+    line-height: 1.45;
+  }
+  .footer-ready-lede::before,
+  .footer-ready-lede::after {
+    display: none;
   }
   .footer-ready-stack {
-    gap: 0.38rem;
+    gap: 0.4rem;
+  }
+  .footer-ready-badge {
+    margin-bottom: 0.5rem;
+    font-size: 0.58rem;
   }
 }
 
@@ -803,12 +958,25 @@ const STYLES = `
   padding-bottom: 0;
 }
 
+.cinematic-footer-wrap--compact .footer-ready-shell {
+  width: min(100%, 36rem);
+  padding: clamp(0.7rem, 2.2vw, 1rem) clamp(0.85rem, 3vw, 1.25rem);
+  border-radius: 1.2rem;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 12px 32px -22px rgba(15, 61, 50, 0.22);
+}
+
 .cinematic-footer-wrap--compact .footer-ready-display {
-  font-size: clamp(1.2rem, 3.5vw, 1.85rem);
+  font-size: clamp(1.28rem, 3.8vw, 1.95rem);
 }
 
 .cinematic-footer-wrap--compact .footer-ready-lede {
-  font-size: clamp(0.76rem, 1.55vw, 0.92rem);
+  font-size: clamp(0.78rem, 1.65vw, 0.95rem);
+}
+
+.cinematic-footer-wrap--compact .footer-ready-ornaments {
+  inset: 0.5rem 0.65rem auto;
 }
 
 .footer-catalog-carousel {
@@ -1735,12 +1903,24 @@ export function CinematicFooter({
                 )}
               >
                 <div className="footer-ready-block">
-                  <h2 className="footer-ready-heading w-full min-w-0 text-center">
-                    <span className="footer-ready-stack">
-                      <span className="footer-ready-display">{cf.readyTitleKicker}</span>
-                      <span className="footer-ready-lede">{cf.readyTitleSub}</span>
-                    </span>
-                  </h2>
+                  <div className="footer-ready-shell">
+                    <div className="footer-ready-ornaments" aria-hidden>
+                      <span className="footer-ready-ornament footer-ready-ornament--left" />
+                      <span className="footer-ready-ornament footer-ready-ornament--right" />
+                    </div>
+                    <span className="footer-ready-spark footer-ready-spark--a" aria-hidden />
+                    <span className="footer-ready-spark footer-ready-spark--b" aria-hidden />
+                    <p className="footer-ready-badge">
+                      <Flame className="footer-ready-badge-icon" strokeWidth={2.4} aria-hidden />
+                      <span>{cf.recommendedBadge}</span>
+                    </p>
+                    <h2 className="footer-ready-heading w-full min-w-0 text-center">
+                      <span className="footer-ready-stack">
+                        <span className="footer-ready-display">{cf.readyTitleKicker}</span>
+                        <span className="footer-ready-lede">{cf.readyTitleSub}</span>
+                      </span>
+                    </h2>
+                  </div>
                 </div>
 
                 <div
