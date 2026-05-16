@@ -4,10 +4,7 @@ import { checkAdmin } from '../authMiddleware';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { getUploadsDir } from '../lib/uploadsDir.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -15,13 +12,7 @@ const prisma = new PrismaClient();
 /** Після збереження в БД лише короткі шляхи /uploads/… або зовнішні URL */
 const MAX_IMAGE_URL_LENGTH = 2048;
 
-const uploadDir = path.join(__dirname, '../../web/public/uploads');
-
-function ensureUploadDir() {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-}
+const uploadDir = getUploadsDir();
 
 /** Адмінка шле base64 data URL після вибору файлу — зберігаємо у web/public/uploads (як promotions). */
 function persistDataUrlBannerImage(dataUrl: string): string | null {
@@ -40,7 +31,6 @@ function persistDataUrlBannerImage(dataUrl: string): string | null {
   if (buf.length < 24) return null;
   if (buf.length > 12 * 1024 * 1024) return null;
 
-  ensureUploadDir();
   const name = `banner-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
   const fp = path.join(uploadDir, name);
   try {

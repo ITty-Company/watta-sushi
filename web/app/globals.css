@@ -12124,6 +12124,23 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   animation: none;
 }
 
+/* Boot splash: швидке заповнення зеленої смуги, помітні білі смужки */
+.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-loading-bar--determinate {
+  transition: width 0.14s linear;
+}
+
+.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-white-bar {
+  animation: wattaUiverseBlink 0.7s ease-in-out infinite;
+}
+
+.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-white-bar:nth-child(3n + 2) {
+  animation-delay: 0.12s;
+}
+
+.watta-load-screen-root:not(.watta-load-screen-root--compact) .watta-white-bar:nth-child(3n) {
+  animation-delay: 0.24s;
+}
+
 .watta-white-bars-container {
   position: absolute;
   display: flex;

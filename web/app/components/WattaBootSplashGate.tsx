@@ -6,10 +6,10 @@ import WattaLoadScreen from './WattaLoadScreen'
 import { WATTA_BOOT_SPLASH_ENDED_EVENT } from '@/lib/wattaHeroVideo'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
-/** Короткий бренд-сплеш при першому відкритті вкладки; повторно в сесії — без екрана */
-const MIN_BOOT_SPLASH_MS = 380
-const PROGRESS_TICK_MS = 16
-const PROGRESS_STEP = 28
+/** Короткий сплеш: зелена смуга + смужки видно, але без довгого очікування */
+const MIN_BOOT_SPLASH_MS = 720
+const PROGRESS_TICK_MS = 20
+const PROGRESS_STEP = 6
 const BOOT_SPLASH_FAILSAFE_MS = 6_000
 
 type WattaBootSplashGateProps = {

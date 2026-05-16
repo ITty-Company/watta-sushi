@@ -36,6 +36,9 @@ services:
         fromDatabase:
           name: watta-sushi-db
           property: connectionString
+      # Після підключення Persistent Disk (Starter+): Mount Path /var/data → UPLOAD_DIR=/var/data/uploads
+      - key: UPLOAD_DIR
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       # Публічний URL фронту (LiqPay, редіректи). Після першого деплою web вкажіть https://…onrender.com (без / в кінці).

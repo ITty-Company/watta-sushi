@@ -3,21 +3,14 @@ import { PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { getUploadsDir } from '../lib/uploadsDir.js';
 
 const prisma = new PrismaClient();
 const router = Router();
 let promoGalleryUrlsMissing = false;
 let promoProductOffersMissing = false;
 
-const uploadDir = path.join(__dirname, '../../web/public/uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const uploadDir = getUploadsDir();
 
 const storage = multer.diskStorage({
   destination: (_req: any, _file: any, cb: any) => {
