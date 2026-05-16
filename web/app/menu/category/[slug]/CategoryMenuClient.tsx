@@ -61,34 +61,36 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
   }, [slug])
 
   const mapProductsToItems = useCallback(
-    (data: any[]) =>
+    (data: any[]): MenuItem[] =>
       (data || [])
-        .map((p: any) => {
-        const id = Number(p.id)
-        if (!Number.isFinite(id) || id <= 0) return null
-        return {
-        id,
-        name: getLocalized(p, 'name'),
-        description: getLocalized(p, 'description') || '',
-        price: p.price,
-        category: p.category
-          ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)
-          : t.categories.rolls,
-        categorySlug: String(p.category?.slug ?? 'rolls')
-          .trim()
-          .toLowerCase(),
-        categoryId: p.categoryId,
-        emoji: '🍣',
-        imageUrl: p.imageUrl,
-        isTop: p.isPopular,
-        isHomeHit: p.isHomeHit === true,
-        isMenuNew: p.isMenuNew === true,
-        recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
-        allowRecommendations: p.category?.allowRecommendations !== false,
-        promoDiscountPercent:
-          typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
-      }
-      })
+        .map((p: any): MenuItem | null => {
+          const id = Number(p.id)
+          if (!Number.isFinite(id) || id <= 0) return null
+          return {
+            id,
+            name: getLocalized(p, 'name'),
+            description: getLocalized(p, 'description') || '',
+            price: p.price,
+            category: p.category
+              ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)
+              : t.categories.rolls,
+            categorySlug: String(p.category?.slug ?? 'rolls')
+              .trim()
+              .toLowerCase(),
+            categoryId: p.categoryId,
+            emoji: '🍣',
+            imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+            isTop: p.isPopular,
+            isHomeHit: p.isHomeHit === true,
+            isMenuNew: p.isMenuNew === true,
+            recommendOrder: typeof p.recommendOrder === 'number' ? p.recommendOrder : 0,
+            allowRecommendations: p.category?.allowRecommendations !== false,
+            promoDiscountPercent:
+              typeof p.promoDiscountPercent === 'number'
+                ? p.promoDiscountPercent
+                : Number(p.promoDiscountPercent) || 0,
+          }
+        })
         .filter((row): row is MenuItem => row != null),
     [getLocalized, t.categories, language]
   )
