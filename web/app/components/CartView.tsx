@@ -29,7 +29,7 @@ import {
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { getApiUrl } from '@/lib/utils'
-import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
+import { cityIdPreferAmsterdam } from '@/lib/wattaPreferredDefaultCity'
 import {
   getExplicitSavedCityId,
   readCityIdForProductApi,
@@ -318,16 +318,12 @@ export default function CartView({
 
         if (loadedCities.length === 0) return
 
-        const resolved = resolveCityFromSavedId(
-          loadedCities.map((c) => ({
-            ...c,
-            country: undefined as { code?: string } | undefined,
-          })),
-          typeof window !== 'undefined' ? getExplicitSavedCityId() : null,
-        )
+        const explicitId =
+          typeof window !== 'undefined' ? getExplicitSavedCityId() : null
+        const amsId = cityIdPreferAmsterdam(loadedCities)
         const preferred =
-          (resolved ? loadedCities.find((c) => c.id === resolved.id) : null) ??
-          loadedCities.find((c) => c.id === cityIdPreferAmsterdam(loadedCities)) ??
+          (explicitId != null ? loadedCities.find((c) => c.id === explicitId) : null) ??
+          (amsId != null ? loadedCities.find((c) => c.id === amsId) : null) ??
           loadedCities[0]
 
         setCities(loadedCities)

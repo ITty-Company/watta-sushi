@@ -1,14 +1,14 @@
 const AMSTERDAM = 'amsterdam'
 
-function normName(s: string | undefined): string {
+function normName(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase()
 }
 
 export function nameFieldsMatchAmsterdam(c: {
-  name?: string
-  name_en?: string
-  name_nl?: string
-  name_ua?: string
+  name?: string | null
+  name_en?: string | null
+  name_nl?: string | null
+  name_ua?: string | null
 }): boolean {
   return (
     normName(c.name) === AMSTERDAM ||
@@ -20,7 +20,13 @@ export function nameFieldsMatchAmsterdam(c: {
 
 /** Плоский список міст (як у `/api/cities`): за замовчуванням — Амстердам, інакше перший у списку. */
 export function cityIdPreferAmsterdam<
-  T extends { id: number; name?: string; name_en?: string; name_nl?: string; name_ua?: string },
+  T extends {
+    id: number
+    name?: string | null
+    name_en?: string | null
+    name_nl?: string | null
+    name_ua?: string | null
+  },
 >(list: readonly T[]): number | null {
   if (!list.length) return null
   const hit = list.find((c) => nameFieldsMatchAmsterdam(c))
@@ -81,10 +87,10 @@ export function findPreferredDefaultCityInCountries<
 export function resolveCityFromSavedId<
   T extends {
     id: string | number
-    name?: string
-    name_en?: string
-    name_nl?: string
-    name_ua?: string
+    name?: string | null
+    name_en?: string | null
+    name_nl?: string | null
+    name_ua?: string | null
     country?: { code?: string } | null
   },
 >(list: readonly T[], savedId: string | number | null | undefined): T | null {
