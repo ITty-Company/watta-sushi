@@ -1,5 +1,6 @@
 import { getApiUrl } from '@/lib/utils'
 import { menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
+import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 
 export function normalizeProductRouteId(raw: unknown): number | null {
   const value = Array.isArray(raw) ? raw[0] : raw
@@ -90,9 +91,7 @@ export async function fetchProductById(
   const fromCache = findProductInMenuSessionCaches(id)
   if (fromCache) return fromCache
 
-  const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
-  const cityId = rawCity ? parseInt(rawCity, 10) : NaN
-  const cityIdOk = Number.isFinite(cityId) && cityId > 0 ? cityId : null
+  const cityIdOk = typeof window !== 'undefined' ? readCityIdForProductApi() : null
 
   const list = await fetchProductList(cityIdOk, signal)
   const fromList = findInRawList(list, id)

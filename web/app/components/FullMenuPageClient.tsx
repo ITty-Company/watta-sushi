@@ -12,6 +12,7 @@ import { WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
+import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { MenuHighlightStack } from './MenuHighlightStack'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
@@ -172,9 +173,8 @@ export default function FullMenuPageClient() {
   const loadProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
-      const cityId = rawCity ? parseInt(rawCity, 10) : NaN
-      const hasCity = Number.isFinite(cityId) && cityId > 0
+      const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
+      const hasCity = cityId != null && cityId > 0
       const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
 
       const fetchProductList = async (url: string): Promise<unknown[]> => {

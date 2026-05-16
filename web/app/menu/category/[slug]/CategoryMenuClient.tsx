@@ -9,6 +9,7 @@ import { getApiUrl } from '@/lib/utils'
 import LogoBackground from '../../../components/LogoBackground'
 import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
+import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 
 interface MenuItem {
   id: number
@@ -117,10 +118,8 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
   const loadProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const rawCity =
-        typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
-      const cityId = rawCity ? parseInt(rawCity, 10) : NaN
-      const hasCity = Number.isFinite(cityId) && cityId > 0
+      const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
+      const hasCity = cityId != null && cityId > 0
       const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
       const scopedRes = await fetch(scopedUrl, {
         cache: 'no-store',
