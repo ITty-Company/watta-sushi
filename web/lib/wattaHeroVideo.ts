@@ -37,25 +37,30 @@ function dedupeAdminUrls(adminUrls?: readonly string[] | null): string[] {
   return out
 }
 
-/** Плейлист головної: лише відео з адмінки; якщо порожньо — запасні mp4. */
+/**
+ * Плейлист головної: спочатку mp4 з `public/` (завжди на Render), потім URL з адмінки.
+ * Інакше перший `/uploads/…` без диска дає синю заглушку, поки не спрацює onError.
+ */
 export function buildHomeHeroPlaylist(adminUrls?: readonly string[] | null): readonly string[] {
   const admin = dedupeAdminUrls(adminUrls)
-  if (admin.length > 0) return admin
-  return [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const fb of WATTA_HOME_HERO_VIDEO_FALLBACKS) {
+    if (seen.has(fb)) continue
+    seen.add(fb)
+    out.push(fb)
+  }
+  for (const u of admin) {
+    if (seen.has(u)) continue
+    seen.add(u)
+    out.push(u)
+  }
+  return out.length > 0 ? out : [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
 }
 
-/** Плейлист + запасні URL (лише при помилці завантаження). */
+/** Той самий ланцюг, що й плейлист (запасні вже на початку). */
 export function buildHomeHeroVideoSources(adminUrls?: readonly string[] | null): readonly string[] {
-  const playlist = buildHomeHeroPlaylist(adminUrls)
-  const seen = new Set(playlist)
-  const chain = [...playlist]
-  for (const fb of WATTA_HOME_HERO_VIDEO_FALLBACKS) {
-    if (!seen.has(fb)) {
-      seen.add(fb)
-      chain.push(fb)
-    }
-  }
-  return chain.length > 0 ? chain : [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
+  return buildHomeHeroPlaylist(adminUrls)
 }
 
 /** @deprecated — один URL; використовуйте buildHomeHeroVideoSources */
@@ -70,6 +75,9 @@ export const WATTA_BOOT_SPLASH_ENDED_EVENT = 'watta:boot-splash-ended' as const
 /** Перший кадр hero готовий (loadeddata / playing) — сплеш можна прибрати */
 export const WATTA_HERO_VIDEO_READY_EVENT = 'watta:hero-video-ready' as const
 
-/** CSS-фон hero до декоду mp4 (немає залежності від відсутнього jpg-постера) */
-export const WATTA_HERO_OCEAN_GRADIENT =
+/** Фон hero до першого кадру mp4 (темний, без «синьої» заглушки) */
+export const WATTA_HERO_OCEAN_GRADIENT = '#0a1210'
+
+/** @deprecated синій градієнт — лишено для рідких fallback-екранів */
+export const WATTA_HERO_OCEAN_GRADIENT_LEGACY =
   'radial-gradient(120% 90% at 50% 28%, #6ec4dc 0%, #3f94ae 38%, #2a6f82 72%, #1e5566 100%)'

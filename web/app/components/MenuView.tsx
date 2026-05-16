@@ -23,7 +23,11 @@ import {
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
 import { WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
-import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
+import {
+  WATTA_BOOT_SPLASH_ENDED_EVENT,
+  WATTA_HERO_VIDEO_READY_EVENT,
+} from '@/lib/wattaHeroVideo'
+import { kickWelcomeHeroVideoPlayBurst, primeHeroVideoElement } from '@/lib/kickWelcomeHeroVideo'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
@@ -36,6 +40,7 @@ import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
 import { formatProductWeightSubtitle } from '@/lib/i18n/parseProductSpecsFromDescription'
 import {
   buildHomeHeroPlaylist,
+  WATTA_HOME_HERO_VIDEO_FALLBACKS,
   buildHomeHeroVideoSources,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
 } from '@/lib/wattaHeroVideo'
@@ -220,7 +225,6 @@ function WelcomeHeroSection({
   setHeroVideoSourceIndex,
   setHeroVideoFailed,
   heroVideoRef,
-  heroVideoCanvasRef,
   heroVideoSrc,
   videoSources,
   playlistLength,
@@ -230,8 +234,7 @@ function WelcomeHeroSection({
   heroVideoFailed: boolean
   setHeroVideoSourceIndex: React.Dispatch<React.SetStateAction<number>>
   setHeroVideoFailed: React.Dispatch<React.SetStateAction<boolean>>
-  heroVideoRef: React.Ref<HTMLVideoElement>
-  heroVideoCanvasRef: React.RefObject<HTMLCanvasElement>
+  heroVideoRef: React.MutableRefObject<HTMLVideoElement | null>
   heroVideoSrc: string
   videoSources: readonly string[]
   playlistLength: number
@@ -239,7 +242,7 @@ function WelcomeHeroSection({
 }) {
   const heroVideoLoop = playlistLength <= 1
   const heroReadySentRef = useRef(false)
-  const [heroFrameReady, setHeroFrameReady] = useState(false)
+  const [heroFrameReady, setHeroFrameReady] = useState(true)
   const { t } = useLanguage()
 
   const notifyHeroVideoReady = useCallback(() => {
@@ -251,8 +254,33 @@ function WelcomeHeroSection({
 
   useEffect(() => {
     heroReadySentRef.current = false
-    setHeroFrameReady(false)
+    setHeroFrameReady(true)
   }, [heroVideoSrc])
+
+  const attachHeroVideoRef = useCallback(
+    (el: HTMLVideoElement | null) => {
+      heroVideoRef.current = el
+      if (!el) return
+      primeHeroVideoElement(el)
+    },
+    [heroVideoRef],
+  )
+
+  useEffect(() => {
+    const onBootSplashEnded = () => {
+      const video = heroVideoRef.current
+      if (video) primeHeroVideoElement(video)
+      kickWelcomeHeroVideoPlayBurst()
+    }
+    window.addEventListener(WATTA_BOOT_SPLASH_ENDED_EVENT, onBootSplashEnded)
+    return () => window.removeEventListener(WATTA_BOOT_SPLASH_ENDED_EVENT, onBootSplashEnded)
+  }, [heroVideoRef])
+
+  useEffect(() => {
+    const video = heroVideoRef.current
+    if (!video) return
+    primeHeroVideoElement(video)
+  }, [heroVideoSrc, heroVideoRef])
 
   return (
     <section
@@ -276,7 +304,7 @@ function WelcomeHeroSection({
           >
             <video
               key={heroVideoSrc}
-              ref={heroVideoRef}
+              ref={attachHeroVideoRef}
               className="welcome-video-native-web watta-home-hero-native-video"
               width={1920}
               height={1080}
@@ -286,6 +314,7 @@ function WelcomeHeroSection({
               loop={heroVideoLoop}
               playsInline
               controls={false}
+              controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
               disablePictureInPicture
               disableRemotePlayback
               preload="auto"
@@ -294,9 +323,35 @@ function WelcomeHeroSection({
               tabIndex={-1}
               aria-hidden
               onContextMenu={(e) => e.preventDefault()}
+              onProgress={() => {
+                const v = heroVideoRef.current
+                if (!v || v.buffered.length === 0) return
+                if (!v.paused) {
+                  notifyHeroVideoReady()
+                  return
+                }
+                primeHeroVideoElement(v)
+              }}
+              onLoadedMetadata={() => {
+                const v = heroVideoRef.current
+                if (v) primeHeroVideoElement(v)
+                notifyHeroVideoReady()
+              }}
               onLoadedData={notifyHeroVideoReady}
-              onPlaying={notifyHeroVideoReady}
-              onCanPlay={notifyHeroVideoReady}
+              onPlaying={(e) => {
+                e.currentTarget.setAttribute('data-watta-playing', '1')
+                notifyHeroVideoReady()
+              }}
+              onCanPlay={() => {
+                const v = heroVideoRef.current
+                if (v) primeHeroVideoElement(v)
+                notifyHeroVideoReady()
+              }}
+              onPause={() => {
+                heroVideoRef.current?.removeAttribute('data-watta-playing')
+                const v = heroVideoRef.current
+                if (v && !v.ended) primeHeroVideoElement(v)
+              }}
               onError={() => {
                 setHeroVideoSourceIndex((prev) => {
                   if (prev < videoSources.length - 1) return prev + 1
@@ -309,12 +364,7 @@ function WelcomeHeroSection({
                 setHeroVideoSourceIndex((prev) => (prev + 1) % playlistLength)
               }}
             />
-            <canvas
-              ref={heroVideoCanvasRef}
-              className="welcome-hero-video-canvas-mirror-web"
-              aria-hidden
-            />
-            {/* Поверх canvas: жодні кліки/жести не доходять до прихованого <video> */}
+            {/* Поверх відео: блокуємо tap-toggle play у Safari */}
             <div
               className="welcome-hero-video-input-shield-web"
               aria-hidden
@@ -450,14 +500,17 @@ export default function MenuView() {
   const [bannerInterval, setBannerInterval] = useState(5000)
   const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v1'
   const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return []
+    if (typeof window === 'undefined') return [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
     try {
       const raw = sessionStorage.getItem(HOME_HERO_URLS_CACHE_KEY)
-      if (!raw) return []
+      if (!raw) return [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
       const parsed = JSON.parse(raw) as unknown
-      return Array.isArray(parsed) ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0) : []
+      const cached = Array.isArray(parsed)
+        ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+        : []
+      return cached.length > 0 ? cached : [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
     } catch {
-      return []
+      return [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
     }
   })
   const homeHeroPlaylist = useMemo(
@@ -473,7 +526,6 @@ export default function MenuView() {
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)
-  const heroVideoCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const heroVideoSrc =
     homeHeroPlaylist[heroVideoSourceIndex] ??
@@ -2132,7 +2184,6 @@ export default function MenuView() {
             setHeroVideoSourceIndex={setHeroVideoSourceIndex}
             setHeroVideoFailed={setHeroVideoFailed}
             heroVideoRef={heroVideoRef}
-            heroVideoCanvasRef={heroVideoCanvasRef}
             heroVideoSrc={heroVideoSrc}
             videoSources={heroVideoSources}
             playlistLength={homeHeroPlaylist.length}
@@ -2152,7 +2203,6 @@ export default function MenuView() {
           setHeroVideoSourceIndex={setHeroVideoSourceIndex}
           setHeroVideoFailed={setHeroVideoFailed}
           heroVideoRef={heroVideoRef}
-          heroVideoCanvasRef={heroVideoCanvasRef}
           heroVideoSrc={heroVideoSrc}
           videoSources={heroVideoSources}
           playlistLength={homeHeroPlaylist.length}
