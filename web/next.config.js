@@ -84,6 +84,10 @@ const nextConfig = {
 
     return [
       {
+        source: '/products/:id',
+        destination: '/product/:id',
+      },
+      {
         source: '/api/:path*',
         destination: `${apiUrl}/api/:path*`,
       },

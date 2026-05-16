@@ -1,0 +1,113 @@
+import { getApiUrl } from '@/lib/utils'
+import { menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
+
+export function normalizeProductRouteId(raw: unknown): number | null {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const n = parseInt(String(value ?? '').trim(), 10)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function findInRawList(list: unknown[], id: number): Record<string, unknown> | null {
+  for (const row of list) {
+    if (!row || typeof row !== 'object') continue
+    if (Number((row as { id?: unknown }).id) === id) {
+      return row as Record<string, unknown>
+    }
+  }
+  return null
+}
+
+/** Шукає сирий товар у sessionStorage (усі ключі menu_items_*). */
+export function findProductInMenuSessionCaches(id: number): Record<string, unknown> | null {
+  if (typeof sessionStorage === 'undefined') return null
+  for (let i = 0; i < sessionStorage.length; i += 1) {
+    const key = sessionStorage.key(i)
+    if (!key?.startsWith('menu_items_')) continue
+    try {
+      const raw = sessionStorage.getItem(key)
+      if (!raw) continue
+      const parsed = JSON.parse(raw) as unknown
+      if (!Array.isArray(parsed)) continue
+      const hit = findInRawList(parsed, id)
+      if (hit) return hit
+    } catch {
+      /* ignore corrupt cache */
+    }
+  }
+  return null
+}
+
+async function fetchProductList(
+  cityId: number | null,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>[]> {
+  const urls: string[] = []
+  if (cityId != null && cityId > 0) {
+    urls.push(getApiUrl(`/api/products?cityId=${cityId}`))
+  }
+  urls.push(getApiUrl('/api/products'))
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        signal,
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      })
+      if (!res.ok) continue
+      const data = (await res.json()) as unknown
+      if (!Array.isArray(data)) continue
+      return data.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === 'object'))
+    } catch (e) {
+      if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') throw e
+    }
+  }
+  return []
+}
+
+/**
+ * Завантажує товар для /product/:id: прямий GET, потім кеш меню та список /api/products
+ * (якщо кеш застарів або одиночний запит тимчасово впав).
+ */
+export async function fetchProductById(
+  id: number,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(getApiUrl(`/api/products/${id}`), {
+      signal,
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    })
+    if (res.ok) {
+      const body = (await res.json()) as unknown
+      if (body && typeof body === 'object') return body as Record<string, unknown>
+    }
+  } catch (e) {
+    if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') throw e
+  }
+
+  const fromCache = findProductInMenuSessionCaches(id)
+  if (fromCache) return fromCache
+
+  const rawCity = typeof window !== 'undefined' ? localStorage.getItem('selectedCityId') : null
+  const cityId = rawCity ? parseInt(rawCity, 10) : NaN
+  const cityIdOk = Number.isFinite(cityId) && cityId > 0 ? cityId : null
+
+  const list = await fetchProductList(cityIdOk, signal)
+  const fromList = findInRawList(list, id)
+  if (fromList) {
+    if (typeof sessionStorage !== 'undefined' && cityIdOk != null) {
+      try {
+        const key = menuItemsSessionKey(cityIdOk)
+        sessionStorage.setItem(key, JSON.stringify(list))
+        sessionStorage.setItem(`${key}_time`, String(Date.now()))
+      } catch {
+        /* quota */
+      }
+    }
+    return fromList
+  }
+
+  return null
+}

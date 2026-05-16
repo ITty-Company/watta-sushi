@@ -94,11 +94,11 @@ export function ProductImageGallery({ images, alt, labels, className }: ProductI
             className="w-full shrink-0 snap-center snap-always"
             aria-hidden={i !== index}
           >
-            <div className="relative aspect-square w-full">
+            <div className="relative aspect-[5/4] w-full max-h-[min(52vw,14.5rem)] sm:aspect-square sm:max-h-none">
               <img
                 src={src}
                 alt={i === 0 ? alt : `${alt} · ${i + 1}`}
-                className="h-full w-full object-contain p-5 sm:p-10"
+                className="h-full w-full object-cover object-center"
                 decoding="async"
                 loading={i === 0 ? 'eager' : undefined}
                 fetchPriority={i === 0 ? 'high' : undefined}

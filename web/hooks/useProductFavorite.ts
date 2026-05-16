@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
-import { readFavoriteIds, writeFavoriteIds } from '@/lib/favoritesStorage'
+import { readFavoriteIds, syncFavoriteIdsToStorage } from '@/lib/favoritesStorage'
 import {
   requestFavoriteCount,
   setFavoriteCountInCache,
@@ -68,10 +68,9 @@ export function useProductFavorite(
       const ids = readFavoriteIds()
       const was = ids.includes(productId)
       const next = was ? ids.filter((id) => id !== productId) : [...ids, productId]
-      writeFavoriteIds(next)
+      syncFavoriteIdsToStorage(next)
       setLiked(!was)
       setCount((prev) => Math.max(0, prev + (was ? -1 : 1)))
-      window.dispatchEvent(new CustomEvent('favoritesUpdated'))
 
       const userStr =
         typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
@@ -93,9 +92,15 @@ export function useProductFavorite(
               setCount(fresh)
               setFavoriteCountInCache(productId, fresh)
             }
+          } else {
+            syncFavoriteIdsToStorage(ids)
+            setLiked(was)
+            setCount((prev) => Math.max(0, prev + (was ? 1 : -1)))
           }
         } catch {
-          /* ignore */
+          syncFavoriteIdsToStorage(ids)
+          setLiked(was)
+          setCount((prev) => Math.max(0, prev + (was ? 1 : -1)))
         }
       }
     },

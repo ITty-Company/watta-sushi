@@ -1,13 +1,18 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import ProductView from '../../components/ProductView'
 import { readIsAdminFromCurrentUserJson } from '@/lib/isAdminRole'
+import { normalizeProductRouteId } from '@/lib/fetchProductById'
 
 export default function ProductPage() {
   const router = useRouter()
   const params = useParams()
+  const productId = useMemo(() => {
+    const id = normalizeProductRouteId(params?.id)
+    return id != null ? String(id) : ''
+  }, [params?.id])
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
@@ -28,7 +33,7 @@ export default function ProductPage() {
 
   return (
     <ProductView 
-      productId={params.id as string}
+      productId={productId}
       isAdmin={isAdmin}
       
       onBack={handleBack}

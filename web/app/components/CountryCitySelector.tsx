@@ -72,9 +72,14 @@ function normalizeCountry(raw: Record<string, unknown>): Country {
 
 interface CountryCitySelectorProps {
   onCityChange?: (cityId: number) => void
+  /** Компактна кнопка в боковому меню (без подвійної рамки) */
+  appearance?: 'default' | 'drawer'
 }
 
-export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCityChange }) => {
+export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
+  onCityChange,
+  appearance = 'default',
+}) => {
   const { t, getLocalized } = useLanguage()
   const lp = t.locationPicker
   const labelCountry = useCallback(
@@ -339,12 +344,16 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({ onCity
       : lp.chooseLocation
 
   return (
-    <div ref={dropdownRef} className="relative z-[1]">
+    <div
+      ref={dropdownRef}
+      className={cn('relative z-[1]', appearance === 'drawer' && 'block w-full min-w-0')}
+    >
       <button
         type="button"
         data-open={isOpen ? 'true' : 'false'}
         className={cn(
           'location-picker-trigger',
+          appearance === 'drawer' && 'location-picker-trigger--drawer',
           triggerAwaitingCatalog && 'location-picker-trigger--loading',
           catalogRefreshing && 'location-picker-trigger--pulse'
         )}

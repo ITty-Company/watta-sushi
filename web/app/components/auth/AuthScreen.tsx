@@ -18,6 +18,7 @@ import LogoBackground from '../LogoBackground'
 import WattaAppRouteLoading from '../WattaAppRouteLoading'
 import { useLanguage } from '../../context/LanguageContext'
 import toast from 'react-hot-toast'
+import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 
 export type AuthScreenVariant = 'page' | 'modal'
 
@@ -164,8 +165,12 @@ function AuthScreenBody({
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', data.token as string)
           localStorage.setItem('currentUser', JSON.stringify(data.user))
+          if (data.user?.id != null) {
+            localStorage.setItem('userId', String(data.user.id))
+          }
         }
         window.dispatchEvent(new Event('userChanged'))
+        void syncFavoritesAfterAuth()
         toast.success(t.auth.welcomeAfterVerify)
         goAfterAuth()
       } else {
@@ -194,8 +199,12 @@ function AuthScreenBody({
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', data.token as string)
         localStorage.setItem('currentUser', JSON.stringify(data.user))
+        if (data.user?.id != null) {
+          localStorage.setItem('userId', String(data.user.id))
+        }
       }
       window.dispatchEvent(new Event('userChanged'))
+      void syncFavoritesAfterAuth()
       toast.success(t.auth.signedInToast)
       goAfterAuth()
     } catch (err: unknown) {

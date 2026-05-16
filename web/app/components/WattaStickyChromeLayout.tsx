@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type MutableRefObject,
   type ReactNode,
   type RefObject,
@@ -19,9 +20,11 @@ type WattaStickyChromeLayoutProps = {
   innerRef?: RefObject<HTMLDivElement>
   /**
    * Віднімається від висоти chrome (offsetHeight, floor), щоб наступний контент не лишав білу смугу під fixed.
-   * На головній з героєм — більше, ніж дефолт 10 (напр. 32–40).
+   * На головній з героєм — 0, щоб заголовок не ховався під категоріями.
    */
   flowHeightFudgePx?: number
+  /** Верхня межа резерву висоти в потоці (шапка + категорії на головній можуть бути >220px). */
+  flowHeightMaxPx?: number
 }
 
 /**
@@ -30,7 +33,7 @@ type WattaStickyChromeLayoutProps = {
  */
 const defaultFlowHeightFudgePx = 10
 /** Захист від рідких стрибків виміру (ResizeObserver/WebKit), що створювали величезний порожній відступ. */
-const MAX_FLOW_LAYOUT_HEIGHT = 220
+const DEFAULT_FLOW_LAYOUT_MAX_PX = 320
 
 /**
  * Липка верхня зона: fixed до viewport + резерв висоти в потоці, щоб контент не їхав під шапку.
@@ -41,6 +44,7 @@ export default function WattaStickyChromeLayout({
   chromeClassName,
   innerRef,
   flowHeightFudgePx = defaultFlowHeightFudgePx,
+  flowHeightMaxPx = DEFAULT_FLOW_LAYOUT_MAX_PX,
 }: WattaStickyChromeLayoutProps) {
   const [flowH, setFlowH] = useState(0)
   const localRef = useRef<HTMLDivElement | null>(null)
@@ -49,9 +53,9 @@ export default function WattaStickyChromeLayout({
     (raw: number) => {
       if (raw < 8) return 0
       /* floor — менший резерв, ніж ceil; менше «зайвого повітря» до героя */
-      return Math.min(MAX_FLOW_LAYOUT_HEIGHT, Math.max(8, Math.floor(raw) - flowHeightFudgePx))
+      return Math.min(flowHeightMaxPx, Math.max(8, Math.floor(raw) - flowHeightFudgePx))
     },
-    [flowHeightFudgePx]
+    [flowHeightFudgePx, flowHeightMaxPx]
   )
 
   const setInnerNode = useCallback(
@@ -88,18 +92,25 @@ export default function WattaStickyChromeLayout({
       ro.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [children, chromeClassName, toFlowLayoutHeight, flowHeightFudgePx])
+  }, [children, chromeClassName, toFlowLayoutHeight, flowHeightFudgePx, flowHeightMaxPx])
+
+  const anchorStyle: CSSProperties | undefined = flowH
+    ? {
+        minHeight: flowH,
+        ['--watta-sticky-chrome-flow-h' as string]: `${flowH}px`,
+      }
+    : undefined
 
   return (
     <div
       className="watta-sticky-chrome-flow-anchor shrink-0 w-full"
-      style={{ minHeight: flowH || undefined }}
+      style={anchorStyle}
       aria-hidden={false}
     >
       <div
         ref={setInnerNode}
         className={clsx(
-          'fixed top-0 left-0 right-0 z-[100] w-full max-w-[100vw] pointer-events-auto',
+          'fixed top-0 left-0 right-0 z-[200] w-full max-w-[100vw] pointer-events-auto',
           chromeClassName
         )}
       >

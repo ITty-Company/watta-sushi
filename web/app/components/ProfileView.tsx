@@ -14,6 +14,11 @@ import LogoBackground from './LogoBackground'
 import Footer from './Footer'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import {
+  loadFavoriteProducts,
+  readFavoriteIds,
+  syncFavoriteIdsToStorage,
+} from '@/lib/favoritesStorage'
 import { isAdminRole } from '@/lib/isAdminRole'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import type { WattaLanguage } from '@/lib/i18n/language'
@@ -86,7 +91,7 @@ export default function ProfileView({
   initialTab = 'history'
 }: ProfileViewProps) {
   const router = useRouter()
-  const { t, language } = useLanguage()
+  const { t, language, getLocalized } = useLanguage()
   const a = t.siteAria
   const rightNavDrawer = useOptionalRightNavDrawer()
   const [profileAllowed, setProfileAllowed] = useState<boolean | null>(null)
@@ -102,7 +107,6 @@ export default function ProfileView({
 
   const [activeTab, setActiveTab] = useState<'history' | 'address' | 'favorites' | 'data'>('history')
   const [orders, setOrders] = useState<Order[]>([])
-  const [favorites, setFavorites] = useState<any[]>([])
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -159,13 +163,6 @@ export default function ProfileView({
       } else {
         setUser(null)
         setIsAdmin(false)
-      }
-
-      const savedFav = localStorage.getItem('favorites')
-      if (savedFav) {
-        try {
-          setFavorites(JSON.parse(savedFav))
-        } catch (e) {}
       }
 
       void loadOrdersAndBonus(true)
@@ -232,32 +229,73 @@ export default function ProfileView({
     onBack()
   }
 
-  const loadFavoritesList = async () => {
+  const loadFavoritesList = useCallback(async () => {
     setFavLoading(true)
     try {
-      const userStr = localStorage.getItem('currentUser')
-      const auth = getBearerAuthHeaders()
-      if (userStr && Object.keys(auth as Record<string, string>).length > 0) {
-        const res = await fetch('/api/favorites/list', {
-          headers: auth,
-        })
-        if (res.ok) {
-          setFavoriteItems(await res.json())
-        }
-      }
+      const list = await loadFavoriteProducts((p) => ({
+        id: Number(p.id),
+        name: getLocalized(p, 'name'),
+        description: getLocalized(p, 'description') || '',
+        price: Number(p.price),
+        imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+      }))
+      setFavoriteItems(list)
     } catch (e) {
       console.error(e)
     } finally {
       setFavLoading(false)
     }
-  }
+  }, [getLocalized])
 
-  // Загружаем, когда открывается вкладка 'favorites'
   useEffect(() => {
     if (activeTab === 'favorites') {
-      loadFavoritesList()
+      void loadFavoritesList()
     }
-  }, [activeTab])
+  }, [activeTab, loadFavoritesList])
+
+  useEffect(() => {
+    const onUser = () => {
+      if (activeTab === 'favorites') void loadFavoritesList()
+    }
+    window.addEventListener('userChanged', onUser)
+    return () => window.removeEventListener('userChanged', onUser)
+  }, [activeTab, loadFavoritesList])
+
+  useEffect(() => {
+    const onFav = () => {
+      if (activeTab === 'favorites') void loadFavoritesList()
+    }
+    window.addEventListener('favoritesUpdated', onFav)
+    return () => window.removeEventListener('favoritesUpdated', onFav)
+  }, [activeTab, loadFavoritesList])
+
+  const addFavoriteToCart = (item: {
+    id: number
+    name: string
+    description?: string
+    price: number
+    imageUrl?: string
+  }) => {
+    if (typeof window === 'undefined' || !window.localStorage) return
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+    const n = cart.filter((x: { id?: number }) => x?.id === item.id).length
+    if (n >= 99) {
+      toast.error(t.appToasts.maxCartQty)
+      return
+    }
+    cart.push({
+      id: item.id,
+      name: item.name,
+      description: item.description || '',
+      price: item.price,
+      category: '',
+      emoji: '🍣',
+      imageUrl: item.imageUrl,
+    })
+    localStorage.setItem('cart', JSON.stringify(cart))
+    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    toast.success(t.addToCart)
+  }
 
   const removeFavorite = async (productId: number) => {
     try {
@@ -278,11 +316,8 @@ export default function ProfileView({
         body: JSON.stringify({ productId })
       })
 
-      // Убираем из списка визуально
-      setFavoriteItems(prev => prev.filter(item => item.id !== productId))
-
-      // Обновляем глобальное состояние (если нужно)
-      window.dispatchEvent(new Event('favoritesUpdated'))
+      setFavoriteItems((prev) => prev.filter((item) => item.id !== productId))
+      syncFavoriteIdsToStorage(readFavoriteIds().filter((id) => id !== productId))
     } catch (e) {
       toast.error(t.appToasts.removeFavoriteError)
     }
@@ -338,11 +373,11 @@ export default function ProfileView({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('favorites')}
-            className={`${headerIconBtn} ${activeTab === 'favorites' ? 'bg-rose-50 text-rose-600' : ''}`}
+            onClick={onOpenFavorites}
+            className={headerIconBtn}
             aria-label={t.clientProfile.tabFavorites}
           >
-            <Heart size={20} strokeWidth={2.25} className={activeTab === 'favorites' ? 'fill-current' : ''} />
+            <Heart size={20} strokeWidth={2.25} />
           </button>
           <button type="button" onClick={onOpenCart} className={headerIconBtn} aria-label={t.cartSection.order}>
             <ShoppingBag size={20} strokeWidth={2.25} />
@@ -363,7 +398,7 @@ export default function ProfileView({
   )
 
   return (
-    <div className="menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden watta-page-bg pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
+    <div className="menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden watta-page-bg pb-16 pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
       <LogoBackground />
       <div className="relative z-10">
         <Header />
@@ -591,9 +626,7 @@ export default function ProfileView({
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            // addToCart(item)
-                          }}
+                          onClick={() => addFavoriteToCart(item)}
                           className="shrink-0 rounded-lg border border-gray-200 p-2 text-[#145142] transition hover:border-[#145142]/40 hover:bg-[#145142]/5"
                           aria-label={a.cart}
                         >
@@ -690,37 +723,6 @@ export default function ProfileView({
       </div>
       </div>
 
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-[1001] box-border w-full border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md lg:hidden"
-        aria-label={t.clientProfile.tabHistory}
-      >
-        <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pt-1.5">
-          {(
-            [
-              { id: 'history' as const, icon: Clock, label: t.clientProfile.tabHistory },
-              { id: 'address' as const, icon: MapPin, label: t.clientProfile.tabAddress },
-              { id: 'favorites' as const, icon: Heart, label: t.clientProfile.tabFavorites },
-              { id: 'data' as const, icon: Settings, label: t.clientProfile.tabData },
-            ]
-          ).map(({ id, icon: Icon, label }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveTab(id)}
-              className={`flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 transition sm:min-h-[3.5rem] ${
-                activeTab === id
-                  ? 'bg-[#145142]/10 text-[#145142]'
-                  : 'text-gray-500 hover:text-[#145142]/80'
-              }`}
-            >
-              <Icon size={23} strokeWidth={2.2} className={activeTab === id && id === 'favorites' ? 'fill-current' : ''} />
-              <span className="max-w-[5.5rem] px-0.5 text-center text-[10px] font-bold leading-[1.15] tracking-tight text-current sm:max-w-none sm:text-[11px]">
-                {label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </nav>
 
       <Footer />
     </div>

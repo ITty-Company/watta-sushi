@@ -245,7 +245,9 @@ interface Translations {
     distanceBreakdown: string
     enterAddressForDeliveryFee: string
     privacyConsent: string
+    namePlaceholder: string
     phonePlaceholder: string
+    phoneHint: string
     deliveryZoneLabel: string
     /** Рядок у підсумку: обрана зона з карти, {{zone}} */
     deliveryFromMap: string
@@ -599,7 +601,13 @@ interface Translations {
     pickPhotos: string
     reviewSend: string
     favoritesTitle: string
+    /** Підзаголовок публічної /favorites */
+    favSubtitle: string
+    /** «{{count}} страв» на бейджі */
+    favSavedCount: string
     favEmpty: string
+    /** Підказка в порожньому стані */
+    favEmptyHint: string
     favToMenu: string
     /** Тост, якщо натиснули «обране» без сесії */
     loginToAddFavorites: string
@@ -1160,7 +1168,7 @@ const translations: Record<Language, Translations> = {
       pickupSubtitle: 'Заберіть замовлення у зазначений час.',
       deliveryFree: 'Безкоштовно',
       deliveryUnlockHint: 'Безкоштовна доставка від {{amount}} €',
-      invalidPhone: 'Невірний формат телефону',
+      invalidPhone: 'Введіть номер у міжнародному форматі (8–15 цифр, можна +)',
       cartMeta: '{{lines}} поз. · {{pieces}} шт',
       perPiece: 'шт.',
       contactDetails: 'Контактні дані',
@@ -1181,7 +1189,9 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Вкажіть адресу доставки для розрахунку вартості',
       privacyConsent:
         'Натискаючи кнопку, ви погоджуєтесь з обробкою персональних даних відповідно до політики конфіденційності.',
-      phonePlaceholder: '+380…, +31… або 10–15 цифр',
+      namePlaceholder: 'Наприклад, Олена',
+      phonePlaceholder: '+31 6 12345678',
+      phoneHint: 'Будь-яка країна: +380, +31, +1 тощо (8–15 цифр)',
       deliveryZoneLabel: 'Зона доставки',
       deliveryFromMap: 'Зона на карті: {{zone}}',
       deliveryZoneStandardHint:
@@ -1512,7 +1522,7 @@ const translations: Record<Language, Translations> = {
       categoriesStripAria: 'Категорії меню — натисніть, щоб перейти до розділу в каталозі',
       animationSlotAria: 'Місце для анімації бренду',
       heroMarquee:
-        "З любов'ю до смаку|Watta Sushi|Свіжі роли|Швидка доставка|Преміум інгредієнти",
+        'Watta Sushi|Свіжі роли|Швидка доставка|Преміум інгредієнти|З любов\'ю до смаку',
     },
   adminCategory: {
     manageTitle: 'Управління категоріями меню',
@@ -1575,7 +1585,10 @@ const translations: Record<Language, Translations> = {
       pickPhotos: 'Обрати зображення',
       reviewSend: 'Надіслати відгук',
       favoritesTitle: 'Обрані товари',
+      favSubtitle: 'Роли та страви, які вам подобаються — збережені тут для швидкого замовлення',
+      favSavedCount: '{{count}} страв',
       favEmpty: 'У вас поки немає обраних товарів',
+      favEmptyHint: 'Натисніть ♥ на картці в меню — і рол з’явиться тут',
       favToMenu: 'Перейти до меню',
       loginToAddFavorites: 'Увійдіть, щоб додавати в обране',
       addrTitle: 'Мої адреси',
@@ -2027,7 +2040,7 @@ const translations: Record<Language, Translations> = {
       pickupSubtitle: 'Заберите заказ в указанное время.',
       deliveryFree: 'Бесплатно',
       deliveryUnlockHint: 'Бесплатная доставка от {{amount}} €',
-      invalidPhone: 'Неверный формат телефона',
+      invalidPhone: 'Введите номер в международном формате (8–15 цифр, можно +)',
       cartMeta: '{{lines}} поз. · {{pieces}} шт',
       perPiece: 'шт.',
       contactDetails: 'Контактные данные',
@@ -2048,7 +2061,9 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Введите адрес доставки для расчёта стоимости',
       privacyConsent:
         'Нажимая кнопку, вы соглашаетесь с обработкой персональных данных в соответствии с политикой конфиденциальности.',
-      phonePlaceholder: '+380…, +31… или 10–15 цифр',
+      namePlaceholder: 'Например, Анна',
+      phonePlaceholder: '+31 6 12345678',
+      phoneHint: 'Любая страна: +380, +31, +1 и т.д. (8–15 цифр)',
       deliveryZoneLabel: 'Зона доставки',
       deliveryFromMap: 'Зона на карте: {{zone}}',
       deliveryZoneStandardHint:
@@ -2379,7 +2394,7 @@ const translations: Record<Language, Translations> = {
       categoriesStripAria: 'Категории меню — нажмите, чтобы перейти к разделу в каталоге',
       animationSlotAria: 'Место для бренд-анимации',
       heroMarquee:
-        'С любовью к вкусу|Watta Sushi|Свежие роллы|Быстрая доставка|Премиум ингредиенты',
+        'Watta Sushi|Свежие роллы|Быстрая доставка|Премиум ингредиенты|С любовью к вкусу',
     },
   adminCategory: {
     manageTitle: 'Управление категориями меню',
@@ -2442,7 +2457,10 @@ const translations: Record<Language, Translations> = {
       pickPhotos: 'Выбрать изображения',
       reviewSend: 'Отправить отзыв',
       favoritesTitle: 'Избранные товары',
+      favSubtitle: 'Роллы и блюда, которые вам нравятся — сохранены здесь для быстрого заказа',
+      favSavedCount: '{{count}} блюд',
       favEmpty: 'У вас пока нет избранных товаров',
+      favEmptyHint: 'Нажмите ♥ на карточке в меню — и ролл появится здесь',
       favToMenu: 'Перейти в меню',
       loginToAddFavorites: 'Войдите, чтобы добавлять в избранное',
       addrTitle: 'Мои адреса',
@@ -2894,7 +2912,7 @@ const translations: Record<Language, Translations> = {
       pickupSubtitle: 'Pick up your order at the chosen time.',
       deliveryFree: 'Free',
       deliveryUnlockHint: 'Free delivery on orders over {{amount}} €',
-      invalidPhone: 'Invalid phone format',
+      invalidPhone: 'Enter an international number (8–15 digits, + optional)',
       cartMeta: '{{lines}} items · {{pieces}} pcs',
       perPiece: 'pc.',
       contactDetails: 'Contact details',
@@ -2915,7 +2933,9 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Enter your address to calculate the delivery fee',
       privacyConsent:
         'By placing the order you agree to the processing of personal data as described in our privacy policy.',
-      phonePlaceholder: '+380…, +31… or 10–15 digits',
+      namePlaceholder: 'e.g. Anna',
+      phonePlaceholder: '+31 6 12345678',
+      phoneHint: 'Any country: +380, +31, +1, etc. (8–15 digits)',
       deliveryZoneLabel: 'Delivery zone',
       deliveryFromMap: 'Map zone: {{zone}}',
       deliveryZoneStandardHint:
@@ -3246,7 +3266,7 @@ const translations: Record<Language, Translations> = {
       categoriesStripAria: 'Menu categories — tap to jump to that section in the catalog',
       animationSlotAria: 'Brand animation area',
       heroMarquee:
-        'With love for taste|Watta Sushi|Fresh rolls|Fast delivery|Premium ingredients',
+        'Watta Sushi|Fresh rolls|Fast delivery|Premium ingredients|With love for taste',
     },
   adminCategory: {
     manageTitle: 'Menu Categories Management',
@@ -3309,7 +3329,10 @@ const translations: Record<Language, Translations> = {
       pickPhotos: 'Choose images',
       reviewSend: 'Submit review',
       favoritesTitle: 'Saved dishes',
+      favSubtitle: 'Rolls and dishes you love — saved here for quick reordering',
+      favSavedCount: '{{count}} dishes',
       favEmpty: 'No saved dishes yet',
+      favEmptyHint: 'Tap ♥ on a menu card and your roll will show up here',
       favToMenu: 'Go to menu',
       loginToAddFavorites: 'Sign in to add favorites',
       addrTitle: 'My addresses',
@@ -3761,7 +3784,7 @@ const translations: Record<Language, Translations> = {
       pickupSubtitle: 'Haal je bestelling op op het gekozen tijdstip.',
       deliveryFree: 'Gratis',
       deliveryUnlockHint: 'Gratis bezorging vanaf {{amount}} €',
-      invalidPhone: 'Ongeldig telefoonnummer',
+      invalidPhone: 'Voer een internationaal nummer in (8–15 cijfers, + mag)',
       cartMeta: '{{lines}} pos. · {{pieces}} st.',
       perPiece: 'st.',
       contactDetails: 'Contactgegevens',
@@ -3782,7 +3805,9 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Vul je adres in om de bezorgkosten te berekenen',
       privacyConsent:
         'Door te bestellen ga je akkoord met de verwerking van persoonsgegevens zoals in ons privacybeleid.',
-      phonePlaceholder: '+380…, +31… of 10–15 cijfers',
+      namePlaceholder: 'Bijv. Anna',
+      phonePlaceholder: '+31 6 12345678',
+      phoneHint: 'Elk land: +380, +31, +1 enz. (8–15 cijfers)',
       deliveryZoneLabel: 'Bezorgzone',
       deliveryFromMap: 'Zone op kaart: {{zone}}',
       deliveryZoneStandardHint:
@@ -4113,7 +4138,7 @@ const translations: Record<Language, Translations> = {
       categoriesStripAria: 'Menucategorieën — tik om naar dat deel van de catalogus te gaan',
       animationSlotAria: 'Ruimte voor merk-animatie',
       heroMarquee:
-        'Met liefde voor smaak|Watta Sushi|Verse rolls|Snelle bezorging|Premium ingrediënten',
+        'Watta Sushi|Verse rolls|Snelle bezorging|Premium ingrediënten|Met liefde voor smaak',
     },
   adminCategory: {
     manageTitle: 'Menu Categorieën Beheer',
@@ -4176,7 +4201,10 @@ const translations: Record<Language, Translations> = {
       pickPhotos: 'Kies afbeeldingen',
       reviewSend: 'Review versturen',
       favoritesTitle: 'Favoriete gerechten',
+      favSubtitle: 'Rollen en gerechten die je leuk vindt — hier bewaard om snel te bestellen',
+      favSavedCount: '{{count}} gerechten',
       favEmpty: 'Nog geen favorieten',
+      favEmptyHint: 'Tik op ♥ bij een gerecht in het menu — het verschijnt hier',
       favToMenu: 'Naar menu',
       loginToAddFavorites: 'Log in om favorieten toe te voegen',
       addrTitle: 'Mijn adressen',

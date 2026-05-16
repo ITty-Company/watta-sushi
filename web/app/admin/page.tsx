@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { useLanguage } from '../context/LanguageContext'
-import { readIsAdminFromCurrentUserJson } from '@/lib/isAdminRole'
+import { readIsSiteAdminFromStorage } from '@/lib/isAdminRole'
 
 /**
  * AdminView — найбільший компонент (~6000+ рядків + recharts/stripe). Тягнемо лише після
@@ -14,8 +14,7 @@ import { readIsAdminFromCurrentUserJson } from '@/lib/isAdminRole'
 const AdminView = dynamic(() => import('../components/AdminView'), { ssr: false })
 
 function readIsAdmin(): boolean {
-  if (typeof window === 'undefined') return false
-  return readIsAdminFromCurrentUserJson(localStorage.getItem('currentUser'))
+  return readIsSiteAdminFromStorage()
 }
 
 export default function AdminPage() {
@@ -24,13 +23,13 @@ export default function AdminPage() {
   const [allowed, setAllowed] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
     const admin = readIsAdmin()
-    if (!token) {
-      router.replace(`/login?return=${encodeURIComponent('/admin')}`)
-      return
-    }
     if (!admin) {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.replace(`/login?return=${encodeURIComponent('/admin')}`)
+        return
+      }
       router.replace('/')
       return
     }
