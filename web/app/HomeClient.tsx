@@ -5,36 +5,8 @@ import dynamic from 'next/dynamic'
 import MenuView from './components/MenuView'
 import WattaBootSplashGate from './components/WattaBootSplashGate'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
+import { kickWelcomeHeroVideoPlayBurst, kickWelcomeHeroVideoPlayOnce } from '@/lib/kickWelcomeHeroVideo'
 import { useRouter } from 'next/navigation'
-
-/** Лише джерело hero на головній (не fallback-div, не інші сторінки). */
-const WELCOME_HERO_VIDEO_SELECTOR =
-  'section.welcome-hero-section-web.menu-snap-section-welcome-web:not(.delivery-page-hero-embed-web) video.watta-home-hero-native-video'
-
-/** Один прохід nudge на hero-`<video>`: muted autoplay + play(). */
-function kickWelcomeHeroVideoPlayOnce() {
-  const v = document.querySelector<HTMLVideoElement>(WELCOME_HERO_VIDEO_SELECTOR)
-  if (!v) return false
-  try {
-    v.defaultMuted = true
-    v.muted = true
-    v.volume = 0
-    v.playsInline = true
-    void v.play().catch(() => {})
-  } catch {
-    /* ignore */
-  }
-  return true
-}
-
-/** Тривала серія nudge — для випадків SPA-back / bfcache / battery-saver, коли
- *  одного play() мало (browser policy відкидає перший виклик). */
-function kickWelcomeHeroVideoPlayBurst() {
-  kickWelcomeHeroVideoPlayOnce()
-  const delays = [16, 80, 200, 500, 1000, 2000]
-  const ids = delays.map((ms) => window.setTimeout(kickWelcomeHeroVideoPlayOnce, ms))
-  return () => ids.forEach((id) => window.clearTimeout(id))
-}
 
 /**
  * Перший екран — лише `MenuView`. `CartView`/`ProfileView`/`NotificationsView`
