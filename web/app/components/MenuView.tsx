@@ -23,6 +23,7 @@ import {
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
 import { WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
+import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
@@ -1414,9 +1415,8 @@ export default function MenuView() {
       return w <= 768 ? 148 : w <= 1024 ? 118 : 168
     }
 
-    const publish = (slug: string) => {
-      window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
-    }
+    const lastHighlightSlugRef = { current: '' }
+    const publish = (slug: string) => publishMenuCategoryHighlight(slug, lastHighlightSlugRef)
 
     const sync = () => {
       if (homeStripScrollLockRef.current) return
@@ -1453,25 +1453,17 @@ export default function MenuView() {
       if (bestSlug) publish(bestSlug)
     }
 
-    root.addEventListener('scroll', sync, { passive: true })
-    window.addEventListener('resize', sync)
+    const { onScroll, cancel } = createRafScrollListener(sync)
+    root.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
     const id = window.requestAnimationFrame(sync)
     return () => {
       window.cancelAnimationFrame(id)
-      root.removeEventListener('scroll', sync)
-      window.removeEventListener('resize', sync)
+      cancel()
+      root.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
     }
   }, [pathname, homeCatalogAsSingleList, menuCategoriesWithItems, selectedCategory])
-
-  // Отладочный эффект для отслеживания изменений
-  useEffect(() => {
-    console.log('Состояние фильтрации обновлено:', {
-      selectedCategory,
-      filteredItemsCount: filteredItems.length,
-      menuItemsCount: menuItems.length,
-      categoriesCount: menuCategories.length
-    })
-  }, [selectedCategory, filteredItems.length, menuItems.length, menuCategories.length])
 
   // --- НАВИГАЦИЯ ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)

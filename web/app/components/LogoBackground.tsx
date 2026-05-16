@@ -32,7 +32,7 @@ export default function LogoBackground() {
       
       // Оптимизированное количество логотипов для производительности (уменьшено для быстрой загрузки)
       const baseLogoCount = Math.floor((containerRect.width * containerRect.height) / (maxSize * maxSize * 1.2)) || 20
-      const logoCount = Math.min(baseLogoCount, 25) // Уменьшено до 25 логотипов для максимальной производительности
+      const logoCount = Math.min(baseLogoCount, 12)
       
       const newLogos: LogoPosition[] = []
       const existingLogos: { x: number; y: number; size: number }[] = []
@@ -293,23 +293,6 @@ export default function LogoBackground() {
       resizeObserver.observe(containerRef.current.parentElement)
     }
     
-    // Используем MutationObserver с debounce только для значительных изменений
-    let mutationObserver: MutationObserver | null = null
-    if (typeof MutationObserver !== 'undefined' && containerRef.current?.parentElement) {
-      mutationObserver = new MutationObserver((mutations) => {
-        // Обновляем только если добавлены/удалены узлы (не просто изменения атрибутов)
-        const hasSignificantChanges = mutations.some(m => m.addedNodes.length > 0 || m.removedNodes.length > 0)
-        if (hasSignificantChanges) {
-          debouncedUpdate()
-        }
-      })
-      mutationObserver.observe(containerRef.current.parentElement, {
-        childList: true,
-        subtree: false, // Только прямые дети для производительности
-        attributes: false // Игнорируем изменения атрибутов
-      })
-    }
-    
     return () => {
       if (updateTimeout) clearTimeout(updateTimeout)
       clearTimeout(timeoutId)
@@ -317,9 +300,6 @@ export default function LogoBackground() {
       window.removeEventListener('resize', debouncedUpdate)
       if (resizeObserver) {
         resizeObserver.disconnect()
-      }
-      if (mutationObserver) {
-        mutationObserver.disconnect()
       }
     }
   }, [])

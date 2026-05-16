@@ -29,7 +29,7 @@ export function scrollMenuToTop(behavior: ScrollBehavior = 'smooth') {
 export function scrollEntireAppToTop() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
   const reset = () => {
-    window.scrollTo(0, 0)
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     document.documentElement.scrollTop = 0
     document.body.scrollTop = 0
     document.querySelectorAll<HTMLElement>('.content-web').forEach((el) => {
@@ -37,8 +37,5 @@ export function scrollEntireAppToTop() {
     })
   }
   reset()
-  /* Другий кадр: дочірні useEffect інколи крутять скрол після батьківського useLayoutEffect */
-  requestAnimationFrame(() => {
-    requestAnimationFrame(reset)
-  })
+  requestAnimationFrame(reset)
 }

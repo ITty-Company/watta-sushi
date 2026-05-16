@@ -93,7 +93,7 @@ export default function HomeClient() {
     }
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        kickWelcomeHeroVideoPlayBurst()
+        kickWelcomeHeroVideoPlayOnce()
       }
     }
 

@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { Heart, UtensilsCrossed } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import { loadFavoriteProducts } from '@/lib/favoritesStorage'
-import LogoBackground from './LogoBackground'
 import WattaSiteStickyChrome from './WattaSiteStickyChrome'
 import { MenuHighlightStack, type MenuHighlightStackItem } from './MenuHighlightStack'
 import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
@@ -15,21 +13,14 @@ import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
 function FavoritesGridSkeleton() {
   return (
     <div className="px-6 pb-4 sm:px-8 sm:pb-5" aria-hidden>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="menu-highlight-stack-products favorites-page-products-grid mx-auto grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 sm:gap-2.5"
-      >
+      <div className="menu-highlight-stack-products favorites-page-products-grid mx-auto grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 sm:gap-2.5">
         {Array.from({ length: 8 }).map((_, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
             className="favorites-grid-skeleton-card min-h-[220px] w-full animate-pulse rounded-[1.15rem] border border-[#145142]/10 bg-white/80"
           />
         ))}
-      </motion.div>
+      </div>
     </div>
   )
 }
@@ -121,44 +112,15 @@ export default function FavoritesPageClient() {
   }))
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.25 }}
-      className="menu-page-web watta-favorites-page relative flex w-full max-w-[100vw] min-w-0 shrink-0 flex-col overflow-x-hidden watta-page-bg"
-    >
+    <div className="menu-page-web watta-favorites-page relative flex w-full max-w-[100vw] min-w-0 shrink-0 flex-col overflow-x-hidden watta-page-bg">
       <WattaSiteStickyChrome flowHeightFudgePx={4} />
-      <motion.div className="menu-content-top-gap-web w-full shrink-0 bg-transparent" aria-hidden />
+      <div className="menu-content-top-gap-web w-full shrink-0 bg-transparent" aria-hidden />
 
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0 opacity-[0.12]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.12 }}
-        transition={{ delay: 0.05, duration: 0.4 }}
-      >
-        <LogoBackground />
-      </motion.div>
-
-      <motion.div
-        className="watta-favorites-page__content relative z-[1] w-full min-w-0"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <div className="watta-favorites-page__content relative z-[1] w-full min-w-0">
         {loading ? (
-          <motion.div
-            className="w-full max-w-[100vw]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <FavoritesGridSkeleton />
-          </motion.div>
+          <FavoritesGridSkeleton />
         ) : items.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-auto flex max-w-lg flex-col items-center justify-center px-6 py-16 text-center sm:py-24"
-          >
+          <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-6 py-16 text-center sm:py-24">
             <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-rose-50 to-[#145142]/[0.06] text-rose-400/70">
               <Heart className="h-9 w-9" strokeWidth={1.5} />
             </div>
@@ -176,7 +138,7 @@ export default function FavoritesPageClient() {
               <UtensilsCrossed className="h-4 w-4" strokeWidth={2.2} aria-hidden />
               {cp.favToMenu}
             </Link>
-          </motion.div>
+          </div>
         ) : (
           <MenuHighlightStack
             title={cp.favoritesTitle}
@@ -190,7 +152,7 @@ export default function FavoritesPageClient() {
             suppressHeading
           />
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }

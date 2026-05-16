@@ -117,7 +117,7 @@ function WattaMenuCategoryStripInner() {
       if (p !== '/menu' && p !== '/') return
       const slug = (ev as CustomEvent<{ slug?: string }>).detail?.slug
       if (typeof slug === 'string' && slug) {
-        setMenuScrollHint(slug)
+        setMenuScrollHint((prev) => (prev === slug ? prev : slug))
       }
     }
     window.addEventListener('wattaMenuCategoryHighlight', h)
@@ -235,7 +235,7 @@ function WattaMenuCategoryStripInner() {
       clearTimeout(t2)
       clearTimeout(t3)
     }
-  }, [activeKey, menuCategories])
+  }, [urlHighlight, productHighlight, pathname, menuCategories])
 
   useEffect(() => {
     const panel = categoriesPanelRef.current
@@ -243,11 +243,19 @@ function WattaMenuCategoryStripInner() {
     checkScrollButtons(panel)
     const t1 = setTimeout(() => checkScrollButtons(panel), 100)
     const t2 = setTimeout(() => checkScrollButtons(panel), 400)
-    const ro = new ResizeObserver(() => checkScrollButtons(panel))
+    let roRaf = 0
+    const ro = new ResizeObserver(() => {
+      if (roRaf) return
+      roRaf = requestAnimationFrame(() => {
+        roRaf = 0
+        checkScrollButtons(panel)
+      })
+    })
     ro.observe(panel)
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
+      if (roRaf) cancelAnimationFrame(roRaf)
       ro.disconnect()
     }
   }, [menuCategories.length, activeKey, checkScrollButtons])
@@ -265,7 +273,7 @@ function WattaMenuCategoryStripInner() {
         const safe =
           typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(slug) : slug.replace(/"/g, '\\"')
         panel.querySelector<HTMLElement>(`[data-watta-cat="${safe}"]`)?.scrollIntoView({
-          behavior: 'smooth',
+          behavior: 'auto',
           inline: 'nearest',
           block: 'nearest',
         })
@@ -287,7 +295,7 @@ function WattaMenuCategoryStripInner() {
         const safe =
           typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(slug) : slug.replace(/"/g, '\\"')
         panel.querySelector<HTMLElement>(`[data-watta-cat="${safe}"]`)?.scrollIntoView({
-          behavior: 'smooth',
+          behavior: 'auto',
           inline: 'nearest',
           block: 'nearest',
         })
