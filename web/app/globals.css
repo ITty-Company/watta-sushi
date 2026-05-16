@@ -5502,11 +5502,11 @@ html.watta-light-chrome body {
   }
 }
 
-/* Ноутбук і десктоп: 3 повні + половина четвертої; 3 зазори по 1rem */
+/* Ноутбук і десктоп: 4 повні + половина п’ятої; 4 зазори по 1rem (усі горизонтальні стрічки) */
 @media (min-width: 1024px) {
-  #home-menu-catalog .home-menu-product-card--rail-web {
-    flex: 0 0 calc((100% - 3rem) / 3.5);
-    max-width: calc((100% - 3rem) / 3.5);
+  .home-menu-category-rail-web > .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 4rem) / 4.5);
+    max-width: calc((100% - 4rem) / 4.5);
   }
 
   #home-menu-catalog .home-menu-category-rail-web {

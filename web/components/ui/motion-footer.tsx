@@ -1107,10 +1107,10 @@ const STYLES = `
     scroll-padding-inline: max(0.32rem, env(safe-area-inset-left, 0px));
   }
 
-  /* 3 повні + половина четвертої; 3 зазори між видимими «частинами» */
+  /* Ноутбук / десктоп: 4 повні + половина п’ятої; 4 зазори по 0.75rem */
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-    flex: 0 0 calc((100% - (0.75rem * 3)) / 3.5);
-    max-width: calc((100% - (0.75rem * 3)) / 3.5);
+    flex: 0 0 calc((100% - (0.75rem * 4)) / 4.5);
+    max-width: calc((100% - (0.75rem * 4)) / 4.5);
   }
 
   .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-web {
