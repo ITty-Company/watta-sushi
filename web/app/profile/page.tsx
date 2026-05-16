@@ -20,7 +20,7 @@ import {
   User,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
-import { mergeServerFavoritesIntoLocal } from '@/lib/favoritesStorage'
+import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { isAdminRole } from '@/lib/isAdminRole'
 import LogoBackground from '../components/LogoBackground'
 
@@ -57,7 +57,7 @@ export default function ProfilePage() {
     }
     try {
       setUser(JSON.parse(savedUser))
-      void mergeServerFavoritesIntoLocal()
+      void syncFavoritesAfterAuth()
     } catch {
       router.replace('/login?return=' + encodeURIComponent('/profile'))
     }

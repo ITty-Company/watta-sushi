@@ -138,8 +138,17 @@ export default function WattaGlobalSiteHeader({
   const deliveryNavActive = pathname === '/delivery' || deliveryEmbeddedActive
 
   const handleMenuButtonClick = () => {
-    if (rightNavDrawer?.enabled) rightNavDrawer.open()
-    else onMenuClick()
+    // Головна: MenuView керує NavigationSidebar (вбудовані сторінки), не глобальним drawer
+    if (pathname === '/') {
+      rightNavDrawer?.close()
+      onMenuClick()
+      return
+    }
+    if (rightNavDrawer?.enabled) {
+      rightNavDrawer.open()
+      return
+    }
+    onMenuClick()
   }
 
   const handleLogoClick = useCallback(() => {

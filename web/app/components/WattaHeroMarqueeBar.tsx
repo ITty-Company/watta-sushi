@@ -3,16 +3,33 @@
 import { useMemo } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 
+const MARQUEE_LOOP_COPIES = 3
+
 function MarqueeRow({ phrases }: { phrases: string[] }) {
-  if (phrases.length === 0) return null
+  const loopPhrases = useMemo(
+    () =>
+      Array.from({ length: MARQUEE_LOOP_COPIES }, () => phrases)
+        .flat()
+        .filter(Boolean),
+    [phrases],
+  )
+
+  if (loopPhrases.length === 0) return null
+
   return (
-    <div className="flex shrink-0 items-center whitespace-nowrap px-5 text-white sm:px-8">
-      {phrases.map((phrase, i) => (
-        <span key={`${phrase}-${i}`} className="inline-flex items-center">
-          <span className="text-[9px] font-bold uppercase tracking-[0.22em] min-[400px]:text-[10px] min-[400px]:tracking-[0.28em] md:text-xs">
+    <div className="flex shrink-0 items-center whitespace-nowrap" aria-hidden>
+      {loopPhrases.map((phrase, i) => (
+        <span
+          key={`${phrase}-${i}`}
+          className="inline-flex shrink-0 items-center gap-x-2 sm:gap-x-2.5"
+        >
+          <span className="watta-hero-marquee-phrase text-[11px] font-bold uppercase tracking-[0.1em] text-white min-[400px]:text-xs min-[480px]:text-[13px] sm:text-sm sm:tracking-[0.11em]">
             {phrase}
           </span>
-          <span className="mx-5 text-white/75 sm:mx-8 md:mx-10" aria-hidden>
+          <span
+            className="watta-hero-marquee-sep text-[11px] font-semibold text-white/85 min-[400px]:text-xs min-[480px]:text-[13px] sm:text-sm"
+            aria-hidden
+          >
             +
           </span>
         </span>
@@ -21,12 +38,12 @@ function MarqueeRow({ phrases }: { phrases: string[] }) {
   )
 }
 
-/** Горизонтальна бігуча смуга на головній: одразу після welcome hero-відео, перед блоком рекомендацій. */
+/** Горизонтальна бігуча смуга на головній: без пауз між циклами, щільніші інтервали. */
 export default function WattaHeroMarqueeBar() {
   const { t } = useLanguage()
   const phrases = useMemo(
     () => t.cinematicFooter.heroMarquee.split('|').map((s) => s.trim()).filter(Boolean),
-    [t.cinematicFooter.heroMarquee]
+    [t.cinematicFooter.heroMarquee],
   )
 
   if (phrases.length === 0) return null
@@ -36,7 +53,7 @@ export default function WattaHeroMarqueeBar() {
       className="watta-hero-marquee-bar relative z-[5] w-full overflow-hidden border-y border-white/20"
       role="presentation"
     >
-      <div className="watta-hero-marquee-track flex w-max py-2.5 sm:py-3 md:py-3.5">
+      <div className="watta-hero-marquee-track flex w-max items-center">
         <MarqueeRow phrases={phrases} />
         <MarqueeRow phrases={phrases} />
       </div>

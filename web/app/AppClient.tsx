@@ -9,6 +9,8 @@ import Footer from './components/Footer'
 import WattaRightNavDrawer from './components/WattaRightNavDrawer'
 import WattaPublicSiteChrome from './components/WattaPublicSiteChrome'
 import { RightNavDrawerProvider } from './context/RightNavDrawerContext'
+import { sanitizeAuthStorage } from '@/lib/authSession'
+import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 
 export default function AppClient({
@@ -21,14 +23,17 @@ export default function AppClient({
   const pathname = usePathname()
   const prevPathnameForScrollRef = useRef<string | null>(null)
   const isHomeRoute = pathname === '/'
+  const isFavoritesRoute = pathname === '/favorites'
+  const isCartRoute = pathname === '/cart'
   const isAuthRoute = pathname === '/login' || pathname === '/register'
   const isAdminShellRoute = pathname === '/admin' || pathname?.startsWith('/admin/')
   const showPublicNavChrome = !isAuthRoute
   /**
-   * Шапка + категорії: на `/` їх рендерить `MenuView` (`WattaStickyChromeLayout` усередині `.content-web`),
-   * щоб fixed-зона йшла в одному скролі з героєм. На інших публічних маршрутах — `WattaPublicSiteChrome`.
+   * Шапка + категорії: на `/` — `MenuView`, на `/favorites` — `FavoritesPageClient`.
+   * На інших публічних маршрутах — `WattaPublicSiteChrome`.
    */
-  const showGlobalSiteChrome = !isAuthRoute && !isAdminShellRoute && !isHomeRoute
+  const showGlobalSiteChrome =
+    !isAuthRoute && !isAdminShellRoute && !isHomeRoute && !isFavoritesRoute
   /**
    * Скрол наверх лише при зміні pathname; raніше тригерилось і на кожну зміну `searchParams`
    * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.
@@ -48,6 +53,7 @@ export default function AppClient({
    */
   useEffect(() => {
     if (typeof window === 'undefined') return
+    sanitizeAuthStorage()
     const stampKey = 'watta_menu_cache_schema_v3'
     if (localStorage.getItem(stampKey) === '1') return
 
@@ -80,6 +86,14 @@ export default function AppClient({
     }
   }, [])
 
+  useEffect(() => {
+    const onUser = () => {
+      void syncFavoritesAfterAuth()
+    }
+    window.addEventListener('userChanged', onUser)
+    return () => window.removeEventListener('userChanged', onUser)
+  }, [])
+
   return (
     <LanguageProviderWrapper initialLocale={initialLocale}>
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
@@ -88,16 +102,18 @@ export default function AppClient({
           {/* flex-1: основний блок забирає вільну висоту до min-h екрана — інакше «повітря» лишалось під футером */}
           <main className="flex min-h-0 w-full max-w-[100vw] flex-1 flex-col">
             {showGlobalSiteChrome ? <WattaPublicSiteChrome /> : null}
-            <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
               {children}
             </div>
           </main>
 
-          {/* На головній футер у MenuView/HomeClient; на /login /register — без глобального футера */}
-          {!isHomeRoute && !isAuthRoute && !isAdminShellRoute && <Footer />}
+          {/* На головній футер у MenuView/HomeClient; на /cart /login /register — без глобального футера */}
+          {!isHomeRoute && !isAuthRoute && !isAdminShellRoute && !isCartRoute && (
+            <Footer compact={isFavoritesRoute} />
+          )}
 
           {showPublicNavChrome && <WattaRightNavDrawer />}
-          {!isAuthRoute && !isAdminShellRoute && <FloatingContactButtons />}
+          {!isAuthRoute && !isAdminShellRoute && !isCartRoute && <FloatingContactButtons />}
         </div>
       </RightNavDrawerProvider>
     </LanguageProviderWrapper>

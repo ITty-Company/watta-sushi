@@ -7,6 +7,7 @@ import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
 import { sendOrderReceipt } from '../services/email.service';
 import Stripe from 'stripe';
+import crypto from 'crypto';
 
 function getStripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY?.trim()
@@ -30,35 +31,67 @@ function getAuthUserId(req: Request): number | null {
   }
 }
 
-function buildLiqPayPayload(orderId: number, amount: number) {
-  const publicKey = process.env.LIQPAY_PUBLIC_KEY;
-  const privateKey = process.env.LIQPAY_PRIVATE_KEY;
-  
+function hasLiqPayKeys(): boolean {
+  return Boolean(process.env.LIQPAY_PUBLIC_KEY?.trim() && process.env.LIQPAY_PRIVATE_KEY?.trim());
+}
+
+function effectiveProductUnitPrice(price: number, promoPercent: number): number {
+  const p = Math.min(100, Math.max(0, Math.round(Number(promoPercent) || 0)));
+  if (p <= 0) return price;
+  return Math.round(price * (100 - p) * 100) / 10000;
+}
+
+function buildLiqPayCheckout(orderId: number, amount: number) {
+  const publicKey = process.env.LIQPAY_PUBLIC_KEY?.trim();
+  const privateKey = process.env.LIQPAY_PRIVATE_KEY?.trim();
+
   if (!publicKey || !privateKey) {
     throw new Error('LiqPay keys are not configured');
   }
 
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  
-  // 1. Формируем параметры (обязательно добавляем public_key)
+  const safeAmount = Math.max(0.01, Math.round(Number(amount) * 100) / 100);
+
   const params = {
     public_key: publicKey,
     action: 'pay',
-    amount: Number(amount).toFixed(2),
-    currency: 'UAH',
-    description: `Order #${orderId}`,
+    amount: safeAmount.toFixed(2),
+    currency: 'EUR',
+    description: `Watta Sushi #${orderId}`,
     order_id: String(orderId),
     result_url: `${frontendUrl}/checkout/success?orderId=${orderId}`,
     version: '3',
   };
-// 2. Кодируем данные в Base64
-const data = Buffer.from(JSON.stringify(params)).toString('base64');
 
-// 3. Создаем подпись: base64(sha1(private_key + data + private_key))
-const signString = privateKey + data + privateKey;
-const signature = crypto.createHash('sha1').update(signString).digest('base64');
+  const data = Buffer.from(JSON.stringify(params)).toString('base64');
+  const signString = privateKey + data + privateKey;
+  const signature = crypto.createHash('sha1').update(signString).digest('base64');
 
-return { data, signature };
+  return { data, signature };
+}
+
+function prismaOrderErrorMessage(error: unknown): string {
+  const code = (error as { code?: string })?.code;
+  if (code === 'P2003') {
+    return 'Один або кілька товарів недоступні. Оновіть кошик і спробуйте знову.';
+  }
+  return 'Помилка при створенні замовлення';
+}
+
+async function rollbackFailedCardOrder(
+  orderId: number,
+  usedBonuses: number,
+  userId: number | null,
+) {
+  await prisma.order.delete({ where: { id: orderId } }).catch(() => {});
+  if (usedBonuses > 0 && userId) {
+    await prisma.user
+      .update({
+        where: { id: userId },
+        data: { bonusBalance: { increment: usedBonuses } },
+      })
+      .catch(() => {});
+  }
 }
 // ==========================================
 // 1. Получить МОИ заказы (по Токену) - НОВОЕ
@@ -210,16 +243,56 @@ router.post('/', async (req: Request, res: Response) => {
       merchandiseTotal,
       deliveryPrice,
       usedBonuses,
-      userId,
       noCallbackConfirm,
       noDoorbellRing,
     } = req.body;
 
-    const clientItems = Array.isArray(items) ? items : [];
-    const lineSubtotal = clientItems.reduce(
-      (s: number, item: any) => s + Number(item.price) * Number(item.quantity ?? 1),
-      0
-    );
+    const payMethod = String(paymentMethod || 'CASH').toUpperCase() === 'CARD' ? 'CARD' : 'CASH';
+    if (payMethod === 'CARD' && !getStripeClient() && !hasLiqPayKeys()) {
+      res.status(503).json({
+        message:
+          'Онлайн-оплата тимчасово недоступна. Оберіть «Готівка» або додайте STRIPE_SECRET_KEY / LIQPAY_* у backend/.env.',
+      });
+      return;
+    }
+
+    const rawItems = Array.isArray(items) ? items : [];
+    if (rawItems.length === 0) {
+      res.status(400).json({ message: 'Кошик порожній' });
+      return;
+    }
+
+    const requestedLines: { productId: number; quantity: number }[] = [];
+    for (const item of rawItems) {
+      const productId = parseInt(String(item?.id ?? item?.productId), 10);
+      const quantity = Math.min(99, Math.max(1, Math.round(Number(item?.quantity ?? 1))));
+      if (!Number.isFinite(productId) || productId <= 0) continue;
+      requestedLines.push({ productId, quantity });
+    }
+
+    if (requestedLines.length === 0) {
+      res.status(400).json({ message: 'Некоректні товари в кошику. Оновіть кошик.' });
+      return;
+    }
+
+    const productIds = [...new Set(requestedLines.map((l) => l.productId))];
+    const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+    if (products.length !== productIds.length) {
+      res.status(400).json({ message: 'Деякі товари більше недоступні. Оновіть кошик.' });
+      return;
+    }
+
+    const productById = new Map(products.map((p) => [p.id, p]));
+    const normalizedLines = requestedLines.map((line) => {
+      const p = productById.get(line.productId)!;
+      return {
+        productId: line.productId,
+        quantity: line.quantity,
+        price: effectiveProductUnitPrice(Number(p.price), Number(p.promoDiscountPercent ?? 0)),
+      };
+    });
+
+    const lineSubtotal = normalizedLines.reduce((s, l) => s + l.price * l.quantity, 0);
     const merchParsed = merchandiseTotal != null ? Number(merchandiseTotal) : NaN;
     const merchandise =
       Number.isFinite(merchParsed) && merchParsed >= 0 ? merchParsed : lineSubtotal;
@@ -263,14 +336,7 @@ router.post('/', async (req: Request, res: Response) => {
       );
     }
 
-    const parsedUserId = userId != null && userId !== '' ? parseInt(String(userId), 10) : NaN;
-    const authUserId = getAuthUserId(req);
-    /** Не довіряємо body userId без JWT; при токені — лише id з токена. */
-    if (Number.isFinite(parsedUserId) && (!authUserId || authUserId !== parsedUserId)) {
-      res.status(403).json({ message: 'Нельзя привязать заказ к чужому аккаунту' });
-      return;
-    }
-    const effectiveUserId = authUserId ?? null;
+    const effectiveUserId = getAuthUserId(req);
     const requestedBonuses = Number(usedBonuses);
     const safeUsedBonuses =
       Number.isFinite(requestedBonuses) && requestedBonuses > 0 ? requestedBonuses : 0;
@@ -308,7 +374,7 @@ router.post('/', async (req: Request, res: Response) => {
           address: String(address || ''),
           fulfillmentType: fulfillment,
           deliveryFee: deliveryFeeApplied,
-          paymentMethod: paymentMethod || 'CASH',
+          paymentMethod: payMethod,
           comment: comment || null,
           noCallbackConfirm: Boolean(noCallbackConfirm),
           noDoorbellRing: Boolean(noDoorbellRing),
@@ -317,10 +383,10 @@ router.post('/', async (req: Request, res: Response) => {
           status: 'PENDING',
           userId: effectiveUserId,
           items: {
-            create: clientItems.map((item: any) => ({
-              productId: item.id,
-              quantity: Number(item.quantity ?? 1),
-              price: Number(item.price),
+            create: normalizedLines.map((line) => ({
+              productId: line.productId,
+              quantity: line.quantity,
+              price: line.price,
             })),
           },
         },
@@ -334,7 +400,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // 2. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЯ
     // order.items теперь существует, так как мы добавили include выше
-    if (paymentMethod === 'CASH') {
+    if (payMethod === 'CASH') {
       Promise.allSettled([
           sendTelegramNotification(order, order.items),
           addOrderToSheet(order, order.items)
@@ -351,53 +417,72 @@ router.post('/', async (req: Request, res: Response) => {
           );
         }
       }
-    }
 
-    if (paymentMethod === 'CARD') {
-      const stripe = getStripeClient()
-      if (!stripe) {
-        res.status(503).json({
-          message:
-            'Оплата карткою недоступна: додайте STRIPE_SECRET_KEY у backend/.env (локально) або на Render.',
-        })
-        return
-      }
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: order.items.map((item: any) => ({
-          price_data: {
-            currency: 'uah', // Валюта
-            product_data: { 
-              name: item.product?.name_ru || 'Товар из Watta Sushi' 
-            },
-            unit_amount: Math.round(item.price * 100), // Stripe принимает сумму в копейках
-          },
-          quantity: item.quantity,
-        })),
-        mode: 'payment',
-        success_url: `${frontendUrl}/checkout/success?orderId=${order.id}`,
-        cancel_url: `${frontendUrl}/cart`,
-        client_reference_id: String(order.id),
-      });
-
-      // Сохраняем ID сессии Stripe в заказ (у тебя уже есть это поле в Prisma)
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { stripeCheckoutSessionId: session.id }
-      });
-
-      // Возвращаем клиенту ссылку на оплату
-      res.json({ ...order, stripeUrl: session.url });
+      res.json(order);
       return;
     }
 
-    res.json(order);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const stripe = getStripeClient();
+
+    if (stripe) {
+      try {
+        const amountCents = Math.max(50, Math.round(totalWithBonuses * 100));
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card', 'ideal'],
+          line_items: [
+            {
+              price_data: {
+                currency: 'eur',
+                product_data: {
+                  name: `Watta Sushi — замовлення #${order.id}`,
+                },
+                unit_amount: amountCents,
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          success_url: `${frontendUrl}/checkout/success?orderId=${order.id}`,
+          cancel_url: `${frontendUrl}/cart`,
+          client_reference_id: String(order.id),
+          metadata: { orderId: String(order.id) },
+        });
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { stripeCheckoutSessionId: session.id },
+        });
+
+        res.json({ ...order, stripeUrl: session.url });
+        return;
+      } catch (stripeErr) {
+        console.error('Stripe checkout session error:', stripeErr);
+        await rollbackFailedCardOrder(order.id, safeUsedBonuses, effectiveUserId);
+        res.status(502).json({
+          message:
+            'Не вдалося відкрити оплату карткою. Спробуйте готівку або повторіть пізніше.',
+        });
+        return;
+      }
+    }
+
+    try {
+      const liqpay = buildLiqPayCheckout(order.id, totalWithBonuses);
+      res.json({ ...order, liqpay });
+      return;
+    } catch (liqErr) {
+      console.error('LiqPay checkout error:', liqErr);
+      await rollbackFailedCardOrder(order.id, safeUsedBonuses, effectiveUserId);
+      res.status(502).json({
+        message: 'Не вдалося відкрити онлайн-оплату. Спробуйте готівку.',
+      });
+      return;
+    }
 
   } catch (error) {
     console.error('Ошибка создания заказа:', error);
-    res.status(500).json({ message: 'Ошибка при создании заказа' });
+    res.status(500).json({ message: prismaOrderErrorMessage(error) });
   }
 });
 

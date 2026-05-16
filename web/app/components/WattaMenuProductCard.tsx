@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Heart, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
-import { useProductFavorite } from '@/hooks/useProductFavorite'
 
 export type WattaMenuProductCardModel = {
   id: number
@@ -47,7 +46,6 @@ export function WattaMenuProductCard({
   onBeforeNavigateToProduct,
 }: Props) {
   const { t } = useLanguage()
-  const { liked, toggle } = useProductFavorite(product.id)
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
   const eff = effectiveUnitPrice(product.price, promoPct)
   const emoji = product.emoji ?? '🍣'
@@ -66,35 +64,16 @@ export function WattaMenuProductCard({
     'rounded-lg bg-[#fff3e8] px-2 py-0.5 text-[10px] font-extrabold text-[#c45a12] ring-1 ring-[#f5c4a8]'
 
   const pills = (
-    <div className="pointer-events-none absolute left-2 top-2 z-[2] flex max-w-[calc(100%-3rem)] flex-wrap gap-1">
+    <div className="pointer-events-none absolute left-2 top-2 z-[2] flex max-w-[calc(100%-1rem)] flex-wrap gap-1">
       {product.isMenuNew ? <span className={pillNew}>{t.productDetail.badgeNew}</span> : null}
       {product.isTop ? <span className={pillHit}>{t.popular}</span> : null}
       {promoPct > 0 ? <span className={pillPromo}>−{promoPct}%</span> : null}
     </div>
   )
 
-  const heartBtn = (
-    <button
-      type="button"
-      onClick={toggle}
-      className={cn(
-        'flex h-9 w-9 items-center justify-center rounded-full border border-white/90 bg-white/95 text-neutral-500 transition hover:scale-[1.03] active:scale-[0.98]',
-        liked && 'text-red-500',
-      )}
-      aria-label={t.navigation.favorites}
-      aria-pressed={liked}
-    >
-      <Heart
-        className={cn('h-[18px] w-[18px] sm:h-5 sm:w-5', liked && 'fill-red-500 text-red-500')}
-        strokeWidth={2}
-      />
-    </button>
-  )
-
   const media = (
     <div className="relative">
       {pills}
-      <div className="absolute right-2 top-2 z-[3]">{heartBtn}</div>
       <Link
         href={`/product/${product.id}`}
         className="home-menu-product-card-media-web group/media block"

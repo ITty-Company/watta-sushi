@@ -24,8 +24,6 @@ import {
 } from '@/lib/menuBrowseRestore'
 import { WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
-import { getBearerAuthHeaders } from '@/lib/authHeaders'
-import { isAdminRole } from '@/lib/isAdminRole'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
@@ -33,6 +31,7 @@ import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDa
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
+import { formatProductWeightSubtitle } from '@/lib/i18n/parseProductSpecsFromDescription'
 import {
   buildHomeHeroPlaylist,
   buildHomeHeroVideoSources,
@@ -45,7 +44,6 @@ import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPrefer
  * Раніше всі ці екрани сиділи в основному бандлі головної (десятки КБ JS, recharts тощо).
  * Тепер при першому заході на `/` користувач отримує лише `MenuView` + видимі чанки.
  */
-const FavoritesView = dynamic(() => import('./FavoritesView'), { ssr: false })
 const ProfileView = dynamic(() => import('./ProfileView'), { ssr: false })
 const DeliveryView = dynamic(() => import('./DeliveryView'), { ssr: false })
 const AdminView = dynamic(() => import('./AdminView'), { ssr: false })
@@ -73,19 +71,10 @@ function queryGlobalCategoriesPanel(): HTMLDivElement | null {
 function cinematicWeightSubtitle(
   desc: string,
   weightFallback: string,
+  piecesFallback: string,
   lang: WattaLanguage,
 ): string {
-  const g = desc.match(/(\d+)\s*(g|г)\b/i)?.[1]
-  const ml = desc.match(/(\d+)\s*(ml|мл)\b/i)?.[1]
-  if (ml) {
-    if (lang === 'ru' || lang === 'uk') return `${ml} мл`
-    return `${ml} ml`
-  }
-  if (g) {
-    if (lang === 'ru' || lang === 'uk') return `${g} г`
-    return `${g} g`
-  }
-  return weightFallback
+  return formatProductWeightSubtitle(desc, weightFallback, piecesFallback, lang)
 }
 
 import { 
@@ -273,7 +262,7 @@ function WelcomeHeroSection({
               className="welcome-video-native-web watta-home-hero-native-video"
               width={1920}
               height={1080}
-              poster="/sushi.webp"
+              poster="/watta-sushi.jpg"
               src={heroVideoSrc}
               autoPlay
               muted
@@ -882,8 +871,6 @@ export default function MenuView() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   /** Мережа / 5xx / проксі без бекенда — на головній показуємо підказку замість порожнього блоку */
   const [homeMenuProductsLoadFailed, setHomeMenuProductsLoadFailed] = useState(false)
-  const [favorites, setFavorites] = useState<number[]>([]) // Храним ID лайкнутых товаров
-  
   const mapProductsToItems = useCallback(
     (data: any[]) => {
       return (data || [])
@@ -1070,7 +1057,6 @@ export default function MenuView() {
 
   // --- ПОЛЬЗОВАТЕЛЬ И АДМИН ---
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
   
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1081,13 +1067,12 @@ export default function MenuView() {
           try {
             const parsed = JSON.parse(savedUser)
             setCurrentUser(parsed)
-            setIsAdmin(isAdminRole(parsed.role))
           } catch (e) {
             console.error(e)
+            setCurrentUser(null)
           }
         } else {
           setCurrentUser(null)
-          setIsAdmin(false)
         }
       }
     }
@@ -1565,11 +1550,24 @@ export default function MenuView() {
       setIsSidebarOpen(false)
       return
     }
+    if (page === 'login') {
+      router.push('/login')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'register') {
+      router.push('/register')
+      setIsSidebarOpen(false)
+      return
+    }
+    if (page === 'privacy') {
+      router.push('/privacy')
+      setIsSidebarOpen(false)
+      return
+    }
     setActivePage(page)
     setIsSidebarOpen(false)
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }, 100)
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? ('instant' as ScrollBehavior) : 'auto' })
   }
   
   const handleClosePage = () => {
@@ -1590,6 +1588,35 @@ export default function MenuView() {
     setIsSidebarOpen(opening)
   }
 
+  const navDrawerCategories = useMemo(
+    () =>
+      menuCategories.map((c) => ({
+        key: c.key,
+        name: c.name,
+        emoji: c.emoji || '🍣',
+      })),
+    [menuCategories],
+  )
+
+  const handleNavCategorySelect = useCallback((key: string) => {
+    setSelectedCategory(key)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }),
+      )
+    }
+  }, [])
+
+  const handleSidebarCityChange = useCallback(
+    (cityId: number) => {
+      setSelectedCityId(cityId)
+      loadMenuItems()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
+      }
+    },
+    [loadMenuItems],
+  )
 
   const cinematicAdminRecommendedProducts = useMemo((): CinematicFooterAdminProduct[] => {
     const maxItems = 24
@@ -1610,15 +1637,20 @@ export default function MenuView() {
         isMenuNew: item.isMenuNew === true,
         emoji: item.emoji,
         discountPercent: (item.promoDiscountPercent ?? 0) > 0 ? item.promoDiscountPercent : undefined,
-        subtitleLine: cinematicWeightSubtitle(item.description, wf, language),
+        subtitleLine: cinematicWeightSubtitle(item.description, wf, t.productDetail.piecesFallback, language),
       }))
       .filter((p) => p.label.length > 0)
-  }, [menuItems, t.productDetail.weightFallback, language])
+  }, [menuItems, t.productDetail.weightFallback, t.productDetail.piecesFallback, language])
 
   // --- ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ПРОФИЛЯ С КОНКРЕТНОЙ ВКЛАДКОЙ ---
   const openProfileTab = (tab: 'history' | 'address' | 'favorites') => {
-    setProfileInitialTab(tab) 
-    handlePageOpen('profile') 
+    if (tab === 'favorites') {
+      router.push('/favorites')
+      setIsSidebarOpen(false)
+      return
+    }
+    setProfileInitialTab(tab)
+    handlePageOpen('profile')
   }
 
   // --- АДМИНСКИЕ ФУНКЦИИ ---
@@ -1657,66 +1689,6 @@ export default function MenuView() {
     setMenuCategories(menuCategories.map(cat => cat.id === categoryId ? { ...cat, subcategories: [...cat.subcategories, newSubcategory] } : cat))
   }
 
-  useEffect(() => {
-  const loadFavorites = async () => {
-    if (typeof window === 'undefined') return
-    const userStr = localStorage.getItem('currentUser')
-    if (!userStr) return
-
-    try {
-      const auth = getBearerAuthHeaders()
-      if (Object.keys(auth as Record<string, string>).length === 0) return
-      const res = await fetch('/api/favorites', {
-        headers: auth,
-      })
-      if (res.ok) {
-        const ids = await res.json()
-        setFavorites(ids)
-      }
-    } catch (e) { console.error(e) }
-  }
-  loadFavorites()
-}, [])
-  const toggleFavorite = async (e: React.MouseEvent, productId: number) => {
-  e.stopPropagation() // Чтобы не открывалась карточка товара (если будет клик по ней)
-  e.preventDefault()
-
-  if (typeof window === 'undefined') return
-  const userStr = localStorage.getItem('currentUser')
-
-  if (!userStr) {
-    toast.error(t.clientProfile.loginToAddFavorites)
-    return
-  }
-
-  const auth = getBearerAuthHeaders()
-  if (Object.keys(auth as Record<string, string>).length === 0) {
-    toast.error(t.clientProfile.loginToAddFavorites)
-    return
-  }
-
-  // Оптимистичное обновление интерфейса (сразу меняем цвет, не ждем сервер)
-  const isLiked = favorites.includes(productId)
-  if (isLiked) {
-    setFavorites(prev => prev.filter(id => id !== productId))
-  } else {
-    setFavorites(prev => [...prev, productId])
-  }
-
-  try {
-    await fetch('/api/favorites/toggle', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...auth,
-      },
-      body: JSON.stringify({ productId })
-    })
-  } catch (err) {
-    // Если ошибка - откатываем (можно добавить логику)
-    console.error('Ошибка лайка')
-  }
-}
   // --- ДОБАВЛЕНИЕ В КОРЗИНУ ---
   const addToCart = (item: MenuItem) => {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -1977,7 +1949,9 @@ export default function MenuView() {
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           staggerKey={sidebarStaggerKey}
-          isAdmin={isAdmin}
+          categories={navDrawerCategories}
+          onCategorySelect={handleNavCategorySelect}
+          onCityChange={handleSidebarCityChange}
           onOpenProfileTab={openProfileTab}
           onPageOpen={handlePageOpen}
           onGoHome={handleClosePage}
@@ -2010,24 +1984,18 @@ export default function MenuView() {
       </>
     )
   }
-  const getTranslated = (item: any, field: 'name' | 'description') => {
-  // Пытаемся найти поле с нужным языком, например name_ua
-  const val = item[`${field}_${language}`];
-  // Если пусто, берем русский (фоллбэк)
-  return val || item[`${field}_ru`] || '';
-};
 
   // ============================================
   // ГЛАВНЫЙ ЭКРАН (МЕНЮ)
   // ============================================
-  /** Текст «доставка суші…»: на телефоні й планшеті (≤1024) — над відео; на десктопі — під відео. */
+  /** Текст «доставка суші…»: лише вузка головна (смуга з відео); на картці ноутбука — прибрано. */
   const homeAfterHeroIntroTitleLines = fillHomeAfterHeroCity(t.menuView.homeAfterHeroIntroTitle)
     .split(/\n/)
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
 
   const homeAfterHeroIntroSection =
-    pathname === '/' ? (
+    pathname === '/' && homeNarrowStripHero ? (
       <section
         id="home-after-hero-intro"
         className="home-after-hero-intro-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0"
@@ -2044,7 +2012,7 @@ export default function MenuView() {
               </span>
             ))}
           </h2>
-          <p className="home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl whitespace-pre-line text-center text-[13px] leading-relaxed text-[#145142]/88 sm:mt-5 sm:text-[14px] sm:leading-relaxed md:max-w-[min(44rem,92vw)] md:whitespace-normal md:leading-snug md:text-balance">
+          <p className="home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl whitespace-pre-line text-center text-[13px] leading-snug text-[#145142]/88 sm:mt-5 sm:text-[14px] max-xl:max-w-[min(52rem,96vw)] xl:max-w-2xl xl:whitespace-normal xl:leading-relaxed xl:text-balance">
             {t.menuView.homeAfterHeroIntroBody}
           </p>
         </div>
@@ -2056,7 +2024,11 @@ export default function MenuView() {
       className="menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col bg-transparent"
       data-watta-home-narrow-strip-hero={homeNarrowStripHero ? '1' : undefined}
     >
-      <WattaStickyChromeLayout chromeClassName="watta-full-menu-sticky-chrome" flowHeightFudgePx={4}>
+      <WattaStickyChromeLayout
+        chromeClassName="watta-full-menu-sticky-chrome"
+        flowHeightFudgePx={0}
+        flowHeightMaxPx={360}
+      >
         <WattaGlobalSiteHeader
           disableSticky
           onCityChange={(cityId: number) => {
@@ -2071,7 +2043,7 @@ export default function MenuView() {
           onCartClick={openCart}
           onMenuClick={toggleSidebar}
           onProfileClick={() => openProfileTab('history')}
-          onFavoritesClick={() => openProfileTab('favorites')}
+          onFavoritesClick={() => router.push('/favorites')}
           onLogoClick={handleClosePage}
         />
         <WattaMenuCategoryStrip />
@@ -2156,15 +2128,7 @@ export default function MenuView() {
           heroVideoSrc={heroVideoSrc}
           videoSources={heroVideoSources}
           playlistLength={homeHeroPlaylist.length}
-        >
-          {/* Смуга на нижньому краї кадру — видно без прокрутки «під відео» */}
-          <div
-            ref={marqueeBarRef}
-            className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full"
-          >
-            <WattaHeroMarqueeBar />
-          </div>
-        </WelcomeHeroSection>
+        />
       )}
 
       {!homeIntroBeforeHero ? homeAfterHeroIntroSection : null}
@@ -2323,7 +2287,7 @@ export default function MenuView() {
       {showHomeMenuCatalog ? (
       <section
         id="home-menu-catalog"
-        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0 px-4 sm:px-6 md:px-8 pt-3 pb-6 sm:pt-5 sm:pb-8 md:pt-6 md:pb-10"
+        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0 px-5 sm:px-7 md:px-8 pt-3 pb-6 sm:pt-5 sm:pb-8 md:pt-6 md:pb-10"
         aria-labelledby="home-menu-catalog-title"
       >
         <div className="home-menu-catalog-stack-web relative z-[1]">
@@ -2449,7 +2413,9 @@ export default function MenuView() {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         staggerKey={sidebarStaggerKey}
-        isAdmin={isAdmin}
+        categories={navDrawerCategories}
+        onCategorySelect={handleNavCategorySelect}
+        onCityChange={handleSidebarCityChange}
         onOpenProfileTab={openProfileTab}
         onPageOpen={handlePageOpen}
         onGoHome={handleClosePage}

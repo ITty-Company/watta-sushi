@@ -1,21 +1,11 @@
 'use client'
 
+import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
+import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
+import type { WattaLanguage } from '@/lib/i18n/language'
+import { useLanguage } from '../context/LanguageContext'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
-
-function parseSpecsFromDescription(
-  desc: string,
-  weightFallback: string,
-  piecesFallback: string,
-): { weightLine: string; piecesLine: string } {
-  const g = desc.match(/(\d+)\s*г\b/i)?.[1]
-  const ml = desc.match(/(\d+)\s*мл\b/i)?.[1]
-  const pcs =
-    desc.match(/(\d+)\s*(шт|pcs|st\.|stuks)/i)?.[1] ||
-    desc.match(/(\d+)\s*(pieces|pcs)\b/i)?.[1]
-  const weightLine = ml ? `${ml} мл` : g ? `${g} г` : weightFallback
-  const piecesLine = pcs ? `${pcs} шт` : piecesFallback
-  return { weightLine, piecesLine }
-}
 
 export type MenuHighlightStackItem = {
   id: number
@@ -42,6 +32,12 @@ type Props = {
   onBeforeNavigateToProduct?: () => void
   /** `stack` — сітка карток (≤768px на /menu). `rail` — горизонтальний свайп як у каталозі. */
   layout?: 'stack' | 'rail'
+  /** Додаткові класи для контейнера сітки (`layout="stack"`). */
+  productsGridClassName?: string
+  /** Замість стандартного h2+p (наприклад вступ як на головній). */
+  headingSlot?: ReactNode
+  /** Без заголовка над сіткою (лише aria-label секції). */
+  suppressHeading?: boolean
 }
 
 export function MenuHighlightStack({
@@ -54,10 +50,16 @@ export function MenuHighlightStack({
   onAddToCart,
   onBeforeNavigateToProduct,
   layout = 'stack',
+  productsGridClassName,
+  headingSlot,
+  suppressHeading = false,
 }: Props) {
+  const { language } = useLanguage()
+  const lang = language as WattaLanguage
+
   if (items.length === 0) return null
 
-  const headingBlock = (
+  const headingBlock = headingSlot ?? (
     <header className="text-center">
       <h2 className="mb-2 font-sans text-base font-extrabold tracking-tight text-[#145142] sm:text-lg">
         {title}
@@ -76,14 +78,15 @@ export function MenuHighlightStack({
         className="menu-highlight-stack-web w-full max-w-[100vw] shrink-0 border-b border-[#145142]/10 bg-transparent px-0 py-4 sm:py-5"
         aria-label={ariaLabel}
       >
-        <div className="px-5 pb-3 pt-0.5 sm:px-8 sm:pb-4">{headingBlock}</div>
+        <div className="px-6 pb-3 pt-0.5 sm:px-8 sm:pb-4">{headingBlock}</div>
         <div className="home-menu-category-rail-outer-web">
           <div className="home-menu-category-rail-web" role="list">
             {items.map((item) => {
-              const subtitleLine = parseSpecsFromDescription(
+              const subtitleLine = parseProductSpecsFromDescription(
                 item.description,
                 weightFallback,
                 piecesFallback,
+                lang,
               ).weightLine
               return (
                 <WattaMenuProductCard
@@ -116,13 +119,23 @@ export function MenuHighlightStack({
 
   return (
     <section
-      className="menu-highlight-stack-web w-full max-w-[100vw] shrink-0 border-b border-[#145142]/10 bg-transparent px-6 py-4 sm:px-8 sm:py-5"
+      className="menu-highlight-stack-web w-full max-w-[100vw] shrink-0 border-b border-[#145142]/10 bg-transparent px-7 py-4 sm:px-8 sm:py-5"
       aria-label={ariaLabel}
     >
-      <div className="mb-3 sm:mb-4">{headingBlock}</div>
-      <div className="menu-highlight-stack-products mx-auto grid w-full max-w-lg grid-cols-1 items-start gap-3 sm:max-w-xl sm:grid-cols-2 sm:gap-2.5">
+      {suppressHeading ? null : <div className="mb-3 sm:mb-4">{headingBlock}</div>}
+      <div
+        className={cn(
+          'menu-highlight-stack-products mx-auto grid w-full max-w-lg grid-cols-1 items-start gap-3 sm:max-w-xl sm:grid-cols-2 sm:gap-2.5',
+          productsGridClassName,
+        )}
+      >
         {items.map((item) => {
-          const subtitleLine = parseSpecsFromDescription(item.description, weightFallback, piecesFallback).weightLine
+          const subtitleLine = parseProductSpecsFromDescription(
+            item.description,
+            weightFallback,
+            piecesFallback,
+            lang,
+          ).weightLine
           return (
             <WattaMenuProductCard
               key={item.id}

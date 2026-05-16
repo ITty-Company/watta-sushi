@@ -1,5 +1,5 @@
 /** Підняти версію, коли змінилися дані API/локалізація — client sessionStorage знову тягне меню. */
-export const MENU_CLIENT_CACHE_BUMP = 'i18n6' as const
+export const MENU_CLIENT_CACHE_BUMP = 'i18n7' as const
 
 /**
  * Сирі товари з /api/products (усі name_*) — один ключ на місто, без мови UI,

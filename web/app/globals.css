@@ -1904,15 +1904,42 @@ html.watta-light-chrome {
   overflow-y: visible;
   max-width: 100vw;
   --watta-floating-fab-size: 3.25rem;
-  --watta-floating-fab-lift: calc(max(1rem, env(safe-area-inset-bottom, 0px)) + 14px);
+  --watta-floating-fab-lift: calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + 8px);
   --watta-floating-fab-clearance: calc(
-    var(--watta-floating-fab-size) + var(--watta-floating-fab-lift) + 0.65rem
+    var(--watta-floating-fab-size) + var(--watta-floating-fab-lift) + 0.35rem
   );
 }
 
 /* Герой (100vw + margin) може виходити за flex-min ширину; не кліпаємо main — інакше смуги по боках відео. */
 .watta-app-shell-root > main {
   overflow-x: visible;
+  position: relative;
+  z-index: 1;
+}
+
+/* Глобальний підвал AppClient — під main (шапка + категорії + контент) */
+.watta-app-shell-root > .site-footer-watta {
+  position: relative;
+  z-index: 0;
+}
+
+/*
+ * Липка шапка + категорії: fixed chrome завжди над скрол-контентом і підвалом.
+ * Без z-index на flow-anchor fixed «застрягає» в контексті main і програє footer (z-index: 0 після main).
+ */
+.watta-sticky-chrome-flow-anchor {
+  position: relative;
+  z-index: 50;
+}
+
+.watta-sticky-chrome-flow-anchor > .fixed {
+  z-index: 200;
+}
+
+/* Підвал у MenuView (головна) — під fixed chrome */
+.menu-page-web > .site-footer-watta {
+  position: relative;
+  z-index: 0;
 }
 
 html.watta-light-chrome body {
@@ -2658,6 +2685,12 @@ html.watta-light-chrome body {
   z-index: 1;
 }
 
+/* Корзина / checkout — компактно на телефоне, просторнее на desktop */
+.watta-cart-page .watta-cart-card {
+  box-shadow: 0 1px 3px rgba(20, 81, 66, 0.06);
+}
+
+
 /* Панель категорий на полностраничных страницах */
 .full-page-web .categories-panel-wrapper-web {
   margin: 0 auto;
@@ -3047,8 +3080,10 @@ html.watta-light-chrome body {
 .app-web {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100dvh;
   width: 100%;
   max-width: 100%;
   /* Фон тільки на html/body — тут прозоро */
@@ -3268,6 +3303,19 @@ html.watta-light-chrome body {
   border-top: none !important;
 }
 
+/*
+ * Головна: контент завжди нижче fixed шапки + категорій (без негативного margin і без обрізання резерву).
+ */
+.menu-page-web:not(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor {
+  margin-bottom: 0 !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor + #home-after-hero-intro.home-after-hero-intro-web {
+  margin-top: 0 !important;
+  position: relative;
+  z-index: 2;
+}
+
 /* Відступ «чіпи → вступ» у ритмі «шапка → чіпи» (margin-top панелі категорій у chrome); без дубля .menu-content-top-gap */
 .menu-page-web:not(.watta-full-menu-page):has(> #home-after-hero-intro) > .menu-content-top-gap-web {
   height: 0 !important;
@@ -3282,12 +3330,12 @@ html.watta-light-chrome body {
   padding-top: clamp(8px, 1.35vh, 14px);
 }
 
-/* Телефон / планшет: трохи більше повітря під панеллю категорій (fixed chrome) до вступного тексту */
+/* Телефон / планшет: відступ під fixed chrome до вступного тексту (заголовок не під категоріями) */
 @media (max-width: 1024px) {
   .menu-page-web:not(.watta-full-menu-page)
     #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
     .home-after-hero-intro-inner-web--home-menu {
-    padding-top: clamp(14px, 2.1vh, 22px);
+    padding-top: clamp(18px, 2.6vh, 32px) !important;
   }
 
   /* Вступ → відео (текст над hero): зазор під абзацем і перед блоком відео */
@@ -3350,6 +3398,77 @@ html.watta-light-chrome body {
 .home-after-hero-intro-body-web {
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Трохи менше планшета (601–767): fixed chrome + вступ над відео — текст не під категоріями.
+ */
+@media (min-width: 601px) and (max-width: 767px) {
+  .menu-page-web:not(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web {
+    position: relative;
+    z-index: 3;
+    margin-top: clamp(10px, 1.5vh, 18px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-inner-web--home-menu {
+    max-width: min(34rem, 100%) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-top: clamp(22px, 3.25vh, 38px) !important;
+    padding-left: clamp(1rem, 4vw, 1.4rem) !important;
+    padding-right: clamp(1rem, 4vw, 1.4rem) !important;
+    padding-bottom: clamp(0.5rem, 1vh, 0.75rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-title-web {
+    font-size: clamp(1.15rem, 3.1vw, 1.6rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
+    + .menu-home-narrow-strip-hero-web {
+    margin-top: clamp(12px, 1.65vh, 20px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-body-web {
+    max-width: 100% !important;
+    white-space: pre-line !important;
+    font-size: clamp(12px, 1.5vw, 13px) !important;
+    line-height: 1.42 !important;
+  }
+}
+
+/* iPad / планшет: вступ — рівно 2 рядки (перенос після «сети й» у copy, другий рядок без wrap) */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-left: clamp(0.85rem, 2.5vw, 1.35rem) !important;
+    padding-right: clamp(0.85rem, 2.5vw, 1.35rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-body-web {
+    max-width: 100% !important;
+    white-space: pre-line !important;
+    text-wrap: initial !important;
+    font-size: clamp(12.5px, 1.38vw, 13.5px) !important;
+    line-height: 1.42 !important;
+    letter-spacing: -0.01em;
+  }
 }
 
 #menu-cinematic-block + #hero-banners.home-brand-story-section-web {
@@ -3436,6 +3555,7 @@ html.watta-light-chrome body {
 .watta-hero-marquee-bar {
   position: relative;
   flex-shrink: 0;
+  min-height: clamp(30px, 4.8vw, 44px);
   background: linear-gradient(
     105deg,
     #0c3229 0%,
@@ -3474,7 +3594,20 @@ html.watta-light-chrome body {
 }
 
 .watta-hero-marquee-track {
-  animation: watta-hero-marquee-scroll 42s linear infinite;
+  animation: watta-hero-marquee-scroll 36s linear infinite;
+  will-change: transform;
+  min-height: inherit;
+  padding: clamp(7px, 1.1vh, 11px) clamp(10px, 2vw, 16px);
+  gap: clamp(12px, 2.2vw, 22px);
+}
+
+.watta-hero-marquee-phrase {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.watta-hero-marquee-sep {
+  color: rgba(255, 255, 255, 0.88);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4550,7 +4683,7 @@ html.watta-light-chrome body {
 
 /* Головна: жодного «повітря» між fixed chrome і hero — 0px + без line-box strut */
 .menu-page-web .categories-panel-spacer-web,
-.menu-page-web .menu-content-top-gap-web {
+.menu-page-web .menu-content-top-gap-web:not(.watta-cart-after-categories-gap) {
   height: 0 !important;
   min-height: 0 !important;
   max-height: 0 !important;
@@ -4575,6 +4708,16 @@ html.watta-light-chrome body {
   background-color: #ffffff;
 }
 
+/* Головна (≥1025): без білої смуги між chrome і карткою — перебиває правило вище */
+@media (min-width: 1025px) {
+  .menu-page-web:not(.watta-full-menu-page) > .menu-content-top-gap-web {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    background-color: transparent !important;
+  }
+}
+
 /* Телефон / планшет: без білої смуги під панеллю — просвічує hero */
 @media (max-width: 768px) {
   .menu-page-web .categories-panel-spacer-web {
@@ -4591,7 +4734,7 @@ html.watta-light-chrome body {
     min-height: 0 !important;
   }
 
-  .menu-page-web:not(.watta-full-menu-page) > .menu-content-top-gap-web {
+  .menu-page-web:not(.watta-full-menu-page):not(.watta-cart-page) > .menu-content-top-gap-web {
     background-color: transparent !important;
     height: 0 !important;
     min-height: 0 !important;
@@ -4667,19 +4810,264 @@ html.watta-light-chrome body {
 
 }
 
-/* Планшет 769–1024: вступ перед звичайним hero (не narrow-strip) */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .menu-page-web:not(.watta-full-menu-page)
-    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
-    .home-after-hero-intro-inner-web--home-menu {
-    padding-top: clamp(18px, 2.4vh, 26px) !important;
-    padding-bottom: clamp(0.7rem, 1.8vh, 1rem) !important;
+/*
+ * iPad / планшет 768–1024: відео нижче під категоріями, повний кадр (contain),
+ * вступ і «Наші хіти» — з нормальними відступами (без нахльосту).
+ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .menu-page-web:not(.watta-full-menu-page) {
+    /* Без підтягування потоку під fixed chrome — блоки нижче панелі категорій */
+    --watta-home-chrome-pull: 0px;
+    --watta-home-cat-spacer-h: clamp(10px, 1.15vh, 14px);
+    --watta-home-hero-viewport-h: min(
+      54vh,
+      max(
+        272px,
+        calc(
+          100svh - env(safe-area-inset-top, 0px) - clamp(168px, 21vh, 228px) -
+            var(--watta-home-hero-card-pad-b, 14px)
+        )
+      )
+    );
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) > .menu-content-top-gap-web {
+    height: clamp(0.85rem, 1.65vh, 1.35rem) !important;
+    min-height: clamp(0.85rem, 1.65vh, 1.35rem) !important;
   }
 
   .menu-page-web:not(.watta-full-menu-page)
     #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
-    + .welcome-hero-section-web {
-    margin-top: clamp(8px, 1.15vh, 13px) !important;
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(14px, 2vh, 26px) !important;
+    padding-bottom: clamp(0.65rem, 1.2vh, 0.95rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web)) {
+    margin-top: clamp(12px, 1.6vh, 22px) !important;
+    position: relative;
+    z-index: 3;
+  }
+}
+
+/* Вузький планшет (769–899): більший зазор під категоріями, щоб вступ не ховався */
+@media (min-width: 769px) and (max-width: 899px) {
+  .menu-page-web:not(.watta-full-menu-page) > .menu-content-top-gap-web {
+    height: clamp(1.15rem, 2.1vh, 1.75rem) !important;
+    min-height: clamp(1.15rem, 2.1vh, 1.75rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(18px, 2.5vh, 30px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web)) {
+    margin-top: clamp(14px, 1.85vh, 24px) !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .welcome-hero-section-web)
+    + .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
+    + .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    margin-top: clamp(26px, 3.1vh, 42px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    margin-top: clamp(22px, 2.65vh, 34px) !important;
+    padding-top: clamp(8px, 1vh, 12px) !important;
+    padding-bottom: clamp(14px, 1.75vh, 22px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web {
+    aspect-ratio: 16 / 9 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    max-height: var(--watta-home-hero-viewport-h) !important;
+    height: auto !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video,
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-fallback-image-web {
+    object-fit: contain !important;
+    object-position: center center !important;
+    background-size: contain !important;
+    background-position: center center !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) > #menu-cinematic-block {
+    margin-top: clamp(38px, 4.5vh, 64px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page):has(#home-after-hero-intro) > #menu-cinematic-block {
+    margin-top: clamp(42px, 5vh, 70px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-ready-block {
+    padding-top: clamp(4px, 0.6vh, 10px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-bar {
+    min-height: clamp(36px, 5.5vw, 50px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-phrase,
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-sep {
+    font-size: clamp(13px, 1.75vw, 16px) !important;
+  }
+}
+
+/*
+ * iPad / планшет / невисоке вікно (ландшафт, 11" laptop): заголовок «Доставка…» зникає під sticky —
+ * стискаємо зазори чіпи→текст→відео й трохи нижчу картку, щоб рядок лишався в кадрі. На «високому»
+ * планшеті max-height не спрацьовує — лишаються правила блоку 768–1024 вище.
+ */
+@media (min-width: 768px) and (max-width: 1024px) and (max-height: 900px) {
+  .menu-page-web:not(.watta-full-menu-page) {
+    --watta-home-cat-spacer-h: clamp(6px, 0.9vh, 11px);
+    --watta-home-hero-viewport-h: min(
+      46vh,
+      max(
+        208px,
+        calc(
+          100svh - env(safe-area-inset-top, 0px) - clamp(128px, 16vh, 188px) -
+            var(--watta-home-hero-card-pad-b, 14px)
+        )
+      )
+    );
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) > .menu-content-top-gap-web {
+    height: clamp(0.35rem, 0.85vh, 0.75rem) !important;
+    min-height: clamp(0.35rem, 0.85vh, 0.75rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .welcome-hero-section-web)
+    .home-after-hero-intro-inner-web--home-menu,
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(4px, 0.85vh, 12px) !important;
+    padding-bottom: clamp(0.3rem, 0.55vh, 0.5rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .welcome-hero-section-web)
+    + .welcome-hero-section-web,
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .menu-home-narrow-strip-hero-web)
+    + .menu-home-narrow-strip-hero-web {
+    margin-top: clamp(0px, 0.35vh, 4px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .welcome-hero-section-web)
+    + .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
+    + .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    margin-top: clamp(8px, 1.15vh, 18px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    margin-top: clamp(6px, 0.95vh, 14px) !important;
+    padding-top: clamp(2px, 0.45vh, 6px) !important;
+    padding-bottom: clamp(8px, 1vh, 14px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-title-web {
+    font-size: clamp(1.02rem, 2.5vw, 1.65rem) !important;
+    line-height: 1.12 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-body-web {
+    margin-top: 0.45rem !important;
+  }
+}
+
+/*
+ * Ноутбук / невисокий десктоп (≥1025): вступ під відео — зменшуємо висоту картки героя й підтягуємо її
+ * ближче до чіпів, щоб блок з текстом швидше потрапляв у видиму зону без зайвого скролу.
+ */
+@media (min-width: 1025px) and (max-height: 900px) {
+  .menu-page-web:not(.watta-full-menu-page) {
+    --watta-home-cat-spacer-h: clamp(8px, 1.05vh, 14px);
+    --watta-home-hero-card-pad-b: clamp(10px, 1.15vh, 16px);
+    --watta-home-hero-viewport-h: max(
+      260px,
+      calc(
+        100svh - env(safe-area-inset-top, 0px) - clamp(94px, 9.2vh, 126px) -
+          var(--watta-home-hero-card-pad-b)
+      )
+    );
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    margin-top: clamp(-110px, -11.2vh, -136px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    + #home-after-hero-intro.home-after-hero-intro-web
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(8px, 1.2vh, 16px) !important;
+    padding-bottom: clamp(8px, 1.2vh, 16px) !important;
+  }
+}
+
+@media (min-width: 1025px) and (max-height: 760px) {
+  .menu-page-web:not(.watta-full-menu-page) {
+    --watta-home-hero-viewport-h: max(
+      220px,
+      calc(
+        100svh - env(safe-area-inset-top, 0px) - clamp(78px, 7.5vh, 104px) -
+          var(--watta-home-hero-card-pad-b)
+      )
+    );
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    margin-top: clamp(-114px, -11.6vh, -140px) !important;
   }
 }
 
@@ -4984,10 +5372,10 @@ html.watta-light-chrome body {
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: max(1rem, env(safe-area-inset-left, 0px));
+  scroll-padding-inline: max(1.35rem, env(safe-area-inset-left, 0px));
   -webkit-overflow-scrolling: touch;
   padding-bottom: 0.35rem;
-  padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+  padding-inline: max(1.35rem, env(safe-area-inset-left, 0px)) max(1.35rem, env(safe-area-inset-right, 0px));
   scrollbar-width: none;
   -ms-overflow-style: none;
   overscroll-behavior-x: contain;
@@ -5338,16 +5726,6 @@ html.watta-light-chrome body {
 .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-add-icon-web {
   width: 13px;
   height: 13px;
-}
-
-.menu-highlight-stack-web .home-menu-product-card--grid-web .absolute.right-2.top-2 button {
-  height: 2rem;
-  width: 2rem;
-}
-
-.menu-highlight-stack-web .home-menu-product-card--grid-web .absolute.right-2.top-2 svg {
-  width: 15px;
-  height: 15px;
 }
 
 .menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-media-web {
@@ -6147,7 +6525,14 @@ html.watta-light-chrome body {
   overflow: hidden !important;
   border-radius: inherit;
   line-height: 0 !important;
-  background: #0c1210 !important;
+  /* Не майже-чорний #0c1210: до першого кадру mp4 WebKit малює «дірку» — градієнт як вода, не пляма */
+  background: radial-gradient(
+    120% 90% at 50% 28%,
+    #6ec4dc 0%,
+    #3f94ae 38%,
+    #2a6f82 72%,
+    #1e5566 100%
+  ) !important;
 }
 
 .menu-page-web:not(.watta-full-menu-page)
@@ -6165,6 +6550,8 @@ html.watta-light-chrome body {
   object-position: center 18% !important;
   opacity: 1 !important;
   visibility: visible !important;
+  /* Підкладка під шар відео до декодування першого кадру */
+  background-color: #3a89a0 !important;
 }
 
 .menu-page-web:not(.watta-full-menu-page)
@@ -6652,17 +7039,19 @@ html.watta-light-chrome body {
 @media (min-width: 769px) {
   /* Головна: панель категорій (спейсер у chrome) — окремо; відступ героя — лише для положення відео */
   .menu-page-web:not(.watta-full-menu-page) {
-    --watta-home-cat-spacer-h: clamp(4px, 0.85vw, 10px);
+    --watta-home-cat-spacer-h: clamp(12px, 1.35vh, 18px);
+    /* Підтягнути потік під fixed chrome до рівня панелі категорій (≈ висота шапки) */
+    --watta-home-chrome-pull: clamp(64px, 9.5vh, 92px);
+    /* Білий відступ під зеленою смугою (симетрично верхнім полям картки) */
+    --watta-home-hero-card-pad-b: clamp(12px, 1.35vh, 20px);
   }
 
-  /* /menu: підтягування потоку під fixed chrome; головна — margin-bottom 0 (див. блок вище для .menu-page-web:not(.watta-full-menu-page)) */
+  /* /menu: підтягування потоку під fixed chrome; головна — --watta-home-chrome-pull */
   .menu-page-web.watta-full-menu-page .watta-sticky-chrome-flow-anchor {
     margin-bottom: calc(-1 * clamp(72px, 12vh, 148px)) !important;
   }
 
-  .menu-page-web:not(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor {
-    margin-bottom: 0 !important;
-  }
+  /* Головна: без негативного margin — див. глобальне правило вище */
 
   /* Головна: спейсер у fixed chrome — лише під панеллю, не керує padding героя */
   .menu-page-web:not(.watta-full-menu-page) .categories-panel-spacer-web {
@@ -6700,20 +7089,77 @@ html.watta-light-chrome body {
     border-radius: 0 !important;
   }
 
-  /* Картка героя: на планшеті / ПК — колонка як текст під героєм (max-w-7xl), без розтягування на всю ширину вікна */
+  /* Картка героя: планшет / ПК — ширше й вище; підтягуємо до рівня панелі категорій */
   .menu-page-web:not(.watta-full-menu-page)
     .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
     width: 100% !important;
-    max-width: min(100% - 32px, 1280px) !important;
+    max-width: min(100% - 24px, 1320px) !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    margin-top: 0 !important;
+    /* margin-top — у блоках 769–1024 (вступ+hero) та ≥1025 */
     min-height: 0 !important;
-    padding-left: max(3rem, env(safe-area-inset-left, 0px)) !important;
-    padding-right: max(3rem, env(safe-area-inset-right, 0px)) !important;
+    padding-top: 0 !important;
+    padding-bottom: var(--watta-home-hero-card-pad-b) !important;
+    padding-left: max(1.25rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(1.25rem, env(safe-area-inset-right, 0px)) !important;
   }
 
-  /* Плитка відео + стек: див. нижче другий блок «Головна ≥769: висота секції = padding-top + плитка 16∶9» */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web {
+    max-width: 100% !important;
+  }
+
+  /* Бігуча смуга — читабельніший розмір на планшеті / десктопі */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-bar {
+    min-height: clamp(32px, 5vw, 46px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-track {
+    padding-top: clamp(8px, 1.15vh, 12px) !important;
+    padding-bottom: clamp(8px, 1.15vh, 12px) !important;
+    gap: clamp(14px, 2.4vw, 24px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-track
+    > div {
+    gap: clamp(10px, 1.8vw, 18px) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-phrase {
+    font-size: clamp(12px, 1.55vw, 15px) !important;
+    letter-spacing: 0.1em !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-sep {
+    font-size: clamp(12px, 1.55vw, 15px) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Висота відео — у блоках 769–1024 та ≥1025 (--watta-home-hero-viewport-h) */
+
+  /* Вступ перед відео (планшет ≤1024): менший зазор до кадру */
+  .menu-page-web:not(.watta-full-menu-page)
+    #home-after-hero-intro.home-after-hero-intro-web:has(+ .welcome-hero-section-web)
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-bottom: clamp(0.35rem, 0.75vh, 0.55rem) !important;
+  }
 
   .menu-page-web .home-hero-after-marquee-wrap-web {
     flex-shrink: 0;
@@ -6854,7 +7300,56 @@ html.watta-light-chrome body {
   /* Margin над панеллю категорій — лише --watta-home-cat-spacer-h (герой окремо) */
   .menu-page-web:not(.watta-full-menu-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
     margin-top: var(--watta-home-cat-spacer-h) !important;
-    padding-top: 4px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .menu-page-web:not(.watta-full-menu-page) {
+    /* Під чіпами (спейсер); відступ шапка→чіпи — окремо в `.categories-panel-wrapper-web` */
+    --watta-home-cat-spacer-h: clamp(8px, 1.1vh, 14px);
+    --watta-home-chrome-pull: clamp(68px, 9vh, 96px);
+    --watta-home-hero-card-pad-b: clamp(14px, 1.55vh, 22px);
+    /* Перший екран: лише відео (шапка + чіпи + нижній відступ картки) */
+    --watta-home-hero-viewport-h: max(
+      360px,
+      calc(
+        100svh - env(safe-area-inset-top, 0px) - clamp(100px, 10.4vh, 136px) -
+          var(--watta-home-hero-card-pad-b)
+      )
+    );
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    max-width: min(100% - 32px, 1400px) !important;
+    margin-top: clamp(-114px, -11.8vh, -142px) !important;
+    padding-bottom: var(--watta-home-hero-card-pad-b) !important;
+    padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(2rem, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web {
+    aspect-ratio: auto !important;
+    width: 100% !important;
+    min-height: var(--watta-home-hero-viewport-h) !important;
+    max-height: var(--watta-home-hero-viewport-h) !important;
+    height: var(--watta-home-hero-viewport-h) !important;
+  }
+
+  /* Вступ «Доставка суші…» — під відео, лише після прокрутки */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    + #home-after-hero-intro.home-after-hero-intro-web {
+    margin-top: 0 !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-top: clamp(18px, 2vh, 30px) !important;
+    padding-top: 6px !important;
     padding-bottom: 4px !important;
   }
 }
@@ -10093,6 +10588,10 @@ html.watta-light-chrome body {
   pointer-events: auto;
 }
 
+.watta-nav-sidebar-drawer:not(.is-open) {
+  pointer-events: none;
+}
+
 .watta-nav-sidebar-drawer {
   position: fixed;
   top: 0;
@@ -10126,6 +10625,735 @@ html.watta-light-chrome body {
 
 .watta-nav-sidebar-drawer.is-open {
   transform: translateX(0);
+}
+
+/* Повноекранне меню (преміум, закриття хрестиком) */
+.watta-nav-sidebar-drawer--fullscreen {
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100vw;
+  border-left: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: #f5f7f6;
+  z-index: 10000;
+  transform: translateX(100%);
+  transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.watta-nav-sidebar-drawer--fullscreen.is-open {
+  transform: translateX(0);
+}
+
+.watta-nav-sidebar-drawer--fullscreen:not(.is-open) {
+  visibility: hidden;
+}
+
+.watta-nav-sidebar-drawer--fullscreen.is-open {
+  visibility: visible;
+}
+
+/* ——— Повноекранна панель меню (преміум, компактно) ——— */
+@keyframes wattaNavCompactPop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.watta-nav-compact {
+  position: relative;
+  z-index: 1;
+  font-family:
+    var(--font-inter, 'Inter'),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #0f241e;
+  background: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+.watta-nav-compact__inner--animate .watta-nav-compact__pop {
+  animation: wattaNavCompactPop 0.48s cubic-bezier(0.34, 1.1, 0.64, 1) backwards;
+}
+
+.watta-nav-compact__head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 16px 12px;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.06);
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.watta-nav-compact__head-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.watta-nav-compact__logo-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+}
+
+.watta-nav-compact__head-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.watta-nav-compact__logo-wordmark {
+  display: flex !important;
+  height: 28px;
+}
+
+.watta-nav-compact__logo-wordmark .logo-text-image-web {
+  max-width: 120px;
+}
+
+.watta-nav-compact__tagline {
+  margin: 3px 0 0;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(20, 81, 66, 0.5);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.watta-nav-compact__close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  border-radius: 10px;
+  background: #fff;
+  color: rgba(20, 81, 66, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.watta-nav-compact__close:hover {
+  background: #f5f7f6;
+  border-color: rgba(20, 81, 66, 0.22);
+  color: #145142;
+}
+
+.watta-nav-compact__close:active {
+  transform: scale(0.97);
+}
+
+.watta-nav-compact__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.watta-nav-compact__inner {
+  position: relative;
+  z-index: 1;
+  padding: 8px 16px max(16px, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0;
+  width: 100%;
+}
+
+.watta-nav-compact__field-label {
+  margin: 0 0 4px;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(20, 81, 66, 0.5);
+}
+
+.watta-nav-compact__section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(20, 81, 66, 0.55);
+}
+
+.watta-nav-compact__section-ico {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.watta-nav-compact__selectors {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.watta-nav-compact__selector {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.watta-nav-compact__selector--city {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.watta-nav-compact__selector--lang {
+  flex: 0 0 52px;
+  width: 52px;
+}
+
+/* Кнопка міста в drawer — одна рамка, на всю ширину */
+.location-picker-trigger--drawer {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  gap: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: #fff;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #145142;
+  transform: none !important;
+  animation: none !important;
+}
+
+.location-picker-trigger--drawer::after {
+  display: none;
+}
+
+.location-picker-trigger--drawer:hover {
+  transform: none !important;
+  border-color: rgba(20, 81, 66, 0.22);
+  box-shadow: none;
+  color: #145142;
+}
+
+.location-picker-trigger--drawer[data-open='true'] {
+  animation: none !important;
+  border-color: rgba(20, 81, 66, 0.35);
+}
+
+.location-picker-trigger--drawer .location-picker-trigger__pin {
+  color: #145142;
+}
+
+.location-picker-trigger--drawer .location-picker-trigger__pin svg {
+  width: 15px;
+  height: 15px;
+}
+
+.location-picker-trigger--drawer .location-picker-trigger__chev svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Кнопка мови в drawer */
+.watta-nav-lang-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #145142;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.watta-nav-lang-btn:hover {
+  border-color: #145142;
+  background: #145142;
+  color: #fff;
+}
+
+.watta-nav-compact__cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.watta-nav-compact__cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 54px;
+  padding: 6px 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.watta-nav-compact__cat:hover {
+  border-color: rgba(20, 81, 66, 0.2);
+  background: #fafbfa;
+}
+
+.watta-nav-compact__cat-emoji {
+  font-size: 1.25rem;
+  line-height: 1;
+  display: block;
+}
+
+.watta-nav-compact__cat-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.15;
+  color: #1a3d33;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.watta-nav-compact__nav-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.watta-nav-compact__nav-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 58px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(20, 81, 66, 0.08);
+  background: #fff;
+  color: #1a3d33;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(20, 81, 66, 0.05);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-nav-compact__nav-tile:hover {
+  border-color: rgba(20, 81, 66, 0.16);
+  background: #f8fbf9;
+  box-shadow: 0 3px 10px rgba(20, 81, 66, 0.08);
+}
+
+.watta-nav-compact__nav-tile:active {
+  transform: scale(0.98);
+}
+
+.watta-nav-compact__nav-label {
+  display: -webkit-box;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.watta-nav-compact__nav-privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(20, 81, 66, 0.14);
+  background: rgba(255, 255, 255, 0.85);
+  color: rgba(20, 81, 66, 0.72);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.watta-nav-compact__nav-privacy:hover {
+  border-color: rgba(20, 81, 66, 0.22);
+  background: #fff;
+  color: #145142;
+}
+
+.watta-nav-compact__nav-privacy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watta-nav-compact__nav-ico-wrap {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Чергування 4 фірмових тонів: зелений → бірюзовий → м’ятний → помаранчевий */
+.watta-nav-compact__nav-ico-wrap--tone-0 {
+  background: rgba(20, 81, 66, 0.1);
+  color: #145142;
+}
+.watta-nav-compact__nav-ico-wrap--tone-1 {
+  background: rgba(10, 186, 181, 0.12);
+  color: #0a8f8a;
+}
+.watta-nav-compact__nav-ico-wrap--tone-2 {
+  background: rgba(82, 183, 136, 0.14);
+  color: #2d8f5c;
+}
+.watta-nav-compact__nav-ico-wrap--tone-3 {
+  background: rgba(255, 107, 53, 0.12);
+  color: #e85d2a;
+}
+
+.watta-nav-compact__nav-ico {
+  flex-shrink: 0;
+}
+
+.watta-nav-compact__extras {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.watta-nav-compact__support {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  border-radius: 12px;
+  background: #145142;
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.watta-nav-compact__support:hover {
+  background: #1a6b58;
+}
+
+.watta-nav-compact__support-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.watta-nav-compact__contact {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ebecec;
+  border: none;
+}
+
+.watta-nav-compact__contact-title {
+  margin: 0 0 4px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(20, 81, 66, 0.65);
+}
+
+.watta-nav-compact__phone {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f241e;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.watta-nav-compact__phone:hover {
+  color: #145142;
+}
+
+.watta-nav-compact__hours {
+  margin: 4px 0 0;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(20, 81, 66, 0.6);
+  line-height: 1.35;
+}
+
+.watta-nav-compact__admin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 107, 53, 0.45);
+  background: rgba(255, 107, 53, 0.08);
+  color: #c44d12;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.watta-nav-compact__admin:hover {
+  background: rgba(255, 107, 53, 0.14);
+}
+
+.watta-nav-compact__legal {
+  margin: 0;
+  text-align: center;
+  font-size: 8px;
+  line-height: 1.4;
+  color: rgba(20, 81, 66, 0.4);
+}
+
+/* Телефон (≤767px): базові стилі вище — без змін */
+
+/* Планшет: вужча бічна панель, компактніші кнопки (не на всю ширину екрана) */
+@media (min-width: 768px) {
+  .watta-nav-sidebar-drawer--fullscreen {
+    left: auto;
+    right: 12px;
+    top: max(14px, env(safe-area-inset-top, 0px));
+    bottom: max(14px, env(safe-area-inset-bottom, 0px));
+    width: min(400px, 42vw);
+    max-width: 400px;
+    height: auto;
+    max-height: none;
+    padding-top: 0;
+    padding-bottom: 0;
+    border: 1px solid rgba(20, 81, 66, 0.1);
+    border-radius: 20px;
+    box-shadow:
+      -20px 0 48px rgba(20, 81, 66, 0.14),
+      -8px 0 24px rgba(0, 0, 0, 0.08),
+      0 8px 32px rgba(20, 81, 66, 0.08);
+  }
+
+  .watta-nav-compact__head {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .watta-nav-compact__inner {
+    padding-left: 20px;
+    padding-right: 20px;
+    gap: 12px;
+  }
+
+  .watta-nav-compact__selectors {
+    max-width: 100%;
+  }
+
+  .watta-nav-compact__cat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .watta-nav-compact__cat {
+    min-height: 50px;
+  }
+
+  .watta-nav-compact__nav-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .watta-nav-compact__nav-tile {
+    min-height: 64px;
+    padding: 9px 7px;
+    border-radius: 13px;
+  }
+
+  .watta-nav-compact__nav-label {
+    font-size: 10px;
+  }
+
+  .watta-nav-compact__nav-ico-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .watta-nav-compact__logo-wordmark {
+    height: 32px;
+  }
+
+  .watta-nav-compact__logo-wordmark .logo-text-image-web {
+    max-width: 150px;
+  }
+}
+
+/* Ноутбук / десктоп */
+@media (min-width: 1025px) {
+  .watta-nav-sidebar-drawer--fullscreen {
+    right: 16px;
+    top: max(18px, env(safe-area-inset-top, 0px));
+    bottom: max(18px, env(safe-area-inset-bottom, 0px));
+    width: min(460px, 32vw);
+    max-width: 480px;
+    border-radius: 22px;
+    box-shadow:
+      -28px 0 64px rgba(20, 81, 66, 0.16),
+      -12px 0 32px rgba(0, 0, 0, 0.1),
+      0 12px 40px rgba(20, 81, 66, 0.1);
+  }
+
+  .watta-nav-compact__head {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .watta-nav-compact__inner {
+    padding-left: 24px;
+    padding-right: 24px;
+    gap: 14px;
+  }
+
+  .watta-nav-compact__cat-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .watta-nav-compact__nav-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .watta-nav-compact__nav-tile {
+    min-height: 70px;
+    padding: 10px 8px;
+    border-radius: 14px;
+  }
+
+  .watta-nav-compact__nav-label {
+    font-size: 11px;
+  }
+
+  .watta-nav-compact__nav-privacy {
+    font-size: 11px;
+    min-height: 38px;
+  }
+
+  .watta-nav-compact__extras {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .watta-nav-compact__support,
+  .watta-nav-compact__admin,
+  .watta-nav-compact__legal {
+    grid-column: 1 / -1;
+  }
+
+  .watta-nav-compact__contact {
+    min-height: 100%;
+  }
+
+  .location-picker-trigger--drawer,
+  .watta-nav-lang-btn {
+    min-height: 38px;
+    height: 38px;
+  }
+
+  .watta-nav-compact__selector--lang {
+    flex: 0 0 56px;
+    width: 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-nav-compact__inner--animate .watta-nav-compact__pop {
+    animation: none !important;
+  }
+
+  .watta-nav-compact__cat:hover,
+  .watta-nav-compact__nav-tile:hover,
+  .watta-nav-compact__nav-tile:active,
+  .watta-nav-compact__support:hover {
+    transform: none;
+  }
 }
 
 .watta-nav-sidebar-bg-shine {
@@ -14736,20 +15964,21 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   }
 }
 
-/* Телефон: юридичний ряд не під FAB Instagram і не під home indicator */
+/* Телефон: відступ під FAB — padding на футері (не margin на colophon: інакше білий зазор без фону) */
 @media (max-width: 767px) {
   .site-footer-watta.site-footer-watta--light {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
   }
 
   .site-footer-watta__inner {
     padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+    padding-bottom: 0;
   }
 
   .site-footer-watta__nav-colophon {
     width: 100%;
     max-width: min(100%, calc(100% - 0.5rem));
-    margin-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
+    margin-bottom: 0.75rem;
     padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
     padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
   }
@@ -16585,3 +17814,366 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
     display: none;
   }
 }
+
+/* /favorites — футер внизу екрана; при скролі лишається під fixed шапкою + категоріями */
+.watta-app-shell-root:has(.watta-favorites-page) > .site-footer-watta {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.watta-favorites-page.menu-page-web {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.watta-favorites-page .menu-highlight-stack-web {
+  border-bottom: none;
+  padding-top: 0.1rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+@media (min-width: 640px) {
+  .watta-favorites-page .menu-highlight-stack-web {
+    padding-top: 0.2rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+}
+
+/* /favorites: FAB-відступ уже на .site-footer-watta--light через padding-bottom */
+
+.watta-favorites-page .watta-favorites-intro {
+  border-top: none !important;
+}
+
+.watta-favorites-page .favorites-intro-count {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.watta-favorites-page .watta-favorites-page__content {
+  flex: 1 1 auto;
+  padding-bottom: 0.75rem;
+}
+
+/* Компактний підвал на /favorites — без дубля логотипу + пілюль, менші колонки */
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__inner {
+  padding-top: 0.55rem;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__hero-row {
+  display: none;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__grid {
+  gap: 0.65rem 1rem;
+  padding-top: 0;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__col-title {
+  font-size: 0.72rem;
+  margin-bottom: 0.28rem;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__text-link,
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__body-strong {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__list {
+  gap: 0.2rem;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__icon-btn {
+  width: 1.95rem;
+  height: 1.95rem;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__pay-mark {
+  font-size: 0.62rem;
+  padding: 0.2rem 0.35rem;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__payments-note {
+  font-size: 0.68rem;
+  margin-top: 0.2rem;
+}
+
+.site-footer-watta.site-footer-watta--compact .site-footer-watta__nav-colophon {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+}
+
+@media (min-width: 768px) {
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__grid.site-footer-watta__grid--cols-4,
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__grid.site-footer-watta__grid--cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__col--social {
+    grid-column: 1 / -1;
+  }
+
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__social-row {
+    margin-bottom: 0.15rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__grid.site-footer-watta__grid--cols-4,
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__grid.site-footer-watta__grid--cols-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem 0.75rem;
+  }
+
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__order-loc-wrap {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem 0.75rem;
+  }
+
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__col--nav {
+    grid-column: 1 / -1;
+  }
+
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__nav-two-cols {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__col--social {
+    grid-column: 1 / -1;
+  }
+
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__nav-colophon {
+    margin-bottom: 0.35rem;
+  }
+}
+
+/*
+ * /favorites — планшет 768–1279:
+ * - у панелі категорій видно 7 чипів у ряд (без «половинки» восьмого);
+ * - відступ від панелі до сітки товарів.
+ * Телефон без змін.
+ */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .watta-favorites-page .watta-full-menu-sticky-chrome .categories-panel-web {
+    --watta-cat-peek: 7 !important;
+  }
+
+  /* Без «підтягування» героя — сітка не заходить під панель категорій */
+  .watta-favorites-page.menu-page-web .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
+  }
+
+  .watta-favorites-page.menu-page-web > .menu-content-top-gap-web {
+    height: clamp(0.4rem, 0.85vw, 0.75rem) !important;
+    min-height: clamp(0.4rem, 0.85vw, 0.75rem) !important;
+    max-height: none !important;
+    overflow: visible !important;
+    line-height: 1 !important;
+    font-size: 1px !important;
+    display: block !important;
+    background-color: transparent !important;
+  }
+
+  .watta-favorites-page .watta-favorites-intro .home-after-hero-intro-inner-web {
+    padding-top: clamp(0.35rem, 1vw, 0.65rem);
+  }
+
+}
+
+@media (min-width: 1280px) {
+  .watta-favorites-page.menu-page-web .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
+  }
+
+  .watta-favorites-page.menu-page-web > .menu-content-top-gap-web {
+    height: clamp(0.45rem, 0.75vw, 0.9rem) !important;
+    min-height: clamp(0.45rem, 0.75vw, 0.9rem) !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background-color: transparent !important;
+  }
+}
+
+/*
+ * /favorites — сітка:
+ * телефон <768px — 2 колонки (Tailwind sm:grid-cols-2);
+ * планшет 768–1279px — 3 колонки (iPad, iPad Pro portrait/landscape до 1279);
+ * ноутбук ≥1280px — 4 колонки.
+ */
+.watta-favorites-page .favorites-page-products-grid {
+  width: 100%;
+  /* Перебиває Tailwind max-w-lg / sm:max-w-xl — інакше сітка вузька по центру */
+  max-width: none !important;
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .watta-favorites-page .favorites-page-products-grid {
+    max-width: min(72rem, 100%) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1rem;
+  }
+}
+
+/* Ноутбук / десктоп — ширша сітка на весь контент, крупніші картки */
+@media (min-width: 1280px) {
+  .watta-favorites-page .menu-highlight-stack-web {
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .watta-favorites-page .favorites-page-products-grid {
+    max-width: min(
+      100rem,
+      calc(100vw - max(3rem, env(safe-area-inset-left, 0px)) - max(3rem, env(safe-area-inset-right, 0px)))
+    ) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1.35rem !important;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web {
+    border-radius: 1.2rem;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-media-web {
+    aspect-ratio: 5 / 4;
+    max-height: none;
+    border-radius: 1rem 1rem 0 0;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-body-web {
+    padding: 0.7rem 0.85rem 0.85rem;
+    gap: 0.3rem;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-title-web {
+    font-size: 0.98rem;
+    line-height: 1.24;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-subline-web {
+    font-size: 0.72rem;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-footer-web {
+    margin-top: 0.35rem;
+    padding-top: 0.4rem;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-price-web {
+    font-size: 1.08rem;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-add-web {
+    min-height: 1.9rem;
+    padding: 0.2rem 0.45rem 0.2rem 0.4rem;
+    font-size: 0.58rem;
+  }
+
+  .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-add-icon-web {
+    width: 15px;
+    height: 15px;
+  }
+
+  .watta-favorites-page .favorites-grid-skeleton-card {
+    min-height: 17.5rem;
+  }
+}
+
+/*
+ * /cart — зазор між fixed панеллю категорій і заголовком «Кошик».
+ * padding-top (не spacer): глобальні .menu-content-top-gap-web давали height:0.
+ */
+.watta-cart-page .watta-cart-page__content {
+  padding-top: clamp(22px, 5vh, 40px) !important;
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .watta-cart-page .watta-cart-page__content {
+    padding-top: clamp(18px, 2.5vh, 30px) !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .watta-cart-page .watta-cart-page__content {
+    padding-top: clamp(16px, 2vh, 26px) !important;
+  }
+}
+
+/* /product — компактніша смуга категорій у sticky chrome */
+.watta-app-shell-root:has(.watta-product-page) .categories-panel-web {
+  --watta-cat-peek: 6.5;
+  --tab-cat-chip: 44px;
+  --tab-cat-chip-max: 72px;
+  --tab-cat-gap: 4px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  gap: var(--tab-cat-gap);
+  border-radius: 12px;
+}
+
+.watta-app-shell-root:has(.watta-product-page) .categories-panel-web::before,
+.watta-app-shell-root:has(.watta-product-page) .categories-panel-web::after {
+  width: 10px;
+}
+
+.watta-app-shell-root:has(.watta-product-page) .category-button-web {
+  padding: 6px 4px;
+  gap: 3px;
+  border-radius: 10px;
+}
+
+.watta-app-shell-root:has(.watta-product-page) .category-button-icon-web {
+  font-size: 1rem;
+}
+
+.watta-app-shell-root:has(.watta-product-page) .category-button-label-web {
+  font-size: 7px;
+}
+
+.watta-app-shell-root:has(.watta-product-page).menu-page-web > .menu-content-top-gap-web {
+  height: clamp(0.25rem, 0.5vw, 0.5rem) !important;
+  min-height: clamp(0.25rem, 0.5vw, 0.5rem) !important;
+}
+
+/* /product — зазор між панеллю категорій і рядком «назад + чіп категорії» */
+.watta-app-shell-root:has(.watta-product-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+  margin-bottom: clamp(8px, 1.5vh, 14px);
+}
+
+.watta-app-shell-root:has(.watta-product-page) .watta-product-page__inner {
+  padding-top: clamp(10px, 2vh, 18px) !important;
+}
+
+/* /product — компактніший блок на телефоні */
+@media (max-width: 639px) {
+  .watta-product-page__inner {
+    padding-left: calc(1.65rem + env(safe-area-inset-left, 0px)) !important;
+    padding-right: calc(1.65rem + env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .watta-product-page__main {
+    gap: 0.65rem !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .watta-app-shell-root:has(.watta-product-page) .categories-panel-web {
+    --watta-cat-peek: 7.5;
+  }
+}
+
+@media (min-width: 769px) {
+  .watta-app-shell-root:has(.watta-product-page) .categories-panel-web {
+    --watta-cat-peek: 8.5;
+    max-width: min(calc(100vw - 64px), 52rem);
+  }
+}
+

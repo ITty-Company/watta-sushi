@@ -20,7 +20,7 @@ export default function FloatingContactButtons() {
   }, [])
 
   const bottomPos =
-    'bottom-[calc(max(1rem,env(safe-area-inset-bottom,0px))+14px)] md:bottom-[calc(max(1.25rem,env(safe-area-inset-bottom,0px))+14px)]'
+    'bottom-[calc(max(0.75rem,env(safe-area-inset-bottom,0px))+8px)] md:bottom-[calc(max(0.875rem,env(safe-area-inset-bottom,0px))+8px)]'
 
   return (
     <div

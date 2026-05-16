@@ -62,8 +62,12 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
 
   const mapProductsToItems = useCallback(
     (data: any[]) =>
-      (data || []).map((p: any) => ({
-        id: p.id,
+      (data || [])
+        .map((p: any) => {
+        const id = Number(p.id)
+        if (!Number.isFinite(id) || id <= 0) return null
+        return {
+        id,
         name: getLocalized(p, 'name'),
         description: getLocalized(p, 'description') || '',
         price: p.price,
@@ -83,7 +87,9 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
         allowRecommendations: p.category?.allowRecommendations !== false,
         promoDiscountPercent:
           typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
-      })),
+      }
+      })
+        .filter((row): row is MenuItem => row != null),
     [getLocalized, t.categories, language]
   )
 

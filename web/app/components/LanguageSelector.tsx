@@ -4,7 +4,12 @@ import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../context/LanguageContext'
 
-export const LanguageSelector = () => {
+type LanguageSelectorProps = {
+  /** Компактна кнопка в боковому меню */
+  variant?: 'default' | 'drawer'
+}
+
+export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps) => {
   const { language, setLanguage } = useLanguage()
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -47,53 +52,84 @@ export const LanguageSelector = () => {
     }
   }, [isOpen])
 
+  const isDrawer = variant === 'drawer'
+
   return (
-    <div 
-      style={{ 
-        position: 'relative',
-        zIndex: 9999
-      }}
+    <div
+      className={isDrawer ? 'relative z-[1] block h-full w-full' : undefined}
+      style={
+        isDrawer
+          ? undefined
+          : {
+              position: 'relative',
+              zIndex: 9999,
+            }
+      }
     >
       <button
         ref={buttonRef}
+        type="button"
+        className={isDrawer ? 'watta-nav-lang-btn' : undefined}
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '10px 16px',
-          borderRadius: '14px',
-          border: '2px solid #145142',
-          background: '#ffffff',
-          cursor: 'pointer',
-          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-          position: 'relative',
-          fontSize: '14px',
-          fontWeight: '600',
-          color: '#145142',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)',
-          overflow: 'hidden'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)'
-          e.currentTarget.style.color = '#ffffff'
-          e.currentTarget.style.borderColor = '#145142'
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(20,81,66,0.35), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 3px rgba(20,81,66,0.1)'
-          e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#ffffff'
-          e.currentTarget.style.color = '#145142'
-          e.currentTarget.style.borderColor = '#145142'
-          e.currentTarget.style.boxShadow = '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)'
-          e.currentTarget.style.transform = 'translateY(0) scale(1)'
-        }}
+        style={
+          isDrawer
+            ? undefined
+            : {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 16px',
+                borderRadius: '14px',
+                border: '2px solid #145142',
+                background: '#ffffff',
+                cursor: 'pointer',
+                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#145142',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)',
+                overflow: 'hidden',
+              }
+        }
+        onMouseEnter={
+          isDrawer
+            ? undefined
+            : (e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)'
+                e.currentTarget.style.color = '#ffffff'
+                e.currentTarget.style.borderColor = '#145142'
+                e.currentTarget.style.boxShadow =
+                  '0 6px 20px rgba(20,81,66,0.35), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 3px rgba(20,81,66,0.1)'
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)'
+              }
+        }
+        onMouseLeave={
+          isDrawer
+            ? undefined
+            : (e) => {
+                e.currentTarget.style.background = '#ffffff'
+                e.currentTarget.style.color = '#145142'
+                e.currentTarget.style.borderColor = '#145142'
+                e.currentTarget.style.boxShadow =
+                  '0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1)'
+                e.currentTarget.style.transform = 'translateY(0) scale(1)'
+              }
+        }
       >
-        <span style={{
-          letterSpacing: '0.3px',
-          fontWeight: '600'
-        }}>{currentLang.label}</span>
+        <span
+          style={
+            isDrawer
+              ? undefined
+              : {
+                  letterSpacing: '0.3px',
+                  fontWeight: '600',
+                }
+          }
+        >
+          {currentLang.label}
+        </span>
       </button>
 
       {isOpen && mounted && createPortal(

@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import MenuView from './components/MenuView'
+import WattaBootSplashGate from './components/WattaBootSplashGate'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { useRouter } from 'next/navigation'
 
@@ -66,6 +67,10 @@ export default function HomeClient() {
    * інколи відкидає перший play() (autoplay-policy after navigation), і binding
    * сам не встигає підхопити video у paused-стані.
    */
+  const handleBootSplashEnded = useCallback(() => {
+    kickWelcomeHeroVideoPlayBurst()
+  }, [])
+
   useEffect(() => {
     queueMicrotask(kickWelcomeHeroVideoPlayOnce)
     const raf = requestAnimationFrame(() => {
@@ -122,7 +127,7 @@ export default function HomeClient() {
 
   const handleBack = useCallback(() => setActiveTab(0), [])
   const handleOpenProfile = useCallback(() => setActiveTab(2), [])
-  const handleOpenFavorites = useCallback(() => setActiveTab(2), [])
+  const handleOpenFavorites = useCallback(() => router.push('/favorites'), [router])
   const handleOpenPhone = useCallback(() => {}, [])
   const handleOpenNotifications = useCallback(() => setNotificationsOpen(true), [])
   const handleMenuClick = useCallback(() => {}, [])
@@ -168,7 +173,8 @@ export default function HomeClient() {
   }, [handleSwitchTab])
 
   return (
-    <div className="app-web" suppressHydrationWarning>
+    <WattaBootSplashGate onEnded={handleBootSplashEnded}>
+    <div className="app-web min-h-0 flex-1" suppressHydrationWarning>
       <div className="content-web content-web--watta-craft">
         {activeTab === 0 && <MenuView />}
         {activeTab === 1 && (
@@ -198,5 +204,6 @@ export default function HomeClient() {
         ) : null}
       </div>
     </div>
+    </WattaBootSplashGate>
   )
 }
