@@ -3,14 +3,18 @@
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import WattaLoadScreen from './WattaLoadScreen'
-import { WATTA_BOOT_SPLASH_ENDED_EVENT } from '@/lib/wattaHeroVideo'
+import { WATTA_BOOT_SPLASH_ENDED_EVENT, WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
 /** Короткий сплеш: зелена смуга + смужки видно, але без довгого очікування */
 const MIN_BOOT_SPLASH_MS = 720
+const MAX_BOOT_SPLASH_WAIT_MS = 3200
 const PROGRESS_TICK_MS = 20
 const PROGRESS_STEP = 6
 const BOOT_SPLASH_FAILSAFE_MS = 6_000
+
+const WELCOME_HERO_VIDEO_SELECTOR =
+  'section.welcome-hero-section-web.menu-snap-section-welcome-web:not(.delivery-page-hero-embed-web) video.watta-home-hero-native-video'
 
 type WattaBootSplashGateProps = {
   children: ReactNode
@@ -34,8 +38,15 @@ function shouldSkipBootSplash(): boolean {
   }
 }
 
+function isHeroVideoBuffered(): boolean {
+  if (typeof document === 'undefined') return false
+  const v = document.querySelector<HTMLVideoElement>(WELCOME_HERO_VIDEO_SELECTOR)
+  return Boolean(v && v.readyState >= 2 && !v.error)
+}
+
 /**
- * Початковий сплеш при повному завантаженні / reload: логотип + зелена смуга прогресу.
+ * Початковий сплеш: логотип + зелена смуга. Знімається після мінімального часу,
+ * коли hero-відео вже має перший кадр, або за таймаутом — щоб не було білого «банера».
  */
 export default function WattaBootSplashGate({ children, onEnded }: WattaBootSplashGateProps) {
   const { t } = useLanguage()
@@ -43,13 +54,35 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
   const [showBootSplash, setShowBootSplash] = useState(true)
   const bootStartedAtRef = useRef<number | null>(null)
   const dismissScheduledRef = useRef(false)
+  const heroReadyRef = useRef(false)
+  const progressCompleteRef = useRef(false)
   const onEndedRef = useRef(onEnded)
   onEndedRef.current = onEnded
+
+  const tryDismissSplash = () => {
+    if (!showBootSplash || dismissScheduledRef.current) return
+    if (!progressCompleteRef.current) return
+    const started = bootStartedAtRef.current ?? Date.now()
+    const elapsed = Date.now() - started
+    if (elapsed < MIN_BOOT_SPLASH_MS) return
+    if (!heroReadyRef.current && elapsed < MAX_BOOT_SPLASH_WAIT_MS) return
+
+    dismissScheduledRef.current = true
+    const wait = Math.max(0, started + MIN_BOOT_SPLASH_MS - Date.now())
+    window.setTimeout(() => {
+      markBootSplashDone()
+      setShowBootSplash(false)
+    }, wait)
+  }
 
   useLayoutEffect(() => {
     bootStartedAtRef.current = Date.now()
     if (shouldSkipBootSplash()) {
       setShowBootSplash(false)
+      return
+    }
+    if (isHeroVideoBuffered()) {
+      heroReadyRef.current = true
     }
   }, [])
 
@@ -69,16 +102,20 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
   useEffect(() => {
     if (!showBootSplash) return
 
-    const scheduleDismiss = () => {
-      if (dismissScheduledRef.current) return
-      dismissScheduledRef.current = true
-      const started = bootStartedAtRef.current ?? Date.now()
-      const wait = Math.max(0, started + MIN_BOOT_SPLASH_MS - Date.now())
-      window.setTimeout(() => {
-        markBootSplashDone()
-        setShowBootSplash(false)
-      }, wait)
+    const onHeroReady = () => {
+      heroReadyRef.current = true
+      tryDismissSplash()
     }
+
+    window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
+
+    const pollId = window.setInterval(() => {
+      if (heroReadyRef.current) return
+      if (isHeroVideoBuffered()) {
+        heroReadyRef.current = true
+        tryDismissSplash()
+      }
+    }, 80)
 
     const id = window.setInterval(() => {
       setBootProgress((prev) => {
@@ -86,18 +123,25 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
         const next = Math.min(100, prev + PROGRESS_STEP)
         if (next >= 100) {
           clearInterval(id)
-          scheduleDismiss()
+          progressCompleteRef.current = true
+          tryDismissSplash()
         }
         return next
       })
     }, PROGRESS_TICK_MS)
 
-    return () => clearInterval(id)
+    return () => {
+      clearInterval(id)
+      clearInterval(pollId)
+      window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
+    }
   }, [showBootSplash])
 
   useEffect(() => {
     if (!showBootSplash) return
     const fail = window.setTimeout(() => {
+      heroReadyRef.current = true
+      progressCompleteRef.current = true
       markBootSplashDone()
       setShowBootSplash(false)
       setBootProgress(100)
