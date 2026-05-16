@@ -5196,6 +5196,13 @@ html.watta-light-chrome body {
 
 .home-menu-cat-block-web {
   scroll-margin-top: clamp(104px, 22vw, 148px);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
+}
+
+.watta-full-menu-page .home-menu-cat-band-web {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
 }
 
 @media (max-width: 480px) {

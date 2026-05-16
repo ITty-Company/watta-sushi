@@ -71,7 +71,6 @@ const nextConfig = {
    */
   experimental: {
     optimizePackageImports: ['lucide-react'],
-    scrollRestoration: true,
   },
   
   async rewrites() {

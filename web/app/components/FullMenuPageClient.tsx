@@ -11,6 +11,7 @@ import { subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
 import { WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
+import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { MenuHighlightStack } from './MenuHighlightStack'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
@@ -343,9 +344,9 @@ export default function FullMenuPageClient() {
   useEffect(() => {
     if (visibleCategories.length === 0) return
 
-    const publishCategoryStrip = (slug: string) => {
-      window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
-    }
+    const lastHighlightSlugRef = { current: '' }
+    const publishCategoryStrip = (slug: string) =>
+      publishMenuCategoryHighlight(slug, lastHighlightSlugRef)
 
     const syncActiveFromScroll = () => {
       if (scrollLockRef.current) return
@@ -396,13 +397,15 @@ export default function FullMenuPageClient() {
       }
     }
 
-    window.addEventListener('scroll', syncActiveFromScroll, { passive: true })
-    window.addEventListener('resize', syncActiveFromScroll)
+    const { onScroll, cancel } = createRafScrollListener(syncActiveFromScroll)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
     const id = window.requestAnimationFrame(syncActiveFromScroll)
     return () => {
       window.cancelAnimationFrame(id)
-      window.removeEventListener('scroll', syncActiveFromScroll)
-      window.removeEventListener('resize', syncActiveFromScroll)
+      cancel()
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
     }
   }, [visibleCategories, scrollPadTotal])
 
