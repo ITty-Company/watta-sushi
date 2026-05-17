@@ -42,7 +42,6 @@ import {
   BookOpen,
   Plus,
 } from 'lucide-react'
-import LogoBackground from './LogoBackground'
 import CityMapPicker from './CityMapPicker'
 import AdminDeliveryZoneEditor from './AdminDeliveryZoneEditor'
 import { useLanguage } from '../context/LanguageContext'
@@ -336,7 +335,23 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const { t, adminUiLanguage, setAdminUiLanguage } = useLanguage()
   const reduceMotion = useReducedMotion()
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'promos' | 'blog' | 'crm' | 'cities' | 'banners' | 'menuCategories' | 'users' | 'team'| 'settings'| 'newsletter'| 'ingredients'>('dashboard')
+  const [activeTab, setActiveTab] = useState<
+    | 'dashboard'
+    | 'orders'
+    | 'products'
+    | 'promos'
+    | 'promotions'
+    | 'blog'
+    | 'crm'
+    | 'cities'
+    | 'banners'
+    | 'menuCategories'
+    | 'users'
+    | 'team'
+    | 'settings'
+    | 'newsletter'
+    | 'ingredients'
+  >('dashboard')
   
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -352,6 +367,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [orderStats, setOrderStats] = useState<AdminOrderStats | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const loadedTabsRef = useRef(new Set<string>())
 
   // Состояния для модального окна ТОВАРОВ
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -600,113 +617,217 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const notifyError = (message: string) => toast.error(message, { style: toastStyle })
   // const alert = (message: string) => notifyError(String(message))
 
-  // --- ЗАГРУЗКА ДАННЫХ ---
-  const fetchAll = async () => {
-    setIsLoading(true)
-    
+  // --- ЗАГРУЗКА ДАННЫХ (по вкладкам — не тянем всё сразу) ---
+  const adminAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return null
+    return { Authorization: `Bearer ${token}` }
+  }, [])
+
+  const handleAdminAuthDenied = useCallback(
+    (statuses: number[]) => {
+      if (!statuses.some((s) => s === 401 || s === 403)) return false
+      localStorage.removeItem('token')
+      localStorage.removeItem('currentUser')
+      localStorage.removeItem('userId')
+      localStorage.removeItem('userOrders')
+      window.dispatchEvent(new Event('userChanged'))
+      toast.error(
+        'Сервер отклонил доступ (401/403). Войдите снова как администратор или проверьте, что backend запущен и NEXT_PUBLIC_API_URL указывает на него.',
+        { id: 'admin-panel-auth' }
+      )
+      onBack()
+      return true
+    },
+    [onBack]
+  )
+
+  const fetchSettings = useCallback(async (headers: { Authorization: string }) => {
+    const settingsRes = await fetch('/api/settings', { headers })
+    if (settingsRes.ok) {
+      const raw = await settingsRes.json()
+      setSettings({ ...defaultSiteSettings, ...raw })
+    }
+  }, [])
+
+  const fetchTabData = useCallback(
+    async (tab: typeof activeTab, opts?: { force?: boolean }) => {
+      const headers = adminAuthHeaders()
+      if (!headers) return
+
+      if (!opts?.force && loadedTabsRef.current.has(tab)) return
+
+      const showTabSpinner =
+        tab === activeTab &&
+        ((tab === 'orders' && orders.length === 0) ||
+          (tab === 'products' && products.length === 0) ||
+          (tab === 'banners' && banners.length === 0) ||
+          (tab === 'dashboard' && orders.length === 0 && !orderStats))
+
+      if (showTabSpinner) setIsLoading(true)
+
+      try {
+        switch (tab) {
+          case 'dashboard':
+          case 'orders': {
+            const [ordersRes, ordersStatsRes] = await Promise.all([
+              fetch('/api/orders', { headers }),
+              fetch('/api/orders/stats', { headers }),
+            ])
+            if (handleAdminAuthDenied([ordersRes.status])) return
+            if (ordersStatsRes.ok) {
+              try {
+                setOrderStats(await ordersStatsRes.json())
+              } catch {
+                setOrderStats(null)
+              }
+            } else setOrderStats(null)
+            if (ordersRes.ok) setOrders(await ordersRes.json())
+            loadedTabsRef.current.add('dashboard')
+            loadedTabsRef.current.add('orders')
+            break
+          }
+          case 'products': {
+            const [prodRes, catRes] = await Promise.all([
+              fetch('/api/products', { headers }),
+              fetch('/api/products/categories', { headers }),
+            ])
+            if (prodRes.ok) {
+              const productsData = await prodRes.json()
+              setProducts(Array.isArray(productsData) ? productsData : [])
+            } else setProducts([])
+            if (catRes.ok) {
+              const c = await catRes.json()
+              setMenuCategories(c)
+            }
+            loadedTabsRef.current.add('products')
+            break
+          }
+          case 'ingredients': {
+            const ingredientsRes = await fetch('/api/ingredients', { headers })
+            if (ingredientsRes.ok) setIngredients(await ingredientsRes.json())
+            loadedTabsRef.current.add('ingredients')
+            break
+          }
+          case 'cities': {
+            const [citiesRes, countriesRes] = await Promise.all([
+              fetch('/api/cities/all', { headers }),
+              fetch('/api/countries/all', { headers }),
+            ])
+            if (citiesRes.ok) setCities(await citiesRes.json())
+            if (countriesRes.ok) setCountries(await countriesRes.json())
+            loadedTabsRef.current.add('cities')
+            break
+          }
+          case 'banners':
+          case 'settings': {
+            const bannersRes = await fetch('/api/banners/all', { headers })
+            if (bannersRes.ok) setBanners(await bannersRes.json())
+            await fetchSettings(headers)
+            loadedTabsRef.current.add('banners')
+            loadedTabsRef.current.add('settings')
+            break
+          }
+          case 'promos': {
+            const promosRes = await fetch('/api/promo', { headers })
+            if (promosRes.ok) setPromos(await promosRes.json())
+            loadedTabsRef.current.add('promos')
+            break
+          }
+          case 'promotions': {
+            const promosNewsRes = await fetch('/api/promotions', { headers })
+            if (promosNewsRes.ok) setNewsItems(await promosNewsRes.json())
+            loadedTabsRef.current.add('promotions')
+            break
+          }
+          case 'blog': {
+            const blogRes = await fetch('/api/blog/all', { headers })
+            if (blogRes.ok) setBlogPosts(await blogRes.json())
+            loadedTabsRef.current.add('blog')
+            break
+          }
+          case 'crm':
+          case 'users': {
+            const crmUsersRes = await fetch('/api/crm/users', { headers })
+            if (handleAdminAuthDenied([crmUsersRes.status])) return
+            if (crmUsersRes.ok) {
+              const list = await crmUsersRes.json()
+              const arr = Array.isArray(list) ? list : []
+              setCrmUsers(arr)
+              setUsers(arr)
+            } else {
+              setCrmUsers([])
+              setUsers([])
+            }
+            loadedTabsRef.current.add('crm')
+            loadedTabsRef.current.add('users')
+            break
+          }
+          case 'team': {
+            const teamRes = await fetch('/api/team/all', { headers })
+            if (teamRes.ok) setTeamMembers(await teamRes.json())
+            loadedTabsRef.current.add('team')
+            break
+          }
+          case 'menuCategories': {
+            const catRes = await fetch('/api/products/categories', { headers })
+            if (catRes.ok) setMenuCategories(await catRes.json())
+            loadedTabsRef.current.add('menuCategories')
+            break
+          }
+          case 'newsletter':
+            loadedTabsRef.current.add('newsletter')
+            break
+          default:
+            break
+        }
+        loadedTabsRef.current.add(tab)
+      } catch (e) {
+        console.error(e)
+        toast.error('Ошибка при загрузке данных')
+      } finally {
+        if (showTabSpinner) setIsLoading(false)
+      }
+    },
+    [
+      activeTab,
+      adminAuthHeaders,
+      banners.length,
+      fetchSettings,
+      handleAdminAuthDenied,
+      orderStats,
+      orders.length,
+      products.length,
+    ]
+  )
+
+  const fetchAll = useCallback(async () => {
+    setIsRefreshing(true)
+    loadedTabsRef.current.clear()
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
+      const headers = adminAuthHeaders()
+      if (!headers) {
         toast.error('Вы не авторизованы. Пожалуйста, войдите в систему.', { id: 'admin-panel-auth' })
         onBack()
         return
       }
-      
-      const headers = { 'Authorization': `Bearer ${token}` }
-      const [
-        ingredientsRes,
-        ordersRes,
-        ordersStatsRes,
-        prodRes,
-        catRes,
-        citiesRes,
-        countriesRes,
-        promosRes,
-        blogRes,
-        crmUsersRes,
-        bannersRes,
-        teamRes,
-      ] = await Promise.all([
-        fetch('/api/ingredients', { headers }),
-        fetch('/api/orders', { headers }),
-        fetch('/api/orders/stats', { headers }),
-        fetch('/api/products', { headers }),
-        fetch('/api/products/categories', { headers }),
-        fetch('/api/cities/all', { headers }),
-        fetch('/api/countries/all', { headers }),
-        fetch('/api/promo', { headers }),
-        fetch('/api/blog/all', { headers }),
-        fetch('/api/crm/users', { headers }),
-        fetch('/api/banners/all', { headers }),
-        fetch('/api/team/all', { headers }),
+      await Promise.all([
+        fetchTabData('dashboard', { force: true }),
+        fetchTabData('products', { force: true }),
+        fetchTabData('banners', { force: true }),
+        fetchTabData('promos', { force: true }),
+        fetchTabData('promotions', { force: true }),
+        fetchTabData('cities', { force: true }),
+        fetchTabData('crm', { force: true }),
+        fetchTabData('team', { force: true }),
+        fetchTabData('blog', { force: true }),
+        fetchTabData('ingredients', { force: true }),
+        fetchTabData('menuCategories', { force: true }),
       ])
-      fetch('/api/promotions')
-        .then((r) => r.json())
-        .then(setNewsItems)
-        .catch(() => {})
-      if (ingredientsRes.ok) setIngredients(await ingredientsRes.json())
-      if (ordersStatsRes.ok) {
-        try {
-          setOrderStats(await ordersStatsRes.json())
-        } catch {
-          setOrderStats(null)
-        }
-      } else {
-        setOrderStats(null)
-      }
-      if (ordersRes.ok) setOrders(await ordersRes.json())
-      if (prodRes.ok) {
-        const productsData = await prodRes.json()
-        setProducts(Array.isArray(productsData) ? productsData : [])
-      } else {
-        setProducts([])
-      }
-      if (catRes.ok) { const c = await catRes.json(); setMenuCategories(c); }
-      if (citiesRes.ok) setCities(await citiesRes.json())
-      if (countriesRes.ok) setCountries(await countriesRes.json())
-      if (promosRes.ok) setPromos(await promosRes.json())
-      if (blogRes.ok) setBlogPosts(await blogRes.json())
-      if (crmUsersRes.ok) {
-        const list = await crmUsersRes.json()
-        const arr = Array.isArray(list) ? list : []
-        setCrmUsers(arr)
-        setUsers(arr)
-      } else {
-        setCrmUsers([])
-        setUsers([])
-      }
-      if (bannersRes.ok) setBanners(await bannersRes.json())
-      if (teamRes.ok) setTeamMembers(await teamRes.json())
-      // Только защищённые админские GET: публичные /products, /countries и т.д. не должны выбрасывать из панели.
-      const adminAuthDenied =
-        ordersRes.status === 401 ||
-        ordersRes.status === 403 ||
-        crmUsersRes.status === 401 ||
-        crmUsersRes.status === 403
-      if (adminAuthDenied) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('currentUser')
-        localStorage.removeItem('userId')
-        localStorage.removeItem('userOrders')
-        window.dispatchEvent(new Event('userChanged'))
-        toast.error(
-          'Сервер отклонил доступ (401/403). Войдите снова как администратор или проверьте, что backend запущен и NEXT_PUBLIC_API_URL указывает на него.',
-          { id: 'admin-panel-auth' }
-        )
-        onBack()
-      }
-      const settingsRes = await fetch('/api/settings', { headers })
-      if (settingsRes.ok) {
-        const raw = await settingsRes.json()
-        setSettings({ ...defaultSiteSettings, ...raw })
-      }
-    } catch (e) {
-      console.error(e)
-      toast.error('Ошибка при загрузке данных')
     } finally {
-      setIsLoading(false)
+      setIsRefreshing(false)
     }
-  }
+  }, [adminAuthHeaders, fetchTabData, onBack])
 
   const fetchData = fetchAll
 
@@ -810,9 +931,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       return
     }
 
-    void fetchAll()
+    void fetchTabData('dashboard')
     // eslint-disable-next-line react-hooks/exhaustive-deps -- старт адмінки один раз при відкритті
   }, [])
+
+  useEffect(() => {
+    void fetchTabData(activeTab)
+  }, [activeTab, fetchTabData])
 
   // Закрытие селектора флагов и поиска города при клике вне
   useEffect(() => {
@@ -3285,7 +3410,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 className="group w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-[#145142]/5 hover:bg-[#145142] text-[#145142] hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#145142]/30 active:scale-95"
                 title={t.adminPanel.header.refreshTitle}
               >
-                <RefreshCw size={20} className="sm:w-5 sm:h-5 group-hover:rotate-180 transition-transform duration-500" />
+                <RefreshCw size={20} className={`sm:w-5 sm:h-5 transition-transform duration-500 ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} />
               </button>
               <button 
                 onClick={() => setIsRightPanelOpen(true)}
@@ -3303,7 +3428,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
   return (
     <div className="admin-shell-watta-web min-h-screen w-full max-w-[100vw] font-sans relative overflow-x-clip">
-      <LogoBackground />
       <div className="admin-watta-stack relative z-10 min-h-screen">
         <Header />
 
@@ -3369,7 +3493,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   { id: 'orders' as const, label: t.adminPanel.sidebar.orders, desc: t.adminPanel.sidebar.ordersDesc },
                   { id: 'products' as const, label: t.adminPanel.sidebar.products, desc: t.adminPanel.sidebar.productsDesc },
                   { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
+                  { id: 'promotions' as const, label: t.adminPanel.news.title, desc: t.adminPanel.sidebar.promosDesc },
                   { id: 'blog' as const, label: 'Блог / Рецепты', desc: 'SEO статьи и рецепты шефа' },
+                  { id: 'newsletter' as const, label: t.adminPanel.sidebar.newsletter, desc: 'Email рассылка' },
                   { id: 'crm' as const, label: 'CRM / Рассылки', desc: 'Пользователи и массовые рассылки' },
                   { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
                   { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
@@ -3609,7 +3735,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             </div>
           )}
           {/* ВКЛАДКА НОВОСТИ */}
-          {!isRightPanelOpen && activeTab === 'promos' && (
+          {!isRightPanelOpen && activeTab === 'promotions' && (
             <div className="space-y-6">
               <div className="admin-watta-news-toolbar">
                 <h2 className="text-xl sm:text-2xl">{t.adminPanel.news.title}</h2>
@@ -4559,7 +4685,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               controls
                               muted
                               playsInline
-                              preload="metadata"
+                              preload="none"
                             />
                           ) : (
                             <motion.div
@@ -4680,7 +4806,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               controls
                               muted
                               playsInline
-                              preload="metadata"
+                              preload="none"
                             />
                           ) : (
                             <motion.div

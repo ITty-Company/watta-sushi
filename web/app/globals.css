@@ -15639,6 +15639,28 @@ body.admin-watta-overlay-open {
     pointer-events: none;
     background: linear-gradient(90deg, transparent, rgba(248, 252, 250, 0.95));
   }
+
+  .admin-shell-watta-web [class*='backdrop-blur'] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .admin-banners-tab-hero-orb,
+  .admin-banners-tab-hero-orb--2,
+  .admin-banners-tab-cta,
+  .admin-banners-tab-cta::after,
+  .admin-banner-card-enter {
+    animation: none !important;
+  }
+
+  .admin-banner-card-web:hover,
+  .admin-watta-hover-lift:hover {
+    transform: none !important;
+  }
+}
+
+.admin-shell-watta-web .admin-banners-tab-shell {
+  contain: layout style;
 }
 
 /* Menu / профіль у вкладці — без власної підкладки: фон і смуга з .content-web--watta-craft, водяні знаки LogoBackground */
