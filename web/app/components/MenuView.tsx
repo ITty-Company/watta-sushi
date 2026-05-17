@@ -1769,6 +1769,15 @@ export default function MenuView() {
     setIsSidebarOpen(opening)
   }
 
+  const openSidebar = useCallback(() => {
+    if (isSidebarOpen) return
+    if (activePage && activePage !== 'admin') {
+      setActivePage(null)
+    }
+    setSidebarStaggerKey((k) => k + 1)
+    setIsSidebarOpen(true)
+  }, [isSidebarOpen, activePage])
+
   const navDrawerCategories = useMemo(
     () =>
       menuCategories.map((c) => ({
@@ -2149,6 +2158,7 @@ export default function MenuView() {
         <NavigationSidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
+          onOpen={openSidebar}
           staggerKey={sidebarStaggerKey}
           categories={navDrawerCategories}
           onCategorySelect={handleNavCategorySelect}
@@ -2626,6 +2636,7 @@ export default function MenuView() {
       <NavigationSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onOpen={openSidebar}
         staggerKey={sidebarStaggerKey}
         categories={navDrawerCategories}
         onCategorySelect={handleNavCategorySelect}

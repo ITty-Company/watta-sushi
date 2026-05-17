@@ -148,6 +148,67 @@ function normalizeAuthHeroVideoUrls(input: unknown): string[] {
   return normalizeHomeHeroVideoUrls(input)
 }
 
+const AUTH_HERO_COPY_LANGS = ['uk', 'ru', 'en', 'nl'] as const
+const MAX_AUTH_HERO_COPY_FIELD = 280
+const MAX_AUTH_HERO_BENEFIT = 80
+
+function trimAuthHeroCopyField(value: unknown, max: number): string {
+  if (typeof value !== 'string') return ''
+  return value.trim().slice(0, max)
+}
+
+function normalizeAuthHeroPhoneCopy(input: unknown): Record<
+  string,
+  { title: string; subtitle: string; benefits: [string, string, string] }
+> {
+  if (!input || typeof input !== 'object') return {}
+  const out: Record<string, { title: string; subtitle: string; benefits: [string, string, string] }> =
+    {}
+  for (const lang of AUTH_HERO_COPY_LANGS) {
+    const block = (input as Record<string, unknown>)[lang]
+    if (!block || typeof block !== 'object') continue
+    const b = block as Record<string, unknown>
+    const title = trimAuthHeroCopyField(b.title, MAX_AUTH_HERO_COPY_FIELD)
+    const subtitle = trimAuthHeroCopyField(b.subtitle, MAX_AUTH_HERO_COPY_FIELD)
+    let benefits: [string, string, string] = ['', '', '']
+    if (Array.isArray(b.benefits)) {
+      benefits = [
+        trimAuthHeroCopyField(b.benefits[0], MAX_AUTH_HERO_BENEFIT),
+        trimAuthHeroCopyField(b.benefits[1], MAX_AUTH_HERO_BENEFIT),
+        trimAuthHeroCopyField(b.benefits[2], MAX_AUTH_HERO_BENEFIT),
+      ]
+    }
+    if (!title && !subtitle && benefits.every((x) => !x)) continue
+    out[lang] = { title, subtitle, benefits }
+  }
+  return out
+}
+
+function parseStoredAuthHeroPhoneCopy(raw: string | null | undefined): Record<
+  string,
+  { title: string; subtitle: string; benefits: [string, string, string] }
+> {
+  if (!raw || !String(raw).trim()) return {}
+  try {
+    const parsed = JSON.parse(String(raw)) as unknown
+    return normalizeAuthHeroPhoneCopy(parsed)
+  } catch {
+    return {}
+  }
+}
+
+function serializeAuthHeroPhoneCopy(
+  copy: Record<string, { title: string; subtitle: string; benefits: [string, string, string] }>,
+): string {
+  return JSON.stringify(copy)
+}
+
+function effectiveAuthHeroPhone2VideoUrls(row: {
+  authHeroPhone2VideoUrls?: string | null
+}): string[] {
+  return parseStoredHomeHeroVideoUrls(row.authHeroPhone2VideoUrls)
+}
+
 function effectiveAuthHeroVideoUrls(row: {
   authHeroVideoUrls?: string | null
   authHeroVideoUrl?: string | null
@@ -183,6 +244,15 @@ function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) 
     authHeroVideoUrls?: string | null
     authHeroVideoUrl?: string | null
   })
+  const authHeroPhone2VideoUrls = effectiveAuthHeroPhone2VideoUrls(settings as {
+    authHeroPhone2VideoUrls?: string | null
+  })
+  const authHeroPhone1Copy = parseStoredAuthHeroPhoneCopy(
+    (settings as { authHeroPhone1Copy?: string | null }).authHeroPhone1Copy,
+  )
+  const authHeroPhone2Copy = parseStoredAuthHeroPhoneCopy(
+    (settings as { authHeroPhone2Copy?: string | null }).authHeroPhone2Copy,
+  )
   return {
     ...settings,
     homeHeroVideoUrls,
@@ -191,6 +261,9 @@ function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) 
     deliveryHeroVideoUrl: deliveryHeroVideoUrls[0] ?? DEFAULT_DELIVERY_HERO_VIDEO,
     authHeroVideoUrls,
     authHeroVideoUrl: authHeroVideoUrls[0] ?? DEFAULT_AUTH_HERO_VIDEO,
+    authHeroPhone2VideoUrls,
+    authHeroPhone1Copy,
+    authHeroPhone2Copy,
   }
 }
 
@@ -203,6 +276,9 @@ const defaultSettings = {
   deliveryHeroVideoUrls: serializeDeliveryHeroVideoUrls([DEFAULT_DELIVERY_HERO_VIDEO]),
   authHeroVideoUrl: DEFAULT_AUTH_HERO_VIDEO,
   authHeroVideoUrls: serializeAuthHeroVideoUrls([DEFAULT_AUTH_HERO_VIDEO]),
+  authHeroPhone2VideoUrls: serializeHomeHeroVideoUrls([]),
+  authHeroPhone1Copy: '{}',
+  authHeroPhone2Copy: '{}',
   telegramUrl: 'https://t.me/wattasushiwork',
   whatsappUrl: '',
   instagramUrl: 'https://www.instagram.com/watta_sushi/',
@@ -332,6 +408,18 @@ router.post('/', checkAdmin, async (req, res) => {
         update.authHeroVideoUrl = normalized
         update.authHeroVideoUrls = serializeAuthHeroVideoUrls([normalized])
       }
+    }
+    if (b.authHeroPhone2VideoUrls !== undefined) {
+      const urls = normalizeAuthHeroVideoUrls(b.authHeroPhone2VideoUrls)
+      update.authHeroPhone2VideoUrls = serializeAuthHeroVideoUrls(urls)
+    }
+    if (b.authHeroPhone1Copy !== undefined) {
+      const copy = normalizeAuthHeroPhoneCopy(b.authHeroPhone1Copy)
+      update.authHeroPhone1Copy = serializeAuthHeroPhoneCopy(copy)
+    }
+    if (b.authHeroPhone2Copy !== undefined) {
+      const copy = normalizeAuthHeroPhoneCopy(b.authHeroPhone2Copy)
+      update.authHeroPhone2Copy = serializeAuthHeroPhoneCopy(copy)
     }
     if (b.telegramUrl !== undefined) update.telegramUrl = String(b.telegramUrl ?? '')
     if (b.whatsappUrl !== undefined) update.whatsappUrl = String(b.whatsappUrl ?? '')

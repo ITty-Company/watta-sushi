@@ -10,11 +10,60 @@ interface LogoPosition {
   opacity: number
 }
 
-export default function LogoBackground() {
+/** Фіксований малюнок для /login та /register — завжди на одних місцях у вікні */
+const AUTH_FIXED_LOGO_PATTERN = [
+  { xPct: 6, yPct: 10, size: 150, rotation: -14, opacity: 0.09 },
+  { xPct: 82, yPct: 8, size: 120, rotation: 18, opacity: 0.085 },
+  { xPct: 12, yPct: 52, size: 170, rotation: 6, opacity: 0.095 },
+  { xPct: 76, yPct: 58, size: 135, rotation: -22, opacity: 0.088 },
+  { xPct: 44, yPct: 80, size: 110, rotation: 11, opacity: 0.082 },
+  { xPct: 4, yPct: 82, size: 95, rotation: -8, opacity: 0.078 },
+  { xPct: 90, yPct: 86, size: 100, rotation: 24, opacity: 0.08 },
+  { xPct: 52, yPct: 6, size: 105, rotation: -6, opacity: 0.084 },
+  { xPct: 26, yPct: 30, size: 85, rotation: 16, opacity: 0.072 },
+  { xPct: 66, yPct: 34, size: 90, rotation: -11, opacity: 0.074 },
+  { xPct: 34, yPct: 68, size: 80, rotation: 9, opacity: 0.07 },
+  { xPct: 58, yPct: 42, size: 75, rotation: -18, opacity: 0.068 },
+] as const
+
+type LogoBackgroundProps = {
+  /** auth: фіксовані водяні знаки на весь viewport, трохи помітніші */
+  variant?: 'default' | 'auth'
+}
+
+function buildAuthLogos(viewportW: number, viewportH: number): LogoPosition[] {
+  return AUTH_FIXED_LOGO_PATTERN.map((item) => {
+    const x = (item.xPct / 100) * viewportW - item.size / 2
+    const y = (item.yPct / 100) * viewportH - item.size / 2
+    return {
+      x: Math.max(0, x),
+      y: Math.max(0, y),
+      rotation: item.rotation,
+      size: item.size,
+      opacity: item.opacity,
+    }
+  })
+}
+
+export default function LogoBackground({ variant = 'default' }: LogoBackgroundProps) {
+  const isAuth = variant === 'auth'
   const containerRef = useRef<HTMLDivElement>(null)
   const [logos, setLogos] = useState<LogoPosition[]>([])
 
   useEffect(() => {
+    if (!isAuth) return
+
+    const applyAuthLogos = () => {
+      setLogos(buildAuthLogos(window.innerWidth, window.innerHeight))
+    }
+
+    applyAuthLogos()
+    window.addEventListener('resize', applyAuthLogos, { passive: true })
+    return () => window.removeEventListener('resize', applyAuthLogos)
+  }, [isAuth])
+
+  useEffect(() => {
+    if (isAuth) return
     if (!containerRef.current) return
 
     // Генерируем логотипы только один раз при монтировании
@@ -240,9 +289,10 @@ export default function LogoBackground() {
     return () => {
       clearTimeout(timeoutId)
     }
-  }, [logos.length])
+  }, [isAuth, logos.length])
 
   useEffect(() => {
+    if (isAuth) return
     // Оптимизированное обновление размеров с debounce
     let updateTimeout: ReturnType<typeof setTimeout> | null = null
     
@@ -302,22 +352,29 @@ export default function LogoBackground() {
         resizeObserver.disconnect()
       }
     }
-  }, [])
+  }, [isAuth])
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="watta-public-page-shell__bg absolute inset-0 overflow-hidden pointer-events-none"
-      style={{ 
-        zIndex: 0,
-        minHeight: '100%',
-        height: '100%',
-        width: '100%',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0
-      }}
+      className={`watta-public-page-shell__bg pointer-events-none overflow-hidden${
+        isAuth ? ' watta-public-page-shell__bg--auth' : ' absolute inset-0'
+      }`}
+      style={
+        isAuth
+          ? undefined
+          : {
+              zIndex: 0,
+              minHeight: '100%',
+              height: '100%',
+              width: '100%',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }
+      }
+      aria-hidden
     >
       {logos.map((logo, index) => (
         <div

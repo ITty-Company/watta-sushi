@@ -2,11 +2,16 @@
 
 import { useEffect } from 'react'
 import { useLanguage } from '../context/LanguageContext'
+import {
+  useNavDrawerCloseSwipeHandlers,
+  useNavDrawerOpenSwipe,
+} from '@/components/NavDrawerSwipeGestures'
 import WattaNavDrawerPanel, { type NavDrawerCategory } from './WattaNavDrawerPanel'
 
 export interface NavigationSidebarProps {
   isOpen: boolean
   onClose: () => void
+  onOpen: () => void
   staggerKey?: number
   categories?: NavDrawerCategory[]
   onCategorySelect?: (key: string) => void
@@ -20,6 +25,7 @@ export interface NavigationSidebarProps {
 export default function NavigationSidebar({
   isOpen,
   onClose,
+  onOpen,
   staggerKey = 0,
   categories,
   onCategorySelect,
@@ -30,6 +36,9 @@ export default function NavigationSidebar({
   onOpenNotifications,
 }: NavigationSidebarProps) {
   const { t } = useLanguage()
+
+  useNavDrawerOpenSwipe(!isOpen, onOpen)
+  const closeSwipe = useNavDrawerCloseSwipeHandlers(isOpen, onClose)
 
   useEffect(() => {
     if (!isOpen) return
@@ -52,6 +61,7 @@ export default function NavigationSidebar({
       aria-modal="true"
       aria-hidden={!isOpen}
       aria-label={t.menu}
+      {...closeSwipe}
     >
       <WattaNavDrawerPanel
         mode="embedded"
