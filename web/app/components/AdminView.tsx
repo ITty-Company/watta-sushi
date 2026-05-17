@@ -296,6 +296,66 @@ function revokeHeroPreviewUrl(url: string | null) {
   if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
 }
 
+function AdminHeroVideoPreview({
+  previewSrc,
+  savedUrl,
+  reduceMotion,
+}: {
+  previewSrc: string | null | undefined
+  savedUrl?: string
+  reduceMotion: boolean
+}) {
+  const [broken, setBroken] = useState(false)
+
+  useEffect(() => {
+    setBroken(false)
+  }, [previewSrc])
+
+  if (!previewSrc) {
+    return (
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="flex aspect-video w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45"
+      >
+        —
+      </motion.div>
+    )
+  }
+
+  if (broken && !previewSrc.startsWith('blob:')) {
+    return (
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="admin-hero-video-preview-missing"
+      >
+        <span className="font-semibold text-[#145142]/85">Відео на сервері недоступне</span>
+        <span>Завантажте файл знову або збережіть нове відео</span>
+        {savedUrl ? (
+          <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>
+            {savedUrl}
+          </span>
+        ) : null}
+      </motion.div>
+    )
+  }
+
+  return (
+    <video
+      key={previewSrc}
+      src={previewSrc}
+      className="aspect-video w-full bg-black object-cover"
+      controls
+      muted
+      playsInline
+      preload="none"
+      onError={() => setBroken(true)}
+    />
+  )
+}
+
 interface SiteSettings {
   bannerInterval: number
   homeHeroVideoUrl: string
@@ -4677,26 +4737,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                           className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5"
                         >
-                          {previewSrc ? (
-                            <video
-                              key={previewSrc}
-                              src={previewSrc}
-                              className="aspect-video w-full bg-black object-cover"
-                              controls
-                              muted
-                              playsInline
-                              preload="none"
-                            />
-                          ) : (
-                            <motion.div
-                              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                              className="flex aspect-video w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45"
-                            >
-                              —
-                            </motion.div>
-                          )}
+                          <AdminHeroVideoPreview
+                            previewSrc={previewSrc}
+                            savedUrl={slot.savedUrl}
+                            reduceMotion={Boolean(reduceMotion)}
+                          />
                         </motion.div>
                         {previewSrc && !slot.pendingFile ? (
                           <p
@@ -4752,7 +4797,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     type="button"
                     disabled={heroVideoSaving || !heroVideoHasFilledSlot}
                     onClick={() => void handleSaveHomeHeroVideos()}
-                    className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="admin-hero-video-save-btn relative z-[5] inline-flex touch-manipulation items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Save className="h-4 w-4 shrink-0" aria-hidden />
                     {heroVideoSaving
@@ -4798,26 +4843,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                           className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5"
                         >
-                          {previewSrc ? (
-                            <video
-                              key={previewSrc}
-                              src={previewSrc}
-                              className="aspect-video w-full bg-black object-cover"
-                              controls
-                              muted
-                              playsInline
-                              preload="none"
-                            />
-                          ) : (
-                            <motion.div
-                              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                              className="flex aspect-video w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45"
-                            >
-                              —
-                            </motion.div>
-                          )}
+                          <AdminHeroVideoPreview
+                            previewSrc={previewSrc}
+                            savedUrl={slot.savedUrl}
+                            reduceMotion={Boolean(reduceMotion)}
+                          />
                         </motion.div>
                         {previewSrc && !slot.pendingFile ? (
                           <p
@@ -4873,7 +4903,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     type="button"
                     disabled={deliveryHeroVideoSaving || !deliveryHeroVideoHasFilledSlot}
                     onClick={() => void handleSaveDeliveryHeroVideos()}
-                    className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="admin-hero-video-save-btn relative z-[5] inline-flex touch-manipulation items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Save className="h-4 w-4 shrink-0" aria-hidden />
                     {deliveryHeroVideoSaving

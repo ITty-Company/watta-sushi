@@ -114,14 +114,33 @@ function normalizeHomeHeroVideoUrls(input: unknown): string[] {
   return out
 }
 
+/** На Render без persistent disk файли в /uploads зникають після деплою — не віддаємо мертві URL клієнту. */
+function uploadVideoFileExists(url: string): boolean {
+  const trimmed = url.trim()
+  if (!trimmed.startsWith('/uploads/')) return true
+  const base = path.basename(trimmed.split('?')[0] ?? '')
+  if (!base || base.includes('..')) return false
+  try {
+    return fs.existsSync(path.join(uploadDir, base))
+  } catch {
+    return false
+  }
+}
+
+function filterExistingUploadVideoUrls(urls: string[]): string[] {
+  return urls.filter((u) => uploadVideoFileExists(u))
+}
+
 function effectiveHomeHeroVideoUrls(row: {
   homeHeroVideoUrls?: string | null
   homeHeroVideoUrl?: string | null
 }): string[] {
-  const fromJson = parseStoredHomeHeroVideoUrls(row.homeHeroVideoUrls)
+  const fromJson = filterExistingUploadVideoUrls(
+    parseStoredHomeHeroVideoUrls(row.homeHeroVideoUrls),
+  )
   if (fromJson.length > 0) return fromJson
   const single = row.homeHeroVideoUrl?.trim()
-  if (single) return [single]
+  if (single && uploadVideoFileExists(single)) return [single]
   return [DEFAULT_HOME_HERO_VIDEO]
 }
 
@@ -207,17 +226,21 @@ function serializeAuthHeroPhoneCopy(
 function effectiveAuthHeroPhone2VideoUrls(row: {
   authHeroPhone2VideoUrls?: string | null
 }): string[] {
-  return parseStoredHomeHeroVideoUrls(row.authHeroPhone2VideoUrls)
+  return filterExistingUploadVideoUrls(
+    parseStoredHomeHeroVideoUrls(row.authHeroPhone2VideoUrls),
+  )
 }
 
 function effectiveAuthHeroVideoUrls(row: {
   authHeroVideoUrls?: string | null
   authHeroVideoUrl?: string | null
 }): string[] {
-  const fromJson = parseStoredAuthHeroVideoUrls(row.authHeroVideoUrls)
+  const fromJson = filterExistingUploadVideoUrls(
+    parseStoredAuthHeroVideoUrls(row.authHeroVideoUrls),
+  )
   if (fromJson.length > 0) return fromJson
   const single = row.authHeroVideoUrl?.trim()
-  if (single) return [single]
+  if (single && uploadVideoFileExists(single)) return [single]
   return [DEFAULT_AUTH_HERO_VIDEO]
 }
 
@@ -225,10 +248,12 @@ function effectiveDeliveryHeroVideoUrls(row: {
   deliveryHeroVideoUrls?: string | null
   deliveryHeroVideoUrl?: string | null
 }): string[] {
-  const fromJson = parseStoredDeliveryHeroVideoUrls(row.deliveryHeroVideoUrls)
+  const fromJson = filterExistingUploadVideoUrls(
+    parseStoredDeliveryHeroVideoUrls(row.deliveryHeroVideoUrls),
+  )
   if (fromJson.length > 0) return fromJson
   const single = row.deliveryHeroVideoUrl?.trim()
-  if (single) return [single]
+  if (single && uploadVideoFileExists(single)) return [single]
   return [DEFAULT_DELIVERY_HERO_VIDEO]
 }
 
