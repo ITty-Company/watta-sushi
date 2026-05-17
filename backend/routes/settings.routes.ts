@@ -6,6 +6,7 @@ import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import { getUploadsDir } from '../lib/uploadsDir.js'
+import { cachePublicGet, PUBLIC_CACHE_SETTINGS_SEC } from '../lib/publicApiCache.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -332,7 +333,7 @@ router.post('/home-hero-video/upload', checkAdmin, (req, res) => {
 })
 
 // Получить настройки
-router.get('/', async (req, res) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_SETTINGS_SEC), async (req, res) => {
   try {
     let settings = await prisma.siteSetting.findUnique({ where: { id: 1 } })
     if (!settings) {

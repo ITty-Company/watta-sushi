@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
+import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC, PUBLIC_CACHE_MENU_SEC } from '../lib/publicApiCache.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -29,7 +30,7 @@ function whereVisibleInCity(cityId: number | null) {
 }
 
 // 1. Получить ВСЕ товары (с фильтрацией по городу)
-router.get('/', async (req, res) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req, res) => {
   try {
     const cityId = req.query.cityId ? parseInt(req.query.cityId as string) : null;
     const cityWhere = whereVisibleInCity(Number.isFinite(cityId) && cityId > 0 ? cityId! : null);
@@ -48,7 +49,7 @@ router.get('/', async (req, res) => {
 });
 
 // 2. Получить ВСЕ категории (ВАЖНО: должен быть ПЕРЕД роутом /:id)
-router.get('/categories', async (req, res) => {
+router.get('/categories', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req, res) => {
   try {
     const categories = await prisma.category.findMany({
       orderBy: { order: 'asc' }
@@ -369,7 +370,7 @@ router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/recommendations', async (req: any, res: any) => {
+router.get('/recommendations', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req: any, res: any) => {
   try {
     const excludeId = req.query.excludeId ? parseInt(String(req.query.excludeId), 10) : null;
     const cityId = req.query.cityId ? parseInt(String(req.query.cityId), 10) : null;
@@ -416,7 +417,7 @@ router.get('/recommendations', async (req: any, res: any) => {
 // ============================================
 
 // 6. Получить один товар по ID
-router.get('/:id', async (req: any, res: any) => {
+router.get('/:id', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req: any, res: any) => {
   const { id } = req.params;
   try {
     // Проверка на категории, если вдруг запрос пролетел

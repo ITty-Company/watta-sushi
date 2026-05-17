@@ -54,6 +54,7 @@ import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPrefer
 import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSiteLocalePrefs'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 
 /**
  * Усе, що показується тільки при `activePage !== null` — тягнемо `next/dynamic` без SSR.
@@ -696,11 +697,7 @@ export default function MenuView() {
       }
     }
 
-    fetch('/api/cities', {
-      headers: {
-        'Cache-Control': 'max-age=600' // 10 минут кэша
-      }
-    })
+    fetchPublicApi('/api/cities')
       .then((res) => {
         if (!res.ok) {
           console.error('Ошибка загрузки городов:', res.status, res.statusText)
@@ -756,9 +753,9 @@ export default function MenuView() {
         /* ignore */
       }
     }
-    const fetchSettings = async () => {
+    const fetchSettings = async (fresh = false) => {
       try {
-        const res = await fetch('/api/settings', { cache: 'no-store' })
+        const res = await (fresh ? fetchPublicApiFresh : fetchPublicApi)('/api/settings')
         if (res.ok) applySettings(await res.json())
       } catch (e) {
         console.error('Error loading settings', e)
@@ -771,7 +768,7 @@ export default function MenuView() {
         homeHeroVideoUrl: detail?.url,
       })
       if (fromEvent.length > 0) setHomeHeroVideoUrls(fromEvent)
-      else void fetchSettings()
+      else void fetchSettings(true)
     }
     void fetchSettings()
     window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
@@ -1114,18 +1111,12 @@ export default function MenuView() {
           setMenuItems(mapProductsToItems(data))
           // Если кэш свежий — только фоновое обновление
           if ((now - parseInt(cacheTime, 10)) < CACHE_TTL) {
-            fetch(url, {
-              cache: 'no-store',
-              headers: { 'Cache-Control': 'no-cache' },
-            })
+            fetchPublicApi(url)
               .then((res) => (res.ok ? res.json() : []))
               .then((data) => {
                 const list = Array.isArray(data) ? data : []
                 if (cityIdToUse && list.length === 0) {
-                  fetch('/api/products', {
-                    cache: 'no-store',
-                    headers: { 'Cache-Control': 'no-cache' },
-                  })
+                  fetchPublicApi('/api/products')
                     .then((r) => {
                       if (!r.ok) {
                         setHomeMenuProductsLoadFailed(true)
@@ -1160,10 +1151,7 @@ export default function MenuView() {
       } catch (_) { /* кэш повреждён */ }
     }
 
-    fetch(url, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' },
-    })
+    fetchPublicApi(url)
       .then(res => {
         if (!res.ok) {
           console.error('Ошибка загрузки товаров:', res.status, res.statusText)
@@ -1175,10 +1163,7 @@ export default function MenuView() {
       .then((data) => {
         const list = Array.isArray(data) ? data : []
         if (cityIdToUse && list.length === 0) {
-          fetch('/api/products', {
-            cache: 'no-store',
-            headers: { 'Cache-Control': 'no-cache' },
-          })
+          fetchPublicApi('/api/products')
             .then((r) => {
               if (!r.ok) {
                 setHomeMenuProductsLoadFailed(true)
@@ -1303,7 +1288,7 @@ export default function MenuView() {
       const raw = parseCategoriesCacheJson(cached)
       if (raw) {
         applyCategories(mapApi(raw))
-        fetch('/api/products/categories', { cache: 'no-store' })
+        fetchPublicApi('/api/products/categories')
           .then((res) => {
             if (!res.ok) throw new Error(String(res.status))
             return res.json()
@@ -1332,7 +1317,7 @@ export default function MenuView() {
       applyCategories(updatedCategories)
     }
 
-    fetch('/api/products/categories', { cache: 'no-store' })
+    fetchPublicApi('/api/products/categories')
       .then((res) => {
         if (!res.ok) throw new Error(String(res.status))
         return res.json()
@@ -2152,7 +2137,7 @@ export default function MenuView() {
   if (activePage === 'admin') {
     return (
       <>
-        <div className="full-page-web full-page-web--craft">
+        <div className="full-page-web full-page-web--craft full-page-web--admin">
           <AdminView onBack={handleClosePage} onSiteMenuClick={toggleSidebar} />
         </div>
         <NavigationSidebar

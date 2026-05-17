@@ -25,6 +25,7 @@ import {
 } from '@/lib/wattaSiteLocalePrefs'
 import { getDeliveryHeroVideoSources } from '@/lib/deliveryHeroVideoSources'
 import { parseDeliveryHeroVideoUrlsFromApi } from '@/lib/deliveryHeroVideoSettings'
+import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import {
   WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT,
   getPrimaryDeliveryHeroVideoSrc,
@@ -271,9 +272,9 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
       const urls = parseDeliveryHeroVideoUrlsFromApi(data)
       if (urls.length > 0) setDeliveryHeroAdminUrls(urls)
     }
-    const fetchSettings = async () => {
+    const fetchSettings = async (fresh = false) => {
       try {
-        const res = await fetch('/api/settings', { cache: 'no-store' })
+        const res = await (fresh ? fetchPublicApiFresh : fetchPublicApi)('/api/settings')
         if (res.ok) applySettings(await res.json())
       } catch {
         /* ignore */
@@ -286,7 +287,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
         deliveryHeroVideoUrl: detail?.url,
       })
       if (fromEvent.length > 0) setDeliveryHeroAdminUrls(fromEvent)
-      else void fetchSettings()
+      else void fetchSettings(true)
     }
     void fetchSettings()
     window.addEventListener(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)

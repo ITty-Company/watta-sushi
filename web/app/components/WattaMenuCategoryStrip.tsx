@@ -9,6 +9,7 @@ import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCat
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG, WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { getApiUrl } from '@/lib/utils'
+import { fetchPublicApi } from '@/lib/publicApiFetch'
 
 type MenuCategory = {
   id: string
@@ -143,7 +144,7 @@ function WattaMenuCategoryStripInner() {
       const raw = parseCategoriesCacheJson(cached)
       if (raw) {
         applyCategories(mapApi(raw))
-        fetch('/api/products/categories', { cache: 'no-store' })
+        fetchPublicApi('/api/products/categories')
           .then((res) => res.json())
           .then((data) => {
             const list = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
@@ -158,7 +159,7 @@ function WattaMenuCategoryStripInner() {
       }
     }
 
-    fetch('/api/products/categories', { cache: 'no-store' })
+    fetchPublicApi('/api/products/categories')
       .then((res) => res.json())
       .then((data) => {
         const list = Array.isArray(data) ? (data as Record<string, unknown>[]) : []

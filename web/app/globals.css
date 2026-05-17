@@ -15456,6 +15456,191 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   }
 }
 
+/* --- Admin panel: mobile / touch scroll --- */
+.admin-shell-watta-web {
+  min-height: 100dvh;
+  min-height: 100svh;
+  overflow-x: clip;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.admin-watta-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-watta-page-inner {
+  min-width: 0;
+  max-width: 100%;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+}
+
+.admin-watta-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 81, 66, 0.35) transparent;
+}
+
+.admin-watta-scroll-x::-webkit-scrollbar {
+  height: 6px;
+}
+
+.admin-watta-scroll-x::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(20, 81, 66, 0.35);
+}
+
+.admin-watta-scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+.admin-watta-modal-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overscroll-behavior: contain;
+}
+
+.admin-watta-modal-panel {
+  width: 100%;
+  max-width: 32rem;
+  max-height: min(90dvh, 90vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.admin-watta-modal-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+body.admin-watta-overlay-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.full-page-web--admin {
+  overflow-x: clip;
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding-bottom: max(5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.admin-page-root {
+  min-height: 100dvh;
+  min-height: 100svh;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 639px) {
+  .admin-watta-header-inner {
+    height: 3.5rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .admin-watta-header-subtitle {
+    display: none;
+  }
+
+  .admin-watta-header-title-wrap {
+    min-width: 0;
+  }
+
+  .admin-watta-header-title {
+    font-size: 0.95rem !important;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: min(42vw, 11rem);
+  }
+
+  .admin-watta-header-brand-badge {
+    display: none;
+  }
+
+  .admin-watta-tab-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-watta-tab-toolbar button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-watta-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .admin-watta-modal-panel {
+    max-width: 100%;
+    max-height: min(92dvh, 92vh);
+    border-radius: 1.35rem 1.35rem 0 0;
+    margin-top: auto;
+  }
+
+  .admin-watta-drawer-shell {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+  }
+
+  .admin-watta-drawer-scroll {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .admin-watta-page-inner {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .admin-watta-crm-table {
+    min-width: 36rem;
+  }
+
+  .admin-watta-dashboard .recharts-wrapper {
+    max-width: 100%;
+  }
+
+  .admin-watta-dashboard .recharts-surface {
+    overflow: visible;
+  }
+
+  .admin-watta-scroll-hint::after {
+    content: '';
+    position: sticky;
+    right: 0;
+    top: 0;
+    float: right;
+    width: 2rem;
+    height: 100%;
+    margin-right: -0.5rem;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(248, 252, 250, 0.95));
+  }
+}
+
 /* Menu / профіль у вкладці — без власної підкладки: фон і смуга з .content-web--watta-craft, водяні знаки LogoBackground */
 .menu-page-web {
   flex: 1 1 auto;

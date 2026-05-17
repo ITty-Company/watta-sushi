@@ -379,7 +379,7 @@ export default function LogoBackground({ variant = 'default' }: LogoBackgroundPr
       {logos.map((logo, index) => (
         <div
           key={index}
-          className="absolute"
+          className="absolute bg-center bg-no-repeat bg-contain"
           style={{
             left: `${logo.x}px`,
             top: `${logo.y}px`,
@@ -387,22 +387,10 @@ export default function LogoBackground({ variant = 'default' }: LogoBackgroundPr
             height: `${logo.size}px`,
             opacity: logo.opacity,
             transform: `rotate(${logo.rotation}deg)`,
-            willChange: 'auto',
+            backgroundImage: 'url(/logo.webp)',
+            contentVisibility: 'auto',
           }}
-        >
-          <img
-            src="/logo.png"
-            alt=""
-            className="w-full h-full object-contain"
-            loading="lazy"
-            decoding="async"
-            fetchPriority="low"
-            style={{
-              willChange: 'auto',
-              contentVisibility: 'auto'
-            }}
-          />
-        </div>
+        />
       ))}
     </div>
   )

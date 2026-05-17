@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { getUploadsDir } from '../lib/uploadsDir.js';
+import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -70,7 +71,7 @@ function normalizeImageUrl(value: unknown): string | null {
 }
 
 // 1. Получить все активные баннеры (отсортированные по порядку)
-router.get('/', async (req, res) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req, res) => {
   try {
     const banners = await prisma.banner.findMany({
       where: {

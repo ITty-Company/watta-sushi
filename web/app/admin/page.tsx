@@ -49,7 +49,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="watta-page-bg flex w-full max-w-[100vw] flex-1 flex-col">
+    <div className="admin-page-root watta-page-bg flex w-full max-w-[100vw] min-h-0 flex-1 flex-col">
       <AdminView onBack={() => router.push('/')} onSiteMenuClick={() => router.push('/')} />
     </div>
   )

@@ -1,3 +1,5 @@
+import { fetchPublicApi } from '@/lib/publicApiFetch'
+
 /**
  * Single-flight fetch + short TTL cache for `/api/countries`.
  * CountryCitySelector mounts twice (header + drawer); sharing one request avoids duplicate loads and effect races.
@@ -30,7 +32,7 @@ async function fetchCountriesFromNetwork(): Promise<Row[]> {
       ? window.setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS)
       : undefined
   try {
-    const res = await fetch('/api/countries', { cache: 'no-store', signal: ac.signal })
+    const res = await fetchPublicApi('/api/countries', { signal: ac.signal })
     if (!res.ok) throw new Error(String(res.status))
     const data = await res.json()
     return Array.isArray(data) ? (data as Row[]) : []

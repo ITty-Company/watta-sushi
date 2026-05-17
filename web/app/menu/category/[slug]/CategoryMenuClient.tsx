@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
+import { fetchPublicApi } from '@/lib/publicApiFetch'
 import LogoBackground from '../../../components/LogoBackground'
 import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
@@ -99,7 +100,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
 
   const loadCategoriesTitle = useCallback(async () => {
     try {
-      const res = await fetch(getApiUrl('/api/products/categories'), { cache: 'no-store' })
+      const res = await fetchPublicApi(getApiUrl('/api/products/categories'))
       if (!res.ok) return
       const data = await res.json()
       const rows: MenuCategoryRow[] = (data || [])
@@ -122,19 +123,13 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
       const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
       const hasCity = cityId != null && cityId > 0
       const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
-      const scopedRes = await fetch(scopedUrl, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' },
-      })
+      const scopedRes = await fetchPublicApi(scopedUrl)
       const scopedData = scopedRes.ok ? await scopedRes.json() : []
       const scopedList = Array.isArray(scopedData) ? scopedData : []
       const rawProducts =
         hasCity && scopedList.length === 0
           ? await (async () => {
-              const fallbackRes = await fetch(getApiUrl('/api/products'), {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache' },
-              })
+              const fallbackRes = await fetchPublicApi(getApiUrl('/api/products'))
               const fallbackData = fallbackRes.ok ? await fallbackRes.json() : []
               return Array.isArray(fallbackData) ? fallbackData : []
             })()

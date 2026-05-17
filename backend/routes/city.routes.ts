@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
+import { cachePublicGet, PUBLIC_CACHE_GEO_SEC } from '../lib/publicApiCache.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Получить все города
-router.get('/', async (req, res) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_GEO_SEC), async (req, res) => {
   try {
     const cities = await prisma.city.findMany({
       where: { isActive: true },

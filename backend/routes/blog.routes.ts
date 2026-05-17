@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
+import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (_req: Request, res: Response) => {
   try {
     const posts = await prisma.blogPost.findMany({
       where: { isPublished: true },
@@ -30,7 +31,7 @@ router.get('/all', checkAdmin, async (_req: Request, res: Response) => {
   }
 });
 
-router.get('/:slug', async (req: Request, res: Response) => {
+router.get('/:slug', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
     const post = await prisma.blogPost.findUnique({

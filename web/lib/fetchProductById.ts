@@ -1,4 +1,5 @@
 import { getApiUrl } from '@/lib/utils'
+import { fetchPublicApi } from '@/lib/publicApiFetch'
 import { menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 
@@ -50,11 +51,7 @@ async function fetchProductList(
 
   for (const url of urls) {
     try {
-      const res = await fetch(url, {
-        signal,
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' },
-      })
+      const res = await fetchPublicApi(url, { signal })
       if (!res.ok) continue
       const data = (await res.json()) as unknown
       if (!Array.isArray(data)) continue
@@ -75,11 +72,7 @@ export async function fetchProductById(
   signal?: AbortSignal,
 ): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(getApiUrl(`/api/products/${id}`), {
-      signal,
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' },
-    })
+    const res = await fetchPublicApi(getApiUrl(`/api/products/${id}`), { signal })
     if (res.ok) {
       const body = (await res.json()) as unknown
       if (body && typeof body === 'object') return body as Record<string, unknown>
