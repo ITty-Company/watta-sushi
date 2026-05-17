@@ -88,7 +88,7 @@ function VideoSlotGrid({
                     controls
                     muted
                     playsInline
-                    preload="metadata"
+                    preload="none"
                   />
                 ) : (
                   <div className="flex aspect-[9/16] max-h-[280px] w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45">
