@@ -89,12 +89,26 @@ function VideoSlotGrid({
                     muted
                     playsInline
                     preload="none"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      const hint = e.currentTarget.nextElementSibling
+                      if (hint instanceof HTMLElement) hint.hidden = false
+                    }}
                   />
-                ) : (
+                ) : null}
+                {previewSrc ? (
+                  <motion.div
+                    hidden
+                    className="admin-hero-video-preview-missing !aspect-[9/16] !max-h-[280px]"
+                  >
+                    <span className="font-semibold">Відео на сервері недоступне</span>
+                  </motion.div>
+                ) : null}
+                {!previewSrc ? (
                   <div className="flex aspect-[9/16] max-h-[280px] w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45">
                     —
                   </div>
-                )}
+                ) : null}
               </div>
               {previewSrc && !slot.pendingFile ? (
                 <p className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55" title={slot.savedUrl ?? ''}>

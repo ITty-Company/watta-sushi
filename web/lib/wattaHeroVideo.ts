@@ -48,6 +48,11 @@ function dedupeAdminUrls(adminUrls?: readonly string[] | null): string[] {
  * 1) URL з адмінки (файл 1:1 через multipart, без перекодування)
  * 2) запасні mp4 з `public/` — лише якщо адмінського немає або onError
  */
+/** Локальні /uploads з адмінки — на проді без диска часто 404; клієнт може відфільтрувати після probe. */
+export function isAdminUploadHeroPath(url: string): boolean {
+  return url.trim().startsWith('/uploads/')
+}
+
 export function buildHomeHeroPlaylist(adminUrls?: readonly string[] | null): readonly string[] {
   const admin = dedupeAdminUrls(adminUrls)
   const seen = new Set<string>()
@@ -66,6 +71,44 @@ export function buildHomeHeroPlaylist(adminUrls?: readonly string[] | null): rea
   }
 
   return out.length > 0 ? out : [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
+}
+
+/** HEAD/GET — чи відповідає mp4 (не HTML 404 від проксі). */
+export async function probeHeroVideoUrl(url: string, signal?: AbortSignal): Promise<boolean> {
+  const src = url.trim()
+  if (!src || src.startsWith('blob:')) return true
+  try {
+    const res = await fetch(src, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-1' },
+      cache: 'no-store',
+      signal,
+    })
+    if (!res.ok) return false
+    const ct = res.headers.get('content-type') ?? ''
+    if (ct.includes('text/html')) return false
+    return ct.startsWith('video/') || ct.includes('octet-stream') || res.status === 206
+  } catch {
+    return false
+  }
+}
+
+/** Залишає лише URL, з яких реально можна зчитати відео; якщо всі мертві — лише fallbacks. */
+export async function filterReachableHeroUrls(
+  urls: readonly string[],
+  signal?: AbortSignal,
+): Promise<string[]> {
+  const admin = dedupeAdminUrls(urls)
+  const reachable: string[] = []
+  for (const u of admin) {
+    if (!isAdminUploadHeroPath(u)) {
+      reachable.push(u)
+      continue
+    }
+    if (await probeHeroVideoUrl(u, signal)) reachable.push(u)
+  }
+  if (reachable.length > 0) return reachable
+  return []
 }
 
 /** Перший src для <video> / preload — завжди оригінал з адмінки, якщо є. */

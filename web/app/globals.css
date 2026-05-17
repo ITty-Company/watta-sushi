@@ -15532,14 +15532,25 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 
 body.admin-watta-overlay-open {
   overflow: hidden;
-  touch-action: none;
+  /* Не touch-action: none — на iOS/Safari блокує кліки по кнопках «Зберегти» та завантаження. */
 }
 
 .full-page-web--admin {
   overflow-x: clip;
+  overflow-y: visible;
   min-height: 100dvh;
   min-height: 100svh;
   padding-bottom: max(5rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Адмінка з головної (всередині .content-web): довгий таб «Баннери» має скролитись повністю */
+.content-web--watta-craft:has(.full-page-web--admin) {
+  overflow-y: auto !important;
+  overflow-x: clip;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .admin-page-root {
@@ -15547,6 +15558,7 @@ body.admin-watta-overlay-open {
   min-height: 100svh;
   min-width: 0;
   flex: 1 1 auto;
+  overflow-y: visible;
 }
 
 @media (max-width: 639px) {
@@ -15660,7 +15672,23 @@ body.admin-watta-overlay-open {
 }
 
 .admin-shell-watta-web .admin-banners-tab-shell {
-  contain: layout style;
+  contain: none;
+}
+
+.admin-hero-video-preview-missing {
+  display: flex;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: rgba(20, 81, 66, 0.08);
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.65rem;
+  line-height: 1.35;
+  color: rgba(20, 81, 66, 0.72);
 }
 
 /* Menu / профіль у вкладці — без власної підкладки: фон і смуга з .content-web--watta-craft, водяні знаки LogoBackground */

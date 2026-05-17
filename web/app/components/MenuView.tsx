@@ -41,6 +41,7 @@ import { formatProductWeightSubtitle } from '@/lib/i18n/parseProductSpecsFromDes
 import {
   buildHomeHeroPlaylist,
   buildHomeHeroVideoSources,
+  filterReachableHeroUrls,
   getPrimaryHomeHeroVideoSrc,
   WATTA_HOME_HERO_POSTER,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
@@ -301,6 +302,25 @@ function WelcomeHeroSection({
     primeHeroVideoElement(video)
   }, [heroVideoSrc, heroVideoRef])
 
+  const advanceHeroVideoSource = useCallback(() => {
+    setHeroVideoSourceIndex((prev) => {
+      if (prev < videoSources.length - 1) return prev + 1
+      setHeroVideoFailed(true)
+      return prev
+    })
+  }, [setHeroVideoSourceIndex, setHeroVideoFailed, videoSources.length])
+
+  /** Битий /uploads на проді інколи не дає onError — таймаут до першого кадру → наступний src. */
+  useEffect(() => {
+    if (heroVideoFailed || heroFrameReady) return
+    const t = window.setTimeout(() => {
+      const v = heroVideoRef.current
+      if (v && v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return
+      advanceHeroVideoSource()
+    }, 4500)
+    return () => window.clearTimeout(t)
+  }, [heroVideoSrc, heroVideoFailed, heroFrameReady, heroVideoRef, advanceHeroVideoSource])
+
   return (
     <section
       ref={sectionRef}
@@ -380,12 +400,11 @@ function WelcomeHeroSection({
                 const v = heroVideoRef.current
                 if (v && !v.ended) primeHeroVideoElement(v)
               }}
-              onError={() => {
-                setHeroVideoSourceIndex((prev) => {
-                  if (prev < videoSources.length - 1) return prev + 1
-                  setHeroVideoFailed(true)
-                  return prev
-                })
+              onError={advanceHeroVideoSource}
+              onStalled={advanceHeroVideoSource}
+              onEmptied={() => {
+                const v = heroVideoRef.current
+                if (v?.error) advanceHeroVideoSource()
               }}
               onEnded={() => {
                 if (playlistLength <= 1) return
@@ -737,6 +756,8 @@ export default function MenuView() {
   }, [])
 
   useEffect(() => {
+    let probeAbort: AbortController | null = null
+
     const applySettings = (data: {
       bannerInterval?: number
       homeHeroVideoUrl?: string
@@ -752,7 +773,25 @@ export default function MenuView() {
       } catch {
         /* ignore */
       }
+      if (!urls.some((u) => u.startsWith('/uploads/'))) return
+      probeAbort?.abort()
+      probeAbort = new AbortController()
+      const signal = probeAbort.signal
+      void filterReachableHeroUrls(urls, signal).then((reachable) => {
+        if (signal.aborted || reachable.length === 0) return
+        setHomeHeroVideoUrls((prev) => {
+          const next = buildHomeHeroPlaylist(reachable)
+          if (prev.length === next.length && prev.every((u, i) => u === next[i])) return prev
+          try {
+            sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(reachable))
+          } catch {
+            /* ignore */
+          }
+          return [...next]
+        })
+      })
     }
+
     const fetchSettings = async (fresh = false) => {
       try {
         const res = await (fresh ? fetchPublicApiFresh : fetchPublicApi)('/api/settings')
@@ -761,18 +800,23 @@ export default function MenuView() {
         console.error('Error loading settings', e)
       }
     }
+
     const onHeroUpdated = (ev: Event) => {
       const detail = (ev as CustomEvent<{ url?: string; urls?: string[] }>).detail
       const fromEvent = parseHomeHeroVideoUrlsFromApi({
         homeHeroVideoUrls: detail?.urls,
         homeHeroVideoUrl: detail?.url,
       })
-      if (fromEvent.length > 0) setHomeHeroVideoUrls(fromEvent)
+      if (fromEvent.length > 0) applySettings({ homeHeroVideoUrls: fromEvent, homeHeroVideoUrl: fromEvent[0] })
       else void fetchSettings(true)
     }
+
     void fetchSettings()
     window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
-    return () => window.removeEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+    return () => {
+      probeAbort?.abort()
+      window.removeEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+    }
   }, [])
 
   // --- ЗАГРУЗКА БАННЕРОВ ---
