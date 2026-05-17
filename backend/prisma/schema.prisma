@@ -246,8 +246,14 @@ model SiteSetting {
 
   /// Вхід / реєстрація: перше відео в симуляторі телефона (зворотна сумісність; дублює [0] з authHeroVideoUrls)
   authHeroVideoUrl String @default("/watta-sushi-2-hero.mp4")
-  /// JSON-масив шляхів — плейлист у «телефоні» на /login та /register (лише планшет / десктоп)
+  /// JSON-масив шляхів — плейлист у передньому «телефоні» на /login та /register
   authHeroVideoUrls String @default("[]")
+  /// JSON-масив — плейлист у другому (задньому) телефоні на сторінці входу
+  authHeroPhone2VideoUrls String @default("[]")
+  /// JSON: { uk, ru, en, nl } → { title, subtitle, benefits[3] } для першого телефона
+  authHeroPhone1Copy String @default("{}")
+  /// JSON: те саме для другого телефона
+  authHeroPhone2Copy String @default("{}")
 
   telegramUrl             String @default("")
   whatsappUrl             String @default("")

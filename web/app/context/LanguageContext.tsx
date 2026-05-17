@@ -18,7 +18,7 @@ export type Language = WattaLanguage
 /** Мова інтерфейсу адмін-панелі (окремо від мови сайту). */
 export type AdminUiLanguage = 'uk' | 'ru'
 
-interface Translations {
+export interface Translations {
   common: {
     brandName: string
     brandShort: string
@@ -396,6 +396,9 @@ interface Translations {
     desktopHeroTitle: string
     /** Десктоп: підзаголовок */
     desktopHeroSub: string
+    /** Другий телефон на вході */
+    desktopHero2Title: string
+    desktopHero2Sub: string
     /** Орбітальні чипи на cinema-панелі */
     benefitHistory: string
     benefitBonuses: string
@@ -852,6 +855,10 @@ interface Translations {
       heroVideoTitle: string; heroVideoSubtitle: string;
       deliveryHeroVideoTitle: string; deliveryHeroVideoSubtitle: string;
       authHeroVideoTitle: string; authHeroVideoSubtitle: string;
+      authHeroPhone1Title: string; authHeroPhone2Title: string;
+      authHeroCopyTitle: string; authHeroCopySubtitle: string; authHeroCopyBenefits: string; authHeroCopyCityHint: string;
+      authHeroCopyLangUk: string; authHeroCopyLangRu: string; authHeroCopyLangEn: string; authHeroCopyLangNl: string;
+      authHeroSavePhones: string; authHeroPhonesSaved: string;
       heroVideoSlotLabel: string; heroVideoUpload: string;
       heroVideoSave: string; heroVideoSaving: string; heroVideoSaved: string; heroVideoError: string;
       heroVideoErrorAuth: string; heroVideoErrorMock: string; heroVideoErrorUpload: string;
@@ -1327,6 +1334,8 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Роли та суші — швидке замовлення',
       desktopHeroTitle: 'Улюблені роли — у кілька кліків',
       desktopHeroSub: 'Збережіть акаунт — історія замовлень, бонуси та швидке оформлення доставки.',
+      desktopHero2Title: 'Доставка в {{city}}',
+      desktopHero2Sub: 'Свіжі роли — швидко до дверей або самовивіз.',
       benefitHistory: 'Історія замовлень',
       benefitBonuses: 'Бонуси',
       benefitFast: 'Швидке замовлення',
@@ -1851,8 +1860,20 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Скільки завгодно роликів на головній. Перший — основний; якщо не завантажиться — підключиться наступний. Натисніть «Додати ролик» для нового слота.",
         deliveryHeroVideoTitle: "Відео на сторінці доставки",
         deliveryHeroVideoSubtitle: "Окремі ролики для /delivery — не плутати з головною. Перший — основний; далі запасні з public, якщо не завантажиться.",
-        authHeroVideoTitle: "Відео у «телефоні» на вході",
-        authHeroVideoSubtitle: "Ролики для /login та /register у симуляторі телефона (планшет і десктоп). Скільки завгодно слотів — відтворюються по черзі.",
+        authHeroVideoTitle: "Телефони на сторінці входу",
+        authHeroVideoSubtitle: "Два телефони на /login та /register: окремі відео та тексти для кожного. Скільки завгодно роликів у плейлисті.",
+        authHeroPhone1Title: "Передній телефон (більший)",
+        authHeroPhone2Title: "Задній телефон",
+        authHeroCopyTitle: "Заголовок",
+        authHeroCopySubtitle: "Підзаголовок",
+        authHeroCopyBenefits: "Чипи (3 рядки)",
+        authHeroCopyCityHint: "У заголовку можна {{city}} — підставиться місто з шапки сайту або геолокації.",
+        authHeroCopyLangUk: "Українська",
+        authHeroCopyLangRu: "Русский",
+        authHeroCopyLangEn: "English",
+        authHeroCopyLangNl: "Nederlands",
+        authHeroSavePhones: "Зберегти телефони входу",
+        authHeroPhonesSaved: "Телефони входу збережено",
         heroVideoAddBtn: "+ Додати ролик",
         heroVideoSlotLabel: "Відео {{n}}",
         heroVideoUpload: "Завантажити",
@@ -2207,6 +2228,8 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Роллы и суши — быстрый заказ',
       desktopHeroTitle: 'Любимые роллы — в пару кликов',
       desktopHeroSub: 'Аккаунт — история заказов, бонусы и быстрее оформление.',
+      desktopHero2Title: 'Доставка в {{city}}',
+      desktopHero2Sub: 'Свежие роллы — быстро к двери или самовывоз.',
       benefitHistory: 'История заказов',
       benefitBonuses: 'Бонусы',
       benefitFast: 'Быстрый заказ',
@@ -2731,8 +2754,20 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Сколько угодно роликов на главной. Первый — основной; если не загрузится — подключится следующий. Нажмите «Добавить ролик» для нового слота.",
         deliveryHeroVideoTitle: "Видео на странице доставки",
         deliveryHeroVideoSubtitle: "Отдельные ролики для /delivery — не путать с главной. Первый — основной; далее запасные из public, если не загрузится.",
-        authHeroVideoTitle: "Видео в «телефоне» на входе",
-        authHeroVideoSubtitle: "Ролики для /login и /register в симуляторе телефона (планшет и десктоп). Любое число слотов — по очереди.",
+        authHeroVideoTitle: "Телефоны на странице входа",
+        authHeroVideoSubtitle: "Два телефона на /login и /register: отдельные видео и тексты. Любое число роликов в плейлисте.",
+        authHeroPhone1Title: "Передний телефон (крупнее)",
+        authHeroPhone2Title: "Задний телефон",
+        authHeroCopyTitle: "Заголовок",
+        authHeroCopySubtitle: "Подзаголовок",
+        authHeroCopyBenefits: "Чипы (3 строки)",
+        authHeroCopyCityHint: "В заголовке можно {{city}} — подставится город из шапки или геолокации.",
+        authHeroCopyLangUk: "Українська",
+        authHeroCopyLangRu: "Русский",
+        authHeroCopyLangEn: "English",
+        authHeroCopyLangNl: "Nederlands",
+        authHeroSavePhones: "Сохранить телефоны входа",
+        authHeroPhonesSaved: "Телефоны входа сохранены",
         heroVideoAddBtn: "+ Добавить ролик",
         heroVideoSlotLabel: "Видео {{n}}",
         heroVideoUpload: "Загрузить",
@@ -3087,6 +3122,8 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Rolls & sushi — order fast',
       desktopHeroTitle: 'Your favourite rolls in a few taps',
       desktopHeroSub: 'Keep an account — order history, bonuses and faster checkout.',
+      desktopHero2Title: 'Delivery in {{city}}',
+      desktopHero2Sub: 'Fresh rolls — fast to your door or pickup.',
       benefitHistory: 'Order history',
       benefitBonuses: 'Bonuses',
       benefitFast: 'Fast checkout',
@@ -3611,8 +3648,20 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "As many clips as you need on the home page. First is primary; if it fails to load, the next plays. Click «Add clip» for a new slot.",
         deliveryHeroVideoTitle: "Delivery page hero video",
         deliveryHeroVideoSubtitle: "Separate clips for /delivery — not shared with home. First is primary; then public fallbacks if a clip fails.",
-        authHeroVideoTitle: "Login page phone simulator video",
-        authHeroVideoSubtitle: "Clips for /login and /register inside the phone mockup (tablet & desktop). Add as many slots as you need — they play in order.",
+        authHeroVideoTitle: "Login page phones",
+        authHeroVideoSubtitle: "Two phones on /login and /register: separate videos and copy per phone. Add as many clips as you need per playlist.",
+        authHeroPhone1Title: "Front phone (larger)",
+        authHeroPhone2Title: "Back phone",
+        authHeroCopyTitle: "Title",
+        authHeroCopySubtitle: "Subtitle",
+        authHeroCopyBenefits: "Chips (3 lines)",
+        authHeroCopyCityHint: "Use {{city}} in the title — replaced with the header city or geolocation.",
+        authHeroCopyLangUk: "Ukrainian",
+        authHeroCopyLangRu: "Russian",
+        authHeroCopyLangEn: "English",
+        authHeroCopyLangNl: "Dutch",
+        authHeroSavePhones: "Save login phones",
+        authHeroPhonesSaved: "Login phones saved",
         heroVideoAddBtn: "+ Add clip",
         heroVideoSlotLabel: "Video {{n}}",
         heroVideoUpload: "Upload",
@@ -3967,6 +4016,8 @@ const translations: Record<Language, Translations> = {
       promoStrip: 'Rolls en sushi — snel bestellen',
       desktopHeroTitle: 'Favoriete rolls in een paar tikken',
       desktopHeroSub: 'Met een account: bestelhistorie, bonussen en sneller afrekenen.',
+      desktopHero2Title: 'Bezorging in {{city}}',
+      desktopHero2Sub: 'Verse rolls — snel aan huis of afhalen.',
       benefitHistory: 'Bestelhistorie',
       benefitBonuses: 'Bonussen',
       benefitFast: 'Snel bestellen',
@@ -4491,8 +4542,20 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Zoveel clips als u wilt op de homepage. De eerste is primair; laadt die niet, dan de volgende. Klik op «Clip toevoegen» voor een nieuw slot.",
         deliveryHeroVideoTitle: "Hero-video bezorgpagina",
         deliveryHeroVideoSubtitle: "Aparte clips voor /delivery — niet dezelfde als homepage. Eerste is primair; daarna public-fallbacks bij laadfout.",
-        authHeroVideoTitle: "Video in telefoon op inlogpagina",
-        authHeroVideoSubtitle: "Clips voor /login en /register in de telefoonmockup (tablet & desktop). Zoveel slots als nodig — achter elkaar.",
+        authHeroVideoTitle: "Telefoons op inlogpagina",
+        authHeroVideoSubtitle: "Twee telefoons op /login en /register: aparte video's en teksten per telefoon. Zoveel clips als nodig per afspeellijst.",
+        authHeroPhone1Title: "Voorste telefoon (groter)",
+        authHeroPhone2Title: "Achterste telefoon",
+        authHeroCopyTitle: "Titel",
+        authHeroCopySubtitle: "Ondertitel",
+        authHeroCopyBenefits: "Chips (3 regels)",
+        authHeroCopyCityHint: "Gebruik {{city}} in de titel — wordt de stad uit de header of geolocatie.",
+        authHeroCopyLangUk: "Oekraïens",
+        authHeroCopyLangRu: "Russisch",
+        authHeroCopyLangEn: "Engels",
+        authHeroCopyLangNl: "Nederlands",
+        authHeroSavePhones: "Inlogtelefoons opslaan",
+        authHeroPhonesSaved: "Inlogtelefoons opgeslagen",
         heroVideoAddBtn: "+ Clip toevoegen",
         heroVideoSlotLabel: "Video {{n}}",
         heroVideoUpload: "Uploaden",

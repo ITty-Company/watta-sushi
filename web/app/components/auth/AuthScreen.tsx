@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useMemo, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -17,7 +17,16 @@ import LogoBackground from '../LogoBackground'
 import WattaAppRouteLoading from '../WattaAppRouteLoading'
 import AuthCinemaPanel from './AuthCinemaPanel'
 import { parseAuthHeroVideoUrlsFromApi } from '@/lib/authHeroVideoSettings'
-import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaAuthHeroVideo'
+import {
+  applyCityPlaceholdersToAuthHeroCopy,
+  applyCityPlaceholdersToText,
+  parseAuthHeroPhone2VideoUrlsFromApi,
+  parseAuthHeroPhoneCopyFromApi,
+  resolveAuthHeroPhoneCopy,
+  type AuthHeroPhoneCopyMap,
+} from '@/lib/authHeroPhoneSettings'
+import { useAuthHeroDeliveryCity } from '@/hooks/useAuthHeroDeliveryCity'
+import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, type AuthHeroPhonesUpdatedDetail } from '@/lib/wattaAuthHeroVideo'
 import { useLanguage } from '../../context/LanguageContext'
 import toast from 'react-hot-toast'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
@@ -70,6 +79,7 @@ function AuthScreenBody({
 }: AuthScreenBodyProps) {
   const { t, language } = useLanguage()
   const router = useRouter()
+  const deliveryCityName = useAuthHeroDeliveryCity(language, variant === 'page')
 
   const [isRegister, setIsRegister] = useState(initialRegister)
   const [showPassword, setShowPassword] = useState(false)
@@ -86,16 +96,19 @@ function AuthScreenBody({
 
   const [isVerifying, setIsVerifying] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
-  const [authHeroAdminUrls, setAuthHeroAdminUrls] = useState<string[]>([])
+  const [authHeroPhone1Urls, setAuthHeroPhone1Urls] = useState<string[]>([])
+  const [authHeroPhone2Urls, setAuthHeroPhone2Urls] = useState<string[]>([])
+  const [authHeroPhone1Copy, setAuthHeroPhone1Copy] = useState<AuthHeroPhoneCopyMap>({})
+  const [authHeroPhone2Copy, setAuthHeroPhone2Copy] = useState<AuthHeroPhoneCopyMap>({})
 
   useEffect(() => {
     if (variant !== 'page') return
-    const applySettings = (data: {
-      authHeroVideoUrl?: string
-      authHeroVideoUrls?: string[]
-    }) => {
+    const applySettings = (data: Record<string, unknown>) => {
       const urls = parseAuthHeroVideoUrlsFromApi(data)
-      if (urls.length > 0) setAuthHeroAdminUrls(urls)
+      if (urls.length > 0) setAuthHeroPhone1Urls(urls)
+      setAuthHeroPhone2Urls(parseAuthHeroPhone2VideoUrlsFromApi(data))
+      setAuthHeroPhone1Copy(parseAuthHeroPhoneCopyFromApi(data.authHeroPhone1Copy))
+      setAuthHeroPhone2Copy(parseAuthHeroPhoneCopyFromApi(data.authHeroPhone2Copy))
     }
     const fetchSettings = async () => {
       try {
@@ -106,13 +119,16 @@ function AuthScreenBody({
       }
     }
     const onHeroUpdated = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ url?: string; urls?: string[] }>).detail
+      const detail = (ev as CustomEvent<AuthHeroPhonesUpdatedDetail>).detail
       const fromEvent = parseAuthHeroVideoUrlsFromApi({
         authHeroVideoUrls: detail?.urls,
         authHeroVideoUrl: detail?.url,
       })
-      if (fromEvent.length > 0) setAuthHeroAdminUrls(fromEvent)
-      else void fetchSettings()
+      if (fromEvent.length > 0) setAuthHeroPhone1Urls(fromEvent)
+      if (detail?.phone2Urls) setAuthHeroPhone2Urls(detail.phone2Urls)
+      if (detail?.phone1Copy) setAuthHeroPhone1Copy(parseAuthHeroPhoneCopyFromApi(detail.phone1Copy))
+      if (detail?.phone2Copy) setAuthHeroPhone2Copy(parseAuthHeroPhoneCopyFromApi(detail.phone2Copy))
+      if (!fromEvent.length && !detail?.phone2Urls) void fetchSettings()
     }
     void fetchSettings()
     window.addEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
@@ -281,29 +297,87 @@ function AuthScreenBody({
           : 'Назад',
   }
 
-  const cinemaBenefits: [{ label: string }, { label: string }, { label: string }] = [
-    { label: t.auth.benefitHistory },
-    { label: t.auth.benefitBonuses },
-    { label: t.auth.benefitFast },
-  ]
+  const cinemaFallbackPrimary = useMemo(
+    () => ({
+      title: t.auth.desktopHeroTitle,
+      subtitle: t.auth.desktopHeroSub,
+      benefits: [t.auth.benefitHistory, t.auth.benefitBonuses, t.auth.benefitFast] as [
+        string,
+        string,
+        string,
+      ],
+    }),
+    [t],
+  )
+
+  const cinemaFallbackSecondary = useMemo(
+    () => ({
+      title: applyCityPlaceholdersToText(t.auth.desktopHero2Title, deliveryCityName),
+      subtitle: t.auth.desktopHero2Sub,
+      benefits: [t.auth.benefitHistory, t.auth.benefitBonuses, t.auth.benefitFast] as [
+        string,
+        string,
+        string,
+      ],
+    }),
+    [t, deliveryCityName],
+  )
+
+  const cinemaPrimary = useMemo(() => {
+    const copy = applyCityPlaceholdersToAuthHeroCopy(
+      resolveAuthHeroPhoneCopy(authHeroPhone1Copy, language, cinemaFallbackPrimary),
+      deliveryCityName,
+    )
+    return {
+      title: copy.title,
+      subtitle: copy.subtitle,
+      benefits: copy.benefits.map((label) => ({ label })) as [
+        { label: string },
+        { label: string },
+        { label: string },
+      ],
+      videoUrls: authHeroPhone1Urls,
+    }
+  }, [authHeroPhone1Copy, authHeroPhone1Urls, language, cinemaFallbackPrimary, deliveryCityName])
+
+  const cinemaSecondary = useMemo(() => {
+    const copy = applyCityPlaceholdersToAuthHeroCopy(
+      resolveAuthHeroPhoneCopy(authHeroPhone2Copy, language, cinemaFallbackSecondary),
+      deliveryCityName,
+    )
+    return {
+      title: copy.title,
+      subtitle: copy.subtitle,
+      benefits: copy.benefits.map((label) => ({ label })) as [
+        { label: string },
+        { label: string },
+        { label: string },
+      ],
+      videoUrls: authHeroPhone2Urls,
+    }
+  }, [authHeroPhone2Copy, authHeroPhone2Urls, language, cinemaFallbackSecondary, deliveryCityName])
 
   const backFab =
     variant === 'page' ? (
-      <Link href="/" className="auth-watta-back-fab" aria-label={t.auth.back}>
-        <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
-        <span>{t.auth.back}</span>
+      <Link href="/" className="auth-watta-back-fab">
+        <span className="auth-watta-back-fab__icon" aria-hidden>
+          <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
+        </span>
+        <span className="auth-watta-back-fab__text">{t.auth.back}</span>
       </Link>
     ) : (
       <button type="button" onClick={onBack} className="auth-watta-back-fab auth-watta-back-fab--modal">
-        <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
-        <span>{t.auth.back}</span>
+        <span className="auth-watta-back-fab__icon" aria-hidden>
+          <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
+        </span>
+        <span className="auth-watta-back-fab__text">{t.auth.back}</span>
       </button>
     )
 
   if (isVerifying) {
     return (
       <div className="auth-watta-root auth-watta-page-shell auth-watta-page-lock flex flex-col relative overflow-hidden">
-        <LogoBackground />
+        <LogoBackground variant="auth" />
         {backFab}
         <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-3 py-2 sm:px-4 sm:py-4">
           <div className="auth-watta-verify-card w-full max-w-md shrink-0 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
@@ -358,37 +432,34 @@ function AuthScreenBody({
 
   return (
     <div className={shellClass}>
-      <LogoBackground />
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/40 via-transparent to-[#145142]/[0.08]" aria-hidden />
+      <LogoBackground variant="auth" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/22 via-white/5 to-[#145142]/[0.06]" aria-hidden />
 
       {backFab}
 
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-2 px-2.5 pt-12 sm:px-4 sm:pt-14 md:grid md:grid-cols-2 md:items-stretch md:gap-4 md:px-6 md:pt-14">
+      <div
+        className={
+          variant === 'page'
+            ? 'auth-watta-page-grid relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 px-2.5 pt-14 pb-6 sm:px-4 sm:pt-16 sm:pb-8 md:grid md:grid-cols-2 md:items-center md:gap-6 md:px-6 md:pt-[4.5rem] md:pb-10'
+            : 'relative z-10 mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-2.5 pt-12 sm:px-4 sm:pt-14'
+        }
+      >
         {variant === 'page' && (
-          <div className="shrink-0 md:hidden">
-            <AuthCinemaPanel
-              compact
-              title={t.auth.desktopHeroTitle}
-              subtitle={t.auth.desktopHeroSub}
-              brandName={t.common.brandName}
-              benefits={cinemaBenefits}
-              videoUrls={authHeroAdminUrls}
-            />
-          </div>
+          <AuthCinemaPanel compact brandName={t.common.brandName} primary={cinemaPrimary} secondary={cinemaSecondary} />
         )}
 
         {variant === 'page' && (
-          <AuthCinemaPanel
-            title={t.auth.desktopHeroTitle}
-            subtitle={t.auth.desktopHeroSub}
-            brandName={t.common.brandName}
-            benefits={cinemaBenefits}
-            videoUrls={authHeroAdminUrls}
-          />
+          <AuthCinemaPanel brandName={t.common.brandName} primary={cinemaPrimary} secondary={cinemaSecondary} />
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col justify-stretch py-0 sm:justify-center sm:py-2 lg:py-6 lg:pl-1">
-          <div className="auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated mx-auto flex w-full max-w-md min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/90 bg-white/[0.97] shadow-xl backdrop-blur-md sm:max-h-none sm:flex-none sm:rounded-[1.35rem] sm:p-5 lg:min-h-0 lg:flex-none">
+        <div className="auth-watta-form-panel flex min-h-0 flex-1 flex-col justify-stretch py-0 sm:justify-center sm:py-2 lg:py-6 lg:pl-1">
+          <div
+            className={
+              variant === 'page'
+                ? 'auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated mx-auto flex w-full max-w-md min-h-0 flex-1 flex-col overflow-hidden rounded-2xl sm:max-h-none sm:flex-none sm:rounded-[1.35rem] lg:min-h-0 lg:flex-none'
+                : 'auth-watta-form-card auth-watta-form-card--elevated mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl sm:max-h-none sm:flex-none sm:rounded-[1.35rem] sm:p-5'
+            }
+          >
             <div className="shrink-0 p-3 pb-0 pt-2 sm:p-5 sm:pb-0 sm:pt-5">
             <div className="auth-watta-tabs relative mb-2 flex rounded-xl bg-[#e8f0ec]/90 p-0.5 sm:mb-4">
               {variant === 'page' && (

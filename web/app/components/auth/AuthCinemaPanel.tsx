@@ -2,22 +2,24 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Clock3, Gift, Zap } from 'lucide-react'
-import {
-  WATTA_AUTH_HERO_POSTER,
-  getPrimaryAuthHeroVideoSrc,
-} from '@/lib/wattaAuthHeroVideo'
+import { getPrimaryAuthHeroVideoSrc } from '@/lib/wattaAuthHeroVideo'
 import { getAuthHeroVideoSources } from '@/lib/authHeroVideoSources'
 
 type Benefit = { label: string }
 
-type AuthCinemaPanelProps = {
+export type AuthCinemaPhoneContent = {
   title: string
   subtitle: string
-  brandName: string
   benefits: [Benefit, Benefit, Benefit]
-  /** URL з адмінки; якщо порожньо — запасні з public */
   videoUrls?: readonly string[]
-  /** Компактна смуга над формою на телефоні */
+}
+
+type AuthCinemaPanelProps = {
+  brandName: string
+  /** Передній (більший) телефон */
+  primary: AuthCinemaPhoneContent
+  /** Задній телефон */
+  secondary: AuthCinemaPhoneContent
   compact?: boolean
 }
 
@@ -29,17 +31,11 @@ const BENEFIT_ICONS = [
 
 const PHONE_MIN_WIDTH_PX = 768
 
-export default function AuthCinemaPanel({
-  title,
-  subtitle,
-  brandName,
-  benefits,
-  videoUrls,
-  compact = false,
-}: AuthCinemaPanelProps) {
+type PhoneSize = 'lg' | 'md'
+
+function usePhonePlaylist(videoUrls?: readonly string[]) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoReady, setVideoReady] = useState(false)
-  const [allowPhoneMotion, setAllowPhoneMotion] = useState(false)
   const [videoIndex, setVideoIndex] = useState(0)
   const [videoFailed, setVideoFailed] = useState(false)
 
@@ -49,6 +45,64 @@ export default function AuthCinemaPanel({
     (hasVideo ? playlist[videoIndex] ?? playlist[0] : null) ??
     getPrimaryAuthHeroVideoSrc(videoUrls)
   const videoLoop = playlist.length <= 1
+  const showVideo = hasVideo && Boolean(videoSrc) && !videoFailed
+
+  useEffect(() => {
+    setVideoIndex(0)
+    setVideoFailed(false)
+    setVideoReady(false)
+  }, [videoSrc, videoUrls])
+
+  const playVideo = useCallback(() => {
+    videoRef.current?.play().catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!showVideo) return
+    playVideo()
+  }, [showVideo, videoSrc, playVideo])
+
+  const onVideoEnded = () => {
+    if (playlist.length <= 1) return
+    setVideoIndex((i) => (i + 1) % playlist.length)
+    setVideoReady(false)
+  }
+
+  const onVideoError = () => {
+    if (videoIndex < playlist.length - 1) {
+      setVideoIndex((i) => i + 1)
+      setVideoReady(false)
+      return
+    }
+    setVideoFailed(true)
+  }
+
+  const onVideoReady = () => {
+    setVideoReady(true)
+    playVideo()
+  }
+
+  return {
+    videoRef,
+    videoSrc,
+    showVideo,
+    videoLoop,
+    videoReady,
+    onVideoEnded,
+    onVideoError,
+    onVideoReady,
+  }
+}
+
+export default function AuthCinemaPanel({
+  brandName,
+  primary,
+  secondary,
+  compact = false,
+}: AuthCinemaPanelProps) {
+  const [allowPhoneMotion, setAllowPhoneMotion] = useState(false)
+  const primaryMedia = usePhonePlaylist(primary.videoUrls)
+  const secondaryMedia = usePhonePlaylist(secondary.videoUrls)
 
   useEffect(() => {
     const mqMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -67,182 +121,189 @@ export default function AuthCinemaPanel({
     }
   }, [])
 
-  useEffect(() => {
-    setVideoIndex(0)
-    setVideoFailed(false)
-    setVideoReady(false)
-  }, [videoSrc, videoUrls])
-
-  const playVideo = useCallback(() => {
-    const el = videoRef.current
-    if (!el) return
-    el.play().catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (!hasVideo || !allowPhoneMotion || compact || videoFailed) return
-    playVideo()
-  }, [hasVideo, allowPhoneMotion, compact, videoFailed, videoSrc, playVideo])
-
-  const onVideoEnded = () => {
-    if (playlist.length <= 1) return
-    setVideoIndex((i) => (i + 1) % playlist.length)
-    setVideoReady(false)
+  if (compact) {
+    return (
+      <aside className="auth-watta-cinema auth-watta-cinema--compact relative shrink-0 overflow-hidden rounded-2xl border border-white/15 shadow-[0_20px_60px_rgba(6,42,34,0.35)] md:hidden">
+        <CompactStripMedia {...primaryMedia} />
+        <ScreenOverlay
+          compact
+          brandName={brandName}
+          title={primary.title}
+          subtitle={primary.subtitle}
+          benefits={primary.benefits}
+        />
+      </aside>
+    )
   }
-
-  const onVideoError = () => {
-    if (videoIndex < playlist.length - 1) {
-      setVideoIndex((i) => i + 1)
-      setVideoReady(false)
-      return
-    }
-    setVideoFailed(true)
-  }
-
-  const rootClass = compact
-    ? 'auth-watta-cinema auth-watta-cinema--compact relative shrink-0 overflow-hidden rounded-2xl border border-white/15 shadow-[0_20px_60px_rgba(6,42,34,0.35)] md:hidden'
-    : 'auth-watta-cinema auth-watta-cinema--phone relative m-1 hidden min-h-0 flex-col overflow-hidden rounded-[1.65rem] border border-white/12 shadow-[0_28px_90px_rgba(6,42,34,0.45)] md:flex'
 
   return (
-    <aside className={rootClass} aria-hidden={compact ? undefined : false}>
-      <CinemaBackdrop compact={compact} />
-
-      {!compact && allowPhoneMotion ? (
-        <PhoneSimulator
-          videoRef={videoRef}
-          videoSrc={videoSrc}
-          hasVideo={hasVideo && Boolean(videoSrc)}
-          videoLoop={videoLoop}
-          videoReady={videoReady}
-          videoFailed={videoFailed}
-          onVideoEnded={onVideoEnded}
-          onVideoError={onVideoError}
-          onVideoReady={() => {
-            setVideoReady(true)
-            playVideo()
-          }}
-          sway={allowPhoneMotion}
+    <aside className="auth-watta-cinema auth-watta-cinema--phone auth-watta-cinema--split relative hidden min-h-0 flex-col overflow-visible md:flex">
+      <div className="auth-watta-phone-duo">
+        <PhoneUnit
+          size="md"
+          sway={false}
+          className="auth-watta-phone-duo__back"
+          content={secondary}
+          brandName={brandName}
+          media={secondaryMedia}
         />
-      ) : !compact ? (
-        <div className="auth-watta-phone-stage auth-watta-phone-stage--static" aria-hidden>
-          <img
-            src={WATTA_AUTH_HERO_POSTER}
-            alt=""
-            className="auth-watta-phone-stage__poster"
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-      ) : null}
-
-      {compact ? <CompactStripMedia /> : null}
-
-      <div className="auth-watta-cinema__orbit" aria-hidden={compact}>
-        {benefits.map((b, i) => (
-          <span
-            key={b.label}
-            className={`auth-watta-cinema__orbit-chip auth-watta-cinema__orbit-chip--${i + 1}`}
-          >
-            {BENEFIT_ICONS[i]}
-            <span>{b.label}</span>
-          </span>
-        ))}
+        <PhoneUnit
+          size="lg"
+          sway={allowPhoneMotion}
+          className="auth-watta-phone-duo__front"
+          content={primary}
+          brandName={brandName}
+          media={primaryMedia}
+        />
       </div>
-
-      <CinemaCopy compact={compact} brandName={brandName} title={title} subtitle={subtitle} />
-
-      {!compact ? (
-        <p className="auth-watta-cinema__footer">
-          © {new Date().getFullYear()} {brandName}
-        </p>
-      ) : null}
     </aside>
   )
 }
 
-function CinemaBackdrop({ compact }: { compact: boolean }) {
-  return (
-    <>
-      <div className="auth-watta-cinema__backdrop" aria-hidden />
-      {!compact ? <div className="auth-watta-cinema__glow auth-watta-cinema__glow--warm" aria-hidden /> : null}
-    </>
-  )
+type ScreenMediaProps = {
+  videoRef: React.RefObject<HTMLVideoElement>
+  videoSrc: string | null
+  showVideo: boolean
+  videoLoop: boolean
+  videoReady: boolean
+  onVideoEnded: () => void
+  onVideoError: () => void
+  onVideoReady: () => void
 }
 
-function CompactStripMedia() {
+function PhoneScreenMedia({
+  videoRef,
+  videoSrc,
+  showVideo,
+  videoLoop,
+  videoReady,
+  onVideoEnded,
+  onVideoError,
+  onVideoReady,
+}: ScreenMediaProps) {
   return (
-    <div className="auth-watta-cinema__media" aria-hidden>
-      <img
-        src={WATTA_AUTH_HERO_POSTER}
-        alt=""
-        className="auth-watta-cinema__poster"
-        loading="eager"
-        decoding="async"
-      />
-      <div className="auth-watta-cinema__vignette" />
-      <div className="auth-watta-cinema__grain" aria-hidden />
+    <div className="auth-watta-phone-sim__media" aria-hidden>
+      <div className="auth-watta-phone-sim__fallback" />
+      {showVideo && videoSrc ? (
+        <video
+          key={videoSrc}
+          ref={videoRef}
+          className={`auth-watta-phone-sim__video${videoReady ? ' auth-watta-phone-sim__video--ready' : ''}`}
+          src={videoSrc}
+          muted
+          loop={videoLoop}
+          playsInline
+          autoPlay
+          preload="auto"
+          onLoadedData={onVideoReady}
+          onCanPlay={onVideoReady}
+          onEnded={onVideoEnded}
+          onError={onVideoError}
+        />
+      ) : null}
     </div>
   )
 }
 
-type PhoneSimulatorProps = {
-  videoRef: React.RefObject<HTMLVideoElement>
-  videoSrc: string | null
-  hasVideo: boolean
-  videoLoop: boolean
-  videoReady: boolean
-  videoFailed: boolean
-  onVideoEnded: () => void
-  onVideoError: () => void
-  onVideoReady: () => void
-  sway: boolean
+function CompactStripMedia(props: ScreenMediaProps) {
+  const { videoRef, videoSrc, showVideo, videoLoop, videoReady, onVideoEnded, onVideoError, onVideoReady } = props
+  return (
+    <div className="auth-watta-cinema__media" aria-hidden>
+      <div className="auth-watta-cinema__fallback" />
+      {showVideo && videoSrc ? (
+        <video
+          key={videoSrc}
+          ref={videoRef}
+          className={`auth-watta-cinema__video${videoReady ? ' auth-watta-cinema__video--ready' : ''}`}
+          src={videoSrc}
+          muted
+          loop={videoLoop}
+          playsInline
+          autoPlay
+          preload="auto"
+          onLoadedData={onVideoReady}
+          onCanPlay={onVideoReady}
+          onEnded={onVideoEnded}
+          onError={onVideoError}
+        />
+      ) : null}
+    </div>
+  )
 }
 
-function PhoneSimulator({
-  videoRef,
-  videoSrc,
-  hasVideo,
-  videoLoop,
-  videoReady,
-  videoFailed,
-  onVideoEnded,
-  onVideoError,
-  onVideoReady,
-  sway,
-}: PhoneSimulatorProps) {
+function ScreenOverlay({
+  compact,
+  brandName,
+  title,
+  subtitle,
+  benefits,
+}: {
+  compact?: boolean
+  brandName: string
+  title: string
+  subtitle: string
+  benefits: [Benefit, Benefit, Benefit]
+}) {
   return (
-    <div className="auth-watta-phone-stage">
-      <div className={`auth-watta-phone-sim${sway ? ' auth-watta-phone-sim--sway' : ''}`} aria-hidden>
+    <div className={`auth-watta-phone-sim__overlay${compact ? ' auth-watta-phone-sim__overlay--compact' : ''}`}>
+      <div className="auth-watta-phone-sim__scrim" aria-hidden />
+      <div className="auth-watta-phone-sim__ui">
+        {!compact ? (
+          <div className="auth-watta-phone-sim__chips" aria-hidden>
+            {benefits.map((b, i) => (
+              <span key={`${b.label}-${i}`} className="auth-watta-phone-sim__chip">
+                {BENEFIT_ICONS[i]}
+                <span>{b.label}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="auth-watta-phone-sim__spacer" aria-hidden />
+        <CinemaCopy compact={compact} brandName={brandName} title={title} subtitle={subtitle} />
+        {!compact ? (
+          <p className="auth-watta-phone-sim__footer">
+            © {new Date().getFullYear()} {brandName}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function PhoneUnit({
+  size,
+  sway,
+  className,
+  content,
+  brandName,
+  media,
+}: {
+  size: PhoneSize
+  sway: boolean
+  className?: string
+  content: AuthCinemaPhoneContent
+  brandName: string
+  media: ScreenMediaProps
+}) {
+  return (
+    <div className={`auth-watta-phone-duo__item ${className ?? ''}`.trim()}>
+      <div
+        className={`auth-watta-phone-sim auth-watta-phone-sim--${size} auth-watta-phone-sim--premium${sway ? ' auth-watta-phone-sim--sway' : ''}`}
+      >
         <div className="auth-watta-phone-sim__tilt">
           <div className="auth-watta-phone-sim__device">
             <div className="auth-watta-phone-sim__bezel">
               <span className="auth-watta-phone-sim__island" aria-hidden />
               <div className="auth-watta-phone-sim__screen">
-                <img
-                  src={WATTA_AUTH_HERO_POSTER}
-                  alt=""
-                  className={`auth-watta-phone-sim__poster${hasVideo && videoReady && !videoFailed ? ' auth-watta-phone-sim__poster--hidden' : ''}`}
-                  loading="lazy"
-                  decoding="async"
-                />
-                {hasVideo && videoSrc && !videoFailed ? (
-                  <video
-                    key={videoSrc}
-                    ref={videoRef}
-                    className={`auth-watta-phone-sim__video${videoReady ? ' auth-watta-phone-sim__video--ready' : ''}`}
-                    src={videoSrc}
-                    poster={WATTA_AUTH_HERO_POSTER}
-                    muted
-                    loop={videoLoop}
-                    playsInline
-                    autoPlay
-                    preload="metadata"
-                    onLoadedData={onVideoReady}
-                    onCanPlay={onVideoReady}
-                    onEnded={onVideoEnded}
-                    onError={onVideoError}
+                <div className="auth-watta-phone-sim__screen-inner">
+                  <PhoneScreenMedia {...media} />
+                  <ScreenOverlay
+                    brandName={brandName}
+                    title={content.title}
+                    subtitle={content.subtitle}
+                    benefits={content.benefits}
                   />
-                ) : null}
+                </div>
                 <div className="auth-watta-phone-sim__screen-glare" aria-hidden />
               </div>
               <span className="auth-watta-phone-sim__home-bar" aria-hidden />
@@ -260,21 +321,21 @@ function CinemaCopy({
   title,
   subtitle,
 }: {
-  compact: boolean
+  compact?: boolean
   brandName: string
   title: string
   subtitle: string
 }) {
   return (
-    <div className={`auth-watta-cinema__copy${compact ? ' auth-watta-cinema__copy--compact' : ' auth-watta-cinema__copy--phone'}`}>
+    <div className={`auth-watta-phone-sim__copy${compact ? ' auth-watta-phone-sim__copy--compact' : ''}`}>
       {!compact ? (
-        <p className="auth-watta-cinema__brand">
+        <p className="auth-watta-phone-sim__brand">
           <span className="auth-watta-cinema__live" aria-hidden />
           {brandName}
         </p>
       ) : null}
-      {!compact ? <h2 className="auth-watta-cinema__title">{title}</h2> : null}
-      {!compact ? <p className="auth-watta-cinema__sub">{subtitle}</p> : null}
+      <h2 className="auth-watta-phone-sim__title">{title}</h2>
+      {!compact ? <p className="auth-watta-phone-sim__sub">{subtitle}</p> : null}
     </div>
   )
 }

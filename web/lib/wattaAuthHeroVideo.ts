@@ -3,6 +3,14 @@ export const WATTA_AUTH_HERO_POSTER = '/sushi.webp' as const
 
 export const WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT = 'watta:auth-hero-video-updated' as const
 
+export type AuthHeroPhonesUpdatedDetail = {
+  urls?: string[]
+  url?: string
+  phone2Urls?: string[]
+  phone1Copy?: Record<string, unknown>
+  phone2Copy?: Record<string, unknown>
+}
+
 /** Головний ролик з написами — не показуємо на сторінці входу. */
 const BRANDED_HOME_HERO_PATH = '/watta-sushi-2-hero.mp4'
 
