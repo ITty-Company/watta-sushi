@@ -17,6 +17,7 @@ import LogoBackground from '../LogoBackground'
 import WattaAppRouteLoading from '../WattaAppRouteLoading'
 import AuthCinemaPanel from './AuthCinemaPanel'
 import { parseAuthHeroVideoUrlsFromApi } from '@/lib/authHeroVideoSettings'
+import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import {
   applyCityPlaceholdersToAuthHeroCopy,
   applyCityPlaceholdersToText,
@@ -110,9 +111,9 @@ function AuthScreenBody({
       setAuthHeroPhone1Copy(parseAuthHeroPhoneCopyFromApi(data.authHeroPhone1Copy))
       setAuthHeroPhone2Copy(parseAuthHeroPhoneCopyFromApi(data.authHeroPhone2Copy))
     }
-    const fetchSettings = async () => {
+    const fetchSettings = async (fresh = false) => {
       try {
-        const res = await fetch('/api/settings', { cache: 'no-store' })
+        const res = await (fresh ? fetchPublicApiFresh : fetchPublicApi)('/api/settings')
         if (res.ok) applySettings(await res.json())
       } catch {
         /* ignore */
@@ -128,7 +129,7 @@ function AuthScreenBody({
       if (detail?.phone2Urls) setAuthHeroPhone2Urls(detail.phone2Urls)
       if (detail?.phone1Copy) setAuthHeroPhone1Copy(parseAuthHeroPhoneCopyFromApi(detail.phone1Copy))
       if (detail?.phone2Copy) setAuthHeroPhone2Copy(parseAuthHeroPhoneCopyFromApi(detail.phone2Copy))
-      if (!fromEvent.length && !detail?.phone2Urls) void fetchSettings()
+      if (!fromEvent.length && !detail?.phone2Urls) void fetchSettings(true)
     }
     void fetchSettings()
     window.addEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)

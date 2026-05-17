@@ -590,6 +590,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [newZoneColor, setNewZoneColor] = useState('#4ade80')
   const [newZoneCoordinates, setNewZoneCoordinates] = useState('')
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false)
+  const drawerTouchStartX = useRef<number | null>(null)
   const toastStyle = { borderRadius: '0.75rem' }
   const notifySuccess = (message: string) =>
     toast.success(message, {
@@ -1036,6 +1037,24 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [newsProductOffers, setNewsProductOffers] = useState<NewsProductOffer[]>([])
   const [newsPickProductId, setNewsPickProductId] = useState('')
   const [newsPickDiscount, setNewsPickDiscount] = useState('10')
+
+  const adminOverlayOpen =
+    isRightPanelOpen ||
+    isModalOpen ||
+    isCategoryModalOpen ||
+    isBannerModalOpen ||
+    isTeamModalOpen ||
+    isNewsModalOpen
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (adminOverlayOpen) {
+      document.body.classList.add('admin-watta-overlay-open')
+    } else {
+      document.body.classList.remove('admin-watta-overlay-open')
+    }
+    return () => document.body.classList.remove('admin-watta-overlay-open')
+  }, [adminOverlayOpen])
 
   const parseGalleryFromPromo = useCallback((p: NewsItem | null): string[] => {
     if (!p) return []
@@ -3193,8 +3212,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       <header className="admin-watta-header w-full sticky top-0 z-40">
         <div className="w-full relative bg-gradient-to-r from-white/95 via-white/90 to-[#145142]/5 backdrop-blur-2xl border-b border-[#145142]/10 shadow-[0_4px_30px_rgba(20,81,66,0.08)]">
           <div className="absolute inset-0 bg-[linear-gradient(105deg,transparent_0%,rgba(20,81,66,0.03)_50%,transparent_100%)] pointer-events-none" />
-          <div className="relative w-full max-w-[1920px] mx-auto px-3 sm:px-5 md:px-6 h-16 sm:h-20 md:h-24 flex items-center justify-between">
-            <div className="flex items-center gap-3 sm:gap-5">
+          <div className="admin-watta-header-inner relative w-full max-w-[1920px] mx-auto px-3 sm:px-5 md:px-6 h-16 sm:h-20 md:h-24 flex items-center justify-between gap-2 min-w-0">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-5">
               <button 
                 onClick={onBack}
                 className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-[#145142]/5 hover:bg-[#145142]/15 text-[#145142] transition-all duration-300 hover:scale-105 active:scale-95"
@@ -3217,21 +3236,21 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   />
                 </button>
               )}
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#145142] to-[#1a6b58] flex items-center justify-center shadow-lg shadow-[#145142]/25">
+              <div className="admin-watta-header-title-wrap flex min-w-0 flex-col gap-0.5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="admin-watta-header-brand-badge w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-br from-[#145142] to-[#1a6b58] flex items-center justify-center shadow-lg shadow-[#145142]/25">
                     <BarChart2 size={18} className="sm:w-5 sm:h-5 text-white" strokeWidth={2.5} />
                   </div>
-                  <h1 className="text-lg sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#0d3d34] bg-clip-text text-transparent tracking-tight">
+                  <h1 className="admin-watta-header-title text-lg sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#0d3d34] bg-clip-text text-transparent tracking-tight">
                     {t.adminPanel.header.title}
                   </h1>
                 </div>
-                <p className="text-xs sm:text-sm text-[#145142]/60 font-medium pl-11 sm:pl-12">
+                <p className="admin-watta-header-subtitle text-xs sm:text-sm text-[#145142]/60 font-medium pl-11 sm:pl-12 max-sm:pl-0">
                   {t.adminPanel.header.subtitle}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
               <div
                 className="flex items-center rounded-2xl border border-[#145142]/18 bg-white/90 p-1 gap-0.5 shadow-sm shrink-0"
                 title={t.adminPanel.header.adminLangHint}
@@ -3283,7 +3302,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   }
 
   return (
-    <div className="admin-shell-watta-web min-h-screen w-full max-w-[100vw] font-sans relative overflow-x-hidden">
+    <div className="admin-shell-watta-web min-h-screen w-full max-w-[100vw] font-sans relative overflow-x-clip">
       <LogoBackground />
       <div className="admin-watta-stack relative z-10 min-h-screen">
         <Header />
@@ -3301,6 +3320,17 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               role="dialog"
               aria-modal="true"
               aria-labelledby="admin-watta-drawer-title"
+              onTouchStart={(e) => {
+                drawerTouchStartX.current = e.touches[0]?.clientX ?? null
+              }}
+              onTouchEnd={(e) => {
+                const start = drawerTouchStartX.current
+                drawerTouchStartX.current = null
+                if (start == null) return
+                const end = e.changedTouches[0]?.clientX
+                if (end == null) return
+                if (end - start > 64) setIsRightPanelOpen(false)
+              }}
             >
               <div className="admin-watta-drawer-header shrink-0 bg-gradient-to-r from-[#145142] via-[#176b57] to-[#1a6b58] px-4 py-4 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.45)] sm:px-5 sm:py-4">
                 <div className="flex items-start justify-between gap-3">
@@ -3390,8 +3420,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         )}
 
         {/* ОСНОВНОЙ КОНТЕНТ — дашборд на главній, панель справа з вкладками */}
-        <div className="w-full min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] md:min-h-[calc(100vh-128px)] pb-8 sm:pb-12 md:pb-20">
-          <div className="admin-watta-page-inner max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pt-4 sm:pt-6 md:pt-8">
+        <div className="admin-watta-main w-full min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100vh-80px)] md:min-h-[calc(100vh-128px)] pb-8 sm:pb-12 md:pb-20">
+          <div className="admin-watta-page-inner max-w-7xl mx-auto min-w-0 px-2 sm:px-4 md:px-6 pt-4 sm:pt-6 md:pt-8">
 
           {/* Головна: студійний дашборд з графіками */}
           {!isRightPanelOpen && activeTab === 'dashboard' && (
@@ -3560,7 +3590,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     <div className="mt-4 pt-4 border-t border-[#145142]/10 flex flex-col md:flex-row justify-between items-center gap-6">
                       
                       {/* Кнопки смены статуса */}
-                      <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto">
+                      <div className="admin-watta-scroll-x flex shrink-0 gap-2 pb-2 w-full md:w-auto">
                          <button onClick={() => updateStatus(order.id, 'CONFIRMED')} className="p-2 bg-lime-50 text-lime-700 rounded-lg hover:bg-lime-100" title={t.adminPanel.orders.hintConfirmed}><CheckCircle/></button>
                          <button onClick={() => updateStatus(order.id, 'COOKING')} className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100" title={t.adminPanel.orders.hintCooking}><ChefHat/></button>
                          <button onClick={() => updateStatus(order.id, 'DELIVERING')} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title={t.adminPanel.orders.hintDelivering}><Truck/></button>
@@ -3615,8 +3645,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   {t.adminPanel.products.addBtn}
                 </button>
 
-                <div className="overflow-x-auto w-full overflow-y-hidden">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-[900px]">
+                <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
                   {products.map(product => (
                     <div key={product.id} className="admin-watta-hover-lift flex flex-col gap-3 border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-4 sm:rounded-[20px] sm:p-5 md:rounded-[25px] rounded-[16px] hover:border-[#145142]/20 hover:shadow-2xl">
                        {/* Картинка */}
@@ -3681,7 +3710,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                        </div>
                     </div>
                   ))}
-                </div>
                 </div>
                 {products.length === 0 && (
                   <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-gray-500">
@@ -5250,9 +5278,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </form>
               </div>
 
-              <div className="overflow-x-auto rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
+              <div className="admin-watta-scroll-x admin-watta-scroll-hint rounded-[24px] border-2 border-white/70 bg-white/80 p-4 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl sm:p-6 md:p-8">
                 <h3 className="mb-4 text-xl font-bold text-[#145142]">Пользователи CRM</h3>
-                <table className="min-w-full text-sm">
+                <table className="admin-watta-crm-table min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-[#145142]/80 border-b border-[#145142]/15">
                       <th className="py-3 pr-4">Имя</th>
@@ -5477,8 +5505,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
         {/* МОДАЛЬНОЕ ОКНО (С ИСПРАВЛЕННЫМИ ПОЛЯМИ ПОД 4 ЯЗЫКА) */}
         {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60">
+          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
             <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
               <div className="h-10 w-10 shrink-0" aria-hidden />
               <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
@@ -5875,8 +5903,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КАТЕГОРИЙ МЕНЮ */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60">
+          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
             {/* Продолжение тени и фона при прокрутке */}
             <div className="sticky bottom-0 left-0 right-0 h-8 -mb-8 bg-gradient-to-b from-white/80 via-white/80 to-transparent pointer-events-none z-10"></div>
             <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
@@ -6075,12 +6103,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ БАННЕРОВ */}
       {isBannerModalOpen && (
         <div
-          className="admin-banner-modal-backdrop-animate fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px] sm:p-4"
+          className="admin-watta-modal-backdrop admin-banner-modal-backdrop-animate fixed inset-0 z-[60] flex bg-black/55 p-3 backdrop-blur-[3px] sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="banner-modal-title"
         >
-          <div className="admin-banner-modal-panel-animate relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_24px_64px_-12px_rgba(20,81,66,0.28)] ring-1 ring-[#145142]/12 sm:rounded-[26px]">
+          <div className="admin-watta-modal-panel admin-banner-modal-panel-animate relative flex w-full max-w-lg flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_24px_64px_-12px_rgba(20,81,66,0.28)] ring-1 ring-[#145142]/12 sm:rounded-[26px]">
             <div
               className="h-1.5 w-full shrink-0 bg-gradient-to-r from-[#0f3d32] via-[#145142] to-[#1a6b56]"
               aria-hidden
@@ -6461,8 +6489,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КОМАНДЫ */}
       {isTeamModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="relative bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60">
+          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
             <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
               <div className="h-10 w-10 shrink-0" aria-hidden />
               <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
@@ -6603,8 +6631,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       )}
       {/* МОДАЛКА НОВОСТЕЙ */}
       {isNewsModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4">
-          <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-[#145142]/10">
+        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60 p-0 sm:p-4">
+          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl p-4 sm:p-6 shadow-2xl border border-[#145142]/10">
             <div className="flex items-center justify-between gap-2 mb-4 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100 sm:border-0 sm:static">
               <div className="h-10 w-10 shrink-0" aria-hidden />
               <h2 className="flex-1 text-center text-lg sm:text-xl font-bold px-1 text-[#145142]">

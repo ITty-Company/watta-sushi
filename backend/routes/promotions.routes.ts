@@ -4,6 +4,7 @@ import { checkAdmin } from '../authMiddleware';
 import multer from 'multer';
 import path from 'path';
 import { getUploadsDir } from '../lib/uploadsDir.js';
+import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -83,7 +84,7 @@ function isMissingColumnError(e: unknown, column: 'galleryUrls' | 'productOffers
   return err?.code === 'P2022' && String(err?.meta?.column || '').includes(`Promo.${column}`);
 }
 
-router.get('/', async (_req: any, res: any) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (_req: any, res: any) => {
   try {
     const promos = await prisma.promo.findMany({
       orderBy: { createdAt: 'desc' },
@@ -110,7 +111,7 @@ router.get('/', async (_req: any, res: any) => {
   }
 });
 
-router.get('/:id', async (req: any, res: any) => {
+router.get('/:id', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req: any, res: any) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) {

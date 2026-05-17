@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
+import { fetchPublicApi } from '@/lib/publicApiFetch'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
@@ -143,7 +144,7 @@ export default function FullMenuPageClient() {
       order: idx,
     }))
     try {
-      const res = await fetch(getApiUrl('/api/products/categories'), { cache: 'no-store' })
+      const res = await fetchPublicApi(getApiUrl('/api/products/categories'))
       if (!res.ok) {
         setCategories(fallbackRows)
         return
@@ -182,10 +183,7 @@ export default function FullMenuPageClient() {
 
       const fetchProductList = async (url: string): Promise<unknown[]> => {
         try {
-          const res = await fetch(url, {
-            cache: 'no-store',
-            headers: { 'Cache-Control': 'no-cache' },
-          })
+          const res = await fetchPublicApi(url)
           if (!res.ok) return []
           const body: unknown = await res.json()
           return coerceProductsArray(body)

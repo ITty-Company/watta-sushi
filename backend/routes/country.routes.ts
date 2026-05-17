@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
+import { cachePublicGet, PUBLIC_CACHE_GEO_SEC } from '../lib/publicApiCache.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Получить все страны
-router.get('/', async (req, res) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_GEO_SEC), async (req, res) => {
   try {
     const countries = await prisma.country.findMany({
       where: { isActive: true },

@@ -184,7 +184,7 @@ export default function AdminDashboardStudio({
   }
 
   return (
-    <div className="flex flex-col gap-8 sm:gap-10 md:gap-12">
+    <div className="admin-watta-dashboard flex min-w-0 flex-col gap-8 sm:gap-10 md:gap-12">
       <motion.section
         {...fadeUp}
         transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}

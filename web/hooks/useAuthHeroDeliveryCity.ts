@@ -9,10 +9,11 @@ import {
   resolveAuthHeroDisplayCity,
   type AuthHeroCity,
 } from '@/lib/authHeroDeliveryCity'
+import { fetchPublicApi } from '@/lib/publicApiFetch'
 
 async function fetchActiveCities(): Promise<AuthHeroCity[]> {
   try {
-    const res = await fetch('/api/cities', { cache: 'no-store' })
+    const res = await fetchPublicApi('/api/cities')
     if (!res.ok) return []
     const data = (await res.json()) as AuthHeroCity[]
     return Array.isArray(data) ? data.filter((c) => c.isActive !== false) : []
