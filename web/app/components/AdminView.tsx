@@ -70,7 +70,6 @@ import {
   adminProductPreviewSrc,
   normalizeAdminProductRow,
 } from '@/lib/adminProductMedia'
-import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { isAdminRole } from '@/lib/isAdminRole'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
@@ -81,6 +80,37 @@ import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
 
 function notifyCountriesCatalogUpdated() {
   broadcastWattaCatalogUpdate('countries')
+}
+
+function AdminProductCoverImage({
+  coverSrc,
+  alt,
+}: {
+  coverSrc: string | null
+  alt: string
+}) {
+  const [broken, setBroken] = useState(false)
+  useEffect(() => {
+    setBroken(false)
+  }, [coverSrc])
+
+  return (
+    <motion.div className="relative h-[150px] w-full overflow-hidden rounded-[12px] border border-[#145142]/10 bg-white sm:h-[180px] sm:rounded-[15px] md:h-[200px]">
+      {coverSrc && !broken ? (
+        <motion.img
+          key={coverSrc}
+          src={coverSrc}
+          alt={alt}
+          className="h-full w-full object-cover"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <motion.div className="flex h-full w-full items-center justify-center text-gray-300">
+          <ImageIcon size={32} className="h-8 w-8 sm:h-12 sm:w-12" />
+        </motion.div>
+      )}
+    </motion.div>
+  )
 }
 
 // --- ТИПЫ ДАННЫХ (ИСПРАВЛЕНО ПОД 4 ЯЗЫКА) ---
@@ -450,7 +480,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
   // Состояния для модального окна ТОВАРОВ
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [productSaving, setProductSaving] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  /** Після власного збереження не перезаписувати список застарілим GET з кешу. */
+  const skipCatalogRefetchRef = useRef(false)
   
   const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings)
   const [settingsLoading, setSettingsLoading] = useState(false)
@@ -767,10 +800,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           }
           case 'cartUpsell':
           case 'products': {
+            const bust = Date.now()
             const [prodRes, catRes, ingredientsRes] = await Promise.all([
-              fetchPublicApiFresh('/api/products', { headers }),
-              fetch('/api/products/categories', { headers }),
-              fetch('/api/ingredients', { headers }),
+              fetch(`/api/products?_=${bust}`, { headers, cache: 'no-store' }),
+              fetch(`/api/products/categories?_=${bust}`, { headers, cache: 'no-store' }),
+              fetch('/api/ingredients', { headers, cache: 'no-store' }),
             ])
             if (prodRes.ok) {
               const productsData = await prodRes.json()
@@ -929,6 +963,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const fetchData = fetchAll
 
   useWattaCatalogSync(() => {
+    if (skipCatalogRefetchRef.current) return
     if (activeTab === 'products' || activeTab === 'cartUpsell') {
       void fetchTabData('products', { force: true })
     }
@@ -1628,6 +1663,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
   const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (productSaving) return
+    setProductSaving(true)
     try {
       const token = localStorage.getItem('token')
       if (!token) {
@@ -1695,6 +1732,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             'Товар збережено, але фото не збереглось на сервері. Перевірте UPLOAD_DIR на Render або спробуйте менший файл.',
           )
         }
+        skipCatalogRefetchRef.current = true
         setProducts((prev) => {
           if (editingId) {
             return prev.map((p) => (p.id === editingId ? { ...p, ...normalized } : p))
@@ -1702,11 +1740,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           return [...prev, normalized]
         })
         setIsModalOpen(false)
+        setEditingId(null)
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('products')
         }
-        void fetchTabData('products', { force: true })
         toast.success(t.adminPage.products.saved)
+        window.setTimeout(() => {
+          skipCatalogRefetchRef.current = false
+        }, 1500)
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -1721,6 +1762,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       console.error('Ошибка сохранения товара:', error)
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
       toast.error(`Ошибка соединения: ${errorMessage}`)
+    } finally {
+      setProductSaving(false)
     }
   }
 
@@ -3939,21 +3982,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     const coverSrc = adminProductCoverSrc(product)
                     return (
                     <div key={product.id} className="admin-watta-hover-lift flex flex-col gap-3 border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-4 sm:rounded-[20px] sm:p-5 md:rounded-[25px] rounded-[16px] hover:border-[#145142]/20 hover:shadow-2xl">
-                       {/* Картинка */}
-                       <div className="w-full h-[150px] sm:h-[180px] md:h-[200px] bg-[#145142]/5 rounded-[12px] sm:rounded-[15px] overflow-hidden relative border border-[#145142]/10">
-                         {coverSrc ? (
-                           <img
-                             key={coverSrc}
-                             src={coverSrc}
-                             alt={product.name_ru}
-                             className="w-full h-full object-cover"
-                           />
-                         ) : (
-                           <div className="w-full h-full flex items-center justify-center text-gray-300">
-                             <ImageIcon size={32} className="sm:w-12 sm:h-12" />
-                           </div>
-                         )}
-                         <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
+                       <div className="relative">
+                       <AdminProductCoverImage coverSrc={coverSrc} alt={product.name_ru} />
+                         <div className="pointer-events-none absolute right-2 top-2 z-[2] flex flex-col items-end gap-1">
                           {product.isHomeHit || product.isPopular ? (
                             <span className="rounded-full bg-[#145142] px-2 py-1 text-[10px] font-bold text-white">
                               Наші хіти
@@ -6209,9 +6240,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </div>
               <button
                 type="submit"
-                className="relative z-20 w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
+                disabled={productSaving}
+                className="relative z-20 mt-2 w-full rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-[15px] sm:py-4 sm:text-base"
               >
-                {editingId ? 'Сохранить изменения' : 'Сохранить'}
+                {productSaving
+                  ? 'Сохранение…'
+                  : editingId
+                    ? 'Сохранить изменения'
+                    : 'Сохранить'}
               </button>
             </form>
           </div>
