@@ -52,6 +52,7 @@ import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSi
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
 import { ensureIngredientsCatalog } from '@/lib/wattaIngredientsCatalog'
 import { productGalleryFromApi } from '@/lib/productGallery'
 
@@ -939,6 +940,7 @@ export default function MenuView() {
 
   const loadMenuItems = useCallback((opts?: { fresh?: boolean }) => {
     const fresh = opts?.fresh === true
+    void ensureCountriesCatalog()
     void ensureIngredientsCatalog()
     setHomeMenuProductsLoadFailed(false)
     const cityIdToUse = selectedCityId || cityIdPreferAmsterdam(deliveryCities) || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
@@ -2054,7 +2056,7 @@ export default function MenuView() {
       <WattaStickyChromeLayout
         chromeClassName="watta-full-menu-sticky-chrome"
         flowHeightFudgePx={0}
-        flowHeightMaxPx={360}
+        flowHeightMaxPx={480}
       >
         <WattaGlobalSiteHeader
           disableSticky
@@ -2340,7 +2342,7 @@ export default function MenuView() {
       {showHomeMenuCatalog ? (
       <section
         id="home-menu-catalog"
-        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0 px-5 sm:px-7 md:px-8 pt-3 pb-6 sm:pt-5 sm:pb-8 md:pt-6 md:pb-10"
+        className="home-menu-catalog-section-web home-full-menu-catalog-web home-full-menu-catalog-after-banners-web menu-after-welcome-web relative z-[1] w-full max-w-[100vw] shrink-0 px-5 sm:px-7 md:px-8 pt-4 pb-6 sm:pt-6 sm:pb-8 md:pt-7 md:pb-10"
         aria-labelledby="home-menu-catalog-title"
       >
         <div className="home-menu-catalog-stack-web relative z-[1]">

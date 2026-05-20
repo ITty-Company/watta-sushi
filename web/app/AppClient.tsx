@@ -13,6 +13,7 @@ import { sanitizeAuthStorage } from '@/lib/authSession'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { subscribeWattaCatalogCrossTab } from '@/lib/wattaCatalogSync'
+import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
 import { ensureIngredientsCatalog } from '@/lib/wattaIngredientsCatalog'
 
 export default function AppClient({
@@ -100,7 +101,19 @@ export default function AppClient({
   useEffect(() => subscribeWattaCatalogCrossTab(() => {}), [])
 
   useEffect(() => {
+    void ensureCountriesCatalog()
     void ensureIngredientsCatalog()
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+    }
+    const warm = () => {
+      void fetch('/api/products', { credentials: 'same-origin' }).catch(() => {})
+    }
+    if (typeof w.requestIdleCallback === 'function') {
+      w.requestIdleCallback(warm, { timeout: 2500 })
+    } else {
+      window.setTimeout(warm, 400)
+    }
   }, [])
 
   return (

@@ -11,6 +11,7 @@ export function LocationPickerMascot({ className }: { className?: string }) {
         src="/location-picker-mascot.png"
         alt=""
         fill
+        priority
         className="location-picker-mascot__img"
         sizes="(max-width: 640px) 140px, 168px"
         draggable={false}
