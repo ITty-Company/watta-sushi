@@ -50,7 +50,7 @@ import {
 import { cityIdPreferAmsterdam, resolveCityFromSavedId } from '@/lib/wattaPreferredDefaultCity'
 import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSiteLocalePrefs'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
-import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { productGalleryFromApi } from '@/lib/productGallery'
 
@@ -1713,25 +1713,7 @@ export default function MenuView() {
     setMenuCategories(menuCategories.map(cat => cat.id === categoryId ? { ...cat, subcategories: [...cat.subcategories, newSubcategory] } : cat))
   }
 
-  // --- ДОБАВЛЕНИЕ В КОРЗИНУ ---
-  const addToCart = (item: MenuItem) => {
-    const result = addToCartWithAuthGate(router, {
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      category: item.category,
-      emoji: item.emoji,
-      imageUrl: item.imageUrl,
-      promoDiscountPercent: item.promoDiscountPercent,
-    })
-    if (result === 'max') {
-      toast.error(t.appToasts.maxCartQty)
-      return
-    }
-    if (result === 'auth_redirect') return
-    toast.success(t.addToCart)
-  }
+  const addToCart = useMenuAddToCart()
   
   // --- АДМИНКА ЗОН ДОСТАВКИ ---
   const [cities, setCities] = useState<City[]>(defaultCities)
@@ -2176,9 +2158,16 @@ export default function MenuView() {
             }
             adminPromoProducts={[]}
             adminRecommendedProducts={cinematicAdminRecommendedProducts}
-            onAdminProductAddToCart={(productId) => {
-              const item = menuItems.find((i) => i.id === productId)
-              if (item) addToCart(item)
+            onAdminProductAddToCart={(product) => {
+              addToCart({
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                emoji: product.emoji,
+                imageUrl: product.imageUrl,
+                promoDiscountPercent: product.promoDiscountPercent,
+              })
             }}
             onBeforeNavigateToProduct={persistMenuBrowseReturnState}
           />
@@ -2355,7 +2344,18 @@ export default function MenuView() {
                     <HomeCategoryProductRail
                       categoryLabel={t.menuView.homeCatalogTitle}
                       items={menuItems.slice(0, HOME_CATEGORY_RAIL_PREVIEW_MAX * 2)}
-                      addToCart={(item) => addToCart(item as MenuItem)}
+                      addToCart={(item) =>
+                        addToCart({
+                          id: item.id,
+                          name: item.name,
+                          description: item.description,
+                          price: item.price,
+                          category: (item as MenuItem).category,
+                          emoji: item.emoji,
+                          imageUrl: item.imageUrl,
+                          promoDiscountPercent: item.promoDiscountPercent,
+                        })
+                      }
                       onBeforeNavigateToProduct={persistMenuBrowseReturnState}
                     />
                   </div>
@@ -2409,7 +2409,18 @@ export default function MenuView() {
                       <HomeCategoryProductRail
                         categoryLabel={cat.name}
                         items={catItems.slice(0, HOME_CATEGORY_RAIL_PREVIEW_MAX)}
-                        addToCart={(item) => addToCart(item as MenuItem)}
+                        addToCart={(item) =>
+                        addToCart({
+                          id: item.id,
+                          name: item.name,
+                          description: item.description,
+                          price: item.price,
+                          category: (item as MenuItem).category,
+                          emoji: item.emoji,
+                          imageUrl: item.imageUrl,
+                          promoDiscountPercent: item.promoDiscountPercent,
+                        })
+                      }
                         onBeforeNavigateToProduct={persistMenuBrowseReturnState}
                       />
                     </div>

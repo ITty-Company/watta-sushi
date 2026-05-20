@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
@@ -12,7 +11,7 @@ import LogoBackground from '../../../components/LogoBackground'
 import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
-import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { productGalleryFromApi } from '@/lib/productGallery'
 
 interface MenuItem {
@@ -195,24 +194,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
     }
   }, [categoryTitle, items])
 
-  const addToCart = (item: MenuItem) => {
-    const result = addToCartWithAuthGate(router, {
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      category: item.category,
-      emoji: item.emoji,
-      imageUrl: item.imageUrl,
-      promoDiscountPercent: item.promoDiscountPercent,
-    })
-    if (result === 'max') {
-      toast.error(t.appToasts.maxCartQty)
-      return
-    }
-    if (result === 'auth_redirect') return
-    toast.success(t.addToCart)
-  }
+  const addToCart = useMenuAddToCart()
 
   const displayTitle = categoryTitle || normalizedSlug
 
@@ -254,7 +236,18 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
                 key={item.id}
                 variant="grid"
                 product={item}
-                onAddToCart={() => addToCart(item)}
+                onAddToCart={(product) =>
+                  addToCart({
+                    id: product.id,
+                    name: product.name,
+                    description: product.description,
+                    price: product.price,
+                    category: item.category,
+                    emoji: product.emoji,
+                    imageUrl: product.imageUrl,
+                    promoDiscountPercent: product.promoDiscountPercent,
+                  })
+                }
               />
             ))}
           </div>

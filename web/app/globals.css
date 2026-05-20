@@ -5600,9 +5600,7 @@ html.watta-light-chrome body {
   background: #ffffff;
   border: 1px solid rgba(20, 81, 66, 0.09);
   box-shadow: none;
-  transition:
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.25s ease;
+  transition: border-color 0.25s ease;
 }
 
 /* У стрічці: на телефоні 1 повна картка + половина наступної (натяк на свайп); 1 зазор 1rem між ними */
@@ -5746,7 +5744,6 @@ html.watta-light-chrome body {
 
 @media (hover: hover) and (pointer: fine) {
   .home-menu-product-card-web:hover {
-    transform: translateY(-4px);
     border-color: rgba(20, 81, 66, 0.22);
     box-shadow: none;
   }
@@ -5765,13 +5762,7 @@ html.watta-light-chrome body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .home-menu-product-card-media-web.group\/media:hover .home-menu-product-card-img-web {
-    transform: scale(1.05);
-  }
+  transform: none;
 }
 
 .home-menu-product-card-placeholder-web {
@@ -5842,7 +5833,6 @@ html.watta-light-chrome body {
   background: #fff;
   box-shadow: 0 4px 14px rgba(20, 81, 66, 0.2);
   outline: none;
-  transform: scale(1.04);
 }
 
 .home-menu-product-favorite-icon-web {

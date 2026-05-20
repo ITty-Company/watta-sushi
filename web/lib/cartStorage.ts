@@ -126,6 +126,23 @@ export function invalidateCartMemoryCache(): void {
   memoryCartHydrated = false
 }
 
+/** Підписка для лічильника кошика в шапці — миттєво після «Замовити». */
+export function subscribeCartStorage(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === 'cart') {
+      invalidateCartMemoryCache()
+      onStoreChange()
+    }
+  }
+  window.addEventListener('cartUpdated', onStoreChange)
+  window.addEventListener('storage', onStorage)
+  return () => {
+    window.removeEventListener('cartUpdated', onStoreChange)
+    window.removeEventListener('storage', onStorage)
+  }
+}
+
 export function writeCartToStorage(lines: CartStorageLine[]): void {
   if (typeof window === 'undefined' || !window.localStorage) return
   memoryCart = lines
@@ -136,6 +153,37 @@ export function writeCartToStorage(lines: CartStorageLine[]): void {
     /* quota / private mode */
   }
   window.dispatchEvent(new CustomEvent('cartUpdated'))
+}
+
+export type MenuCartProductInput = {
+  id: number
+  name: string
+  description?: string
+  price: number
+  emoji?: string
+  imageUrl?: string
+  promoDiscountPercent?: number
+  category?: string
+}
+
+/** Додати товар з картки меню в localStorage-кошик (без очікування API). */
+export function addMenuProductToCart(
+  product: MenuCartProductInput,
+  quantity = 1,
+): 'ok' | 'max' {
+  return appendCartLines(
+    {
+      id: product.id,
+      name: product.name,
+      description: product.description ?? '',
+      price: product.price,
+      category: product.category ?? '',
+      emoji: product.emoji ?? '🍣',
+      imageUrl: product.imageUrl,
+      promoDiscountPercent: product.promoDiscountPercent,
+    },
+    quantity,
+  )
 }
 
 export function getCartTotalPieceCount(lines: CartStorageLine[]): number {

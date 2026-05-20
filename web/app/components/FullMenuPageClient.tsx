@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
-import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
+import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
 import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
@@ -526,31 +526,22 @@ export default function FullMenuPageClient() {
     return () => cancelAnimationFrame(id)
   }, [loading, visibleCategories, scrollToCategory])
 
-  const addToCart = useCallback(
-    (item: MenuItem | { id: number }) => {
-      const full =
-        'category' in item && item.category !== undefined
-          ? (item as MenuItem)
-          : items.find((x) => x.id === item.id)
-      if (!full) return
-      const result = addToCartWithAuthGate(router, {
-        id: full.id,
-        name: full.name,
-        description: full.description,
-        price: full.price,
-        category: full.category,
-        emoji: full.emoji,
-        imageUrl: full.imageUrl,
-        promoDiscountPercent: full.promoDiscountPercent,
+  const addToCart = useMenuAddToCart()
+  const addToCartFromCard = useCallback(
+    (product: WattaMenuProductCardModel) => {
+      const full = items.find((x) => x.id === product.id)
+      addToCart({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        category: full?.category,
+        emoji: product.emoji,
+        imageUrl: product.imageUrl,
+        promoDiscountPercent: product.promoDiscountPercent,
       })
-      if (result === 'max') {
-        toast.error(t.appToasts.maxCartQty)
-        return
-      }
-      if (result === 'auth_redirect') return
-      toast.success(t.addToCart)
     },
-    [items, router, t.addToCart, t.appToasts.maxCartQty]
+    [addToCart, items],
   )
 
   const menuNewItems = useMemo(
@@ -727,7 +718,7 @@ export default function FullMenuPageClient() {
                               key={item.id}
                               variant="grid"
                               product={item}
-                              onAddToCart={() => addToCart(item)}
+                              onAddToCart={addToCartFromCard}
                             />
                           ))}
                         </div>

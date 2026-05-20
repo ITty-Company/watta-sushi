@@ -32,7 +32,7 @@ export type WattaMenuProductCardModel = {
 
 type Props = {
   product: WattaMenuProductCardModel
-  onAddToCart: () => void
+  onAddToCart: (product: WattaMenuProductCardModel) => void
   variant: 'rail' | 'grid'
   /** Рядок під назвою (вага / шт.) */
   subtitleLine?: string
@@ -164,7 +164,7 @@ export function WattaMenuProductCard({
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              onAddToCart()
+              onAddToCart(product)
             }}
             className="home-menu-product-add-web"
             aria-label={orderLabel}

@@ -3,11 +3,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useSyncExternalStore, type CSSProperties } from 'react'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react'
-import { getLiveCartPieceCount } from '@/lib/cartStorage'
-import { readFavoriteIds } from '@/lib/favoritesStorage'
+import { getLiveCartPieceCount, subscribeCartStorage } from '@/lib/cartStorage'
+import { readFavoriteIds, subscribeFavoriteIds } from '@/lib/favoritesStorage'
 import { useLanguage } from '../context/LanguageContext'
 import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
@@ -15,43 +15,25 @@ import { LanguageSelector } from './LanguageSelector'
 import { CountryCitySelector } from './CountryCitySelector'
 
 function useLiveCartCount() {
-  const [n, setN] = useState(() => {
-    if (typeof window === 'undefined') return 0
-    try {
-      return getLiveCartPieceCount()
-    } catch {
-      return 0
-    }
-  })
-  useEffect(() => {
-    const u = () => {
+  return useSyncExternalStore(
+    subscribeCartStorage,
+    () => {
       try {
-        setN(getLiveCartPieceCount())
+        return getLiveCartPieceCount()
       } catch {
-        setN(0)
+        return 0
       }
-    }
-    window.addEventListener('cartUpdated', u)
-    return () => window.removeEventListener('cartUpdated', u)
-  }, [])
-  return n
+    },
+    () => 0,
+  )
 }
 
 function useLiveFavoritesCount() {
-  const [n, setN] = useState(0)
-  useEffect(() => {
-    const u = () => {
-      setN(readFavoriteIds().length)
-    }
-    u()
-    window.addEventListener('favoritesUpdated', u)
-    window.addEventListener('storage', u)
-    return () => {
-      window.removeEventListener('favoritesUpdated', u)
-      window.removeEventListener('storage', u)
-    }
-  }, [])
-  return n
+  return useSyncExternalStore(
+    subscribeFavoriteIds,
+    () => readFavoriteIds().length,
+    () => 0,
+  )
 }
 
 const HEADER_SQUircle_BTN = 40

@@ -30,6 +30,25 @@ function favoriteIdsEqual(a: number[], b: number[]) {
   return a.every((id) => setB.has(id))
 }
 
+/** Підписка для useSyncExternalStore — усі сердечка й бейдж оновлюються в один кадр. */
+export function subscribeFavoriteIds(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === 'favorites') onStoreChange()
+  }
+  window.addEventListener('favoritesUpdated', onStoreChange)
+  window.addEventListener('storage', onStorage)
+  return () => {
+    window.removeEventListener('favoritesUpdated', onStoreChange)
+    window.removeEventListener('storage', onStorage)
+  }
+}
+
+export function isProductFavorite(productId: number): boolean {
+  if (!Number.isFinite(productId) || productId <= 0) return false
+  return readFavoriteIds().includes(productId)
+}
+
 /** Записує id і сповіщає підписників лише якщо набір змінився. */
 export function syncFavoriteIdsToStorage(ids: number[]) {
   if (typeof window === 'undefined') return
