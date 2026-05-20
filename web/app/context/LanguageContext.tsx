@@ -1018,6 +1018,7 @@ export interface Translations {
     /** Головна: API меню недоступне — порожній каталог */
     homeMenuApiUnavailableTitle: string
     homeMenuApiUnavailableHint: string
+    homeMenuApiUnavailableHintProd: string
     /** Aria: текст під hero-відео, перед блоком хітів */
     homeAfterHeroIntroAria: string
     /** Короткий рядок-акцент (кирилиця / латиниця — під мову) */
@@ -1607,6 +1608,8 @@ const translations: Record<Language, Translations> = {
       homeMenuApiUnavailableTitle: 'Меню не завантажилось',
       homeMenuApiUnavailableHint:
         'Сервер з товарами не відповідає (часто порт 5050). Запустіть backend з кореня: npm run local:backend:quick, або лише фронт з моками: npm run local:web:mock. Потім оновіть сторінку.',
+      homeMenuApiUnavailableHintProd:
+        'API тимчасово недоступне (сайт на Render). Перевірте, що сервіс watta-sushi-backend у статусі Live, у логах build є prisma migrate deploy, немає 502. Зачекайте 30–60 с (пробудження free tier) і оновіть сторінку.',
       homeAfterHeroIntroAria:
         'Короткий текст про доставку суші в обраному місті ({{city}}) перед відео та добіркою хітів меню',
       homeAfterHeroIntroKicker: '{{city}} · доставка до столу',
@@ -2594,6 +2597,8 @@ const translations: Record<Language, Translations> = {
       homeMenuApiUnavailableTitle: 'Меню не загрузилось',
       homeMenuApiUnavailableHint:
         'Сервер с товарами не отвечает (часто порт 5050). Запустите backend из корня: npm run local:backend:quick, или только фронт с моками: npm run local:web:mock. Затем обновите страницу.',
+      homeMenuApiUnavailableHintProd:
+        'API временно недоступно (сайт на Render). Проверьте, что сервис watta-sushi-backend в статусе Live, в логах сборки есть prisma migrate deploy, нет 502. Подождите 30–60 с и обновите страницу.',
       homeAfterHeroIntroAria:
         'Краткий текст о доставке суши в выбранном городе ({{city}}) перед видео и подборкой хитов меню',
       homeAfterHeroIntroKicker: '{{city}} · доставка к столу',
@@ -3581,6 +3586,8 @@ const translations: Record<Language, Translations> = {
       homeMenuApiUnavailableTitle: 'Menu could not load',
       homeMenuApiUnavailableHint:
         'The products API is not responding (often port 5050). Start the backend from the repo root: npm run local:backend:quick, or frontend-only mocks: npm run local:web:mock. Then refresh the page.',
+      homeMenuApiUnavailableHintProd:
+        'The API is temporarily unavailable (hosted on Render). Ensure watta-sushi-backend is Live, build logs show prisma migrate deploy, no 502 errors. Wait 30–60s and refresh.',
       homeAfterHeroIntroAria:
         'Short introduction to sushi delivery in the selected city ({{city}}) before the hero video and menu hits section',
       homeAfterHeroIntroKicker: '{{city}} · delivered to your table',
@@ -4568,6 +4575,8 @@ const translations: Record<Language, Translations> = {
       homeMenuApiUnavailableTitle: 'Menu laadt niet',
       homeMenuApiUnavailableHint:
         'De producten-API reageert niet (vaak poort 5050). Start de backend vanaf de root: npm run local:backend:quick, of alleen de frontend met mocks: npm run local:web:mock. Vernieuw daarna de pagina.',
+      homeMenuApiUnavailableHintProd:
+        'De API is tijdelijk niet bereikbaar (Render). Controleer of watta-sushi-backend Live is, migrate deploy in de build-log, geen 502. Wacht 30–60 s en vernieuw.',
       homeAfterHeroIntroAria:
         'Korte introductie over sushibezorging in de gekozen stad ({{city}}) vóór de hero-video en het menuhits-gedeelte',
       homeAfterHeroIntroKicker: '{{city}} · bij u op tafel',
