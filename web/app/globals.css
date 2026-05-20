@@ -1925,7 +1925,29 @@ html.watta-light-chrome {
   overflow-x: visible;
   position: relative;
   z-index: 1;
-  flex: 1 0 auto;
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Контент між chrome і підвалом — займає всю вільну висоту вікна */
+.watta-app-shell-root > main > .watta-app-main-grow {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  max-width: 100vw;
+}
+
+.watta-app-main-grow > .watta-full-menu-page,
+.watta-app-main-grow > .menu-page-web,
+.watta-app-main-grow > .watta-public-page-shell,
+.watta-app-main-grow > .watta-cart-page,
+.watta-app-main-grow > .watta-product-page {
+  flex: 1 1 auto;
+  min-height: 100%;
 }
 
 /* Підвал у main (публічні маршрути зі скролом body) */
@@ -1933,6 +1955,7 @@ html.watta-light-chrome {
   position: relative;
   z-index: 0;
   flex-shrink: 0;
+  margin-top: auto;
   /* При скролі до футера — не ховати під fixed шапку + категорії */
   scroll-margin-top: calc(
     var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)) +
@@ -1960,6 +1983,7 @@ html.watta-light-chrome:has(.floating-contact-buttons-root) {
 }
 
 /* Контент перед футером — невеликий зазор; FAB не перекриває останні рядки при скролі */
+.watta-app-shell-root > main > .watta-app-main-grow:has(+ .site-footer-watta),
 .watta-app-shell-root > main > div:has(+ .site-footer-watta) {
   padding-bottom: clamp(0.35rem, 1.2vh, 0.85rem);
 }

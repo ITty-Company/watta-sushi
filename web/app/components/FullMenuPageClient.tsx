@@ -598,7 +598,7 @@ export default function FullMenuPageClient() {
   )
 
   return (
-    <div className="watta-full-menu-page menu-page-web watta-page-bg flex min-h-0 w-full max-w-[100vw] min-w-0 flex-1 flex-col">
+    <div className="watta-full-menu-page menu-page-web watta-page-bg flex min-h-full w-full max-w-[100vw] min-w-0 flex-1 flex-col">
       <div
         className={`watta-full-menu-top-stack w-full shrink-0 ${isNarrowViewport ? 'watta-full-menu-top-stack--intro-first' : ''}`}
       >

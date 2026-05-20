@@ -103,7 +103,7 @@ export default function FavoritesPageClient() {
   }))
 
   return (
-    <div className="menu-page-web watta-favorites-page relative flex w-full max-w-[100vw] min-w-0 shrink-0 flex-col overflow-x-hidden watta-page-bg">
+    <div className="menu-page-web watta-favorites-page relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden watta-page-bg">
       <div className="watta-favorites-page__content relative z-[1] w-full min-w-0">
         {loading ? (
           <FavoritesGridSkeleton />
