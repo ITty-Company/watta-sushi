@@ -996,17 +996,38 @@ export default function MenuView() {
       } catch (_) { /* кэш повреждён */ }
     }
 
-    fetcher(url)
-      .then(res => {
-        if (!res.ok) {
-          console.error('Ошибка загрузки товаров:', res.status, res.statusText)
-          setHomeMenuProductsLoadFailed(true)
-          return []
-        }
-        return res.json()
-      })
+    const fetchMenuProducts = (apiUrl: string, attempt = 0): Promise<unknown[]> =>
+      fetcher(apiUrl)
+        .then((res) => {
+          if (!res.ok) {
+            if ((res.status === 502 || res.status === 503 || res.status === 504) && attempt < 1) {
+              return new Promise<unknown[]>((resolve) => {
+                window.setTimeout(() => {
+                  void fetchMenuProducts(apiUrl, attempt + 1).then(resolve)
+                }, 2000)
+              })
+            }
+            console.error('Ошибка загрузки товаров:', res.status, res.statusText)
+            setHomeMenuProductsLoadFailed(true)
+            return []
+          }
+          return res.json() as Promise<unknown[]>
+        })
+        .catch((err) => {
+          if (attempt < 1) {
+            return new Promise<unknown[]>((resolve) => {
+              window.setTimeout(() => {
+                void fetchMenuProducts(apiUrl, attempt + 1).then(resolve)
+              }, 2000)
+            })
+          }
+          throw err
+        })
+
+    fetchMenuProducts(url)
       .then((data) => {
-        const list = Array.isArray(data) ? data : []
+        if (!Array.isArray(data)) return
+        const list = data
         if (cityIdToUse && list.length === 0) {
           fetcher('/api/products')
             .then((r) => {
@@ -2303,7 +2324,13 @@ export default function MenuView() {
         >
           <div className="rounded-xl border border-amber-200/90 bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
             <p className="font-semibold">{t.menuView.homeMenuApiUnavailableTitle}</p>
-            <p className="mt-1 text-[13px] leading-relaxed opacity-95">{t.menuView.homeMenuApiUnavailableHint}</p>
+            <p className="mt-1 text-[13px] leading-relaxed opacity-95">
+              {typeof window !== 'undefined' &&
+              (window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1')
+                ? t.menuView.homeMenuApiUnavailableHint
+                : t.menuView.homeMenuApiUnavailableHintProd}
+            </p>
           </div>
         </section>
       ) : null}

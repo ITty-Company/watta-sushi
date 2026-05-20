@@ -120,6 +120,39 @@ function sanitizeProductImagesForApi<T extends { imageUrl?: string | null; image
 
 const whereNotArchived = { isArchived: false } as const;
 
+function isMissingIsArchivedColumn(e: unknown): boolean {
+  const err = e as { code?: string; meta?: { column?: string }; message?: string };
+  if (err?.code === 'P2022' && String(err?.meta?.column || '').toLowerCase().includes('isarchived')) {
+    return true;
+  }
+  const msg = String(err?.message || e || '').toLowerCase();
+  return msg.includes('isarchived') || msg.includes('unknown column') && msg.includes('product');
+}
+
+async function findPublicProducts(
+  where: Prisma.ProductWhereInput = {},
+  include: Prisma.ProductInclude = { category: true },
+  extra?: Omit<Prisma.ProductFindManyArgs, 'where' | 'include'>,
+) {
+  try {
+    return await prisma.product.findMany({
+      where: { ...whereNotArchived, ...where },
+      include,
+      ...extra,
+    });
+  } catch (e) {
+    if (isMissingIsArchivedColumn(e)) {
+      console.warn('Product.isArchived missing — run prisma migrate deploy on backend');
+      return await prisma.product.findMany({
+        where,
+        include,
+        ...extra,
+      });
+    }
+    throw e;
+  }
+}
+
 /** Доступність у місті: явне додавання в ProductCity АБО «усі міста» (нема жодного зв’язку). */
 function whereVisibleInCity(cityId: number | null) {
   if (cityId == null || !Number.isFinite(cityId) || cityId <= 0) return undefined;
@@ -139,10 +172,7 @@ router.get('/', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req, res) => {
 
     // Список для меню/адмін-таблиці: тільки category. Інакше 100+ товарів × ingredients → величезний JSON,
     // Safari/мобілка можуть не отримати тіло. Деталі — GET /:id, інгредієнти — /api/ingredients.
-    const products = await prisma.product.findMany({
-      where: { ...whereNotArchived, ...(cityWhere ? cityWhere : {}) },
-      include: { category: true },
-    });
+    const products = await findPublicProducts(cityWhere ? { ...cityWhere } : {});
     res.json(products.map(sanitizeProductImagesForApi));
   } catch (error) {
     console.error('Ошибка получения товаров:', error);
@@ -673,24 +703,27 @@ router.get('/recommendations', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req
       ...(cityScope || {}),
     };
 
-    let recommendations = await prisma.product.findMany({
-      where: baseWhere,
-      take,
-      include: { category: true, ingredients: true },
-      orderBy: [{ cartRecommendOrder: 'asc' }, { recommendOrder: 'asc' }, { id: 'asc' }],
-    });
+    let recommendations = await findPublicProducts(
+      baseWhere,
+      { category: true, ingredients: true },
+      {
+        take,
+        orderBy: [{ cartRecommendOrder: 'asc' }, { recommendOrder: 'asc' }, { id: 'asc' }],
+      },
+    );
 
     if (recommendations.length === 0) {
-      recommendations = await prisma.product.findMany({
-        where: {
-          ...whereNotArchived,
+      recommendations = await findPublicProducts(
+        {
           ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
           ...(cityScope || {}),
         },
-        take: Math.min(12, take),
-        include: { category: true, ingredients: true },
-        orderBy: [{ isPopular: 'desc' }, { id: 'asc' }],
-      });
+        { category: true, ingredients: true },
+        {
+          take: Math.min(12, take),
+          orderBy: [{ isPopular: 'desc' }, { id: 'asc' }],
+        },
+      );
     }
 
     res.json(recommendations.map(sanitizeProductImagesForApi));
@@ -722,7 +755,9 @@ router.get('/:id', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req: any, res: 
       } 
     });
 
-    if (!product || product.isArchived) return res.status(404).json({ error: 'Product not found' });
+    if (!product || (product as { isArchived?: boolean }).isArchived === true) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
     res.json(sanitizeProductImagesForApi(product));
   } catch (e) {
     console.error(e);
