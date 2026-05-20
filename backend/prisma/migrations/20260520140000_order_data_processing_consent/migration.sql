@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "Order" ADD COLUMN "dataProcessingConsentAt" TIMESTAMP(3);
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "dataProcessingConsentAt" TIMESTAMP(3);
