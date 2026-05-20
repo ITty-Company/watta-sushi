@@ -25,6 +25,10 @@ import {
   WATTA_PRODUCT_DETAIL_CACHED_EVENT,
   warmupProductDetail,
 } from '@/lib/fetchProductById'
+import {
+  ensureIngredientsCatalog,
+  parseIngredientIds,
+} from '@/lib/wattaIngredientsCatalog'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { useProductFavorite } from '@/hooks/useProductFavorite'
@@ -95,12 +99,21 @@ function cacheHasIngredients(row: Record<string, unknown> | null): boolean {
   return Array.isArray(ing) && ing.length > 0
 }
 
+function cacheHasDisplayableProduct(row: Record<string, unknown> | null): boolean {
+  if (!row) return false
+  const id = Number(row.id)
+  if (!Number.isFinite(id) || id <= 0) return false
+  const price = Number(row.price)
+  const name = String(row.name_ru ?? row.name_ua ?? row.name_en ?? '').trim()
+  return name.length > 0 && Number.isFinite(price)
+}
+
 function readInitialProductState(id: number): { product: Product | null; loading: boolean } {
   if (id <= 0) return { product: null, loading: false }
   if (typeof window === 'undefined') return { product: null, loading: true }
   const cached = readProductFromClientCache(id)
   if (!cached) return { product: null, loading: true }
-  return { product: rowToProduct(cached), loading: !cacheHasIngredients(cached) }
+  return { product: rowToProduct(cached), loading: !cacheHasDisplayableProduct(cached) }
 }
 
 export default function ProductView({ productId, onBack }: ProductViewProps) {
@@ -122,6 +135,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   const [fetchAttempt, setFetchAttempt] = useState(0)
   const { liked: isFavorite, toggle: toggleFavorite } = useProductFavorite(numericProductId)
   const [justAdded, setJustAdded] = useState(false)
+  const [compositionPending, setCompositionPending] = useState(false)
   const recScrollRef = useRef<HTMLDivElement>(null)
 
   const lang = language as WattaLanguage
@@ -141,20 +155,33 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
 
   useEffect(() => {
     if (numericProductId <= 0) return
+    let cancelled = false
     const applyCached = () => {
       const row = readProductFromClientCache(numericProductId)
       if (!row) return
       setProduct(rowToProduct(row))
-      if (cacheHasIngredients(row)) setIsLoading(false)
+      if (cacheHasDisplayableProduct(row)) setIsLoading(false)
+      if (cacheHasIngredients(row)) {
+        setCompositionPending(false)
+      } else {
+        const ids = parseIngredientIds(row)
+        setCompositionPending(ids.length > 0)
+      }
     }
     applyCached()
+    void ensureIngredientsCatalog().then(() => {
+      if (!cancelled) applyCached()
+    })
     const onDetail = (e: Event) => {
       const detail = (e as CustomEvent<{ id: number }>).detail
       if (detail?.id === numericProductId) applyCached()
     }
     window.addEventListener(WATTA_PRODUCT_DETAIL_CACHED_EVENT, onDetail)
     void warmupProductDetail(numericProductId)
-    return () => window.removeEventListener(WATTA_PRODUCT_DETAIL_CACHED_EVENT, onDetail)
+    return () => {
+      cancelled = true
+      window.removeEventListener(WATTA_PRODUCT_DETAIL_CACHED_EVENT, onDetail)
+    }
   }, [numericProductId])
 
   useLayoutEffect(() => {
@@ -167,7 +194,9 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     const cached = readProductFromClientCache(numericProductId)
     if (cached) {
       setProduct(rowToProduct(cached))
-      setIsLoading(!cacheHasIngredients(cached))
+      setIsLoading(!cacheHasDisplayableProduct(cached))
+      const ids = parseIngredientIds(cached)
+      setCompositionPending(ids.length > 0 && !cacheHasIngredients(cached))
     } else {
       setProduct(null)
       setIsLoading(true)
@@ -183,10 +212,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     const ac = new AbortController()
     let cancelled = false
 
-    const cachedRow = readProductFromClientCache(numericProductId)
-    if (!cacheHasIngredients(cachedRow)) {
-      setIsLoading(true)
-    }
+    void ensureIngredientsCatalog()
 
     const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
     const recQ = new URLSearchParams({ excludeId: String(numericProductId), limit: '24' })
@@ -203,11 +229,17 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
         if (cancelled) return
         if (row) {
           setProduct(rowToProduct(row))
+          setCompositionPending(
+            parseIngredientIds(row).length > 0 && !cacheHasIngredients(row),
+          )
           return
         }
         const cached = readProductFromClientCache(numericProductId)
         if (cached) {
           setProduct(rowToProduct(cached))
+          setCompositionPending(
+            parseIngredientIds(cached).length > 0 && !cacheHasIngredients(cached),
+          )
         }
       })
       .catch((e) => {
@@ -218,7 +250,10 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
         if (cached) setProduct(rowToProduct(cached))
       })
       .finally(() => {
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled) {
+          setIsLoading(false)
+          setCompositionPending(false)
+        }
       })
 
     void recFetch
@@ -384,7 +419,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     lang,
   )
   const ingredients = product.ingredients && product.ingredients.length > 0 ? product.ingredients : []
-  const compositionLoading = ingredients.length === 0 && isLoading
+  const compositionLoading = compositionPending && ingredients.length === 0
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
   const unitEffective = effectiveUnitPrice(product.price, promoPct)
   const lineTotal = Math.round(product.price * quantity * 100) / 100
@@ -519,7 +554,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                   </h2>
                 </div>
                 <div className="bg-white px-2.5 py-2.5 sm:px-4 sm:py-3">
-                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                  <div className="grid grid-cols-4 gap-2 sm:gap-2.5 md:grid-cols-5 md:gap-3 lg:grid-cols-6">
                     {ingredients.length > 0
                       ? ingredients.map((ing) => (
                           <div
@@ -546,7 +581,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                             </p>
                           </div>
                         ))
-                      : Array.from({ length: 4 }).map((_, i) => (
+                      : Array.from({ length: 6 }).map((_, i) => (
                           <div
                             key={i}
                             className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-[#145142]/8 bg-[#f6faf8] p-1.5 sm:rounded-2xl sm:p-2"

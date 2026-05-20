@@ -52,6 +52,7 @@ import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSi
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { ensureIngredientsCatalog } from '@/lib/wattaIngredientsCatalog'
 import { productGalleryFromApi } from '@/lib/productGallery'
 
 /**
@@ -938,6 +939,7 @@ export default function MenuView() {
 
   const loadMenuItems = useCallback((opts?: { fresh?: boolean }) => {
     const fresh = opts?.fresh === true
+    void ensureIngredientsCatalog()
     setHomeMenuProductsLoadFailed(false)
     const cityIdToUse = selectedCityId || cityIdPreferAmsterdam(deliveryCities) || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
     const url = cityIdToUse ? `/api/products?cityId=${cityIdToUse}` : '/api/products'
@@ -2046,7 +2048,7 @@ export default function MenuView() {
 
   return (
     <div
-      className="menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col bg-transparent"
+      className="menu-page-web watta-site-hero-page-web relative flex min-h-0 w-full max-w-[100vw] flex-col bg-transparent"
       data-watta-home-narrow-strip-hero={homeNarrowStripHero ? '1' : undefined}
     >
       <WattaStickyChromeLayout

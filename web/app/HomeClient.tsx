@@ -175,7 +175,7 @@ export default function HomeClient() {
         {activeTab !== 0 ? (
           <NotificationsView isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
         ) : null}
-        <Footer className="mt-auto" />
+        <Footer />
       </div>
     </div>
     </WattaBootSplashGate>

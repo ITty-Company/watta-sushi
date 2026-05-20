@@ -498,6 +498,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [productSaving, setProductSaving] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  /** Якщо користувач закрив модалку або відкрив інший товар — не перезаписувати форму з фонового GET. */
+  const productModalHydrateIdRef = useRef<number | null>(null)
   /** Після власного збереження не перезаписувати список застарілим GET з кешу. */
   const skipCatalogRefetchRef = useRef(false)
   
@@ -817,10 +819,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           case 'cartUpsell':
           case 'products': {
             const bust = Date.now()
-            const [prodRes, catRes, ingredientsRes] = await Promise.all([
+            const [prodRes, catRes, ingredientsRes, citiesRes] = await Promise.all([
               fetch(`/api/products?_=${bust}`, { headers, cache: 'no-store' }),
               fetch(`/api/products/categories?_=${bust}`, { headers, cache: 'no-store' }),
               fetch('/api/ingredients', { headers, cache: 'no-store' }),
+              fetch('/api/cities/all', { headers, cache: 'no-store' }),
             ])
             if (prodRes.ok) {
               const productsData = await prodRes.json()
@@ -835,6 +838,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               const ingList = await ingredientsRes.json()
               setIngredients(Array.isArray(ingList) ? ingList : [])
               loadedTabsRef.current.add('ingredients')
+            }
+            if (citiesRes.ok) {
+              setCities(await citiesRes.json())
+              loadedTabsRef.current.add('cities')
             }
             loadedTabsRef.current.add('products')
             loadedTabsRef.current.add('cartUpsell')
@@ -1537,116 +1544,143 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
   }
 
-  const openCreateModal = async () => {
-    setEditingId(null)
-    // Загружаем города при открытии модального окна
-    const token = localStorage.getItem('token')
-    const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
-    const [citiesRes] = await Promise.all([
-      fetch('/api/cities/all', { headers: adminHeaders }),
-      loadIngredientsLibrary(adminHeaders),
-      ensureProductEditorCatalog(adminHeaders),
-    ])
-    if (citiesRes.ok) {
-      const citiesData = await citiesRes.json()
-      setCities(citiesData)
+  const emptyProductFormData = () => ({
+    name_ru: '',
+    name_ua: '',
+    name_en: '',
+    name_nl: '',
+    price: '',
+    description_ru: '',
+    description_ua: '',
+    description_en: '',
+    description_nl: '',
+    categoryId: '',
+    imageUrls: [] as string[],
+    cityIds: [] as number[],
+    ingredientIds: [] as number[],
+    isPopular: false,
+    isHomeHit: false,
+    isMenuNew: false,
+    isCartRecommend: false,
+    recommendOrder: '0',
+    cartRecommendOrder: '0',
+    promoDiscountPercent: '0',
+  })
+
+  const productFormFromList = (product: Product) => {
+    const hitsOn = Boolean(product.isPopular) || Boolean(product.isHomeHit)
+    return {
+      name_ru: product.name_ru,
+      name_ua: product.name_ua || '',
+      name_en: product.name_en || '',
+      name_nl: product.name_nl || '',
+      price: product.price.toString(),
+      description_ru: product.description_ru || '',
+      description_ua: product.description_ua || '',
+      description_en: product.description_en || '',
+      description_nl: product.description_nl || '',
+      categoryId: product.categoryId.toString(),
+      imageUrls: productGalleryFromApi({
+        imageUrl: product.imageUrl,
+        imageUrls: product.imageUrls,
+      }),
+      cityIds: [] as number[],
+      ingredientIds: [] as number[],
+      isPopular: hitsOn,
+      isHomeHit: hitsOn,
+      isMenuNew: Boolean(product.isMenuNew),
+      isCartRecommend: Boolean(product.isCartRecommend),
+      recommendOrder: String(product.recommendOrder ?? 0),
+      cartRecommendOrder: String(product.cartRecommendOrder ?? 0),
+      promoDiscountPercent: String(product.promoDiscountPercent ?? 0),
     }
-    setFormData({ 
-      name_ru: '', name_ua: '', name_en: '', name_nl: '',
-      price: '', 
-      description_ru: '', description_ua: '', description_en: '', description_nl: '',
-      categoryId: '', imageUrls: [],
-      cityIds: [],
-      ingredientIds: [],
-      isPopular: false,
-      isHomeHit: false,
-      isMenuNew: false,
-      isCartRecommend: false,
-      recommendOrder: '0',
-      cartRecommendOrder: '0',
-      promoDiscountPercent: '0',
-    })
-    setIsModalOpen(true)
   }
 
-  const openEditModal = async (product: Product) => {
-    setEditingId(product.id)
-    // Загружаем города и связи товара с городами
+  const productFormFromApi = (productData: Record<string, unknown>, fallback: Product) => {
+    const hitsOn = Boolean(productData.isPopular) || Boolean(productData.isHomeHit)
+    const cities = productData.cities as { cityId: number }[] | undefined
+    const ings = productData.ingredients as { id: number }[] | undefined
+    return {
+      name_ru: String(productData.name_ru ?? fallback.name_ru),
+      name_ua: String(productData.name_ua || ''),
+      name_en: String(productData.name_en || ''),
+      name_nl: String(productData.name_nl || ''),
+      price: String(productData.price ?? fallback.price),
+      description_ru: String(productData.description_ru || ''),
+      description_ua: String(productData.description_ua || ''),
+      description_en: String(productData.description_en || ''),
+      description_nl: String(productData.description_nl || ''),
+      categoryId: String(productData.categoryId ?? fallback.categoryId),
+      imageUrls: productGalleryFromApi({
+        imageUrl: productData.imageUrl as string | undefined,
+        imageUrls: productData.imageUrls,
+      }),
+      cityIds: cities?.map((pc) => pc.cityId) || [],
+      ingredientIds: ings?.map((i) => i.id) || [],
+      isPopular: hitsOn,
+      isHomeHit: hitsOn,
+      isMenuNew: Boolean(productData.isMenuNew),
+      isCartRecommend: Boolean(productData.isCartRecommend),
+      recommendOrder: String(productData.recommendOrder ?? 0),
+      cartRecommendOrder: String(productData.cartRecommendOrder ?? 0),
+      promoDiscountPercent: String(productData.promoDiscountPercent ?? 0),
+    }
+  }
+
+  const prefetchProductEditorDeps = (adminHeaders: HeadersInit) => {
+    void loadIngredientsLibrary(adminHeaders)
+    void ensureProductEditorCatalog(adminHeaders)
+    if (!loadedTabsRef.current.has('cities')) {
+      void fetch('/api/cities/all', { headers: adminHeaders, cache: 'no-store' })
+        .then(async (res) => {
+          if (!res.ok) return
+          setCities(await res.json())
+          loadedTabsRef.current.add('cities')
+        })
+        .catch(() => {})
+    }
+  }
+
+  const closeProductModal = () => {
+    productModalHydrateIdRef.current = null
+    setIsModalOpen(false)
+  }
+
+  const openCreateModal = () => {
+    productModalHydrateIdRef.current = null
+    setEditingId(null)
+    setFormData(emptyProductFormData())
+    setIsModalOpen(true)
     const token = localStorage.getItem('token')
     const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
-    const [citiesRes, productRes] = await Promise.all([
-      fetch('/api/cities/all', { headers: adminHeaders }),
-      fetch(`/api/products/${product.id}`, { headers: adminHeaders, cache: 'no-store' }),
-      loadIngredientsLibrary(adminHeaders),
-      ensureProductEditorCatalog(adminHeaders),
-    ])
-    if (citiesRes.ok) {
-      const citiesData = await citiesRes.json()
-      setCities(citiesData)
-    }
-    if (productRes.ok) {
-      const productData = await productRes.json()
-      const hitsOn = Boolean(productData.isPopular) || Boolean(productData.isHomeHit)
-      setFormData({
-        name_ru: productData.name_ru ?? product.name_ru,
-        name_ua: productData.name_ua || '',
-        name_en: productData.name_en || '',
-        name_nl: productData.name_nl || '',
-        
-        price: String(productData.price ?? product.price),
-        
-        description_ru: productData.description_ru || '',
-        description_ua: productData.description_ua || '',
-        description_en: productData.description_en || '',
-        description_nl: productData.description_nl || '',
-        
-        categoryId: String(productData.categoryId ?? product.categoryId),
-        imageUrls: productGalleryFromApi({
-          imageUrl: productData.imageUrl,
-          imageUrls: (productData as { imageUrls?: unknown }).imageUrls,
-        }),
-        cityIds: productData.cities?.map((pc: any) => pc.cityId) || [],
-        ingredientIds: (productData.ingredients as { id: number }[] | undefined)?.map((i) => i.id) || [],
-        isPopular: hitsOn,
-        isHomeHit: hitsOn,
-        isMenuNew: Boolean((productData as { isMenuNew?: boolean }).isMenuNew),
-        isCartRecommend: Boolean(productData.isCartRecommend),
-        recommendOrder: String(productData.recommendOrder ?? 0),
-        cartRecommendOrder: String(productData.cartRecommendOrder ?? 0),
-        promoDiscountPercent: String(productData.promoDiscountPercent ?? 0),
-      })
-    } else {
-      const hitsOn = Boolean(product.isPopular) || Boolean(product.isHomeHit)
-      setFormData({
-        name_ru: product.name_ru,
-        name_ua: product.name_ua || '',
-        name_en: product.name_en || '',
-        name_nl: product.name_nl || '',
-        
-        price: product.price.toString(),
-        
-        description_ru: product.description_ru || '',
-        description_ua: product.description_ua || '',
-        description_en: product.description_en || '',
-        description_nl: product.description_nl || '',
-        
-        categoryId: product.categoryId.toString(),
-        imageUrls: productGalleryFromApi({
-          imageUrl: product.imageUrl,
-          imageUrls: (product as { imageUrls?: unknown }).imageUrls,
-        }),
-        cityIds: [],
-        ingredientIds: [],
-        isPopular: hitsOn,
-        isHomeHit: hitsOn,
-        isMenuNew: Boolean((product as { isMenuNew?: boolean }).isMenuNew),
-        isCartRecommend: Boolean(product.isCartRecommend),
-        recommendOrder: String(product.recommendOrder ?? 0),
-        cartRecommendOrder: String(product.cartRecommendOrder ?? 0),
-        promoDiscountPercent: String(product.promoDiscountPercent ?? 0),
-      })
-    }
+    prefetchProductEditorDeps(adminHeaders)
+  }
+
+  const openEditModal = (product: Product) => {
+    productModalHydrateIdRef.current = product.id
+    setEditingId(product.id)
+    setFormData(productFormFromList(product))
     setIsModalOpen(true)
+    const token = localStorage.getItem('token')
+    const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+    prefetchProductEditorDeps(adminHeaders)
+    const targetId = product.id
+    void (async () => {
+      try {
+        const productRes = await fetch(`/api/products/${targetId}`, {
+          headers: adminHeaders,
+          cache: 'no-store',
+        })
+        if (productModalHydrateIdRef.current !== targetId) return
+        if (productRes.ok) {
+          const productData = (await productRes.json()) as Record<string, unknown>
+          if (productModalHydrateIdRef.current !== targetId) return
+          setFormData(productFormFromApi(productData, product))
+        }
+      } catch {
+        /* форма вже заповнена зі списку */
+      }
+    })()
   }
 
   const handleDeleteProduct = async (id: number) => {
@@ -1665,7 +1699,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         const data = (await res.json().catch(() => ({}))) as { archived?: boolean; message?: string }
         setProducts((prev) => prev.filter((p) => p.id !== id))
         if (editingId === id) {
-          setIsModalOpen(false)
+          closeProductModal()
           setEditingId(null)
         }
         if (typeof window !== 'undefined') {
@@ -1735,6 +1769,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         return
       }
 
+      const existingProduct = editingId ? products.find((p) => p.id === editingId) : undefined
       const payload = {
         name_ru: (formData.name_ru || '').trim() || anyName,
         name_ua: (formData.name_ua || '').trim() || anyName,
@@ -1757,10 +1792,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         isPopular: Boolean(formData.isPopular),
         isHomeHit: Boolean(formData.isHomeHit),
         isMenuNew: Boolean(formData.isMenuNew),
-        isCartRecommend: Boolean(formData.isCartRecommend),
-        recommendOrder: Number(formData.recommendOrder) || 0,
-        cartRecommendOrder: Number(formData.cartRecommendOrder) || 0,
-        promoDiscountPercent: Number(formData.promoDiscountPercent) || 0,
+        /* Кошик, порядок і знижка — окрема вкладка адмінки; при редагуванні не скидаємо */
+        isCartRecommend: existingProduct?.isCartRecommend ?? false,
+        recommendOrder: existingProduct?.recommendOrder ?? 0,
+        cartRecommendOrder: existingProduct?.cartRecommendOrder ?? 0,
+        promoDiscountPercent: existingProduct?.promoDiscountPercent ?? 0,
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
       
@@ -1800,7 +1836,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           }
           return [...prev, normalized]
         })
-        setIsModalOpen(false)
+        closeProductModal()
         setEditingId(null)
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('products')
@@ -4139,7 +4175,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
           {activeTab === 'products' && (
              <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
-                <button 
+                <button
+                  type="button"
                   onClick={openCreateModal}
                   className="w-full h-14 sm:h-16 md:h-[77px] bg-[#155044] rounded-[12px] sm:rounded-[15px] flex items-center justify-center text-white text-base sm:text-xl md:text-[24px] font-bold hover:bg-[#103d34] transition shadow-md px-4"
                 >
@@ -4185,16 +4222,18 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
                             {/* КНОПКИ ДЕЙСТВИЙ */}
                             <div className="flex gap-2">
-                              <button 
+                              <button
+                                type="button"
                                 onClick={() => openEditModal(product)}
-                                className="p-1.5 text-[#145142]/50 hover:text-[#145142] hover:bg-[#145142]/10 rounded-lg transition"
+                                className="p-1.5 text-[#145142]/50 hover:text-[#145142] hover:bg-[#145142]/10 rounded-lg transition touch-manipulation"
                                 title={t.adminPanel.actions.edit}
                               >
                                 <Pencil size={18} />
                               </button>
-                              <button 
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteProduct(product.id)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition touch-manipulation"
                                 title={t.adminPanel.actions.delete}
                               >
                                 <Trash2 size={18} />
@@ -6086,7 +6125,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </h2>
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeProductModal}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-none hover:bg-red-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                 aria-label="Закрыть"
               >
@@ -6325,10 +6364,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
               <div className="rounded-xl border border-[#145142]/15 bg-white p-3 sm:p-4">
                 <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#145142]/80">
-                  Вітрина: хіти, кошик і акції
+                  Вітрина
                 </p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="flex cursor-pointer items-start gap-2 text-sm font-semibold text-gray-800 sm:col-span-2">
+                <div className="flex flex-col gap-3">
+                  <label className="flex cursor-pointer items-start gap-2 text-sm font-semibold text-gray-800">
                     <input
                       type="checkbox"
                       checked={formData.isPopular || formData.isHomeHit}
@@ -6345,7 +6384,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       </span>
                     </span>
                   </label>
-                  <label className="flex cursor-pointer items-start gap-2 text-sm font-semibold text-gray-800 sm:col-span-2">
+                  <label className="flex cursor-pointer items-start gap-2 text-sm font-semibold text-gray-800">
                     <input
                       type="checkbox"
                       checked={formData.isMenuNew}
@@ -6359,53 +6398,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       </span>
                     </span>
                   </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-gray-800 sm:col-span-2">
-                    <input
-                      type="checkbox"
-                      checked={formData.isCartRecommend}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, isCartRecommend: e.target.checked }))}
-                      className="h-4 w-4 rounded border-[#145142]/40 text-[#145142] focus:ring-[#145142]"
-                    />
-                    Рекомендації в кошику та на сторінці товару (окремо від «хітів» — можна ввімкнути обидва)
-                  </label>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Порядок у блоці «хіти» на головній (менше — раніше)</label>
-                    <input
-                      type="number"
-                      name="recommendOrder"
-                      value={formData.recommendOrder}
-                      onChange={handleInputChange}
-                      min={0}
-                      className="w-full rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Порядок у рекомендаціях кошика (менше — раніше)</label>
-                    <input
-                      type="number"
-                      name="cartRecommendOrder"
-                      value={formData.cartRecommendOrder}
-                      onChange={handleInputChange}
-                      min={0}
-                      className="w-full rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs font-medium text-[#145142]/80">Акційна знижка, % (0 = без акції)</label>
-                    <input
-                      type="number"
-                      name="promoDiscountPercent"
-                      value={formData.promoDiscountPercent}
-                      onChange={handleInputChange}
-                      min={0}
-                      max={100}
-                      className="w-full max-w-md rounded-lg border border-[#145142]/20 bg-white p-2 text-sm outline-none focus:ring-2 focus:ring-[#145142]"
-                    />
-                  </div>
                 </div>
-                <p className="mt-2 text-[11px] leading-snug text-gray-500">
-                  У категорії має бути ввімкнено «рекомендації». Блок «хіти/хіт» і «кошик» — окремо; перший виставляє і топ-бейдж, і показ на головній.
-                </p>
               </div>
 
               {/* --- ВЫБОР ИНГРЕДИЕНТОВ --- */}

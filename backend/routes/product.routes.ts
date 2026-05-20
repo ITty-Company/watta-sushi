@@ -164,16 +164,29 @@ function whereVisibleInCity(cityId: number | null) {
   } as const;
 }
 
+/** Список меню: лише id інгредієнтів (без фото/назв) — клієнт зливає з GET /api/ingredients. */
+function toMenuListProduct(
+  p: { ingredients?: { id: number }[] } & Record<string, unknown>,
+) {
+  const base = sanitizeProductImagesForApi(p as { imageUrl?: string | null; imageUrls?: unknown });
+  const ingredientIds = Array.isArray(p.ingredients)
+    ? p.ingredients.map((i) => i.id).filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+  const { ingredients: _ing, ...rest } = base as typeof base & { ingredients?: unknown };
+  return { ...rest, ingredientIds };
+}
+
 // 1. Получить ВСЕ товары (с фильтрацией по городу)
 router.get('/', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req, res) => {
   try {
     const cityId = req.query.cityId ? parseInt(req.query.cityId as string) : null;
     const cityWhere = whereVisibleInCity(Number.isFinite(cityId) && cityId > 0 ? cityId! : null);
 
-    // Список для меню/адмін-таблиці: тільки category. Інакше 100+ товарів × ingredients → величезний JSON,
-    // Safari/мобілка можуть не отримати тіло. Деталі — GET /:id, інгредієнти — /api/ingredients.
-    const products = await findPublicProducts(cityWhere ? { ...cityWhere } : {});
-    res.json(products.map(sanitizeProductImagesForApi));
+    const products = await findPublicProducts(cityWhere ? { ...cityWhere } : {}, {
+      category: true,
+      ingredients: { select: { id: true } },
+    });
+    res.json(products.map((p) => toMenuListProduct(p as { ingredients?: { id: number }[] } & Record<string, unknown>)));
   } catch (error) {
     console.error('Ошибка получения товаров:', error);
     res.status(500).json({ message: 'Ошибка получения товаров' });
