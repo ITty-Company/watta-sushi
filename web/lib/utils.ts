@@ -9,18 +9,18 @@ export function cn(...inputs: ClassValue[]) {
 export function getApiUrl(path: string = ''): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`
 
+  // У браузері завжди той самий origin — Next rewrites /api та /uploads на Express.
+  // NEXT_PUBLIC_API_URL на окремий Render-сервіс часто дає 404; через web origin працює.
   if (typeof window !== 'undefined') {
-    // У dev: однакові origin-запити → Next rewrites на Express (і на LAN-телефоні не 127.0.0.1).
-    if (process.env.NODE_ENV === 'development') {
-      return cleanPath
-    }
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || ''
-    if (apiBaseUrl) {
-      const base = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl
-      return `${base}${cleanPath}`
-    }
+    return cleanPath
   }
-  // SSR або прод без змінної — відносний шлях
+
+  const apiBaseUrl =
+    process.env.BACKEND_URL?.trim() || process.env.NEXT_PUBLIC_API_URL?.trim() || ''
+  if (apiBaseUrl) {
+    const base = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl
+    return `${base}${cleanPath}`
+  }
   return cleanPath
 }
 

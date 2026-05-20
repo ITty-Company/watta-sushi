@@ -2,7 +2,7 @@ import { getApiUrl } from '@/lib/utils'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
-import { productHasGalleryImages } from '@/lib/productGallery'
+import { productGalleryFromApi, productHasGalleryImages } from '@/lib/productGallery'
 
 export function normalizeProductRouteId(raw: unknown): number | null {
   const value = Array.isArray(raw) ? raw[0] : raw
@@ -18,6 +18,26 @@ function findInRawList(list: unknown[], id: number): Record<string, unknown> | n
     }
   }
   return null
+}
+
+function isProductRow(row: unknown): row is Record<string, unknown> {
+  if (!row || typeof row !== 'object') return false
+  const id = Number((row as { id?: unknown }).id)
+  return Number.isFinite(id) && id > 0
+}
+
+function mergeProductImages(
+  base: Record<string, unknown>,
+  extra: Record<string, unknown> | null,
+): Record<string, unknown> {
+  if (!extra) return base
+  if (productHasGalleryImages(base)) return base
+  if (!productHasGalleryImages(extra)) return base
+  return {
+    ...base,
+    imageUrl: extra.imageUrl ?? base.imageUrl,
+    imageUrls: extra.imageUrls ?? base.imageUrls,
+  }
 }
 
 const PRODUCT_PRIME_PREFIX = 'watta_product_prime_'
@@ -79,8 +99,8 @@ export function readProductFromClientCache(id: number): Record<string, unknown> 
     const prime = sessionStorage.getItem(`${PRODUCT_PRIME_PREFIX}${id}`)
     if (prime) {
       const parsed = JSON.parse(prime) as unknown
-      if (parsed && typeof parsed === 'object') {
-        return parsed as Record<string, unknown>
+      if (isProductRow(parsed)) {
+        return parsed
       }
     }
   } catch {
@@ -127,7 +147,7 @@ async function fetchProductList(
       if (!res.ok) continue
       const data = (await res.json()) as unknown
       if (!Array.isArray(data)) continue
-      return data.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === 'object'))
+      return data.filter((row): row is Record<string, unknown> => isProductRow(row))
     } catch (e) {
       if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') throw e
     }
@@ -136,8 +156,7 @@ async function fetchProductList(
 }
 
 /**
- * Завантажує товар для /product/:id: прямий GET, потім кеш меню та список /api/products
- * (якщо кеш застарів або одиночний запит тимчасово впав).
+ * Завантажує товар для /product/:id: прямий GET, потім кеш меню та список /api/products.
  */
 export async function fetchProductById(
   id: number,
@@ -145,18 +164,17 @@ export async function fetchProductById(
   options?: { fresh?: boolean },
 ): Promise<Record<string, unknown> | null> {
   const fetchFn = options?.fresh ? fetchPublicApiFresh : fetchPublicApi
+
   try {
     const res = await fetchFn(getApiUrl(`/api/products/${id}`), { signal })
     if (res.ok) {
       const body = (await res.json()) as unknown
-      if (body && typeof body === 'object') {
+      if (isProductRow(body)) {
         const row = body as Record<string, unknown>
-        if (productHasGalleryImages(row)) return row
-        const cityIdOk = typeof window !== 'undefined' ? readCityIdForProductApi() : null
-        const list = await fetchProductList(cityIdOk, signal, true)
-        const fromList = findInRawList(list, id)
-        if (fromList && productHasGalleryImages(fromList)) {
-          return { ...row, imageUrl: fromList.imageUrl, imageUrls: fromList.imageUrls }
+        if (!productHasGalleryImages(row)) {
+          const cityIdOk = typeof window !== 'undefined' ? readCityIdForProductApi() : null
+          const list = await fetchProductList(cityIdOk, signal, true)
+          return mergeProductImages(row, findInRawList(list, id))
         }
         return row
       }
@@ -165,17 +183,20 @@ export async function fetchProductById(
     if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') throw e
   }
 
-  if (!options?.fresh) {
-    const fromCache = readProductFromClientCache(id)
-    if (fromCache && productHasGalleryImages(fromCache)) return fromCache
+  const fromCache = readProductFromClientCache(id)
+  if (fromCache && isProductRow(fromCache)) {
+    return fromCache
   }
 
   const cityIdOk = typeof window !== 'undefined' ? readCityIdForProductApi() : null
-
   const list = await fetchProductList(cityIdOk, signal, Boolean(options?.fresh))
-  const fromList = findInRawList(list, id)
+  let fromList = findInRawList(list, id)
+  if (!fromList) {
+    const globalList = await fetchProductList(null, signal, Boolean(options?.fresh))
+    fromList = findInRawList(globalList, id)
+  }
   if (fromList) {
-    if (typeof sessionStorage !== 'undefined' && cityIdOk != null) {
+    if (typeof sessionStorage !== 'undefined' && cityIdOk != null && list.length > 0) {
       try {
         const key = menuItemsSessionKey(cityIdOk)
         sessionStorage.setItem(key, JSON.stringify(list))
