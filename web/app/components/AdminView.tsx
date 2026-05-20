@@ -70,6 +70,11 @@ import {
   adminProductPreviewSrc,
   normalizeAdminProductRow,
 } from '@/lib/adminProductMedia'
+import {
+  adminProductsCacheIsFresh,
+  readAdminProductsCache,
+  writeAdminProductsCache,
+} from '@/lib/adminProductsCache'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { isAdminRole } from '@/lib/isAdminRole'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
@@ -483,7 +488,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   >('dashboard')
   
   const [orders, setOrders] = useState<Order[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const initialAdminProducts = useMemo(() => readAdminProductsCache() ?? [], [])
+  const [products, setProducts] = useState<Product[]>(() => initialAdminProducts as Product[])
+  const [productsListReady, setProductsListReady] = useState(() => initialAdminProducts.length > 0)
+  const [productsListLoading, setProductsListLoading] = useState(() => initialAdminProducts.length === 0)
   const [promos, setPromos] = useState<PromoCode[]>([]) // Промокоды
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
   const [adminReviews, setAdminReviews] = useState<AdminReviewRow[]>([])
@@ -824,6 +832,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           }
           case 'cartUpsell':
           case 'products': {
+            if (tab === 'products' || tab === 'cartUpsell') {
+              setProductsListLoading(true)
+            }
             const bust = Date.now()
             const [prodRes, catRes, ingredientsRes, citiesRes] = await Promise.all([
               fetch(`/api/products?_=${bust}`, { headers, cache: 'no-store' }),
@@ -831,11 +842,19 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               fetch('/api/ingredients', { headers, cache: 'no-store' }),
               fetch('/api/cities/all', { headers, cache: 'no-store' }),
             ])
+            if (handleAdminAuthDenied([prodRes.status, catRes.status])) return
             if (prodRes.ok) {
               const productsData = await prodRes.json()
               const list = Array.isArray(productsData) ? productsData : []
-              setProducts(list.map((row) => normalizeAdminProductRow(row as Product)))
-            } else setProducts([])
+              const normalized = list.map((row) => normalizeAdminProductRow(row as Product))
+              setProducts(normalized)
+              if (normalized.length > 0) writeAdminProductsCache(normalized)
+              loadedTabsRef.current.add('products')
+              loadedTabsRef.current.add('cartUpsell')
+            } else {
+              const cached = readAdminProductsCache()
+              if (cached?.length) setProducts(cached as Product[])
+            }
             if (catRes.ok) {
               const c = await catRes.json()
               setMenuCategories(c)
@@ -849,8 +868,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               setCities(await citiesRes.json())
               loadedTabsRef.current.add('cities')
             }
-            loadedTabsRef.current.add('products')
-            loadedTabsRef.current.add('cartUpsell')
             break
           }
           case 'ingredients': {
@@ -946,6 +963,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         toast.error('Ошибка при загрузке данных')
       } finally {
         if (showTabSpinner) setIsLoading(false)
+        if (tab === 'products' || tab === 'cartUpsell') {
+          setProductsListReady(true)
+          setProductsListLoading(false)
+        }
       }
     },
     [
@@ -1094,14 +1115,34 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       return
     }
 
+    const cached = readAdminProductsCache()
+    if (cached?.length) {
+      setProducts(cached as Product[])
+      setProductsListLoading(false)
+    }
+
     void fetchTabData('dashboard')
     void Promise.all(ADMIN_PREFETCH_TABS.map((tab) => fetchTabData(tab)))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- старт адмінки один раз при відкритті
   }, [])
 
   useEffect(() => {
+    if (activeTab === 'products' || activeTab === 'cartUpsell') {
+      const cached = readAdminProductsCache()
+      if (cached?.length && products.length === 0) {
+        setProducts(cached as Product[])
+        setProductsListLoading(false)
+      }
+      if (!loadedTabsRef.current.has('products') || !adminProductsCacheIsFresh()) {
+        void fetchTabData('products', { force: !loadedTabsRef.current.has('products') })
+      } else {
+        setProductsListReady(true)
+        setProductsListLoading(false)
+      }
+      return
+    }
     void fetchTabData(activeTab)
-  }, [activeTab, fetchTabData])
+  }, [activeTab, fetchTabData, products.length])
 
   // Закрытие селектора флагов и поиска города при клике вне
   useEffect(() => {
@@ -1703,7 +1744,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       })
       if (res.ok) {
         const data = (await res.json().catch(() => ({}))) as { archived?: boolean; message?: string }
-        setProducts((prev) => prev.filter((p) => p.id !== id))
+        setProducts((prev) => {
+          const next = prev.filter((p) => p.id !== id)
+          writeAdminProductsCache(next)
+          return next
+        })
         if (editingId === id) {
           closeProductModal()
           setEditingId(null)
@@ -1837,10 +1882,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         }
         skipCatalogRefetchRef.current = true
         setProducts((prev) => {
-          if (editingId) {
-            return prev.map((p) => (p.id === editingId ? { ...p, ...normalized } : p))
-          }
-          return [...prev, normalized]
+          const next = editingId
+            ? prev.map((p) => (p.id === editingId ? { ...p, ...normalized } : p))
+            : [...prev, normalized]
+          writeAdminProductsCache(next)
+          return next
         })
         closeProductModal()
         setEditingId(null)
@@ -4258,11 +4304,25 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   })}
                 </div>
                 </div>
-                {products.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-4 text-center text-sm text-gray-500">
-                    No products found
+                {productsListLoading && products.length === 0 ? (
+                  <div className="admin-watta-products-grid-inner grid w-full min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5 md:grid-cols-4 md:gap-3 lg:grid-cols-5 xl:grid-cols-6">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-2 rounded-[12px] border border-[#145142]/8 bg-white/80 p-2.5"
+                      >
+                        <div className="aspect-[4/3] w-full animate-pulse rounded-[10px] bg-[#145142]/10" />
+                        <div className="h-3 w-4/5 animate-pulse rounded bg-[#145142]/10" />
+                        <div className="h-2.5 w-1/2 animate-pulse rounded bg-[#145142]/8" />
+                      </div>
+                    ))}
                   </div>
-                )}
+                ) : null}
+                {productsListReady && !productsListLoading && products.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-4 text-center text-sm text-gray-500">
+                    {adminUiLanguage === 'ru' ? 'Товаров не найдено' : 'Товарів не знайдено'}
+                  </div>
+                ) : null}
              </div>
           )}
           {/* === Вкладка: ИНГРЕДИЕНТЫ === */}
