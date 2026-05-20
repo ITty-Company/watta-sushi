@@ -11,6 +11,7 @@ export type CatalogIngredient = {
 }
 
 const CACHE_KEY = 'watta_ingredients_catalog_v1'
+const LS_CACHE_KEY = 'watta_ingredients_catalog_v1'
 const memoryById = new Map<number, CatalogIngredient>()
 let inflight: Promise<Map<number, CatalogIngredient> | null> | null = null
 
@@ -26,34 +27,47 @@ function hydrateMemory(list: CatalogIngredient[]): Map<number, CatalogIngredient
   return memoryById
 }
 
-function readSessionCatalog(): CatalogIngredient[] | null {
-  if (typeof sessionStorage === 'undefined') return null
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return null
-    return parsed.filter(isIngredientRow)
-  } catch {
-    return null
+function readStoredCatalog(): CatalogIngredient[] | null {
+  if (typeof window === 'undefined') return null
+  for (const store of [sessionStorage, localStorage] as const) {
+    try {
+      const raw = store.getItem(CACHE_KEY) ?? (store === localStorage ? store.getItem(LS_CACHE_KEY) : null)
+      if (!raw) continue
+      const parsed = JSON.parse(raw) as unknown
+      if (!Array.isArray(parsed)) continue
+      const list = parsed.filter(isIngredientRow)
+      if (list.length > 0) return list
+    } catch {
+      /* ignore */
+    }
   }
+  return null
 }
 
 function writeSessionCatalog(list: CatalogIngredient[]): void {
-  if (typeof sessionStorage === 'undefined') return
+  if (typeof window === 'undefined') return
+  const payload = JSON.stringify(list)
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(list))
+    sessionStorage.setItem(CACHE_KEY, payload)
+    localStorage.setItem(LS_CACHE_KEY, payload)
   } catch {
     /* quota */
   }
 }
 
+/** Після SSR / prefetch — одразу доступний «Склад» на клієнті. */
+export function seedIngredientsCatalog(list: CatalogIngredient[]): void {
+  if (!list.length) return
+  writeSessionCatalog(list)
+  hydrateMemory(list)
+}
+
 /** Синхронно: памʼять або sessionStorage (для миттєвого «Складу» на /product). */
 export function readIngredientsCatalogSync(): Map<number, CatalogIngredient> | null {
   if (memoryById.size > 0) return memoryById
-  const fromSession = readSessionCatalog()
-  if (!fromSession?.length) return null
-  return hydrateMemory(fromSession)
+  const stored = readStoredCatalog()
+  if (!stored?.length) return null
+  return hydrateMemory(stored)
 }
 
 export function parseIngredientIds(row: Record<string, unknown>): number[] {
