@@ -12,7 +12,7 @@ export function getUploadsDir() {
   const fromEnv = process.env.UPLOAD_DIR?.trim()
   const dir = fromEnv
     ? path.resolve(fromEnv)
-    : path.resolve(__dirname, '../../web/public/uploads')
+    : path.resolve(__dirname, '../uploads')
   fs.mkdirSync(dir, { recursive: true })
   cachedDir = dir
   return dir

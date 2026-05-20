@@ -52,7 +52,7 @@ export function getStorageHealthSnapshot() {
     uploads: {
       path: uploadDir,
       uploadDirEnv,
-      mode: uploadDirEnv ? 'UPLOAD_DIR' : 'default_web_public',
+      mode: uploadDirEnv ? 'UPLOAD_DIR' : 'default_backend_uploads',
       persistentDiskLikely,
       exists,
       writable,

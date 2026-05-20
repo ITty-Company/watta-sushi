@@ -440,7 +440,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
               </div>
             </div>
 
-            {(desc || ingredients.length > 0) && (
+            {ingredients.length > 0 && (
               <section className="w-full max-w-full rounded-xl border border-[#145142]/20 bg-white sm:rounded-[24px]">
                 <div className="flex items-center gap-1.5 border-b border-[#145142]/12 bg-white px-2.5 py-2 sm:gap-2 sm:px-4 sm:py-2.5">
                   <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#e85d2a] sm:h-4 sm:w-4" strokeWidth={2.4} aria-hidden />
@@ -448,13 +448,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                     {pd.composition}
                   </h2>
                 </div>
-                <div className="space-y-3 bg-white px-2.5 py-2.5 sm:space-y-4 sm:px-4 sm:py-3">
-                  {desc ? (
-                    <p className="text-[13px] leading-relaxed text-neutral-700 sm:text-base sm:leading-[1.75] whitespace-pre-line">
-                      {desc}
-                    </p>
-                  ) : null}
-                  {ingredients.length > 0 ? (
+                <div className="bg-white px-2.5 py-2.5 sm:px-4 sm:py-3">
                     <div className="grid grid-cols-4 gap-2 sm:gap-3">
                       {ingredients.map((ing) => (
                         <div
@@ -482,7 +476,6 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                         </div>
                       ))}
                     </div>
-                  ) : null}
                 </div>
               </section>
             )}
