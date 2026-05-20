@@ -92,6 +92,7 @@ export default function FullMenuPageClient() {
     setHeroVideoSourceIndex,
     videoSources,
     playlistLength,
+    heroVideoShouldLoop,
   } = useHomeHeroVideo()
 
   /** Як на головній: ≤768px — поточна сітка; планшет+ — горизонтальний свайп. */
@@ -294,10 +295,10 @@ export default function FullMenuPageClient() {
       extendedRetries: true,
       blockInteractionRoot:
         !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
-      loop: WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES.length <= 1,
+      loop: heroVideoShouldLoop,
     })
     return () => offAutoplay()
-  }, [heroVideoSrc, heroVideoFailed])
+  }, [heroVideoSrc, heroVideoFailed, heroVideoShouldLoop])
 
   useWattaCatalogSync(() => {
     void loadProducts(true)
