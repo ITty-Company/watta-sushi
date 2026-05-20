@@ -486,6 +486,46 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
       });
     }
 
+    const category = await prisma.category.findUnique({ where: { id: cid }, select: { id: true } });
+    if (!category) {
+      return res.status(400).json({
+        error: 'Категория не найдена. Обновите страницу и выберите категорию снова.',
+        message: 'category_not_found',
+      });
+    }
+
+    const cityIdsNorm = Array.isArray(cityIds)
+      ? cityIds
+          .map((cityId: unknown) => parseInt(String(cityId), 10))
+          .filter((n) => Number.isFinite(n) && n > 0)
+      : [];
+
+    if (cityIdsNorm.length > 0) {
+      const citiesFound = await prisma.city.count({ where: { id: { in: cityIdsNorm } } });
+      if (citiesFound !== cityIdsNorm.length) {
+        return res.status(400).json({
+          error: 'Часть городов не найдена. Обновите страницу админки.',
+          message: 'city_not_found',
+        });
+      }
+    }
+
+    const ingredientIdsNorm = Array.isArray(ingredientIds)
+      ? ingredientIds
+          .map((ingId: unknown) => parseInt(String(ingId), 10))
+          .filter((n) => Number.isFinite(n) && n > 0)
+      : [];
+
+    if (ingredientIdsNorm.length > 0) {
+      const ingFound = await prisma.ingredient.count({ where: { id: { in: ingredientIdsNorm } } });
+      if (ingFound !== ingredientIdsNorm.length) {
+        return res.status(400).json({
+          error: 'Часть ингредиентов не найдена. Обновите вкладку «Ингредиенты» и страницу.',
+          message: 'ingredient_not_found',
+        });
+      }
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
@@ -503,30 +543,38 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
         cartRecommendOrder: Math.round(Number(cartRecommendOrder) || 0),
         promoDiscountPercent: promoPct,
 
-        // Обновляем связи с городами
-        cities: cityIds && Array.isArray(cityIds) && cityIds.length > 0 ? {
-          create: cityIds.map((cityId: any) => ({
-            cityId: parseInt(cityId)
-          }))
-        } : undefined,
+        cities:
+          cityIdsNorm.length > 0
+            ? {
+                create: cityIdsNorm.map((cityId) => ({ cityId })),
+              }
+            : undefined,
 
-        // Обновляем ингредиенты (перезаписываем список)
         ingredients: {
-            set: ingredientIds && Array.isArray(ingredientIds) 
-                 ? ingredientIds.map((ingId: any) => ({ id: Number(ingId) }))
-                 : []
-        }
+          set: ingredientIdsNorm.map((id) => ({ id })),
+        },
       },
       include: {
         cities: { include: { city: true } },
-        ingredients: true
-      }
+        ingredients: true,
+      },
     });
 
     res.json(sanitizeProductImagesForApi(updatedProduct));
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Ошибка обновления товара' });
+  } catch (error: unknown) {
+    console.error('PUT /api/products/:id', error);
+    const code =
+      typeof error === 'object' && error && 'code' in error
+        ? String((error as { code: string }).code)
+        : '';
+    if (code === 'P2003' || code === 'P2025') {
+      return res.status(400).json({
+        message: 'Связанные данные устарели (категория, город или ингредиент). Обновите страницу.',
+      });
+    }
+    const msg =
+      error instanceof Error && error.message ? String(error.message) : 'Ошибка обновления товара';
+    res.status(500).json({ message: msg, error: 'Ошибка обновления товара' });
   }
 });
 
