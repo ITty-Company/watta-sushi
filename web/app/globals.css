@@ -1266,6 +1266,8 @@
 }
 
 .location-picker-backdrop {
+  min-height: 100dvh;
+  min-height: 100svh;
   animation: locationPickerBackdropIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   background:
     radial-gradient(ellipse 90% 55% at 50% -5%, rgba(20, 81, 66, 0.38) 0%, transparent 58%),
@@ -1943,6 +1945,15 @@ html.watta-light-chrome {
   max-width: 100vw;
 }
 
+/* Головна: .app-web → .content-web з внутрішнім скролом і підвалом */
+.watta-app-main-grow > .app-web {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .watta-app-main-grow > .watta-full-menu-page,
 .watta-app-main-grow > .menu-page-web,
 .watta-app-main-grow > .watta-public-page-shell,
@@ -2002,6 +2013,13 @@ html.watta-light-chrome:has(.floating-contact-buttons-root) {
 .watta-sticky-chrome-flow-anchor > .fixed,
 body > .watta-sticky-chrome-portal {
   z-index: 200;
+}
+
+/* Липкий chrome: суцільний фон — скрол каталогу не «просвічує» крізь категорії */
+body > .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome,
+body > .watta-sticky-chrome-portal.watta-public-sticky-chrome {
+  background: #ffffff;
+  box-shadow: 0 6px 28px rgba(20, 81, 66, 0.08);
 }
 
 /* Підвал у MenuView (головна) — під fixed chrome */
@@ -2863,21 +2881,13 @@ html.watta-light-chrome body {
 }
 .watta-full-menu-sticky-chrome .categories-panel-web,
 .watta-public-sticky-chrome .categories-panel-web {
-  /* Той самий папер, що сторінка — без смуги «чисто біле / сірий папір» */
-  background: var(--watta-page-gradient);
-  border: 1px solid rgba(20, 81, 66, 0.09);
+  background: #ffffff;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  border-radius: clamp(14px, 2.4vw, 22px);
   box-shadow:
     0 4px 20px rgba(20, 81, 66, 0.06),
-    0 1px 0 rgba(255, 255, 255, 0.75) inset;
-}
-@media (min-width: 1025px) {
-  .watta-full-menu-sticky-chrome .categories-panel-web,
-  .watta-public-sticky-chrome .categories-panel-web {
-    border-radius: 14px;
-    box-shadow:
-      0 3px 16px rgba(20, 81, 66, 0.05),
-      0 1px 0 rgba(255, 255, 255, 0.75) inset;
-  }
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  overflow: hidden;
 }
 /* /menu: зазор під sticky як на глобальній сітці — 0 з планшету, невеликий лише на телефоні */
 .watta-full-menu-below-sticky-spacer {
@@ -3273,13 +3283,14 @@ html.watta-light-chrome body {
 }
 
 /*
- * Головна: підвал у кінці скролу .content-web (після меню/банерів), не «прилипший» до viewport.
- * Раніше min-height:100% + margin-top:auto на футері ставили його поверх каталогу.
+ * Головна: підвал внизу .content-web (коротка сторінка — внизу вікна; довга — після скролу).
+ * min-height лише на scroll-контейнері; menu-page-web без min-height:100% — інакше футер накладався на каталог.
  */
 .content-web--watta-craft:has(> .site-footer-watta) {
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .content-web--watta-craft:has(> .site-footer-watta) > *:not(.site-footer-watta) {
@@ -3288,16 +3299,20 @@ html.watta-light-chrome body {
 }
 
 .content-web--watta-craft:has(> .site-footer-watta) > .site-footer-watta {
-  margin-top: clamp(1.25rem, 2.5vh, 2rem);
+  margin-top: auto;
   flex: 0 0 auto;
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  width: 100%;
+  border-radius: var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px));
+  overflow: hidden;
 }
 
 .content-web--watta-craft:has(> .site-footer-watta) > .menu-page-web {
   flex: 0 0 auto;
   min-height: 0;
+  width: 100%;
 }
 
 /* Головна: вертикальний snap вимкнено — на Safari/WebKit клієнт «застрягав» після банерів, каталог не прокручувався/не був видимий. */
@@ -3702,7 +3717,7 @@ html.watta-light-chrome body {
   visibility: visible !important;
   transform: none !important;
   animation: none !important;
-  z-index: 2;
+  z-index: 1;
   isolation: isolate;
   /* Той самий кліп, що на /menu: flex + overflow:hidden обрізали сітку/стрічку товарів. */
   overflow: visible !important;
@@ -5273,7 +5288,8 @@ html.watta-light-chrome body {
 
   .menu-page-web:not(.watta-full-menu-page)
     .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
-    margin-top: clamp(-88px, -9vh, -108px) !important;
+    margin-top: clamp(10px, 1.2vh, 18px) !important;
+    margin-bottom: clamp(12px, 1.5vh, 22px) !important;
   }
 }
 
@@ -5282,7 +5298,7 @@ html.watta-light-chrome body {
 /* Контент після відео: свій фон і z-index, щоб банер/меню не «просвічували» крізь відео */
 .menu-after-welcome-web {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   background: transparent;
 }
 
@@ -5353,7 +5369,8 @@ html.watta-light-chrome body {
 /* Повний каталог на головній — секція + креативний хедер Watta */
 .home-menu-catalog-section-web {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 1;
 }
 
 /* Без додаткового патерну — інакше поверх body з’являються «смуги»/плями */
@@ -5420,17 +5437,37 @@ html.watta-light-chrome body {
   }
 }
 
-/* Категорія на головній — без підсвітки / смуги під заголовком.
- * Горизонтальний padding лише зверху/знизу: стрічка товарів тягнеться на всю ширину секції без «втоплення» в бік. */
+/* Секції каталогу на головній — картка зі скругленням, нічого не врізається під chrome */
+.menu-page-web:not(.watta-full-menu-page) .home-menu-cat-band-web {
+  margin: 0 auto;
+  max-width: min(100%, 1400px);
+  padding: clamp(0.85rem, 2vw, 1.15rem) clamp(0.65rem, 1.8vw, 1rem)
+    clamp(0.95rem, 2.2vw, 1.2rem);
+  border-radius: var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px));
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #ffffff;
+  box-shadow: 0 8px 32px rgba(20, 81, 66, 0.07);
+  overflow: hidden;
+}
+
+.watta-full-menu-page .home-menu-cat-band-web,
 .home-menu-cat-band-web {
   margin: 0;
   padding: 1rem 0 1.1rem;
   border-radius: 0;
   border: none;
   background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
 @media (min-width: 640px) {
+  .menu-page-web:not(.watta-full-menu-page) .home-menu-cat-band-web {
+    padding: clamp(1rem, 2.2vw, 1.25rem) clamp(0.85rem, 2vw, 1.15rem)
+      clamp(1.05rem, 2.4vw, 1.3rem);
+  }
+
+  .watta-full-menu-page .home-menu-cat-band-web,
   .home-menu-cat-band-web {
     padding: 1.15rem 0 1.2rem;
   }
@@ -6859,8 +6896,6 @@ html.watta-light-chrome body {
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  clip-path: inset(0 round var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)));
-  -webkit-clip-path: inset(0 round var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)));
 }
 
 /*
@@ -7736,7 +7771,8 @@ html.watta-light-chrome body {
   .menu-page-web:not(.watta-full-menu-page)
     .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
     max-width: min(100% - 32px, 1400px) !important;
-    margin-top: clamp(-88px, -9.1vh, -108px) !important;
+    margin-top: clamp(10px, 1.2vh, 18px) !important;
+    margin-bottom: clamp(12px, 1.5vh, 22px) !important;
     padding-top: clamp(6px, 0.75vh, 10px) !important;
     padding-bottom: var(--watta-home-hero-card-pad-b) !important;
     padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
@@ -15746,6 +15782,10 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 .admin-shell-watta-web > .admin-watta-stack {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .admin-watta-header {
@@ -15826,6 +15866,76 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
     margin-bottom: 1.5rem;
     padding: 0.85rem 1.15rem;
     border-radius: 1.1rem;
+  }
+}
+
+/* Товари: одна смуга «меню + додати», сітка на всю висоту вікна */
+.admin-watta-tab-toolbar--products {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  margin-bottom: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  gap: 0.45rem;
+}
+
+.admin-watta-tab-toolbar--products .admin-watta-tab-toolbar-menu {
+  max-width: min(48%, 14rem);
+}
+
+.admin-watta-tab-toolbar--products .admin-watta-products-add-btn {
+  min-height: 2.5rem;
+}
+
+.admin-watta-products-tab {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  --admin-watta-products-chrome-h: calc(
+    3.5rem + 3.25rem + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px) + 1.25rem
+  );
+}
+
+@media (min-width: 640px) {
+  .admin-watta-products-tab {
+    --admin-watta-products-chrome-h: calc(3.75rem + 3.5rem + 1.5rem);
+  }
+}
+
+.admin-watta-products-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100dvh - var(--admin-watta-products-chrome-h));
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: 0.35rem;
+}
+
+.admin-watta-product-card.admin-watta-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 639px) {
+  .admin-watta-tab-toolbar--products {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .admin-watta-tab-toolbar--products .admin-watta-tab-toolbar-menu {
+    width: auto;
+    flex: 0 1 auto;
+    max-width: 46%;
+    justify-content: flex-start;
+  }
+
+  .admin-watta-tab-toolbar--products .admin-watta-products-add-btn {
+    width: auto;
+    flex: 1 1 auto;
+    justify-content: center;
   }
 }
 
@@ -15953,13 +16063,17 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   -webkit-overflow-scrolling: touch;
 }
 
 .admin-watta-page-inner {
   min-width: 0;
   max-width: 100%;
-  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 
 .admin-watta-scroll-x {
@@ -16074,12 +16188,12 @@ body.admin-watta-overlay-open {
     display: none;
   }
 
-  .admin-watta-tab-toolbar {
+  .admin-watta-tab-toolbar:not(.admin-watta-tab-toolbar--products) {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .admin-watta-tab-toolbar button {
+  .admin-watta-tab-toolbar:not(.admin-watta-tab-toolbar--products) button {
     width: 100%;
     justify-content: center;
   }
@@ -16832,9 +16946,9 @@ body.admin-watta-overlay-open {
   flex-shrink: 0;
   margin-bottom: 0;
   overflow: hidden;
-  background: var(--watta-page-gradient);
-  border-top: none;
-  box-shadow: none;
+  background: #ffffff;
+  border-top: 1px solid rgba(20, 81, 66, 0.08);
+  box-shadow: 0 -4px 24px rgba(20, 81, 66, 0.04);
 }
 
 .site-footer-watta__inner {

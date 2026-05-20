@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { LocationPickerMascot } from './LocationPickerMascot'
 import { cn } from '@/lib/utils'
 import {
+  ensureCountriesCatalog,
   getCountriesCatalog,
   getCountriesCatalogIfCached,
   invalidateCountriesCatalogCache,
@@ -76,6 +77,13 @@ function normalizeCountry(raw: Record<string, unknown>): Country {
   }
 }
 
+function initialCountriesFromCache(): Country[] {
+  if (typeof window === 'undefined') return []
+  const cached = getCountriesCatalogIfCached()
+  if (!cached?.length) return []
+  return cached.map((row) => normalizeCountry(row)).filter((c) => c.isActive)
+}
+
 interface CountryCitySelectorProps {
   onCityChange?: (cityId: number) => void
   /** Компактна кнопка в боковому меню (без подвійної рамки) */
@@ -88,6 +96,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
 }) => {
   const { t, getLocalized } = useLanguage()
   const lp = t.locationPicker
+  const bootCountries = initialCountriesFromCache()
   const labelCountry = useCallback(
     (c: Country) => getLocalized(c, 'name') || c.name,
     [getLocalized]
@@ -98,10 +107,10 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   )
 
   const [isOpen, setIsOpen] = useState(false)
-  const [countries, setCountries] = useState<Country[]>([])
+  const [countries, setCountries] = useState<Country[]>(bootCountries)
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null)
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(bootCountries.length === 0)
   const [catalogRefreshing, setCatalogRefreshing] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -114,6 +123,10 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  const warmupCatalog = useCallback(() => {
+    void ensureCountriesCatalog()
   }, [])
 
   const applyResolvedList = useCallback((list: Country[]) => {
@@ -270,15 +283,22 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
       document.addEventListener('keydown', handleEscape)
+      const html = document.documentElement
+      const prevHtml = html.style.overflow
+      const prevBody = document.body.style.overflow
+      html.style.overflow = 'hidden'
       document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleEscape)
+        html.style.overflow = prevHtml
+        document.body.style.overflow = prevBody
+      }
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = ''
     }
   }, [isOpen])
 
@@ -309,8 +329,8 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
     setIsOpen(false)
   }
 
-  /** Перший запит ще без рядків — компактний спінер у тригері, але клік відкриває модалку одразу */
-  const triggerAwaitingCatalog = loading && countries.length === 0
+  /** Каталог ще не підвантажився — у модалці скелетон, не порожній екран */
+  const catalogPending = loading && countries.length === 0
 
   const cityL = selectedCity ? labelCity(selectedCity) : ''
   const countryL = selectedCountry ? labelCountry(selectedCountry) : ''
@@ -331,20 +351,24 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
         className={cn(
           'location-picker-trigger',
           appearance === 'drawer' && 'location-picker-trigger--drawer',
-          triggerAwaitingCatalog && 'location-picker-trigger--loading',
+          catalogPending && 'location-picker-trigger--loading',
           catalogRefreshing && 'location-picker-trigger--pulse'
         )}
+        onMouseEnter={warmupCatalog}
+        onFocus={warmupCatalog}
+        onTouchStart={warmupCatalog}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          warmupCatalog()
           setIsOpen(true)
         }}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={lp.ariaOpen}
-        aria-busy={triggerAwaitingCatalog}
+        aria-busy={catalogPending}
       >
-        {triggerAwaitingCatalog ? (
+        {catalogPending ? (
           <>
             <span
               className="location-picker-trigger__spin h-3.5 w-3.5 shrink-0 rounded-full border-2 border-[#145142]/30 border-t-[#145142]"
@@ -424,25 +448,24 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
                   </div>
                 )}
 
-                {triggerAwaitingCatalog ? (
-                  <div className="flex flex-col items-center justify-center gap-3 px-4 py-14 text-center">
-                    <span
-                      className="inline-block h-9 w-9 rounded-full border-2 border-[#145142]/22 border-t-[#145142]"
-                      style={{ animation: 'countryCityModalSpin 0.7s linear infinite' }}
-                      aria-hidden
-                    />
-                    <p className="m-0 text-sm font-semibold text-[#145142]">{lp.loading}</p>
-                  </div>
-                ) : null}
-
-                <section className="location-picker-section" hidden={triggerAwaitingCatalog}>
+                <section className="location-picker-section">
                   <div className="location-picker-section__head">
                     <span className="location-picker-section__icon" aria-hidden>
                       <MapPin size={17} strokeWidth={2.25} />
                     </span>
                     <span className="location-picker-section__label">{lp.country}</span>
                   </div>
-                  {!filteredCountries || filteredCountries.length === 0 ? (
+                  {catalogPending ? (
+                    <div className="location-picker-grid location-picker-grid--countries grid gap-2 sm:gap-3" aria-busy>
+                      {[0, 1].map((i) => (
+                        <div
+                          key={i}
+                          className="location-picker-chip location-picker-chip--skeleton h-11 animate-pulse rounded-2xl border border-[#145142]/10 bg-[#145142]/8 sm:h-12"
+                          aria-hidden
+                        />
+                      ))}
+                    </div>
+                  ) : !filteredCountries || filteredCountries.length === 0 ? (
                     <div className="location-picker-empty flex flex-col items-center gap-3 px-4 py-10 text-center">
                       <div className="text-5xl">🌍</div>
                       <div className="location-picker-empty__title">{lp.noCountries}</div>
@@ -474,7 +497,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
                   )}
                 </section>
 
-                {selectedCountry && (
+                {(selectedCountry || catalogPending) && (
                   <section className="location-picker-section location-picker-section--city">
                     <div className="location-picker-section__head">
                       <span className="location-picker-section__icon" aria-hidden>
@@ -482,9 +505,16 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
                       </span>
                       <span className="location-picker-section__label">{lp.city}</span>
                     </div>
-                    {filteredCities.length === 0 ? (
+                    {catalogPending ? (
+                      <div className="location-picker-grid location-picker-grid--cities grid gap-2 sm:gap-3" aria-busy>
+                        <div
+                          className="location-picker-chip location-picker-chip--skeleton h-11 animate-pulse rounded-2xl border border-[#145142]/10 bg-[#145142]/8 sm:h-12"
+                          aria-hidden
+                        />
+                      </div>
+                    ) : filteredCities.length === 0 ? (
                       <div className="location-picker-empty flex flex-col items-center gap-3 px-4 py-10 text-center">
-                        {!selectedCountry.cities || selectedCountry.cities.length === 0 ? (
+                        {!selectedCountry?.cities || selectedCountry.cities.length === 0 ? (
                           <>
                             <div className="text-5xl">🏙️</div>
                             <div className="location-picker-empty__title">{lp.noCitiesInCountry}</div>

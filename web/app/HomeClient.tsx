@@ -147,8 +147,8 @@ export default function HomeClient() {
 
   return (
     <WattaBootSplashGate onEnded={handleBootSplashEnded}>
-    <div className="app-web min-h-0 flex-1" suppressHydrationWarning>
-      <div className="content-web content-web--watta-craft">
+    <div className="app-web flex min-h-0 flex-1 flex-col" suppressHydrationWarning>
+      <div className="content-web content-web--watta-craft flex min-h-0 flex-1 flex-col">
         {activeTab === 0 && <MenuView />}
         {activeTab === 1 && (
           <CartView

@@ -86,9 +86,11 @@ function notifyCountriesCatalogUpdated() {
 function AdminProductCoverImage({
   coverSrc,
   alt,
+  compact = false,
 }: {
   coverSrc: string | null
   alt: string
+  compact?: boolean
 }) {
   const [broken, setBroken] = useState(false)
   useEffect(() => {
@@ -96,7 +98,11 @@ function AdminProductCoverImage({
   }, [coverSrc])
 
   return (
-    <motion.div className="relative h-[150px] w-full overflow-hidden rounded-[12px] border border-[#145142]/10 bg-white sm:h-[180px] sm:rounded-[15px] md:h-[200px]">
+    <motion.div
+      className={`relative w-full overflow-hidden rounded-[10px] border border-[#145142]/10 bg-white sm:rounded-[12px] ${
+        compact ? 'h-[4.5rem] sm:h-[5rem]' : 'h-[150px] sm:h-[180px] md:h-[200px] rounded-[12px] sm:rounded-[15px]'
+      }`}
+    >
       {coverSrc && !broken ? (
         <motion.img
           key={coverSrc}
@@ -107,7 +113,7 @@ function AdminProductCoverImage({
         />
       ) : (
         <motion.div className="flex h-full w-full items-center justify-center text-gray-300">
-          <ImageIcon size={32} className="h-8 w-8 sm:h-12 sm:w-12" />
+          <ImageIcon size={compact ? 22 : 32} className={compact ? 'h-5 w-5' : 'h-8 w-8 sm:h-12 sm:w-12'} />
         </motion.div>
       )}
     </motion.div>
@@ -3736,7 +3742,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       <header className="admin-watta-header w-full sticky top-0 z-40">
         <div className="w-full relative bg-gradient-to-r from-white/95 via-white/90 to-[#145142]/5 backdrop-blur-2xl border-b border-[#145142]/10 shadow-[0_4px_30px_rgba(20,81,66,0.08)]">
           <div className="absolute inset-0 bg-[linear-gradient(105deg,transparent_0%,rgba(20,81,66,0.03)_50%,transparent_100%)] pointer-events-none" />
-          <div className="admin-watta-header-inner relative w-full max-w-[1920px] mx-auto px-3 sm:px-5 md:px-6 h-16 sm:h-20 md:h-24 flex items-center justify-between gap-2 min-w-0">
+          <div className="admin-watta-header-inner relative w-full max-w-[1920px] mx-auto px-3 sm:px-5 md:px-6 h-14 sm:h-[3.75rem] md:h-16 flex items-center justify-between gap-2 min-w-0">
             <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-5">
               <button 
                 onClick={onBack}
@@ -3769,7 +3775,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     {t.adminPanel.header.title}
                   </h1>
                 </div>
-                <p className="admin-watta-header-subtitle text-xs sm:text-sm text-[#145142]/60 font-medium pl-11 sm:pl-12 max-sm:pl-0">
+                <p className="admin-watta-header-subtitle hidden text-xs text-[#145142]/60 font-medium pl-11 sm:pl-12 lg:block lg:text-sm max-lg:pl-0">
                   {t.adminPanel.header.subtitle}
                 </p>
               </div>
@@ -3826,8 +3832,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   }
 
   return (
-    <div className="admin-shell-watta-web min-h-screen w-full max-w-[100vw] font-sans relative overflow-x-clip">
-      <div className="admin-watta-stack relative z-10 min-h-screen">
+    <div className="admin-shell-watta-web flex min-h-[100dvh] min-h-[100svh] w-full max-w-[100vw] flex-col font-sans relative overflow-x-clip">
+      <div className="admin-watta-stack relative z-10 flex min-h-0 flex-1 flex-col">
         <Header />
 
         {/* Поза admin-watta-page-inner: інакше transform на батькові ламає position:fixed → панель «зрізається» */}
@@ -3947,8 +3953,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         )}
 
         {/* ОСНОВНОЙ КОНТЕНТ — дашборд на главній, панель справа з вкладками */}
-        <div className="admin-watta-main w-full min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100vh-80px)] md:min-h-[calc(100vh-128px)] pb-8 sm:pb-12 md:pb-20">
-          <div className="admin-watta-page-inner max-w-7xl mx-auto min-w-0 px-2 sm:px-4 md:px-6 pt-4 sm:pt-6 md:pt-8">
+        <div className="admin-watta-main flex min-h-0 w-full flex-1 flex-col pb-3 sm:pb-4">
+          <div className="admin-watta-page-inner mx-auto flex min-h-0 w-full max-w-[1920px] min-w-0 flex-1 flex-col px-2 sm:px-3 md:px-4 pt-2 sm:pt-3">
 
           {/* Головна: студійний дашборд з графіками */}
           {!isRightPanelOpen && activeTab === 'dashboard' && (
@@ -3982,22 +3988,36 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           {!isRightPanelOpen && activeTab !== 'dashboard' && (
             <motion.div
               key={activeTab}
-              className="w-full"
+              className={`w-full min-w-0${activeTab === 'products' ? ' flex min-h-0 flex-1 flex-col' : ''}`}
               initial={reduceMotion ? false : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reduceMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="admin-watta-tab-toolbar">
+              <div
+                className={`admin-watta-tab-toolbar${activeTab === 'products' ? ' admin-watta-tab-toolbar--products' : ''}`}
+              >
                 <motion.button
                   type="button"
                   onClick={() => setIsRightPanelOpen(true)}
                   whileHover={reduceMotion ? undefined : { scale: 1.02 }}
                   whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#145142]/12 to-[#1a6b58]/10 px-4 py-2.5 font-semibold text-[#145142] ring-1 ring-[#145142]/15 transition-all hover:from-[#145142]/18 hover:to-[#1a6b58]/14 hover:ring-[#145142]/25"
+                  className="admin-watta-tab-toolbar-menu inline-flex min-w-0 shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-[#145142]/12 to-[#1a6b58]/10 px-3 py-2 text-sm font-semibold text-[#145142] ring-1 ring-[#145142]/15 transition-all hover:from-[#145142]/18 hover:to-[#1a6b58]/14 hover:ring-[#145142]/25 sm:px-4 sm:py-2.5"
                 >
-                  <Menu size={18} />
-                  <span>{t.adminPanel.common.menuChangeSection}</span>
+                  <Menu size={18} className="shrink-0" />
+                  <span className="truncate">{t.adminPanel.common.menuChangeSection}</span>
                 </motion.button>
+                {activeTab === 'products' ? (
+                  <motion.button
+                    type="button"
+                    onClick={openCreateModal}
+                    whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                    className="admin-watta-products-add-btn inline-flex min-h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#155044] px-3 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#103d34] sm:min-h-11 sm:text-base"
+                  >
+                    <Plus size={18} className="shrink-0" strokeWidth={2.5} />
+                    <span className="truncate">{t.adminPanel.products.addBtn}</span>
+                  </motion.button>
+                ) : null}
               </div>
           {activeTab === 'orders' && (
             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 items-center">
@@ -4174,69 +4194,61 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           )}
 
           {activeTab === 'products' && (
-             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  className="w-full h-14 sm:h-16 md:h-[77px] bg-[#155044] rounded-[12px] sm:rounded-[15px] flex items-center justify-center text-white text-base sm:text-xl md:text-[24px] font-bold hover:bg-[#103d34] transition shadow-md px-4"
-                >
-                  {t.adminPanel.products.addBtn}
-                </button>
-
-                <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+             <div className="admin-watta-products-tab">
+                <div className="admin-watta-products-grid admin-watta-scroll-y">
+                <div className="admin-watta-products-grid-inner grid w-full min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5 md:grid-cols-4 md:gap-3 lg:grid-cols-5 xl:grid-cols-6">
                   {products.map((product) => {
                     const coverSrc = adminProductCoverSrc(product)
                     return (
-                    <div key={product.id} className="admin-watta-hover-lift flex flex-col gap-3 border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-4 sm:rounded-[20px] sm:p-5 md:rounded-[25px] rounded-[16px] hover:border-[#145142]/20 hover:shadow-2xl">
+                    <div key={product.id} className="admin-watta-product-card admin-watta-hover-lift flex flex-col gap-1.5 rounded-[12px] border border-white/60 bg-white/90 p-2 shadow-md shadow-[#145142]/8 backdrop-blur-sm sm:gap-2 sm:rounded-[14px] sm:p-2.5 hover:border-[#145142]/20">
                        <div className="relative">
-                       <AdminProductCoverImage coverSrc={coverSrc} alt={product.name_ru} />
-                         <div className="pointer-events-none absolute right-2 top-2 z-[2] flex flex-col items-end gap-1">
+                       <AdminProductCoverImage coverSrc={coverSrc} alt={product.name_ru} compact />
+                         <div className="pointer-events-none absolute right-1 top-1 z-[2] flex max-w-[70%] flex-col items-end gap-0.5">
                           {product.isHomeHit || product.isPopular ? (
-                            <span className="rounded-full bg-[#145142] px-2 py-1 text-[10px] font-bold text-white">
+                            <span className="rounded-full bg-[#145142] px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
                               Наші хіти
                             </span>
                           ) : null}
                           {product.isCartRecommend ? (
-                            <span className="rounded-full bg-indigo-600 px-2 py-1 text-[10px] font-bold text-white">Кошик</span>
+                            <span className="rounded-full bg-indigo-600 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">Кошик</span>
                           ) : null}
                            {(product.promoDiscountPercent ?? 0) > 0 ? (
-                             <span className="rounded-full bg-rose-500 px-2 py-1 text-[10px] font-bold text-white">
+                             <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
                                −{product.promoDiscountPercent}%
                              </span>
                            ) : null}
                          </div>
                        </div>
                        
-                       {/* Инфо */}
-                       <div className="flex flex-col flex-1">
-                         <div className="flex justify-between items-start mb-2 gap-2">
-                           <h3 className="text-base sm:text-lg md:text-[20px] font-bold text-black leading-tight flex-1">{product.name_ru}</h3>
-                           <span className="text-base sm:text-lg md:text-[20px] font-bold text-[#194A38] whitespace-nowrap">{product.price} €</span>
+                       <div className="flex min-h-0 flex-1 flex-col gap-1">
+                         <div className="flex items-start justify-between gap-1">
+                           <h3 className="line-clamp-2 min-w-0 flex-1 text-[11px] font-bold leading-tight text-black sm:text-xs">{product.name_ru}</h3>
+                           <span className="shrink-0 text-[11px] font-bold text-[#194A38] sm:text-xs">{product.price} €</span>
                          </div>
-                         {/* Футер карточки с кнопками */}
-                         <div className="mt-auto pt-2 border-t border-[#145142]/10 flex justify-between items-center text-xs text-gray-400">
-                            <div className="flex gap-2">
-                              <span>ID: {product.id}</span>
-                              <span className="hidden sm:inline">| {menuCategories.find(c => c.id === product.categoryId)?.name_ru}</span>
-                            </div>
-
-                            {/* КНОПКИ ДЕЙСТВИЙ */}
-                            <div className="flex gap-2">
+                         <div className="mt-auto flex items-center justify-between gap-1 border-t border-[#145142]/10 pt-1 text-[10px] text-gray-400">
+                            <span className="min-w-0 truncate">
+                              ID {product.id}
+                              <span className="hidden md:inline">
+                                {' '}
+                                · {menuCategories.find((c) => c.id === product.categoryId)?.name_ru}
+                              </span>
+                            </span>
+                            <div className="flex shrink-0 gap-0.5">
                               <button
                                 type="button"
                                 onClick={() => openEditModal(product)}
-                                className="p-1.5 text-[#145142]/50 hover:text-[#145142] hover:bg-[#145142]/10 rounded-lg transition touch-manipulation"
+                                className="rounded-md p-1 text-[#145142]/50 transition hover:bg-[#145142]/10 hover:text-[#145142] touch-manipulation"
                                 title={t.adminPanel.actions.edit}
                               >
-                                <Pencil size={18} />
+                                <Pencil size={15} />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => void handleDeleteProduct(product.id)}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition touch-manipulation"
+                                className="rounded-md p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-600 touch-manipulation"
                                 title={t.adminPanel.actions.delete}
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={15} />
                               </button>
                             </div>
                          </div>
@@ -4245,8 +4257,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     )
                   })}
                 </div>
+                </div>
                 {products.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-gray-500">
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-4 text-center text-sm text-gray-500">
                     No products found
                   </div>
                 )}

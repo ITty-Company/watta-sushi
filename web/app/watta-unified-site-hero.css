@@ -23,8 +23,7 @@
   margin-bottom: 0 !important;
   min-height: 0 !important;
   height: auto !important;
-  overflow-x: hidden !important;
-  overflow-y: visible !important;
+  overflow: hidden !important;
   padding: var(--watta-home-hero-below-cats, clamp(12px, 1.55vh, 22px)) clamp(12px, 3vw, 28px)
     clamp(10px, 1.5vh, 22px) !important;
   box-sizing: border-box;
@@ -44,6 +43,9 @@
   background: #0a1210 !important;
   border: 1px solid rgba(20, 81, 66, 0.18) !important;
   box-shadow: none !important;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .menu-page-web.watta-site-hero-page-web
@@ -62,6 +64,9 @@
   border-radius: var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)) !important;
   line-height: 0 !important;
   background: #0a1210 !important;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .menu-page-web.watta-site-hero-page-web
@@ -70,7 +75,12 @@
   .watta-home-hero-native-video,
 .menu-page-web.watta-site-hero-page-web
   .welcome-hero-section-web.watta-home-hero-as-card-web
-  .welcome-hero-fallback-image-web {
+  .welcome-hero-fallback-image-web,
+.menu-page-web.watta-site-hero-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web
+  .welcome-hero-video-stack-web
+  .welcome-hero-video-input-shield-web {
+  border-radius: inherit !important;
   object-fit: cover !important;
   object-position: center center !important;
   background-position: center center !important;
@@ -140,7 +150,8 @@
     max-width: min(100% - 32px, 1400px) !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    margin-top: clamp(-88px, -9.1vh, -108px) !important;
+    margin-top: clamp(10px, 1.2vh, 18px) !important;
+    margin-bottom: clamp(12px, 1.5vh, 22px) !important;
     padding-top: clamp(6px, 0.75vh, 10px) !important;
     padding-bottom: var(--watta-home-hero-card-pad-b) !important;
     padding-left: max(2rem, env(safe-area-inset-left, 0px)) !important;
