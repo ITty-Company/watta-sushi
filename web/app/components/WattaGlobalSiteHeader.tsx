@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useCallback, useSyncExternalStore, type CSSProperties } from 'react'
+import { useCallback, useEffect, useSyncExternalStore, type CSSProperties } from 'react'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react'
 import { getLiveCartPieceCount, subscribeCartStorage } from '@/lib/cartStorage'
