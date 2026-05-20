@@ -6,7 +6,12 @@ import { useLanguage } from '../context/LanguageContext'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
 import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
-import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG, WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
+import {
+  WATTA_MENU_REQUEST_SCROLL_TO_CAT,
+  FULL_MENU_ALL_SLUG,
+  WATTA_HOME_REQUEST_SCROLL_TO_CAT,
+  dispatchFullMenuScrollToCategory,
+} from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { getApiUrl } from '@/lib/utils'
 import { fetchPublicApi } from '@/lib/publicApiFetch'
@@ -323,14 +328,8 @@ function WattaMenuCategoryStripInner() {
 
     if (key === FULL_MENU_ALL_SLUG) {
       if (p === '/menu') {
-        router.push('/menu')
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.dispatchEvent(
-              new CustomEvent(WATTA_MENU_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }),
-            )
-          })
-        })
+        dispatchFullMenuScrollToCategory(key)
+        router.replace('/menu', { scroll: false })
       } else {
         router.push('/menu')
       }
@@ -338,14 +337,8 @@ function WattaMenuCategoryStripInner() {
     }
 
     if (p === '/menu') {
-      router.push(`/menu?cat=${encodeURIComponent(key)}`)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.dispatchEvent(
-            new CustomEvent(WATTA_MENU_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }),
-          )
-        })
-      })
+      dispatchFullMenuScrollToCategory(key)
+      router.replace(`/menu?cat=${encodeURIComponent(key)}`, { scroll: false })
       return
     }
     if (p === '/' || p === '') {

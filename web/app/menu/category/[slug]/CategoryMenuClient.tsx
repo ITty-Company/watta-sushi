@@ -6,12 +6,14 @@ import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
-import { fetchPublicApi } from '@/lib/publicApiFetch'
+import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import LogoBackground from '../../../components/LogoBackground'
 import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { productGalleryFromApi } from '@/lib/productGallery'
 
 interface MenuItem {
   id: number
@@ -82,7 +84,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
               .toLowerCase(),
             categoryId: p.categoryId,
             emoji: '🍣',
-            imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+            imageUrl: productGalleryFromApi(p)[0] || (typeof p.imageUrl === 'string' ? p.imageUrl : undefined),
             isTop: p.isPopular,
             isHomeHit: p.isHomeHit === true,
             isMenuNew: p.isMenuNew === true,
@@ -117,19 +119,20 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
     }
   }, [language, t.categories, normalizedSlug])
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (fresh = false) => {
     setLoading(true)
     try {
       const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
       const hasCity = cityId != null && cityId > 0
       const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
-      const scopedRes = await fetchPublicApi(scopedUrl)
+      const fetchFn = fresh ? fetchPublicApiFresh : fetchPublicApi
+      const scopedRes = await fetchFn(scopedUrl)
       const scopedData = scopedRes.ok ? await scopedRes.json() : []
       const scopedList = Array.isArray(scopedData) ? scopedData : []
       const rawProducts =
         hasCity && scopedList.length === 0
           ? await (async () => {
-              const fallbackRes = await fetchPublicApi(getApiUrl('/api/products'))
+              const fallbackRes = await fetchFn(getApiUrl('/api/products'))
               const fallbackData = fallbackRes.ok ? await fallbackRes.json() : []
               return Array.isArray(fallbackData) ? fallbackData : []
             })()
@@ -177,16 +180,13 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
     void loadProducts()
   }, [loadProducts, language])
 
+  useWattaCatalogSync(() => void loadProducts(true), 'products')
+
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const onProducts = () => void loadProducts()
-    const onCity = () => void loadProducts()
-    window.addEventListener('productsUpdated', onProducts)
+    const onCity = () => void loadProducts(true)
     window.addEventListener('cityChanged', onCity)
-    return () => {
-      window.removeEventListener('productsUpdated', onProducts)
-      window.removeEventListener('cityChanged', onCity)
-    }
+    return () => window.removeEventListener('cityChanged', onCity)
   }, [loadProducts])
 
   useEffect(() => {

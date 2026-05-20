@@ -2,20 +2,84 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC, PUBLIC_CACHE_MENU_SEC } from '../lib/publicApiCache.js';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { getUploadsDir } from '../lib/uploadsDir.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 const MAX_PRODUCT_GALLERY = 24;
+const MAX_IMAGE_URL_LENGTH = 2048;
+const uploadDir = getUploadsDir();
 
-/** Порядок URL у каруселі; якщо масив порожній — одне головне фото з imageUrl */
+/** Адмінка шле data URL — зберігаємо у uploads, у БД лише /uploads/… */
+function persistDataUrlProductImage(dataUrl: string): string | null {
+  const trimmed = dataUrl.trim();
+  const m = /^data:image\/(png|jpeg|jpg|webp|gif);base64,([\s\S]+)$/i.exec(trimmed);
+  if (!m) return null;
+  let ext = m[1].toLowerCase();
+  if (ext === 'jpeg') ext = 'jpg';
+  const b64 = m[2].replace(/\s/g, '');
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(b64, 'base64');
+  } catch {
+    return null;
+  }
+  if (buf.length < 24 || buf.length > 12 * 1024 * 1024) return null;
+
+  const name = `product-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+  const fp = path.join(uploadDir, name);
+  try {
+    fs.writeFileSync(fp, buf);
+  } catch (e) {
+    console.error('Product image write failed:', e);
+    return null;
+  }
+  return `/uploads/${name}`;
+}
+
+function normalizeProductImageUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const url = value.trim();
+  if (!url) return null;
+  if (url.startsWith('data:image/')) return persistDataUrlProductImage(url);
+  if (url.length > MAX_IMAGE_URL_LENGTH) return null;
+  if (url.startsWith('/') || /^https?:\/\//i.test(url)) return url;
+  return null;
+}
+
+/** Порядок URL у каруселі; data URL → файл у uploads */
 function normalizeProductImageList(imageUrls: unknown, imageUrl: unknown): string[] {
   const fromArray = Array.isArray(imageUrls)
-    ? imageUrls.map((x) => (x == null ? '' : String(x).trim())).filter((s) => s.length > 0)
+    ? imageUrls
+        .map((x) => normalizeProductImageUrl(x))
+        .filter((s): s is string => Boolean(s))
     : [];
   if (fromArray.length > 0) return fromArray.slice(0, MAX_PRODUCT_GALLERY);
-  const single = imageUrl != null && String(imageUrl).trim() !== '' ? String(imageUrl).trim() : '';
+  const single = normalizeProductImageUrl(imageUrl);
   return single ? [single] : [];
+}
+
+/** У відповідях API не віддаємо base64 — інакше /api/products важить десятки МБ і меню падає */
+function sanitizeProductImagesForApi<T extends { imageUrl?: string | null; imageUrls?: unknown }>(p: T): T {
+  const clean = (raw: string) => {
+    const u = raw.trim();
+    if (u.startsWith('data:') || u.startsWith('blob:') || u.length > MAX_IMAGE_URL_LENGTH) return '';
+    return u;
+  };
+  const imageUrl = p.imageUrl != null && String(p.imageUrl).trim() !== '' ? clean(String(p.imageUrl)) : '';
+  let imageUrls: string[] = [];
+  if (Array.isArray(p.imageUrls)) {
+    imageUrls = p.imageUrls
+      .map((x) => (x == null ? '' : clean(String(x))))
+      .filter((s) => s.length > 0)
+      .slice(0, MAX_PRODUCT_GALLERY);
+  }
+  if (imageUrls.length === 0 && imageUrl) imageUrls = [imageUrl];
+  return { ...p, imageUrl, imageUrls };
 }
 
 /** Доступність у місті: явне додавання в ProductCity АБО «усі міста» (нема жодного зв’язку). */
@@ -41,7 +105,7 @@ router.get('/', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req, res) => {
       where: cityWhere,
       include: { category: true },
     });
-    res.json(products);
+    res.json(products.map(sanitizeProductImagesForApi));
   } catch (error) {
     console.error('Ошибка получения товаров:', error);
     res.status(500).json({ message: 'Ошибка получения товаров' });
@@ -273,7 +337,7 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
         ingredients: true
       }
     });
-    res.json(product);
+    res.json(sanitizeProductImagesForApi(product));
   } catch (error: any) {
     console.error(error);
     const hint =
@@ -350,7 +414,7 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
       }
     });
 
-    res.json(updatedProduct);
+    res.json(sanitizeProductImagesForApi(updatedProduct));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Ошибка обновления товара' });
@@ -405,7 +469,7 @@ router.get('/recommendations', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req
       });
     }
 
-    res.json(recommendations);
+    res.json(recommendations.map(sanitizeProductImagesForApi));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error fetching recommendations' });
@@ -435,7 +499,7 @@ router.get('/:id', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req: any, res: 
     });
 
     if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.json(product);
+    res.json(sanitizeProductImagesForApi(product));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error fetching product' });

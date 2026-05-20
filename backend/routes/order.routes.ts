@@ -6,6 +6,7 @@ import { getJwtSecret } from '../lib/jwtSecret';
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
 import { sendOrderReceipt } from '../services/email.service';
+import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service';
 import Stripe from 'stripe';
 import crypto from 'crypto';
 
@@ -245,7 +246,16 @@ router.post('/', async (req: Request, res: Response) => {
       usedBonuses,
       noCallbackConfirm,
       noDoorbellRing,
+      dataProcessingConsent,
     } = req.body;
+
+    if (dataProcessingConsent !== true) {
+      res.status(400).json({
+        message:
+          'Потрібна згода на обробку персональних даних. Поставте галочку під номером телефону.',
+      });
+      return;
+    }
 
     const payMethod = String(paymentMethod || 'CASH').toUpperCase() === 'CARD' ? 'CARD' : 'CASH';
     if (payMethod === 'CARD' && !getStripeClient() && !hasLiqPayKeys()) {
@@ -378,6 +388,7 @@ router.post('/', async (req: Request, res: Response) => {
           comment: comment || null,
           noCallbackConfirm: Boolean(noCallbackConfirm),
           noDoorbellRing: Boolean(noDoorbellRing),
+          dataProcessingConsentAt: new Date(),
           totalPrice: totalWithBonuses,
           usedBonuses: safeUsedBonuses,
           status: 'PENDING',
@@ -397,6 +408,10 @@ router.post('/', async (req: Request, res: Response) => {
         },
       });
     });
+
+    if (effectiveUserId) {
+      await notifyUserOrderStatusChange(prisma, effectiveUserId, order.id, 'PENDING', null);
+    }
 
     // 2. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЯ
     // order.items теперь существует, так как мы добавили include выше
@@ -493,6 +508,11 @@ router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, paymentStatus } = req.body;
+    const orderId = parseInt(String(id), 10);
+    const previous = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { status: true, userId: true },
+    });
     const updatedOrder = await prisma.order.update({
       where: { id: parseInt(String(id)) },
       data: {
@@ -520,6 +540,16 @@ router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
           data: { bonusBalance: { increment: cashback } },
         });
       }
+    }
+
+    if (status !== undefined && updatedOrder.userId) {
+      await notifyUserOrderStatusChange(
+        prisma,
+        updatedOrder.userId,
+        updatedOrder.id,
+        String(status),
+        previous?.status ?? null,
+      );
     }
 
     if (updatedOrder.userId) {

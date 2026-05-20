@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -12,6 +12,9 @@ import {
   Star,
   X,
   Sparkles,
+  ChevronDown,
+  MapPin,
+  CreditCard,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage, type Language } from '@/app/context/LanguageContext'
@@ -47,6 +50,13 @@ export interface ProfileOrder {
   status: string
   items: ProfileOrderItem[]
   review?: ProfileOrderReview | null
+  address?: string
+  phone?: string
+  paymentMethod?: string
+  paymentStatus?: string
+  fulfillmentType?: string
+  deliveryFee?: number
+  comment?: string
 }
 
 function orderPipelineRank(status: string): number {
@@ -92,6 +102,14 @@ interface TProfile {
   orderLabel: string
   total: string
   reorder: string
+  showDetails?: string
+  hideDetails?: string
+  labelAddress?: string
+  labelFulfillment?: string
+  fulfillmentDelivery?: string
+  fulfillmentPickup?: string
+  labelPayment?: string
+  timelineTitle?: string
 }
 
 interface Props {
@@ -105,6 +123,7 @@ interface Props {
   onGoMenu: () => void
   onReorder: (order: ProfileOrder) => void
   onReviewSubmitted: (orderId: number, review: ProfileOrderReview) => void
+  highlightOrderId?: number
 }
 
 export default function ClientProfileOrders({
@@ -118,13 +137,19 @@ export default function ClientProfileOrders({
   onGoMenu,
   onReorder,
   onReviewSubmitted,
+  highlightOrderId,
 }: Props) {
   const { t: siteT } = useLanguage()
+  const [expandedId, setExpandedId] = useState<number | null>(highlightOrderId ?? null)
   const [reviewOrder, setReviewOrder] = useState<ProfileOrder | null>(null)
   const [reviewText, setReviewText] = useState('')
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewImages, setReviewImages] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (highlightOrderId) setExpandedId(highlightOrderId)
+  }, [highlightOrderId])
 
   const stepLabels = [
     t.stepPending,
@@ -260,6 +285,10 @@ export default function ClientProfileOrders({
           t={t}
           stepLabels={stepLabels}
           stepIcons={stepIcons}
+          expanded={expandedId === order.id}
+          onToggleExpand={() =>
+            setExpandedId((id) => (id === order.id ? null : order.id))
+          }
           onReorder={() => onReorder(order)}
           onOpenReview={() => setReviewOrder(order)}
         />
@@ -369,6 +398,8 @@ function OrderCard({
   t,
   stepLabels,
   stepIcons,
+  expanded,
+  onToggleExpand,
   onReorder,
   onOpenReview,
 }: {
@@ -378,6 +409,8 @@ function OrderCard({
   t: TProfile
   stepLabels: string[]
   stepIcons: LucideIcon[]
+  expanded: boolean
+  onToggleExpand: () => void
   onReorder: () => void
   onOpenReview: () => void
 }) {
@@ -386,6 +419,8 @@ function OrderCard({
   const terminal = order.status === 'COMPLETED' || order.status === 'DELIVERED'
   const hasReview = !!order.review
   const showReviewStep = terminal && !cancelled
+  const showDetailsLabel = expanded ? t.hideDetails ?? 'Згорнути' : t.showDetails ?? 'Деталі замовлення'
+  const timelineTitle = t.timelineTitle ?? 'Шлях замовлення'
 
   return (
     <motion.article
@@ -421,8 +456,114 @@ function OrderCard({
                 {t.orderCancelled}
               </span>
             ) : null}
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              className="inline-flex items-center gap-1 rounded-full border border-[#145142]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#145142] transition hover:bg-[#145142]/5"
+            >
+              {showDetailsLabel}
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
+              />
+            </button>
           </div>
         </div>
+
+        <AnimatePresence initial={false}>
+          {expanded ? (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mb-5 overflow-hidden"
+            >
+              <div className="rounded-xl border border-[#145142]/12 bg-[#f4faf7] p-4 sm:p-5">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#145142]/70">
+                  {timelineTitle}
+                </p>
+                <ol className="space-y-3">
+                  {stepLabels.map((label, si) => {
+                    const Icon = stepIcons[si]
+                    const done = !cancelled && rank > si
+                    const current = !cancelled && rank === si
+                    return (
+                      <li key={label} className="flex gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 ${
+                            done
+                              ? 'border-[#145142] bg-[#145142] text-white'
+                              : current
+                                ? 'border-[#ff6b35] bg-white text-[#ff6b35] ring-2 ring-[#ff6b35]/25'
+                                : 'border-gray-200 bg-white text-gray-300'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 pt-0.5">
+                          <p
+                            className={`text-sm font-bold ${
+                              done || current ? 'text-[#145142]' : 'text-gray-400'
+                            }`}
+                          >
+                            {label}
+                            {current ? (
+                              <span className="ml-2 text-[10px] font-bold uppercase text-[#ff6b35]">
+                                · now
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ol>
+                <div className="mt-4 grid gap-2 border-t border-[#145142]/10 pt-4 text-sm sm:grid-cols-2">
+                  {order.address ? (
+                    <p className="flex gap-2 text-gray-700">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#145142]" />
+                      <span>
+                        <span className="font-semibold text-gray-900">
+                          {t.labelAddress ?? 'Адреса'}:{' '}
+                        </span>
+                        {order.address}
+                      </span>
+                    </p>
+                  ) : null}
+                  {order.phone ? (
+                    <p className="text-gray-700">
+                      <span className="font-semibold text-gray-900">Tel: </span>
+                      {order.phone}
+                    </p>
+                  ) : null}
+                  <p className="flex gap-2 text-gray-700">
+                    <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-[#145142]" />
+                    <span>
+                      <span className="font-semibold text-gray-900">
+                        {t.labelPayment ?? 'Оплата'}:{' '}
+                      </span>
+                      {order.paymentMethod === 'CARD' ? 'Card' : 'Cash'}
+                      {order.paymentStatus ? ` · ${order.paymentStatus}` : ''}
+                    </span>
+                  </p>
+                  <p className="text-gray-700">
+                    <span className="font-semibold text-gray-900">
+                      {t.labelFulfillment ?? 'Отримання'}:{' '}
+                    </span>
+                    {order.fulfillmentType === 'PICKUP'
+                      ? t.fulfillmentPickup ?? 'Самовивіз'
+                      : t.fulfillmentDelivery ?? 'Доставка'}
+                    {order.deliveryFee != null && order.deliveryFee > 0
+                      ? ` · ${order.deliveryFee.toFixed(2)} €`
+                      : ''}
+                  </p>
+                  {order.comment ? (
+                    <p className="sm:col-span-2 italic text-gray-600">{order.comment}</p>
+                  ) : null}
+                </div>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         {!cancelled ? (
           <div className="relative mb-6 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50/80 p-4 sm:p-5">

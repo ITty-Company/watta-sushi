@@ -1,0 +1,354 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Plus, Trash2, Pencil, Sparkles } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { formatTierRangeLabel, type CartUpsellTierDto } from '@/lib/cartUpsell'
+import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
+
+type ProductRow = {
+  id: number
+  name_ru: string
+  price: number
+}
+
+type TierForm = {
+  minOrderTotal: string
+  maxOrderTotal: string
+  discountEur: string
+  sortOrder: string
+  isActive: boolean
+  productIds: number[]
+}
+
+const emptyForm = (): TierForm => ({
+  minOrderTotal: '50',
+  maxOrderTotal: '',
+  discountEur: '3',
+  sortOrder: '0',
+  isActive: true,
+  productIds: [],
+})
+
+function adminAuthHeaders(): { Authorization: string } | null {
+  if (typeof window === 'undefined') return null
+  const token = localStorage.getItem('token')
+  if (!token) return null
+  return { Authorization: `Bearer ${token}` }
+}
+
+type Props = {
+  products: ProductRow[]
+}
+
+export default function AdminCartUpsellPanel({ products }: Props) {
+  const [tiers, setTiers] = useState<CartUpsellTierDto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [form, setForm] = useState<TierForm>(emptyForm)
+
+  const loadTiers = useCallback(async () => {
+    const headers = adminAuthHeaders()
+    if (!headers) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/cart-upsell/all', { headers })
+      if (!res.ok) throw new Error('load_failed')
+      const data = await res.json()
+      setTiers(Array.isArray(data) ? data : [])
+    } catch {
+      toast.error('Не вдалося завантажити пороги кошика')
+      setTiers([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadTiers()
+  }, [loadTiers])
+
+  const productOptions = useMemo(
+    () =>
+      [...products].sort((a, b) =>
+        String(a.name_ru).localeCompare(String(b.name_ru), 'uk'),
+      ),
+    [products],
+  )
+
+  const startCreate = () => {
+    setEditingId(null)
+    setForm(emptyForm())
+  }
+
+  const startEdit = (tier: CartUpsellTierDto) => {
+    setEditingId(tier.id)
+    setForm({
+      minOrderTotal: String(tier.minOrderTotal),
+      maxOrderTotal:
+        tier.maxOrderTotal != null && Number.isFinite(Number(tier.maxOrderTotal))
+          ? String(tier.maxOrderTotal)
+          : '',
+      discountEur: String(tier.discountEur),
+      sortOrder: String(tier.sortOrder ?? 0),
+      isActive: tier.isActive !== false,
+      productIds: (tier.products ?? [])
+        .map((p) => Number((p as { id?: number }).id))
+        .filter((id) => Number.isFinite(id) && id > 0),
+    })
+  }
+
+  const toggleProduct = (productId: number) => {
+    setForm((prev) => {
+      const has = prev.productIds.includes(productId)
+      return {
+        ...prev,
+        productIds: has
+          ? prev.productIds.filter((id) => id !== productId)
+          : [...prev.productIds, productId],
+      }
+    })
+  }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const headers = adminAuthHeaders()
+    if (!headers) {
+      toast.error('Увійдіть як адміністратор')
+      return
+    }
+    setSaving(true)
+    try {
+      const body = {
+        minOrderTotal: parseFloat(form.minOrderTotal),
+        maxOrderTotal: form.maxOrderTotal.trim() === '' ? null : parseFloat(form.maxOrderTotal),
+        discountEur: parseFloat(form.discountEur),
+        sortOrder: parseInt(form.sortOrder, 10) || 0,
+        isActive: form.isActive,
+        productIds: form.productIds,
+      }
+      const url = editingId ? `/api/cart-upsell/${editingId}` : '/api/cart-upsell'
+      const res = await fetch(url, {
+        method: editingId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(err?.error || 'save_failed')
+      }
+      toast.success(editingId ? 'Поріг оновлено' : 'Поріг створено')
+      broadcastWattaCatalogUpdate('cartUpsell')
+      setEditingId(null)
+      setForm(emptyForm())
+      await loadTiers()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Помилка збереження')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Видалити цей поріг і всі прив’язані товари?')) return
+    const headers = adminAuthHeaders()
+    if (!headers) return
+    try {
+      const res = await fetch(`/api/cart-upsell/${id}`, { method: 'DELETE', headers })
+      if (!res.ok) throw new Error('delete_failed')
+      toast.success('Видалено')
+      broadcastWattaCatalogUpdate('cartUpsell')
+      if (editingId === id) {
+        setEditingId(null)
+        setForm(emptyForm())
+      }
+      await loadTiers()
+    } catch {
+      toast.error('Не вдалося видалити')
+    }
+  }
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-2xl border border-[#145142]/15 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-[#145142] sm:text-xl">
+              <Sparkles className="h-5 w-5 text-[#ff6b35]" />
+              Спецпропозиції в кошику
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm text-neutral-600">
+              Пороги суми замовлення (€) і фіксована знижка на обрані товари. Клієнт побачить їх у
+              «Додайте до замовлення», коли сума кошика досягне порогу.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={startCreate}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#145142] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0f3d34]"
+          >
+            <Plus className="h-4 w-4" />
+            Новий поріг
+          </button>
+        </div>
+        {loading ? (
+          <p className="text-sm text-neutral-500">Завантаження…</p>
+        ) : tiers.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-500">
+            Порогів ще немає.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {tiers.map((tier) => (
+              <li
+                key={tier.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-neutral-900">
+                    {formatTierRangeLabel(tier)} · −{Number(tier.discountEur).toFixed(2)} € / шт.
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {tier.products?.length ?? 0} товар(ів)
+                    {!tier.isActive ? ' · вимкнено' : ''}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(tier)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#145142] hover:bg-neutral-50"
+                    aria-label="Редагувати"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(tier.id)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 bg-white text-red-600 hover:bg-red-50"
+                    aria-label="Видалити"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <form
+        onSubmit={(e) => void handleSave(e)}
+        className="rounded-2xl border border-[#145142]/15 bg-white p-4 shadow-sm sm:p-6"
+      >
+        <h3 className="mb-4 text-base font-bold text-[#145142]">
+          {editingId ? `Редагування порогу #${editingId}` : 'Новий поріг знижки'}
+        </h3>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium text-neutral-700">Від суми (€) *</span>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              required
+              value={form.minOrderTotal}
+              onChange={(e) => setForm((f) => ({ ...f, minOrderTotal: e.target.value }))}
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium text-neutral-700">До суми (€)</span>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              placeholder="без обмеження"
+              value={form.maxOrderTotal}
+              onChange={(e) => setForm((f) => ({ ...f, maxOrderTotal: e.target.value }))}
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium text-neutral-700">Знижка (€ / шт.) *</span>
+            <input
+              type="number"
+              min={0.01}
+              step={0.01}
+              required
+              value={form.discountEur}
+              onChange={(e) => setForm((f) => ({ ...f, discountEur: e.target.value }))}
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium text-neutral-700">Порядок</span>
+            <input
+              type="number"
+              value={form.sortOrder}
+              onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2"
+            />
+          </label>
+        </div>
+        <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-700">
+          <input
+            type="checkbox"
+            checked={form.isActive}
+            onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+            className="h-4 w-4 accent-[#145142]"
+          />
+          Активний поріг
+        </label>
+        <div className="mt-5">
+          <p className="mb-2 text-sm font-semibold text-neutral-800">
+            Товари зі знижкою ({form.productIds.length})
+          </p>
+          <div className="max-h-64 overflow-y-auto rounded-xl border border-neutral-200 p-2">
+            {productOptions.length === 0 ? (
+              <p className="px-2 py-4 text-sm text-neutral-500">Спочатку додайте товари в каталозі.</p>
+            ) : (
+              <ul className="space-y-1">
+                {productOptions.map((p) => (
+                  <li key={p.id}>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-neutral-50">
+                      <input
+                        type="checkbox"
+                        checked={form.productIds.includes(p.id)}
+                        onChange={() => toggleProduct(p.id)}
+                        className="h-4 w-4 accent-[#145142]"
+                      />
+                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-800">{p.name_ru}</span>
+                      <span className="shrink-0 text-xs text-neutral-500">{p.price} €</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-xl bg-[#145142] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f3d34] disabled:opacity-50"
+          >
+            {saving ? 'Збереження…' : editingId ? 'Зберегти зміни' : 'Створити поріг'}
+          </button>
+          {editingId ? (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingId(null)
+                setForm(emptyForm())
+              }}
+              className="rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+            >
+              Скасувати
+            </button>
+          ) : null}
+        </div>
+      </form>
+    </section>
+  )
+}

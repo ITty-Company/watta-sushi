@@ -70,7 +70,7 @@ function PhilosophySlideCard({
 }) {
   return (
     <motion.article
-      className="flex flex-col rounded-[22px] border border-gray-200/80 bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.06)] transition hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)]"
+      className="flex flex-col rounded-[22px] border border-gray-200/80 bg-white p-4 shadow-[0_8px_40px_rgba(0,0,0,0.06)] transition hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)] sm:p-6"
       {...fade}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.45, delay }}
@@ -108,7 +108,7 @@ function InsideCard({
 }) {
   return (
     <motion.article
-      className="flex flex-col rounded-[26px] border border-gray-100 bg-white p-6 shadow-sm sm:p-7"
+      className="flex flex-col rounded-[26px] border border-gray-100 bg-white p-4 shadow-sm sm:p-6 md:p-7"
       {...fade}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.45, delay }}
@@ -206,7 +206,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
     <div
       id="about-page-container"
       className={cn(
-        'relative min-h-screen w-full overflow-x-hidden pb-16',
+        'about-page-web relative min-h-screen w-full overflow-x-hidden pb-16',
         embedded ? 'watta-page-bg' : 'bg-transparent',
       )}
     >
@@ -241,9 +241,9 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
         </header>
       ) : null}
 
-      {/* Кінематографічний герой: одразу під глобальною шапкою + категоріями (без зазору) */}
+      {/* Кінематографічний герой: одразу під глобальною шапкою + категоріями */}
       <section
-        className={cn('relative overflow-hidden text-white')}
+        className={cn('about-page-hero-web relative overflow-hidden text-white')}
         style={{ background: HERO_BG }}
         aria-labelledby="about-dark-hero-title"
       >
@@ -267,30 +267,33 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
 
         <div
           className={cn(
-            'relative z-[1] mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:gap-16',
+            'about-page-hero-grid relative z-[1] mx-auto grid max-w-6xl gap-8 px-4 max-[380px]:px-3 sm:gap-10 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:gap-16',
             embedded
-              ? 'py-14 sm:py-20'
-              : 'pb-14 pt-0 sm:pb-20 sm:pt-0 md:pt-0',
+              ? 'py-12 sm:py-20'
+              : 'pb-12 pt-8 sm:pb-20 sm:pt-10 lg:pt-12',
           )}
         >
-          <div>
+          <div className="min-w-0">
             <h2
               id="about-dark-hero-title"
-              className="font-black lowercase leading-[0.95] tracking-tight text-white"
+              className="about-page-hero-wordmark font-black lowercase leading-[0.95] tracking-tight text-white"
               style={{
-                fontSize: 'clamp(2.75rem, 10vw, 6.5rem)',
                 fontFamily: 'var(--font-inter, ui-sans-serif), system-ui, sans-serif',
               }}
             >
               watta sushi
             </h2>
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">{a.darkHeroSubtitle}</p>
+            <p className="mt-4 max-w-xl text-balance text-[15px] leading-relaxed text-white/75 sm:mt-6 sm:text-base md:text-lg">
+              {a.darkHeroSubtitle}
+            </p>
           </div>
-          <div className="flex flex-col gap-1 text-left lg:items-end lg:text-right">
-            <p className="text-sm font-medium text-white/55 sm:text-base">{a.darkFoundedLabel}</p>
-            <p className="text-3xl font-black tracking-tight sm:text-4xl md:text-[2.75rem]">{a.darkFoundedYearCity}</p>
-            <p className="mt-8 text-sm font-medium text-white/55 sm:text-base">{a.darkMilestoneLine1}</p>
-            <p className="max-w-sm text-xl font-bold leading-snug text-white lg:ml-auto lg:text-right sm:text-2xl">
+          <div className="about-page-hero-milestone flex min-w-0 flex-col gap-1 text-left lg:items-end lg:text-right">
+            <p className="text-xs font-medium text-white/55 sm:text-sm md:text-base">{a.darkFoundedLabel}</p>
+            <p className="text-[clamp(1.5rem,6.5vw,2.75rem)] font-black leading-tight tracking-tight break-words">
+              {a.darkFoundedYearCity}
+            </p>
+            <p className="mt-5 text-xs font-medium text-white/55 sm:mt-8 sm:text-sm md:text-base">{a.darkMilestoneLine1}</p>
+            <p className="max-w-sm text-balance text-lg font-bold leading-snug text-white sm:text-xl lg:ml-auto lg:text-right">
               {a.darkMilestoneLine2}
             </p>
           </div>
@@ -299,25 +302,28 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
 
       {/* Філософія + слайди-картки */}
       <section
-        className="relative z-10 w-full watta-page-bg px-4 py-16 sm:px-6 sm:py-20"
+        className="about-page-section-web relative z-10 w-full watta-page-bg px-4 py-10 sm:px-6 sm:py-16 md:py-20"
         aria-labelledby="about-philosophy-heading"
       >
         <div className="mx-auto max-w-6xl">
         <motion.div
-          className="mb-12 flex flex-col items-center justify-center gap-4 text-center sm:mb-16 sm:flex-row sm:flex-wrap"
+          className="about-page-philosophy-heading-wrap mb-8 flex flex-col items-center justify-center gap-3 text-center sm:mb-12 sm:gap-4 md:mb-16"
           {...fade}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 id="about-philosophy-heading" className="text-4xl font-black tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+          <h2
+            id="about-philosophy-heading"
+            className="about-page-philosophy-heading text-[clamp(1.75rem,7.5vw,3.75rem)] font-black leading-[1.08] tracking-tight text-gray-900"
+          >
             <span>{a.philosophyTitlePart1}</span>{' '}
             <span style={{ color: ACCENT }}>{a.philosophyTitlePart2}</span>
           </h2>
           <span
-            className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25"
+            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25 sm:h-14 sm:w-14"
             aria-hidden
           >
-            <Heart className="h-7 w-7 fill-white" strokeWidth={1.5} />
+            <Heart className="h-6 w-6 fill-white sm:h-7 sm:w-7" strokeWidth={1.5} />
           </span>
         </motion.div>
 
@@ -337,14 +343,14 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Арт-блок + «плаваюче» зображення */}
-      <section className="relative z-10 border-y border-gray-100 watta-page-bg">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1fr_0.9fr] lg:gap-14">
+      <section className="about-page-art-web relative z-10 border-y border-gray-100 watta-page-bg">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:gap-10 sm:px-6 sm:py-16 md:py-20 lg:grid-cols-[1fr_0.9fr] lg:gap-14">
           <motion.div {...fade} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-            <p className="text-3xl font-black leading-[1.12] tracking-tight text-gray-900 sm:text-4xl md:text-[2.75rem] lg:text-5xl">
+            <p className="text-2xl font-black leading-[1.12] tracking-tight text-balance text-gray-900 sm:text-3xl md:text-[2.75rem] lg:text-5xl">
               {a.artHeadlineLine1}
               <br />
               {a.artHeadlineLine2}{' '}
-              <span style={{ color: ACCENT }} className="whitespace-nowrap">
+              <span style={{ color: ACCENT }} className="sm:whitespace-nowrap">
                 {a.artHeadlineAccent}
               </span>
             </p>
@@ -374,13 +380,13 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
 
       {/* Що всередині ролу */}
       <section
-        className="relative z-10 watta-page-bg py-16 sm:py-20"
+        className="about-page-section-web relative z-10 watta-page-bg py-10 sm:py-16 md:py-20"
         aria-labelledby="about-inside-heading"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <motion.h2
             id="about-inside-heading"
-            className="mb-10 text-center text-3xl font-black text-gray-900 sm:mb-12 sm:text-4xl"
+            className="mb-8 text-center text-[clamp(1.5rem,5.5vw,2.25rem)] font-black text-gray-900 sm:mb-12"
             {...fade}
             viewport={{ once: true }}
             transition={{ duration: 0.45 }}
@@ -403,18 +409,18 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Статистика */}
-      <section className="relative z-10 w-full watta-page-bg px-4 pt-14 sm:px-6 sm:pt-20">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
+      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-10 sm:px-6 sm:pt-16 md:pt-20">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:gap-4">
           {stats.map((s, i) => (
             <motion.div
               key={s.label}
-              className="rounded-[22px] border border-gray-100 bg-white p-5 text-center shadow-[0_6px_32px_rgba(0,0,0,0.05)]"
+              className="rounded-[18px] border border-gray-100 bg-white p-3.5 text-center shadow-[0_6px_32px_rgba(0,0,0,0.05)] sm:rounded-[22px] sm:p-5"
               {...fade}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.45, delay: i * 0.05 }}
             >
-              <s.icon className="mx-auto mb-2 h-8 w-8 text-gray-800" strokeWidth={2} style={{ color: i % 2 === 0 ? ACCENT : undefined }} />
-              <div className="text-2xl font-black text-gray-900 sm:text-3xl">{s.value}</div>
+              <s.icon className="mx-auto mb-1.5 h-6 w-6 text-gray-800 sm:mb-2 sm:h-8 sm:w-8" strokeWidth={2} style={{ color: i % 2 === 0 ? ACCENT : undefined }} />
+              <div className="text-xl font-black text-gray-900 sm:text-2xl md:text-3xl">{s.value}</div>
               <div className="mt-1 text-xs font-semibold leading-snug text-[#7a7a7a] sm:text-sm">{s.label}</div>
             </motion.div>
           ))}
@@ -422,10 +428,10 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Історія */}
-      <section className="relative z-10 w-full watta-page-bg px-4 pt-20 sm:px-6">
+      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-12 sm:px-6 sm:pt-16 md:pt-20">
         <div className="mx-auto max-w-6xl">
         <motion.h3
-          className="mb-6 text-3xl font-black text-gray-900 sm:text-4xl"
+          className="mb-5 text-[clamp(1.5rem,5.5vw,2.25rem)] font-black text-gray-900 sm:mb-6"
           {...fade}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -433,7 +439,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
           {a.storyTitle}
         </motion.h3>
         <motion.div
-          className="max-w-3xl space-y-5 text-base leading-relaxed text-gray-700 sm:text-lg"
+          className="max-w-3xl space-y-4 text-[15px] leading-relaxed text-gray-700 sm:space-y-5 sm:text-base md:text-lg"
           {...fade}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
@@ -446,10 +452,10 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Команда */}
-      <section className="relative z-10 w-full watta-page-bg px-4 pt-24 sm:px-6">
+      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-14 sm:px-6 sm:pt-20 md:pt-24">
         <div className="mx-auto max-w-6xl">
         <motion.h3
-          className="mb-8 text-center text-3xl font-black text-gray-900 sm:text-4xl"
+          className="mb-6 text-center text-[clamp(1.5rem,5.5vw,2.25rem)] font-black text-gray-900 sm:mb-8"
           {...fade}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -481,8 +487,8 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
                     </div>
                   )}
                 </div>
-                <div className="p-5">
-                  <h4 className="text-xl font-black text-gray-900">{getLocalized(member, 'name') || member.name_ru}</h4>
+                <div className="p-4 sm:p-5">
+                  <h4 className="text-lg font-black text-gray-900 sm:text-xl">{getLocalized(member, 'name') || member.name_ru}</h4>
                   <p className="mt-1 font-semibold" style={{ color: ACCENT }}>
                     {getLocalized(member, 'position') || member.position_ru}
                   </p>
@@ -495,7 +501,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
           </div>
         ) : (
           <motion.div
-            className="rounded-[24px] border border-dashed border-gray-300 bg-gray-50/80 p-10 text-center"
+            className="rounded-[24px] border border-dashed border-gray-300 bg-gray-50/80 p-6 text-center sm:p-10"
             {...fade}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
@@ -509,10 +515,10 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Візит / контакти */}
-      <section className="relative z-10 w-full watta-page-bg px-4 pt-20 sm:px-6">
+      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-12 sm:px-6 sm:pt-16 md:pt-20">
         <div className="mx-auto max-w-6xl">
         <motion.h3
-          className="mb-6 text-center text-2xl font-black text-gray-900 sm:text-3xl"
+          className="mb-5 text-center text-[clamp(1.35rem,4.5vw,1.875rem)] font-black text-gray-900 sm:mb-6"
           {...fade}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -527,7 +533,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
           ].map((row, i) => (
             <motion.div
               key={row.title}
-              className="flex flex-col rounded-[22px] border border-gray-100 bg-white p-6 shadow-sm"
+              className="flex flex-col rounded-[22px] border border-gray-100 bg-white p-4 shadow-sm sm:p-6"
               {...fade}
               viewport={{ once: true, margin: '-30px' }}
               transition={{ duration: 0.45, delay: i * 0.05 }}
@@ -542,29 +548,29 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Нижні CTA */}
-      <section className="relative z-10 w-full watta-page-bg px-4 pb-8 pt-16 sm:px-6">
+      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pt-16">
         <div className="mx-auto max-w-6xl">
         <motion.div
-          className="flex flex-col items-center justify-center gap-4 rounded-[24px] border border-gray-200 bg-gray-50/80 px-6 py-10 text-center sm:flex-row sm:flex-wrap sm:gap-6"
+          className="about-page-cta-web flex w-full flex-col items-stretch justify-center gap-3 rounded-[24px] border border-gray-200 bg-gray-50/80 px-4 py-8 text-center sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4 sm:px-6 sm:py-10"
           {...fade}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
           <Link
             href="/"
-            className="inline-flex min-w-[200px] items-center justify-center rounded-2xl bg-[#145142] px-8 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-[#1a6b58]"
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-[#145142] px-6 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-[#1a6b58] sm:w-auto sm:min-w-[200px] sm:px-8"
           >
             {a.ctaMenu}
           </Link>
           <Link
             href="/contacts"
-            className="inline-flex min-w-[200px] items-center justify-center rounded-2xl border-2 border-[#145142] bg-transparent px-8 py-3.5 text-sm font-bold text-[#145142] transition hover:bg-[#145142]/5"
+            className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-[#145142] bg-transparent px-6 py-3.5 text-sm font-bold text-[#145142] transition hover:bg-[#145142]/5 sm:w-auto sm:min-w-[200px] sm:px-8"
           >
             {a.ctaContacts}
           </Link>
           <Link
             href="/delivery"
-            className="inline-flex min-w-[200px] items-center justify-center rounded-2xl border border-gray-300 bg-white px-8 py-3.5 text-sm font-bold text-gray-800 transition hover:border-gray-400"
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-gray-300 bg-white px-6 py-3.5 text-sm font-bold text-gray-800 transition hover:border-gray-400 sm:w-auto sm:min-w-[200px] sm:px-8"
           >
             {a.ctaDelivery}
           </Link>

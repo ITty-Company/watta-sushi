@@ -110,7 +110,58 @@ export function ProductImageGallery({ images, alt, labels, className }: ProductI
 
       {len > 1 && (
         <>
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] flex w-10 items-center sm:w-12">
+          {/* Мобільні: компактні стрілки під фото, не поверх зображення */}
+          <div
+            className="mt-2 flex items-center justify-between gap-2 px-0.5 sm:hidden"
+            role="group"
+            aria-label={formatProgress(labels.progress, index + 1, len)}
+          >
+            <button
+              type="button"
+              onClick={() => goTo(index - 1)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#145142]/12 bg-[#f6faf8] text-[#145142] transition active:bg-[#e8f0ec]"
+              aria-label={labels.prev}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.4} />
+            </button>
+
+            <div className="flex min-w-0 flex-1 justify-center gap-1.5">
+              {len <= MAX_DOTS ? (
+                images.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => goTo(i)}
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full transition',
+                      i === index ? 'scale-110 bg-[#145142]' : 'bg-[#145142]/30',
+                    )}
+                    aria-label={formatProgress(labels.progress, i + 1, len)}
+                    aria-current={i === index}
+                  />
+                ))
+              ) : (
+                <span
+                  className="text-[11px] font-bold tabular-nums text-[#145142]/70"
+                  aria-live="polite"
+                >
+                  {formatProgress(labels.progress, index + 1, len)}
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => goTo(index + 1)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#145142]/12 bg-[#f6faf8] text-[#145142] transition active:bg-[#e8f0ec]"
+              aria-label={labels.next}
+            >
+              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
+            </button>
+          </div>
+
+          {/* Планшет і десктоп: стрілки по боках */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] hidden w-10 items-center sm:flex sm:w-12">
             <button
               type="button"
               onClick={() => goTo(index - 1)}
@@ -120,7 +171,7 @@ export function ProductImageGallery({ images, alt, labels, className }: ProductI
               <ChevronLeft className="h-5 w-5" strokeWidth={2.2} />
             </button>
           </div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-10 items-center justify-end sm:w-12">
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] hidden w-10 items-center justify-end sm:flex sm:w-12">
             <button
               type="button"
               onClick={() => goTo(index + 1)}
@@ -131,7 +182,10 @@ export function ProductImageGallery({ images, alt, labels, className }: ProductI
             </button>
           </div>
 
-          <div className="absolute bottom-3 left-0 right-0 z-[1] flex justify-center gap-1.5 px-2" role="group">
+          <div
+            className="absolute bottom-3 left-0 right-0 z-[1] hidden justify-center gap-1.5 px-2 sm:flex"
+            role="group"
+          >
             {len <= MAX_DOTS ? (
               images.map((_, i) => (
                 <button

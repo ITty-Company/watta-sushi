@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -132,13 +132,38 @@ function AuthScreenBody({
       if (!fromEvent.length && !detail?.phone2Urls) void fetchSettings(true)
     }
     void fetchSettings()
+    const onSettings = () => void fetchSettings(true)
     window.addEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
-    return () => window.removeEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+    window.addEventListener('settingsUpdated', onSettings)
+    return () => {
+      window.removeEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+      window.removeEventListener('settingsUpdated', onSettings)
+    }
   }, [variant])
 
   useEffect(() => {
     setIsRegister(initialRegister)
   }, [initialRegister])
+
+  const buildAuthPath = useCallback(
+    (register: boolean) => {
+      const base = register ? '/register' : '/login'
+      if (returnUrl !== '/') return `${base}?return=${encodeURIComponent(returnUrl)}`
+      return base
+    },
+    [returnUrl],
+  )
+
+  /** Вхід ↔ реєстрація без remount — відео на телефонах не зупиняються. */
+  const switchAuthMode = useCallback(
+    (register: boolean) => {
+      setIsRegister(register)
+      setError(null)
+      if (variant !== 'page' || typeof window === 'undefined') return
+      window.history.replaceState(window.history.state, '', buildAuthPath(register))
+    },
+    [variant, buildAuthPath],
+  )
 
   useEffect(() => {
     if (variant !== 'modal') return
@@ -470,53 +495,36 @@ function AuthScreenBody({
                   aria-hidden
                 />
               )}
-              {variant === 'page' ? (
-                <>
-                  <Link
-                    href={returnUrl !== '/' ? `/login?return=${encodeURIComponent(returnUrl)}` : '/login'}
-                    className={`auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
-                      !isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
-                    }`}
-                  >
-                    {t.auth.login}
-                  </Link>
-                  <Link
-                    href={returnUrl !== '/' ? `/register?return=${encodeURIComponent(returnUrl)}` : '/register'}
-                    className={`auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
-                      isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
-                    }`}
-                  >
-                    {t.auth.register}
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsRegister(false)
-                      setError(null)
-                    }}
-                    className={`flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
-                      !isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
-                    }`}
-                  >
-                    {t.auth.login}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsRegister(true)
-                      setError(null)
-                    }}
-                    className={`flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
-                      isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
-                    }`}
-                  >
-                    {t.auth.register}
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => switchAuthMode(false)}
+                className={
+                  variant === 'page'
+                    ? `auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                        !isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
+                      }`
+                    : `flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                        !isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
+                      }`
+                }
+              >
+                {t.auth.login}
+              </button>
+              <button
+                type="button"
+                onClick={() => switchAuthMode(true)}
+                className={
+                  variant === 'page'
+                    ? `auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                        isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
+                      }`
+                    : `flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                        isRegister ? 'bg-white text-[#0f3d32] shadow-sm' : 'text-gray-600 hover:text-[#145142]'
+                      }`
+                }
+              >
+                {t.auth.register}
+              </button>
             </div>
 
             <h1 className="mb-0 text-lg font-bold leading-tight text-[#0f3d32] sm:mb-0.5 sm:text-2xl">
@@ -537,17 +545,20 @@ function AuthScreenBody({
             </div>
 
             <div className="auth-watta-form-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-1 sm:px-5 sm:pb-2 lg:flex-none lg:overflow-visible">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-1.5 sm:gap-2">
-              {isRegister && (
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
+            <form onSubmit={handleSubmit} className="auth-watta-form-fields flex flex-col gap-1.5 sm:gap-2">
+              <div
+                className={`auth-watta-register-block grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2${isRegister ? '' : ' auth-watta-register-block--hidden'}`}
+                aria-hidden={!isRegister}
+              >
                   <label className="auth-watta-label min-w-0">
                     <span className="auth-watta-label-text">{t.auth.name}</span>
                     <span className="auth-watta-input-wrap">
                       <User className="auth-watta-input-icon" />
                       <input
                         type="text"
-                        required
+                        required={isRegister}
                         maxLength={50}
+                        tabIndex={isRegister ? 0 : -1}
                         autoComplete="name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -562,7 +573,8 @@ function AuthScreenBody({
                       <Phone className="auth-watta-input-icon" />
                       <input
                         type="tel"
-                        required
+                        required={isRegister}
+                        tabIndex={isRegister ? 0 : -1}
                         maxLength={13}
                         autoComplete="tel"
                         value={formData.phone}
@@ -572,8 +584,7 @@ function AuthScreenBody({
                       />
                     </span>
                   </label>
-                </div>
-              )}
+              </div>
 
               <label className="auth-watta-label">
                 <span className="auth-watta-label-text">{t.auth.email}</span>
@@ -615,25 +626,27 @@ function AuthScreenBody({
                 </span>
               </label>
 
-              {isRegister && (
-                <label className="auth-watta-label">
-                  <span className="auth-watta-label-text">
-                    {language === 'uk' ? 'Підтвердження пароля' : language === 'en' ? 'Confirm password' : 'Подтверждение'}
-                  </span>
-                  <span className="auth-watta-input-wrap">
-                    <Lock className="auth-watta-input-icon" />
-                    <input
-                      type="password"
-                      required
-                      autoComplete="new-password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      className="auth-watta-input"
-                      placeholder="••••••••"
-                    />
-                  </span>
-                </label>
-              )}
+              <label
+                className={`auth-watta-label auth-watta-register-block${isRegister ? '' : ' auth-watta-register-block--hidden'}`}
+                aria-hidden={!isRegister}
+              >
+                <span className="auth-watta-label-text">
+                  {language === 'uk' ? 'Підтвердження пароля' : language === 'en' ? 'Confirm password' : 'Подтверждение'}
+                </span>
+                <span className="auth-watta-input-wrap">
+                  <Lock className="auth-watta-input-icon" />
+                  <input
+                    type="password"
+                    required={isRegister}
+                    tabIndex={isRegister ? 0 : -1}
+                    autoComplete="new-password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="auth-watta-input"
+                    placeholder="••••••••"
+                  />
+                </span>
+              </label>
 
               <button type="submit" disabled={isLoading} className="auth-watta-btn-primary mt-0.5 sm:mt-1">
                 {isLoading
@@ -650,19 +663,24 @@ function AuthScreenBody({
                 {isRegister ? (
                   <>
                     {t.auth.haveAccount}{' '}
-                    <Link href={returnUrl !== '/' ? `/login?return=${encodeURIComponent(returnUrl)}` : '/login'} className="font-semibold text-[#145142] hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => switchAuthMode(false)}
+                      className="font-semibold text-[#145142] hover:underline"
+                    >
                       {t.auth.login}
-                    </Link>
+                    </button>
                   </>
                 ) : (
                   <>
                     {t.auth.noAccount}{' '}
-                    <Link
-                      href={returnUrl !== '/' ? `/register?return=${encodeURIComponent(returnUrl)}` : '/register'}
+                    <button
+                      type="button"
+                      onClick={() => switchAuthMode(true)}
                       className="font-semibold text-[#145142] hover:underline"
                     >
                       {t.auth.register}
-                    </Link>
+                    </button>
                   </>
                 )}
               </p>
@@ -671,10 +689,7 @@ function AuthScreenBody({
             {variant === 'modal' && (
               <button
                 type="button"
-                onClick={() => {
-                  setIsRegister(!isRegister)
-                  setError(null)
-                }}
+                onClick={() => switchAuthMode(!isRegister)}
                 className="mt-4 w-full shrink-0 text-center text-sm font-medium text-[#145142] hover:underline sm:mt-6"
               >
                 {isRegister ? t.auth.haveAccount : t.auth.noAccount}

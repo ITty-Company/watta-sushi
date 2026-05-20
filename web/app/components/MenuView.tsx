@@ -7,11 +7,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
+import WelcomeHeroSection from './WelcomeHeroSection'
 import WattaStickyChromeLayout from './WattaStickyChromeLayout'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
 import PhoneView from './PhoneView'
 import { NotificationsView } from './NotificationsView'
+import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
 import NavigationSidebar from './NavigationSidebar'
 import { HomeCategoryProductRail } from './HomeCategoryProductRail'
 import { CinematicFooter, type CinematicFooterAdminProduct } from '@/components/ui/motion-footer'
@@ -22,11 +24,7 @@ import {
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
 import { FULL_MENU_ALL_SLUG, WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
-import {
-  WATTA_BOOT_SPLASH_ENDED_EVENT,
-  WATTA_HERO_VIDEO_READY_EVENT,
-} from '@/lib/wattaHeroVideo'
-import { kickWelcomeHeroVideoPlayBurst, primeHeroVideoElement } from '@/lib/kickWelcomeHeroVideo'
+import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
@@ -43,9 +41,7 @@ import {
   buildHomeHeroVideoSources,
   filterReachableHeroUrls,
   getPrimaryHomeHeroVideoSrc,
-  WATTA_HOME_HERO_POSTER,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
-  WATTA_HERO_OCEAN_GRADIENT,
 } from '@/lib/wattaHeroVideo'
 import {
   HOME_BANNER_AUTO_INTERVAL_MS,
@@ -56,6 +52,7 @@ import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSi
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { productGalleryFromApi } from '@/lib/productGallery'
 
 /**
  * Усе, що показується тільки при `activePage !== null` — тягнемо `next/dynamic` без SSR.
@@ -234,212 +231,6 @@ function homeBannerObjectPosition(b: { focalX?: number; focalY?: number }): stri
   return `${fx}% ${fy}%`
 }
 
-/** Головна: ocean hero + запасні (`wattaHeroVideo` — окремо від сторінки `/menu`). */
-
-function WelcomeHeroSection({
-  sectionRef,
-  heroVideoFailed,
-  setHeroVideoSourceIndex,
-  setHeroVideoFailed,
-  heroVideoRef,
-  heroVideoSrc,
-  videoSources,
-  playlistLength,
-  children,
-}: {
-  sectionRef: React.Ref<HTMLElement>
-  heroVideoFailed: boolean
-  setHeroVideoSourceIndex: React.Dispatch<React.SetStateAction<number>>
-  setHeroVideoFailed: React.Dispatch<React.SetStateAction<boolean>>
-  heroVideoRef: React.MutableRefObject<HTMLVideoElement | null>
-  heroVideoSrc: string
-  videoSources: readonly string[]
-  playlistLength: number
-  children?: React.ReactNode
-}) {
-  const heroVideoLoop = playlistLength <= 1
-  const heroReadySentRef = useRef(false)
-  const [heroFrameReady, setHeroFrameReady] = useState(false)
-  const { t } = useLanguage()
-
-  const notifyHeroVideoReady = useCallback(() => {
-    if (heroReadySentRef.current) return
-    heroReadySentRef.current = true
-    setHeroFrameReady(true)
-    window.dispatchEvent(new CustomEvent(WATTA_HERO_VIDEO_READY_EVENT))
-  }, [])
-
-  useEffect(() => {
-    heroReadySentRef.current = false
-    setHeroFrameReady(false)
-  }, [heroVideoSrc])
-
-  const attachHeroVideoRef = useCallback(
-    (el: HTMLVideoElement | null) => {
-      heroVideoRef.current = el
-      if (!el) return
-      primeHeroVideoElement(el)
-      if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        queueMicrotask(notifyHeroVideoReady)
-      }
-    },
-    [heroVideoRef, notifyHeroVideoReady],
-  )
-
-  useEffect(() => {
-    const onBootSplashEnded = () => {
-      const video = heroVideoRef.current
-      if (video) primeHeroVideoElement(video)
-      kickWelcomeHeroVideoPlayBurst()
-    }
-    window.addEventListener(WATTA_BOOT_SPLASH_ENDED_EVENT, onBootSplashEnded)
-    return () => window.removeEventListener(WATTA_BOOT_SPLASH_ENDED_EVENT, onBootSplashEnded)
-  }, [heroVideoRef])
-
-  useEffect(() => {
-    const video = heroVideoRef.current
-    if (!video) return
-    primeHeroVideoElement(video)
-  }, [heroVideoSrc, heroVideoRef])
-
-  const advanceHeroVideoSource = useCallback(() => {
-    setHeroVideoSourceIndex((prev) => {
-      if (prev < videoSources.length - 1) return prev + 1
-      setHeroVideoFailed(true)
-      return prev
-    })
-  }, [setHeroVideoSourceIndex, setHeroVideoFailed, videoSources.length])
-
-  /** Битий /uploads на проді інколи не дає onError — таймаут до першого кадру → наступний src. */
-  useEffect(() => {
-    if (heroVideoFailed || heroFrameReady) return
-    const t = window.setTimeout(() => {
-      const v = heroVideoRef.current
-      if (v && v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return
-      advanceHeroVideoSource()
-    }, 4500)
-    return () => window.clearTimeout(t)
-  }, [heroVideoSrc, heroVideoFailed, heroFrameReady, heroVideoRef, advanceHeroVideoSource])
-
-  return (
-    <section
-      ref={sectionRef}
-      className="watta-home-hero-as-card-web welcome-hero-section-web menu-snap-section-welcome-web menu-welcome-hero-tight-web shrink-0"
-      aria-label={t.siteAria.heroVideo}
-    >
-      <div className="welcome-hero-video-fill-web">
-        {heroVideoFailed ? (
-          <div className="welcome-hero-video-fail-wrap-web relative w-full shrink-0">
-            <div
-              className="welcome-video-native-web welcome-hero-fallback-image-web"
-              role="img"
-              aria-hidden
-              style={{ backgroundImage: `url('${WATTA_HOME_HERO_POSTER}')` }}
-            />
-            {children}
-          </div>
-        ) : (
-          <div
-            className={`welcome-hero-video-stack-web${heroFrameReady ? ' watta-hero-video--ready' : ''}`}
-            style={{
-              backgroundColor: WATTA_HERO_OCEAN_GRADIENT,
-              backgroundImage: `url('${WATTA_HOME_HERO_POSTER}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center 18%',
-              backgroundRepeat: 'no-repeat',
-            }}
-          >
-            <video
-              key={heroVideoSrc}
-              ref={attachHeroVideoRef}
-              className="welcome-video-native-web watta-home-hero-native-video"
-              width={1920}
-              height={1080}
-              src={heroVideoSrc}
-              poster={WATTA_HOME_HERO_POSTER}
-              autoPlay
-              muted
-              loop={heroVideoLoop}
-              playsInline
-              controls={false}
-              controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
-              disablePictureInPicture
-              disableRemotePlayback
-              preload="auto"
-              // @ts-expect-error fetchPriority для Chromium (працює, але типи React 18.2 не знають)
-              fetchPriority="high"
-              tabIndex={-1}
-              aria-hidden
-              onContextMenu={(e) => e.preventDefault()}
-              onProgress={() => {
-                const v = heroVideoRef.current
-                if (!v || v.buffered.length === 0) return
-                if (!v.paused) {
-                  notifyHeroVideoReady()
-                  return
-                }
-                primeHeroVideoElement(v)
-              }}
-              onLoadedMetadata={() => {
-                const v = heroVideoRef.current
-                if (v) primeHeroVideoElement(v)
-                notifyHeroVideoReady()
-              }}
-              onLoadedData={notifyHeroVideoReady}
-              onPlaying={(e) => {
-                e.currentTarget.setAttribute('data-watta-playing', '1')
-                notifyHeroVideoReady()
-              }}
-              onCanPlay={() => {
-                const v = heroVideoRef.current
-                if (v) primeHeroVideoElement(v)
-                notifyHeroVideoReady()
-              }}
-              onPause={() => {
-                heroVideoRef.current?.removeAttribute('data-watta-playing')
-                const v = heroVideoRef.current
-                if (v && !v.ended) primeHeroVideoElement(v)
-              }}
-              onError={advanceHeroVideoSource}
-              onStalled={advanceHeroVideoSource}
-              onEmptied={() => {
-                const v = heroVideoRef.current
-                if (v?.error) advanceHeroVideoSource()
-              }}
-              onEnded={() => {
-                if (playlistLength <= 1) return
-                setHeroVideoSourceIndex((prev) => (prev + 1) % playlistLength)
-              }}
-            />
-            {/* Поверх відео: блокуємо tap-toggle play у Safari */}
-            <div
-              className="welcome-hero-video-input-shield-web"
-              aria-hidden
-              role="presentation"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onAuxClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onDoubleClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-            />
-            {children}
-          </div>
-        )}
-      </div>
-    </section>
-  )
-}
 
 export default function MenuView() {
   const router = useRouter()
@@ -811,11 +602,17 @@ export default function MenuView() {
       else void fetchSettings(true)
     }
 
+    const onSettingsUpdated = () => {
+      void fetchSettings(true)
+    }
+
     void fetchSettings()
     window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+    window.addEventListener('settingsUpdated', onSettingsUpdated)
     return () => {
       probeAbort?.abort()
       window.removeEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
+      window.removeEventListener('settingsUpdated', onSettingsUpdated)
     }
   }, [])
 
@@ -914,7 +711,8 @@ export default function MenuView() {
   }, [displayBanners.length, startBannerAutoplay])
 
   // Функция загрузки данных
-  const loadBanners = useCallback(() => {
+  const loadBanners = useCallback((opts?: { fresh?: boolean }) => {
+    const fresh = opts?.fresh === true
     const sessionKey = 'banners'
     const persistKey = 'watta_banners_v1'
     const persistTimeKey = 'watta_banners_v1_time'
@@ -957,10 +755,10 @@ export default function MenuView() {
     const now = Date.now()
     const persisted = readPersisted()
 
-    if (persisted && persisted.data.length > 0) {
+    if (!fresh && persisted && persisted.data.length > 0) {
       setBanners(persisted.data)
       if (now - persisted.time < CACHE_TTL) {
-        fetch('/api/banners')
+        fetchPublicApiFresh('/api/banners')
           .then(async (res) => {
             if (!res.ok) {
               const hint = await res.text().catch(() => '')
@@ -980,7 +778,8 @@ export default function MenuView() {
       }
     }
 
-    fetch('/api/banners')
+    const bannerFetch = fresh ? fetchPublicApiFresh : fetch
+    bannerFetch('/api/banners')
       .then(async (res) => {
         if (!res.ok) {
           const hint = await res.text().catch(() => '')
@@ -1013,7 +812,7 @@ export default function MenuView() {
   // Слушатель обновлений
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const handleBannersUpdate = () => loadBanners()
+      const handleBannersUpdate = () => loadBanners({ fresh: true })
       window.addEventListener('bannersUpdated', handleBannersUpdate)
       return () => window.removeEventListener('bannersUpdated', handleBannersUpdate)
     }
@@ -1123,7 +922,7 @@ export default function MenuView() {
             categorySlug: slugRaw.length > 0 ? slugRaw : 'rolls',
             categoryId: p.categoryId,
             emoji: '🍣',
-            imageUrl: p.imageUrl,
+            imageUrl: productGalleryFromApi(p)[0] || p.imageUrl,
             isTop: p.isPopular,
             promoDiscountPercent: promoPct,
             isHomeHit: p.isHomeHit === true,
@@ -1137,7 +936,8 @@ export default function MenuView() {
     [getLocalized, t.categories, language],
   )
 
-  const loadMenuItems = useCallback(() => {
+  const loadMenuItems = useCallback((opts?: { fresh?: boolean }) => {
+    const fresh = opts?.fresh === true
     setHomeMenuProductsLoadFailed(false)
     const cityIdToUse = selectedCityId || cityIdPreferAmsterdam(deliveryCities) || (deliveryCities.length > 0 ? deliveryCities[0].id : null)
     const url = cityIdToUse ? `/api/products?cityId=${cityIdToUse}` : '/api/products'
@@ -1146,21 +946,22 @@ export default function MenuView() {
     const cached = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
     const cacheTime = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`${cacheKey}_time`) : null
     const now = Date.now()
+    const fetcher = fresh ? fetchPublicApiFresh : fetchPublicApi
 
     // Сразу показываем кэш (даже устаревший) — быстрая отрисовка. Порожній масив не кешували раніше — ігноруємо, щоб «оживити» меню.
-    if (cached && cacheTime) {
+    if (!fresh && cached && cacheTime) {
       try {
         const data = JSON.parse(cached)
         if (Array.isArray(data) && data.length > 0) {
           setMenuItems(mapProductsToItems(data))
           // Если кэш свежий — только фоновое обновление
           if ((now - parseInt(cacheTime, 10)) < CACHE_TTL) {
-            fetchPublicApi(url)
+            fetcher(url)
               .then((res) => (res.ok ? res.json() : []))
               .then((data) => {
                 const list = Array.isArray(data) ? data : []
                 if (cityIdToUse && list.length === 0) {
-                  fetchPublicApi('/api/products')
+                  fetcher('/api/products')
                     .then((r) => {
                       if (!r.ok) {
                         setHomeMenuProductsLoadFailed(true)
@@ -1195,7 +996,7 @@ export default function MenuView() {
       } catch (_) { /* кэш повреждён */ }
     }
 
-    fetchPublicApi(url)
+    fetcher(url)
       .then(res => {
         if (!res.ok) {
           console.error('Ошибка загрузки товаров:', res.status, res.statusText)
@@ -1207,7 +1008,7 @@ export default function MenuView() {
       .then((data) => {
         const list = Array.isArray(data) ? data : []
         if (cityIdToUse && list.length === 0) {
-          fetchPublicApi('/api/products')
+          fetcher('/api/products')
             .then((r) => {
               if (!r.ok) {
                 setHomeMenuProductsLoadFailed(true)
@@ -1255,15 +1056,7 @@ export default function MenuView() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handleProductsUpdate = () => {
-      if (typeof sessionStorage !== 'undefined') {
-        for (let i = sessionStorage.length - 1; i >= 0; i--) {
-          const k = sessionStorage.key(i)
-          if (k?.startsWith('menu_items_') || k?.startsWith('menu_categories_')) {
-            sessionStorage.removeItem(k)
-          }
-        }
-      }
-      void loadMenuItems()
+      void loadMenuItems({ fresh: true })
     }
     window.addEventListener('productsUpdated', handleProductsUpdate)
     return () => window.removeEventListener('productsUpdated', handleProductsUpdate)
@@ -2236,27 +2029,16 @@ export default function MenuView() {
 
   const homeAfterHeroIntroSection =
     pathname === '/' && homeNarrowStripHero ? (
-      <section
-        id="home-after-hero-intro"
-        className="home-after-hero-intro-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0"
-        aria-label={fillHomeAfterHeroCity(t.menuView.homeAfterHeroIntroAria)}
-      >
-        <div className="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu relative z-[1] mx-auto max-w-7xl px-6 pb-4 sm:px-9 sm:pb-5 md:px-12 md:pb-6">
-          <h2
-            id="home-after-hero-intro-title"
-            className="home-after-hero-intro-title-web mx-auto max-w-3xl text-center text-[clamp(1.35rem,3.8vw,2.35rem)] font-semibold leading-[1.18] tracking-[-0.02em] text-[#0f2a22]"
-          >
-            {homeAfterHeroIntroTitleLines.map((line, i) => (
-              <span key={i} className="block">
-                {line}
-              </span>
-            ))}
-          </h2>
-          <p className="home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl whitespace-pre-line text-center text-[13px] leading-snug text-[#145142]/88 sm:mt-5 sm:text-[14px] max-xl:max-w-[min(52rem,96vw)] xl:max-w-2xl xl:whitespace-normal xl:leading-relaxed xl:text-balance">
-            {t.menuView.homeAfterHeroIntroBody}
-          </p>
-        </div>
-      </section>
+      <AnimatedHeroIntroBlock
+        sectionId="home-after-hero-intro"
+        ariaLabel={fillHomeAfterHeroCity(t.menuView.homeAfterHeroIntroAria)}
+        titleId="home-after-hero-intro-title"
+        titleLines={homeAfterHeroIntroTitleLines}
+        body={t.menuView.homeAfterHeroIntroBody}
+        accentLineIndex={1}
+        scriptLineIndex={1}
+        reserveTopSpace
+      />
     ) : null
 
   return (

@@ -47,6 +47,24 @@ import {
   type WattaDeliveryZoneSelection,
 } from '@/lib/wattaDeliveryZoneSelection'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
+import {
+  getCartTotalPieceCount,
+  lineQuantity,
+  invalidateCartMemoryCache,
+  readCartFromStorage,
+  writeCartToStorage,
+  refreshCartProductMediaFromCatalog,
+} from '@/lib/cartStorage'
+import {
+  cartLineChargeUnitPrice,
+  cartUpsellSaleUnitPrice,
+  mergeCartUpsellOffersFromTiers,
+  pickQualifiedCartUpsellTiers,
+  type CartUpsellTierDto,
+} from '@/lib/cartUpsell'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
+import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 
 const CART_CHECKOUT_FORM_ID = 'watta-cart-checkout-form'
 
@@ -88,7 +106,9 @@ interface MenuItem {
   quantity?: number
   isTop?: boolean
   promoDiscountPercent?: number
-  /** Стабільний ключ рядка в кошику (кожна «+» — окремий рядок) */
+  /** Знижка € з upsell (лише при додаванні з блоку спецпропозицій) */
+  cartUpsellDiscountEur?: number
+  /** Стабільний ключ рядка в кошику */
   cartLineId?: string
 }
 
@@ -98,23 +118,6 @@ function newCartLineId(): string {
   }
   return `line-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
 }
-
-function normalizeCartLines(raw: unknown): MenuItem[] {
-  if (!Array.isArray(raw)) return []
-  return raw.map((entry, index) => {
-    const item = entry as MenuItem
-    return {
-      ...item,
-      cartLineId:
-        typeof item.cartLineId === 'string' && item.cartLineId.length > 0
-          ? item.cartLineId
-          : `legacy-${item.id}-${index}`,
-    }
-  })
-}
-
-const UPSELL_THRESHOLD = 300
-const UPSELL_DISCOUNT_PERCENT = 15
 
 interface CityOption {
   id: number
@@ -158,7 +161,7 @@ export default function CartView({
   const recScrollRef = useRef<HTMLDivElement>(null)
 
   const [cartItems, setCartItems] = useState<MenuItem[]>([])
-  const [recommendations, setRecommendations] = useState<MenuItem[]>([])
+  const [cartUpsellTiers, setCartUpsellTiers] = useState<CartUpsellTierDto[]>([])
   const [isUpsellModalOpen, setIsUpsellModalOpen] = useState(false)
   const [isBypassingUpsell, setIsBypassingUpsell] = useState(false)
   
@@ -181,6 +184,7 @@ export default function CartView({
     noCallbackConfirm: false,
     noDoorbellRing: false,
   })
+  const [dataProcessingConsent, setDataProcessingConsent] = useState(false)
 
   //---Оплата---
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CARD');
@@ -223,17 +227,12 @@ export default function CartView({
   }, [])
 
   const syncCartFromStorage = useCallback(() => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    try {
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      setCartItems(normalizeCartLines(cart))
-    } catch {
-      setCartItems([])
-    }
+    setCartItems(readCartFromStorage() as MenuItem[])
   }, [])
 
   useEffect(() => {
     syncCartFromStorage()
+    void refreshCartProductMediaFromCatalog().then(syncCartFromStorage)
     window.addEventListener('storage', syncCartFromStorage)
     window.addEventListener('cartUpdated', syncCartFromStorage)
     return () => {
@@ -271,39 +270,28 @@ export default function CartView({
     return () => window.removeEventListener('userChanged', prefillFromUser)
   }, [prefillFromUser])
 
+  const loadCartUpsellTiers = useCallback((fresh = false) => {
+    const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
+    const upsellQ = new URLSearchParams()
+    if (cityId != null && cityId > 0) upsellQ.set('cityId', String(cityId))
+    const fetchFn = fresh ? fetchPublicApiFresh : fetch
+    void fetchFn(getApiUrl(`/api/cart-upsell?${upsellQ.toString()}`))
+      .then((res) => (res.ok ? res.json() : { tiers: [] }))
+      .then((data: { tiers?: CartUpsellTierDto[] }) => {
+        setCartUpsellTiers(Array.isArray(data?.tiers) ? data.tiers : [])
+      })
+      .catch(() => setCartUpsellTiers([]))
+  }, [])
+
   useEffect(() => {
-    const loadRecs = () => {
-      const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
-      const q = new URLSearchParams({ limit: '20' })
-      if (cityId != null && cityId > 0) q.set('cityId', String(cityId))
-      fetch(getApiUrl(`/api/products/recommendations?${q.toString()}`))
-        .then((res) => res.json())
-        .then((data) => {
-          const list: MenuItem[] = (Array.isArray(data) ? data : []).map((p: Record<string, unknown>) => {
-            const cat = p.category as Record<string, unknown> | undefined
-            return {
-              id: Number(p.id),
-              name: getLocalized(p as never, 'name'),
-              description: getLocalized(p as never, 'description') || '',
-              price: Number(p.price),
-              category:
-                getMenuCategoryDisplayName((cat || {}) as Record<string, unknown>, language, t.categories) || '',
-              emoji: '🍱',
-              imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
-              isTop: p.isPopular === true,
-              promoDiscountPercent:
-                typeof p.promoDiscountPercent === 'number' ? p.promoDiscountPercent : Number(p.promoDiscountPercent) || 0,
-            }
-          })
-          setRecommendations(list)
-        })
-        .catch(() => setRecommendations([]))
-    }
-    loadRecs()
+    loadCartUpsellTiers(false)
     if (typeof window === 'undefined') return undefined
-    window.addEventListener('cityChanged', loadRecs)
-    return () => window.removeEventListener('cityChanged', loadRecs)
-  }, [getLocalized, language, t.categories])
+    const onCity = () => loadCartUpsellTiers(true)
+    window.addEventListener('cityChanged', onCity)
+    return () => window.removeEventListener('cityChanged', onCity)
+  }, [loadCartUpsellTiers])
+
+  useWattaCatalogSync(() => loadCartUpsellTiers(true), ['cartUpsell'])
 
   useEffect(() => {
     fetch('/api/cities')
@@ -387,68 +375,52 @@ export default function CartView({
 
   // --- ВЫЧИСЛЕНИЯ ---
   const uniqueItems = useMemo(
-    () =>
-      Array.from(new Set(cartItems.map((i) => i.id))).map((id) => {
-        const item = cartItems.find((i) => i.id === id)!
-        const count = cartItems.filter((i) => i.id === id).length
-        return { ...item, quantity: count }
-      }),
+    () => cartItems.map((item) => ({ ...item, quantity: lineQuantity(item) })),
     [cartItems],
   )
 
-  const filteredRecommendations = recommendations
-    .filter(rec => !cartItems.some(cartItem => cartItem.id === rec.id))
-    .slice(0, 10)
-
-  const upsellCandidates = useMemo(() => {
-    const byCategory = recommendations.filter((item) => {
-      const category = item.category.toLowerCase()
-      return (
-        category.includes('нап') ||
-        category.includes('drink') ||
-        category.includes('соус') ||
-        category.includes('sauce') ||
-        category.includes('рол')
-      )
-    })
-    const source = byCategory.length > 0 ? byCategory : filteredRecommendations
-    return source.filter(item => !cartItems.some(cartItem => cartItem.id === item.id)).slice(0, 3)
-  }, [recommendations, filteredRecommendations, cartItems])
-
-  const mockUpsellItems: MenuItem[] = useMemo(() => ([
-    {
-      id: -101,
-      name: 'Кола 0.5',
-      description: 'Освежающий напиток',
-      price: 65,
-      category: 'Напитки',
-      emoji: '🥤',
-    },
-    {
-      id: -102,
-      name: 'Спайси соус',
-      description: 'Идеально к роллам',
-      price: 35,
-      category: 'Соусы',
-      emoji: '🧴',
-    },
-    {
-      id: -103,
-      name: 'Мини-ролл с лососем',
-      description: 'Легкий перекус со скидкой',
-      price: 119,
-      category: 'Роллы',
-      emoji: '🍣',
-    },
-  ]), [])
-
   // --- РАСЧЕТ ЦЕНЫ (ВОТ ЭТО ВАЖНО ДЛЯ ОШИБОК) ---
   const basePrice = cartItems.reduce(
-    (sum, item) => sum + effectiveUnitPrice(item.price, item.promoDiscountPercent),
-    0
+    (sum, item) => sum + cartLineChargeUnitPrice(item) * lineQuantity(item),
+    0,
   )
   const discountAmount = appliedPromo ? Math.round((basePrice * appliedPromo.discount) / 100) : 0
   const finalPrice = basePrice - discountAmount
+
+  const qualifiedUpsellTiers = useMemo(
+    () => pickQualifiedCartUpsellTiers(cartUpsellTiers, finalPrice),
+    [cartUpsellTiers, finalPrice],
+  )
+
+  const tierUpsellItems = useMemo((): (MenuItem & { upsellDiscountEur?: number })[] => {
+    const merged = mergeCartUpsellOffersFromTiers(qualifiedUpsellTiers)
+    if (merged.length === 0) return []
+
+    return merged
+      .map(({ product: p, discountEur }) => {
+        const cat = p.category as Record<string, unknown> | undefined
+        const promo =
+          typeof p.promoDiscountPercent === 'number'
+            ? p.promoDiscountPercent
+            : Number(p.promoDiscountPercent) || 0
+        return {
+          id: Number(p.id),
+          name: getLocalized(p as never, 'name'),
+          description: getLocalized(p as never, 'description') || '',
+          price: Number(p.price),
+          category:
+            getMenuCategoryDisplayName((cat || {}) as Record<string, unknown>, language, t.categories) ||
+            '',
+          emoji: '🍱',
+          imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+          promoDiscountPercent: promo,
+          upsellDiscountEur: discountEur,
+        }
+      })
+      .filter((item) => Number.isFinite(item.id) && item.id > 0)
+      .filter((item) => !cartItems.some((c) => c.id === item.id))
+  }, [qualifiedUpsellTiers, cartItems, getLocalized, language, t.categories])
+
   const { restaurantPickupAddress } = checkoutSettings
   const selectedCityInfo = useMemo(
     () => cities.find((city) => city.name === selectedCity) ?? null,
@@ -609,34 +581,43 @@ export default function CartView({
   const phoneInvalidHint =
     formData.phone.trim() !== '' && !isValidCheckoutPhone(formData.phone)
   const phoneValid = isValidCheckoutPhone(formData.phone)
-  const canSubmitOrder = phoneValid && !isCalculatingDistance
+  const canSubmitOrder =
+    phoneValid && !isCalculatingDistance && dataProcessingConsent
 
 
-  const upsellItems = upsellCandidates.length > 0 ? upsellCandidates : mockUpsellItems
-  const isUpsellQualified = finalPrice >= UPSELL_THRESHOLD && upsellItems.length > 0
+  const upsellItems = tierUpsellItems
+  const isUpsellQualified = upsellItems.length > 0
 
   const addItem = (item: MenuItem) => {
     setCartItems((prev) => {
-      const currentQty = prev.filter((i) => i.id === item.id).length
+      const existing = prev.find((i) => i.id === item.id)
+      const currentQty = existing ? lineQuantity(existing) : 0
       if (currentQty >= 99) {
         toast.error(cs.toastMaxQty)
         return prev
       }
-      const newCart = [...prev, { ...item, cartLineId: newCartLineId() }]
-      localStorage.setItem('cart', JSON.stringify(newCart))
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      const newCart = existing
+        ? prev.map((i) =>
+            i.id === item.id ? { ...i, quantity: currentQty + 1 } : i,
+          )
+        : [...prev, { ...item, quantity: 1, cartLineId: newCartLineId() }]
+      writeCartToStorage(newCart)
       return newCart
     })
   }
 
   const removeCartLine = (cartLineId: string) => {
     setCartItems((prev) => {
-      const index = prev.findIndex((i) => i.cartLineId === cartLineId)
-      if (index < 0) return prev
-      const newCart = [...prev]
-      newCart.splice(index, 1)
-      localStorage.setItem('cart', JSON.stringify(newCart))
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      const line = prev.find((i) => i.cartLineId === cartLineId)
+      if (!line) return prev
+      const qty = lineQuantity(line)
+      const newCart =
+        qty <= 1
+          ? prev.filter((i) => i.cartLineId !== cartLineId)
+          : prev.map((i) =>
+              i.cartLineId === cartLineId ? { ...i, quantity: qty - 1 } : i,
+            )
+      writeCartToStorage(newCart)
       return newCart
     })
   }
@@ -644,14 +625,9 @@ export default function CartView({
   const removeAllItem = (itemId: number) => {
     setCartItems((prev) => {
       const newCart = prev.filter((i) => i.id !== itemId)
-      localStorage.setItem('cart', JSON.stringify(newCart))
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      writeCartToStorage(newCart)
       return newCart
     })
-  }
-
-  const handleAddRecommendation = (item: MenuItem) => {
-    addItem(item)
   }
 
   // --- ФУНКЦИЯ ПРОВЕРКИ ПРОМОКОДА ---
@@ -681,17 +657,21 @@ export default function CartView({
     }
   }
 
-  const getDiscountedUpsellItem = (item: MenuItem): MenuItem => ({
-    ...item,
-    price: Math.max(1, Math.round(item.price * (1 - UPSELL_DISCOUNT_PERCENT / 100))),
-  })
+  const getDiscountedUpsellItem = (item: MenuItem & { upsellDiscountEur?: number }): MenuItem => {
+    const discountEur = Number(item.upsellDiscountEur ?? 0)
+    return {
+      ...item,
+      cartUpsellDiscountEur: discountEur > 0 ? discountEur : undefined,
+    }
+  }
 
-  const handleAddUpsell = (item: MenuItem) => {
+  const handleAddUpsell = (item: MenuItem & { upsellDiscountEur?: number }) => {
     addItem(getDiscountedUpsellItem(item))
+    const discountEur = Number(item.upsellDiscountEur ?? 0)
     toast.success(
-      cs.toastUpsellAdded
+      cs.toastUpsellAddedEur
         .replace('{{name}}', item.name)
-        .replace('{{percent}}', String(UPSELL_DISCOUNT_PERCENT)),
+        .replace('{{discount}}', discountEur.toFixed(2)),
     )
   }
 
@@ -699,6 +679,10 @@ export default function CartView({
  const handleOrder = async () => {
     if (!isUserLoggedIn()) {
       router.push(getAuthUrl('/cart'))
+      return
+    }
+    if (!dataProcessingConsent) {
+      toast.error(cs.dataProcessingConsentRequired)
       return
     }
     if (fulfillment === 'delivery' && !formData.address.trim()) {
@@ -772,7 +756,7 @@ export default function CartView({
         .map((item) => ({
           id: item.id,
           quantity: item.quantity ?? 1,
-          price: effectiveUnitPrice(item.price, item.promoDiscountPercent),
+          price: cartLineChargeUnitPrice(item),
         }))
 
       if (orderItems.length === 0) {
@@ -795,6 +779,7 @@ export default function CartView({
         fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY',
         noCallbackConfirm: formData.noCallbackConfirm,
         noDoorbellRing: formData.noDoorbellRing,
+        dataProcessingConsent: true,
       }
 
       const response = await fetch('/api/orders', {
@@ -834,8 +819,9 @@ export default function CartView({
 
       // === Готівка: сторінка успішного замовлення ===
       // (Твой родной, рабочий код очистки)
-      localStorage.removeItem('cart');
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      localStorage.removeItem('cart')
+      invalidateCartMemoryCache()
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
       window.location.href = `/checkout/success?orderId=${orderData.id}`;
       return;
 
@@ -875,7 +861,7 @@ export default function CartView({
 
   const cartMetaText = cs.cartMeta
     .replace('{{lines}}', String(uniqueItems.length))
-    .replace('{{pieces}}', String(cartItems.length))
+    .replace('{{pieces}}', String(getCartTotalPieceCount(cartItems)))
 
   const isEmpty = cartItems.length === 0
 
@@ -964,7 +950,11 @@ export default function CartView({
                         >
                         <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-neutral-100 sm:h-14 sm:w-14">
                             {item.imageUrl ? (
-                              <img src={item.imageUrl} className="h-full w-full object-cover" alt="" />
+                              <img
+                                src={resolveCatalogMediaUrl(item.imageUrl) ?? undefined}
+                                className="h-full w-full object-cover"
+                                alt=""
+                              />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-xl sm:text-2xl">
                                 {item.emoji}
@@ -976,16 +966,42 @@ export default function CartView({
                             {item.name}
                           </p>
                           <p className="mt-0.5 text-[11px] text-neutral-500 sm:text-xs">
-                            {clampPromoPercent(item.promoDiscountPercent) > 0 ? (
-                              <>
-                                <span className="text-neutral-400 line-through">{item.price} €</span>
-                                <span className="ml-1 font-medium text-[#145142]">
-                                  {effectiveUnitPrice(item.price, item.promoDiscountPercent)} €
-                                </span>
-                              </>
-                            ) : (
-                              <span className="font-medium text-neutral-600">{item.price} €</span>
-                            )}
+                            {(() => {
+                              const unitCharge = cartLineChargeUnitPrice(item)
+                              const promo = clampPromoPercent(item.promoDiscountPercent)
+                              const hasUpsellOff =
+                                Number(item.cartUpsellDiscountEur) > 0 &&
+                                unitCharge < item.price - 0.004
+                              const catalogUnit = effectiveUnitPrice(
+                                item.price,
+                                item.promoDiscountPercent,
+                              )
+                              if (hasUpsellOff && unitCharge < catalogUnit - 0.004) {
+                                return (
+                                  <>
+                                    <span className="text-neutral-400 line-through">
+                                      {catalogUnit} €
+                                    </span>
+                                    <span className="ml-1 font-medium text-[#145142]">
+                                      {unitCharge} €
+                                    </span>
+                                  </>
+                                )
+                              }
+                              if (!hasUpsellOff && promo > 0) {
+                                return (
+                                  <>
+                                    <span className="text-neutral-400 line-through">{item.price} €</span>
+                                    <span className="ml-1 font-medium text-[#145142]">
+                                      {unitCharge} €
+                                    </span>
+                                  </>
+                                )
+                              }
+                              return (
+                                <span className="font-medium text-neutral-600">{unitCharge} €</span>
+                              )
+                            })()}
                             <span className="text-neutral-400"> / {cs.perPiece}</span>
                           </p>
                         </div>
@@ -1002,7 +1018,7 @@ export default function CartView({
                                 <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
                               </button>
                               <span className="min-w-[1.25rem] text-center text-xs font-semibold tabular-nums text-neutral-900 sm:min-w-[1.75rem] sm:text-sm">
-                                1
+                                {lineQuantity(item)}
                               </span>
                               <button
                                 type="button"
@@ -1023,7 +1039,7 @@ export default function CartView({
                             </button>
                           </div>
                           <p className="text-[13px] font-bold tabular-nums text-[#145142] sm:text-base sm:text-neutral-900">
-                            {effectiveUnitPrice(item.price, item.promoDiscountPercent).toFixed(2)} €
+                            {(cartLineChargeUnitPrice(item) * lineQuantity(item)).toFixed(2)} €
                           </p>
                         </div>
                       </li>
@@ -1037,14 +1053,13 @@ export default function CartView({
                   </div>
                 </div>
 
-                {filteredRecommendations.length > 0 ? (
-                  <section className={CHECKOUT_CARD_CLASS} aria-labelledby="cart-recs-heading">
+                {isUpsellQualified ? (
+                  <section className={CHECKOUT_CARD_CLASS} aria-labelledby="cart-upsell-heading">
                     <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4">
                       <div className="min-w-0">
-                        <h2 id="cart-recs-heading" className={CHECKOUT_SECTION_TITLE_CLASS}>
-                          {cs.addToOrder}
+                        <h2 id="cart-upsell-heading" className={CHECKOUT_SECTION_TITLE_CLASS}>
+                          {cs.cartUpsellOffersTitle}
                         </h2>
-                        <p className="mt-0.5 text-[11px] text-neutral-500 sm:mt-1 sm:text-sm">{pd.recommendsHint}</p>
                       </div>
                       <div className="flex shrink-0 gap-1.5">
                         <button
@@ -1070,40 +1085,52 @@ export default function CartView({
                         ref={recScrollRef}
                         className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
                       >
-                        {filteredRecommendations.map((item) => (
-                          <div
-                            key={item.id}
-                            className="snap-start pl-0 first:pl-1 last:pr-1 sm:first:pl-2 sm:last:pr-2"
-                          >
-                            <WattaMenuProductCard
-                              variant="grid"
-                              className="w-[min(200px,68vw)] shrink-0 sm:w-[min(240px,72vw)]"
-                              product={{
-                                id: item.id,
-                                name: item.name,
-                                description: item.description,
-                                price: item.price,
-                                emoji: item.emoji,
-                                imageUrl: item.imageUrl,
-                                isTop: item.isTop,
-                                promoDiscountPercent: item.promoDiscountPercent,
-                              }}
-                              subtitleLine={
-                                parseProductSpecsFromDescription(
-                                  item.description,
-                                  pd.weightFallback,
-                                  pd.piecesFallback,
-                                  language as WattaLanguage,
-                                ).weightLine
-                              }
-                              onAddToCart={() => handleAddRecommendation(item)}
-                            />
-                          </div>
-                        ))}
+                        {upsellItems.map((item) => {
+                          const discountEur = Number(item.upsellDiscountEur ?? 0)
+                          const catalogEff = effectiveUnitPrice(item.price, item.promoDiscountPercent)
+                          const salePrice = cartUpsellSaleUnitPrice(
+                            item.price,
+                            item.promoDiscountPercent,
+                            discountEur,
+                          )
+                          return (
+                            <div
+                              key={item.id}
+                              className="snap-start pl-0 first:pl-1 last:pr-1 sm:first:pl-2 sm:last:pr-2"
+                            >
+                              <WattaMenuProductCard
+                                variant="grid"
+                                className="w-[min(200px,68vw)] shrink-0 sm:w-[min(240px,72vw)]"
+                                product={{
+                                  id: item.id,
+                                  name: item.name,
+                                  description: item.description,
+                                  price: item.price,
+                                  emoji: item.emoji,
+                                  imageUrl: item.imageUrl,
+                                  promoDiscountPercent: item.promoDiscountPercent,
+                                  saleUnitPrice: salePrice,
+                                  compareAtPrice: catalogEff,
+                                  cartFixedDiscountEur: discountEur,
+                                }}
+                                subtitleLine={
+                                  parseProductSpecsFromDescription(
+                                    item.description,
+                                    pd.weightFallback,
+                                    pd.piecesFallback,
+                                    language as WattaLanguage,
+                                  ).weightLine
+                                }
+                                onAddToCart={() => handleAddUpsell(item)}
+                              />
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   </section>
                 ) : null}
+
               </div>
 
               <div className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:sticky lg:top-[10.5rem] lg:z-20 lg:self-start">
@@ -1177,25 +1204,33 @@ export default function CartView({
                           </p>
                         )}
                       </div>
+                      <label
+                        htmlFor="cart-data-processing-consent"
+                        className="mt-1 flex cursor-pointer items-start gap-3 rounded-lg border border-[#145142]/15 bg-[#145142]/[0.04] px-3 py-3"
+                      >
+                        <input
+                          id="cart-data-processing-consent"
+                          type="checkbox"
+                          checked={dataProcessingConsent}
+                          onChange={(e) => setDataProcessingConsent(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#145142]"
+                          required
+                        />
+                        <span className="text-xs leading-snug text-[#145142]/90 sm:text-sm">
+                          {cs.dataProcessingConsentPrefix}{' '}
+                          <Link
+                            href="/privacy"
+                            className="font-semibold text-[#145142] underline underline-offset-2 hover:text-[#0f3d34]"
+                          >
+                            {cs.privacyPolicyLink}
+                          </Link>
+                        </span>
+                      </label>
                    </div>
                 </div>
                 {/* 2. Доставка / самовивіз */}
                 <div className={`${CHECKOUT_CARD_CLASS} relative z-10`}>
-                   <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <h2 className={CHECKOUT_SECTION_TITLE_CLASS}>{t.delivery}</h2>
-                      {fulfillment === 'delivery' && (
-                        <span
-                          className="flex shrink-0 cursor-pointer items-center gap-1 text-xs font-semibold text-[#145142] sm:text-sm"
-                          title={cs.deliveryZoneLabel}
-                          role="note"
-                        >
-                          {cs.deliveryZoneLabel}{' '}
-                          <span className="text-neutral-400" aria-hidden>
-                            ⓘ
-                          </span>
-                        </span>
-                      )}
-                   </div>
+                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-3`}>{t.delivery}</h2>
 
                    <div
                      className="mb-4 flex w-full min-w-0 gap-1 rounded-lg border border-neutral-200 bg-neutral-100 p-1 sm:mb-5"
@@ -1693,9 +1728,6 @@ export default function CartView({
                           >
                             {isLoading ? cs.processing : cs.order}
                           </button>
-                          <p className="px-2 text-center text-[11px] leading-snug text-neutral-400">
-                            {cs.privacyConsent}
-                          </p>
                       </div>
                     </div>
                   </form>
@@ -1709,21 +1741,28 @@ export default function CartView({
         <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4">
           <div className="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-[#145142]/15 overflow-hidden">
             <div className="bg-[#145142] px-6 py-5 text-white">
-              <h3 className="text-xl font-bold tracking-tight sm:text-2xl">{cs.upsellTitle}</h3>
-              <p className="mt-1 text-sm text-white/90 sm:text-base">
-                {cs.upsellLead.replace('{{threshold}}', String(UPSELL_THRESHOLD))}
-              </p>
+              <h3 className="text-xl font-bold tracking-tight sm:text-2xl">
+                {cs.cartUpsellOffersTitle}
+              </h3>
             </div>
 
             <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {upsellItems.map((item) => {
-                const discounted = getDiscountedUpsellItem(item)
+                const discountEur = Number(
+                  (item as MenuItem & { upsellDiscountEur?: number }).upsellDiscountEur ?? 0,
+                )
+                const compareAt = effectiveUnitPrice(item.price, item.promoDiscountPercent)
+                const salePrice = cartUpsellSaleUnitPrice(
+                  item.price,
+                  item.promoDiscountPercent,
+                  discountEur,
+                )
                 return (
                   <div key={item.id} className="rounded-2xl border border-[#145142]/15 p-4 bg-[#F9FAFB] flex flex-col">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-2xl">{item.emoji}</div>
                       <span className="text-xs font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#ff6b35]/15 text-[#ff6b35]">
-                        -{UPSELL_DISCOUNT_PERCENT}%
+                        −{discountEur.toFixed(2)} €
                       </span>
                     </div>
                     <h4 className="mt-3 text-base font-semibold leading-tight text-neutral-900">{item.name}</h4>
@@ -1732,13 +1771,15 @@ export default function CartView({
                     </p>
                     <div className="mt-3 flex items-end justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl font-extrabold text-[#145142]">{discounted.price} €</span>
-                        <span className="text-sm text-gray-400 line-through">{item.price} €</span>
+                        <span className="text-xl font-extrabold text-[#145142]">{salePrice} €</span>
+                        <span className="text-sm text-gray-400 line-through">{compareAt} €</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleAddUpsell(item)}
+                      onClick={() =>
+                        handleAddUpsell(item as MenuItem & { upsellDiscountEur?: number })
+                      }
                       className="mt-4 h-10 rounded-lg bg-[#145142] text-sm font-semibold text-white transition hover:bg-[#0f3d34]"
                     >
                       {cs.upsellAddToCart}

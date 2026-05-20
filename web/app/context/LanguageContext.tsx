@@ -161,9 +161,15 @@ export interface Translations {
     estimatedDeliveryApprox: string
     /** Відстань від точки кухні, плейсхолдер {{km}} */
     distanceFromKitchen: string
-    /** Амстердам: успішна перевірка індексу, км × 2 € */
+    /** NL / кроковий тариф: успішна перевірка адреси */
     postalAmsterdamOkTitle: string
     postalAmsterdamOkFormula: string
+    /** Великий акцент: сума доставки, плейсхолдер {{amount}} */
+    postalDeliveryFeeTitle: string
+    /** Час у дорозі, плейсхолдер {{minutes}} */
+    postalRouteDuration: string
+    /** Пояснення крокового тарифу: {{stepKm}}, {{stepEur}} */
+    postalTariffExplain: string
     /** Індекс не в Амстердамі / інше гементе */
     postalOutsideAmsterdam: string
     /** Невірний формат NL (1234 AB) */
@@ -245,6 +251,9 @@ export interface Translations {
     distanceBreakdown: string
     enterAddressForDeliveryFee: string
     privacyConsent: string
+    dataProcessingConsentPrefix: string
+    privacyPolicyLink: string
+    dataProcessingConsentRequired: string
     namePlaceholder: string
     phonePlaceholder: string
     phoneHint: string
@@ -282,6 +291,11 @@ export interface Translations {
     toastPromoNetwork: string
     /** {{name}}, {{percent}} */
     toastUpsellAdded: string
+    /** {{name}}, {{discount}} */
+    toastUpsellAddedEur: string
+    /** {{range}}, {{discount}} */
+    cartUpsellOffersHint: string
+    cartUpsellOffersTitle: string
     toastAddressRequired: string
     toastOrderFailed: string
     /** {{threshold}} — сума для upsell */
@@ -565,8 +579,8 @@ export interface Translations {
     readCta: string
     /** Тег категорії, якщо з API не прийшла мітка */
     defaultCategoryTag: string
-    /** Підказка, коли показуємо демо-новини без бекенду */
-    fallbackHint: string
+    /** Коли список акцій порожній */
+    emptyList: string
   }
   profilePage: {
     title: string
@@ -637,20 +651,30 @@ export interface Translations {
   }
   /** Публічна сторінка відгуків */
   reviewsPublic: {
+    heroKicker: string
     title: string
     subtitle: string
-    empty: string
+    statsLine: string
+    loginBlockTitle: string
     loginCta: string
+    loginButton: string
+    writeBlockTitle: string
+    writeBlockDesc: string
+    writeBlockNoOrders: string
+    orderPickLabel: string
+    feedTitle: string
+    empty: string
     openProfile: string
   }
   /** Блог — обгортка UI */
   blogPublic: {
+    heroKicker: string
     title: string
     subtitle: string
     empty: string
     readMore: string
     backToBlog: string
-    fallbackHint: string
+    featuredBadge: string
     /** Тег на картці, коли з API немає категорії */
     cardCategoryFallback: string
   }
@@ -667,6 +691,53 @@ export interface Translations {
     stat2Label: string
     stat3Val: string
     stat3Label: string
+    stat4Val: string
+    stat4Label: string
+    topicsTitle: string
+    topicsSub: string
+    topicMenu: string
+    topicDelivery: string
+    topicCorporate: string
+    topicPartners: string
+    topicFeedback: string
+    flowTitle: string
+    flowSub: string
+    flowStep1Title: string
+    flowStep1Body: string
+    flowStep2Title: string
+    flowStep2Body: string
+    flowStep3Title: string
+    flowStep3Body: string
+    messengerSub: string
+    tgCardTitle: string
+    tgCardSub: string
+    waCardTitle: string
+    waCardSub: string
+    igCardTitle: string
+    igCardSub: string
+    corporateTitle: string
+    corporateSub: string
+    corporateCta: string
+    quickLinksTitle: string
+    quickMenu: string
+    quickDelivery: string
+    quickPromo: string
+    quickAbout: string
+    mapBadgePickup: string
+    mapBadgeOpen: string
+    formTopicLabel: string
+    formTopicMenu: string
+    formTopicDelivery: string
+    formTopicCorporate: string
+    formTopicOther: string
+    formAsideTitle: string
+    formAside1: string
+    formAside2: string
+    formAside3: string
+    faq6Q: string
+    faq6A: string
+    ctaMenu: string
+    trustLine: string
     channelsTitle: string
     channelsSub: string
     cardCall: string
@@ -891,6 +962,7 @@ export interface Translations {
     title: string
     empty: string
     emptySubtext: string
+    markAllRead: string
   }
   // Додайте це до інтерфейсу Translations:
   menuView: {
@@ -915,7 +987,14 @@ export interface Translations {
     categoryPageOpenCart: string
     /** Сторінка /menu — повний каталог */
     fullMenuTitle: string
-    fullMenuSub: string
+    fullMenuIntroKicker: string
+    fullMenuIntroKickerScript: string
+    fullMenuIntroHeadlineLead: string
+    fullMenuIntroHeadlineMark: string
+    fullMenuIntroSub: string
+    fullMenuIntroStatFresh: string
+    fullMenuIntroStatHits: string
+    fullMenuIntroStatOrder: string
     fullMenuWant: string
     fullMenuCategoriesAria: string
     fullMenuLoading: string
@@ -1099,21 +1178,21 @@ const translations: Record<Language, Translations> = {
       description: 'Суші та роли з доставкою у ваше місто.',
       workingHours: 'Режим роботи',
       payment: 'Оплата',
-      postalTitle: 'Перевірка за індексом',
+      postalTitle: 'Розрахунок доставки за адресою',
       postalDesc:
-        'Оберіть місто зі списку (як у шапці сайту) і введіть поштовий індекс. Для Амстердама (NL) рахуємо відстань від нашої кухні до точки індексу автоматично: 2 € за кілометр. В інших містах — зони й тарифи задає адміністратор.',
-      postalLabel: 'Поштовий індекс',
-      postalPlaceholder: 'Напр. 1075 VV (Амстердам, NL)',
-      postalButton: 'Перевірити',
-      postalChecking: 'Шукаємо адресу…',
+        'Оберіть місто й вкажіть адресу доставки — вулицю з номером, індекс або повну адресу. Відстань рахуємо від нашої кухні до вас по дорозі; вартість покажемо одразу.',
+      postalLabel: 'Адреса доставки',
+      postalPlaceholder: 'Напр. Damrak 1, 1012 JS Amsterdam',
+      postalButton: 'Розрахувати',
+      postalChecking: 'Шукаємо адресу та рахуємо…',
       postalInside: 'Доставка доступна у зоні',
       postalOutside: 'За межами зон доставки для цього міста',
       postalNoZones:
         'Для цього міста ще не накреслені зони на карті — уточнюйте доставку в оператора. Тарифи встановлює адміністратор.',
       postalFoundIndexNoZonesTitle:
         'Поштовий індекс знайдено — координати підтверджені (карта). Зони доставки для цього міста ще не накреслені в адмін-панелі.',
-      postalGeocodeFail: 'Не вдалося знайти адресу за цим індексом — перевірте написання та країну міста.',
-      postalBadRequest: 'Оберіть місто та введіть індекс.',
+      postalGeocodeFail: 'Не вдалося знайти цю адресу — перевірте написання та обране місто.',
+      postalBadRequest: 'Оберіть місто та введіть адресу (мінімум 3 символи).',
       postalZone: 'Зона',
       postalAddressFound: 'Знайдено',
       adminZonesNote:
@@ -1142,10 +1221,14 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Тариф зони: стандарт (база + €/км)',
       estimatedDeliveryApprox: 'Орієнтовна доставка: {{amount}} €',
       distanceFromKitchen: 'Відстань від кухні (орієнтовно): {{km}} км',
-      postalAmsterdamOkTitle: 'Доставка в Амстердамі доступна за цим індексом',
-      postalAmsterdamOkFormula: 'Відстань від кухні: {{km}} км × 2 €/км = орієнтовно {{amount}} € за доставку.',
+      postalAmsterdamOkTitle: 'Доставляємо за цією адресою',
+      postalAmsterdamOkFormula:
+        'Відстань від кухні: {{km}} км (маршрут) · орієнтовно {{amount}} € за доставку.',
+      postalDeliveryFeeTitle: 'Вартість доставки',
+      postalRouteDuration: 'Орієнтовно {{minutes}} хв у дорозі',
+      postalTariffExplain: 'Тариф: +{{stepEur}} € кожні {{stepKm}} км від кухні',
       postalOutsideAmsterdam:
-        'За цим індексом адреса не в Амстердамі (або в іншому гементе поруч). Перевірте індекс або оберіть інше місто.',
+        'Ця адреса поза зоною доставки по Нідерландах. Перевірте адресу або оберіть інше місто.',
       postalInvalidNlFormat:
         'Формат індексу Нідерландів: чотири цифри та дві літери, наприклад 1075 VV.',
       splitHeroVideoRail: 'З кухні — до вас',
@@ -1205,6 +1288,11 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Вкажіть адресу доставки для розрахунку вартості',
       privacyConsent:
         'Натискаючи кнопку, ви погоджуєтесь з обробкою персональних даних відповідно до політики конфіденційності.',
+      dataProcessingConsentPrefix:
+        'Я погоджуюсь на обробку моїх персональних даних відповідно до',
+      privacyPolicyLink: 'політики конфіденційності',
+      dataProcessingConsentRequired:
+        'Поставте галочку згоди на обробку персональних даних, щоб оформити замовлення.',
       namePlaceholder: 'Наприклад, Олена',
       phonePlaceholder: '+31 6 12345678',
       phoneHint: 'Будь-яка країна: +380, +31, +1 тощо (8–15 цифр)',
@@ -1239,6 +1327,9 @@ const translations: Record<Language, Translations> = {
       toastPromoOk: 'Промокод {{code}} застосовано',
       toastPromoNetwork: 'Помилка з’єднання',
       toastUpsellAdded: '{{name}} додано зі знижкою {{percent}}%',
+      toastUpsellAddedEur: '{{name}} додано (−{{discount}} € на шт.)',
+      cartUpsellOffersTitle: 'Спецпропозиції зі знижкою',
+      cartUpsellOffersHint: 'Знижка {{discount}} € на кожну позицію нижче.',
       toastAddressRequired: 'Вкажіть адресу доставки',
       toastOrderFailed: 'Не вдалося оформити замовлення.',
       upsellTitle: 'Додайте до замовлення зі знижкою',
@@ -1489,8 +1580,16 @@ const translations: Record<Language, Translations> = {
       categoryPageBack: 'На головну',
       categoryPageEmpty: 'У цій категорії поки немає позицій.',
       categoryPageOpenCart: 'Кошик',
-      fullMenuTitle: 'Меню',
-      fullMenuSub: 'Усі категорії та страви на одній сторінці. Оберіть категорію зверху — список прокрутиться до потрібного блоку.',
+      fullMenuTitle: 'Усе меню',
+      fullMenuIntroKicker: 'WATTA',
+      fullMenuIntroKickerScript: 'з любов\'ю до смаку',
+      fullMenuIntroHeadlineLead: 'Усе меню',
+      fullMenuIntroHeadlineMark: 'в одному місці',
+      fullMenuIntroSub:
+        'Роли, суші, сети та супи — оберіть категорію зверху й додавайте улюблене в кошик за кілька кліків.',
+      fullMenuIntroStatFresh: 'Готуємо щодня',
+      fullMenuIntroStatHits: 'Хіти та новинки',
+      fullMenuIntroStatOrder: 'У кошик за секунди',
       fullMenuWant: 'Замовити',
       fullMenuCategoriesAria: 'Категорії меню',
       fullMenuLoading: 'Завантаження меню…',
@@ -1570,7 +1669,7 @@ const translations: Record<Language, Translations> = {
       hitBadge: "ХІТ",
       readCta: "Читати",
       defaultCategoryTag: "Новини Watta",
-      fallbackHint: "Поки з сервера немає записів — нижче приклади оформлення. Ваші новини з’являться тут після додавання в адмін-панелі.",
+      emptyList: "Поки що немає активних акцій. Загляньте пізніше!",
     },
     profilePage: { title: "Профіль", logout: "Вийти", orderHistory: "Історія замовлень" },
     clientProfile: {
@@ -1630,19 +1729,29 @@ const translations: Record<Language, Translations> = {
       inAppNavHint: 'Розділи зліва на великому екрані; на телефоні — вкладки внизу.',
     },
     reviewsPublic: {
+      heroKicker: 'Відгуки гостей',
       title: 'Відгуки клієнтів',
       subtitle: 'Щирі враження про доставку, смак і сервіс Watta Sushi.',
-      empty: 'Ще немає опублікованих відгуків — станьте першим після замовлення.',
-      loginCta: 'Увійдіть, щоб залишити відгук у профілі після отримання замовлення.',
-      openProfile: 'На головну — профіль у меню',
+      statsLine: '{{count}} відгуків · середня оцінка {{avg}}',
+      loginBlockTitle: 'Хочете поділитися враженням?',
+      loginCta: 'Увійдіть у профіль — після отримання замовлення зможете залишити відгук прямо тут.',
+      loginButton: 'Увійти',
+      writeBlockTitle: 'Залишити відгук',
+      writeBlockDesc: 'Оберіть виконане замовлення — один відгук на замовлення.',
+      writeBlockNoOrders: 'Поки немає замовлень, для яких можна залишити відгук. Після доставки вони з’являться тут.',
+      orderPickLabel: 'Замовлення №{{id}}',
+      feedTitle: 'Усі відгуки',
+      empty: 'Ще немає відгуків — станьте першим після отримання замовлення.',
+      openProfile: 'Профіль',
     },
     blogPublic: {
+      heroKicker: 'Нотатки шефа',
       title: 'Блог і рецепти шефа',
       subtitle: 'Секрети приготування, поради та нотатки команди Watta Sushi.',
       empty: 'Скоро тут з’являться нові статті.',
       readMore: 'Читати',
       backToBlog: 'Усі статті',
-      fallbackHint: 'Поки з API немає статей — показуємо приклади нотаток шефа. Публікації з адмін-панелі замінять цей блок.',
+      featuredBadge: 'Свіжа публікація',
       cardCategoryFallback: 'Блог шефа',
     },
     contactPage: {
@@ -1657,6 +1766,53 @@ const translations: Record<Language, Translations> = {
       stat2Label: 'Регіон доставки та самовивіз',
       stat3Val: '100%',
       stat3Label: 'Свіжі інгредієнти щодня',
+      stat4Val: '4.9★',
+      stat4Label: 'Середня оцінка сервісу',
+      topicsTitle: 'З чим допоможемо',
+      topicsSub: 'Оберіть тему — підкажемо найкоротший шлях до відповіді.',
+      topicMenu: 'Меню та склад',
+      topicDelivery: 'Доставка',
+      topicCorporate: 'Корпоративи',
+      topicPartners: 'Партнерство',
+      topicFeedback: 'Відгук',
+      flowTitle: 'Як ми відповідаємо',
+      flowSub: 'Прозорий процес — без «чорної скриньки».',
+      flowStep1Title: 'Повідомлення',
+      flowStep1Body: 'Форма, чат або дзвінок — все потрапляє до команди кухні.',
+      flowStep2Title: 'Уточнення',
+      flowStep2Body: 'За потреби уточнюємо адресу, час або склад замовлення.',
+      flowStep3Title: 'Рішення',
+      flowStep3Body: 'Підтвердження, зміна маршруту або пропозиція по сету — у листі або месенджері.',
+      messengerSub: 'Найшвидший канал — месенджер. Ми на зв’язку в години роботи кухні.',
+      tgCardTitle: 'Telegram',
+      tgCardSub: 'Замовлення, статус, питання по меню',
+      waCardTitle: 'WhatsApp',
+      waCardSub: 'Швидкі відповіді та фото адреси',
+      igCardTitle: 'Instagram',
+      igCardSub: 'Новинки, акції та атмосфера кухні',
+      corporateTitle: 'Корпоративи та великі сети',
+      corporateSub: 'Офіс, івент або святковий стіл — зберемо меню під кількість гостей і час подачі.',
+      corporateCta: 'Запит на сет',
+      quickLinksTitle: 'Корисні розділи',
+      quickMenu: 'Меню',
+      quickDelivery: 'Доставка',
+      quickPromo: 'Акції',
+      quickAbout: 'Про нас',
+      mapBadgePickup: 'Самовивіз за записом',
+      mapBadgeOpen: 'Відкрито щодня 14:00–21:00',
+      formTopicLabel: 'Тема звернення',
+      formTopicMenu: 'Меню / алергени',
+      formTopicDelivery: 'Доставка / адреса',
+      formTopicCorporate: 'Корпоратив / івент',
+      formTopicOther: 'Інше',
+      formAsideTitle: 'Що варто знати',
+      formAside1: 'Відповідаємо на email протягом робочого дня кухні.',
+      formAside2: 'Для термінових питань по активному замовленню — телефон або месенджер.',
+      formAside3: 'Дані з форми використовуємо лише для відповіді — без спаму.',
+      faq6Q: 'Чи можна замовити наперед на конкретний час?',
+      faq6A: 'Так — вкажіть бажаний час у коментарі до замовлення або в повідомленні. Підтвердимо, якщо кухня встигне.',
+      ctaMenu: 'До меню',
+      trustLine: 'Команда Watta Sushi · Amsterdam · щоденна свіжа риба',
       channelsTitle: 'Як з нами зв’язатися',
       channelsSub: 'Оберіть зручний канал — усі лінії ведуть до однієї кухні.',
       cardCall: 'Телефон',
@@ -1752,7 +1908,8 @@ const translations: Record<Language, Translations> = {
     notifications: {
       title: "Повідомлення",
       empty: "Повідомлень немає",
-      emptySubtext: "Ми повідомимо, коли з'явиться щось цікаве",
+      emptySubtext: "Оновлення статусу замовлення з’являться тут",
+      markAllRead: "Позначити всі прочитаними",
     },
     adminPage: {
       auth: {
@@ -1994,21 +2151,21 @@ const translations: Record<Language, Translations> = {
       description: 'Суши и роллы с доставкой в ваш город.',
       workingHours: 'Режим работы',
       payment: 'Оплата',
-      postalTitle: 'Проверка по индексу',
+      postalTitle: 'Расчёт доставки по адресу',
       postalDesc:
-        'Выберите город из списка (как в шапке сайта) и введите индекс. Для Амстердама (NL) расстояние от нашей кухни до точки индекса считается автоматически: 2 € за километр. В других городах зоны и тарифы задаёт администратор.',
-      postalLabel: 'Почтовый индекс',
-      postalPlaceholder: 'Напр. 1075 VV (Амстердам, NL)',
-      postalButton: 'Проверить',
-      postalChecking: 'Ищем адрес…',
+        'Выберите город и укажите адрес доставки — улицу с номером, индекс или полный адрес. Считаем расстояние от нашей кухни до вас по дороге и сразу показываем стоимость.',
+      postalLabel: 'Адрес доставки',
+      postalPlaceholder: 'Напр. Damrak 1, 1012 JS Amsterdam',
+      postalButton: 'Рассчитать',
+      postalChecking: 'Ищем адрес и считаем…',
       postalInside: 'Доставка доступна в зоне',
       postalOutside: 'Вне зон доставки для этого города',
       postalNoZones:
         'Для этого города ещё не заданы зоны на карте — уточняйте у оператора. Тарифы настраивает администратор.',
       postalFoundIndexNoZonesTitle:
         'Индекс найден — координаты подтверждены (карта). Зоны доставки для этого города ещё не нарисованы в админ-панели.',
-      postalGeocodeFail: 'Не удалось найти адрес по индексу — проверьте написание и страну города.',
-      postalBadRequest: 'Выберите город и введите индекс.',
+      postalGeocodeFail: 'Не удалось найти этот адрес — проверьте написание и выбранный город.',
+      postalBadRequest: 'Выберите город и введите адрес (минимум 3 символа).',
       postalZone: 'Зона',
       postalAddressFound: 'Найдено',
       adminZonesNote:
@@ -2037,10 +2194,14 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Тариф зоны: стандарт (база + €/км)',
       estimatedDeliveryApprox: 'Ориентировочная доставка: {{amount}} €',
       distanceFromKitchen: 'Расстояние от кухни (примерно): {{km}} км',
-      postalAmsterdamOkTitle: 'Доставка в Амстердаме по этому индексу доступна',
-      postalAmsterdamOkFormula: 'Расстояние от кухни: {{km}} км × 2 €/км ≈ {{amount}} € за доставку.',
+      postalAmsterdamOkTitle: 'Доставляем по этому адресу',
+      postalAmsterdamOkFormula:
+        'Расстояние от кухни: {{km}} км (маршрут) · ориентировочно {{amount}} € за доставку.',
+      postalDeliveryFeeTitle: 'Стоимость доставки',
+      postalRouteDuration: 'Ориентировочно {{minutes}} мин в пути',
+      postalTariffExplain: 'Тариф: +{{stepEur}} € каждые {{stepKm}} км от кухни',
       postalOutsideAmsterdam:
-        'По этому индексу адрес не в Амстердаме (или в другом гементе рядом). Проверьте индекс или выберите другой город.',
+        'Этот адрес вне зоны доставки по Нидерландам. Проверьте адрес или выберите другой город.',
       postalInvalidNlFormat: 'Формат индекса Нидерландов: четыре цифры и две буквы, например 1075 VV.',
       splitHeroVideoRail: 'С кухни — к вам',
     },
@@ -2099,6 +2260,11 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Введите адрес доставки для расчёта стоимости',
       privacyConsent:
         'Нажимая кнопку, вы соглашаетесь с обработкой персональных данных в соответствии с политикой конфиденциальности.',
+      dataProcessingConsentPrefix:
+        'Я согласен(на) на обработку моих персональных данных в соответствии с',
+      privacyPolicyLink: 'политикой конфиденциальности',
+      dataProcessingConsentRequired:
+        'Поставьте галочку согласия на обработку персональных данных, чтобы оформить заказ.',
       namePlaceholder: 'Например, Анна',
       phonePlaceholder: '+31 6 12345678',
       phoneHint: 'Любая страна: +380, +31, +1 и т.д. (8–15 цифр)',
@@ -2133,6 +2299,9 @@ const translations: Record<Language, Translations> = {
       toastPromoOk: 'Промокод {{code}} применён',
       toastPromoNetwork: 'Ошибка соединения',
       toastUpsellAdded: '{{name}} добавлено со скидкой {{percent}}%',
+      toastUpsellAddedEur: '{{name}} добавлено (−{{discount}} € за шт.)',
+      cartUpsellOffersTitle: 'Спецпредложения со скидкой',
+      cartUpsellOffersHint: 'Скидка {{discount}} € на каждую позицию ниже.',
       toastAddressRequired: 'Укажите адрес доставки',
       toastOrderFailed: 'Не удалось оформить заказ.',
       upsellTitle: 'Добавьте к заказу со скидкой',
@@ -2383,8 +2552,16 @@ const translations: Record<Language, Translations> = {
       categoryPageBack: 'На главную',
       categoryPageEmpty: 'В этой категории пока нет позиций.',
       categoryPageOpenCart: 'Корзина',
-      fullMenuTitle: 'Меню',
-      fullMenuSub: 'Все категории и блюда на одной странице. Выберите категорию сверху — список прокрутится к нужному блоку.',
+      fullMenuTitle: 'Всё меню',
+      fullMenuIntroKicker: 'WATTA',
+      fullMenuIntroKickerScript: 'с любовью к вкусу',
+      fullMenuIntroHeadlineLead: 'Всё меню',
+      fullMenuIntroHeadlineMark: 'в одном месте',
+      fullMenuIntroSub:
+        'Роллы, суши, сеты и супы — выбирайте категорию сверху и добавляйте любимое в корзину за пару кликов.',
+      fullMenuIntroStatFresh: 'Готовим каждый день',
+      fullMenuIntroStatHits: 'Хиты и новинки',
+      fullMenuIntroStatOrder: 'В корзину за секунды',
       fullMenuWant: 'Заказать',
       fullMenuCategoriesAria: 'Категории меню',
       fullMenuLoading: 'Загрузка меню…',
@@ -2464,7 +2641,7 @@ const translations: Record<Language, Translations> = {
       hitBadge: "ХИТ",
       readCta: "Читать",
       defaultCategoryTag: "Новости Watta",
-      fallbackHint: "Пока с сервера нет записей — ниже примеры оформления. Ваши новости появятся после добавления в админ-панели.",
+      emptyList: "Пока нет активных акций. Загляните позже!",
     },
     profilePage: { title: "Профиль", logout: "Выйти", orderHistory: "История заказов" },
     clientProfile: {
@@ -2524,19 +2701,29 @@ const translations: Record<Language, Translations> = {
       inAppNavHint: 'Разделы слева на большом экране; на телефоне — вкладки внизу.',
     },
     reviewsPublic: {
+      heroKicker: 'Отзывы гостей',
       title: 'Отзывы клиентов',
       subtitle: 'Честные впечатления о доставке, вкусе и сервисе Watta Sushi.',
+      statsLine: '{{count}} отзывов · средняя оценка {{avg}}',
+      loginBlockTitle: 'Хотите поделиться впечатлением?',
+      loginCta: 'Войдите в профиль — после получения заказа можно оставить отзыв прямо здесь.',
+      loginButton: 'Войти',
+      writeBlockTitle: 'Оставить отзыв',
+      writeBlockDesc: 'Выберите выполненный заказ — один отзыв на заказ.',
+      writeBlockNoOrders: 'Пока нет заказов, для которых можно оставить отзыв. После доставки они появятся здесь.',
+      orderPickLabel: 'Заказ №{{id}}',
+      feedTitle: 'Все отзывы',
       empty: 'Пока нет отзывов — оставьте первый после получения заказа.',
-      loginCta: 'Войдите, чтобы оставить отзыв в профиле после доставки.',
-      openProfile: 'На главную — профиль в меню',
+      openProfile: 'Профиль',
     },
     blogPublic: {
+      heroKicker: 'Заметки шефа',
       title: 'Блог и рецепты шефа',
       subtitle: 'Секреты приготовления и заметки команды Watta Sushi.',
       empty: 'Скоро появятся новые статьи.',
       readMore: 'Читать',
       backToBlog: 'Все статьи',
-      fallbackHint: 'Пока с API нет статей — ниже примеры заметок шефа. Публикации из админ-панели заменят этот блок.',
+      featuredBadge: 'Свежая публикация',
       cardCategoryFallback: 'Блог шефа',
     },
     contactPage: {
@@ -2551,6 +2738,53 @@ const translations: Record<Language, Translations> = {
       stat2Label: 'Регион доставки и самовывоз',
       stat3Val: '100%',
       stat3Label: 'Свежие ингредиенты каждый день',
+      stat4Val: '4.9★',
+      stat4Label: 'Средняя оценка сервиса',
+      topicsTitle: 'С чем поможем',
+      topicsSub: 'Выберите тему — подскажем самый короткий путь к ответу.',
+      topicMenu: 'Меню и состав',
+      topicDelivery: 'Доставка',
+      topicCorporate: 'Корпоративы',
+      topicPartners: 'Партнёрство',
+      topicFeedback: 'Отзыв',
+      flowTitle: 'Как мы отвечаем',
+      flowSub: 'Прозрачный процесс — без «чёрного ящика».',
+      flowStep1Title: 'Сообщение',
+      flowStep1Body: 'Форма, чат или звонок — всё попадает к команде кухни.',
+      flowStep2Title: 'Уточнение',
+      flowStep2Body: 'При необходимости уточним адрес, время или состав заказа.',
+      flowStep3Title: 'Решение',
+      flowStep3Body: 'Подтверждение, смена маршрута или предложение по сету — в письме или мессенджере.',
+      messengerSub: 'Самый быстрый канал — мессенджер. На связи в часы работы кухни.',
+      tgCardTitle: 'Telegram',
+      tgCardSub: 'Заказы, статус, вопросы по меню',
+      waCardTitle: 'WhatsApp',
+      waCardSub: 'Быстрые ответы и фото адреса',
+      igCardTitle: 'Instagram',
+      igCardSub: 'Новинки, акции и атмосфера кухни',
+      corporateTitle: 'Корпоративы и большие сеты',
+      corporateSub: 'Офис, ивент или праздничный стол — соберём меню под число гостей и время подачи.',
+      corporateCta: 'Запрос на сет',
+      quickLinksTitle: 'Полезные разделы',
+      quickMenu: 'Меню',
+      quickDelivery: 'Доставка',
+      quickPromo: 'Акции',
+      quickAbout: 'О нас',
+      mapBadgePickup: 'Самовывоз по записи',
+      mapBadgeOpen: 'Открыто ежедневно 14:00–21:00',
+      formTopicLabel: 'Тема обращения',
+      formTopicMenu: 'Меню / аллергены',
+      formTopicDelivery: 'Доставка / адрес',
+      formTopicCorporate: 'Корпоратив / ивент',
+      formTopicOther: 'Другое',
+      formAsideTitle: 'Что стоит знать',
+      formAside1: 'Отвечаем на email в течение рабочего дня кухни.',
+      formAside2: 'Для срочных вопросов по активному заказу — телефон или мессенджер.',
+      formAside3: 'Данные из формы используем только для ответа — без спама.',
+      faq6Q: 'Можно заказать заранее на конкретное время?',
+      faq6A: 'Да — укажите желаемое время в комментарии к заказу или в сообщении. Подтвердим, если кухня успеет.',
+      ctaMenu: 'В меню',
+      trustLine: 'Команда Watta Sushi · Amsterdam · свежая рыба каждый день',
       channelsTitle: 'Как с нами связаться',
       channelsSub: 'Выберите удобный канал — все линии ведут на одну кухню.',
       cardCall: 'Телефон',
@@ -2646,7 +2880,8 @@ const translations: Record<Language, Translations> = {
     notifications: {
       title: "Уведомления",
       empty: "Уведомлений нет",
-      emptySubtext: "Мы сообщим, когда появится что-то интересное",
+      emptySubtext: "Обновления статуса заказа появятся здесь",
+      markAllRead: "Отметить все прочитанными",
     },
     adminPage: {
       auth: {
@@ -2888,21 +3123,21 @@ const translations: Record<Language, Translations> = {
       description: 'Sushi and rolls delivered to your city.',
       workingHours: 'Working hours',
       payment: 'Payment',
-      postalTitle: 'Check by postcode',
+      postalTitle: 'Delivery cost by address',
       postalDesc:
-        'Pick your city (same as in the site header) and enter your postcode. For Amsterdam (NL) we automatically measure distance from our kitchen to that postcode: €2 per km. In other cities zones and fees are set by an administrator.',
-      postalLabel: 'Postcode',
-      postalPlaceholder: 'e.g. 1075 VV (Amsterdam, NL)',
-      postalButton: 'Check',
-      postalChecking: 'Looking up address…',
+        'Pick your city and enter your delivery address — street and number, postcode, or full address. We measure driving distance from our kitchen to you and show the fee right away.',
+      postalLabel: 'Delivery address',
+      postalPlaceholder: 'e.g. Damrak 1, 1012 JS Amsterdam',
+      postalButton: 'Calculate',
+      postalChecking: 'Finding address and calculating…',
       postalInside: 'Delivery available in this zone',
       postalOutside: 'Outside delivery zones for this city',
       postalNoZones:
         'No map zones are configured for this city yet — ask the operator. Pricing is managed in the admin panel.',
       postalFoundIndexNoZonesTitle:
         'Postcode found — coordinates verified (maps). Delivery polygons for this city are not set up in the admin panel yet.',
-      postalGeocodeFail: 'We could not resolve this postcode — check spelling and country.',
-      postalBadRequest: 'Select a city and enter a postcode.',
+      postalGeocodeFail: 'We could not find this address — check spelling and selected city.',
+      postalBadRequest: 'Select a city and enter an address (at least 3 characters).',
       postalZone: 'Zone',
       postalAddressFound: 'Found',
       adminZonesNote:
@@ -2931,10 +3166,14 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Zone tariff: standard (base + per km)',
       estimatedDeliveryApprox: 'Estimated delivery: €{{amount}}',
       distanceFromKitchen: 'Approx. distance from kitchen: {{km}} km',
-      postalAmsterdamOkTitle: 'Amsterdam delivery is available for this postcode',
-      postalAmsterdamOkFormula: 'Distance from kitchen: {{km}} km × €2/km ≈ €{{amount}} delivery.',
+      postalAmsterdamOkTitle: 'We deliver to this address',
+      postalAmsterdamOkFormula:
+        'Distance from kitchen: {{km}} km (route) · approx. €{{amount}} delivery.',
+      postalDeliveryFeeTitle: 'Delivery fee',
+      postalRouteDuration: 'About {{minutes}} min drive',
+      postalTariffExplain: 'Rate: +€{{stepEur}} per {{stepKm}} km from kitchen',
       postalOutsideAmsterdam:
-        'This postcode is not in Amsterdam (or is in a neighbouring municipality). Check the code or pick another city.',
+        'This address is outside our delivery area in the Netherlands. Check the address or pick another city.',
       postalInvalidNlFormat: 'Dutch postcode format: four digits and two letters, e.g. 1075 VV.',
       splitHeroVideoRail: 'From our kitchen to you',
     },
@@ -2993,6 +3232,11 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Enter your address to calculate the delivery fee',
       privacyConsent:
         'By placing the order you agree to the processing of personal data as described in our privacy policy.',
+      dataProcessingConsentPrefix:
+        'I agree to the processing of my personal data in accordance with the',
+      privacyPolicyLink: 'privacy policy',
+      dataProcessingConsentRequired:
+        'Please check the consent box to process your personal data before placing the order.',
       namePlaceholder: 'e.g. Anna',
       phonePlaceholder: '+31 6 12345678',
       phoneHint: 'Any country: +380, +31, +1, etc. (8–15 digits)',
@@ -3027,6 +3271,9 @@ const translations: Record<Language, Translations> = {
       toastPromoOk: 'Promo {{code}} applied',
       toastPromoNetwork: 'Connection error',
       toastUpsellAdded: '{{name}} added with {{percent}}% off',
+      toastUpsellAddedEur: '{{name}} added (−{{discount}} € each)',
+      cartUpsellOffersTitle: 'Special offers',
+      cartUpsellOffersHint: 'Save {{discount}} € on each item below.',
       toastAddressRequired: 'Please enter a delivery address',
       toastOrderFailed: 'Could not place the order.',
       upsellTitle: 'Add to your order with a discount',
@@ -3277,8 +3524,16 @@ const translations: Record<Language, Translations> = {
       categoryPageBack: 'Home',
       categoryPageEmpty: 'No dishes in this category yet.',
       categoryPageOpenCart: 'Cart',
-      fullMenuTitle: 'Menu',
-      fullMenuSub: 'All categories and dishes on one page. Pick a category in the bar above — we scroll to that section.',
+      fullMenuTitle: 'Full menu',
+      fullMenuIntroKicker: 'WATTA',
+      fullMenuIntroKickerScript: 'made with care',
+      fullMenuIntroHeadlineLead: 'The full menu',
+      fullMenuIntroHeadlineMark: 'in one place',
+      fullMenuIntroSub:
+        'Rolls, sushi, sets and soups — pick a category above and add favourites to your cart in a few taps.',
+      fullMenuIntroStatFresh: 'Made fresh daily',
+      fullMenuIntroStatHits: 'Hits & new dishes',
+      fullMenuIntroStatOrder: 'To cart in seconds',
       fullMenuWant: 'Order',
       fullMenuCategoriesAria: 'Menu categories',
       fullMenuLoading: 'Loading menu…',
@@ -3358,7 +3613,7 @@ const translations: Record<Language, Translations> = {
       hitBadge: "HOT",
       readCta: "Read",
       defaultCategoryTag: "Watta news",
-      fallbackHint: "No items from the server yet — below is sample layout. Your stories will show here once added in the admin panel.",
+      emptyList: "No active promotions yet. Check back soon!",
     },
     profilePage: { title: "Profile", logout: "Log out", orderHistory: "Order history" },
     clientProfile: {
@@ -3418,19 +3673,29 @@ const translations: Record<Language, Translations> = {
       inAppNavHint: 'Sidebar on desktop; bottom tabs on your phone.',
     },
     reviewsPublic: {
+      heroKicker: 'Guest reviews',
       title: 'Customer reviews',
       subtitle: 'Real feedback on delivery, taste, and service.',
+      statsLine: '{{count}} reviews · average {{avg}}',
+      loginBlockTitle: 'Want to share your experience?',
+      loginCta: 'Sign in — after your order is delivered you can leave a review right here.',
+      loginButton: 'Sign in',
+      writeBlockTitle: 'Leave a review',
+      writeBlockDesc: 'Pick a completed order — one review per order.',
+      writeBlockNoOrders: 'No orders ready for a review yet. They will appear here after delivery.',
+      orderPickLabel: 'Order #{{id}}',
+      feedTitle: 'All reviews',
       empty: 'No reviews yet — be the first after your order arrives.',
-      loginCta: 'Sign in to leave a review in your profile after delivery.',
-      openProfile: 'Home — open Profile from the menu',
+      openProfile: 'Profile',
     },
     blogPublic: {
+      heroKicker: "Chef's notes",
       title: 'Chef blog & recipes',
       subtitle: 'Cooking tips and stories from the Watta Sushi team.',
       empty: 'New articles are coming soon.',
       readMore: 'Read',
       backToBlog: 'All articles',
-      fallbackHint: 'No articles from the API yet — sample chef notes below. Admin posts will replace this block.',
+      featuredBadge: 'Latest',
       cardCategoryFallback: "Chef's notes",
     },
     contactPage: {
@@ -3445,6 +3710,53 @@ const translations: Record<Language, Translations> = {
       stat2Label: 'Delivery & pickup region',
       stat3Val: '100%',
       stat3Label: 'Fresh ingredients daily',
+      stat4Val: '4.9★',
+      stat4Label: 'Average service rating',
+      topicsTitle: 'What we can help with',
+      topicsSub: 'Pick a topic — we will route you to the fastest answer.',
+      topicMenu: 'Menu & ingredients',
+      topicDelivery: 'Delivery',
+      topicCorporate: 'Corporate',
+      topicPartners: 'Partnerships',
+      topicFeedback: 'Feedback',
+      flowTitle: 'How we respond',
+      flowSub: 'A clear process — no black box.',
+      flowStep1Title: 'Your message',
+      flowStep1Body: 'Form, chat, or call — everything reaches the kitchen team.',
+      flowStep2Title: 'Clarify',
+      flowStep2Body: 'If needed we confirm address, timing, or order details.',
+      flowStep3Title: 'Resolve',
+      flowStep3Body: 'Confirmation, route update, or set proposal — by email or messenger.',
+      messengerSub: 'Fastest channel is messenger. We are online during kitchen hours.',
+      tgCardTitle: 'Telegram',
+      tgCardSub: 'Orders, status, menu questions',
+      waCardTitle: 'WhatsApp',
+      waCardSub: 'Quick replies and address photos',
+      igCardTitle: 'Instagram',
+      igCardSub: 'New drops, promos, kitchen vibe',
+      corporateTitle: 'Corporate & large sets',
+      corporateSub: 'Office, event, or celebration — we plan menus around guest count and serving time.',
+      corporateCta: 'Request a set',
+      quickLinksTitle: 'Helpful links',
+      quickMenu: 'Menu',
+      quickDelivery: 'Delivery',
+      quickPromo: 'Promotions',
+      quickAbout: 'About us',
+      mapBadgePickup: 'Pickup by appointment',
+      mapBadgeOpen: 'Open daily 14:00–21:00',
+      formTopicLabel: 'Topic',
+      formTopicMenu: 'Menu / allergens',
+      formTopicDelivery: 'Delivery / address',
+      formTopicCorporate: 'Corporate / event',
+      formTopicOther: 'Other',
+      formAsideTitle: 'Good to know',
+      formAside1: 'We reply to email within the kitchen’s working day.',
+      formAside2: 'For urgent questions about an active order — call or message us.',
+      formAside3: 'Form data is used only to answer you — no spam.',
+      faq6Q: 'Can I schedule an order for a specific time?',
+      faq6A: 'Yes — note your preferred time in the order comment or message. We confirm if the kitchen can hit it.',
+      ctaMenu: 'Browse menu',
+      trustLine: 'Watta Sushi team · Amsterdam · fresh fish daily',
       channelsTitle: 'Ways to reach us',
       channelsSub: 'Pick a channel you like — it all goes to the same kitchen crew.',
       cardCall: 'Phone',
@@ -3540,7 +3852,8 @@ const translations: Record<Language, Translations> = {
     notifications: {
       title: "Notifications",
       empty: "No notifications yet",
-      emptySubtext: "We’ll let you know when something interesting shows up",
+      emptySubtext: "Order status updates will appear here",
+      markAllRead: "Mark all as read",
     },
     adminPage: {
       auth: {
@@ -3782,21 +4095,21 @@ const translations: Record<Language, Translations> = {
       description: 'Sushi en rolls bij je thuis in jouw stad.',
       workingHours: 'Openingstijden',
       payment: 'Betaling',
-      postalTitle: 'Check via postcode',
+      postalTitle: 'Bezorgkosten per adres',
       postalDesc:
-        'Kies je stad (zoals in de header) en vul je postcode in. Voor Amsterdam (NL) berekenen we automatisch de afstand vanaf onze keuken: €2 per km. In andere steden stelt de beheerder zones en tarieven in.',
-      postalLabel: 'Postcode',
-      postalPlaceholder: 'bijv. 1012 AB',
-      postalButton: 'Controleren',
-      postalChecking: 'Adres zoeken…',
+        'Kies je stad en vul je bezorgadres in — straat en huisnummer, postcode of volledig adres. We meten de rijafstand vanaf onze keuken en tonen de prijs meteen.',
+      postalLabel: 'Bezorgadres',
+      postalPlaceholder: 'bijv. Damrak 1, 1012 JS Amsterdam',
+      postalButton: 'Berekenen',
+      postalChecking: 'Adres zoeken en berekenen…',
       postalInside: 'Bezorging mogelijk in deze zone',
       postalOutside: 'Buiten de bezorgzones voor deze stad',
       postalNoZones:
         'Er zijn nog geen zones op de kaart — vraag de operator. Tarieven staan in het adminpaneel.',
       postalFoundIndexNoZonesTitle:
         'Postcode gevonden — coördinaten bevestigd (kaarten). Bezorgzones voor deze stad zijn nog niet getekend in het adminpaneel.',
-      postalGeocodeFail: 'Postcode niet gevonden — controleer spelling en land.',
-      postalBadRequest: 'Kies een stad en vul een postcode in.',
+      postalGeocodeFail: 'Dit adres is niet gevonden — controleer spelling en gekozen stad.',
+      postalBadRequest: 'Kies een stad en vul een adres in (minimaal 3 tekens).',
       postalZone: 'Zone',
       postalAddressFound: 'Gevonden',
       adminZonesNote:
@@ -3825,10 +4138,14 @@ const translations: Record<Language, Translations> = {
       postalZoneTariffStandard: 'Zonetarief: standaard (basis + per km)',
       estimatedDeliveryApprox: 'Geschatte bezorging: € {{amount}}',
       distanceFromKitchen: 'Afstand vanaf de keuken (ongeveer): {{km}} km',
-      postalAmsterdamOkTitle: 'Bezorging in Amsterdam is mogelijk voor deze postcode',
-      postalAmsterdamOkFormula: 'Afstand vanaf de keuken: {{km}} km × €2/km ≈ €{{amount}} bezorgkosten.',
+      postalAmsterdamOkTitle: 'We bezorgen op dit adres',
+      postalAmsterdamOkFormula:
+        'Afstand vanaf de keuken: {{km}} km (route) · ca. €{{amount}} bezorgkosten.',
+      postalDeliveryFeeTitle: 'Bezorgkosten',
+      postalRouteDuration: 'Ca. {{minutes}} min rijden',
+      postalTariffExplain: 'Tarief: +€{{stepEur}} per {{stepKm}} km vanaf de keuken',
       postalOutsideAmsterdam:
-        'Deze postcode hoort niet bij Amsterdam (of staat in een andere gemeente). Controleer de postcode of kies een andere stad.',
+        'Dit adres valt buiten ons bezorggebied in Nederland. Controleer het adres of kies een andere stad.',
       postalInvalidNlFormat: 'Nederlands postcodeformaat: vier cijfers en twee letters, bijv. 1075 VV.',
       splitHeroVideoRail: 'Van onze keuken tot bij u',
     },
@@ -3887,6 +4204,11 @@ const translations: Record<Language, Translations> = {
       enterAddressForDeliveryFee: 'Vul je adres in om de bezorgkosten te berekenen',
       privacyConsent:
         'Door te bestellen ga je akkoord met de verwerking van persoonsgegevens zoals in ons privacybeleid.',
+      dataProcessingConsentPrefix:
+        'Ik ga akkoord met de verwerking van mijn persoonsgegevens volgens het',
+      privacyPolicyLink: 'privacybeleid',
+      dataProcessingConsentRequired:
+        'Vink het vakje voor toestemming tot gegevensverwerking aan om te bestellen.',
       namePlaceholder: 'Bijv. Anna',
       phonePlaceholder: '+31 6 12345678',
       phoneHint: 'Elk land: +380, +31, +1 enz. (8–15 cijfers)',
@@ -3921,6 +4243,9 @@ const translations: Record<Language, Translations> = {
       toastPromoOk: 'Promocode {{code}} toegepast',
       toastPromoNetwork: 'Verbindingsfout',
       toastUpsellAdded: '{{name}} toegevoegd met {{percent}}% korting',
+      toastUpsellAddedEur: '{{name}} toegevoegd (−{{discount}} € per stuk)',
+      cartUpsellOffersTitle: 'Speciale aanbiedingen',
+      cartUpsellOffersHint: '{{discount}} € korting op elk item hieronder.',
       toastAddressRequired: 'Vul je bezorgadres in',
       toastOrderFailed: 'Bestelling plaatsen mislukt.',
       upsellTitle: 'Voeg met korting toe aan je bestelling',
@@ -4171,8 +4496,16 @@ const translations: Record<Language, Translations> = {
       categoryPageBack: 'Naar home',
       categoryPageEmpty: 'Nog geen gerechten in deze categorie.',
       categoryPageOpenCart: 'Winkelwagen',
-      fullMenuTitle: 'Menu',
-      fullMenuSub: 'Alle categorieën en gerechten op één pagina. Kies een categorie in de balk hierboven — we scrollen naar dat blok.',
+      fullMenuTitle: 'Volledig menu',
+      fullMenuIntroKicker: 'WATTA',
+      fullMenuIntroKickerScript: 'met liefde voor smaak',
+      fullMenuIntroHeadlineLead: 'Het volledige menu',
+      fullMenuIntroHeadlineMark: 'op één plek',
+      fullMenuIntroSub:
+        'Rolls, sushi, sets en soepen — kies hierboven een categorie en bestel je favorieten in een paar tikken.',
+      fullMenuIntroStatFresh: 'Dagelijks vers',
+      fullMenuIntroStatHits: 'Hits & nieuw',
+      fullMenuIntroStatOrder: 'In seconden in je mand',
       fullMenuWant: 'Bestellen',
       fullMenuCategoriesAria: 'Menucategorieën',
       fullMenuLoading: 'Menu laden…',
@@ -4252,7 +4585,7 @@ const translations: Record<Language, Translations> = {
       hitBadge: "HIT",
       readCta: "Lezen",
       defaultCategoryTag: "Watta-nieuws",
-      fallbackHint: "Nog geen items van de server — hieronder voorbeelden. Jouw berichten verschijnen hier na toevoegen in het adminpaneel.",
+      emptyList: "Er zijn nog geen actieve aanbiedingen. Kom later terug!",
     },
     profilePage: { title: "Profiel", logout: "Uitloggen", orderHistory: "Bestelgeschiedenis" },
     clientProfile: {
@@ -4312,19 +4645,29 @@ const translations: Record<Language, Translations> = {
       inAppNavHint: 'Zijbalk op desktop; onderaan tabbladen op je telefoon.',
     },
     reviewsPublic: {
+      heroKicker: 'Gastreviews',
       title: 'Klantreviews',
       subtitle: 'Echte reacties over bezorging, smaak en service.',
+      statsLine: '{{count}} reviews · gemiddeld {{avg}}',
+      loginBlockTitle: 'Wil je je ervaring delen?',
+      loginCta: 'Log in — na levering kun je hier direct een review plaatsen.',
+      loginButton: 'Inloggen',
+      writeBlockTitle: 'Review plaatsen',
+      writeBlockDesc: 'Kies een afgeronde bestelling — één review per bestelling.',
+      writeBlockNoOrders: 'Nog geen bestellingen waarvoor je een review kunt plaatsen.',
+      orderPickLabel: 'Bestelling #{{id}}',
+      feedTitle: 'Alle reviews',
       empty: 'Nog geen reviews — laat de eerste achter na je bestelling.',
-      loginCta: 'Log in om na levering een review in je profiel te plaatsen.',
-      openProfile: 'Home — profiel via het menu',
+      openProfile: 'Profiel',
     },
     blogPublic: {
+      heroKicker: 'Notities van de chef',
       title: 'Blog & recepten van de chef',
       subtitle: 'Tips en verhalen van team Watta Sushi.',
       empty: 'Binnenkort nieuwe artikelen.',
       readMore: 'Lezen',
       backToBlog: 'Alle artikelen',
-      fallbackHint: 'Nog geen artikelen van de API — hieronder voorbeelden. Berichten uit het adminpaneel vervangen dit blok.',
+      featuredBadge: 'Nieuw',
       cardCategoryFallback: 'Blog van de chef',
     },
     contactPage: {
@@ -4339,6 +4682,53 @@ const translations: Record<Language, Translations> = {
       stat2Label: 'Regio bezorging & afhalen',
       stat3Val: '100%',
       stat3Label: 'Dagvers ingrediënten',
+      stat4Val: '4.9★',
+      stat4Label: 'Gemiddelde servicebeoordeling',
+      topicsTitle: 'Waarmee we helpen',
+      topicsSub: 'Kies een onderwerp — we wijzen je de snelste route naar een antwoord.',
+      topicMenu: 'Menu & ingrediënten',
+      topicDelivery: 'Bezorging',
+      topicCorporate: 'Zakelijk',
+      topicPartners: 'Partnerschap',
+      topicFeedback: 'Feedback',
+      flowTitle: 'Zo reageren we',
+      flowSub: 'Een helder proces — geen black box.',
+      flowStep1Title: 'Bericht',
+      flowStep1Body: 'Formulier, chat of bellen — alles komt bij het keukenteam.',
+      flowStep2Title: 'Afstemmen',
+      flowStep2Body: 'Zo nodig bevestigen we adres, tijd of bestelgegevens.',
+      flowStep3Title: 'Oplossing',
+      flowStep3Body: 'Bevestiging, routewijziging of setvoorstel — per mail of messenger.',
+      messengerSub: 'Snelste kanaal is messenger. Online tijdens keukenuren.',
+      tgCardTitle: 'Telegram',
+      tgCardSub: 'Bestellingen, status, menuvragen',
+      waCardTitle: 'WhatsApp',
+      waCardSub: 'Snel antwoord en adresfoto’s',
+      igCardTitle: 'Instagram',
+      igCardSub: 'Nieuw, acties en sfeer uit de keuken',
+      corporateTitle: 'Zakelijk & grote sets',
+      corporateSub: 'Kantoor, event of feest — menu rond aantal gasten en serveertijd.',
+      corporateCta: 'Set aanvragen',
+      quickLinksTitle: 'Handige links',
+      quickMenu: 'Menu',
+      quickDelivery: 'Bezorging',
+      quickPromo: 'Acties',
+      quickAbout: 'Over ons',
+      mapBadgePickup: 'Afhalen op afspraak',
+      mapBadgeOpen: 'Dagelijks open 14:00–21:00',
+      formTopicLabel: 'Onderwerp',
+      formTopicMenu: 'Menu / allergenen',
+      formTopicDelivery: 'Bezorging / adres',
+      formTopicCorporate: 'Zakelijk / event',
+      formTopicOther: 'Overig',
+      formAsideTitle: 'Handig om te weten',
+      formAside1: 'We antwoorden op e-mail binnen de werkdag van de keuken.',
+      formAside2: 'Voor urgente vragen over een actieve bestelling — bel of app ons.',
+      formAside3: 'Formuliergegevens gebruiken we alleen om te antwoorden — geen spam.',
+      faq6Q: 'Kan ik vooraf op een tijd bestellen?',
+      faq6A: 'Ja — vermeld de gewenste tijd in de opmerking of bericht. We bevestigen als de keuken het haalt.',
+      ctaMenu: 'Naar menu',
+      trustLine: 'Team Watta Sushi · Amsterdam · dagverse vis',
       channelsTitle: 'Hoe bereik je ons',
       channelsSub: 'Kies je kanaal — alles komt bij dezelfde keuken terecht.',
       cardCall: 'Telefoon',
@@ -4434,7 +4824,8 @@ const translations: Record<Language, Translations> = {
     notifications: {
       title: "Meldingen",
       empty: "Nog geen meldingen",
-      emptySubtext: "We laten het weten zodra er iets interessants is",
+      emptySubtext: "Bestelstatusupdates verschijnen hier",
+      markAllRead: "Alles als gelezen markeren",
     },
     adminPage: {
       auth: {

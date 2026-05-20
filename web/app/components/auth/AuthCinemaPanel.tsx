@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Clock3, Gift, Zap } from 'lucide-react'
+import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
+import { primeHeroVideoElement } from '@/lib/kickWelcomeHeroVideo'
 import { getPrimaryAuthHeroVideoSrc } from '@/lib/wattaAuthHeroVideo'
 import { getAuthHeroVideoSources } from '@/lib/authHeroVideoSources'
 
@@ -40,27 +42,35 @@ function usePhonePlaylist(videoUrls?: readonly string[]) {
   const [videoFailed, setVideoFailed] = useState(false)
 
   const playlist = useMemo(() => getAuthHeroVideoSources(videoUrls), [videoUrls])
+  const playlistKey = useMemo(() => playlist.join('\0'), [playlist])
   const hasVideo = playlist.length > 0
+  const safeIndex = playlist.length > 0 ? videoIndex % playlist.length : 0
   const videoSrc =
-    (hasVideo ? playlist[videoIndex] ?? playlist[0] : null) ??
+    (hasVideo ? playlist[safeIndex] ?? playlist[0] : null) ??
     getPrimaryAuthHeroVideoSrc(videoUrls)
   const videoLoop = playlist.length <= 1
   const showVideo = hasVideo && Boolean(videoSrc) && !videoFailed
 
+  /* Скидання лише при зміні плейлиста — не при кожному videoSrc (інакше другий ролик не грає). */
   useEffect(() => {
     setVideoIndex(0)
     setVideoFailed(false)
     setVideoReady(false)
-  }, [videoSrc, videoUrls])
+  }, [playlistKey])
 
   const playVideo = useCallback(() => {
-    videoRef.current?.play().catch(() => {})
+    const v = videoRef.current
+    if (!v) return
+    primeHeroVideoElement(v)
   }, [])
 
   useEffect(() => {
     if (!showVideo) return
-    playVideo()
-  }, [showVideo, videoSrc, playVideo])
+    const video = videoRef.current
+    if (!video) return
+    const off = bindHeroVideoAutoplay(video, { extendedRetries: true, loop: videoLoop })
+    return off
+  }, [showVideo, videoSrc, videoLoop, playlistKey])
 
   const onVideoEnded = () => {
     if (playlist.length <= 1) return
@@ -69,12 +79,19 @@ function usePhonePlaylist(videoUrls?: readonly string[]) {
   }
 
   const onVideoError = () => {
-    if (videoIndex < playlist.length - 1) {
-      setVideoIndex((i) => i + 1)
+    setVideoIndex((i) => {
+      if (playlist.length <= 1) {
+        setVideoFailed(true)
+        return i
+      }
+      const next = i + 1
+      if (next >= playlist.length) {
+        setVideoFailed(true)
+        return i
+      }
       setVideoReady(false)
-      return
-    }
-    setVideoFailed(true)
+      return next
+    })
   }
 
   const onVideoReady = () => {
@@ -195,8 +212,11 @@ function PhoneScreenMedia({
           playsInline
           autoPlay
           preload="auto"
+          disablePictureInPicture
+          disableRemotePlayback
           onLoadedData={onVideoReady}
           onCanPlay={onVideoReady}
+          onPlaying={onVideoReady}
           onEnded={onVideoEnded}
           onError={onVideoError}
         />
@@ -221,8 +241,11 @@ function CompactStripMedia(props: ScreenMediaProps) {
           playsInline
           autoPlay
           preload="auto"
+          disablePictureInPicture
+          disableRemotePlayback
           onLoadedData={onVideoReady}
           onCanPlay={onVideoReady}
+          onPlaying={onVideoReady}
           onEnded={onVideoEnded}
           onError={onVideoError}
         />

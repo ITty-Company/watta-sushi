@@ -30,8 +30,9 @@ model User {
   personalPromos PersonalPromo[]
 
   dateOfBirth DateTime?
-  favorites   Favorite[]
-  reviews     OrderReview[]
+  favorites       Favorite[]
+  reviews         OrderReview[]
+  notifications   UserNotification[]
 }
 
 // --- ТОВАРЫ ---
@@ -144,6 +145,31 @@ model Product {
   favorites  Favorite[]
 
   ingredients Ingredient[]
+  cartUpsellTierProducts CartUpsellTierProduct[]
+}
+
+/// Пороги суми замовлення → фіксована знижка € на обрані товари в кошику
+model CartUpsellTier {
+  id            Int      @id @default(autoincrement())
+  minOrderTotal Float
+  maxOrderTotal Float?
+  discountEur   Float
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  products      CartUpsellTierProduct[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model CartUpsellTierProduct {
+  id        Int            @id @default(autoincrement())
+  tierId    Int
+  tier      CartUpsellTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder Int            @default(0)
+
+  @@unique([tierId, productId])
 }
 
 model ProductCity {
@@ -178,6 +204,9 @@ model Order {
   noCallbackConfirm Boolean @default(false) // не перезванивать для подтверждения
   noDoorbellRing    Boolean @default(false) // не звонить в дверь
 
+  /// Згода на обробку персональних даних при оформленні замовлення
+  dataProcessingConsentAt DateTime?
+
   // Связь с пользователем (опционально, так как заказ может сделать гость)
   userId Int?
   user   User? @relation(fields: [userId], references: [id])
@@ -201,6 +230,24 @@ model OrderReview {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+/// Сповіщення клієнта (статус замовлення тощо)
+model UserNotification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   @default("ORDER_STATUS") // ORDER_STATUS | ...
+  title     String
+  body      String
+  orderId   Int?
+  meta      Json     @default("{}")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([orderId])
 }
 
 model OrderItem {

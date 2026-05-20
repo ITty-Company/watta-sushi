@@ -6,24 +6,31 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react'
+import { getLiveCartPieceCount } from '@/lib/cartStorage'
 import { readFavoriteIds } from '@/lib/favoritesStorage'
 import { useLanguage } from '../context/LanguageContext'
 import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
+import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
 import { LanguageSelector } from './LanguageSelector'
 import { CountryCitySelector } from './CountryCitySelector'
 
 function useLiveCartCount() {
-  const [n, setN] = useState(0)
+  const [n, setN] = useState(() => {
+    if (typeof window === 'undefined') return 0
+    try {
+      return getLiveCartPieceCount()
+    } catch {
+      return 0
+    }
+  })
   useEffect(() => {
     const u = () => {
       try {
-        const cart = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('cart') || '[]' : '[]')
-        setN(Array.isArray(cart) ? cart.length : 0)
+        setN(getLiveCartPieceCount())
       } catch {
         setN(0)
       }
     }
-    u()
     window.addEventListener('cartUpdated', u)
     return () => window.removeEventListener('cartUpdated', u)
   }, [])
@@ -125,6 +132,7 @@ export default function WattaGlobalSiteHeader({
   const pathname = usePathname()
   const cartCount = useLiveCartCount()
   const favoritesCount = useLiveFavoritesCount()
+  const { showPromotionsNav } = usePublicPromotionsNav()
 
   useEffect(() => {
     const ref = rightNavDrawer?.cityChangeHandlerRef
@@ -239,14 +247,16 @@ export default function WattaGlobalSiteHeader({
                 {t.navigation.about}
               </Link>
 
-              <button
-                type="button"
-                onClick={onPromotionsClick}
-                style={navTextStyle(false)}
-                className="header-center-nav-tight-web"
-              >
-                {t.navigation.promotions}
-              </button>
+              {showPromotionsNav ? (
+                <button
+                  type="button"
+                  onClick={onPromotionsClick}
+                  style={navTextStyle(pathname === '/promotions' || pathname?.startsWith('/promotions/'))}
+                  className="header-center-nav-tight-web"
+                >
+                  {t.navigation.promotions}
+                </button>
+              ) : null}
 
               <Link
                 href="/contacts"

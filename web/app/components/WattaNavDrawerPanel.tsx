@@ -34,6 +34,8 @@ import {
   WATTA_TELEGRAM_URL,
 } from '@/lib/wattaSiteDefaults'
 import { useSiteAdmin } from '@/lib/useSiteAdmin'
+import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
+import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
 
 export type NavDrawerCategory = {
   key: string
@@ -222,10 +224,18 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
   const { t } = useLanguage()
   const nav = t.navigation
   const sf = t.siteFooter
+  const { showPromotionsNav } = usePublicPromotionsNav()
+  const { showBlogNav } = usePublicBlogNav()
   const drawerNavPages = useDrawerNavPages(t)
   const mainNavPages = useMemo(
-    () => drawerNavPages.filter((item) => item.key !== 'privacy'),
-    [drawerNavPages],
+    () =>
+      drawerNavPages.filter(
+        (item) =>
+          item.key !== 'privacy' &&
+          (item.key !== 'promotions' || showPromotionsNav) &&
+          (item.key !== 'blog' || showBlogNav),
+      ),
+    [drawerNavPages, showPromotionsNav, showBlogNav],
   )
   const privacyNavPage = useMemo(
     () => drawerNavPages.find((item) => item.key === 'privacy'),

@@ -6,6 +6,7 @@ import {
   useNavDrawerCloseSwipeHandlers,
   useNavDrawerOpenSwipe,
 } from '@/components/NavDrawerSwipeGestures'
+import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
 import WattaNavDrawerPanel, { type NavDrawerCategory } from './WattaNavDrawerPanel'
 
 export interface NavigationSidebarProps {
@@ -39,6 +40,7 @@ export default function NavigationSidebar({
 
   useNavDrawerOpenSwipe(!isOpen, onOpen)
   const closeSwipe = useNavDrawerCloseSwipeHandlers(isOpen, onClose)
+  useWattaNavDrawerOpenSync(isOpen)
 
   useEffect(() => {
     if (!isOpen) return

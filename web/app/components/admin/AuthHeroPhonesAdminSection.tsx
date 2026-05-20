@@ -1,11 +1,12 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Save, Trash2, Upload } from 'lucide-react'
 import type { Translations } from '@/app/context/LanguageContext'
 import type { Language } from '@/app/context/LanguageContext'
 import type { AuthHeroPhoneCopyForm } from '@/lib/authHeroPhoneSettings'
+import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
 
 export type HeroVideoSlotState = {
   id: string
@@ -47,6 +48,57 @@ const COPY_LANGS: { id: Language; label: (t: BannersT) => string }[] = [
   { id: 'nl', label: (t) => t.authHeroCopyLangNl },
 ]
 
+function AuthPhoneHeroVideoPreview({
+  previewSrc,
+  savedUrl,
+}: {
+  previewSrc: string | null | undefined
+  savedUrl?: string | null
+}) {
+  const [broken, setBroken] = useState(false)
+
+  useEffect(() => {
+    setBroken(false)
+  }, [previewSrc])
+
+  if (!previewSrc) {
+    return (
+      <motion.div className="flex aspect-[9/16] max-h-[280px] w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45">
+        —
+      </motion.div>
+    )
+  }
+
+  if (broken && !previewSrc.startsWith('blob:')) {
+    return (
+      <div className="admin-hero-video-preview-missing !aspect-[9/16] !max-h-[280px]">
+        <span className="font-semibold text-[#145142]/85">Відео на сервері недоступне</span>
+        <span>Завантажте файл знову і збережіть. На Render потрібен Persistent Disk для /uploads.</span>
+        {savedUrl ? (
+          <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>
+            {savedUrl}
+          </span>
+        ) : null}
+      </div>
+    )
+  }
+
+  const resolvedSrc = resolveUploadMediaUrl(previewSrc) ?? previewSrc
+
+  return (
+    <video
+      key={resolvedSrc}
+      src={resolvedSrc}
+      className="aspect-[9/16] max-h-[280px] w-full bg-black object-cover"
+      controls
+      muted
+      playsInline
+      preload="metadata"
+      onError={() => setBroken(true)}
+    />
+  )
+}
+
 function VideoSlotGrid({
   t,
   reduceMotion,
@@ -79,37 +131,9 @@ function VideoSlotGrid({
               className="flex flex-col rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/80 p-3"
             >
               <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">{slotLabel}</p>
-              <div className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5">
-                {previewSrc ? (
-                  <video
-                    key={previewSrc}
-                    src={previewSrc}
-                    className="aspect-[9/16] max-h-[280px] w-full bg-black object-cover"
-                    controls
-                    muted
-                    playsInline
-                    preload="none"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                      const hint = e.currentTarget.nextElementSibling
-                      if (hint instanceof HTMLElement) hint.hidden = false
-                    }}
-                  />
-                ) : null}
-                {previewSrc ? (
-                  <motion.div
-                    hidden
-                    className="admin-hero-video-preview-missing !aspect-[9/16] !max-h-[280px]"
-                  >
-                    <span className="font-semibold">Відео на сервері недоступне</span>
-                  </motion.div>
-                ) : null}
-                {!previewSrc ? (
-                  <div className="flex aspect-[9/16] max-h-[280px] w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45">
-                    —
-                  </div>
-                ) : null}
-              </div>
+              <motion.div className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5">
+                <AuthPhoneHeroVideoPreview previewSrc={previewSrc} savedUrl={slot.savedUrl} />
+              </motion.div>
               {previewSrc && !slot.pendingFile ? (
                 <p className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55" title={slot.savedUrl ?? ''}>
                   {slot.savedUrl}

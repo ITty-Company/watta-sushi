@@ -12,6 +12,7 @@ import { RightNavDrawerProvider } from './context/RightNavDrawerContext'
 import { sanitizeAuthStorage } from '@/lib/authSession'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
+import { subscribeWattaCatalogCrossTab } from '@/lib/wattaCatalogSync'
 
 export default function AppClient({
   children,
@@ -33,8 +34,8 @@ export default function AppClient({
    * Шапка + категорії: на `/` — `MenuView`, на `/favorites` — `FavoritesPageClient`, на `/delivery` — `DeliveryView`.
    * На інших публічних маршрутах — `WattaPublicSiteChrome`.
    */
-  const showGlobalSiteChrome =
-    !isAuthRoute && !isAdminShellRoute && !isHomeRoute && !isFavoritesRoute && !isDeliveryRoute
+  /** Шапка + категорії на всіх публічних сторінках, крім головної (там — MenuView). */
+  const showGlobalSiteChrome = !isAuthRoute && !isAdminShellRoute && !isHomeRoute
   /**
    * Скрол наверх лише при зміні pathname; raніше тригерилось і на кожну зміну `searchParams`
    * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.
@@ -95,6 +96,8 @@ export default function AppClient({
     return () => window.removeEventListener('userChanged', onUser)
   }, [])
 
+  useEffect(() => subscribeWattaCatalogCrossTab(() => {}), [])
+
   return (
     <LanguageProviderWrapper initialLocale={initialLocale}>
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
@@ -107,13 +110,13 @@ export default function AppClient({
               {children}
             </div>
             {/* mt-auto: коротка сторінка — підвал внизу вікна; довга — після контенту при скролі body */}
-            {!isHomeRoute && !isAuthRoute && !isAdminShellRoute && !isCartRoute ? (
+            {!isHomeRoute && !isAuthRoute && !isAdminShellRoute ? (
               <Footer className="mt-auto" />
             ) : null}
           </main>
 
           {showPublicNavChrome && <WattaRightNavDrawer />}
-          {!isAuthRoute && !isAdminShellRoute && !isCartRoute && <FloatingContactButtons />}
+          {!isAuthRoute && !isAdminShellRoute && <FloatingContactButtons />}
         </div>
       </RightNavDrawerProvider>
     </LanguageProviderWrapper>

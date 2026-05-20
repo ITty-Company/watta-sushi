@@ -1,6 +1,7 @@
 /** Локальне обране: масив id (узгоджено з useProductFavorite та картками меню). */
 
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { getApiUrl } from '@/lib/utils'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 
@@ -119,7 +120,9 @@ type ProductWithId = { id: number }
  */
 export async function loadFavoriteProducts<T extends ProductWithId>(
   mapProduct: (raw: Record<string, unknown>) => T | null,
+  options?: { fresh?: boolean },
 ): Promise<T[]> {
+  const fresh = options?.fresh === true
   if (typeof window === 'undefined') return []
 
   await mergeServerFavoritesIntoLocal()
@@ -127,7 +130,10 @@ export async function loadFavoriteProducts<T extends ProductWithId>(
   if (isAuthedForFavorites()) {
     try {
       const authHeaders = getBearerAuthHeaders()
-      const res = await fetch('/api/favorites/list', { headers: authHeaders })
+      const res = await fetch('/api/favorites/list', {
+        headers: authHeaders,
+        ...(fresh ? { cache: 'no-store' as RequestCache } : {}),
+      })
       if (res.ok) {
         const data = await res.json()
         const list: T[] = []
@@ -155,7 +161,9 @@ export async function loadFavoriteProducts<T extends ProductWithId>(
     cityId != null && cityId > 0
       ? getApiUrl(`/api/products?cityId=${cityId}`)
       : getApiUrl('/api/products')
-  const res = await fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
+  const res = fresh
+    ? await fetchPublicApiFresh(url)
+    : await fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
   const data = res.ok ? await res.json() : []
   const idSet = new Set(ids)
   const byId = new Map<number, T>()

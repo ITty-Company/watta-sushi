@@ -131,6 +131,19 @@ function filterExistingUploadVideoUrls(urls: string[]): string[] {
   return urls.filter((u) => uploadVideoFileExists(u))
 }
 
+/** Перед записом у БД — лишаємо лише файли, що реально є на диску. */
+function persistableHeroVideoUrls(
+  urls: string[],
+  fallback: string = DEFAULT_HOME_HERO_VIDEO,
+): string[] {
+  const normalized = urls
+    .map((u) => normalizeHomeHeroVideoUrl(u))
+    .filter((u): u is string => Boolean(u))
+  const existing = filterExistingUploadVideoUrls(normalized)
+  if (existing.length > 0) return existing
+  return [fallback]
+}
+
 function effectiveHomeHeroVideoUrls(row: {
   homeHeroVideoUrls?: string | null
   homeHeroVideoUrl?: string | null
@@ -397,46 +410,56 @@ router.post('/', checkAdmin, async (req, res) => {
     const update: Record<string, unknown> = {}
     if (bannerInterval != null && !Number.isNaN(bannerInterval)) update.bannerInterval = bannerInterval
     if (b.homeHeroVideoUrls !== undefined) {
-      const urls = normalizeHomeHeroVideoUrls(b.homeHeroVideoUrls)
-      if (urls.length > 0) {
-        update.homeHeroVideoUrls = serializeHomeHeroVideoUrls(urls)
-        update.homeHeroVideoUrl = urls[0]
-      }
+      const urls = persistableHeroVideoUrls(
+        normalizeHomeHeroVideoUrls(b.homeHeroVideoUrls),
+        DEFAULT_HOME_HERO_VIDEO,
+      )
+      update.homeHeroVideoUrls = serializeHomeHeroVideoUrls(urls)
+      update.homeHeroVideoUrl = urls[0]
     } else if (b.homeHeroVideoUrl !== undefined) {
-      const normalized = normalizeHomeHeroVideoUrl(b.homeHeroVideoUrl)
-      if (normalized) {
-        update.homeHeroVideoUrl = normalized
-        update.homeHeroVideoUrls = serializeHomeHeroVideoUrls([normalized])
-      }
+      const urls = persistableHeroVideoUrls(
+        normalizeHomeHeroVideoUrls(b.homeHeroVideoUrl),
+        DEFAULT_HOME_HERO_VIDEO,
+      )
+      update.homeHeroVideoUrl = urls[0]
+      update.homeHeroVideoUrls = serializeHomeHeroVideoUrls(urls)
     }
     if (b.deliveryHeroVideoUrls !== undefined) {
-      const urls = normalizeDeliveryHeroVideoUrls(b.deliveryHeroVideoUrls)
-      if (urls.length > 0) {
-        update.deliveryHeroVideoUrls = serializeDeliveryHeroVideoUrls(urls)
-        update.deliveryHeroVideoUrl = urls[0]
-      }
+      const urls = persistableHeroVideoUrls(
+        normalizeDeliveryHeroVideoUrls(b.deliveryHeroVideoUrls),
+        DEFAULT_DELIVERY_HERO_VIDEO,
+      )
+      update.deliveryHeroVideoUrls = serializeDeliveryHeroVideoUrls(urls)
+      update.deliveryHeroVideoUrl = urls[0]
     } else if (b.deliveryHeroVideoUrl !== undefined) {
-      const normalized = normalizeHomeHeroVideoUrl(b.deliveryHeroVideoUrl)
-      if (normalized) {
-        update.deliveryHeroVideoUrl = normalized
-        update.deliveryHeroVideoUrls = serializeDeliveryHeroVideoUrls([normalized])
-      }
+      const urls = persistableHeroVideoUrls(
+        normalizeDeliveryHeroVideoUrls(b.deliveryHeroVideoUrl),
+        DEFAULT_DELIVERY_HERO_VIDEO,
+      )
+      update.deliveryHeroVideoUrl = urls[0]
+      update.deliveryHeroVideoUrls = serializeDeliveryHeroVideoUrls(urls)
     }
     if (b.authHeroVideoUrls !== undefined) {
-      const urls = normalizeAuthHeroVideoUrls(b.authHeroVideoUrls)
-      if (urls.length > 0) {
-        update.authHeroVideoUrls = serializeAuthHeroVideoUrls(urls)
-        update.authHeroVideoUrl = urls[0]
-      }
+      const urls = persistableHeroVideoUrls(
+        normalizeAuthHeroVideoUrls(b.authHeroVideoUrls),
+        DEFAULT_AUTH_HERO_VIDEO,
+      )
+      update.authHeroVideoUrls = serializeAuthHeroVideoUrls(urls)
+      update.authHeroVideoUrl = urls[0]
     } else if (b.authHeroVideoUrl !== undefined) {
-      const normalized = normalizeHomeHeroVideoUrl(b.authHeroVideoUrl)
-      if (normalized) {
-        update.authHeroVideoUrl = normalized
-        update.authHeroVideoUrls = serializeAuthHeroVideoUrls([normalized])
-      }
+      const urls = persistableHeroVideoUrls(
+        normalizeAuthHeroVideoUrls(b.authHeroVideoUrl),
+        DEFAULT_AUTH_HERO_VIDEO,
+      )
+      update.authHeroVideoUrl = urls[0]
+      update.authHeroVideoUrls = serializeAuthHeroVideoUrls(urls)
     }
     if (b.authHeroPhone2VideoUrls !== undefined) {
-      const urls = normalizeAuthHeroVideoUrls(b.authHeroPhone2VideoUrls)
+      const urls = filterExistingUploadVideoUrls(
+        normalizeAuthHeroVideoUrls(b.authHeroPhone2VideoUrls)
+          .map((u) => normalizeHomeHeroVideoUrl(u))
+          .filter((u): u is string => Boolean(u)),
+      )
       update.authHeroPhone2VideoUrls = serializeAuthHeroVideoUrls(urls)
     }
     if (b.authHeroPhone1Copy !== undefined) {
