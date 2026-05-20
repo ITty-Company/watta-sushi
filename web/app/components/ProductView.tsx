@@ -24,9 +24,11 @@ import {
   readProductFromClientCache,
   WATTA_PRODUCT_DETAIL_CACHED_EVENT,
   warmupProductDetail,
+  writeProductDetailCache,
 } from '@/lib/fetchProductById'
 import {
   ensureIngredientsCatalog,
+  enrichProductRow,
   parseIngredientIds,
 } from '@/lib/wattaIngredientsCatalog'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
@@ -43,6 +45,8 @@ import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 
 interface ProductViewProps {
   productId: string
+  /** Дані з SSR — перший кадр одразу з товаром і складом. */
+  initialProductRow?: Record<string, unknown> | null
   isAdmin?: boolean
   onBack: () => void
   onOpenProfile: () => void
@@ -108,34 +112,55 @@ function cacheHasDisplayableProduct(row: Record<string, unknown> | null): boolea
   return name.length > 0 && Number.isFinite(price)
 }
 
-function readInitialProductState(id: number): { product: Product | null; loading: boolean } {
-  if (id <= 0) return { product: null, loading: false }
-  if (typeof window === 'undefined') return { product: null, loading: true }
-  const cached = readProductFromClientCache(id)
-  if (!cached) return { product: null, loading: true }
-  return { product: rowToProduct(cached), loading: !cacheHasDisplayableProduct(cached) }
+function resolveInitialRow(
+  id: number,
+  initialProductRow?: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  if (initialProductRow && cacheHasDisplayableProduct(initialProductRow)) {
+    return enrichProductRow(initialProductRow) ?? initialProductRow
+  }
+  if (typeof window === 'undefined') return initialProductRow ? enrichProductRow(initialProductRow) ?? initialProductRow : null
+  return readProductFromClientCache(id)
 }
 
-export default function ProductView({ productId, onBack }: ProductViewProps) {
+function readInitialProductState(
+  id: number,
+  initialProductRow?: Record<string, unknown> | null,
+): { product: Product | null; loading: boolean; compositionPending: boolean } {
+  if (id <= 0) return { product: null, loading: false, compositionPending: false }
+  const cached = resolveInitialRow(id, initialProductRow)
+  if (!cached) {
+    return { product: null, loading: typeof window !== 'undefined' && !initialProductRow, compositionPending: false }
+  }
+  const ids = parseIngredientIds(cached)
+  return {
+    product: rowToProduct(cached),
+    loading: !cacheHasDisplayableProduct(cached),
+    compositionPending: ids.length > 0 && !cacheHasIngredients(cached),
+  }
+}
+
+export default function ProductView({ productId, initialProductRow, onBack }: ProductViewProps) {
   const router = useRouter()
   const { t, language } = useLanguage()
   const pd = t.productDetail
   const cs = t.cartSection
   const a = t.siteAria
   const numericProductId = normalizeProductRouteId(productId) ?? 0
-  const [product, setProduct] = useState<Product | null>(() =>
-    readInitialProductState(normalizeProductRouteId(productId) ?? 0).product,
+  const initialState = useMemo(
+    () => readInitialProductState(numericProductId, initialProductRow),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- лише при зміні товару / SSR-рядка
+    [numericProductId, initialProductRow],
   )
+  const [product, setProduct] = useState<Product | null>(initialState.product)
   const [recommendations, setRecommendations] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(
-    () => readInitialProductState(normalizeProductRouteId(productId) ?? 0).loading,
-  )
+  const [isLoading, setIsLoading] = useState(initialState.loading)
   const [quantity, setQuantity] = useState(1)
   const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
   const [fetchAttempt, setFetchAttempt] = useState(0)
   const { liked: isFavorite, toggle: toggleFavorite } = useProductFavorite(numericProductId)
   const [justAdded, setJustAdded] = useState(false)
-  const [compositionPending, setCompositionPending] = useState(false)
+  const [compositionPending, setCompositionPending] = useState(initialState.compositionPending)
   const recScrollRef = useRef<HTMLDivElement>(null)
 
   const lang = language as WattaLanguage
@@ -189,19 +214,24 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     if (numericProductId <= 0) {
       setProduct(null)
       setIsLoading(false)
+      setCompositionPending(false)
       return
     }
-    const cached = readProductFromClientCache(numericProductId)
+    const cached = resolveInitialRow(numericProductId, initialProductRow)
     if (cached) {
       setProduct(rowToProduct(cached))
       setIsLoading(!cacheHasDisplayableProduct(cached))
       const ids = parseIngredientIds(cached)
       setCompositionPending(ids.length > 0 && !cacheHasIngredients(cached))
+      if (cacheHasIngredients(cached)) {
+        writeProductDetailCache(cached)
+      }
     } else {
       setProduct(null)
-      setIsLoading(true)
+      setIsLoading(!initialProductRow)
+      setCompositionPending(false)
     }
-  }, [numericProductId])
+  }, [numericProductId, initialProductRow])
 
   useEffect(() => {
     if (numericProductId <= 0) {
@@ -228,9 +258,10 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       .then((row) => {
         if (cancelled) return
         if (row) {
-          setProduct(rowToProduct(row))
+          const enriched = enrichProductRow(row) ?? row
+          setProduct(rowToProduct(enriched))
           setCompositionPending(
-            parseIngredientIds(row).length > 0 && !cacheHasIngredients(row),
+            parseIngredientIds(enriched).length > 0 && !cacheHasIngredients(enriched),
           )
           return
         }
@@ -247,13 +278,15 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
         if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') return
         console.error(e)
         const cached = readProductFromClientCache(numericProductId)
-        if (cached) setProduct(rowToProduct(cached))
+        if (cached) {
+          setProduct(rowToProduct(cached))
+          setCompositionPending(
+            parseIngredientIds(cached).length > 0 && !cacheHasIngredients(cached),
+          )
+        }
       })
       .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false)
-          setCompositionPending(false)
-        }
+        if (!cancelled) setIsLoading(false)
       })
 
     void recFetch
@@ -348,7 +381,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       .filter((u) => u.length > 0)
   }, [product, catalogRefreshKey])
 
-  if (isLoading && !product) {
+  if (isLoading && !product && !initialProductRow) {
     return (
       <div className="relative flex min-h-[min(100dvh,56rem)] flex-1 flex-col watta-page-bg pb-24">
         <div className="watta-product-page__inner relative mx-auto w-full max-w-6xl flex-1 px-6 py-4 sm:px-7 sm:py-5">
@@ -568,7 +601,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                                   alt=""
                                   className="max-h-full max-w-full object-contain"
                                   decoding="async"
-                                  loading="lazy"
+                                  loading={compositionLoading ? 'lazy' : 'eager'}
                                 />
                               ) : (
                                 <span className="text-lg sm:text-xl" aria-hidden>
