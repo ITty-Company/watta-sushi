@@ -27,7 +27,7 @@ router.get('/product/:id', async (req, res) => {
       where: { id: parseInt(id) }
     });
     
-    if (!product) {
+    if (!product || product.isArchived) {
       return res.status(404).json({ message: 'Товар не найден' });
     }
     
