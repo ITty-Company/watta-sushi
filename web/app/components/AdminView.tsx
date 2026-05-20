@@ -3933,9 +3933,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                              src={coverSrc}
                              alt={product.name_ru}
                              className="w-full h-full object-cover"
-                             onError={(e) => {
-                               e.currentTarget.style.display = 'none'
-                             }}
                            />
                          ) : (
                            <div className="w-full h-full flex items-center justify-center text-gray-300">
