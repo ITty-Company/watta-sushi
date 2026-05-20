@@ -3082,15 +3082,12 @@ html.watta-light-chrome body {
 .watta-full-menu-page.menu-page-web
   .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
   .welcome-hero-video-stack-web
-  .watta-full-menu-intro-video-el {
-  border-radius: clamp(16px, 1.6vw, 26px) clamp(16px, 1.6vw, 26px) clamp(8px, 0.9vw, 12px) clamp(8px, 0.9vw, 12px);
-}
-
+  .watta-full-menu-intro-video-el,
 .watta-full-menu-page.menu-page-web
   .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
   .welcome-hero-video-stack-web
   .welcome-hero-video-input-shield-web {
-  border-radius: clamp(16px, 1.6vw, 26px) clamp(16px, 1.6vw, 26px) clamp(8px, 0.9vw, 12px) clamp(8px, 0.9vw, 12px);
+  border-radius: inherit !important;
 }
 
 .watta-full-menu-page.menu-page-web
@@ -3141,8 +3138,7 @@ html.watta-light-chrome body {
     max-width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
   }
 
@@ -6838,9 +6834,7 @@ html.watta-light-chrome body {
   min-height: 0 !important;
   height: auto !important;
   z-index: 2 !important;
-  /* Повний кадр не обрізається overflow секції */
-  overflow-x: hidden !important;
-  overflow-y: visible !important;
+  overflow: hidden !important;
   padding: var(--watta-home-hero-below-cats, clamp(12px, 1.55vh, 22px)) clamp(12px, 3vw, 28px)
     clamp(10px, 1.5vh, 22px) !important;
   box-sizing: border-box;
@@ -6862,6 +6856,11 @@ html.watta-light-chrome body {
   border: 1px solid rgba(20, 81, 66, 0.18) !important;
   /* Без великої нижньої тіні — інакше на білому блоці під відео виглядає як сіра смуга */
   box-shadow: none !important;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  clip-path: inset(0 round var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)));
+  -webkit-clip-path: inset(0 round var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)));
 }
 
 /*
@@ -6899,6 +6898,7 @@ html.watta-light-chrome body {
   max-height: none !important;
   min-width: 0 !important;
   min-height: 0 !important;
+  border-radius: inherit !important;
   object-fit: cover !important;
   object-position: center center !important;
   opacity: 1 !important;
@@ -6914,6 +6914,7 @@ html.watta-light-chrome body {
   .welcome-hero-video-stack-web
   .welcome-hero-video-input-shield-web {
   z-index: 4 !important;
+  border-radius: inherit !important;
 }
 
 /* Стек відео + прозорий шар: Safari/Mac інакше отримує клік на <video> і toggle play/pause */
@@ -11246,11 +11247,26 @@ html.watta-light-chrome body {
   transform: translateX(4px);
 }
 
-/* ——— WATTA: бокове меню сайту (праворуч) ——— */
+/* ——— WATTA: бокове меню сайту (portal на body) ——— */
+.watta-nav-drawer-portal-root {
+  position: relative;
+  z-index: 11050;
+  pointer-events: none;
+}
+
+.watta-nav-drawer-portal-root[data-open='1'] {
+  pointer-events: auto;
+}
+
 .watta-nav-sidebar-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  z-index: 11040;
+  margin: 0;
+  padding: 0;
+  border: none;
+  appearance: none;
+  cursor: default;
   background: radial-gradient(ellipse 120% 80% at 70% 40%, rgba(20, 81, 66, 0.35) 0%, rgba(4, 10, 8, 0.72) 55%, rgba(0, 0, 0, 0.78) 100%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -11270,13 +11286,14 @@ html.watta-light-chrome body {
 
 .watta-nav-sidebar-drawer:not(.is-open) {
   pointer-events: none;
+  visibility: hidden;
 }
 
 .watta-nav-sidebar-drawer {
   position: fixed;
   top: 0;
   right: 0;
-  z-index: 9999;
+  z-index: 11050;
   width: min(320px, 90vw);
   height: 100%;
   height: 100dvh;
@@ -11305,6 +11322,8 @@ html.watta-light-chrome body {
 
 .watta-nav-sidebar-drawer.is-open {
   transform: translateX(0);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 /* Повноекранне меню (преміум, закриття хрестиком) */
@@ -11317,21 +11336,13 @@ html.watta-light-chrome body {
   border-radius: 0;
   box-shadow: none;
   background: #f5f7f6;
-  z-index: 10000;
+  z-index: 11050;
   transform: translateX(100%);
   transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .watta-nav-sidebar-drawer--fullscreen.is-open {
   transform: translateX(0);
-}
-
-.watta-nav-sidebar-drawer--fullscreen:not(.is-open) {
-  visibility: hidden;
-}
-
-.watta-nav-sidebar-drawer--fullscreen.is-open {
-  visibility: visible;
 }
 
 /* Бокове меню: не показувати липку шапку, стрічку категорій і FAB Instagram під drawer */
@@ -11369,7 +11380,8 @@ html[data-watta-nav-drawer-open] .floating-contact-buttons-root {
 
 .watta-nav-compact {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  isolation: isolate;
   font-family:
     var(--font-inter, 'Inter'),
     -apple-system,
@@ -11439,6 +11451,8 @@ html[data-watta-nav-drawer-open] .floating-contact-buttons-root {
 }
 
 .watta-nav-compact__close {
+  position: relative;
+  z-index: 3;
   flex-shrink: 0;
   width: 34px;
   height: 34px;
