@@ -3,13 +3,13 @@
 import React, { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useRightNavDrawer } from '../context/RightNavDrawerContext'
-import { cn } from '@/lib/utils'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import {
   useNavDrawerCloseSwipeHandlers,
   useNavDrawerOpenSwipe,
 } from '@/components/NavDrawerSwipeGestures'
 import WattaNavDrawerPanel from './WattaNavDrawerPanel'
+import WattaNavDrawerShell from './WattaNavDrawerShell'
 
 export default function WattaRightNavDrawer() {
   const pathname = usePathname() || '/'
@@ -44,16 +44,11 @@ export default function WattaRightNavDrawer() {
   if (!enabled || isHomeRoute) return null
 
   return (
-    <aside
+    <WattaNavDrawerShell
+      isOpen={isOpen}
+      onClose={close}
       id="watta-right-nav-drawer"
-      role="dialog"
-      aria-modal="true"
-      aria-hidden={!isOpen}
-      className={cn(
-        'watta-nav-sidebar-drawer watta-nav-sidebar-drawer--fullscreen',
-        isOpen && 'is-open',
-      )}
-      {...closeSwipe}
+      closeSwipeHandlers={closeSwipe}
     >
       <WattaNavDrawerPanel
         mode="link"
@@ -62,6 +57,6 @@ export default function WattaRightNavDrawer() {
         onNavigate={close}
         onCityChange={(cityId) => cityChangeHandlerRef.current?.(cityId)}
       />
-    </aside>
+    </WattaNavDrawerShell>
   )
 }

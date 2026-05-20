@@ -8,6 +8,7 @@ import {
 } from '@/components/NavDrawerSwipeGestures'
 import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
 import WattaNavDrawerPanel, { type NavDrawerCategory } from './WattaNavDrawerPanel'
+import WattaNavDrawerShell from './WattaNavDrawerShell'
 
 export interface NavigationSidebarProps {
   isOpen: boolean
@@ -57,13 +58,12 @@ export default function NavigationSidebar({
   }, [isOpen, onClose])
 
   return (
-    <aside
-      className={`watta-nav-sidebar-drawer watta-nav-sidebar-drawer--fullscreen ${isOpen ? 'is-open' : ''}`}
-      role="dialog"
-      aria-modal="true"
-      aria-hidden={!isOpen}
-      aria-label={t.menu}
-      {...closeSwipe}
+    <WattaNavDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      id="watta-home-nav-drawer"
+      ariaLabel={t.menu}
+      closeSwipeHandlers={closeSwipe}
     >
       <WattaNavDrawerPanel
         mode="embedded"
@@ -77,6 +77,6 @@ export default function NavigationSidebar({
         onOpenProfileTab={onOpenProfileTab}
         onOpenNotifications={onOpenNotifications}
       />
-    </aside>
+    </WattaNavDrawerShell>
   )
 }
