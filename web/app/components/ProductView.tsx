@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useRef, startTransition, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, startTransition, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
@@ -18,14 +18,18 @@ import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { cn, getApiUrl } from '@/lib/utils'
-import { fetchProductById, normalizeProductRouteId } from '@/lib/fetchProductById'
+import {
+  fetchProductById,
+  normalizeProductRouteId,
+  readProductFromClientCache,
+} from '@/lib/fetchProductById'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { useProductFavorite } from '@/hooks/useProductFavorite'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import { ProductImageGallery } from './ProductImageGallery'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
-import { productGalleryFromApi, productHasGalleryImages } from '@/lib/productGallery'
+import { productGalleryFromApi } from '@/lib/productGallery'
 import toast from 'react-hot-toast'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
@@ -80,6 +84,18 @@ interface Product {
 
 type IngredientRow = NonNullable<Product['ingredients']>[number]
 
+function rowToProduct(row: Record<string, unknown>): Product {
+  return row as unknown as Product
+}
+
+function readInitialProductState(id: number): { product: Product | null; loading: boolean } {
+  if (id <= 0) return { product: null, loading: false }
+  if (typeof window === 'undefined') return { product: null, loading: true }
+  const cached = readProductFromClientCache(id)
+  if (!cached) return { product: null, loading: true }
+  return { product: rowToProduct(cached), loading: false }
+}
+
 export default function ProductView({ productId, onBack }: ProductViewProps) {
   const router = useRouter()
   const { t, language } = useLanguage()
@@ -87,9 +103,13 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   const cs = t.cartSection
   const a = t.siteAria
   const numericProductId = normalizeProductRouteId(productId) ?? 0
-  const [product, setProduct] = useState<Product | null>(null)
+  const [product, setProduct] = useState<Product | null>(() =>
+    readInitialProductState(normalizeProductRouteId(productId) ?? 0).product,
+  )
   const [recommendations, setRecommendations] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(
+    () => readInitialProductState(normalizeProductRouteId(productId) ?? 0).loading,
+  )
   const [quantity, setQuantity] = useState(1)
   const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
   const { liked: isFavorite, toggle: toggleFavorite } = useProductFavorite(numericProductId)
@@ -111,20 +131,36 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
 
   useWattaCatalogSync(() => setCatalogRefreshKey((k) => k + 1), 'products')
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    setQuantity(1)
     if (numericProductId <= 0) {
       setProduct(null)
-      setRecommendations([])
       setIsLoading(false)
+      return
+    }
+    const cached = readProductFromClientCache(numericProductId)
+    if (cached) {
+      setProduct(rowToProduct(cached))
+      setIsLoading(false)
+    } else {
+      setProduct(null)
+      setIsLoading(true)
+    }
+  }, [numericProductId])
+
+  useEffect(() => {
+    if (numericProductId <= 0) {
+      setRecommendations([])
       return
     }
 
     const ac = new AbortController()
     let cancelled = false
 
-    setIsLoading(true)
-    setProduct(null)
-    setRecommendations([])
+    const hadCache = Boolean(readProductFromClientCache(numericProductId))
+    if (!hadCache) {
+      setIsLoading(true)
+    }
 
     const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
     const recQ = new URLSearchParams({ excludeId: String(numericProductId), limit: '24' })
@@ -136,32 +172,20 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       ? fetchPublicApiFresh(recUrl, { signal: ac.signal })
       : fetch(recUrl, { signal: ac.signal, headers: { 'Cache-Control': 'no-cache' } })
 
-    void fetchProductById(numericProductId, ac.signal, { fresh: true })
+    void fetchProductById(numericProductId, ac.signal, { fresh })
       .then((row) => {
         if (cancelled) return
-        if (!row) {
+        if (row) {
+          setProduct(rowToProduct(row))
+        } else if (!readProductFromClientCache(numericProductId)) {
           setProduct(null)
-          return
         }
-        const hasIngredientsField = Object.prototype.hasOwnProperty.call(row, 'ingredients')
-        if (!hasIngredientsField) {
-          void fetchProductById(numericProductId, ac.signal, { fresh: true })
-            .then((full) => {
-              if (cancelled) return
-              setProduct(full ? (full as unknown as Product) : (row as unknown as Product))
-            })
-            .catch(() => {
-              if (!cancelled) setProduct(row as unknown as Product)
-            })
-          return
-        }
-        setProduct(row as unknown as Product)
       })
       .catch((e) => {
         if (cancelled) return
         if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') return
         console.error(e)
-        setProduct(null)
+        if (!readProductFromClientCache(numericProductId)) setProduct(null)
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -188,24 +212,6 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       ac.abort()
     }
   }, [numericProductId, catalogRefreshKey])
-
-  useEffect(() => {
-    if (!product || productHasGalleryImages(product)) return
-    const ac = new AbortController()
-    void fetchProductById(numericProductId, ac.signal, { fresh: true }).then((row) => {
-      if (!row || !productHasGalleryImages(row)) return
-      setProduct((prev) =>
-        prev
-          ? {
-              ...prev,
-              imageUrl: row.imageUrl as Product['imageUrl'],
-              imageUrls: row.imageUrls as Product['imageUrls'],
-            }
-          : (row as unknown as Product),
-      )
-    })
-    return () => ac.abort()
-  }, [product, numericProductId])
 
   const addToCart = () => {
     if (!product) return
@@ -268,7 +274,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       .filter((u) => u.length > 0)
   }, [product, catalogRefreshKey])
 
-  if (isLoading) {
+  if (isLoading && !product) {
     return (
       <div className="relative flex min-h-[min(100dvh,56rem)] flex-1 flex-col watta-page-bg pb-24">
         <div className="watta-product-page__inner relative mx-auto w-full max-w-6xl flex-1 px-6 py-4 sm:px-7 sm:py-5">

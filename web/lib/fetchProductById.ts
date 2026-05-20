@@ -20,6 +20,75 @@ function findInRawList(list: unknown[], id: number): Record<string, unknown> | n
   return null
 }
 
+const PRODUCT_PRIME_PREFIX = 'watta_product_prime_'
+
+/** Зберегти з картки меню перед переходом на /product/:id — миттєвий показ сторінки. */
+export function primeProductPageCache(product: {
+  id: number
+  name: string
+  description?: string
+  price: number
+  imageUrl?: string
+  promoDiscountPercent?: number
+}): void {
+  if (typeof sessionStorage === 'undefined') return
+  const desc = product.description ?? ''
+  const img = product.imageUrl?.trim() ?? ''
+  try {
+    sessionStorage.setItem(
+      `${PRODUCT_PRIME_PREFIX}${product.id}`,
+      JSON.stringify({
+        id: product.id,
+        name_ru: product.name,
+        name_ua: product.name,
+        name_en: product.name,
+        name_nl: product.name,
+        description_ru: desc,
+        description_ua: desc,
+        description_en: desc,
+        description_nl: desc,
+        price: product.price,
+        imageUrl: img,
+        imageUrls: img ? [img] : [],
+        promoDiscountPercent: product.promoDiscountPercent ?? 0,
+      }),
+    )
+  } catch {
+    /* quota */
+  }
+}
+
+let prefetchingIds = new Set<number>()
+
+/** Прогрів GET /api/products/:id при наведенні на картку. */
+export function prefetchProductById(id: number): void {
+  if (typeof window === 'undefined' || !Number.isFinite(id) || id <= 0) return
+  if (prefetchingIds.has(id)) return
+  prefetchingIds.add(id)
+  void fetch(getApiUrl(`/api/products/${id}`), { cache: 'default' })
+    .catch(() => {})
+    .finally(() => {
+      prefetchingIds.delete(id)
+    })
+}
+
+/** Кеш меню або snapshot з картки — синхронно, без мережі. */
+export function readProductFromClientCache(id: number): Record<string, unknown> | null {
+  if (typeof sessionStorage === 'undefined') return null
+  try {
+    const prime = sessionStorage.getItem(`${PRODUCT_PRIME_PREFIX}${id}`)
+    if (prime) {
+      const parsed = JSON.parse(prime) as unknown
+      if (parsed && typeof parsed === 'object') {
+        return parsed as Record<string, unknown>
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return findProductInMenuSessionCaches(id)
+}
+
 /** Шукає сирий товар у sessionStorage (усі ключі menu_items_*). */
 export function findProductInMenuSessionCaches(id: number): Record<string, unknown> | null {
   if (typeof sessionStorage === 'undefined') return null
@@ -97,7 +166,7 @@ export async function fetchProductById(
   }
 
   if (!options?.fresh) {
-    const fromCache = findProductInMenuSessionCaches(id)
+    const fromCache = readProductFromClientCache(id)
     if (fromCache && productHasGalleryImages(fromCache)) return fromCache
   }
 

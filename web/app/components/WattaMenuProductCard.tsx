@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { prefetchProductById, primeProductPageCache } from '@/lib/fetchProductById'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
 
@@ -112,7 +113,13 @@ export function WattaMenuProductCard({
       <Link
         href={`/product/${product.id}`}
         className="home-menu-product-card-media-web group/media block"
-        onClick={() => onBeforeNavigateToProduct?.()}
+        prefetch
+        onMouseEnter={() => prefetchProductById(product.id)}
+        onFocus={() => prefetchProductById(product.id)}
+        onClick={() => {
+          primeProductPageCache(product)
+          onBeforeNavigateToProduct?.()
+        }}
       >
         {showPhoto ? (
           <img
@@ -145,7 +152,13 @@ export function WattaMenuProductCard({
         <Link
           href={`/product/${product.id}`}
           className="home-menu-product-card-title-link-web"
-          onClick={() => onBeforeNavigateToProduct?.()}
+          prefetch
+          onMouseEnter={() => prefetchProductById(product.id)}
+          onFocus={() => prefetchProductById(product.id)}
+          onClick={() => {
+            primeProductPageCache(product)
+            onBeforeNavigateToProduct?.()
+          }}
         >
           <h2 className="home-menu-product-card-title-web">{product.name}</h2>
         </Link>
