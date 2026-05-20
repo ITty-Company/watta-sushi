@@ -437,7 +437,7 @@ const defaultSiteSettings: SiteSettings = {
 }
 
 export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
-  const { t, adminUiLanguage, setAdminUiLanguage } = useLanguage()
+  const { t, adminUiLanguage, setAdminUiLanguage, getLocalized } = useLanguage()
   const reduceMotion = useReducedMotion()
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
   const [activeTab, setActiveTab] = useState<
@@ -2885,68 +2885,163 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
   }
 
-  const [newIngName, setNewIngName] = useState('')
-  const [newIngImage, setNewIngImage] = useState('')
+  type IngredientDraft = {
+    name_ru: string
+    name_ua: string
+    name_en: string
+    name_nl: string
+    imageUrl: string
+  }
+
+  const emptyIngredientDraft = (): IngredientDraft => ({
+    name_ru: '',
+    name_ua: '',
+    name_en: '',
+    name_nl: '',
+    imageUrl: '',
+  })
+
+  const [ingDraft, setIngDraft] = useState<IngredientDraft>(emptyIngredientDraft)
+  const [editingIngredientId, setEditingIngredientId] = useState<number | null>(null)
+  const [ingEditorLang, setIngEditorLang] = useState<'ru' | 'ua' | 'en' | 'nl'>('ru')
   const [ingLoading, setIngLoading] = useState(false)
+
+  const resetIngredientForm = () => {
+    setIngDraft(emptyIngredientDraft())
+    setEditingIngredientId(null)
+    setIngEditorLang(adminUiLanguage === 'uk' ? 'ua' : 'ru')
+  }
+
+  const openEditIngredient = (ing: {
+    id: number
+    name_ru?: string
+    name_ua?: string
+    name_en?: string
+    name_nl?: string
+    imageUrl?: string
+  }) => {
+    setEditingIngredientId(ing.id)
+    setIngDraft({
+      name_ru: ing.name_ru || '',
+      name_ua: ing.name_ua || '',
+      name_en: ing.name_en || '',
+      name_nl: ing.name_nl || '',
+      imageUrl: ing.imageUrl || '',
+    })
+    setIngEditorLang(adminUiLanguage === 'uk' ? 'ua' : 'ru')
+  }
 
   const handleIngImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setNewIngImage(reader.result as string)
+        setIngDraft((prev) => ({ ...prev, imageUrl: reader.result as string }))
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const handleCreateIngredient = async (e: React.FormEvent) => {
+  const buildIngredientPayload = () => {
+    const name_ru = ingDraft.name_ru.trim()
+    if (!name_ru) return null
+    const name_ua = ingDraft.name_ua.trim() || name_ru
+    const name_en = ingDraft.name_en.trim() || name_ru
+    const name_nl = ingDraft.name_nl.trim() || name_ru
+    const imageUrl = ingDraft.imageUrl.trim()
+    if (!imageUrl) return null
+    return { name_ru, name_ua, name_en, name_nl, imageUrl }
+  }
+
+  const handleSaveIngredient = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newIngName || !newIngImage) return toast.error('Нужно название и фото')
-    
+    const payload = buildIngredientPayload()
+    if (!payload) {
+      toast.error(t.adminPanel.ingredients.photoLabel + ' + ' + t.adminPanel.ingredients.nameRu)
+      return
+    }
+
     setIngLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('/api/ingredients', {
-        method: 'POST',
-        headers: { 
-           'Content-Type': 'application/json',
-           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-            name_ru: newIngName, 
-            imageUrl: newIngImage 
-        })
-      })
-      if (res.ok) {
-        setNewIngName('')
-        setNewIngImage('')
-        // Обновляем список (вызывайте fetchAll или отдельный запрос)
-        const newIng = await res.json()
-        setIngredients(prev => [...prev, newIng])
-        toast.success('Ингредиент добавлен!')
-      } else {
-        toast.error('Ошибка создания')
+      if (!token) {
+        toast.error(t.adminPage.auth.notAuthorized)
+        return
       }
-    } catch (e) {
-      toast.error('Ошибка')
+      const isEdit = editingIngredientId != null
+      const res = await fetch(
+        isEdit ? `/api/ingredients/${editingIngredientId}` : '/api/ingredients',
+        {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      )
+      if (res.ok) {
+        const saved = await res.json()
+        setIngredients((prev) => {
+          if (isEdit) {
+            return prev.map((row) => (row.id === saved.id ? saved : row))
+          }
+          return [...prev, saved]
+        })
+        resetIngredientForm()
+        broadcastWattaCatalogUpdate('products')
+        toast.success(isEdit ? t.adminPanel.ingredients.updated : t.adminPanel.ingredients.saved)
+      } else {
+        let msg = isEdit ? 'Ошибка обновления' : 'Ошибка создания'
+        try {
+          const err = await res.json()
+          msg = err.message || err.error || msg
+        } catch {
+          /* ignore */
+        }
+        toast.error(msg)
+      }
+    } catch {
+      toast.error('Ошибка соединения')
     } finally {
       setIngLoading(false)
     }
   }
 
   const handleDeleteIngredient = async (id: number) => {
-      if(!confirm('Удалить этот ингредиент?')) return;
-      // Логика удаления (fetch DELETE /api/ingredients/id)
-      // ... допишите если нужно, или просто скройте
-      try {
-          const token = localStorage.getItem('token')
-          await fetch(`/api/ingredients/${id}`, { 
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${token}` }
-          })
-          setIngredients(prev => prev.filter(i => i.id !== id))
-      } catch (e) { toast.error('Ошибка') }
+    if (!confirm(t.adminPanel.ingredients.deleteConfirm)) return
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toast.error(t.adminPage.auth.notAuthorized)
+        return
+      }
+      const res = await fetch(`/api/ingredients/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        setIngredients((prev) => prev.filter((i) => i.id !== id))
+        if (editingIngredientId === id) resetIngredientForm()
+        setFormData((prev) => ({
+          ...prev,
+          ingredientIds: (prev.ingredientIds || []).filter((x) => x !== id),
+        }))
+        broadcastWattaCatalogUpdate('products')
+        toast.success(t.adminPanel.ingredients.deleted)
+      } else {
+        let msg = 'Ошибка удаления'
+        try {
+          const err = await res.json()
+          msg = err.message || err.error || msg
+        } catch {
+          /* ignore */
+        }
+        toast.error(msg)
+      }
+    } catch {
+      toast.error('Ошибка соединения')
+    }
   }
 
   // --- ЛОГИКА КАТЕГОРИЙ МЕНЮ ---
@@ -4076,60 +4171,144 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           )}
           {/* === Вкладка: ИНГРЕДИЕНТЫ === */}
             {activeTab === 'ingredients' && (
-              <div className="max-w-4xl mx-auto">
-                <h2 className="text-2xl font-bold text-[#145142] mb-6">{t.adminPanel.ingredients.title}</h2>
-                
-                {/* Форма добавления */}
+              <div className="mx-auto max-w-5xl">
+                <h2 className="mb-6 text-2xl font-bold text-[#145142]">{t.adminPanel.ingredients.title}</h2>
+
                 <div className="mb-8 rounded-2xl border border-[#145142]/15 bg-white p-6">
-                  <h3 className="mb-4 font-bold text-[#145142]">{t.adminPanel.ingredients.addNew}</h3>
-                  <form onSubmit={handleCreateIngredient} className="relative z-0 flex flex-col gap-4 sm:flex-row sm:items-end">
-                    
-                    {/* Загрузка фото */}
-                    <div className="w-24 h-24 flex-shrink-0 relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden hover:border-[#145142] transition cursor-pointer group">
-                      <input type="file" onChange={handleIngImageUpload} className="absolute inset-0 opacity-0 z-10 cursor-pointer" accept="image/*" />
-                      {newIngImage ? (
-                        <img src={newIngImage} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <Upload size={24} />
+                  <h3 className="mb-2 font-bold text-[#145142]">
+                    {editingIngredientId != null
+                      ? t.adminPanel.ingredients.editTitle
+                      : t.adminPanel.ingredients.addNew}
+                  </h3>
+                  <p className="mb-4 text-xs text-[#145142]/65">{t.adminPanel.ingredients.langsHint}</p>
+
+                  <form onSubmit={handleSaveIngredient} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                      <div className="relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-gray-300 transition hover:border-[#145142]">
+                        <input
+                          type="file"
+                          onChange={handleIngImageUpload}
+                          className="absolute inset-0 z-10 cursor-pointer opacity-0"
+                          accept="image/*"
+                        />
+                        {ingDraft.imageUrl ? (
+                          <img src={ingDraft.imageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-gray-400">
+                            <Upload size={24} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <div className="flex rounded-lg bg-gray-100 p-1">
+                          {(['ru', 'ua', 'en', 'nl'] as const).map((lang) => (
+                            <button
+                              key={lang}
+                              type="button"
+                              onClick={() => setIngEditorLang(lang)}
+                              className={`flex-1 rounded-md py-2 text-xs font-bold transition-all ${
+                                ingEditorLang === lang
+                                  ? 'bg-white text-[#145142] shadow-sm'
+                                  : 'text-gray-400 hover:text-gray-600'
+                              }`}
+                            >
+                              {lang.toUpperCase()}
+                            </button>
+                          ))}
                         </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-bold text-gray-500">
+                            {t.adminPanel.ingredients.nameRu} ({ingEditorLang.toUpperCase()})
+                          </label>
+                          <input
+                            type="text"
+                            value={ingDraft[`name_${ingEditorLang}`] || ''}
+                            onChange={(e) =>
+                              setIngDraft((prev) => ({
+                                ...prev,
+                                [`name_${ingEditorLang}`]: e.target.value,
+                              }))
+                            }
+                            className="w-full rounded-xl border p-3 outline-none focus:border-[#145142]"
+                            placeholder={t.adminPanel.ingredients.namePlaceholder}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="submit"
+                        disabled={ingLoading}
+                        className="h-[46px] rounded-xl bg-[#145142] px-6 font-bold text-white transition hover:bg-[#103d34] disabled:opacity-60"
+                      >
+                        {ingLoading
+                          ? '...'
+                          : editingIngredientId != null
+                            ? t.adminPanel.ingredients.saveBtn
+                            : t.adminPanel.ingredients.addBtn}
+                      </button>
+                      {editingIngredientId != null && (
+                        <button
+                          type="button"
+                          onClick={resetIngredientForm}
+                          className="h-[46px] rounded-xl border border-[#145142]/25 px-5 font-bold text-[#145142]"
+                        >
+                          {t.adminPanel.ingredients.cancelEdit}
+                        </button>
                       )}
                     </div>
-
-                    {/* Название */}
-                    <div className="flex-1 w-full">
-                        <label className="block text-xs font-bold text-gray-500 mb-1">{t.adminPanel.ingredients.nameRu}</label>
-                        <input 
-                          type="text" 
-                          value={newIngName}
-                          onChange={e => setNewIngName(e.target.value)}
-                          className="w-full p-3 border rounded-xl outline-none focus:border-[#145142]"
-                          placeholder={t.adminPanel.ingredients.namePlaceholder}
-                        />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={ingLoading}
-                      className="relative z-10 h-[50px] shrink-0 px-6 bg-[#145142] text-white rounded-xl font-bold shadow-none hover:bg-[#103d34] transition disabled:opacity-60"
-                    >
-                      {ingLoading ? '...' : t.adminPanel.ingredients.addBtn}
-                    </button>
                   </form>
                 </div>
 
-                {/* Список существующих */}
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4">
-                  {ingredients.map(ing => (
-                    <div key={ing.id} className="admin-watta-hover-lift relative flex flex-col items-center rounded-xl border border-white/60 bg-white/85 p-3 shadow-md shadow-[#145142]/8 backdrop-blur-sm group">
-                        <button 
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                  {ingredients.map((ing) => (
+                    <div
+                      key={ing.id}
+                      className={`admin-watta-hover-lift group relative flex flex-col items-center rounded-xl border bg-white/85 p-3 shadow-md shadow-[#145142]/8 backdrop-blur-sm ${
+                        editingIngredientId === ing.id
+                          ? 'border-[#145142] ring-2 ring-[#145142]/25'
+                          : 'border-white/60'
+                      }`}
+                    >
+                      <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => openEditIngredient(ing)}
+                          className="rounded-md bg-[#145142]/10 p-1 text-[#145142]"
+                          title={t.adminPanel.actions.edit}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDeleteIngredient(ing.id)}
-                          className="absolute top-1 right-1 p-1 bg-red-100 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition"
+                          className="rounded-md bg-red-100 p-1 text-red-500"
+                          title={t.adminPanel.actions.delete}
                         >
                           <Trash2 size={14} />
                         </button>
-                        <img src={ing.imageUrl} className="w-12 h-12 object-contain mb-2" />
-                        <span className="text-xs font-bold text-center">{ing.name_ru}</span>
+                      </div>
+                      <img src={ing.imageUrl} alt="" className="mb-2 h-12 w-12 object-contain" />
+                      <span className="line-clamp-2 text-center text-xs font-bold">
+                        {getLocalized(ing, 'name') || ing.name_ru}
+                      </span>
+                      <div className="mt-1 flex flex-wrap justify-center gap-0.5">
+                        {(['ru', 'ua', 'en', 'nl'] as const).map((code) => {
+                          const label =
+                            (ing[`name_${code}` as keyof typeof ing] as string | undefined)?.trim() || '—'
+                          return (
+                            <span
+                              key={code}
+                              className="rounded bg-[#145142]/6 px-1 text-[8px] font-semibold uppercase text-[#145142]/55"
+                              title={label}
+                            >
+                              {code}
+                            </span>
+                          )
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -6222,10 +6401,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           <img
                             src={ing.imageUrl}
                             className="h-8 w-8 object-contain sm:h-9 sm:w-9"
-                            alt={ing.name_ru}
+                            alt={getLocalized(ing, 'name') || ing.name_ru}
                           />
                           <span className="line-clamp-2 w-full text-[9px] text-center font-bold leading-tight text-[#145142] sm:text-[10px]">
-                            {ing.name_ru}
+                            {getLocalized(ing, 'name') || ing.name_ru}
                           </span>
                         </button>
                       )
