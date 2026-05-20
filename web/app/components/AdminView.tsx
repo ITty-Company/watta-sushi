@@ -420,6 +420,21 @@ interface SiteSettings {
   deliveryFee: number
 }
 
+/** Вкладки, які підвантажуються у фоні одразу після входу в адмінку. */
+const ADMIN_PREFETCH_TABS = [
+  'products',
+  'banners',
+  'promos',
+  'promotions',
+  'cities',
+  'crm',
+  'team',
+  'blog',
+  'reviews',
+  'ingredients',
+  'menuCategories',
+] as const
+
 const defaultSiteSettings: SiteSettings = {
   bannerInterval: 4000,
   homeHeroVideoUrl: '/watta-sushi-2-hero.mp4',
@@ -931,6 +946,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     ]
   )
 
+  /** Оновити лише одну вкладку (швидко після збереження). */
+  const refreshTab = useCallback(
+    (tab: typeof activeTab) => {
+      void fetchTabData(tab, { force: true })
+    },
+    [fetchTabData],
+  )
+
   const fetchAll = useCallback(async () => {
     setIsRefreshing(true)
     loadedTabsRef.current.clear()
@@ -943,24 +966,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       }
       await Promise.all([
         fetchTabData('dashboard', { force: true }),
-        fetchTabData('products', { force: true }),
-        fetchTabData('banners', { force: true }),
-        fetchTabData('promos', { force: true }),
-        fetchTabData('promotions', { force: true }),
-        fetchTabData('cities', { force: true }),
-        fetchTabData('crm', { force: true }),
-        fetchTabData('team', { force: true }),
-        fetchTabData('blog', { force: true }),
-        fetchTabData('reviews', { force: true }),
-        fetchTabData('ingredients', { force: true }),
-        fetchTabData('menuCategories', { force: true }),
+        ...ADMIN_PREFETCH_TABS.map((tab) => fetchTabData(tab, { force: true })),
       ])
     } finally {
       setIsRefreshing(false)
     }
   }, [adminAuthHeaders, fetchTabData, onBack])
-
-  const fetchData = fetchAll
 
   useWattaCatalogSync(() => {
     if (skipCatalogRefetchRef.current) return
@@ -1029,7 +1040,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         if (res.ok) {
           toast.success('Тариф зони збережено')
           notifyCountriesCatalogUpdated()
-          fetchData()
+          refreshTab('cities')
         } else {
           const e = (await res.json().catch(() => ({}))) as { message?: string }
           toast.error(e.message || 'Помилка збереження')
@@ -1038,7 +1049,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         toast.error('Помилка мережі')
       }
     },
-    [fetchData]
+    [refreshTab]
   )
 
   // Одна ініціалізація: роль у localStorage + лише тоді завантаження даних (без дубля тостів / fetch).
@@ -1070,6 +1081,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
 
     void fetchTabData('dashboard')
+    void Promise.all(ADMIN_PREFETCH_TABS.map((tab) => fetchTabData(tab)))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- старт адмінки один раз при відкритті
   }, [])
 
@@ -1776,7 +1788,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         toast.success(t.adminPage.products.saved)
         window.setTimeout(() => {
           skipCatalogRefetchRef.current = false
-          void fetchTabData('products', { force: true })
         }, 400)
       } else {
         let errorMessage = 'Ошибка при сохранении'
@@ -1815,7 +1826,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         body: JSON.stringify({ status: newStatus })
       })
       if (res.ok) {
-        fetchData() // Обновляем список
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+        )
+        void refreshTab('dashboard')
         toast.success(t.adminPage.common.statusUpdated)
       } else {
         let errorMessage = t.adminPage.common.updateError
@@ -1928,7 +1942,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       })
       if (res.ok) {
         resetCityForm()
-        fetchData()
+        refreshTab('cities')
         notifyCountriesCatalogUpdated()
         toast.success(t.adminPage.cities.created)
       } else {
@@ -2015,7 +2029,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         setNewCountryNameNl('')
         setNewCountryCode('')
         setNewCountryFlag('🌍')
-        fetchData()
+        refreshTab('cities')
         notifyCountriesCatalogUpdated()
         toast.success(t.adminPage.countries.created)
       } else {
@@ -2075,7 +2089,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         setEditingCityId(null)
         resetCityForm()
-        fetchData()
+        refreshTab('cities')
         notifyCountriesCatalogUpdated()
         toast.success('Місто успішно оновлено!')
       } else {
@@ -2107,7 +2121,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
-        fetchData()
+        refreshTab('cities')
         notifyCountriesCatalogUpdated()
         toast.success('Город успешно удален!')
       } else {
@@ -2166,7 +2180,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         setEditingCountryId(null)
         setIsEditFlagPickerOpen(false)
-        fetchData()
+        refreshTab('cities')
         notifyCountriesCatalogUpdated()
         toast.success('Страна успешно обновлена!')
       } else {
@@ -2200,7 +2214,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         setEditingCountryId(null)
         setIsEditFlagPickerOpen(false)
-        fetchData()
+        refreshTab('cities')
         notifyCountriesCatalogUpdated()
         toast.success('Страна успешно удалена!')
       } else {
@@ -2250,7 +2264,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         setNewPromoCode('')
         setNewPromoDiscount('')
-        fetchData()
+        refreshTab('promos')
         toast.success('Промокод успешно создан!')
       } else {
         let errorMessage = 'Ошибка создания промокода'
@@ -2282,7 +2296,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
-        fetchData()
+        refreshTab('promos')
         toast.success('Промокод успешно удален!')
       } else {
         let errorMessage = 'Ошибка удаления'
@@ -2363,7 +2377,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       }
       toast.success(blogForm.id ? 'Статья обновлена' : 'Статья создана')
       resetBlogForm()
-      fetchData()
+      refreshTab('blog')
       broadcastWattaCatalogUpdate('blog')
     } catch (error: any) {
       toast.error(error?.message || 'Ошибка сохранения статьи')
@@ -2388,7 +2402,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       }
       toast.success('Статья удалена')
       if (blogForm.id === id) resetBlogForm()
-      fetchData()
+      refreshTab('blog')
       broadcastWattaCatalogUpdate('blog')
     } catch (error: any) {
       toast.error(error?.message || 'Ошибка удаления статьи')
@@ -2602,7 +2616,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       
       if (res.ok) {
         setIsBannerModalOpen(false)
-        fetchData()
+        refreshTab('banners')
         // Отправляем событие для обновления баннеров в MenuView
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('banners')
@@ -2638,7 +2652,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
-        fetchData()
+        refreshTab('banners')
         // Отправляем событие для обновления баннеров в MenuView
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('banners')
@@ -2707,7 +2721,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       const token = localStorage.getItem('token')
       if (!token) {
         toast.error('Вы не авторизованы')
-        fetchData()
+        refreshTab('banners')
         return
       }
 
@@ -2746,19 +2760,18 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           if (typeof window !== 'undefined') {
             broadcastWattaCatalogUpdate('banners')
           }
-          fetchData()
         } else {
           toast.error(t.adminPanel.common.bannerOrderSaveError)
-          fetchData()
+          refreshTab('banners')
         }
       } catch {
         toast.error(t.adminPanel.common.bannerOrderSaveError)
-        fetchData()
+        refreshTab('banners')
       } finally {
         setBannerReorderBusy(false)
       }
     },
-    [banners, bannerReorderBusy, fetchData, t],
+    [banners, bannerReorderBusy, refreshTab, t],
   )
 
   // --- ЛОГИКА КОМАНДЫ ---
@@ -2835,7 +2848,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       
       if (res.ok) {
         setIsTeamModalOpen(false)
-        fetchData()
+        refreshTab('team')
         broadcastWattaCatalogUpdate('team')
         toast.success('Член команды успешно сохранен!')
       } else {
@@ -2867,7 +2880,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
-        fetchData()
+        refreshTab('team')
         toast.success('Член команды успешно удален!')
       } else {
         let errorMessage = 'Ошибка удаления'
@@ -3108,8 +3121,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         const savedCategory = await res.json()
         console.log('Категория сохранена в БД:', savedCategory)
         setIsCategoryModalOpen(false)
-        // Сначала обновляем данные в админ-панели
-        await fetchData()
+        await Promise.all([
+          fetchTabData('menuCategories', { force: true }),
+          fetchTabData('products', { force: true }),
+        ])
         // Затем отправляем событие для обновления категорий в MenuView
         if (typeof window !== 'undefined') {
           // Небольшая задержка, чтобы убедиться, что данные сохранены в БД
@@ -3149,7 +3164,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
-        await fetchData()
+        await Promise.all([
+          fetchTabData('menuCategories', { force: true }),
+          fetchTabData('products', { force: true }),
+        ])
         // Отправляем событие для обновления категорий в MenuView
         if (typeof window !== 'undefined') {
           setTimeout(() => {
@@ -4768,7 +4786,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           zoom={parseInt(newCityZoom, 10) || 12}
                           onZonesChanged={() => {
                             setZoneEditorRefresh((k) => k + 1)
-                            void fetchData()
+                            refreshTab('cities')
                           }}
                         />
                       )}

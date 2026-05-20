@@ -106,7 +106,7 @@ export default function AppClient({
           {/* flex-1: основний блок забирає вільну висоту до min-h екрана — інакше «повітря» лишалось під футером */}
           <main className="flex min-h-0 w-full max-w-[100vw] flex-1 flex-col">
             {showGlobalSiteChrome ? <WattaPublicSiteChrome /> : null}
-            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="watta-app-main-grow relative flex min-h-0 min-w-0 flex-1 flex-col">
               {children}
             </div>
             {/* mt-auto: коротка сторінка — підвал внизу вікна; довга — після контенту при скролі body */}

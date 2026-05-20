@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
-import { prefetchProductById, primeProductPageCache } from '@/lib/fetchProductById'
+import { prefetchProductById, primeProductPageCache, warmupProductDetail } from '@/lib/fetchProductById'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
 
@@ -70,6 +70,10 @@ export function WattaMenuProductCard({
   const fixedOff = Number(product.cartFixedDiscountEur) || 0
   const emoji = product.emoji ?? '🍣'
   const orderLabel = t.menuView.fullMenuWant
+  const warmDetail = () => {
+    prefetchProductById(product.id)
+    void warmupProductDetail(product.id)
+  }
   const [imageError, setImageError] = useState(false)
   const [mediaEpoch, setMediaEpoch] = useState(0)
   useEffect(() => {
@@ -114,10 +118,12 @@ export function WattaMenuProductCard({
         href={`/product/${product.id}`}
         className="home-menu-product-card-media-web group/media block"
         prefetch
-        onMouseEnter={() => prefetchProductById(product.id)}
-        onFocus={() => prefetchProductById(product.id)}
+        onMouseEnter={warmDetail}
+        onFocus={warmDetail}
+        onTouchStart={warmDetail}
         onClick={() => {
           primeProductPageCache(product)
+          void warmupProductDetail(product.id)
           onBeforeNavigateToProduct?.()
         }}
       >
@@ -153,10 +159,12 @@ export function WattaMenuProductCard({
           href={`/product/${product.id}`}
           className="home-menu-product-card-title-link-web"
           prefetch
-          onMouseEnter={() => prefetchProductById(product.id)}
-          onFocus={() => prefetchProductById(product.id)}
+          onMouseEnter={warmDetail}
+          onFocus={warmDetail}
+          onTouchStart={warmDetail}
           onClick={() => {
             primeProductPageCache(product)
+            void warmupProductDetail(product.id)
             onBeforeNavigateToProduct?.()
           }}
         >

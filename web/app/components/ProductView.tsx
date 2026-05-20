@@ -22,6 +22,8 @@ import {
   fetchProductById,
   normalizeProductRouteId,
   readProductFromClientCache,
+  WATTA_PRODUCT_DETAIL_CACHED_EVENT,
+  warmupProductDetail,
 } from '@/lib/fetchProductById'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
@@ -88,12 +90,17 @@ function rowToProduct(row: Record<string, unknown>): Product {
   return row as unknown as Product
 }
 
+function cacheHasIngredients(row: Record<string, unknown> | null): boolean {
+  const ing = row?.ingredients
+  return Array.isArray(ing) && ing.length > 0
+}
+
 function readInitialProductState(id: number): { product: Product | null; loading: boolean } {
   if (id <= 0) return { product: null, loading: false }
   if (typeof window === 'undefined') return { product: null, loading: true }
   const cached = readProductFromClientCache(id)
   if (!cached) return { product: null, loading: true }
-  return { product: rowToProduct(cached), loading: false }
+  return { product: rowToProduct(cached), loading: !cacheHasIngredients(cached) }
 }
 
 export default function ProductView({ productId, onBack }: ProductViewProps) {
@@ -132,6 +139,24 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
 
   useWattaCatalogSync(() => setCatalogRefreshKey((k) => k + 1), 'products')
 
+  useEffect(() => {
+    if (numericProductId <= 0) return
+    const applyCached = () => {
+      const row = readProductFromClientCache(numericProductId)
+      if (!row) return
+      setProduct(rowToProduct(row))
+      if (cacheHasIngredients(row)) setIsLoading(false)
+    }
+    applyCached()
+    const onDetail = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: number }>).detail
+      if (detail?.id === numericProductId) applyCached()
+    }
+    window.addEventListener(WATTA_PRODUCT_DETAIL_CACHED_EVENT, onDetail)
+    void warmupProductDetail(numericProductId)
+    return () => window.removeEventListener(WATTA_PRODUCT_DETAIL_CACHED_EVENT, onDetail)
+  }, [numericProductId])
+
   useLayoutEffect(() => {
     setQuantity(1)
     if (numericProductId <= 0) {
@@ -142,7 +167,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     const cached = readProductFromClientCache(numericProductId)
     if (cached) {
       setProduct(rowToProduct(cached))
-      setIsLoading(false)
+      setIsLoading(!cacheHasIngredients(cached))
     } else {
       setProduct(null)
       setIsLoading(true)
@@ -158,8 +183,8 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     const ac = new AbortController()
     let cancelled = false
 
-    const hadCache = Boolean(readProductFromClientCache(numericProductId))
-    if (!hadCache) {
+    const cachedRow = readProductFromClientCache(numericProductId)
+    if (!cacheHasIngredients(cachedRow)) {
       setIsLoading(true)
     }
 
@@ -359,6 +384,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     lang,
   )
   const ingredients = product.ingredients && product.ingredients.length > 0 ? product.ingredients : []
+  const compositionLoading = ingredients.length === 0 && isLoading
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
   const unitEffective = effectiveUnitPrice(product.price, promoPct)
   const lineTotal = Math.round(product.price * quantity * 100) / 100
@@ -396,19 +422,15 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
           <div className="mx-auto flex w-full max-w-[min(100%,22rem)] flex-col gap-3 sm:gap-3 lg:contents lg:mx-0 lg:max-w-none">
           {/* Image */}
           <div className="w-full shrink-0 lg:w-[46%]">
-            <div className="relative">
-              <div className="relative overflow-hidden rounded-2xl border border-[#145142]/12 bg-white sm:rounded-[30px]">
-                <ProductImageGallery
-                  images={galleryImages}
-                  alt={getName(product)}
-                  labels={{
-                    prev: pd.galleryPrev,
-                    next: pd.galleryNext,
-                    progress: pd.galleryProgress,
-                  }}
-                />
-              </div>
-            </div>
+            <ProductImageGallery
+              images={galleryImages}
+              alt={getName(product)}
+              labels={{
+                prev: pd.galleryPrev,
+                next: pd.galleryNext,
+                progress: pd.galleryProgress,
+              }}
+            />
           </div>
 
           {/* Info */}
@@ -488,7 +510,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
               </div>
             </div>
 
-            {ingredients.length > 0 && (
+            {(ingredients.length > 0 || compositionLoading) && (
               <section className="w-full max-w-full rounded-xl border border-[#145142]/20 bg-white sm:rounded-[24px]">
                 <div className="flex items-center gap-1.5 border-b border-[#145142]/12 bg-white px-2.5 py-2 sm:gap-2 sm:px-4 sm:py-2.5">
                   <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#e85d2a] sm:h-4 sm:w-4" strokeWidth={2.4} aria-hidden />
@@ -497,33 +519,43 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                   </h2>
                 </div>
                 <div className="bg-white px-2.5 py-2.5 sm:px-4 sm:py-3">
-                    <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                      {ingredients.map((ing) => (
-                        <div
-                          key={ing.id}
-                          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-[#145142]/12 bg-[#f6faf8] p-1.5 text-center sm:rounded-2xl sm:p-2"
-                        >
-                          <div className="flex min-h-0 flex-1 w-full items-center justify-center">
-                            {ing.imageUrl ? (
-                              <img
-                                src={ing.imageUrl}
-                                alt=""
-                                className="max-h-full max-w-full object-contain"
-                                decoding="async"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <span className="text-lg sm:text-xl" aria-hidden>
-                                🥢
-                              </span>
-                            )}
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                    {ingredients.length > 0
+                      ? ingredients.map((ing) => (
+                          <div
+                            key={ing.id}
+                            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-[#145142]/12 bg-[#f6faf8] p-1.5 text-center sm:rounded-2xl sm:p-2"
+                          >
+                            <div className="flex min-h-0 flex-1 w-full items-center justify-center">
+                              {ing.imageUrl ? (
+                                <img
+                                  src={ing.imageUrl}
+                                  alt=""
+                                  className="max-h-full max-w-full object-contain"
+                                  decoding="async"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="text-lg sm:text-xl" aria-hidden>
+                                  🥢
+                                </span>
+                              )}
+                            </div>
+                            <p className="line-clamp-2 w-full text-[9px] font-bold leading-tight text-[#0f241e] sm:text-[11px]">
+                              {getIngName(ing)}
+                            </p>
                           </div>
-                          <p className="line-clamp-2 w-full text-[9px] font-bold leading-tight text-[#0f241e] sm:text-[11px]">
-                            {getIngName(ing)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                        ))
+                      : Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-[#145142]/8 bg-[#f6faf8] p-1.5 sm:rounded-2xl sm:p-2"
+                          >
+                            <div className="h-8 w-8 animate-pulse rounded-lg bg-[#145142]/10 sm:h-9 sm:w-9" />
+                            <div className="h-2 w-10 animate-pulse rounded bg-[#145142]/10" />
+                          </div>
+                        ))}
+                  </div>
                 </div>
               </section>
             )}

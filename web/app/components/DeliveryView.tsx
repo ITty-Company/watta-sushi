@@ -1088,7 +1088,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   }
 
   return (
-    <div className="menu-page-web watta-delivery-page watta-delivery-page--home-tone relative flex w-full max-w-[100vw] min-w-0 shrink-0 flex-col overflow-x-hidden watta-page-bg">
+    <div className="menu-page-web watta-delivery-page watta-delivery-page--home-tone relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden watta-page-bg">
       {deliveryStandaloneAdaptiveHero}
       {deliveryPageBody}
     </div>
