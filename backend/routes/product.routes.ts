@@ -5,6 +5,7 @@ import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC, PUBLIC_CACHE_MENU_SEC } from 
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import multer from 'multer';
 import { getUploadsDir } from '../lib/uploadsDir.js';
 
 const router = Router();
@@ -13,6 +14,27 @@ const prisma = new PrismaClient();
 const MAX_PRODUCT_GALLERY = 24;
 const MAX_IMAGE_URL_LENGTH = 2048;
 const uploadDir = getUploadsDir();
+
+const productImageDiskUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const rawExt = path.extname(file.originalname || '').toLowerCase();
+      const ext =
+        rawExt === '.jpeg' || rawExt === '.jpg'
+          ? '.jpg'
+          : ['.png', '.webp', '.gif'].includes(rawExt)
+            ? rawExt
+            : '.jpg';
+      cb(null, `product-${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
+    },
+  }),
+  limits: { fileSize: 12 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype?.startsWith('image/')) cb(null, true);
+    else cb(new Error('Дозволені лише зображення'));
+  },
+});
 
 /** Адмінка шле data URL — зберігаємо у uploads, у БД лише /uploads/… */
 function persistDataUrlProductImage(dataUrl: string): string | null {
@@ -248,6 +270,25 @@ router.delete('/categories/:id', checkAdmin, async (req: Request, res: Response)
     console.error('Ошибка удаления категории:', error);
     res.status(500).json({ error: 'Ошибка удаления категории' });
   }
+});
+
+/** Завантаження фото товару (multipart) — надійніше за base64 у JSON. */
+router.post('/upload-image', checkAdmin, (req: Request, res: Response, next) => {
+  productImageDiskUpload.single('image')(req, res, (err: unknown) => {
+    if (err) {
+      const msg = err instanceof Error ? err.message : 'Помилка завантаження';
+      res.status(400).json({ message: msg });
+      return;
+    }
+    next();
+  });
+}, (req: Request, res: Response) => {
+  const file = (req as Request & { file?: { filename: string } }).file;
+  if (!file?.filename) {
+    res.status(400).json({ message: 'Потрібен файл image' });
+    return;
+  }
+  res.json({ url: `/uploads/${file.filename}` });
 });
 
 // 3. Создать товар

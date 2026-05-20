@@ -10,7 +10,9 @@ export function resolveUploadMediaUrl(url: string | null | undefined): string | 
   // NEXT_PUBLIC_API_URL часто вказує на окремий Render-сервіс, який може бути вимкнений,
   // тоді прямий https://…-backend.onrender.com/uploads/… дає 404, а /uploads/… на web — 200.
   if (typeof window !== 'undefined') {
-    if (trimmed.startsWith('/')) return trimmed
+    if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+      return `${window.location.origin}${trimmed}`
+    }
     return trimmed
   }
   if (trimmed.startsWith('/')) {
