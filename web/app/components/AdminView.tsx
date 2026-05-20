@@ -1515,6 +1515,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
   }
 
+  const ensureProductEditorCatalog = async (adminHeaders: HeadersInit) => {
+    if (menuCategories.length > 0) return
+    const catRes = await fetch('/api/products/categories', { headers: adminHeaders, cache: 'no-store' })
+    if (catRes.ok) {
+      const c = await catRes.json()
+      setMenuCategories(Array.isArray(c) ? c : [])
+    }
+  }
+
   const openCreateModal = async () => {
     setEditingId(null)
     // Загружаем города при открытии модального окна
@@ -1523,6 +1532,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     const [citiesRes] = await Promise.all([
       fetch('/api/cities/all', { headers: adminHeaders }),
       loadIngredientsLibrary(adminHeaders),
+      ensureProductEditorCatalog(adminHeaders),
     ])
     if (citiesRes.ok) {
       const citiesData = await citiesRes.json()
@@ -1553,8 +1563,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
     const [citiesRes, productRes] = await Promise.all([
       fetch('/api/cities/all', { headers: adminHeaders }),
-      fetch(`/api/products/${product.id}`),
+      fetch(`/api/products/${product.id}`, { headers: adminHeaders, cache: 'no-store' }),
       loadIngredientsLibrary(adminHeaders),
+      ensureProductEditorCatalog(adminHeaders),
     ])
     if (citiesRes.ok) {
       const citiesData = await citiesRes.json()
@@ -1564,19 +1575,19 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       const productData = await productRes.json()
       const hitsOn = Boolean(productData.isPopular) || Boolean(productData.isHomeHit)
       setFormData({
-        name_ru: product.name_ru,
-        name_ua: product.name_ua || '',
-        name_en: product.name_en || '',
-        name_nl: product.name_nl || '',
+        name_ru: productData.name_ru ?? product.name_ru,
+        name_ua: productData.name_ua || '',
+        name_en: productData.name_en || '',
+        name_nl: productData.name_nl || '',
         
-        price: product.price.toString(),
+        price: String(productData.price ?? product.price),
         
-        description_ru: product.description_ru || '',
-        description_ua: product.description_ua || '',
-        description_en: product.description_en || '',
-        description_nl: product.description_nl || '',
+        description_ru: productData.description_ru || '',
+        description_ua: productData.description_ua || '',
+        description_en: productData.description_en || '',
+        description_nl: productData.description_nl || '',
         
-        categoryId: product.categoryId.toString(),
+        categoryId: String(productData.categoryId ?? product.categoryId),
         imageUrls: productGalleryFromApi({
           imageUrl: productData.imageUrl,
           imageUrls: (productData as { imageUrls?: unknown }).imageUrls,
@@ -1638,8 +1649,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
-        fetchData()
-        // Отправляем событие для обновления товаров в MenuView
+        setProducts((prev) => prev.filter((p) => p.id !== id))
+        if (editingId === id) {
+          setIsModalOpen(false)
+          setEditingId(null)
+        }
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('products')
         }
@@ -1688,11 +1702,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         return
       }
       const payload = {
-        ...formData,
         name_ru: (formData.name_ru || '').trim() || anyName,
         name_ua: (formData.name_ua || '').trim() || anyName,
         name_en: (formData.name_en || '').trim() || anyName,
         name_nl: (formData.name_nl || '').trim() || anyName,
+        description_ru: formData.description_ru || '',
+        description_ua: formData.description_ua || '',
+        description_en: formData.description_en || '',
+        description_nl: formData.description_nl || '',
         price: priceNum,
         categoryId: Number(formData.categoryId),
         imageUrl: formData.imageUrls[0] || '',
@@ -1703,6 +1720,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         ingredientIds: (formData.ingredientIds || [])
           .map((id) => Number(id))
           .filter((n) => Number.isFinite(n) && n > 0),
+        isPopular: Boolean(formData.isPopular),
+        isHomeHit: Boolean(formData.isHomeHit),
+        isMenuNew: Boolean(formData.isMenuNew),
+        isCartRecommend: Boolean(formData.isCartRecommend),
+        recommendOrder: Number(formData.recommendOrder) || 0,
+        cartRecommendOrder: Number(formData.cartRecommendOrder) || 0,
+        promoDiscountPercent: Number(formData.promoDiscountPercent) || 0,
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
       
@@ -1747,7 +1771,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         toast.success(t.adminPage.products.saved)
         window.setTimeout(() => {
           skipCatalogRefetchRef.current = false
-        }, 1500)
+          void fetchTabData('products', { force: true })
+        }, 400)
       } else {
         let errorMessage = 'Ошибка при сохранении'
         try {
@@ -6040,7 +6065,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   >
                     <option value="">Выберите...</option>
                     {menuCategories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name_ru}</option>
+                      <option key={cat.id} value={String(cat.id)}>{cat.name_ru}</option>
                     ))}
                   </select>
                 </div>
