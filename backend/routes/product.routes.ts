@@ -382,6 +382,10 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
         isPopular: Boolean(isPopular),
         isMenuNew: Boolean(isMenuNew),
         isHomeHit: Boolean(isHomeHit),
+        isCartRecommend: Boolean(isCartRecommend),
+        recommendOrder: Math.round(Number(recommendOrder) || 0),
+        cartRecommendOrder: Math.round(Number(cartRecommendOrder) || 0),
+        promoDiscountPercent: promoPct,
         cities:
           cityIdsNorm.length > 0
             ? {
@@ -436,6 +440,14 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
     const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)));
     const productId = parseInt(id, 10);
 
+    const cid = parseInt(String(categoryId), 10);
+    if (!Number.isFinite(cid) || cid < 1) {
+      return res.status(400).json({
+        error: 'Выберите категорию из списка.',
+        message: 'categoryId_invalid',
+      });
+    }
+
     const existingProduct = await prisma.product.findUnique({
       where: { id: productId },
       select: { imageUrl: true, imageUrls: true },
@@ -464,19 +476,31 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
 
     // Для ингредиентов проще использовать set: [] внутри update, Prisma сама разберется
 
+    const priceN = Number(price);
+    if (!Number.isFinite(priceN) || priceN < 0) {
+      return res.status(400).json({
+        error: 'Укажите корректную цену (число ≥ 0).',
+        message: 'price_invalid',
+      });
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
         name_ru, name_ua, name_en, name_nl,
-        price: Number(price),
+        price: priceN,
         description_ru, description_ua, description_en, description_nl,
+        categoryId: cid,
         imageUrl: gallery[0] || '',
         imageUrls: gallery,
         isPopular: Boolean(isPopular),
         isMenuNew: Boolean(isMenuNew),
         isHomeHit: Boolean(isHomeHit),
         isCartRecommend: Boolean(isCartRecommend),
-        
+        recommendOrder: Math.round(Number(recommendOrder) || 0),
+        cartRecommendOrder: Math.round(Number(cartRecommendOrder) || 0),
+        promoDiscountPercent: promoPct,
+
         // Обновляем связи с городами
         cities: cityIds && Array.isArray(cityIds) && cityIds.length > 0 ? {
           create: cityIds.map((cityId: any) => ({
@@ -508,11 +532,26 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
 router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const productId = parseInt(id, 10);
+    if (!Number.isFinite(productId)) {
+      return res.status(400).json({ message: 'Некорректный ID товара' });
+    }
+    const existing = await prisma.product.findUnique({ where: { id: productId } });
+    if (!existing) {
+      return res.status(404).json({ message: 'Товар не найден' });
+    }
     await prisma.product.delete({
-      where: { id: parseInt(id) }
+      where: { id: productId },
     });
-    res.json({ message: 'Товар удален' });
-  } catch (error) {
+    res.json({ message: 'Товар удален', id: productId });
+  } catch (error: unknown) {
+    console.error(error);
+    const code = typeof error === 'object' && error && 'code' in error ? String((error as { code: string }).code) : '';
+    if (code === 'P2003') {
+      return res.status(409).json({
+        message: 'Нельзя удалить: товар есть в заказах. Снимите с витрины или обратитесь к разработчику.',
+      });
+    }
     res.status(500).json({ message: 'Ошибка удаления' });
   }
 });
