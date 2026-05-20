@@ -1674,6 +1674,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         const saved = (await res.json()) as Product
         const normalized = normalizeAdminProductRow(saved)
+        if (
+          formData.imageUrls.length > 0 &&
+          !adminProductCoverSrc(normalized)
+        ) {
+          toast.error(
+            'Товар збережено, але фото не збереглось на сервері. Перевірте UPLOAD_DIR на Render або спробуйте менший файл.',
+          )
+        }
         setProducts((prev) => {
           if (editingId) {
             return prev.map((p) => (p.id === editingId ? { ...p, ...normalized } : p))
@@ -1681,7 +1689,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           return [...prev, normalized]
         })
         setIsModalOpen(false)
-        void fetchTabData('products', { force: true })
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('products')
         }
@@ -3926,6 +3933,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                              src={coverSrc}
                              alt={product.name_ru}
                              className="w-full h-full object-cover"
+                             onError={(e) => {
+                               e.currentTarget.style.display = 'none'
+                             }}
                            />
                          ) : (
                            <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -6120,22 +6130,27 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
               {/* ОПИСАНИЯ */}
               <div className="space-y-2">
-                <label className="block text-xs sm:text-sm font-medium text-[#145142]/80">Описания (Состав)</label>
-                <textarea name="description_ru" value={formData.description_ru} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="RU: Рис, нори..." />
-                <textarea name="description_ua" value={formData.description_ua} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="UA: Рис, норі..." />
+                <label className="block text-xs sm:text-sm font-medium text-[#145142]/80">
+                  Описание (вес / шт — на сайте не показывается как текст)
+                </label>
+                <p className="mb-1.5 text-[11px] leading-snug text-gray-500">
+                  Только для бейджей «300 г», «8 шт». Состав на сайте — только из ингредиентов ниже.
+                </p>
+                <textarea name="description_ru" value={formData.description_ru} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="RU: 300 г, 8 шт" />
+                <textarea name="description_ua" value={formData.description_ua} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="UA: 300 г, 8 шт" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                   <textarea name="description_en" value={formData.description_en} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="EN: Rice..." />
-                   <textarea name="description_nl" value={formData.description_nl} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="NL: Rijst..." />
+                   <textarea name="description_en" value={formData.description_en} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="EN: 300 g, 8 pcs" />
+                   <textarea name="description_nl" value={formData.description_nl} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="NL: 300 g, 8 st." />
                 </div>
               </div>
               {/* --- ВЫБОР ИНГРЕДИЕНТОВ --- */}
               <div className="mb-4">
                 <label className="block text-sm font-bold text-[#145142]/70 mb-2">
-                  Ингредиенты (Состав)
+                  Склад (ингредиенты на сайте)
                 </label>
                 
                 <p className="mb-2 text-[11px] text-gray-500">
-                  Выберите из библиотеки (вкладка «Ингредиенты»). Нажмите на плитку, чтобы добавить или убрать.
+                  Выберите из библиотеки (вкладка «Ингредиенты»). На странице товара показываются только названия и фото плиток.
                 </p>
                 <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto p-2 border border-[#145142]/15 rounded-xl bg-[#f6faf8] sm:max-h-64">
                   {ingredients.length === 0 ? (

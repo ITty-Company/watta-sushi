@@ -63,6 +63,20 @@ function normalizeProductImageList(imageUrls: unknown, imageUrl: unknown): strin
   return single ? [single] : [];
 }
 
+function hasIncomingImagePayload(imageUrls: unknown, imageUrl: unknown): boolean {
+  if (Array.isArray(imageUrls)) {
+    return imageUrls.some((x) => typeof x === 'string' && x.trim().length > 0);
+  }
+  return typeof imageUrl === 'string' && imageUrl.trim().length > 0;
+}
+
+function existingProductGallery(row: {
+  imageUrl?: string | null;
+  imageUrls?: unknown;
+}): string[] {
+  return normalizeProductImageList(row.imageUrls, row.imageUrl);
+}
+
 /** У відповідях API не віддаємо base64 — інакше /api/products важить десятки МБ і меню падає */
 function sanitizeProductImagesForApi<T extends { imageUrl?: string | null; imageUrls?: unknown }>(p: T): T {
   const clean = (raw: string) => {
@@ -298,6 +312,13 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
     const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)))
 
     const gallery = normalizeProductImageList(imageUrlsBody, imageUrl);
+    if (hasIncomingImagePayload(imageUrlsBody, imageUrl) && gallery.length === 0) {
+      return res.status(400).json({
+        error:
+          'Не вдалося зберегти фото. Спробуйте менший файл або перевірте UPLOAD_DIR / диск на сервері.',
+        message: 'product_image_save_failed',
+      });
+    }
     const img = gallery[0] ?? null;
 
     const descRu = description_ru != null ? String(description_ru) : ''
@@ -372,17 +393,38 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
     } = req.body;
 
     const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)));
-    const gallery = normalizeProductImageList(imageUrlsBody, imageUrl);
+    const productId = parseInt(id, 10);
+
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { imageUrl: true, imageUrls: true },
+    });
+    if (!existingProduct) {
+      return res.status(404).json({ message: 'Товар не найден' });
+    }
+
+    let gallery = normalizeProductImageList(imageUrlsBody, imageUrl);
+    const incomingImages = hasIncomingImagePayload(imageUrlsBody, imageUrl);
+    if (incomingImages && gallery.length === 0) {
+      return res.status(400).json({
+        error:
+          'Не вдалося зберегти фото. Спробуйте менший файл або перевірте UPLOAD_DIR / диск на сервері.',
+        message: 'product_image_save_failed',
+      });
+    }
+    if (!incomingImages && gallery.length === 0) {
+      gallery = existingProductGallery(existingProduct);
+    }
 
     // Сначала удаляем все связи с городами (старый метод)
     await prisma.productCity.deleteMany({
-      where: { productId: parseInt(id) }
+      where: { productId },
     });
 
     // Для ингредиентов проще использовать set: [] внутри update, Prisma сама разберется
 
     const updatedProduct = await prisma.product.update({
-      where: { id: parseInt(id) },
+      where: { id: productId },
       data: {
         name_ru, name_ua, name_en, name_nl,
         price: Number(price),

@@ -202,6 +202,17 @@ app.use(
     fallthrough: true,
   }),
 );
+const legacyUploadsDir = path.resolve(__dirname, '../web/public/uploads');
+if (legacyUploadsDir !== uploadsPublicDir && fs.existsSync(legacyUploadsDir)) {
+  app.use(
+    '/uploads',
+    express.static(legacyUploadsDir, {
+      maxAge: isProd ? '7d' : 0,
+      index: false,
+      fallthrough: true,
+    }),
+  );
+}
 
 // --- 3. ПОДКЛЮЧЕНИЕ РОУТОВ ---
 app.use('/api/shop', shopRoutes);
