@@ -112,6 +112,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   )
   const [quantity, setQuantity] = useState(1)
   const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
+  const [fetchAttempt, setFetchAttempt] = useState(0)
   const { liked: isFavorite, toggle: toggleFavorite } = useProductFavorite(numericProductId)
   const [justAdded, setJustAdded] = useState(false)
   const recScrollRef = useRef<HTMLDivElement>(null)
@@ -177,15 +178,19 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
         if (cancelled) return
         if (row) {
           setProduct(rowToProduct(row))
-        } else if (!readProductFromClientCache(numericProductId)) {
-          setProduct(null)
+          return
+        }
+        const cached = readProductFromClientCache(numericProductId)
+        if (cached) {
+          setProduct(rowToProduct(cached))
         }
       })
       .catch((e) => {
         if (cancelled) return
         if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') return
         console.error(e)
-        if (!readProductFromClientCache(numericProductId)) setProduct(null)
+        const cached = readProductFromClientCache(numericProductId)
+        if (cached) setProduct(rowToProduct(cached))
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -211,7 +216,16 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       cancelled = true
       ac.abort()
     }
-  }, [numericProductId, catalogRefreshKey])
+  }, [numericProductId, catalogRefreshKey, fetchAttempt])
+
+  useEffect(() => {
+    if (isLoading || product || numericProductId <= 0) return
+    if (readProductFromClientCache(numericProductId)) return
+    const t = window.setTimeout(() => {
+      router.replace('/menu')
+    }, 1200)
+    return () => window.clearTimeout(t)
+  }, [isLoading, product, numericProductId, router])
 
   const addToCart = () => {
     if (!product) return
@@ -303,8 +317,36 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   }
   if (!product) {
     return (
-      <div className="flex min-h-screen flex-1 flex-col items-center justify-center watta-page-bg px-6 text-center">
-        <p className="text-lg font-semibold text-[#145142]">{pd.notFound}</p>
+      <div className="relative flex min-h-[min(100dvh,56rem)] flex-1 flex-col watta-page-bg pb-24">
+        <div className="watta-product-page__inner relative mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+          <p className="text-sm font-semibold text-[#145142]/80">{pd.loading}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-xl border border-[#145142]/20 bg-white px-4 py-2 text-sm font-bold text-[#145142]"
+            >
+              {t.auth.back}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLoading(true)
+                setFetchAttempt((n) => n + 1)
+              }}
+              className="rounded-xl bg-[#145142] px-4 py-2 text-sm font-bold text-white"
+            >
+              {t.errorPage.retry}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/menu')}
+              className="rounded-xl border border-[#145142]/20 bg-white px-4 py-2 text-sm font-bold text-[#145142]"
+            >
+              {t.menuView.fullMenuAllTab ?? 'Меню'}
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
