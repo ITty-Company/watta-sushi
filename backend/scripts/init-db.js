@@ -34,6 +34,28 @@ function listSortedMigrationDirs() {
  * Baseline для уже заполненной БД без таблицы _prisma_migrations (ошибка P3005).
  * @see https://www.prisma.io/docs/guides/migrate/production-troubleshooting#baseline-a-database-with-migrations
  */
+/** Имя миграции из вывода P3009 (failed migration record). */
+function parseFailedMigrationName(output) {
+  const m = output.match(/The `([^`]+)` migration started at/)
+  return m?.[1] ?? null
+}
+
+/**
+ * Сбрасывает failed-запись в _prisma_migrations, чтобы deploy мог применить миграцию снова.
+ * Нужно после P3018 (например, таблица уже существовала до фикса idempotent SQL).
+ */
+function markMigrationRolledBack(name) {
+  console.log(`📌 migrate resolve --rolled-back "${name}"`)
+  const rr = spawnSync('npx', ['prisma', 'migrate', 'resolve', '--rolled-back', name], {
+    cwd: backendRoot,
+    encoding: 'utf8',
+    env: process.env,
+  })
+  if (rr.stdout) process.stdout.write(rr.stdout)
+  if (rr.stderr) process.stderr.write(rr.stderr)
+  return rr.status === 0
+}
+
 function markAllMigrationsResolved() {
   const names = listSortedMigrationDirs()
   console.log(`📌 Baseline: prisma migrate resolve --applied (${names.length} migrations)`)
@@ -80,7 +102,34 @@ async function initDatabase() {
     }
 
     if (!migrateResult.ok) {
+      const failedName = parseFailedMigrationName(migrateResult.out)
+      const isFailedRecord = migrateResult.out.includes('P3009') && failedName
+      const isAlreadyExists =
+        migrateResult.out.includes('P3018') ||
+        migrateResult.out.includes('42P07') ||
+        migrateResult.out.includes('already exists')
+
+      if (isFailedRecord || (isAlreadyExists && failedName)) {
+        const name =
+          failedName ||
+          migrateResult.out.match(/Applying migration `([^`]+)`/)?.[1] ||
+          null
+        if (name && markMigrationRolledBack(name)) {
+          console.log('🗄️  prisma migrate deploy (повтор после rolled-back)…')
+          migrateResult = runMigrateDeploy()
+        }
+      }
+    }
+
+    if (!migrateResult.ok) {
       console.error('❌ prisma migrate deploy не удался.')
+      if (migrateResult.out.includes('P3009')) {
+        console.error('')
+        console.error('   Вручную в Shell Render (папка backend):')
+        console.error('   npx prisma migrate resolve --rolled-back <имя_миграции>')
+        console.error('   npx prisma migrate deploy')
+        console.error('')
+      }
       process.exit(1)
     }
 
