@@ -18,6 +18,11 @@ export function setPublicJsonCache(res: Response, maxAgeSec: number, swrSec?: nu
 export function cachePublicGet(maxAgeSec: number, swrSec?: number): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
     if (req.method !== 'GET') return next();
+    // Адмінка та інші авторизовані refetch — без HTTP-кешу (оновлення в ту ж секунду).
+    if (req.headers.authorization) {
+      res.setHeader('Cache-Control', 'private, no-store, must-revalidate');
+      return next();
+    }
     setPublicJsonCache(res, maxAgeSec, swrSec);
     next();
   };
