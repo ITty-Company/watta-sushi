@@ -1706,10 +1706,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         name_ua: (formData.name_ua || '').trim() || anyName,
         name_en: (formData.name_en || '').trim() || anyName,
         name_nl: (formData.name_nl || '').trim() || anyName,
-        description_ru: formData.description_ru || '',
-        description_ua: formData.description_ua || '',
-        description_en: formData.description_en || '',
-        description_nl: formData.description_nl || '',
+        description_ru: '',
+        description_ua: '',
+        description_en: '',
+        description_nl: '',
         price: priceNum,
         categoryId: Number(formData.categoryId),
         imageUrl: formData.imageUrls[0] || '',
@@ -4032,8 +4032,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                            <h3 className="text-base sm:text-lg md:text-[20px] font-bold text-black leading-tight flex-1">{product.name_ru}</h3>
                            <span className="text-base sm:text-lg md:text-[20px] font-bold text-[#194A38] whitespace-nowrap">{product.price} €</span>
                          </div>
-                         <p className="text-xs sm:text-sm md:text-[14px] text-[#7C7C7C] line-clamp-2 mb-3 sm:mb-4 min-h-[32px] sm:min-h-[42px]">{product.description_ru}</p>
-                         
                          {/* Футер карточки с кнопками */}
                          <div className="mt-auto pt-2 border-t border-[#145142]/10 flex justify-between items-center text-xs text-gray-400">
                             <div className="flex gap-2">
@@ -6028,19 +6026,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 />
               </div>
 
-              {/* --- ПОЛЕ ОПИСАНИЯ (Меняется в зависимости от вкладки) --- */}
-              <div className="mb-4">
-                <label className="block text-sm font-bold text-gray-700 mb-1">
-                  Описание ({editorLang.toUpperCase()})
-                </label>
-                <textarea
-                  value={(formData as any)[`description_${editorLang}`] || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, [`description_${editorLang}`]: e.target.value }))}
-                  className="w-full p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-xl outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] h-24 resize-none"
-                  placeholder={`Состав, вес, особенности... (${editorLang})`}
-                />
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-1">Цена (€)</label>
@@ -6195,21 +6180,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </p>
               </div>
 
-              {/* ОПИСАНИЯ */}
-              <div className="space-y-2">
-                <label className="block text-xs sm:text-sm font-medium text-[#145142]/80">
-                  Описание (вес / шт — на сайте не показывается как текст)
-                </label>
-                <p className="mb-1.5 text-[11px] leading-snug text-gray-500">
-                  Только для бейджей «300 г», «8 шт». Состав на сайте — только из ингредиентов ниже.
-                </p>
-                <textarea name="description_ru" value={formData.description_ru} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="RU: 300 г, 8 шт" />
-                <textarea name="description_ua" value={formData.description_ua} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="UA: 300 г, 8 шт" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                   <textarea name="description_en" value={formData.description_en} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="EN: 300 g, 8 pcs" />
-                   <textarea name="description_nl" value={formData.description_nl} onChange={handleInputChange} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg h-14 sm:h-16 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]" placeholder="NL: 300 g, 8 st." />
-                </div>
-              </div>
               {/* --- ВЫБОР ИНГРЕДИЕНТОВ --- */}
               <div className="mb-4">
                 <label className="block text-sm font-bold text-[#145142]/70 mb-2">
