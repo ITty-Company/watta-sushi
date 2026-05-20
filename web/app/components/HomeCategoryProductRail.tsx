@@ -34,7 +34,18 @@ export function HomeCategoryProductRail({ categoryLabel, items, addToCart, onBef
             key={item.id}
             variant="rail"
             product={item}
-            onAddToCart={() => addToCart(item)}
+            onAddToCart={(product) =>
+              addToCart({
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                category: item.category,
+                emoji: product.emoji,
+                imageUrl: product.imageUrl,
+                promoDiscountPercent: product.promoDiscountPercent,
+              })
+            }
             onBeforeNavigateToProduct={onBeforeNavigateToProduct}
           />
         ))}

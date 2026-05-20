@@ -7,7 +7,7 @@ import { Heart, UtensilsCrossed } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
-import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { loadFavoriteProducts } from '@/lib/favoritesStorage'
 import { productGalleryFromApi } from '@/lib/productGallery'
@@ -89,24 +89,7 @@ export default function FavoritesPageClient() {
     }
   }, [load])
 
-  const addToCart = (item: MenuHighlightStackItem | WattaMenuProductCardModel) => {
-    const result = addToCartWithAuthGate(router, {
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      category: '',
-      emoji: item.emoji ?? '🍣',
-      imageUrl: item.imageUrl,
-      promoDiscountPercent: item.promoDiscountPercent,
-    })
-    if (result === 'max') {
-      toast.error(t.appToasts.maxCartQty)
-      return
-    }
-    if (result === 'auth_redirect') return
-    toast.success(t.addToCart)
-  }
+  const addToCart = useMenuAddToCart()
 
   const stackItems: MenuHighlightStackItem[] = items.map((item) => ({
     id: item.id,

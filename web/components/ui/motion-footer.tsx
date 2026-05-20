@@ -1092,7 +1092,7 @@ const STYLES = `
 
 @media (hover: hover) and (pointer: fine) {
   .footer-cinematic-rail--recommended .footer-promo-card--watta-grid:hover .group {
-    transform: translateY(-3px) scale(1.01);
+    transform: none;
     box-shadow: none;
   }
 }
@@ -1116,14 +1116,6 @@ const STYLES = `
   object-position: center center;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .footer-cinematic-rail--recommended
-    .footer-rec-watta-card
-    .home-menu-product-card-media-web.group\/media:hover
-    .home-menu-product-card-img-web {
-    transform: scale(1.03);
-  }
-}
 
 /* Рекомендовані / хіти: телефон — 1 картка + половина наступної, решта — свайп */
 .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
@@ -1417,7 +1409,15 @@ export type CinematicFooterProps = {
   /** Товари з isHomeHit з адмінки (стрічка «хіти») */
   adminRecommendedProducts?: CinematicFooterAdminProduct[]
   /** Додати в кошик зі стрічки, без переходу на сторінку страви */
-  onAdminProductAddToCart: (productId: number) => void
+  onAdminProductAddToCart: (product: {
+    id: number
+    name: string
+    description?: string
+    price: number
+    emoji?: string
+    imageUrl?: string
+    promoDiscountPercent?: number
+  }) => void
   onBeforeNavigateToProduct?: () => void
   /**
    * fullscreen — окремий повноекранний скрол-блок.
@@ -1460,7 +1460,15 @@ function AdminProductStrip({
   items: CinematicFooterAdminProduct[]
   carouselRef: React.RefObject<HTMLDivElement | null>
   onScroll: (dir: -1 | 1) => void
-  onProductAddToCart: (id: number) => void
+  onProductAddToCart: (product: {
+    id: number
+    name: string
+    description?: string
+    price: number
+    emoji?: string
+    imageUrl?: string
+    promoDiscountPercent?: number
+  }) => void
   onBeforeNavigateToProduct?: () => void
   prevLabel: string
   nextLabel: string
@@ -1503,7 +1511,17 @@ function AdminProductStrip({
             promoDiscountPercent: promoPct,
           }}
           subtitleLine={p.subtitleLine}
-          onAddToCart={() => onProductAddToCart(p.id)}
+          onAddToCart={(cardProduct) =>
+            onProductAddToCart({
+              id: cardProduct.id,
+              name: cardProduct.name,
+              description: cardProduct.description,
+              price: cardProduct.price,
+              emoji: cardProduct.emoji,
+              imageUrl: cardProduct.imageUrl,
+              promoDiscountPercent: cardProduct.promoDiscountPercent,
+            })
+          }
           onBeforeNavigateToProduct={onBeforeNavigateToProduct}
         />
       </div>
