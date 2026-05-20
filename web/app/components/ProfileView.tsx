@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '../context/LanguageContext'
@@ -21,6 +21,10 @@ import {
 import { isAdminRole } from '@/lib/isAdminRole'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import type { WattaLanguage } from '@/lib/i18n/language'
+import { appendCartLines, writeCartToStorage } from '@/lib/cartStorage'
+import { getOrderStatusToastMessage } from '@/lib/orderStatusMessage'
+import { WATTA_NOTIFICATIONS_CHANGED_EVENT } from '@/lib/userNotificationsApi'
+import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
 
 const HERO_BG =
   'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
@@ -74,8 +78,11 @@ interface ProfileViewProps {
   onOpenFavorites: () => void
   onOpenCart: () => void
   onOpenAdmin: () => void
-  onSelectCategory: (key: string) => void // <--- ДОБАВИЛИ ЭТО ПОЛЕ
-  initialTab?: 'history' | 'address' | 'favorites'
+  onSelectCategory: (key: string) => void
+  initialTab?: 'history' | 'address' | 'favorites' | 'data'
+  /** embedded — у MenuView; page — /profile з глобальною шапкою */
+  layout?: 'embedded' | 'page'
+  highlightOrderId?: number
 }
 
 export default function ProfileView({
@@ -86,11 +93,14 @@ export default function ProfileView({
   onOpenFavorites,
   onOpenCart,
   onOpenAdmin,
-  onSelectCategory, // <--- ДОБАВИЛИ В ПАРАМЕТРЫ
-  initialTab = 'history'
+  onSelectCategory,
+  initialTab = 'history',
+  layout = 'embedded',
+  highlightOrderId,
 }: ProfileViewProps) {
   const router = useRouter()
   const { t, language, getLocalized } = useLanguage()
+  const { showBlogNav } = usePublicBlogNav()
   const a = t.siteAria
   const rightNavDrawer = useOptionalRightNavDrawer()
   const [profileAllowed, setProfileAllowed] = useState<boolean | null>(null)
@@ -100,9 +110,10 @@ export default function ProfileView({
     const ok = !!localStorage.getItem('currentUser')
     setProfileAllowed(ok)
     if (!ok) {
-      router.replace('/login?return=' + encodeURIComponent('/'))
+      const ret = layout === 'page' ? '/profile' : '/'
+      router.replace('/login?return=' + encodeURIComponent(ret))
     }
-  }, [router])
+  }, [router, layout])
 
   const [activeTab, setActiveTab] = useState<'history' | 'address' | 'favorites' | 'data'>('history')
   const [orders, setOrders] = useState<Order[]>([])
@@ -113,7 +124,7 @@ export default function ProfileView({
 
   const [favoriteItems, setFavoriteItems] = useState<any[]>([])
   const [favLoading, setFavLoading] = useState(false)
-
+  const orderStatusRef = useRef<Map<number, string>>(new Map())
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab)
@@ -140,6 +151,16 @@ export default function ProfileView({
       })
       if (res.ok) {
         const data = await res.json()
+        if (Array.isArray(data)) {
+          for (const o of data as Order[]) {
+            const prev = orderStatusRef.current.get(o.id)
+            if (prev && prev !== o.status) {
+              toast.success(getOrderStatusToastMessage(o.status, o.id, language as WattaLanguage))
+              window.dispatchEvent(new Event(WATTA_NOTIFICATIONS_CHANGED_EVENT))
+            }
+            orderStatusRef.current.set(o.id, o.status)
+          }
+        }
         setOrders(data)
       }
     } catch (error) {
@@ -147,7 +168,7 @@ export default function ProfileView({
     } finally {
       if (showSpinner) setLoading(false)
     }
-  }, [])
+  }, [language])
 
   // --- ЗАГРУЗКА ДАННЫХ ---
   useEffect(() => {
@@ -192,11 +213,11 @@ export default function ProfileView({
 
   const handleReorder = (order: Order) => {
     const lang = language as WattaLanguage
-    const reorderedItems = order.items.flatMap((item) => {
+    const reorderedItems = order.items.map((item) => {
       const itemId = Number(item.productId ?? item.id)
       const qty = Math.max(1, Number(item.quantity || 1))
       const prod = item.product as Record<string, unknown> | undefined
-      const cartItem = {
+      return {
         id: itemId,
         name:
           (prod && getLocalizedField(prod, 'name', lang)) ||
@@ -210,12 +231,11 @@ export default function ProfileView({
         category: t.clientProfile.reorder,
         emoji: '🍣',
         imageUrl: item.product?.imageUrl,
+        quantity: qty,
       }
-      return Array.from({ length: qty }, () => ({ ...cartItem }))
     })
 
-    localStorage.setItem('cart', JSON.stringify(reorderedItems))
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    writeCartToStorage(reorderedItems)
     window.location.href = '/cart'
   }
 
@@ -275,14 +295,7 @@ export default function ProfileView({
     price: number
     imageUrl?: string
   }) => {
-    if (typeof window === 'undefined' || !window.localStorage) return
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    const n = cart.filter((x: { id?: number }) => x?.id === item.id).length
-    if (n >= 99) {
-      toast.error(t.appToasts.maxCartQty)
-      return
-    }
-    cart.push({
+    const result = appendCartLines({
       id: item.id,
       name: item.name,
       description: item.description || '',
@@ -291,8 +304,10 @@ export default function ProfileView({
       emoji: '🍣',
       imageUrl: item.imageUrl,
     })
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    if (result === 'max') {
+      toast.error(t.appToasts.maxCartQty)
+      return
+    }
     toast.success(t.addToCart)
   }
 
@@ -396,11 +411,16 @@ export default function ProfileView({
     </header>
   )
 
+  const rootPad =
+    layout === 'page'
+      ? 'pb-16 pt-2 font-sans sm:pb-20 sm:pt-3'
+      : 'pb-16 pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16'
+
   return (
-    <div className="menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden watta-page-bg pb-16 pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16">
+    <div className={`menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden watta-page-bg ${rootPad}`}>
       <LogoBackground />
       <div className="relative z-10">
-        <Header />
+        {layout === 'embedded' ? <Header /> : null}
 
       <div className="mx-auto max-w-[1600px] px-3 pb-2 sm:px-4 sm:pb-3">
         <section
@@ -568,12 +588,14 @@ export default function ProfileView({
                     >
                       {t.reviewsPublic.title}
                     </Link>
-                    <Link
-                      href="/blog"
-                      className="rounded-lg bg-[#145142] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#0f3d32] sm:text-sm"
-                    >
-                      {t.blogPublic.title}
-                    </Link>
+                    {showBlogNav ? (
+                      <Link
+                        href="/blog"
+                        className="rounded-lg bg-[#145142] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#0f3d32] sm:text-sm"
+                      >
+                        {t.blogPublic.title}
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
                 <ClientProfileOrders
@@ -584,9 +606,10 @@ export default function ProfileView({
                   t={t.clientProfile}
                   emptyMessage={t.clientProfile.emptyOrders}
                   goMenuLabel={t.clientProfile.goMenu}
-                  onGoMenu={onBack}
+                  onGoMenu={layout === 'page' ? () => router.push('/menu') : onBack}
                   onReorder={handleReorder}
                   onReviewSubmitted={handleReviewSubmitted}
+                  highlightOrderId={highlightOrderId}
                 />
               </div>
             )}

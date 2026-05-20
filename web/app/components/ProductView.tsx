@@ -24,9 +24,12 @@ import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { useProductFavorite } from '@/hooks/useProductFavorite'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import { ProductImageGallery } from './ProductImageGallery'
-import { productGalleryFromApi } from '@/lib/productGallery'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { productGalleryFromApi, productHasGalleryImages } from '@/lib/productGallery'
 import toast from 'react-hot-toast'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
+import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 
 interface ProductViewProps {
   productId: string
@@ -88,8 +91,8 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
   const [recommendations, setRecommendations] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
+  const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
   const { liked: isFavorite, toggle: toggleFavorite } = useProductFavorite(numericProductId)
-  const [isAdding, setIsAdding] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
   const recScrollRef = useRef<HTMLDivElement>(null)
 
@@ -105,6 +108,8 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     if (!c) return ''
     return getLocalizedField(c as unknown as Record<string, unknown>, 'name', lang)
   }
+
+  useWattaCatalogSync(() => setCatalogRefreshKey((k) => k + 1), 'products')
 
   useEffect(() => {
     if (numericProductId <= 0) {
@@ -126,12 +131,31 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     if (cityId != null && cityId > 0) recQ.set('cityId', String(cityId))
     const recUrl = getApiUrl(`/api/products/recommendations?${recQ.toString()}`)
 
-    const recFetch = fetch(recUrl, { signal: ac.signal, headers: { 'Cache-Control': 'no-cache' } })
+    const fresh = catalogRefreshKey > 0
+    const recFetch = fresh
+      ? fetchPublicApiFresh(recUrl, { signal: ac.signal })
+      : fetch(recUrl, { signal: ac.signal, headers: { 'Cache-Control': 'no-cache' } })
 
-    void fetchProductById(numericProductId, ac.signal)
+    void fetchProductById(numericProductId, ac.signal, { fresh: true })
       .then((row) => {
         if (cancelled) return
-        setProduct(row ? (row as unknown as Product) : null)
+        if (!row) {
+          setProduct(null)
+          return
+        }
+        const hasIngredientsField = Object.prototype.hasOwnProperty.call(row, 'ingredients')
+        if (!hasIngredientsField) {
+          void fetchProductById(numericProductId, ac.signal, { fresh: true })
+            .then((full) => {
+              if (cancelled) return
+              setProduct(full ? (full as unknown as Product) : (row as unknown as Product))
+            })
+            .catch(() => {
+              if (!cancelled) setProduct(row as unknown as Product)
+            })
+          return
+        }
+        setProduct(row as unknown as Product)
       })
       .catch((e) => {
         if (cancelled) return
@@ -163,11 +187,28 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
       cancelled = true
       ac.abort()
     }
-  }, [numericProductId])
+  }, [numericProductId, catalogRefreshKey])
+
+  useEffect(() => {
+    if (!product || productHasGalleryImages(product)) return
+    const ac = new AbortController()
+    void fetchProductById(numericProductId, ac.signal, { fresh: true }).then((row) => {
+      if (!row || !productHasGalleryImages(row)) return
+      setProduct((prev) =>
+        prev
+          ? {
+              ...prev,
+              imageUrl: row.imageUrl as Product['imageUrl'],
+              imageUrls: row.imageUrls as Product['imageUrls'],
+            }
+          : (row as unknown as Product),
+      )
+    })
+    return () => ac.abort()
+  }, [product, numericProductId])
 
   const addToCart = () => {
     if (!product) return
-    setIsAdding(true)
     const cover =
       (product.imageUrl && String(product.imageUrl).trim()) ||
       productGalleryFromApi({ imageUrl: product.imageUrl, imageUrls: product.imageUrls })[0]
@@ -184,18 +225,12 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     const result = addToCartWithAuthGate(router, line, { quantity })
     if (result === 'max') {
       toast.error(t.appToasts.maxCartQty)
-      setIsAdding(false)
       return
     }
-    if (result === 'auth_redirect') {
-      setIsAdding(false)
-      return
-    }
-    setTimeout(() => {
-      setIsAdding(false)
-      setJustAdded(true)
-      setTimeout(() => setJustAdded(false), 2200)
-    }, 400)
+    if (result === 'auth_redirect') return
+    toast.success(t.addToCart)
+    setJustAdded(true)
+    window.setTimeout(() => setJustAdded(false), 2200)
   }
 
   const addRecToCart = (rec: Product) => {
@@ -226,10 +261,12 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
     el.scrollBy({ left: dir * Math.min(300, el.clientWidth * 0.8), behavior: 'smooth' })
   }
 
-  const galleryImages = useMemo(
-    () => (product ? productGalleryFromApi(product) : []),
-    [product],
-  )
+  const galleryImages = useMemo(() => {
+    if (!product) return []
+    return productGalleryFromApi(product)
+      .map((u) => resolveCatalogMediaUrl(u) ?? u)
+      .filter((u) => u.length > 0)
+  }, [product, catalogRefreshKey])
 
   if (isLoading) {
     return (
@@ -395,61 +432,60 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
                 <button
                   type="button"
                   onClick={addToCart}
-                  disabled={isAdding}
-                  className="mt-2 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#145142] px-3 text-sm font-bold text-white transition hover:bg-[#104034] active:scale-[0.99] disabled:opacity-70 sm:mt-3 sm:min-h-12 sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-lg"
+                  className="mt-2 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#145142] px-3 text-sm font-bold text-white transition hover:bg-[#104034] active:scale-[0.99] sm:mt-3 sm:min-h-12 sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-lg"
                 >
                   <ShoppingBag className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-                  {isAdding ? pd.adding : pd.toCart}
+                  {justAdded ? pd.addedHint : pd.toCart}
                 </button>
-                {justAdded ? (
-                  <p className="mt-2 text-center text-xs font-semibold text-[#145142] sm:text-sm">{pd.addedHint}</p>
-                ) : null}
               </div>
             </div>
 
-            {ingredients.length > 0 && (
-              <section className="h-fit min-h-0 w-full max-w-full overflow-hidden rounded-xl border border-[#145142]/20 bg-white sm:rounded-[24px]">
+            {(desc || ingredients.length > 0) && (
+              <section className="w-full max-w-full rounded-xl border border-[#145142]/20 bg-white sm:rounded-[24px]">
                 <div className="flex items-center gap-1.5 border-b border-[#145142]/12 bg-white px-2.5 py-2 sm:gap-2 sm:px-4 sm:py-2.5">
                   <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#e85d2a] sm:h-4 sm:w-4" strokeWidth={2.4} aria-hidden />
                   <h2 className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-[#145142] sm:text-sm sm:tracking-[0.12em]">
                     {pd.composition}
                   </h2>
                 </div>
-                <div className="bg-white px-2 pt-1.5 pb-2 sm:px-3 sm:pt-2 sm:pb-2.5">
-                  <div className="flex min-h-0 w-full flex-wrap content-start items-start justify-center gap-x-4 gap-y-2.5 sm:gap-x-5 sm:gap-y-3">
-                    {ingredients.map((ing) => (
-                      <div
-                        key={ing.id}
-                        className="flex h-fit w-[4.5rem] max-w-full shrink-0 flex-col items-center self-start text-center sm:w-24"
-                      >
-                        <div className="mb-0.5 flex h-10 w-full max-w-[3.75rem] shrink-0 items-center justify-center sm:h-14 sm:max-w-20">
-                          {ing.imageUrl ? (
-                            <img
-                              src={ing.imageUrl}
-                              alt=""
-                              className="h-full w-full object-contain"
-                              decoding="async"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <span className="text-xl">🥢</span>
-                          )}
+                <div className="space-y-3 bg-white px-2.5 py-2.5 sm:space-y-4 sm:px-4 sm:py-3">
+                  {desc ? (
+                    <p className="text-[13px] leading-relaxed text-neutral-700 sm:text-base sm:leading-[1.75] whitespace-pre-line">
+                      {desc}
+                    </p>
+                  ) : null}
+                  {ingredients.length > 0 ? (
+                    <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                      {ingredients.map((ing) => (
+                        <div
+                          key={ing.id}
+                          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-[#145142]/12 bg-[#f6faf8] p-1.5 text-center sm:rounded-2xl sm:p-2"
+                        >
+                          <div className="flex min-h-0 flex-1 w-full items-center justify-center">
+                            {ing.imageUrl ? (
+                              <img
+                                src={ing.imageUrl}
+                                alt=""
+                                className="max-h-full max-w-full object-contain"
+                                decoding="async"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="text-lg sm:text-xl" aria-hidden>
+                                🥢
+                              </span>
+                            )}
+                          </div>
+                          <p className="line-clamp-2 w-full text-[9px] font-bold leading-tight text-[#0f241e] sm:text-[11px]">
+                            {getIngName(ing)}
+                          </p>
                         </div>
-                        <p className="line-clamp-2 w-full text-[11px] font-bold leading-tight text-[#0f241e] sm:text-xs">
-                          {getIngName(ing)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </section>
             )}
-
-            {desc ? (
-              <div className="rounded-xl border border-[#145142]/10 border-l-[3px] border-l-[#145142] bg-white py-2.5 pl-3.5 pr-3 sm:rounded-2xl sm:border-l-4 sm:py-4 sm:pl-6 sm:pr-5">
-                <p className="text-[13px] leading-relaxed text-neutral-700 sm:text-base sm:leading-[1.75]">{desc}</p>
-              </div>
-            ) : null}
 
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#145142]/10 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 sm:gap-2 sm:rounded-2xl sm:px-4 sm:py-2 sm:text-sm">
@@ -467,11 +503,7 @@ export default function ProductView({ productId, onBack }: ProductViewProps) {
             <div className="relative rounded-2xl border border-[#145142]/10 bg-white sm:rounded-[22px]">
               <div className="overflow-hidden rounded-[15px] px-3 py-5 sm:rounded-[21px] sm:px-5 sm:py-6">
                 <div className="mb-4 flex items-end justify-between gap-3 sm:mb-5">
-                  <div className="min-w-0 space-y-1">
-                    <p className="inline-flex items-center gap-1.5 rounded-full border border-[#145142]/12 bg-white px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#145142] sm:text-[10px]">
-                      <Sparkles className="h-3 w-3 shrink-0 text-[#e85d2a]" strokeWidth={2.4} aria-hidden />
-                      <span className="truncate">{pd.recommendsTitle.split(/\s+/)[0] ?? t.common.brandShort}</span>
-                    </p>
+                  <div className="min-w-0">
                     <h2
                       id="product-recommendations-heading"
                       className="text-lg font-black leading-tight tracking-tight text-[#0f241e] sm:text-2xl"

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { useLanguage } from '@/app/context/LanguageContext'
 
 export default function BlogBackToIndex() {
@@ -8,10 +9,12 @@ export default function BlogBackToIndex() {
   return (
     <Link
       href="/blog"
-      className="inline-flex items-center gap-2 text-sm font-bold transition hover:opacity-80"
-      style={{ color: '#27AE60' }}
+      className="auth-watta-back-fab watta-blog-back watta-blog-back--inline"
     >
-      ← {t.blogPublic.backToBlog}
+      <span className="auth-watta-back-fab__icon" aria-hidden>
+        <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
+      </span>
+      <span className="auth-watta-back-fab__text">{t.blogPublic.backToBlog}</span>
     </Link>
   )
 }

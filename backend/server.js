@@ -30,7 +30,10 @@ import blogRoutes from './routes/blog.routes.ts';
 import reviewRoutes from './routes/review.routes.ts';
 import crmRoutes from './routes/crm.routes.ts';
 import contactRoutes from './routes/contact.routes.ts';
+import notificationRoutes from './routes/notification.routes.ts';
+import cartUpsellRoutes from './routes/cartUpsell.routes.ts';
 import { getUploadsDir } from './lib/uploadsDir.js';
+import { getStorageHealthSnapshot } from './lib/storageHealth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -139,6 +142,30 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true, uptime: Math.round(process.uptime()), ts: Date.now() });
 });
 
+/** Діагностика БД + uploads (Render Persistent Disk). Відкрийте https://ВАШ-API.onrender.com/health/storage */
+app.get('/health/storage', async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const storage = getStorageHealthSnapshot();
+  let database = { connected: false };
+  try {
+    const [products, categories] = await Promise.all([
+      prisma.product.count(),
+      prisma.category.count(),
+    ]);
+    database = { connected: true, products, categories };
+  } catch {
+    database = { connected: false };
+  }
+  res.json({
+    ok: storage.ok && database.connected,
+    uptime: Math.round(process.uptime()),
+    storage: storage.uploads,
+    hintUk: storage.hintUk,
+    database,
+    ts: Date.now(),
+  });
+});
+
 // Лимит запросов: в dev админка дергает десятки эндпоинтов подряд — 200/15мин даёт 429
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -160,7 +187,7 @@ app.use(express.urlencoded({ extended: true, limit: jsonBodyLimit }));
 
 // Логирование запросов
 app.use((req, res, next) => {
-  if (req.path === '/health') return next();
+  if (req.path === '/health' || req.path === '/health/storage') return next();
   if (!shouldLogApiRequests && req.path.startsWith('/api/')) return next();
   console.log(`📡 [${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
   next();
@@ -198,6 +225,8 @@ app.use('/api/blog', blogRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/cart-upsell', cartUpsellRoutes);
 
 // Тестовый маршрут
 app.get('/', (req, res) => {

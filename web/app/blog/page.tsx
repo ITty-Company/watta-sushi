@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildSubpageMetadata } from '@/lib/i18n/seo'
+import WattaSiteStickyChrome from '../components/WattaSiteStickyChrome'
 import BlogIndexClient from './BlogIndexClient'
 
 interface BlogPost {
@@ -25,7 +27,8 @@ async function getPosts(): Promise<BlogPost[]> {
       cache: 'no-store',
     })
     if (!res.ok) return []
-    return res.json()
+    const data: unknown = await res.json()
+    return Array.isArray(data) ? (data as BlogPost[]) : []
   } catch {
     return []
   }
@@ -33,12 +36,13 @@ async function getPosts(): Promise<BlogPost[]> {
 
 export default async function BlogPage() {
   const posts = await getPosts()
+  if (posts.length === 0) notFound()
 
   return (
-    <main
-      className="watta-public-page-shell flex min-h-screen flex-1 flex-col watta-page-bg px-4 pb-12 pt-2 sm:px-6 sm:pb-16 sm:pt-3"
-    >
+    <div className="menu-page-web watta-blog-route relative flex w-full max-w-[100vw] min-w-0 shrink-0 flex-col overflow-x-hidden watta-page-bg">
+      <WattaSiteStickyChrome flowHeightFudgePx={4} />
+      <div className="menu-content-top-gap-web w-full shrink-0 bg-transparent" aria-hidden />
       <BlogIndexClient posts={posts} />
-    </main>
+    </div>
   )
 }

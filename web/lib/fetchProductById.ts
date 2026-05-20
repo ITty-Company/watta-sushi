@@ -1,7 +1,8 @@
 import { getApiUrl } from '@/lib/utils'
-import { fetchPublicApi } from '@/lib/publicApiFetch'
+import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
+import { productHasGalleryImages } from '@/lib/productGallery'
 
 export function normalizeProductRouteId(raw: unknown): number | null {
   const value = Array.isArray(raw) ? raw[0] : raw
@@ -42,7 +43,9 @@ export function findProductInMenuSessionCaches(id: number): Record<string, unkno
 async function fetchProductList(
   cityId: number | null,
   signal?: AbortSignal,
+  fresh = false,
 ): Promise<Record<string, unknown>[]> {
+  const fetchFn = fresh ? fetchPublicApiFresh : fetchPublicApi
   const urls: string[] = []
   if (cityId != null && cityId > 0) {
     urls.push(getApiUrl(`/api/products?cityId=${cityId}`))
@@ -51,7 +54,7 @@ async function fetchProductList(
 
   for (const url of urls) {
     try {
-      const res = await fetchPublicApi(url, { signal })
+      const res = await fetchFn(url, { signal })
       if (!res.ok) continue
       const data = (await res.json()) as unknown
       if (!Array.isArray(data)) continue
@@ -70,23 +73,37 @@ async function fetchProductList(
 export async function fetchProductById(
   id: number,
   signal?: AbortSignal,
+  options?: { fresh?: boolean },
 ): Promise<Record<string, unknown> | null> {
+  const fetchFn = options?.fresh ? fetchPublicApiFresh : fetchPublicApi
   try {
-    const res = await fetchPublicApi(getApiUrl(`/api/products/${id}`), { signal })
+    const res = await fetchFn(getApiUrl(`/api/products/${id}`), { signal })
     if (res.ok) {
       const body = (await res.json()) as unknown
-      if (body && typeof body === 'object') return body as Record<string, unknown>
+      if (body && typeof body === 'object') {
+        const row = body as Record<string, unknown>
+        if (productHasGalleryImages(row)) return row
+        const cityIdOk = typeof window !== 'undefined' ? readCityIdForProductApi() : null
+        const list = await fetchProductList(cityIdOk, signal, true)
+        const fromList = findInRawList(list, id)
+        if (fromList && productHasGalleryImages(fromList)) {
+          return { ...row, imageUrl: fromList.imageUrl, imageUrls: fromList.imageUrls }
+        }
+        return row
+      }
     }
   } catch (e) {
     if (e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError') throw e
   }
 
-  const fromCache = findProductInMenuSessionCaches(id)
-  if (fromCache) return fromCache
+  if (!options?.fresh) {
+    const fromCache = findProductInMenuSessionCaches(id)
+    if (fromCache && productHasGalleryImages(fromCache)) return fromCache
+  }
 
   const cityIdOk = typeof window !== 'undefined' ? readCityIdForProductApi() : null
 
-  const list = await fetchProductList(cityIdOk, signal)
+  const list = await fetchProductList(cityIdOk, signal, Boolean(options?.fresh))
   const fromList = findInRawList(list, id)
   if (fromList) {
     if (typeof sessionStorage !== 'undefined' && cityIdOk != null) {

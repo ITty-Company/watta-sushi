@@ -10,6 +10,7 @@ import React, {
   useState,
   type MutableRefObject,
 } from 'react'
+import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
 
 export type RightNavDrawerContextValue = {
   open: () => void
@@ -50,6 +51,8 @@ export function RightNavDrawerProvider({
   useEffect(() => {
     if (!enabled) setOpen(false)
   }, [enabled])
+
+  useWattaNavDrawerOpenSync(enabled && isOpen)
 
   const value = useMemo<RightNavDrawerContextValue>(
     () => ({

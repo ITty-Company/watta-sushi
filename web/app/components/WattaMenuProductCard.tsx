@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { WATTA_CATALOG_REFRESH_EVENT } from '@/lib/wattaCatalogSync'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
 
@@ -21,6 +23,11 @@ export type WattaMenuProductCardModel = {
   /** Блок «Новинки» на /menu */
   isMenuNew?: boolean
   promoDiscountPercent?: number
+  /** Ціна зі знижкою кошика (upsell); якщо задано — показуємо compareAtPrice закресленим */
+  saleUnitPrice?: number
+  compareAtPrice?: number
+  /** Бейдж фіксованої знижки € */
+  cartFixedDiscountEur?: number
 }
 
 type Props = {
@@ -48,14 +55,39 @@ export function WattaMenuProductCard({
 }: Props) {
   const { t } = useLanguage()
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
-  const eff = effectiveUnitPrice(product.price, promoPct)
+  const catalogEff = effectiveUnitPrice(product.price, promoPct)
+  const eff =
+    product.saleUnitPrice != null && Number.isFinite(product.saleUnitPrice)
+      ? product.saleUnitPrice
+      : catalogEff
+  const oldPrice =
+    product.compareAtPrice != null && product.compareAtPrice > eff
+      ? product.compareAtPrice
+      : promoPct > 0
+        ? product.price
+        : null
+  const fixedOff = Number(product.cartFixedDiscountEur) || 0
   const emoji = product.emoji ?? '🍣'
   const orderLabel = t.menuView.fullMenuWant
   const [imageError, setImageError] = useState(false)
+  const [mediaEpoch, setMediaEpoch] = useState(0)
+  useEffect(() => {
+    const bump = () => setMediaEpoch((n) => n + 1)
+    window.addEventListener('productsUpdated', bump)
+    window.addEventListener(WATTA_CATALOG_REFRESH_EVENT, bump)
+    return () => {
+      window.removeEventListener('productsUpdated', bump)
+      window.removeEventListener(WATTA_CATALOG_REFRESH_EVENT, bump)
+    }
+  }, [])
   useEffect(() => {
     setImageError(false)
-  }, [product.id, product.imageUrl])
-  const showPhoto = Boolean(product.imageUrl) && !imageError
+  }, [product.id, product.imageUrl, mediaEpoch])
+  const photoSrc = useMemo(
+    () => resolveCatalogMediaUrl(product.imageUrl),
+    [product.imageUrl, mediaEpoch],
+  )
+  const showPhoto = Boolean(photoSrc) && !imageError
 
   const pillNew =
     'rounded-lg bg-[#e8f6f0] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
@@ -68,7 +100,8 @@ export function WattaMenuProductCard({
     <div className="pointer-events-none absolute left-2 top-2 z-[2] flex max-w-[calc(100%-1rem)] flex-wrap gap-1">
       {product.isMenuNew ? <span className={pillNew}>{t.productDetail.badgeNew}</span> : null}
       {product.isTop ? <span className={pillHit}>{t.popular}</span> : null}
-      {promoPct > 0 ? <span className={pillPromo}>−{promoPct}%</span> : null}
+      {fixedOff > 0 ? <span className={pillPromo}>−{fixedOff} €</span> : null}
+      {fixedOff <= 0 && promoPct > 0 ? <span className={pillPromo}>−{promoPct}%</span> : null}
     </div>
   )
 
@@ -83,7 +116,7 @@ export function WattaMenuProductCard({
       >
         {showPhoto ? (
           <img
-            src={product.imageUrl}
+            src={photoSrc ?? undefined}
             alt=""
             className="home-menu-product-card-img-web h-full w-full object-cover"
             decoding="async"
@@ -121,8 +154,8 @@ export function WattaMenuProductCard({
 
         <div className="home-menu-product-card-footer-web">
           <div className="home-menu-product-price-stack-web">
-            {promoPct > 0 ? (
-              <span className="home-menu-product-price-old-web">{product.price} €</span>
+            {oldPrice != null ? (
+              <span className="home-menu-product-price-old-web">{oldPrice} €</span>
             ) : null}
             <span className="home-menu-product-price-web">{eff} €</span>
           </div>

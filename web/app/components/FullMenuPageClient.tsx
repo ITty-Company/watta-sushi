@@ -6,20 +6,24 @@ import toast from 'react-hot-toast'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { useLanguage } from '../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
-import { fetchPublicApi } from '@/lib/publicApiFetch'
+import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
-import { bindHeroVideoMirrorToCanvas } from '@/lib/heroVideoMirrorToCanvas'
-import { getHeroVideoTouchLikeViewport, subscribeHeroVideoNativeOnDesktop } from '@/lib/heroVideoNativeDesktop'
+import { getHeroVideoTouchLikeViewport } from '@/lib/heroVideoNativeDesktop'
 import { WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
+import { menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
+import { productGalleryFromApi } from '@/lib/productGallery'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { MenuHighlightStack } from './MenuHighlightStack'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
+import WelcomeHeroSection from './WelcomeHeroSection'
+import DeliveryHeroCopy from './DeliveryHeroCopy'
 
 interface MenuItem {
   id: number
@@ -82,7 +86,6 @@ export default function FullMenuPageClient() {
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)
-  const heroVideoCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const heroVideoSrc =
     WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES[heroVideoSourceIndex] ??
     WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES[0]
@@ -120,7 +123,7 @@ export default function FullMenuPageClient() {
             categorySlug: normMenuSlug(rawSlug),
             categoryId: Number(p.categoryId) || Number(cat?.id) || 0,
             emoji: '🍣',
-            imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+            imageUrl: productGalleryFromApi(p)[0] || (typeof p.imageUrl === 'string' ? p.imageUrl : undefined),
             isTop: p.isPopular === true,
             isHomeHit: p.isHomeHit === true,
             isMenuNew: p.isMenuNew === true,
@@ -174,16 +177,60 @@ export default function FullMenuPageClient() {
     }
   }, [language, t.categories])
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (fresh = false) => {
+    const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
+    const hasCity = cityId != null && cityId > 0
+    const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
+    const cacheKey = menuItemsSessionKey(cityId)
+    const CACHE_TTL = 5 * 60 * 1000
+    const now = Date.now()
+    const fetchFn = fresh ? fetchPublicApiFresh : fetchPublicApi
+
+    if (!fresh && typeof sessionStorage !== 'undefined') {
+      const cached = sessionStorage.getItem(cacheKey)
+      const cacheTime = sessionStorage.getItem(`${cacheKey}_time`)
+      if (cached && cacheTime) {
+        try {
+          const data = JSON.parse(cached)
+          if (Array.isArray(data) && data.length > 0) {
+            setItems(mapProductsToItems(data))
+            setLoading(false)
+            if (now - parseInt(cacheTime, 10) < CACHE_TTL) {
+              void (async () => {
+                try {
+                  const res = await fetchFn(scopedUrl)
+                  if (!res.ok) return
+                  const body: unknown = await res.json()
+                  let list = coerceProductsArray(body)
+                  if (hasCity && list.length === 0) {
+                    const fallback = await fetchFn(getApiUrl('/api/products'))
+                    if (fallback.ok) {
+                      list = coerceProductsArray(await fallback.json())
+                    }
+                  }
+                  if (list.length > 0) {
+                    sessionStorage.setItem(cacheKey, JSON.stringify(list))
+                    sessionStorage.setItem(`${cacheKey}_time`, String(Date.now()))
+                    setItems(mapProductsToItems(list))
+                  }
+                } catch {
+                  /* keep cached list */
+                }
+              })()
+              return
+            }
+          }
+        } catch {
+          /* damaged cache */
+        }
+      }
+    }
+
     setLoading(true)
     try {
-      const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
-      const hasCity = cityId != null && cityId > 0
-      const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
-
       const fetchProductList = async (url: string): Promise<unknown[]> => {
         try {
-          const res = await fetchPublicApi(url)
+          const res = await fetchFn(url)
           if (!res.ok) return []
           const body: unknown = await res.json()
           return coerceProductsArray(body)
@@ -194,11 +241,15 @@ export default function FullMenuPageClient() {
 
       let list = await fetchProductList(scopedUrl)
       if (list.length === 0) {
-        await new Promise((r) => setTimeout(r, 400))
+        await new Promise((r) => setTimeout(r, 80))
         list = await fetchProductList(scopedUrl)
       }
       if (hasCity && list.length === 0) {
         list = await fetchProductList(getApiUrl('/api/products'))
+      }
+      if (typeof sessionStorage !== 'undefined' && list.length > 0) {
+        sessionStorage.setItem(cacheKey, JSON.stringify(list))
+        sessionStorage.setItem(`${cacheKey}_time`, String(Date.now()))
       }
       setItems(mapProductsToItems(list))
     } catch {
@@ -233,44 +284,28 @@ export default function FullMenuPageClient() {
   useEffect(() => {
     if (heroVideoFailed) return
     const video = heroVideoRef.current
-    const canvas = heroVideoCanvasRef.current
-    if (!video || !canvas) return
+    if (!video) return
     const stack = video.closest('.welcome-hero-video-stack-web')
-    let offMirror: () => void = () => {}
-    const armMirror = (preferNative: boolean) => {
-      offMirror()
-      offMirror = () => {}
-      if (!preferNative) {
-        offMirror = bindHeroVideoMirrorToCanvas(video, canvas)
-      }
-    }
-    const unsubNative = subscribeHeroVideoNativeOnDesktop(armMirror)
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
       blockInteractionRoot:
         !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
+      loop: WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES.length <= 1,
     })
-    return () => {
-      unsubNative()
-      offMirror()
-      offAutoplay()
-    }
+    return () => offAutoplay()
   }, [heroVideoSrc, heroVideoFailed])
+
+  useWattaCatalogSync(() => {
+    void loadProducts(true)
+    void loadCategories()
+  }, ['products', 'categories'])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const onProducts = () => void loadProducts()
-    const onCity = () => void loadProducts()
-    const onCat = () => void loadCategories()
-    window.addEventListener('productsUpdated', onProducts)
+    const onCity = () => void loadProducts(true)
     window.addEventListener('cityChanged', onCity)
-    window.addEventListener('categoriesUpdated', onCat)
-    return () => {
-      window.removeEventListener('productsUpdated', onProducts)
-      window.removeEventListener('cityChanged', onCity)
-      window.removeEventListener('categoriesUpdated', onCat)
-    }
-  }, [loadProducts, loadCategories])
+    return () => window.removeEventListener('cityChanged', onCity)
+  }, [loadProducts])
 
   const itemsBySlug = useMemo(() => {
     const m = new Map<string, MenuItem[]>()
@@ -413,23 +448,54 @@ export default function FullMenuPageClient() {
   }, [visibleCategories, scrollPadTotal])
 
   const scrollToCategory = useCallback((slug: string) => {
-    const targetId = slug === FULL_MENU_ALL_SLUG ? 'full-menu-page-start' : `full-menu-section-${slug}`
-    const el = document.getElementById(targetId)
-    if (!el) return
+    const findTarget = (): HTMLElement | null => {
+      if (slug === FULL_MENU_ALL_SLUG) {
+        return document.getElementById('full-menu-page-start')
+      }
+      const byId = document.getElementById(`full-menu-section-${slug}`)
+      if (byId) return byId
+      const norm = normMenuSlug(slug)
+      if (norm !== slug) {
+        const byNormId = document.getElementById(`full-menu-section-${norm}`)
+        if (byNormId) return byNormId
+      }
+      const safe =
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(slug) : slug
+      return (
+        document.querySelector<HTMLElement>(`[data-full-menu-cat="${safe}"]`) ??
+        (norm !== slug
+          ? document.querySelector<HTMLElement>(
+              `[data-full-menu-cat="${typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(norm) : norm}"]`,
+            )
+          : null)
+      )
+    }
 
-    scrollLockRef.current = true
-    window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
+    const scrollEl = (el: HTMLElement) => {
+      scrollLockRef.current = true
+      window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
 
-    const scroller = (document.scrollingElement as HTMLElement | null) ?? document.documentElement
-    const marginRaw = typeof getComputedStyle !== 'undefined' ? getComputedStyle(el).scrollMarginTop : ''
-    const marginParsed = Number.parseFloat(marginRaw)
-    const margin = Number.isFinite(marginParsed) ? marginParsed : FULL_MENU_STICKY_RESERVE_PX
-    const top = el.getBoundingClientRect().top + scroller.scrollTop - margin
-    scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+      const scroller = (document.scrollingElement as HTMLElement | null) ?? document.documentElement
+      const marginRaw = typeof getComputedStyle !== 'undefined' ? getComputedStyle(el).scrollMarginTop : ''
+      const marginParsed = Number.parseFloat(marginRaw)
+      const margin = Number.isFinite(marginParsed) ? marginParsed : FULL_MENU_STICKY_RESERVE_PX
+      const top = el.getBoundingClientRect().top + scroller.scrollTop - margin
+      scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
 
-    window.setTimeout(() => {
-      scrollLockRef.current = false
-    }, 700)
+      window.setTimeout(() => {
+        scrollLockRef.current = false
+      }, 700)
+    }
+
+    const el = findTarget()
+    if (el) {
+      scrollEl(el)
+      return
+    }
+    requestAnimationFrame(() => {
+      const late = findTarget()
+      if (late) scrollEl(late)
+    })
   }, [])
 
   useEffect(() => {
@@ -441,6 +507,24 @@ export default function FullMenuPageClient() {
     window.addEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
     return () => window.removeEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
   }, [scrollToCategory])
+
+  /** Перехід на `/menu?cat=` з іншої сторінки: після завантаження каталогу — одразу до секції. */
+  useEffect(() => {
+    if (loading || visibleCategories.length === 0) return
+    let urlCat: string | null = null
+    try {
+      urlCat = new URLSearchParams(window.location.search).get('cat')?.trim() || null
+    } catch {
+      return
+    }
+    if (!urlCat || urlCat === FULL_MENU_ALL_SLUG) return
+    if (!visibleCategories.some((c) => normMenuSlug(c.slug) === normMenuSlug(urlCat!))) return
+    const id = requestAnimationFrame(() => {
+      if (scrollLockRef.current) return
+      scrollToCategory(urlCat!)
+    })
+    return () => cancelAnimationFrame(id)
+  }, [loading, visibleCategories, scrollToCategory])
 
   const addToCart = useCallback(
     (item: MenuItem | { id: number }) => {
@@ -477,118 +561,67 @@ export default function FullMenuPageClient() {
     [items],
   )
 
-  const menuHitItems = useMemo(
-    () =>
-      items
-        .filter((i) => i.isHomeHit === true && i.allowRecommendations !== false)
-        .sort((a, b) => (a.recommendOrder ?? 0) - (b.recommendOrder ?? 0)),
-    [items],
+  const showHighlightStacks = menuNewItems.length > 0
+
+  const fullMenuHeroBlock = (
+    <div
+      className={`watta-full-menu-intro flex min-h-0 shrink-0 flex-col ${showHighlightStacks ? 'mb-3 sm:mb-4' : 'mb-0'} min-[1025px]:mb-3`}
+    >
+        <WelcomeHeroSection
+          heroVideoFailed={heroVideoFailed}
+          setHeroVideoSourceIndex={setHeroVideoSourceIndex}
+          setHeroVideoFailed={setHeroVideoFailed}
+          heroVideoRef={heroVideoRef}
+          heroVideoSrc={heroVideoSrc}
+          videoSources={WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES}
+          playlistLength={WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES.length}
+          ariaLabel={`${mv.fullMenuIntroHeadlineLead} — ${mv.fullMenuIntroHeadlineMark}`}
+        >
+          <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
+            <WattaHeroMarqueeBar />
+          </div>
+      </WelcomeHeroSection>
+    </div>
   )
 
-  const menuPromoItems = useMemo(
-    () =>
-      items
-        .filter((i) => (i.promoDiscountPercent ?? 0) > 0)
-        .sort((a, b) => (b.promoDiscountPercent ?? 0) - (a.promoDiscountPercent ?? 0)),
-    [items],
+  const fullMenuIntroBlock = (
+    <section
+      id="menu-page-after-hero-intro"
+      className="home-after-hero-intro-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0"
+      aria-labelledby="menu-page-after-hero-intro-title"
+    >
+      <div className="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu relative z-[1] mx-auto max-w-7xl px-6 pb-5 pt-6 sm:px-9 sm:pb-6 sm:pt-7 md:px-12 md:pb-8">
+        <DeliveryHeroCopy
+          titleId="menu-page-after-hero-intro-title"
+          kicker={mv.fullMenuIntroKicker}
+          kickerScript={mv.fullMenuIntroKickerScript}
+          headlineLead={mv.fullMenuIntroHeadlineLead}
+          headlineMark={mv.fullMenuIntroHeadlineMark}
+          sub={mv.fullMenuIntroSub}
+          statFresh={mv.fullMenuIntroStatFresh}
+          statFast={mv.fullMenuIntroStatHits}
+          statCity={mv.fullMenuIntroStatOrder}
+        />
+      </div>
+    </section>
   )
-
-  const showHighlightStacks =
-    menuNewItems.length > 0 || menuHitItems.length > 0 || menuPromoItems.length > 0
 
   return (
     <div className="watta-full-menu-page menu-page-web watta-page-bg flex min-h-0 w-full max-w-[100vw] min-w-0 flex-1 flex-col">
       <div
-        className={`watta-full-menu-intro flex min-h-0 shrink-0 flex-col ${showHighlightStacks ? 'mb-3 sm:mb-4' : 'mb-0'} min-[1025px]:mb-3`}
+        className={`watta-full-menu-top-stack w-full shrink-0 ${isNarrowViewport ? 'watta-full-menu-top-stack--intro-first' : ''}`}
       >
-        <section
-          className="welcome-hero-section-web menu-snap-section-welcome-web menu-welcome-hero-tight-web"
-          aria-label={mv.fullMenuTitle}
-        >
-          <div className="welcome-hero-video-fill-web">
-            {heroVideoFailed ? (
-              <div className="welcome-hero-video-fail-wrap-web relative h-full w-full min-h-0 shrink-0">
-                <div
-                  className="welcome-video-native-web welcome-hero-fallback-image-web"
-                  style={{ backgroundImage: "url('/watta-sushi.jpg')" }}
-                  role="img"
-                  aria-hidden
-                />
-                <div
-                  className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full"
-                >
-                  <WattaHeroMarqueeBar />
-                </div>
-              </div>
-            ) : (
-              <div className="welcome-hero-video-stack-web h-full w-full min-h-0">
-                <video
-                  key={heroVideoSrc}
-                  ref={heroVideoRef}
-                  className="welcome-video-native-web welcome-hero-video-source-for-canvas-web"
-                  src={heroVideoSrc}
-                  poster="/watta-sushi.jpg"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  controls={false}
-                  disablePictureInPicture
-                  disableRemotePlayback
-                  preload="auto"
-                  // @ts-expect-error fetchPriority для Chromium
-                  fetchPriority="high"
-                  tabIndex={-1}
-                  aria-hidden
-                  onContextMenu={(e) => e.preventDefault()}
-                  onError={() => {
-                    setHeroVideoSourceIndex((prev) => {
-                      if (prev < WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES.length - 1) return prev + 1
-                      setHeroVideoFailed(true)
-                      return prev
-                    })
-                  }}
-                  onEnded={(e) => {
-                    const el = e.currentTarget
-                    el.currentTime = 0
-                    void el.play()
-                  }}
-                />
-                <canvas
-                  ref={heroVideoCanvasRef}
-                  className="welcome-hero-video-canvas-mirror-web"
-                  aria-hidden
-                />
-                <div
-                  className="welcome-hero-video-input-shield-web"
-                  aria-hidden
-                  role="presentation"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                  }}
-                  onAuxClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                  }}
-                  onDoubleClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                  }}
-                />
-                <div
-                  className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full"
-                >
-                  <WattaHeroMarqueeBar />
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+        {isNarrowViewport ? (
+          <>
+            {fullMenuIntroBlock}
+            {fullMenuHeroBlock}
+          </>
+        ) : (
+          <>
+            {fullMenuHeroBlock}
+            {fullMenuIntroBlock}
+          </>
+        )}
       </div>
 
       {showHighlightStacks ? (
@@ -606,26 +639,6 @@ export default function FullMenuPageClient() {
             onAddToCart={addToCart}
             layout={highlightLayout}
           />
-          <MenuHighlightStack
-            title={cf.sectionRecommendedTitle}
-            lead={cf.sectionRecommendedLead}
-            ariaLabel={cf.recommendedStripAria}
-            items={menuHitItems}
-            weightFallback={wf}
-            piecesFallback={pf}
-            onAddToCart={addToCart}
-            layout={highlightLayout}
-          />
-          <MenuHighlightStack
-            title={cf.sectionPromoTitle}
-            lead={cf.sectionPromoLead}
-            ariaLabel={cf.promoStripAria}
-            items={menuPromoItems}
-            weightFallback={wf}
-            piecesFallback={pf}
-            onAddToCart={addToCart}
-            layout={highlightLayout}
-          />
         </div>
       ) : null}
 
@@ -635,19 +648,10 @@ export default function FullMenuPageClient() {
         className="relative z-[1] w-full max-w-[100vw] shrink-0"
       >
         <section
-          className="home-menu-catalog-section-web home-full-menu-catalog-web watta-full-menu-catalog-reveal-web relative z-[2] w-full max-w-[100vw] px-4 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-8 md:px-8 md:pb-14"
-          aria-labelledby="full-menu-page-heading"
+          className="home-menu-catalog-section-web home-full-menu-catalog-web watta-full-menu-catalog-reveal-web relative z-[2] w-full max-w-[100vw] px-4 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-6 md:px-8 md:pb-14"
+          aria-labelledby="menu-page-after-hero-intro-title"
         >
           <div className="home-menu-catalog-stack-web relative z-[1] mx-auto w-full max-w-[1800px]">
-            <header className="home-full-menu-catalog-head-web">
-              <h1 id="full-menu-page-heading" className="home-full-menu-catalog-title-web">
-                {mv.fullMenuTitle}
-              </h1>
-              <p className="mx-auto mt-3 max-w-[40rem] px-2 text-center text-sm font-medium leading-relaxed text-[#145142]/72 sm:text-base">
-                {mv.fullMenuSub}
-              </p>
-            </header>
-
             {loading ? (
               <div className="home-menu-cat-list-web pb-4" aria-busy="true" aria-live="polite">
                 <p className="sr-only">{mv.fullMenuLoading}</p>

@@ -18,6 +18,8 @@ type Props = {
 export default function WattaSiteStickyChrome({ flowHeightFudgePx = 12 }: Props) {
   const router = useRouter()
   const pathname = usePathname() || '/'
+  /** /cart: трохи менший резерв під fixed chrome — менший зазор до «Кошик». */
+  const chromeFlowFudgePx = pathname === '/cart' ? Math.max(flowHeightFudgePx, 16) : flowHeightFudgePx
   const [homeDeliveryEmbed, setHomeDeliveryEmbed] = useState(false)
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export default function WattaSiteStickyChrome({ flowHeightFudgePx = 12 }: Props)
   }, [])
 
   return (
-    <WattaStickyChromeLayout chromeClassName="watta-full-menu-sticky-chrome" flowHeightFudgePx={flowHeightFudgePx}>
+    <WattaStickyChromeLayout chromeClassName="watta-full-menu-sticky-chrome" flowHeightFudgePx={chromeFlowFudgePx}>
       <WattaGlobalSiteHeader
         disableSticky
         onCityChange={onCityChange}

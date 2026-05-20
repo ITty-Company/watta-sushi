@@ -14,6 +14,8 @@ import {
 type DeliveryWelcomeHeroSectionProps = {
   sectionRef?: Ref<HTMLElement>
   embedInMenu?: boolean
+  /** У двоколонковому hero /delivery (планшет): contain-відео в split-панелі */
+  splitPanel?: boolean
   heroVideoFailed: boolean
   setHeroVideoSourceIndex: React.Dispatch<React.SetStateAction<number>>
   setHeroVideoFailed: React.Dispatch<React.SetStateAction<boolean>>
@@ -27,6 +29,7 @@ type DeliveryWelcomeHeroSectionProps = {
 export default function DeliveryWelcomeHeroSection({
   sectionRef,
   embedInMenu = false,
+  splitPanel = false,
   heroVideoFailed,
   setHeroVideoSourceIndex,
   setHeroVideoFailed,
@@ -72,7 +75,9 @@ export default function DeliveryWelcomeHeroSection({
   return (
     <section
       ref={sectionRef}
-      className={`watta-home-hero-as-card-web welcome-hero-section-web menu-snap-section-welcome-web menu-welcome-hero-tight-web shrink-0${embedInMenu ? '' : ' delivery-page-hero-standalone-web'}`}
+      className={`watta-home-hero-as-card-web welcome-hero-section-web menu-snap-section-welcome-web menu-welcome-hero-tight-web shrink-0${
+        embedInMenu ? ' delivery-page-hero-embed-web' : ' delivery-page-hero-standalone-web'
+      }${splitPanel ? ' delivery-page-hero-split-panel-web' : ''}`}
       aria-label={t.siteAria.heroVideo}
     >
       <div className="welcome-hero-video-fill-web">
@@ -91,10 +96,14 @@ export default function DeliveryWelcomeHeroSection({
             className={`welcome-hero-video-stack-web${heroFrameReady ? ' watta-hero-video--ready' : ''}`}
             style={{
               backgroundColor: WATTA_HERO_OCEAN_GRADIENT,
-              backgroundImage: `url('${WATTA_DELIVERY_HERO_POSTER}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center 18%',
-              backgroundRepeat: 'no-repeat',
+              ...(heroFrameReady
+                ? {}
+                : {
+                    backgroundImage: `url('${WATTA_DELIVERY_HERO_POSTER}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center center',
+                    backgroundRepeat: 'no-repeat',
+                  }),
             }}
           >
             <video
@@ -104,7 +113,7 @@ export default function DeliveryWelcomeHeroSection({
               width={1920}
               height={1080}
               src={heroVideoSrc}
-              poster={WATTA_DELIVERY_HERO_POSTER}
+              poster={heroFrameReady ? undefined : WATTA_DELIVERY_HERO_POSTER}
               autoPlay
               muted
               loop={heroVideoLoop}

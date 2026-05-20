@@ -59,18 +59,28 @@ import {
 import type { Language } from '../context/LanguageContext'
 import AuthHeroPhonesAdminSection from './admin/AuthHeroPhonesAdminSection'
 import { parseDeliveryHeroVideoUrlsFromApi } from '@/lib/deliveryHeroVideoSettings'
+import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
 import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaAuthHeroVideo'
 import { uploadHomeHeroVideoFile } from '@/lib/uploadHomeHeroVideo'
 import { WATTA_HOME_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaHeroVideo'
 import { WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaDeliveryHeroVideo'
 import { productGalleryFromApi } from '@/lib/productGallery'
+import {
+  adminProductCoverSrc,
+  adminProductPreviewSrc,
+  normalizeAdminProductRow,
+} from '@/lib/adminProductMedia'
+import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { isAdminRole } from '@/lib/isAdminRole'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
+import AdminReviewsPanel, { type AdminReviewRow } from './admin/AdminReviewsPanel'
+import AdminCartUpsellPanel from './admin/AdminCartUpsellPanel'
+import AdminCustomersPanel from './admin/AdminCustomersPanel'
+import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
 
 function notifyCountriesCatalogUpdated() {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('countriesCatalogUpdated'))
-  }
+  broadcastWattaCatalogUpdate('countries')
 }
 
 // --- ТИПЫ ДАННЫХ (ИСПРАВЛЕНО ПОД 4 ЯЗЫКА) ---
@@ -332,7 +342,10 @@ function AdminHeroVideoPreview({
         className="admin-hero-video-preview-missing"
       >
         <span className="font-semibold text-[#145142]/85">Відео на сервері недоступне</span>
-        <span>Завантажте файл знову або збережіть нове відео</span>
+        <span>
+          Файл відсутній (часто після redeploy на Render). Натисніть «Завантажити» і «Зберегти» знову; на
+          проді увімкніть Persistent Disk і UPLOAD_DIR.
+        </span>
         {savedUrl ? (
           <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>
             {savedUrl}
@@ -342,15 +355,17 @@ function AdminHeroVideoPreview({
     )
   }
 
+  const resolvedSrc = resolveUploadMediaUrl(previewSrc) ?? previewSrc
+
   return (
     <video
-      key={previewSrc}
-      src={previewSrc}
+      key={resolvedSrc}
+      src={resolvedSrc}
       className="aspect-video w-full bg-black object-cover"
       controls
       muted
       playsInline
-      preload="none"
+      preload="metadata"
       onError={() => setBroken(true)}
     />
   )
@@ -402,6 +417,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     | 'promos'
     | 'promotions'
     | 'blog'
+    | 'reviews'
     | 'crm'
     | 'cities'
     | 'banners'
@@ -411,12 +427,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     | 'settings'
     | 'newsletter'
     | 'ingredients'
+    | 'cartUpsell'
   >('dashboard')
   
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [promos, setPromos] = useState<PromoCode[]>([]) // Промокоды
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
+  const [adminReviews, setAdminReviews] = useState<AdminReviewRow[]>([])
   const [cities, setCities] = useState<City[]>([]) // Города
   const [countries, setCountries] = useState<any[]>([]) // Страны
   const [banners, setBanners] = useState<Banner[]>([]) // Баннеры
@@ -747,20 +765,29 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             loadedTabsRef.current.add('orders')
             break
           }
+          case 'cartUpsell':
           case 'products': {
-            const [prodRes, catRes] = await Promise.all([
-              fetch('/api/products', { headers }),
+            const [prodRes, catRes, ingredientsRes] = await Promise.all([
+              fetchPublicApiFresh('/api/products', { headers }),
               fetch('/api/products/categories', { headers }),
+              fetch('/api/ingredients', { headers }),
             ])
             if (prodRes.ok) {
               const productsData = await prodRes.json()
-              setProducts(Array.isArray(productsData) ? productsData : [])
+              const list = Array.isArray(productsData) ? productsData : []
+              setProducts(list.map((row) => normalizeAdminProductRow(row as Product)))
             } else setProducts([])
             if (catRes.ok) {
               const c = await catRes.json()
               setMenuCategories(c)
             }
+            if (ingredientsRes.ok) {
+              const ingList = await ingredientsRes.json()
+              setIngredients(Array.isArray(ingList) ? ingList : [])
+              loadedTabsRef.current.add('ingredients')
+            }
             loadedTabsRef.current.add('products')
+            loadedTabsRef.current.add('cartUpsell')
             break
           }
           case 'ingredients': {
@@ -804,6 +831,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             const blogRes = await fetch('/api/blog/all', { headers })
             if (blogRes.ok) setBlogPosts(await blogRes.json())
             loadedTabsRef.current.add('blog')
+            break
+          }
+          case 'reviews': {
+            const reviewsRes = await fetch('/api/reviews/all', { headers })
+            if (reviewsRes.ok) {
+              const data = await reviewsRes.json()
+              setAdminReviews(Array.isArray(data) ? data : [])
+            } else setAdminReviews([])
+            loadedTabsRef.current.add('reviews')
             break
           }
           case 'crm':
@@ -881,6 +917,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         fetchTabData('crm', { force: true }),
         fetchTabData('team', { force: true }),
         fetchTabData('blog', { force: true }),
+        fetchTabData('reviews', { force: true }),
         fetchTabData('ingredients', { force: true }),
         fetchTabData('menuCategories', { force: true }),
       ])
@@ -890,6 +927,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   }, [adminAuthHeaders, fetchTabData, onBack])
 
   const fetchData = fetchAll
+
+  useWattaCatalogSync(() => {
+    if (activeTab === 'products' || activeTab === 'cartUpsell') {
+      void fetchTabData('products', { force: true })
+    }
+  }, ['products', 'cartUpsell'])
 
   useEffect(() => {
     if (!editingCityId) {
@@ -1322,7 +1365,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         fetch('/api/promotions')
           .then((r) => r.json())
           .then(setNewsItems)
-        window.dispatchEvent(new Event('promotionsUpdated'))
+        broadcastWattaCatalogUpdate('promotions')
       } else toast.error(t.adminPage.common.updateError)
     } catch {
       toast.error(t.adminPage.common.networkError)
@@ -1335,7 +1378,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       const token = localStorage.getItem('token')
       await fetch(`/api/promotions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
       setNewsItems(newsItems.filter(p => p.id !== id))
-      window.dispatchEvent(new Event('promotionsUpdated'))
+      broadcastWattaCatalogUpdate('promotions')
     } catch { toast.error('Ошибка') }
   }
   const [editorLang, setEditorLang] = useState<'ru' | 'ua' | 'en' | 'nl'>('ru');
@@ -1411,12 +1454,28 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     })
   }
 
+  const loadIngredientsLibrary = async (headers: HeadersInit) => {
+    try {
+      const ingredientsRes = await fetch('/api/ingredients', { headers })
+      if (ingredientsRes.ok) {
+        const ingList = await ingredientsRes.json()
+        setIngredients(Array.isArray(ingList) ? ingList : [])
+        loadedTabsRef.current.add('ingredients')
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   const openCreateModal = async () => {
     setEditingId(null)
     // Загружаем города при открытии модального окна
     const token = localStorage.getItem('token')
     const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
-    const citiesRes = await fetch('/api/cities/all', { headers: adminHeaders })
+    const [citiesRes] = await Promise.all([
+      fetch('/api/cities/all', { headers: adminHeaders }),
+      loadIngredientsLibrary(adminHeaders),
+    ])
     if (citiesRes.ok) {
       const citiesData = await citiesRes.json()
       setCities(citiesData)
@@ -1446,7 +1505,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     const adminHeaders: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
     const [citiesRes, productRes] = await Promise.all([
       fetch('/api/cities/all', { headers: adminHeaders }),
-      fetch(`/api/products/${product.id}`)
+      fetch(`/api/products/${product.id}`),
+      loadIngredientsLibrary(adminHeaders),
     ])
     if (citiesRes.ok) {
       const citiesData = await citiesRes.json()
@@ -1533,7 +1593,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         fetchData()
         // Отправляем событие для обновления товаров в MenuView
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('productsUpdated'))
+          broadcastWattaCatalogUpdate('products')
         }
         toast.success(t.adminPage.products.deleted)
       } else {
@@ -1612,11 +1672,18 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       }
       
       if (res.ok) {
+        const saved = (await res.json()) as Product
+        const normalized = normalizeAdminProductRow(saved)
+        setProducts((prev) => {
+          if (editingId) {
+            return prev.map((p) => (p.id === editingId ? { ...p, ...normalized } : p))
+          }
+          return [...prev, normalized]
+        })
         setIsModalOpen(false)
-        fetchData()
-        // Отправляем событие для обновления товаров в MenuView (если нужно)
+        void fetchTabData('products', { force: true })
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('productsUpdated'))
+          broadcastWattaCatalogUpdate('products')
         }
         toast.success(t.adminPage.products.saved)
       } else {
@@ -2203,6 +2270,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       toast.success(blogForm.id ? 'Статья обновлена' : 'Статья создана')
       resetBlogForm()
       fetchData()
+      broadcastWattaCatalogUpdate('blog')
     } catch (error: any) {
       toast.error(error?.message || 'Ошибка сохранения статьи')
     }
@@ -2227,6 +2295,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       toast.success('Статья удалена')
       if (blogForm.id === id) resetBlogForm()
       fetchData()
+      broadcastWattaCatalogUpdate('blog')
     } catch (error: any) {
       toast.error(error?.message || 'Ошибка удаления статьи')
     }
@@ -2442,7 +2511,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         fetchData()
         // Отправляем событие для обновления баннеров в MenuView
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('bannersUpdated'))
+          broadcastWattaCatalogUpdate('banners')
         }
         toast.success('Баннер успешно сохранен!')
       } else {
@@ -2478,7 +2547,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         fetchData()
         // Отправляем событие для обновления баннеров в MenuView
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('bannersUpdated'))
+          broadcastWattaCatalogUpdate('banners')
         }
         toast.success('Баннер успешно удален!')
       } else {
@@ -2581,7 +2650,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         if (results.every((r) => r.ok)) {
           toast.success(t.adminPanel.common.bannerOrderSaved)
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('bannersUpdated'))
+            broadcastWattaCatalogUpdate('banners')
           }
           fetchData()
         } else {
@@ -2673,6 +2742,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         setIsTeamModalOpen(false)
         fetchData()
+        broadcastWattaCatalogUpdate('team')
         toast.success('Член команды успешно сохранен!')
       } else {
         let errorMessage = 'Ошибка при сохранении'
@@ -2856,7 +2926,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           // Небольшая задержка, чтобы убедиться, что данные сохранены в БД
           setTimeout(() => {
             console.log('Отправляем событие categoriesUpdated')
-            window.dispatchEvent(new CustomEvent('categoriesUpdated'))
+            broadcastWattaCatalogUpdate('categories')
           }, 200)
         }
         toast.success('Категория успешно сохранена!')
@@ -2894,7 +2964,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         // Отправляем событие для обновления категорий в MenuView
         if (typeof window !== 'undefined') {
           setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('categoriesUpdated'))
+            broadcastWattaCatalogUpdate('categories')
           }, 100)
         }
         toast.success('Категория успешно удалена!')
@@ -2931,10 +3001,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       
       if (res.ok) {
         toast.success('Настройки сохранены!')
-        // Отправляем событие, чтобы MenuView обновился без перезагрузки (если открыт в другой вкладке)
         if (typeof window !== 'undefined') {
-             window.localStorage.setItem('bannerInterval', settings.bannerInterval.toString())
+          window.localStorage.setItem('bannerInterval', settings.bannerInterval.toString())
         }
+        broadcastWattaCatalogUpdate('settings')
       } else {
         toast.error('Ошибка сохранения настроек')
       }
@@ -3552,11 +3622,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   { id: 'dashboard' as const, label: t.adminPanel.sidebar.dashboard, desc: t.adminPanel.sidebar.dashboardDesc },
                   { id: 'orders' as const, label: t.adminPanel.sidebar.orders, desc: t.adminPanel.sidebar.ordersDesc },
                   { id: 'products' as const, label: t.adminPanel.sidebar.products, desc: t.adminPanel.sidebar.productsDesc },
+                  { id: 'cartUpsell' as const, label: 'Кошик: знижки', desc: 'Пороги суми та товари зі знижкою' },
                   { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
                   { id: 'promotions' as const, label: t.adminPanel.news.title, desc: t.adminPanel.sidebar.promosDesc },
                   { id: 'blog' as const, label: 'Блог / Рецепты', desc: 'SEO статьи и рецепты шефа' },
+                  { id: 'reviews' as const, label: 'Відгуки', desc: 'Модерація відгуків клієнтів' },
                   { id: 'newsletter' as const, label: t.adminPanel.sidebar.newsletter, desc: 'Email рассылка' },
-                  { id: 'crm' as const, label: 'CRM / Рассылки', desc: 'Пользователи и массовые рассылки' },
+                  { id: 'crm' as const, label: 'CRM / База клиентов', desc: 'База клиентов, поиск и рассылки' },
                   { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
                   { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
                   { id: 'menuCategories' as const, label: t.adminPanel.sidebar.categories, desc: t.adminPanel.sidebar.categoriesDesc },
@@ -3822,6 +3894,16 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             </div>
           )}
           {/* === Вкладка: ТОВАРЫ === */}
+          {activeTab === 'cartUpsell' && (
+            <AdminCartUpsellPanel
+              products={products.map((p) => ({
+                id: p.id,
+                name_ru: p.name_ru,
+                price: Number(p.price),
+              }))}
+            />
+          )}
+
           {activeTab === 'products' && (
              <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
                 <button 
@@ -3832,12 +3914,19 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </button>
 
                 <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-                  {products.map(product => (
+                  {products.map((product) => {
+                    const coverSrc = adminProductCoverSrc(product)
+                    return (
                     <div key={product.id} className="admin-watta-hover-lift flex flex-col gap-3 border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-4 sm:rounded-[20px] sm:p-5 md:rounded-[25px] rounded-[16px] hover:border-[#145142]/20 hover:shadow-2xl">
                        {/* Картинка */}
                        <div className="w-full h-[150px] sm:h-[180px] md:h-[200px] bg-[#145142]/5 rounded-[12px] sm:rounded-[15px] overflow-hidden relative border border-[#145142]/10">
-                         {product.imageUrl ? (
-                           <img src={product.imageUrl} alt={product.name_ru} className="w-full h-full object-cover" />
+                         {coverSrc ? (
+                           <img
+                             key={coverSrc}
+                             src={coverSrc}
+                             alt={product.name_ru}
+                             className="w-full h-full object-cover"
+                           />
                          ) : (
                            <div className="w-full h-full flex items-center justify-center text-gray-300">
                              <ImageIcon size={32} className="sm:w-12 sm:h-12" />
@@ -3895,7 +3984,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                          </div>
                        </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 {products.length === 0 && (
                   <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-gray-500">
@@ -3910,9 +4000,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 <h2 className="text-2xl font-bold text-[#145142] mb-6">{t.adminPanel.ingredients.title}</h2>
                 
                 {/* Форма добавления */}
-                <div className="mb-8 rounded-2xl border border-white/60 bg-white/85 p-6 shadow-xl shadow-[#145142]/10 backdrop-blur-xl">
+                <div className="mb-8 rounded-2xl border border-[#145142]/15 bg-white p-6">
                   <h3 className="mb-4 font-bold text-[#145142]">{t.adminPanel.ingredients.addNew}</h3>
-                  <form onSubmit={handleCreateIngredient} className="flex flex-col sm:flex-row gap-4 items-end">
+                  <form onSubmit={handleCreateIngredient} className="relative z-0 flex flex-col gap-4 sm:flex-row sm:items-end">
                     
                     {/* Загрузка фото */}
                     <div className="w-24 h-24 flex-shrink-0 relative border-2 border-dashed border-gray-300 rounded-xl overflow-hidden hover:border-[#145142] transition cursor-pointer group">
@@ -3938,10 +4028,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         />
                     </div>
 
-                    <button   
-                      type="submit" 
+                    <button
+                      type="submit"
                       disabled={ingLoading}
-                      className="h-[50px] px-6 bg-[#145142] text-white rounded-xl font-bold hover:bg-[#103d34] transition"
+                      className="relative z-10 h-[50px] shrink-0 px-6 bg-[#145142] text-white rounded-xl font-bold shadow-none hover:bg-[#103d34] transition disabled:opacity-60"
                     >
                       {ingLoading ? '...' : t.adminPanel.ingredients.addBtn}
                     </button>
@@ -3949,7 +4039,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </div>
 
                 {/* Список существующих */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 sm:gap-4">
                   {ingredients.map(ing => (
                     <div key={ing.id} className="admin-watta-hover-lift relative flex flex-col items-center rounded-xl border border-white/60 bg-white/85 p-3 shadow-md shadow-[#145142]/8 backdrop-blur-sm group">
                         <button 
@@ -5287,6 +5377,27 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             </div>
           )}
 
+          {activeTab === 'reviews' && (
+            <div className="flex flex-col gap-6">
+              <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
+                <h2 className="mb-2 text-2xl font-bold text-[#145142]">Відгуки клієнтів</h2>
+                <p className="mb-6 text-sm text-gray-600">
+                  Редагування та видалення відгуків. Зміни одразу відображаються на сторінці /reviews.
+                </p>
+                <AdminReviewsPanel
+                  reviews={adminReviews}
+                  getAuthHeaders={adminAuthHeaders}
+                  onReload={async () => {
+                    await fetchTabData('reviews', { force: true })
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('reviewsUpdated'))
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* === Вкладка: ПРОМОКОДЫ === */}
           {activeTab === 'blog' && (
             <div className="flex flex-col gap-6">
@@ -5385,6 +5496,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
           {activeTab === 'crm' && (
             <div className="flex flex-col gap-6">
+              <AdminCustomersPanel />
+
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
                 <h2 className="mb-4 text-2xl font-bold text-[#145142]">Создать рассылку</h2>
                 <form onSubmit={handleSendCrmPromo} className="grid grid-cols-1 gap-4">
@@ -5732,7 +5845,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     className="w-full h-32 sm:h-40 overflow-hidden rounded-[12px] sm:rounded-[15px] border border-[#145142]/20 bg-[#f6faf7] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40"
                   >
                     <img
-                      src={formData.imageUrls[0]}
+                      src={adminProductPreviewSrc(formData.imageUrls[0])}
                       alt="Обкладинка"
                       className="h-full w-full object-cover"
                     />
@@ -5754,7 +5867,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       key={`${i}-${url.slice(0, 32)}`}
                       className="relative h-20 w-20 overflow-hidden rounded-lg border border-[#145142]/20 bg-white"
                     >
-                      <img src={url} alt="" className="h-full w-full object-cover" />
+                      <img
+                        src={adminProductPreviewSrc(url)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                       <span className="absolute bottom-0 left-0 right-0 bg-black/55 px-0.5 py-0.5 text-center text-[9px] font-bold text-white">
                         {i === 0 ? 'Меню' : i + 1}
                       </span>
@@ -6017,42 +6134,60 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   Ингредиенты (Состав)
                 </label>
                 
-                {/* Сетка ингредиентов */}
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-2 border rounded-xl bg-gray-50">
-                  {ingredients.map(ing => {
-                    // Проверяем, выбран ли ингредиент
-                    const isSelected = (formData as any).ingredientIds?.includes(ing.id);
-                    
-                    return (
-                      <div 
-                        key={ing.id}
-                        onClick={() => {
-                          const currentIds = (formData as any).ingredientIds || [];
-                          const newIds = isSelected 
-                            ? currentIds.filter((id: number) => id !== ing.id) // Убрать
-                            : [...currentIds, ing.id]; // Добавить
-                          setFormData(prev => ({ ...prev, ingredientIds: newIds }));
-                        }}
-                        className={`cursor-pointer rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all ${
-                          isSelected ? 'border-[#145142] bg-[#145142]/10' : 'border-transparent bg-white hover:shadow-md'
-                        }`}
-                      >
-                        <img src={ing.imageUrl} className="w-8 h-8 object-contain" alt={ing.name_ru} />
-                        <span className="text-[10px] text-center font-bold leading-tight">{ing.name_ru}</span>
-                      </div>
-                    )
-                  })}
+                <p className="mb-2 text-[11px] text-gray-500">
+                  Выберите из библиотеки (вкладка «Ингредиенты»). Нажмите на плитку, чтобы добавить или убрать.
+                </p>
+                <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto p-2 border border-[#145142]/15 rounded-xl bg-[#f6faf8] sm:max-h-64">
+                  {ingredients.length === 0 ? (
+                    <p className="col-span-4 py-4 text-center text-xs text-gray-500">
+                      Сначала добавьте ингредиенты во вкладке «Ингредиенты».
+                    </p>
+                  ) : (
+                    ingredients.map((ing) => {
+                      const isSelected = formData.ingredientIds?.includes(ing.id)
+                      return (
+                        <button
+                          key={ing.id}
+                          type="button"
+                          onClick={() => {
+                            const currentIds = formData.ingredientIds || []
+                            const newIds = isSelected
+                              ? currentIds.filter((id: number) => id !== ing.id)
+                              : [...currentIds, ing.id]
+                            setFormData((prev) => ({ ...prev, ingredientIds: newIds }))
+                          }}
+                          className={`aspect-square cursor-pointer rounded-xl p-1.5 flex flex-col items-center justify-center gap-1 border-2 transition-all ${
+                            isSelected
+                              ? 'border-[#145142] bg-[#145142]/12 ring-1 ring-[#145142]/25'
+                              : 'border-[#145142]/10 bg-white hover:border-[#145142]/30'
+                          }`}
+                        >
+                          <img
+                            src={ing.imageUrl}
+                            className="h-8 w-8 object-contain sm:h-9 sm:w-9"
+                            alt={ing.name_ru}
+                          />
+                          <span className="line-clamp-2 w-full text-[9px] text-center font-bold leading-tight text-[#145142] sm:text-[10px]">
+                            {ing.name_ru}
+                          </span>
+                        </button>
+                      )
+                    })
+                  )}
                 </div>
+                {formData.ingredientIds.length > 0 ? (
+                  <p className="mt-1.5 text-[11px] font-medium text-[#145142]/70">
+                    Выбрано: {formData.ingredientIds.length}
+                  </p>
+                ) : null}
               </div>
-              <button 
-                type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
+              <button
+                type="submit"
+                className="relative z-20 w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
               >
                 {editingId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
             </form>
-            {/* Продолжение тени и фона при прокрутке вниз */}
-            <div className="sticky bottom-0 left-0 right-0 h-12 -mb-12 bg-gradient-to-b from-transparent via-white/80 to-white/80 pointer-events-none z-10 rounded-b-[20px] sm:rounded-b-[25px]"></div>
           </div>
         </div>
       )}

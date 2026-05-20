@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -142,6 +143,107 @@ router.post('/', async (req: Request, res: Response) => {
     }
     console.error('review create error:', error);
     res.status(500).json({ message: 'Не вдалося зберегти відгук' });
+  }
+});
+
+/** Адмін: усі відгуки */
+router.get('/all', checkAdmin, async (_req: Request, res: Response) => {
+  try {
+    const rows = await prisma.orderReview.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        order: { select: { id: true, status: true } },
+      },
+    });
+    res.json(
+      rows.map((r) => ({
+        id: r.id,
+        orderId: r.orderId,
+        userId: r.userId,
+        rating: r.rating,
+        text: r.text,
+        images: normalizeImages(r.images as unknown),
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        authorName: r.user?.name ?? '—',
+        authorEmail: r.user?.email ?? '',
+        orderStatus: r.order?.status ?? '',
+      }))
+    );
+  } catch (error) {
+    console.error('reviews admin list error:', error);
+    res.status(500).json({ message: 'Помилка завантаження відгуків' });
+  }
+});
+
+/** Адмін: редагувати відгук */
+router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ message: 'Невірний id' });
+      return;
+    }
+    const { rating, text } = req.body;
+    const data: { rating?: number; text?: string } = {};
+    if (rating !== undefined) {
+      const r = Number(rating);
+      if (!Number.isFinite(r) || r < 1 || r > 5) {
+        res.status(400).json({ message: 'Оцінка від 1 до 5' });
+        return;
+      }
+      data.rating = Math.round(r);
+    }
+    if (text !== undefined) {
+      const txt = String(text).trim();
+      if (txt.length < 3) {
+        res.status(400).json({ message: 'Текст занадто короткий' });
+        return;
+      }
+      if (txt.length > 4000) {
+        res.status(400).json({ message: 'Текст занадто довгий' });
+        return;
+      }
+      data.text = txt;
+    }
+    if (Object.keys(data).length === 0) {
+      res.status(400).json({ message: 'Немає полів для оновлення' });
+      return;
+    }
+    const updated = await prisma.orderReview.update({
+      where: { id },
+      data,
+    });
+    res.json(updated);
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      res.status(404).json({ message: 'Відгук не знайдено' });
+      return;
+    }
+    console.error('review update error:', error);
+    res.status(500).json({ message: 'Не вдалося оновити відгук' });
+  }
+});
+
+/** Адмін: видалити відгук */
+router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ message: 'Невірний id' });
+      return;
+    }
+    await prisma.orderReview.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      res.status(404).json({ message: 'Відгук не знайдено' });
+      return;
+    }
+    console.error('review delete error:', error);
+    res.status(500).json({ message: 'Не вдалося видалити відгук' });
   }
 });
 

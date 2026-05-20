@@ -1933,6 +1933,35 @@ html.watta-light-chrome {
   position: relative;
   z-index: 0;
   flex-shrink: 0;
+  /* При скролі до футера — не ховати під fixed шапку + категорії */
+  scroll-margin-top: calc(
+    var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)) +
+      env(safe-area-inset-top, 0px) + 6px
+  );
+  scroll-margin-bottom: var(
+    --watta-floating-fab-clearance,
+    calc(4.75rem + env(safe-area-inset-bottom, 0px))
+  );
+}
+
+/* Скрол сторінки: відступи під fixed chrome зверху та FAB знизу */
+html.watta-light-chrome:has(.watta-sticky-chrome-flow-anchor) {
+  scroll-padding-top: calc(
+    var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)) +
+      env(safe-area-inset-top, 0px) + 6px
+  );
+}
+
+html.watta-light-chrome:has(.floating-contact-buttons-root) {
+  scroll-padding-bottom: var(
+    --watta-floating-fab-clearance,
+    calc(4.75rem + env(safe-area-inset-bottom, 0px))
+  );
+}
+
+/* Контент перед футером — невеликий зазор; FAB не перекриває останні рядки при скролі */
+.watta-app-shell-root > main > div:has(+ .site-footer-watta) {
+  padding-bottom: clamp(0.35rem, 1.2vh, 0.85rem);
 }
 
 /*
@@ -1944,7 +1973,8 @@ html.watta-light-chrome {
   z-index: 50;
 }
 
-.watta-sticky-chrome-flow-anchor > .fixed {
+.watta-sticky-chrome-flow-anchor > .fixed,
+body > .watta-sticky-chrome-portal {
   z-index: 200;
 }
 
@@ -2934,56 +2964,85 @@ html.watta-light-chrome body {
   margin-bottom: 0 !important;
 }
 
+/* /menu: герой-картка як на головній — не на весь екран */
 .watta-full-menu-page.menu-page-web
-  .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 1 auto !important;
-  min-height: calc(100svh - 76px) !important;
-}
-
-@supports (height: 100dvh) {
-  .watta-full-menu-page.menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
-    min-height: calc(100dvh - 76px) !important;
-  }
-}
-
-@media (min-width: 481px) {
-  .watta-full-menu-page.menu-page-web
-    .welcome-hero-section-web:not(.delivery-page-hero-embed-web) {
-    min-height: max(78svh, calc(100svh - 76px)) !important;
-  }
-}
-
-.watta-full-menu-page.menu-page-web
-  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
-  .welcome-hero-video-fill-web {
-  flex: 1 1 auto !important;
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+  display: block !important;
+  flex: 0 0 auto !important;
   min-height: 0 !important;
-  max-height: none !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  border-top-left-radius: clamp(16px, 1.6vw, 26px);
-  border-top-right-radius: clamp(16px, 1.6vw, 26px);
-  border-bottom-left-radius: clamp(8px, 0.9vw, 12px);
-  border-bottom-right-radius: clamp(8px, 0.9vw, 12px);
+  margin-top: clamp(12px, 1.5vh, 20px) !important;
+  padding-top: clamp(8px, 1vh, 12px) !important;
+  padding-bottom: clamp(12px, 1.5vh, 18px) !important;
 }
 
 .watta-full-menu-page.menu-page-web
-  .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
   .welcome-hero-video-stack-web {
-  flex: 1 1 auto !important;
+  aspect-ratio: 16 / 9 !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  max-height: min(52vh, 520px) !important;
+  height: auto !important;
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-fill-web {
+  flex: 0 0 auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  height: 100% !important;
+}
+
+#menu-page-after-hero-intro.home-after-hero-intro-web {
+  margin-top: 0;
+}
+
+#menu-page-after-hero-intro .delivery-hero-copy-home__title {
+  font-size: clamp(1.5rem, 4.2vw, 2.5rem);
+  line-height: 1.12;
+}
+
+/* /menu: на телефоні заголовок і опис — під категоріями з повітрям, відео нижче з зазором */
+@media (max-width: 768px) {
+  .watta-full-menu-top-stack--intro-first #menu-page-after-hero-intro.home-after-hero-intro-web {
+    margin-top: clamp(12px, 2vh, 22px);
+    margin-bottom: clamp(4px, 0.8vh, 10px);
+  }
+
+  .watta-full-menu-top-stack--intro-first
+    #menu-page-after-hero-intro
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(16px, 2.4vh, 28px);
+    padding-bottom: clamp(14px, 2vh, 24px);
+  }
+
+  .watta-full-menu-top-stack--intro-first .watta-full-menu-intro {
+    margin-top: clamp(12px, 1.8vh, 20px) !important;
+    margin-bottom: clamp(10px, 1.4vh, 16px) !important;
+  }
+
+  .watta-full-menu-top-stack--intro-first
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    margin-top: 0 !important;
+    padding-top: clamp(4px, 0.6vh, 10px) !important;
+    padding-bottom: clamp(10px, 1.4vh, 16px) !important;
+  }
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-fill-web {
+  display: block !important;
+  overflow: hidden !important;
+  border-radius: var(--watta-home-hero-card-r, clamp(12px, 2.8vw, 20px)) !important;
+}
+
+.watta-full-menu-page.menu-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web {
   position: relative !important;
   overflow: hidden !important;
-  border-top-left-radius: clamp(16px, 1.6vw, 26px);
-  border-top-right-radius: clamp(16px, 1.6vw, 26px);
-  border-bottom-left-radius: clamp(8px, 0.9vw, 12px);
-  border-bottom-right-radius: clamp(8px, 0.9vw, 12px);
+  border-radius: var(--watta-home-hero-card-r, clamp(12px, 2.8vw, 20px)) !important;
 }
 
 .watta-full-menu-page.menu-page-web
@@ -3032,10 +3091,77 @@ html.watta-light-chrome body {
 .watta-full-menu-page.menu-page-web
   .welcome-hero-section-web:not(.delivery-page-hero-embed-web)
   .welcome-hero-fallback-image-web {
-  flex: 1 1 auto !important;
-  min-height: min(72vh, 720px) !important;
+  width: 100% !important;
+  min-height: 0 !important;
   max-height: none !important;
+  aspect-ratio: 16 / 9 !important;
   background-size: cover !important;
+}
+
+/* /menu: той самий hero-картка, що на головній — без canvas-mirror і без full-bleed чорного блоку */
+.watta-full-menu-page.menu-page-web .welcome-hero-video-canvas-mirror-web {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    position: relative !important;
+    isolation: isolate;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    padding: clamp(0px, 0.35vh, 6px) clamp(12px, 3vw, 28px) clamp(10px, 1.5vh, 22px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: min(100%, 1120px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    border-radius: var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)) !important;
+    overflow: hidden !important;
+    background: #0a1210 !important;
+    border: 1px solid rgba(20, 81, 66, 0.18) !important;
+  }
+
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web {
+    position: relative !important;
+    width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    min-height: min(240px, 52vw, 48vh) !important;
+    max-height: min(86dvh, calc(100svh - 168px)) !important;
+    height: auto !important;
+    overflow: hidden !important;
+    border-radius: inherit;
+    background: #0a1210 !important;
+  }
+
+  .watta-full-menu-page.menu-page-web
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center 18% !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
 }
 
 /* /menu: блоки категорій — легке «скло» та глибина (головна в .menu-page-web без watta-full-menu-page лишається плоскою) */
@@ -3402,6 +3528,25 @@ html.watta-light-chrome body {
   text-transform: uppercase;
   color: #145142;
   opacity: 0.92;
+}
+
+.home-after-hero-intro-script-line {
+  font-size: clamp(1.2rem, 3.6vw, 1.65rem);
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+}
+
+/* Головна: без kicker — зазор під категоріями до заголовка */
+.home-after-hero-intro-inner-web--headroom {
+  padding-top: clamp(14px, 2.2vh, 26px) !important;
+}
+
+@media (max-width: 768px) {
+  .menu-page-web[data-watta-home-narrow-strip-hero='1']
+    #home-after-hero-intro
+    .home-after-hero-intro-inner-web--headroom {
+    padding-top: clamp(16px, 2.5vh, 28px) !important;
+  }
 }
 
 .home-after-hero-intro-title-web {
@@ -6975,6 +7120,27 @@ html.watta-light-chrome body {
   background-image: none !important;
 }
 
+/*
+ * iOS Safari: поки mp4 не грає — ховаємо <video> з poster (логотип + велика кнопка play).
+ * До ready лишається фон стеку (sushi.webp / темний градієнт).
+ */
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web:not(.watta-hero-video--ready)
+  .watta-home-hero-native-video {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.menu-page-web:not(.watta-full-menu-page)
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web.watta-hero-video--ready
+  .watta-home-hero-native-video {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 /* Safari: приховати велику кнопку Play, поки відео ще paused */
 .watta-home-hero-native-video::-webkit-media-controls-start-playback-button,
 .watta-home-hero-native-video::-webkit-media-controls-overlay-play-button,
@@ -7487,9 +7653,11 @@ html.watta-light-chrome body {
     background-position: center center !important;
   }
 
-  /* Картка головної: перебиваємо contain вище — відео на всю плитку */
+  /* Картка головної: перебиваємо contain вище — відео на всю плитку (не /delivery) */
   .menu-page-web:not(.watta-full-menu-page)
-    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web):not(
+      .delivery-page-hero-standalone-web
+    )
     .welcome-hero-video-stack-web
     .watta-home-hero-native-video {
     object-fit: cover !important;
@@ -7778,7 +7946,8 @@ html.watta-light-chrome body {
   margin-top: 0 !important;
   --welcome-cat-overlap: 0px !important;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   background: var(--watta-page-fill);
 }
 
@@ -7825,22 +7994,31 @@ html.watta-light-chrome body {
   padding-top: 0;
 }
 
-.menu-page-web.watta-delivery-page .home-after-hero-intro-web + .menu-home-narrow-strip-hero-web,
-.menu-page-web.watta-delivery-page .home-after-hero-intro-web + .welcome-hero-section-web.watta-home-hero-as-card-web,
-.menu-page-web.watta-delivery-page
-  #delivery-before-hero-intro.home-after-hero-intro-web:not(:has(+ .menu-home-narrow-strip-hero-web))
-  + .welcome-hero-section-web.watta-home-hero-as-card-web {
-  margin-top: clamp(22px, 2.65vh, 34px) !important;
-}
-
-.menu-delivery-embed-web #delivery-before-hero-intro.home-after-hero-intro-web {
-  margin-top: 0 !important;
-}
-
 /*
- * Доставка (standalone): ≤1024 — дві колонки (відео | текст), як раніше split.
- * ≥1025 — як головна: повноширинне відео під шапкою + зелена бігуча смуга + текст нижче.
+ * Доставка (standalone): ≤768 — текст hero, потім відео;
+ * 769–1024 — одна колонка (відео → текст);
+ * ≥1025 — повноширинне відео + бігуча смуга + текст.
  */
+.delivery-page-hero-mobile-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100vw;
+  margin-top: 0;
+  padding-top: 0;
+  gap: 0;
+}
+
+.delivery-page-hero-mobile-copy {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-top: 0;
+  padding: clamp(10px, 1.8vh, 14px) clamp(14px, 4vw, 20px) clamp(18px, 2.5vh, 22px);
+  border-bottom: 1px solid rgba(20, 81, 66, 0.1);
+  background: var(--watta-page-fill);
+}
+
 .delivery-page-hero-adaptive-shell {
   width: 100%;
   max-width: 100vw;
@@ -7882,6 +8060,7 @@ html.watta-light-chrome body {
   grid-area: heroCopy;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   min-width: 0;
   padding: 20px 18px 28px;
@@ -7891,6 +8070,245 @@ html.watta-light-chrome body {
 @media (min-width: 1024px) {
   .delivery-page-hero-ad-cell--copy {
     padding: 28px 32px 36px 36px;
+  }
+}
+
+/* Планшет: одна колонка — відео, потім текст */
+@media (max-width: 1024px) {
+  .delivery-page-hero-adaptive-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'heroVideo'
+      'heroCopy';
+    min-height: 0 !important;
+    align-items: stretch;
+  }
+
+  .delivery-page-hero-ad-cell--video {
+    flex-direction: column;
+    min-height: 0 !important;
+    border-right: none;
+    border-bottom: 1px solid rgba(20, 81, 66, 0.1);
+  }
+
+  .watta-delivery-page {
+    --watta-home-hero-card-r: clamp(14px, 2.4vw, 26px);
+    --watta-home-hero-viewport-h: min(
+      54vh,
+      max(
+        272px,
+        calc(
+          100svh - env(safe-area-inset-top, 0px) - clamp(168px, 21vh, 228px) -
+            clamp(10px, 1.35vh, 18px)
+        )
+      )
+    );
+  }
+
+  .watta-delivery-page .delivery-page-hero-ad-cell--video,
+  .watta-delivery-page .delivery-page-hero-mobile-stack {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  .delivery-page-hero-ad-cell--video .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web,
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web,
+  .menu-page-web .delivery-page-hero-embed-web.watta-home-hero-as-card-web {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    width: 100%;
+    position: relative !important;
+    isolation: isolate;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    padding: clamp(0px, 0.35vh, 6px) clamp(12px, 3vw, 20px) clamp(10px, 1.5vh, 18px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-fill-web,
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-fill-web,
+  .menu-page-web .delivery-page-hero-embed-web.watta-home-hero-as-card-web .welcome-hero-video-fill-web {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    border-radius: var(--watta-home-hero-card-r, clamp(12px, 2.8vw, 18px)) !important;
+    overflow: hidden !important;
+    background: #0a1210 !important;
+    border: 1px solid rgba(20, 81, 66, 0.18) !important;
+    box-shadow: none !important;
+  }
+
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-stack-web,
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-stack-web,
+  .menu-page-web .delivery-page-hero-embed-web.watta-home-hero-as-card-web .welcome-hero-video-stack-web {
+    position: relative !important;
+    width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    min-height: min(240px, 52vw, 48vh) !important;
+    max-height: var(--watta-home-hero-viewport-h, min(86dvh, calc(100svh - 168px))) !important;
+    height: auto !important;
+    overflow: hidden !important;
+    border-radius: inherit;
+    background: #0a1210 !important;
+  }
+
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video,
+  .menu-page-web
+    .delivery-page-hero-embed-web.watta-home-hero-as-card-web
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video,
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-fallback-image-web,
+  .menu-page-web
+    .delivery-page-hero-embed-web.watta-home-hero-as-card-web
+    .welcome-hero-fallback-image-web {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
+    object-position: center 18% !important;
+    background-size: cover !important;
+    background-position: center 18% !important;
+  }
+
+  .delivery-page-hero-ad-cell--video
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-bar,
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-bar,
+  .menu-page-web
+    .delivery-page-hero-embed-web.watta-home-hero-as-card-web
+    .home-hero-marquee-over-video-web
+    .watta-hero-marquee-bar {
+    border-top-width: 1px !important;
+    border-top-style: solid !important;
+    border-top-color: rgba(255, 255, 255, 0.32) !important;
+    border-radius: 0 0 var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px))
+      var(--watta-home-hero-card-r, clamp(14px, 2.4vw, 26px)) !important;
+    min-height: clamp(36px, 5.5vw, 50px) !important;
+    box-shadow:
+      0 -12px 32px rgba(4, 18, 14, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    overflow: hidden;
+  }
+
+  .delivery-page-hero-ad-cell--copy {
+    position: relative;
+    z-index: 1;
+    padding: clamp(12px, 2vh, 16px) clamp(14px, 4vw, 20px) 20px;
+    margin-top: 0;
+  }
+
+  .delivery-page-hero-ad-cell--marquee {
+    display: none;
+  }
+
+  .watta-delivery-page .delivery-page-hero-ad-cell--video .menu-home-narrow-strip-hero-web {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .watta-delivery-page
+    .delivery-page-hero-ad-cell--video
+    .menu-home-narrow-strip-hero-web
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web.watta-home-hero-as-card-web,
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .menu-home-narrow-strip-hero-web
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web.watta-home-hero-as-card-web {
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .watta-delivery-page
+    .delivery-page-hero-ad-cell--video
+    .menu-home-narrow-strip-hero-web
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-fill-web,
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .menu-home-narrow-strip-hero-web
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-fill-web {
+    border-radius: 0 0 var(--watta-home-hero-card-r, clamp(12px, 2.8vw, 20px))
+      var(--watta-home-hero-card-r, clamp(12px, 2.8vw, 20px)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .delivery-page-hero-adaptive-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'heroVideo'
+      'heroCopy';
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .delivery-page-hero-ad-cell--video {
+    flex-direction: column;
+    min-height: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(20, 81, 66, 0.1);
+  }
+
+  .delivery-page-hero-ad-cell--video .delivery-page-hero-split-rail {
+    writing-mode: horizontal-tb;
+    transform: none;
+    max-width: none;
+    width: 100%;
+    padding: 10px 14px;
+    border-right: none;
+    border-bottom: 1px solid rgba(20, 81, 66, 0.08);
+  }
+
+  .delivery-page-hero-ad-cell--copy {
+    padding: 18px clamp(14px, 4vw, 20px) 24px;
+  }
+
+  .delivery-watta-hero--split .delivery-watta-display {
+    font-size: clamp(1.65rem, 7.5vw, 2.15rem);
+  }
+
+  .delivery-watta-hero--split .delivery-watta-stats {
+    gap: 8px;
+  }
+
+  .delivery-watta-hero--split .delivery-watta-stat {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    padding: 9px 12px 9px 10px;
+    font-size: 11px;
   }
 }
 
@@ -10883,6 +11301,27 @@ html.watta-light-chrome body {
 
 .watta-nav-sidebar-drawer--fullscreen.is-open {
   visibility: visible;
+}
+
+/* Бокове меню: не показувати липку шапку, стрічку категорій і FAB Instagram під drawer */
+html[data-watta-nav-drawer-open] .watta-sticky-chrome-portal {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html[data-watta-nav-drawer-open] .watta-sticky-chrome-flow-anchor {
+  min-height: 0 !important;
+  height: 0 !important;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html[data-watta-nav-drawer-open] .floating-contact-buttons-root {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* ——— Повноекранна панель меню (преміум, компактно) ——— */
@@ -15848,13 +16287,475 @@ body.admin-watta-overlay-open {
 }
 
 .delivery-watta-page {
-  padding: 0 16px 48px;
+  padding: 0 max(16px, env(safe-area-inset-left, 0px)) max(48px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-right, 0px));
   max-width: 1180px;
   margin: 0 auto;
   position: relative;
   border-radius: 0;
   /* Без білої «підкладки» — той самий тон, що delivery-page-root-web bg-[#F3F4F6] */
   background: transparent;
+}
+
+.watta-delivery-page .delivery-watta-page {
+  padding-top: clamp(8px, 1.5vh, 16px);
+}
+
+/* /delivery — тон головної: лаконічний hero, м’які картки, без 3D-ефектів */
+.delivery-hero-copy-home {
+  margin: 0 auto;
+  padding: 0;
+  border: none;
+  text-align: center;
+}
+
+.delivery-hero-copy-home__kicker {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin: 0 0 clamp(10px, 2vh, 14px);
+  line-height: 1.15;
+}
+
+.delivery-hero-copy-home__kicker-brand {
+  font-size: clamp(0.62rem, 1.05vw, 0.72rem);
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #145142;
+}
+
+.delivery-hero-copy-home__caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.82em;
+  margin-left: 3px;
+  vertical-align: -0.1em;
+  border-radius: 1px;
+  background: #145142;
+  animation: delivery-hero-caret-blink 0.72s step-end infinite;
+}
+
+@keyframes delivery-hero-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.delivery-hero-copy-home__word {
+  display: inline;
+}
+
+/* Між рядками опису (перенос у copy) — лише перенос рядка, без додаткового margin */
+.home-after-hero-intro-body-br {
+  line-height: inherit;
+}
+
+.delivery-hero-copy-home__stat-ico-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delivery-hero-copy-home__caret {
+    display: none;
+  }
+}
+
+.delivery-hero-copy-home__script {
+  font-size: clamp(1.15rem, 3.4vw, 1.5rem);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #0f3d32;
+  line-height: 1.1;
+}
+
+@media (min-width: 480px) {
+  .delivery-hero-copy-home__kicker {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 10px;
+  }
+}
+
+.delivery-hero-copy-home__title {
+  margin: 0 0 clamp(10px, 1.5vh, 14px);
+  text-align: center;
+}
+
+.delivery-page-hero-ad-cell--copy .delivery-hero-copy-home__title,
+.delivery-page-hero-ad-cell--copy .delivery-hero-copy-home__body,
+.delivery-page-hero-ad-cell--copy .delivery-hero-copy-home__kicker {
+  text-align: center;
+}
+
+.delivery-page-hero-ad-cell--copy .delivery-hero-copy-home__kicker {
+  justify-content: center;
+}
+
+.delivery-page-hero-ad-cell--copy .delivery-hero-copy-home__stats {
+  justify-content: center;
+}
+
+.delivery-hero-copy-home__body {
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.delivery-hero-copy-home__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.delivery-hero-copy-home__stats li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #145142;
+  background: rgba(20, 81, 66, 0.08);
+  border: 1px solid rgba(20, 81, 66, 0.12);
+}
+
+.delivery-hero-copy-home__stats--intro {
+  justify-content: center;
+}
+
+.delivery-hero-copy-home__stat-ico {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.watta-delivery-page--home-tone .delivery-page-hero-ad-cell--copy {
+  padding: clamp(18px, 3vw, 28px) clamp(16px, 4vw, 32px) clamp(22px, 3.5vw, 34px);
+}
+
+@media (max-width: 768px) {
+  .watta-delivery-page--home-tone .delivery-page-hero-mobile-copy,
+  .watta-delivery-page--home-tone .delivery-page-hero-ad-cell--copy {
+    padding: clamp(10px, 1.8vh, 14px) clamp(14px, 4vw, 20px) clamp(18px, 2.5vh, 22px);
+  }
+
+  .watta-delivery-page .delivery-page-hero-mobile-stack .menu-home-narrow-strip-hero-web {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    width: 100%;
+  }
+
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web {
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Телефон /delivery: повне відео без обрізання (contain, висота за кадром) */
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-fill-web {
+    overflow: visible !important;
+  }
+
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-stack-web {
+    aspect-ratio: unset !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video,
+  .watta-delivery-page
+    .delivery-page-hero-mobile-stack
+    .delivery-page-hero-split-panel-web.delivery-page-hero-standalone-web
+    .welcome-hero-fallback-image-web {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: min(72vh, 640px) !important;
+    min-height: 0 !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    background-size: contain !important;
+    background-position: center center !important;
+  }
+}
+
+.watta-delivery-page--home-tone .delivery-page-hero-split-rail {
+  display: none;
+}
+
+.watta-delivery-page--home-tone .delivery-watta-policy-strip {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border-color: rgba(20, 81, 66, 0.12);
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 6px 20px rgba(20, 81, 66, 0.05);
+}
+
+.watta-delivery-page--home-tone .delivery-watta-postal-inner {
+  border-radius: 18px;
+  box-shadow: 0 12px 36px rgba(20, 81, 66, 0.08);
+}
+
+.watta-delivery-page--home-tone .delivery-watta-section-title {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1rem, 2.5vw, 1.15rem);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/* Панелі досвіду — легкі, як на головній */
+.delivery-watta-split--home {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (min-width: 720px) {
+  .delivery-watta-split--home {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+.delivery-watta-panel {
+  padding: 22px 20px 24px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  box-shadow: 0 10px 32px rgba(20, 81, 66, 0.06);
+}
+
+.delivery-watta-panel-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #145142;
+  opacity: 0.9;
+}
+
+.delivery-watta-panel-title {
+  margin: 0 0 14px;
+  font-family: var(--font-brand-playfair), Georgia, serif;
+  font-size: clamp(1.05rem, 2.6vw, 1.2rem);
+  font-weight: 700;
+  color: #0f241e;
+  letter-spacing: -0.02em;
+}
+
+.delivery-watta-panel-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.delivery-watta-panel-list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #333;
+}
+
+.delivery-watta-panel-list-ico {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(20, 81, 66, 0.08);
+  color: #145142;
+}
+
+.delivery-watta-panel-muted {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(20, 81, 66, 0.72);
+}
+
+.delivery-watta-panel-highlight {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #0f3d32;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+}
+
+.delivery-watta-panel-hours {
+  margin: 0 0 10px;
+  font-family: var(--font-brand-playfair), Georgia, serif;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111;
+}
+
+.delivery-watta-promise--home {
+  margin-bottom: 28px;
+}
+
+.delivery-watta-promise-inner--home {
+  position: relative;
+  padding: 24px 22px 26px;
+  border-radius: 18px;
+  text-align: center;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.95), rgba(248, 252, 250, 0.92));
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  box-shadow: 0 12px 36px rgba(20, 81, 66, 0.07);
+}
+
+.delivery-watta-promise-ico-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #145142;
+  opacity: 0.85;
+}
+
+.delivery-watta-how--home {
+  margin-bottom: 32px;
+  padding-top: 4px;
+}
+
+.delivery-watta-how--home .delivery-watta-how-title {
+  margin-bottom: 18px;
+  text-align: center;
+  font-family: var(--font-brand-playfair), Georgia, serif;
+}
+
+.delivery-watta-how-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .delivery-watta-how-steps {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+}
+
+.delivery-watta-how-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  box-shadow: 0 6px 20px rgba(20, 81, 66, 0.05);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.delivery-watta-how-step:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(20, 81, 66, 0.1);
+}
+
+.delivery-watta-how-step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(145deg, #145142, #1a6b52);
+}
+
+.delivery-watta-how-step-label {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.delivery-watta-how-step-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #666;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delivery-watta-how-step {
+    transition: none;
+  }
+
+  .delivery-watta-how-step:hover {
+    transform: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .delivery-watta-page {
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .delivery-watta-page {
+    padding-left: max(24px, env(safe-area-inset-left, 0px));
+    padding-right: max(24px, env(safe-area-inset-right, 0px));
+  }
 }
 
 /* Доставка всередині menu-page: без вузької «картки» на білому, той самий фон що й меню */
@@ -16652,46 +17553,81 @@ body.admin-watta-overlay-open {
   }
 }
 
-/* Телефон: відступ під FAB — padding на футері (не margin на colophon: інакше білий зазор без фону) */
+/* Телефон: нижня смуга футера (оплата + ©) — по центру; невеликий зазор під FAB */
 @media (max-width: 767px) {
   .site-footer-watta.site-footer-watta--light {
-    padding-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .site-footer-watta__inner {
     padding-bottom: 0;
+    padding-right: max(
+      var(--watta-footer-panel-inset-x),
+      env(safe-area-inset-right, 0px)
+    );
   }
 
-  /* Телефон: по центру, скляна «док-панель» */
-  .site-footer-watta__nav-colophon {
-    justify-content: center;
+  .site-footer-watta__col--social {
+    align-items: center;
     text-align: center;
+  }
+
+  .site-footer-watta__social-row,
+  .site-footer-watta__pay-row {
+    justify-content: center;
     width: 100%;
-    max-width: min(100%, calc(100% - 0.5rem));
+  }
+
+  .site-footer-watta__payments-note {
+    text-align: center;
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 0.75rem;
-    padding: clamp(0.55rem, 1.35vw, 0.78rem) max(0.75rem, env(safe-area-inset-right, 0px))
-      clamp(0.55rem, 1.35vw, 0.78rem) max(0.75rem, env(safe-area-inset-left, 0px));
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.52);
-    border: 1px solid rgba(20, 81, 66, 0.1);
-    box-shadow: 0 4px 22px rgba(20, 81, 66, 0.055);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
   }
 
-  .site-footer-watta__nav-colophon-copy,
+  /* © + політика — по центру на всіх публічних сторінках */
+  .site-footer-watta__nav-colophon,
+  .site-footer-watta .site-footer-watta__legal-bar {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    text-align: center;
+    width: 100%;
+    max-width: none;
+    margin-top: clamp(0.55rem, 1.5vw, 0.75rem);
+    margin-bottom: calc(var(--watta-floating-fab-size, 3.25rem) + 0.45rem);
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0 max(var(--watta-footer-panel-inset-x, 0.75rem), env(safe-area-inset-right, 0px))
+      0 max(var(--watta-footer-panel-inset-x, 0.75rem), env(safe-area-inset-left, 0px));
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
   .site-footer-watta__nav-colophon-sep {
-    font-size: clamp(0.76rem, 3.4vw, 0.84rem);
+    display: none;
+  }
+
+  .site-footer-watta__nav-colophon-copy {
+    display: block;
+    width: auto;
+    max-width: min(20rem, 100%);
+    font-size: clamp(0.74rem, 3.2vw, 0.82rem);
+    line-height: 1.45;
+    text-align: center;
   }
 
   .site-footer-watta__nav-colophon-link {
-    font-size: clamp(0.78rem, 3.6vw, 0.86rem);
-  }
-
-  html.watta-light-chrome body:has(.site-footer-watta) {
-    scroll-padding-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
+    font-size: clamp(0.76rem, 3.4vw, 0.84rem);
+    min-height: auto;
+    display: inline;
+    text-align: center;
   }
 }
 
@@ -17043,6 +17979,52 @@ body.admin-watta-overlay-open {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #145142;
+}
+
+@media (max-width: 479px) {
+  .delivery-watta-city-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 6px;
+    margin-right: -4px;
+    mask-image: linear-gradient(90deg, #000 92%, transparent);
+  }
+
+  .delivery-watta-city-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .delivery-watta-city-chip {
+    flex-shrink: 0;
+  }
+
+  .delivery-watta-postal-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .delivery-watta-postal-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .delivery-watta-map-inner {
+    height: min(58vh, 480px);
+    min-height: min(280px, 48vh);
+  }
+
+  .delivery-watta-map-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .delivery-watta-zones-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .delivery-watta-city-row {
@@ -18305,6 +19287,63 @@ body.admin-watta-overlay-open {
   box-shadow: 0 0 0 4px rgba(20, 81, 66, 0.12);
 }
 
+.delivery-watta-postal-controls--address {
+  align-items: stretch;
+}
+
+.delivery-watta-postal-input--address {
+  flex: 1 1 100%;
+  min-height: 52px;
+  resize: vertical;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+@media (min-width: 640px) {
+  .delivery-watta-postal-controls--address {
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .delivery-watta-postal-input--address {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .delivery-watta-postal-controls--address .delivery-watta-postal-btn {
+    align-self: stretch;
+    min-height: 52px;
+  }
+}
+
+.delivery-watta-postal-fee-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  margin: 12px 0 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(20, 81, 66, 0.14), rgba(20, 81, 66, 0.06));
+  border: 1px solid rgba(20, 81, 66, 0.22);
+}
+
+.delivery-watta-postal-fee-hero__label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #145142;
+}
+
+.delivery-watta-postal-fee-hero__amount {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.65rem, 5vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #0f2a22;
+}
+
 .delivery-watta-postal-btn {
   padding: 14px 24px;
   border: none;
@@ -18345,13 +19384,15 @@ body.admin-watta-overlay-open {
 }
 
 .delivery-watta-postal-result--inside,
-.delivery-watta-postal-result--amsterdam_ok {
+.delivery-watta-postal-result--amsterdam_ok,
+.delivery-watta-postal-result--nl_tariff_ok {
   border-color: rgba(20, 81, 66, 0.35);
   background: linear-gradient(135deg, rgba(20, 81, 66, 0.08), rgba(255, 255, 255, 0.9));
 }
 
 .delivery-watta-postal-result--outside,
 .delivery-watta-postal-result--outside_amsterdam,
+.delivery-watta-postal-result--outside_nl,
 .delivery-watta-postal-result--postcode_format_invalid,
 .delivery-watta-postal-result--geocode_failed,
 .delivery-watta-postal-result--bad_request,
@@ -18371,6 +19412,7 @@ body.admin-watta-overlay-open {
 
 .delivery-watta-postal-result--outside .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--outside_amsterdam .delivery-watta-postal-result-ico,
+.delivery-watta-postal-result--outside_nl .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--postcode_format_invalid .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--geocode_failed .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--bad_request .delivery-watta-postal-result-ico,
@@ -18429,6 +19471,12 @@ body.admin-watta-overlay-open {
   .auth-watta-btn-primary {
     @apply w-full rounded-2xl bg-gradient-to-r from-[#0f3d32] to-[#145142] py-3.5 text-center text-base font-bold text-white shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none;
     box-shadow: 0 10px 28px rgba(20, 81, 66, 0.22);
+  }
+
+  /* Поля реєстрації залишають місце в макеті — без стрибка телефонів при перемиканні вкладок */
+  .auth-watta-register-block--hidden {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   /* Сторінки /login та /register — усе в межах 100dvh без прокрутки сторінки (компактні поля) */
@@ -18791,7 +19839,9 @@ body.admin-watta-overlay-open {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.08);
+  transform: scale(1.02);
+  filter: none;
+  -webkit-filter: none;
   animation: auth-watta-cinema-kenburns 22s ease-in-out infinite alternate;
 }
 
@@ -18812,7 +19862,7 @@ body.admin-watta-overlay-open {
 .auth-watta-cinema--compact .auth-watta-cinema__poster,
 .auth-watta-cinema--compact .auth-watta-cinema__video {
   animation: none;
-  transform: scale(1.12);
+  transform: scale(1.02);
 }
 
 .auth-watta-cinema__vignette {
@@ -19116,10 +20166,10 @@ body.admin-watta-overlay-open {
   inset: 0;
   background: linear-gradient(
     125deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    transparent 38%,
-    transparent 62%,
-    rgba(255, 255, 255, 0.06) 100%
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 40%,
+    transparent 68%,
+    rgba(255, 255, 255, 0.03) 100%
   );
   pointer-events: none;
 }
@@ -19195,8 +20245,12 @@ body.admin-watta-overlay-open {
   margin-right: -2.75rem;
   margin-bottom: 0.85rem;
   transform: rotate(-8deg) translateY(10px);
-  opacity: 0.92;
-  filter: brightness(0.88);
+  opacity: 1;
+  filter: none;
+  overflow: hidden;
+  isolation: isolate;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .auth-watta-phone-duo__front {
@@ -19340,11 +20394,26 @@ body.admin-watta-overlay-open {
   height: 100%;
   object-fit: cover;
   object-position: center center;
+  transform: scale(1.03);
+  transform-origin: center center;
+  filter: none;
+  -webkit-filter: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.auth-watta-phone-duo__back .auth-watta-phone-sim__media {
+  background: #0a0a0a;
+}
+
+.auth-watta-phone-duo__back .auth-watta-phone-sim__video,
+.auth-watta-phone-duo__back .auth-watta-phone-sim__fallback {
+  transform: scale(1.03);
 }
 
 .auth-watta-phone-sim__video {
   opacity: 0;
-  transition: opacity 0.65s ease;
+  transition: opacity 0.35s ease;
 }
 
 .auth-watta-phone-sim__video--ready {
@@ -19364,16 +20433,14 @@ body.admin-watta-overlay-open {
 .auth-watta-phone-sim__scrim {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(4, 22, 18, 0.72) 0%,
-      rgba(4, 22, 18, 0.2) 28%,
-      rgba(4, 22, 18, 0.12) 48%,
-      rgba(4, 22, 18, 0.55) 78%,
-      rgba(4, 22, 18, 0.92) 100%
-    ),
-    radial-gradient(90% 50% at 50% 100%, rgba(20, 81, 66, 0.35) 0%, transparent 70%);
+  background: linear-gradient(
+    180deg,
+    rgba(4, 22, 18, 0.06) 0%,
+    transparent 24%,
+    transparent 58%,
+    rgba(4, 22, 18, 0.22) 82%,
+    rgba(4, 22, 18, 0.62) 100%
+  );
   pointer-events: none;
 }
 
@@ -19538,10 +20605,10 @@ body.admin-watta-overlay-open {
 
 @keyframes auth-watta-cinema-kenburns {
   from {
-    transform: scale(1.06) translate3d(0, 0, 0);
+    transform: scale(1.02) translate3d(0, 0, 0);
   }
   to {
-    transform: scale(1.14) translate3d(-1.5%, -1%, 0);
+    transform: scale(1.05) translate3d(-0.5%, -0.5%, 0);
   }
 }
 
@@ -19630,13 +20697,12 @@ body.admin-watta-overlay-open {
 
 .watta-favorites-page .menu-highlight-stack-web {
   border-bottom: none;
-  padding-top: 0.1rem !important;
+  padding-top: 0 !important;
   padding-bottom: 0.5rem !important;
 }
 
 @media (min-width: 640px) {
   .watta-favorites-page .menu-highlight-stack-web {
-    padding-top: 0.2rem !important;
     padding-bottom: 0.75rem !important;
   }
 }
@@ -19655,7 +20721,14 @@ body.admin-watta-overlay-open {
 
 .watta-favorites-page .watta-favorites-page__content {
   flex: 1 1 auto;
+  padding-top: clamp(14px, 1.85vh, 22px);
   padding-bottom: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .watta-favorites-page .watta-favorites-page__content {
+    padding-top: clamp(16px, 2vw, 24px);
+  }
 }
 
 /* Компактний підвал на /favorites — без дубля логотипу + пілюль, менші колонки */
@@ -19704,7 +20777,7 @@ body.admin-watta-overlay-open {
 
 .site-footer-watta.site-footer-watta--compact .site-footer-watta__nav-colophon {
   margin-top: 0.35rem;
-  padding-top: 0.35rem;
+  padding-top: 0;
 }
 
 @media (min-width: 768px) {
@@ -19750,8 +20823,8 @@ body.admin-watta-overlay-open {
     grid-column: 1 / -1;
   }
 
-  .site-footer-watta.site-footer-watta--compact .site-footer-watta__nav-colophon {
-    margin-bottom: 0.35rem;
+  .site-footer-watta.site-footer-watta--compact .site-footer-watta__legal-bar {
+    margin-bottom: calc(var(--watta-floating-fab-size, 3.25rem) + 0.45rem);
   }
 }
 
@@ -19889,21 +20962,42 @@ body.admin-watta-overlay-open {
 
 /*
  * /cart — зазор між fixed панеллю категорій і заголовком «Кошик».
- * padding-top (не spacer): глобальні .menu-content-top-gap-web давали height:0.
  */
 .watta-cart-page .watta-cart-page__content {
-  padding-top: clamp(22px, 5vh, 40px) !important;
+  padding-top: clamp(10px, 2vh, 18px) !important;
+}
+
+.watta-app-shell-root:has(.watta-cart-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+  margin-bottom: clamp(6px, 1.25vh, 12px);
+}
+
+@media (max-width: 768px) {
+  .watta-app-shell-root:has(.watta-cart-page) .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
+  }
+
+  .watta-app-shell-root:has(.watta-cart-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-bottom: clamp(10px, 2.5vh, 16px);
+  }
+
+  .watta-cart-page .watta-cart-page__content {
+    padding-top: clamp(14px, 3vh, 22px) !important;
+  }
+
+  .watta-cart-page .watta-cart-page__content > header {
+    margin-bottom: 0.5rem !important;
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .watta-cart-page .watta-cart-page__content {
-    padding-top: clamp(18px, 2.5vh, 30px) !important;
+    padding-top: clamp(8px, 1.5vh, 14px) !important;
   }
 }
 
 @media (min-width: 1025px) {
   .watta-cart-page .watta-cart-page__content {
-    padding-top: clamp(16px, 2vh, 26px) !important;
+    padding-top: clamp(8px, 1.25vh, 14px) !important;
   }
 }
 
@@ -19975,5 +21069,1551 @@ body.admin-watta-overlay-open {
     --watta-cat-peek: 8.5;
     max-width: min(calc(100vw - 64px), 52rem);
   }
+}
+
+/* ——— Акції / новини ——— */
+.watta-promotions-route.menu-page-web {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.watta-promotions-page {
+  --watta-promo-accent: #145142;
+  --watta-promo-read: #27ae60;
+  flex: 1 1 auto;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.watta-promotions-page__toolbar {
+  position: relative;
+  z-index: 2;
+  padding: clamp(0.35rem, 1.2vw, 0.75rem)
+    max(1rem, env(safe-area-inset-right, 0px))
+    0.5rem
+    max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.watta-promotions-back--inline {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+.watta-promotions-page__inner {
+  width: 100%;
+  max-width: min(100rem, calc(100vw - 2rem));
+  margin-inline: auto;
+  padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.watta-promotions-page__header {
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+  max-width: 42rem;
+}
+
+.watta-promotions-page__header--placeholder {
+  margin-bottom: 1rem;
+}
+
+.watta-promotions-page__title {
+  color: #0f2a22;
+  margin: 0;
+}
+
+.watta-promotions-page__subtitle {
+  margin: 0.65rem 0 0;
+  color: color-mix(in srgb, var(--watta-promo-accent) 72%, #0a1f1a);
+}
+
+.watta-promotions-page__empty {
+  min-height: clamp(12rem, 28vh, 22rem);
+}
+
+.watta-promotions-page__empty-hint {
+  margin: clamp(1.25rem, 3vw, 2rem) 0 0;
+  text-align: center;
+  font-size: clamp(0.95rem, 2.8vw, 1.05rem);
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--watta-promo-accent) 55%, #4a5c57);
+}
+
+.watta-promotions-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1rem, 2.5vw, 1.35rem);
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .watta-promotions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .watta-promotions-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .watta-promotions-page__inner {
+    max-width: min(
+      100rem,
+      calc(100vw - max(3rem, env(safe-area-inset-left, 0px)) - max(3rem, env(safe-area-inset-right, 0px)))
+    );
+  }
+
+  .watta-promotions-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.35rem;
+  }
+}
+
+.watta-promo-card {
+  border-radius: 1.35rem;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 10%, transparent);
+  box-shadow: 0 10px 36px -22px rgba(20, 81, 66, 0.35);
+  overflow: hidden;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.watta-promo-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--watta-promo-accent) 22%, transparent);
+  box-shadow: 0 18px 44px -20px rgba(20, 81, 66, 0.42);
+}
+
+.watta-promo-card__hit-area {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.watta-promo-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(145deg, #eef6f2 0%, #f8faf9 100%);
+  overflow: hidden;
+}
+
+.watta-promo-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.watta-promo-card:hover .watta-promo-card__img {
+  transform: scale(1.03);
+}
+
+.watta-promo-card__no-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.watta-promo-card__no-photo-mark {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: color-mix(in srgb, var(--watta-promo-accent) 18%, transparent);
+}
+
+.watta-promo-card__badge {
+  position: absolute;
+  bottom: 0.65rem;
+  border-radius: 0.55rem;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+.watta-promo-card__badge--photos {
+  left: 0.65rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.watta-promo-card__badge--offers {
+  right: 0.65rem;
+  background: #155044;
+  color: #fff;
+}
+
+.watta-promo-card__hit {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  min-width: 3.5rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.65rem;
+  background: #155044;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  box-shadow: 0 6px 16px rgba(21, 80, 68, 0.35);
+}
+
+.watta-promo-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.45rem;
+  padding: clamp(0.9rem, 2vw, 1.15rem) clamp(1rem, 2.2vw, 1.25rem) clamp(1rem, 2.2vw, 1.2rem);
+}
+
+.watta-promo-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+}
+
+@media (min-width: 640px) {
+  .watta-promo-card__meta {
+    font-size: 0.78rem;
+  }
+}
+
+.watta-promo-card__category {
+  max-width: 68%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0.22rem 0.6rem;
+  background: color-mix(in srgb, var(--watta-promo-accent) 8%, #fff);
+  color: color-mix(in srgb, var(--watta-promo-accent) 78%, #0a1f1a);
+  font-weight: 700;
+}
+
+.watta-promo-card__date {
+  flex-shrink: 0;
+  color: #8a9a94;
+  font-weight: 600;
+}
+
+.watta-promo-card__title {
+  margin: 0;
+  font-size: clamp(1.02rem, 2.4vw, 1.2rem);
+  font-weight: 800;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  color: #0f2a22;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.watta-promo-card__desc {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #5c6f68;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.watta-promo-card__cta {
+  margin-top: 0.35rem;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.watta-promo-card--skeleton {
+  pointer-events: none;
+}
+
+.watta-promo-card__media-skeleton,
+.watta-promo-detail-card__gallery-skeleton {
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--watta-promo-accent) 6%, #eef4f1) 8%,
+    #f8fbfa 18%,
+    color-mix(in srgb, var(--watta-promo-accent) 6%, #eef4f1) 33%
+  );
+  background-size: 200% 100%;
+  animation: wattaPromoShimmer 1.35s ease-in-out infinite;
+}
+
+.watta-promo-skeleton-line {
+  height: 0.72rem;
+  border-radius: 0.4rem;
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--watta-promo-accent) 8%, #eef4f1) 8%,
+    #f8fbfa 18%,
+    color-mix(in srgb, var(--watta-promo-accent) 8%, #eef4f1) 33%
+  );
+  background-size: 200% 100%;
+  animation: wattaPromoShimmer 1.35s ease-in-out infinite;
+}
+
+.watta-promo-skeleton-line--short {
+  width: 42%;
+}
+
+.watta-promo-skeleton-line--title {
+  height: 1.1rem;
+  width: 88%;
+}
+
+.watta-promo-skeleton-line--hero {
+  height: clamp(1.75rem, 4vw, 2.5rem);
+  width: min(18rem, 72%);
+  margin-bottom: 0.5rem;
+}
+
+@keyframes wattaPromoShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Детальна сторінка */
+.watta-promotions-page--detail .watta-promotions-page__inner {
+  max-width: min(52rem, 100%);
+}
+
+.watta-promo-detail-card {
+  border-radius: clamp(1.25rem, 3vw, 1.85rem);
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 12%, transparent);
+  box-shadow: 0 20px 56px -28px rgba(20, 81, 66, 0.38);
+  overflow: hidden;
+}
+
+.watta-promo-detail-card__gallery {
+  border-bottom: 1px solid color-mix(in srgb, var(--watta-promo-accent) 8%, transparent);
+}
+
+.watta-promo-detail-card__gallery-track {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.watta-promo-detail-card__slide {
+  position: relative;
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  height: clamp(220px, 42vw, 420px);
+}
+
+@media (min-width: 640px) {
+  .watta-promo-detail-card__slide {
+    flex: 0 0 85%;
+    max-width: 85%;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-promo-detail-card__slide {
+    flex: 0 0 70%;
+    max-width: 70%;
+  }
+}
+
+.watta-promo-detail-card__slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watta-promo-detail-card__hit {
+  top: 1rem;
+  right: 1rem;
+}
+
+.watta-promo-detail-card__gallery-hint {
+  margin: 0;
+  padding: 0.55rem 1rem 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #7a8b84;
+}
+
+.watta-promo-detail-card__content {
+  padding: clamp(1.15rem, 3vw, 2.5rem) clamp(1.15rem, 3.5vw, 2.75rem) clamp(1.5rem, 3.5vw, 2.75rem);
+}
+
+.watta-promo-detail-card__title {
+  margin: 0 0 clamp(0.85rem, 2vw, 1.25rem);
+  color: #0f2a22;
+}
+
+.watta-promo-detail-card__prose {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: clamp(0.95rem, 2.1vw, 1.12rem);
+  line-height: 1.65;
+  color: color-mix(in srgb, #0a1f1a 82%, var(--watta-promo-accent));
+}
+
+.watta-promo-detail-card__offers {
+  margin-top: clamp(1.5rem, 3.5vw, 2.25rem);
+  padding-top: clamp(1.25rem, 3vw, 1.75rem);
+  border-top: 1px solid color-mix(in srgb, var(--watta-promo-accent) 10%, transparent);
+}
+
+.watta-promo-detail-card__offers-title {
+  margin: 0 0 clamp(0.85rem, 2vw, 1.25rem);
+  font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #155044;
+}
+
+.watta-promo-detail-card__offers-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .watta-promo-detail-card__offers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+  }
+}
+
+.watta-promo-detail-card--skeleton .watta-promo-detail-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.menu-page-web:has(.watta-promotions-page--embedded) .menu-delivery-embed-web {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 1024px) {
+  .watta-promotions-route.menu-page-web > .menu-content-top-gap-web {
+    height: clamp(0.35rem, 1vw, 0.65rem) !important;
+    min-height: clamp(0.35rem, 1vw, 0.65rem) !important;
+    max-height: none !important;
+    background: transparent !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-promo-card,
+  .watta-promo-card__img,
+  .watta-promo-card__media-skeleton,
+  .watta-promo-skeleton-line,
+  .watta-promo-detail-card__gallery-skeleton {
+    transition: none;
+    animation: none;
+  }
+
+  .watta-promo-card:hover {
+    transform: none;
+  }
+
+  .watta-promo-card:hover .watta-promo-card__img {
+    transform: none;
+  }
+}
+
+/* ——— Contact page ——— */
+.contact-page-hero-web {
+  position: relative;
+}
+
+.contact-watta-stat-pill {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 14px 12px;
+  backdrop-filter: blur(8px);
+}
+
+.contact-watta-hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.contact-watta-hero-visual__glow {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 92, 0, 0.22) 0%, transparent 70%);
+}
+
+.contact-watta-hero-visual__img {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 320px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.35));
+}
+
+.contact-watta-hero-visual__badge {
+  position: absolute;
+  z-index: 2;
+  bottom: 12%;
+  left: 50%;
+  display: flex;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(12, 48, 40, 0.88);
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.contact-watta-topic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(20, 81, 66, 0.14);
+  background: #fff;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #145142;
+  box-shadow: 0 4px 20px rgba(20, 81, 66, 0.06);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.contact-watta-topic-chip:hover {
+  transform: translateY(-2px);
+  border-color: rgba(20, 81, 66, 0.28);
+  box-shadow: 0 8px 28px rgba(20, 81, 66, 0.1);
+}
+
+.contact-watta-topic-chip--active {
+  border-color: #145142;
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  color: #fff;
+  box-shadow: 0 10px 32px rgba(20, 81, 66, 0.28);
+}
+
+.contact-watta-topic-chip__ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(20, 81, 66, 0.08);
+}
+
+.contact-watta-topic-chip--active .contact-watta-topic-chip__ico {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.contact-watta-flow-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .contact-watta-flow-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+}
+
+.contact-watta-flow-step {
+  position: relative;
+  border-radius: 22px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: linear-gradient(165deg, #fff 0%, #f6faf8 100%);
+  padding: 24px 20px 22px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.05);
+}
+
+.contact-watta-flow-step__num {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ff5c00;
+}
+
+.contact-watta-flow-step__title {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f241e;
+}
+
+.contact-watta-flow-step__body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #5a6d64;
+}
+
+.contact-watta-channel-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #fff;
+  padding: 22px 20px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.25s ease;
+}
+
+.contact-watta-channel-card:hover {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.09);
+}
+
+.contact-watta-channel-card__ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  background: #145142;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(20, 81, 66, 0.25);
+}
+
+.contact-watta-channel-card__ico--grad {
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+}
+
+.contact-watta-channel-card__label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.75);
+}
+
+.contact-watta-channel-card__value {
+  margin-top: 4px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111;
+}
+
+.contact-watta-messenger {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 140px;
+  border-radius: 22px;
+  padding: 22px 20px 48px;
+  color: #fff;
+  text-decoration: none;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+.contact-watta-messenger--tg {
+  background: linear-gradient(145deg, #229ed9 0%, #1a7fb5 100%);
+}
+
+.contact-watta-messenger--wa {
+  background: linear-gradient(145deg, #25d366 0%, #1da851 100%);
+}
+
+.contact-watta-messenger--ig {
+  background: linear-gradient(145deg, #f09433 0%, #dc2743 45%, #bc1888 100%);
+}
+
+.contact-watta-messenger__ico {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.contact-watta-messenger__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.contact-watta-messenger__sub {
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+
+.contact-watta-messenger__arrow {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  opacity: 0.75;
+}
+
+.contact-watta-corporate {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background: linear-gradient(125deg, #0c3028 0%, #145142 45%, #1a6b58 100%);
+  padding: 32px 28px;
+  box-shadow: 0 20px 60px rgba(20, 81, 66, 0.35);
+}
+
+.contact-watta-corporate__kicker {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.contact-watta-quick-link {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1.5px solid rgba(20, 81, 66, 0.16);
+  background: #fff;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #145142;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.contact-watta-quick-link:hover {
+  transform: translateY(-1px);
+  border-color: #145142;
+  background: rgba(20, 81, 66, 0.06);
+}
+
+.contact-watta-map-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #fff;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+}
+
+.contact-watta-map-card {
+  position: absolute;
+  z-index: 2;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  max-width: 360px;
+  border-radius: 18px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 16px 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 640px) {
+  .contact-watta-map-card {
+    bottom: 24px;
+    left: 24px;
+  }
+}
+
+.contact-watta-map-badge {
+  display: inline-flex;
+  border-radius: 999px;
+  background: rgba(20, 81, 66, 0.08);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #145142;
+}
+
+.contact-watta-map-badge--open {
+  background: rgba(255, 92, 0, 0.12);
+  color: #c44a00;
+}
+
+.contact-watta-faq-item {
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-watta-faq-item--open {
+  border-color: rgba(20, 81, 66, 0.22);
+  box-shadow: 0 8px 32px rgba(20, 81, 66, 0.08);
+}
+
+.contact-watta-form-aside {
+  border-radius: 24px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: linear-gradient(180deg, #f6faf8 0%, #fff 100%);
+  padding: 24px 22px;
+  align-self: start;
+}
+
+.contact-watta-bottom-cta {
+  background: linear-gradient(125deg, #0c3028 0%, #145142 50%, #1a6b58 100%);
+  box-shadow: 0 20px 60px rgba(20, 81, 66, 0.35);
+}
+
+/* --- /about: адаптив героя, заголовків і CTA (телефон / планшет / десктоп) --- */
+#about-page-container.about-page-web {
+  overflow-x: clip;
+}
+
+.about-page-hero-web .about-page-hero-wordmark {
+  font-size: clamp(2rem, 11vw, 6.5rem);
+  overflow-wrap: anywhere;
+}
+
+.about-page-hero-web .about-page-hero-milestone {
+  padding-top: 0.25rem;
+}
+
+@media (max-width: 1023px) {
+  .about-page-hero-web .about-page-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-page-hero-web .about-page-hero-milestone {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .about-page-hero-web .about-page-hero-milestone p:last-child {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-page-hero-web .about-page-hero-wordmark {
+    font-size: clamp(1.85rem, 12vw, 2.65rem);
+    line-height: 1;
+  }
+
+  .about-page-philosophy-heading-wrap {
+    padding-inline: 0.25rem;
+  }
+
+  .about-page-art-web img {
+    max-width: min(72vw, 280px);
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .about-page-hero-web .about-page-hero-grid {
+    align-items: end;
+  }
+}
+
+@media (min-width: 640px) {
+  .about-page-philosophy-heading-wrap {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 1024px) {
+  .about-page-hero-web .about-page-hero-wordmark {
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+  }
+}
+
+/* ——— Blog (/blog) ——— */
+.watta-blog-page {
+  --watta-blog-accent: #145142;
+  --watta-blog-read: #27ae60;
+  flex: 1 1 auto;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.watta-blog-page__toolbar {
+  position: relative;
+  z-index: 2;
+  padding: clamp(0.35rem, 1.2vw, 0.75rem)
+    max(1rem, env(safe-area-inset-right, 0px))
+    0.5rem
+    max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.watta-blog-back--inline {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+.watta-blog-page__inner {
+  width: 100%;
+  max-width: min(100rem, calc(100vw - 2rem));
+  margin-inline: auto;
+  padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.watta-blog-page__header {
+  margin-bottom: clamp(1.35rem, 3.2vw, 2.25rem);
+  max-width: 44rem;
+}
+
+.watta-blog-page__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.75rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--watta-blog-accent);
+  background: color-mix(in srgb, var(--watta-blog-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--watta-blog-accent) 16%, transparent);
+}
+
+.watta-blog-page__kicker-ico {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.watta-blog-page__title {
+  color: #0f2a22;
+  margin: 0;
+}
+
+.watta-blog-page__subtitle {
+  margin: 0.65rem 0 0;
+  color: color-mix(in srgb, var(--watta-blog-accent) 72%, #0a1f1a);
+}
+
+.watta-blog-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1rem, 2.5vw, 1.35rem);
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .watta-blog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .watta-blog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .watta-blog-page__inner {
+    max-width: min(
+      100rem,
+      calc(100vw - max(3rem, env(safe-area-inset-left, 0px)) - max(3rem, env(safe-area-inset-right, 0px)))
+    );
+  }
+
+  .watta-blog-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .watta-blog-card--featured {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+
+  .watta-blog-card--featured .watta-blog-card__media {
+    aspect-ratio: 16 / 9;
+  }
+
+  .watta-blog-card--featured .watta-blog-card__title {
+    font-size: clamp(1.35rem, 2.2vw, 1.65rem);
+  }
+}
+
+.watta-blog-card {
+  border-radius: 1.35rem;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--watta-blog-accent) 10%, transparent);
+  box-shadow: 0 10px 36px -22px rgba(20, 81, 66, 0.35);
+  overflow: hidden;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.watta-blog-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--watta-blog-accent) 22%, transparent);
+  box-shadow: 0 18px 44px -20px rgba(20, 81, 66, 0.42);
+}
+
+.watta-blog-card__hit-area {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.watta-blog-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(145deg, #eef6f2 0%, #f8faf9 100%);
+  overflow: hidden;
+}
+
+.watta-blog-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.watta-blog-card:hover .watta-blog-card__img {
+  transform: scale(1.03);
+}
+
+.watta-blog-card__no-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.watta-blog-card__no-photo-mark {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: color-mix(in srgb, var(--watta-blog-accent) 18%, transparent);
+}
+
+.watta-blog-card__featured {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #155044;
+  box-shadow: 0 6px 16px rgba(4, 18, 14, 0.28);
+}
+
+.watta-blog-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1rem 1.05rem 1.15rem;
+}
+
+.watta-blog-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.watta-blog-card__category {
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--watta-blog-accent) 88%, #0a1f1a);
+  background: color-mix(in srgb, var(--watta-blog-accent) 8%, #fff);
+  border: 1px solid color-mix(in srgb, var(--watta-blog-accent) 12%, transparent);
+}
+
+.watta-blog-card__date {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--watta-blog-accent) 45%, #6b7c78);
+}
+
+.watta-blog-card__title {
+  margin: 0;
+  font-size: clamp(1.02rem, 2.4vw, 1.18rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #0f2a22;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.watta-blog-card__excerpt {
+  margin: 0.5rem 0 0;
+  flex: 1;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--watta-blog-accent) 42%, #4a5c57);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.watta-blog-card__cta {
+  margin-top: 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+/* Article */
+.watta-blog-article-page {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: min(52rem, calc(100vw - 2rem));
+  margin-inline: auto;
+  padding: 0 max(1rem, env(safe-area-inset-left, 0px)) max(2rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.watta-blog-article-page__toolbar {
+  padding: clamp(0.35rem, 1.2vw, 0.75rem) 0 1rem;
+}
+
+.watta-blog-article {
+  overflow: hidden;
+  border-radius: clamp(1.25rem, 2.8vw, 1.75rem);
+  border: 1px solid color-mix(in srgb, #145142 12%, transparent);
+  background: #fff;
+  box-shadow: 0 16px 48px -28px rgba(20, 81, 66, 0.38);
+}
+
+.watta-blog-article__hero-media {
+  aspect-ratio: 16 / 9;
+  max-height: min(52vh, 480px);
+  overflow: hidden;
+  background: linear-gradient(145deg, #eef6f2 0%, #e8eeec 100%);
+}
+
+.watta-blog-article__hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watta-blog-article__body {
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+.watta-blog-article__meta {
+  margin: 0 0 0.75rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: color-mix(in srgb, #145142 55%, #6b7c78);
+}
+
+.watta-blog-article__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #0f2a22;
+}
+
+.watta-blog-article__video {
+  margin-top: 1.5rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, #145142 14%, transparent);
+}
+
+.watta-blog-article__video-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
+.watta-blog-article__prose {
+  margin-top: 1.5rem;
+  white-space: pre-wrap;
+  font-size: clamp(1rem, 2.2vw, 1.08rem);
+  line-height: 1.75;
+  color: color-mix(in srgb, #0f2a22 88%, #145142);
+}
+
+.watta-blog-route {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* ——— Reviews (/reviews) ——— */
+.watta-reviews-page {
+  --watta-reviews-accent: #145142;
+  flex: 1 1 auto;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.watta-reviews-page__toolbar {
+  position: relative;
+  z-index: 2;
+  padding: clamp(0.35rem, 1.2vw, 0.75rem)
+    max(1rem, env(safe-area-inset-right, 0px))
+    0.5rem
+    max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.watta-reviews-back--inline {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+.watta-reviews-page__inner {
+  width: 100%;
+  max-width: min(100rem, calc(100vw - 2rem));
+  margin-inline: auto;
+  padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.watta-reviews-page__header {
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+  max-width: 44rem;
+}
+
+.watta-reviews-page__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.75rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--watta-reviews-accent);
+  background: color-mix(in srgb, var(--watta-reviews-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--watta-reviews-accent) 16%, transparent);
+}
+
+.watta-reviews-page__kicker-ico {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.watta-reviews-page__title {
+  color: #0f2a22;
+  margin: 0;
+}
+
+.watta-reviews-page__subtitle {
+  margin: 0.65rem 0 0;
+  color: color-mix(in srgb, var(--watta-reviews-accent) 72%, #0a1f1a);
+}
+
+.watta-reviews-page__stats {
+  margin: 0.85rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--watta-reviews-accent) 88%, #0a1f1a);
+}
+
+.watta-reviews-page__cta-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: clamp(1.35rem, 3vw, 2rem);
+  padding: clamp(1.15rem, 3vw, 1.5rem);
+  border-radius: 1.35rem;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--watta-reviews-accent) 6%, #fff) 0%,
+    #fff 55%
+  );
+  border: 1px solid color-mix(in srgb, var(--watta-reviews-accent) 14%, transparent);
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--watta-reviews-accent) 8%, transparent);
+}
+
+.watta-reviews-page__cta-card--logged {
+  background: linear-gradient(
+    145deg,
+    #fff 0%,
+    color-mix(in srgb, var(--watta-reviews-accent) 5%, #fff) 100%
+  );
+}
+
+.watta-reviews-page__cta-title {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.4vw, 1.2rem);
+  font-weight: 800;
+  color: #0f2a22;
+}
+
+.watta-reviews-page__cta-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--watta-reviews-accent) 65%, #334);
+}
+
+.watta-reviews-page__cta-muted {
+  margin: 0;
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--watta-reviews-accent) 50%, #667);
+}
+
+.watta-reviews-page__cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.35rem;
+  padding: 0.75rem 1.35rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.watta-reviews-page__cta-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--watta-reviews-accent) 28%, transparent);
+}
+
+.watta-reviews-page__cta-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--watta-reviews-accent) 34%, transparent);
+}
+
+.watta-reviews-page__order-pick-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.watta-reviews-page__order-pick {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--watta-reviews-accent) 16%, transparent);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.watta-reviews-page__order-pick:hover {
+  border-color: color-mix(in srgb, var(--watta-reviews-accent) 35%, transparent);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--watta-reviews-accent) 10%, transparent);
+  transform: translateY(-1px);
+}
+
+.watta-reviews-page__order-pick-label {
+  font-weight: 800;
+  color: var(--watta-reviews-accent);
+}
+
+.watta-reviews-page__order-pick-date {
+  font-size: 0.82rem;
+  color: #667;
+}
+
+.watta-reviews-page__feed-title {
+  margin: 0 0 clamp(0.85rem, 2vw, 1.15rem);
+  font-size: clamp(1.1rem, 2.6vw, 1.35rem);
+  font-weight: 800;
+  color: #0f2a22;
+}
+
+.watta-reviews-page__loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.watta-reviews-page__empty {
+  margin: 0;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+  border-radius: 1.35rem;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--watta-reviews-accent) 55%, #445);
+  background: #fff;
+  border: 1px dashed color-mix(in srgb, var(--watta-reviews-accent) 22%, transparent);
+}
+
+.watta-reviews-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(0.85rem, 2.2vw, 1.15rem);
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .watta-reviews-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-reviews-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.watta-review-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: clamp(1rem, 2.5vw, 1.2rem);
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--watta-reviews-accent) 10%, transparent);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--watta-reviews-accent) 6%, transparent);
+}
+
+.watta-review-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.watta-review-card__author {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #0f2a22;
+}
+
+.watta-review-card__date {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: #778;
+}
+
+.watta-review-card__text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, #0f2a22 88%, #145142);
+  white-space: pre-wrap;
+}
+
+.watta-review-card__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.watta-review-card__photo {
+  width: 4.25rem;
+  height: 4.25rem;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--watta-reviews-accent) 12%, transparent);
+}
+
+.watta-review-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watta-reviews-route {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/*
+ * Fixed chrome (portal на body): панель категорій завжди під шапкою, без position:sticky.
+ * Інакше на головній (.content-web scroll) чіпи «відриваються» і їдуть поверх контенту.
+ */
+body > .watta-sticky-chrome-portal .categories-panel-wrapper-web,
+.watta-sticky-chrome-flow-anchor .categories-panel-wrapper-web,
+.watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
+.watta-public-sticky-chrome .categories-panel-wrapper-web,
+.menu-page-web .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
 }
 

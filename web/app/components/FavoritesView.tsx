@@ -7,6 +7,7 @@ import {
 import LogoBackground from './LogoBackground'
 import toast from 'react-hot-toast'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { appendCartLines } from '@/lib/cartStorage'
 
 interface FavoritesViewProps {
   onBack: () => void
@@ -53,12 +54,15 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
 
   // Добавление в корзину
   const addToCart = (item: MenuItem) => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    // Нормализуем имя для корзины (если есть name_ru, используем его)
-    const cartItem = { ...item, name: item.name }
-    cart.push(cartItem)
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
+    appendCartLines({
+      id: item.id,
+      name: item.name,
+      description: item.description || '',
+      price: item.price,
+      category: '',
+      emoji: item.emoji ?? '🍣',
+      imageUrl: item.imageUrl,
+    })
     toast.success(t.productDetail.addedHint)
   }
 

@@ -1,10 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { ArrowLeft, BookOpen } from 'lucide-react'
 import { useMemo } from 'react'
 import { useLanguage } from '@/app/context/LanguageContext'
-const READ_LINK = '#27AE60'
+
+const READ_LINK = '#27ae60'
 
 export interface BlogPostPreview {
   id: number
@@ -32,77 +35,115 @@ function formatCardDate(iso: string, lang: string): string {
   return `${day}.${month}.${d.getFullYear()}`
 }
 
-export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] }) {
-  const { t, language } = useLanguage()
+function excerptFromContent(content: string, max = 150): string {
+  const flat = content.replace(/\s+/g, ' ').trim()
+  if (!flat) return ''
+  if (flat.length <= max) return flat
+  return `${flat.slice(0, max).trim()}…`
+}
 
-  const rows = useMemo((): BlogCardRow[] => {
-    if (posts.length > 0) return posts
-    return []
-  }, [posts])
+function BlogBackButton({ label, onBack }: { label: string; onBack: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onBack}
+      className="auth-watta-back-fab watta-blog-back watta-blog-back--inline"
+    >
+      <span className="auth-watta-back-fab__icon" aria-hidden>
+        <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
+      </span>
+      <span className="auth-watta-back-fab__text">{label}</span>
+    </button>
+  )
+}
+
+export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] }) {
+  const router = useRouter()
+  const { t, language } = useLanguage()
+  const b = t.blogPublic
+
+  const rows = useMemo((): BlogCardRow[] => posts, [posts])
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-10 sm:mb-12"
-      >
-        <h1
-          className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl md:text-5xl lg:text-6xl"
-          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-        >
-          {t.blogPublic.title}
-        </h1>
-        {rows.length > 0 ? (
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg">{t.blogPublic.subtitle}</p>
-        ) : null}
-      </motion.div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 lg:grid-cols-3 xl:grid-cols-4">
-        {rows.map((post, i) => {
-          const category = post.category ?? t.blogPublic.cardCategoryFallback
-          const dateStr = post.dateDisplay ?? formatCardDate(post.createdAt, language)
-
-          return (
-            <motion.article
-              key={`${post.id}-${post.slug}`}
-              initial={{ opacity: 0, y: 22 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, type: 'spring', damping: 24 }}
-              className="flex flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-            >
-              <Link
-                href={`/blog/${post.slug}`}
-                className="flex min-h-0 flex-1 cursor-pointer flex-col rounded-[22px] text-inherit no-underline outline-none ring-offset-2 transition focus-visible:ring-2 focus-visible:ring-[#27AE60]"
-              >
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
-                  {post.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={post.imageUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-sm text-gray-400">
-                      {t.common.brandShort}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <div className="mb-3 flex items-center justify-between gap-2 text-xs sm:text-sm">
-                    <span className="max-w-[65%] truncate rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-600">
-                      {category}
-                    </span>
-                    <time className="shrink-0 font-medium text-gray-400">{dateStr}</time>
-                  </div>
-                  <h2 className="line-clamp-3 text-lg font-black leading-snug text-gray-900 sm:text-xl">{post.title}</h2>
-                  <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-gray-500">{post.content}</p>
-                  <span className="mt-4 self-start text-sm font-bold" style={{ color: READ_LINK }}>
-                    {t.blogPublic.readMore}
-                  </span>
-                </div>
-              </Link>
-            </motion.article>
-          )
-        })}
+    <motion.div
+      className="watta-blog-page watta-blog-page--route relative w-full min-w-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <div className="watta-blog-page__toolbar">
+        <BlogBackButton label={t.auth.back} onBack={() => router.push('/')} />
       </div>
-    </div>
+
+      <motion.div
+        className="watta-blog-page__inner"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <header className="watta-blog-page__header">
+          <p className="watta-blog-page__kicker">
+            <BookOpen className="watta-blog-page__kicker-ico" strokeWidth={2.25} aria-hidden />
+            {b.heroKicker}
+          </p>
+          <h1 className="watta-blog-page__title home-after-hero-intro-title-web">{b.title}</h1>
+          <p className="watta-blog-page__subtitle home-after-hero-intro-body-web">{b.subtitle}</p>
+        </header>
+
+        <div className="watta-blog-grid" role="list">
+          {rows.map((post, i) => {
+            const category = post.category ?? b.cardCategoryFallback
+            const dateStr = post.dateDisplay ?? formatCardDate(post.createdAt, language)
+            const excerpt = excerptFromContent(post.content)
+            const featured = i === 0
+
+            return (
+              <motion.article
+                key={`${post.id}-${post.slug}`}
+                role="listitem"
+                className={`watta-blog-card${featured ? ' watta-blog-card--featured' : ''}`}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04, type: 'spring', damping: 26 }}
+              >
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="watta-blog-card__hit-area"
+                  aria-label={`${b.readMore}: ${post.title}`}
+                >
+                  <div className="watta-blog-card__media">
+                    {post.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={post.imageUrl}
+                        alt=""
+                        className="watta-blog-card__img"
+                        loading={i < 4 ? 'eager' : 'lazy'}
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="watta-blog-card__no-photo" aria-hidden>
+                        <span className="watta-blog-card__no-photo-mark">W</span>
+                      </div>
+                    )}
+                    {featured ? <span className="watta-blog-card__featured">{b.featuredBadge}</span> : null}
+                  </div>
+                  <div className="watta-blog-card__body">
+                    <div className="watta-blog-card__meta">
+                      <span className="watta-blog-card__category">{category}</span>
+                      {dateStr ? <time className="watta-blog-card__date">{dateStr}</time> : null}
+                    </div>
+                    <h2 className="watta-blog-card__title">{post.title}</h2>
+                    {excerpt ? <p className="watta-blog-card__excerpt">{excerpt}</p> : null}
+                    <span className="watta-blog-card__cta" style={{ color: READ_LINK }}>
+                      {b.readMore}
+                    </span>
+                  </div>
+                </Link>
+              </motion.article>
+            )
+          })}
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }

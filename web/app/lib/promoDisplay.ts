@@ -35,6 +35,38 @@ export function promoTpl(template: string, vars: Record<string, string | number>
   return s
 }
 
+export type PromoListItem = {
+  id: number
+  title: string
+  description?: string | null
+  content?: string | null
+  imageUrl?: string | null
+  galleryUrls?: unknown
+  productOffers?: unknown
+  isHit?: boolean
+  createdAt?: string
+  displayDate?: string
+  categoryLabel?: string
+  offerProducts?: unknown
+  error?: string
+}
+
+/** Публічний список: лише валідні записи, без об’єктів помилки API */
+export function normalizePromoList(data: unknown): PromoListItem[] {
+  if (!Array.isArray(data)) return []
+  const out: PromoListItem[] = []
+  for (const row of data) {
+    if (!row || typeof row !== 'object') continue
+    const r = row as Record<string, unknown>
+    if ('error' in r) continue
+    const id = Number(r.id)
+    const title = typeof r.title === 'string' ? r.title.trim() : ''
+    if (!Number.isFinite(id) || id < 1 || !title) continue
+    out.push(row as PromoListItem)
+  }
+  return out
+}
+
 /** Кількість прив’язаних до новини акційних страв (з productOffers) */
 export function promoProductOffersCount(productOffers: unknown): number {
   const rows = parseJsonArray(productOffers)

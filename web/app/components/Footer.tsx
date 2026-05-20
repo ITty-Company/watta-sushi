@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Instagram, Mail, Send } from 'lucide-react'
@@ -12,6 +12,8 @@ import {
   WATTA_TELEGRAM_URL,
   WATTA_TIKTOK_URL,
 } from '@/lib/wattaSiteDefaults'
+import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
+import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -71,36 +73,52 @@ export default function Footer({ className }: FooterProps) {
   const year = new Date().getFullYear()
   const legal = nav.footerLegal.replace('{{year}}', String(year))
   const [locationLines, setLocationLines] = useState<string[]>([])
+  const { showPromotionsNav } = usePublicPromotionsNav()
+  const { showBlogNav } = usePublicBlogNav()
 
   const phones = [{ label: sf.phone1, href: `tel:${WATTA_PHONE_E164}` }]
 
-  const pillLinks = [
-    { href: '/menu', label: nav.menu },
-    { href: '/promotions', label: nav.promotions },
-    { href: '/delivery', label: nav.deliveryPage },
-    { href: '/blog', label: sf.blog },
-    { href: '/reviews', label: sf.reviews },
-    { href: '/about', label: nav.about },
-    { href: '/contacts', label: nav.contacts },
-  ]
+  const pillLinks = useMemo(() => {
+    const links = [
+      { href: '/menu', label: nav.menu },
+      { href: '/promotions', label: nav.promotions },
+      { href: '/delivery', label: nav.deliveryPage },
+      { href: '/blog', label: sf.blog },
+      { href: '/reviews', label: sf.reviews },
+      { href: '/about', label: nav.about },
+      { href: '/contacts', label: nav.contacts },
+    ]
+    return links.filter((l) => {
+      if (l.href === '/promotions' && !showPromotionsNav) return false
+      if (l.href === '/blog' && !showBlogNav) return false
+      return true
+    })
+  }, [nav, sf, showPromotionsNav, showBlogNav])
 
   /** Колонка «Навігація» — ті самі основні сторінки, що й у drawer / pills, плюс кошик, профіль, сповіщення, вхід. */
-  const navLinks = [
-    { href: '/', label: nav.home },
-    { href: '/menu', label: nav.menu },
-    { href: '/promotions', label: nav.promotions },
-    { href: '/delivery', label: nav.delivery },
-    { href: '/blog', label: sf.blog },
-    { href: '/reviews', label: sf.reviews },
-    { href: '/about', label: nav.about },
-    { href: '/contacts', label: nav.contacts },
-    { href: '/favorites', label: nav.favorites },
-    { href: '/cart', label: t.cart },
-    { href: '/profile', label: t.profile },
-    { href: '/notifications', label: t.notifications.title },
-    { href: '/login', label: t.auth.login },
-    { href: '/register', label: t.auth.register },
-  ]
+  const navLinks = useMemo(() => {
+    const links = [
+      { href: '/', label: nav.home },
+      { href: '/menu', label: nav.menu },
+      { href: '/promotions', label: nav.promotions },
+      { href: '/delivery', label: nav.delivery },
+      { href: '/blog', label: sf.blog },
+      { href: '/reviews', label: sf.reviews },
+      { href: '/about', label: nav.about },
+      { href: '/contacts', label: nav.contacts },
+      { href: '/favorites', label: nav.favorites },
+      { href: '/cart', label: t.cart },
+      { href: '/profile', label: t.profile },
+      { href: '/notifications', label: t.notifications.title },
+      { href: '/login', label: t.auth.login },
+      { href: '/register', label: t.auth.register },
+    ]
+    return links.filter((l) => {
+      if (l.href === '/promotions' && !showPromotionsNav) return false
+      if (l.href === '/blog' && !showBlogNav) return false
+      return true
+    })
+  }, [nav, sf, t, showPromotionsNav, showBlogNav])
 
   const navMid = Math.ceil(navLinks.length / 2)
   const navLinksCol1 = navLinks.slice(0, navMid)
@@ -274,7 +292,7 @@ export default function Footer({ className }: FooterProps) {
             ) : null}
           </div>
 
-          <div className="site-footer-watta__nav-colophon site-footer-watta__grid-colophon">
+          <div className="site-footer-watta__nav-colophon site-footer-watta__grid-colophon site-footer-watta__legal-bar">
             <span className="site-footer-watta__nav-colophon-copy" suppressHydrationWarning>
               {legal}
             </span>

@@ -8,8 +8,9 @@ import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
+import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { loadFavoriteProducts } from '@/lib/favoritesStorage'
-import WattaSiteStickyChrome from './WattaSiteStickyChrome'
+import { productGalleryFromApi } from '@/lib/productGallery'
 import { MenuHighlightStack, type MenuHighlightStackItem } from './MenuHighlightStack'
 import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
 
@@ -44,7 +45,7 @@ export default function FavoritesPageClient() {
       description: getLocalized(p as never, 'description') || '',
       price: Number(p.price),
       emoji: '🍣',
-      imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+      imageUrl: productGalleryFromApi(p)[0] || (typeof p.imageUrl === 'string' ? p.imageUrl : undefined),
       isTop: p.isPopular === true,
       promoDiscountPercent:
         typeof p.promoDiscountPercent === 'number'
@@ -54,10 +55,10 @@ export default function FavoritesPageClient() {
     [getLocalized],
   )
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (fresh = false) => {
     setLoading(true)
     try {
-      const list = await loadFavoriteProducts((p) => mapRawToCard(p))
+      const list = await loadFavoriteProducts((p) => mapRawToCard(p), { fresh })
       setItems(list)
     } catch {
       setItems([])
@@ -73,6 +74,8 @@ export default function FavoritesPageClient() {
     }
     void load()
   }, [load, language, router])
+
+  useWattaCatalogSync(() => void load(true), 'products')
 
   useEffect(() => {
     if (!isUserLoggedIn()) return
@@ -118,9 +121,6 @@ export default function FavoritesPageClient() {
 
   return (
     <div className="menu-page-web watta-favorites-page relative flex w-full max-w-[100vw] min-w-0 shrink-0 flex-col overflow-x-hidden watta-page-bg">
-      <WattaSiteStickyChrome flowHeightFudgePx={4} />
-      <div className="menu-content-top-gap-web w-full shrink-0 bg-transparent" aria-hidden />
-
       <div className="watta-favorites-page__content relative z-[1] w-full min-w-0">
         {loading ? (
           <FavoritesGridSkeleton />

@@ -13,7 +13,7 @@ export const WATTA_DELIVERY_HERO_VIDEO_FALLBACKS = [
 
 export const WATTA_DELIVERY_HERO_PRIMARY_MP4 = WATTA_DELIVERY_HERO_VIDEO_FALLBACKS[0]
 
-export const WATTA_DELIVERY_HERO_POSTER = '/watta-sushi.jpg' as const
+export const WATTA_DELIVERY_HERO_POSTER = '/sushi.webp' as const
 
 export const WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT = 'watta:delivery-hero-video-updated' as const
 

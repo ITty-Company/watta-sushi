@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -10,6 +11,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
+import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 
 type WattaStickyChromeLayoutProps = {
@@ -36,8 +38,8 @@ const defaultFlowHeightFudgePx = 10
 const DEFAULT_FLOW_LAYOUT_MAX_PX = 320
 
 /**
- * Липка верхня зона: fixed до viewport + резерв висоти в потоці, щоб контент не їхав під шапку.
- * Надійніше, ніж position: sticky, при nested overflow / WebKit.
+ * Липка верхня зона: fixed до viewport (portal на body) + резерв висоти в потоці.
+ * Portal потрібен: .content-web на головній скролиться з overflow — інакше fixed «пливе» разом із контентом.
  */
 export default function WattaStickyChromeLayout({
   children,
@@ -47,13 +49,18 @@ export default function WattaStickyChromeLayout({
   flowHeightMaxPx = DEFAULT_FLOW_LAYOUT_MAX_PX,
 }: WattaStickyChromeLayoutProps) {
   const [flowH, setFlowH] = useState(0)
+  const [portalReady, setPortalReady] = useState(false)
   const localRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
 
   const toFlowLayoutHeight = useCallback(
     (raw: number) => {
       if (raw < 8) return 0
-      /* floor — менший резерв, ніж ceil; менше «зайвого повітря» до героя */
-      return Math.min(flowHeightMaxPx, Math.max(8, Math.floor(raw) - flowHeightFudgePx))
+      /* ceil — трохи більший резерв, щоб fixed chrome не накривав перший блок контенту / футер */
+      return Math.min(flowHeightMaxPx, Math.max(8, Math.ceil(raw) - flowHeightFudgePx))
     },
     [flowHeightFudgePx, flowHeightMaxPx]
   )
@@ -94,6 +101,28 @@ export default function WattaStickyChromeLayout({
     }
   }, [children, chromeClassName, toFlowLayoutHeight, flowHeightFudgePx, flowHeightMaxPx])
 
+  useLayoutEffect(() => {
+    const el = localRef.current
+    const root = document.documentElement
+    const sync = () => {
+      const raw = el?.offsetHeight ?? 0
+      if (raw >= 8) {
+        root.style.setProperty('--watta-sticky-chrome-measured-h', `${raw}px`)
+      }
+      if (flowH >= 8) {
+        root.style.setProperty('--watta-sticky-chrome-flow-h', `${flowH}px`)
+      }
+    }
+    sync()
+    return () => {
+      requestAnimationFrame(() => {
+        if (document.querySelector('.watta-sticky-chrome-flow-anchor')) return
+        root.style.removeProperty('--watta-sticky-chrome-measured-h')
+        root.style.removeProperty('--watta-sticky-chrome-flow-h')
+      })
+    }
+  }, [flowH])
+
   const anchorStyle: CSSProperties | undefined = flowH
     ? {
         minHeight: flowH,
@@ -101,21 +130,28 @@ export default function WattaStickyChromeLayout({
       }
     : undefined
 
+  const chromeNode = (
+    <div
+      ref={setInnerNode}
+      data-watta-sticky-chrome-portal=""
+      className={clsx(
+        'watta-sticky-chrome-portal fixed top-0 left-0 right-0 z-[200] w-full max-w-[100vw] pointer-events-auto',
+        chromeClassName
+      )}
+    >
+      {children}
+    </div>
+  )
+
   return (
     <div
       className="watta-sticky-chrome-flow-anchor shrink-0 w-full"
       style={anchorStyle}
       aria-hidden={false}
     >
-      <div
-        ref={setInnerNode}
-        className={clsx(
-          'fixed top-0 left-0 right-0 z-[200] w-full max-w-[100vw] pointer-events-auto',
-          chromeClassName
-        )}
-      >
-        {children}
-      </div>
+      {portalReady && typeof document !== 'undefined'
+        ? createPortal(chromeNode, document.body)
+        : null}
     </div>
   )
 }
