@@ -25,15 +25,10 @@ import {
   isCityChoiceExplicit,
   persistUserCityChoice,
 } from '@/lib/wattaSiteLocalePrefs'
-import { getDeliveryHeroVideoSources } from '@/lib/deliveryHeroVideoSources'
-import { parseDeliveryHeroVideoUrlsFromApi } from '@/lib/deliveryHeroVideoSettings'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
-import {
-  WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT,
-  getPrimaryDeliveryHeroVideoSrc,
-} from '@/lib/wattaDeliveryHeroVideo'
+import { useHomeHeroVideo } from '@/hooks/useHomeHeroVideo'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
-import DeliveryWelcomeHeroSection from './DeliveryWelcomeHeroSection'
+import WelcomeHeroSection from './WelcomeHeroSection'
 import { MapPin, Search, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 function escapeHtml(s: string) {
@@ -225,16 +220,16 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     deliveryTariffStepEur: 1.5,
   })
 
-  const [deliveryHeroAdminUrls, setDeliveryHeroAdminUrls] = useState<string[]>([])
-  const [deliveryHeroVideoFailed, setDeliveryHeroVideoFailed] = useState(false)
-  const [deliveryHeroVideoIndex, setDeliveryHeroVideoIndex] = useState(0)
-  const deliveryHeroVideoRef = useRef<HTMLVideoElement | null>(null)
-  const deliveryHeroPlaylist = useMemo(
-    () => getDeliveryHeroVideoSources(deliveryHeroAdminUrls),
-    [deliveryHeroAdminUrls],
-  )
-  const deliveryHeroVideoSrc =
-    deliveryHeroPlaylist[deliveryHeroVideoIndex] ?? deliveryHeroPlaylist[0] ?? getPrimaryDeliveryHeroVideoSrc()
+  const {
+    heroVideoRef: deliveryHeroVideoRef,
+    heroVideoSrc: deliveryHeroVideoSrc,
+    heroVideoFailed: deliveryHeroVideoFailed,
+    setHeroVideoFailed: setDeliveryHeroVideoFailed,
+    heroVideoSourceIndex: deliveryHeroVideoIndex,
+    setHeroVideoSourceIndex: setDeliveryHeroVideoIndex,
+    videoSources: deliveryHeroPlaylist,
+    playlistLength: deliveryHeroPlaylistLength,
+  } = useHomeHeroVideo()
 
   const [isNarrowViewport, setIsNarrowViewport] = useState(false)
   const deliveryNarrowStripHero = isNarrowViewport
@@ -248,11 +243,6 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     return () => mqNarrow.removeEventListener('change', applyNarrow)
   }, [])
 
-  useEffect(() => {
-    setDeliveryHeroVideoIndex(0)
-    setDeliveryHeroVideoFailed(false)
-  }, [deliveryHeroVideoSrc])
-
   const cityLabel = useCallback((c: City) => getLocalized(c, 'name') || c.name, [getLocalized])
 
   useEffect(() => {
@@ -261,8 +251,6 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
       freeDeliveryThreshold?: number
       deliveryTariffStepKm?: number
       deliveryTariffStepEur?: number
-      deliveryHeroVideoUrl?: string
-      deliveryHeroVideoUrls?: string[]
     }) => {
       if (
         typeof data.deliveryFee === 'number' ||
@@ -286,8 +274,6 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
               : prev.deliveryTariffStepEur,
         }))
       }
-      const urls = parseDeliveryHeroVideoUrlsFromApi(data)
-      if (urls.length > 0) setDeliveryHeroAdminUrls(urls)
     }
     const fetchSettings = async (fresh = false) => {
       try {
@@ -297,21 +283,10 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
         /* ignore */
       }
     }
-    const onHeroUpdated = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ url?: string; urls?: string[] }>).detail
-      const fromEvent = parseDeliveryHeroVideoUrlsFromApi({
-        deliveryHeroVideoUrls: detail?.urls,
-        deliveryHeroVideoUrl: detail?.url,
-      })
-      if (fromEvent.length > 0) setDeliveryHeroAdminUrls(fromEvent)
-      else void fetchSettings(true)
-    }
     void fetchSettings()
     const onSettings = () => void fetchSettings(true)
-    window.addEventListener(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
     window.addEventListener('settingsUpdated', onSettings)
     return () => {
-      window.removeEventListener(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
       window.removeEventListener('settingsUpdated', onSettings)
     }
   }, [])
@@ -602,25 +577,21 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     />
   )
 
-  const deliveryHeroVideoBlock = (opts?: { splitPanel?: boolean }) => (
-    <DeliveryWelcomeHeroSection
+  const deliveryHeroVideoBlock = () => (
+    <WelcomeHeroSection
       sectionRef={menuWelcomeHeroRef}
-      embedInMenu={embedInMenu}
-      splitPanel={opts?.splitPanel}
       heroVideoFailed={deliveryHeroVideoFailed}
       setHeroVideoSourceIndex={setDeliveryHeroVideoIndex}
       setHeroVideoFailed={setDeliveryHeroVideoFailed}
       heroVideoRef={deliveryHeroVideoRef}
       heroVideoSrc={deliveryHeroVideoSrc}
       videoSources={deliveryHeroPlaylist}
-      playlistLength={deliveryHeroPlaylist.length}
+      playlistLength={deliveryHeroPlaylistLength}
     >
-      {deliveryNarrowStripHero ? (
-        <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
-          <WattaHeroMarqueeBar />
-        </div>
-      ) : null}
-    </DeliveryWelcomeHeroSection>
+      <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
+        <WattaHeroMarqueeBar />
+      </div>
+    </WelcomeHeroSection>
   )
 
   const deliveryHeroVideoInStrip = deliveryNarrowStripHero ? (
@@ -638,27 +609,16 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     </>
   )
 
-  const deliveryStandaloneAdaptiveHero = isNarrowViewport ? (
-    <div className="delivery-page-hero-mobile-stack w-full shrink-0">
-      <div className="delivery-page-hero-mobile-copy w-full shrink-0">{deliveryHeroCopy}</div>
-      <div className="menu-home-narrow-strip-hero-web w-full min-w-0 shrink-0">
-        {deliveryHeroVideoBlock({ splitPanel: true })}
-      </div>
-    </div>
+  const deliveryStandaloneHeroStack = deliveryNarrowStripHero ? (
+    <>
+      {deliveryIntroSection}
+      {deliveryHeroVideoInStrip}
+    </>
   ) : (
-    <div className="delivery-page-hero-adaptive-shell w-full shrink-0">
-      <div className="delivery-page-hero-adaptive-grid">
-        <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--video">
-          {deliveryHeroVideoBlock({ splitPanel: true })}
-        </div>
-        <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--marquee">
-          <WattaHeroMarqueeBar />
-        </div>
-        <div className="delivery-page-hero-ad-cell delivery-page-hero-ad-cell--copy">
-          {deliveryHeroCopy}
-        </div>
-      </div>
-    </div>
+    <>
+      {deliveryHeroVideoInStrip}
+      <div className="delivery-page-after-hero-copy w-full shrink-0">{deliveryHeroCopy}</div>
+    </>
   )
 
   const deliveryPageBody = (
@@ -1088,8 +1048,9 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   }
 
   return (
-    <div className="menu-page-web watta-delivery-page watta-delivery-page--home-tone relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden watta-page-bg">
-      {deliveryStandaloneAdaptiveHero}
+    <div className="menu-page-web watta-delivery-page watta-delivery-page--home-tone watta-site-hero-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden watta-page-bg">
+      <div className="menu-content-top-gap-web w-full shrink-0" aria-hidden="true" />
+      {deliveryStandaloneHeroStack}
       {deliveryPageBody}
     </div>
   )

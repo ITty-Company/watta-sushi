@@ -3,6 +3,12 @@ import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { productGalleryFromApi, productHasGalleryImages } from '@/lib/productGallery'
+import {
+  attachIngredientsFromCatalog,
+  ensureIngredientsCatalog,
+  enrichProductRow,
+  parseIngredientIds,
+} from '@/lib/wattaIngredientsCatalog'
 
 export const WATTA_PRODUCT_DETAIL_CACHED_EVENT = 'watta:product-detail-cached' as const
 
@@ -31,6 +37,16 @@ function isProductRow(row: unknown): row is Record<string, unknown> {
 function hasIngredients(row: Record<string, unknown>): boolean {
   const ing = row.ingredients
   return Array.isArray(ing) && ing.length > 0
+}
+
+function hasIngredientIds(row: Record<string, unknown>): boolean {
+  return parseIngredientIds(row).length > 0
+}
+
+function enrichAndStoreDetail(row: Record<string, unknown>): Record<string, unknown> {
+  const enriched = enrichProductRow(row) ?? row
+  if (hasIngredients(enriched)) writeProductDetailCache(enriched)
+  return enriched
 }
 
 function mergeProductImages(
@@ -135,20 +151,26 @@ export function primeProductPageCache(product: {
       0,
     category: fromMenu?.category,
     ingredients: existingDetail?.ingredients ?? fromMenu?.ingredients,
+    ingredientIds:
+      parseIngredientIds(fromMenu ?? {}) ||
+      parseIngredientIds(existingDetail ?? {}) ||
+      [],
   }
 
+  const merged = enrichProductRow({ ...existingDetail, ...snapshot } as Record<string, unknown>) ?? snapshot
+
   if (existingDetail) {
-    writeProductDetailCache({ ...existingDetail, ...snapshot })
+    writeProductDetailCache(merged as Record<string, unknown>)
     return
   }
 
   if (typeof sessionStorage === 'undefined') return
   try {
-    sessionStorage.setItem(`${PRODUCT_PRIME_PREFIX}${id}`, JSON.stringify(snapshot))
+    sessionStorage.setItem(`${PRODUCT_PRIME_PREFIX}${id}`, JSON.stringify(merged))
   } catch {
     /* quota */
   }
-  memoryDetailCache.set(id, snapshot)
+  memoryDetailCache.set(id, merged as Record<string, unknown>)
 }
 
 async function fetchAndStoreProductDetail(
@@ -168,9 +190,9 @@ async function fetchAndStoreProductDetail(
       const list = await fetchProductList(cityIdOk, signal, fresh)
       row = mergeProductImages(row, findInRawList(list, id))
     }
-    writeProductDetailCache(row)
+    const enriched = enrichAndStoreDetail(row)
     dispatchDetailCached(id)
-    return row
+    return enriched
   } catch (e) {
     if (isAbortError(e)) throw e
     return null
@@ -211,22 +233,27 @@ export function prefetchProductById(id: number): void {
 /** Кеш меню, detail з API або snapshot з картки — синхронно. */
 export function readProductFromClientCache(id: number): Record<string, unknown> | null {
   const detail = readProductDetailCache(id)
-  if (detail) return detail
+  if (detail) return enrichProductRow(detail) ?? detail
 
-  if (typeof sessionStorage === 'undefined') return findProductInMenuSessionCaches(id)
+  if (typeof sessionStorage === 'undefined') {
+    const fromMenu = findProductInMenuSessionCaches(id)
+    return fromMenu ? enrichProductRow(fromMenu) : null
+  }
 
   try {
     const prime = sessionStorage.getItem(`${PRODUCT_PRIME_PREFIX}${id}`)
     if (prime) {
       const parsed = JSON.parse(prime) as unknown
       if (isProductRow(parsed)) {
-        return parsed as Record<string, unknown>
+        const row = parsed as Record<string, unknown>
+        return enrichProductRow(row) ?? row
       }
     }
   } catch {
     /* ignore */
   }
-  return findProductInMenuSessionCaches(id)
+  const fromMenu = findProductInMenuSessionCaches(id)
+  return fromMenu ? enrichProductRow(fromMenu) : null
 }
 
 /** Шукає сирий товар у sessionStorage (усі ключі menu_items_*). */
@@ -287,10 +314,19 @@ export async function fetchProductById(
     throw new DOMException('Aborted', 'AbortError')
   }
 
+  void ensureIngredientsCatalog()
+
   if (!options?.fresh) {
     const cached = readProductDetailCache(id)
-    if (cached && (hasIngredients(cached) || productHasGalleryImages(cached))) {
-      return cached
+    if (cached) {
+      const enriched = enrichProductRow(cached) ?? cached
+      if (enriched !== cached && hasIngredients(enriched)) writeProductDetailCache(enriched)
+      if (hasIngredients(enriched) || productHasGalleryImages(enriched)) return enriched
+      const withIng = attachIngredientsFromCatalog(enriched)
+      if (withIng && hasIngredients(withIng)) {
+        writeProductDetailCache(withIng)
+        return withIng
+      }
     }
   }
 
@@ -303,7 +339,7 @@ export async function fetchProductById(
 
   const fromCache = readProductFromClientCache(id)
   if (fromCache && isProductRow(fromCache)) {
-    return fromCache
+    return enrichProductRow(fromCache) ?? fromCache
   }
 
   const cityIdOk = typeof window !== 'undefined' ? readCityIdForProductApi() : null

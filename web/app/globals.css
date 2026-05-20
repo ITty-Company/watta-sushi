@@ -5,6 +5,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './watta-unified-site-hero.css';
+
 /* shadcn-совместимые токены (Tailwind: bg-background, text-primary, …) */
 @layer base {
   :root {
@@ -3274,26 +3276,32 @@ html.watta-light-chrome body {
   min-height: 0;
 }
 
-/* Головна: підвал у кінці скролу .content-web (не під viewport) */
+/*
+ * Головна: підвал у кінці скролу .content-web (після меню/банерів), не «прилипший» до viewport.
+ * Раніше min-height:100% + margin-top:auto на футері ставили його поверх каталогу.
+ */
 .content-web--watta-craft:has(> .site-footer-watta) {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 0;
 }
 
 .content-web--watta-craft:has(> .site-footer-watta) > *:not(.site-footer-watta) {
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   min-height: 0;
 }
 
 .content-web--watta-craft:has(> .site-footer-watta) > .site-footer-watta {
-  margin-top: auto;
+  margin-top: clamp(1.25rem, 2.5vh, 2rem);
+  flex: 0 0 auto;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
-/* Мінімум на всю висоту скрол-контейнера — футер лишається внизу, коли контент коротший */
 .content-web--watta-craft:has(> .site-footer-watta) > .menu-page-web {
-  min-height: 100%;
+  flex: 0 0 auto;
+  min-height: 0;
 }
 
 /* Головна: вертикальний snap вимкнено — на Safari/WebKit клієнт «застрягав» після банерів, каталог не прокручувався/не був видимий. */

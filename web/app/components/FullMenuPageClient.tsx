@@ -11,7 +11,7 @@ import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { getHeroVideoTouchLikeViewport } from '@/lib/heroVideoNativeDesktop'
-import { WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES } from '@/lib/wattaHeroVideo'
+import { useHomeHeroVideo } from '@/hooks/useHomeHeroVideo'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
@@ -83,12 +83,16 @@ export default function FullMenuPageClient() {
   /** Під `WattaPublicSiteChrome` (шапка + стрічка) — той самий візуальний блок, що на /product, /cart, … */
   const FULL_MENU_STICKY_RESERVE_PX = 180
 
-  const [heroVideoFailed, setHeroVideoFailed] = useState(false)
-  const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
-  const heroVideoRef = useRef<HTMLVideoElement | null>(null)
-  const heroVideoSrc =
-    WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES[heroVideoSourceIndex] ??
-    WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES[0]
+  const {
+    heroVideoRef,
+    heroVideoSrc,
+    heroVideoFailed,
+    setHeroVideoFailed,
+    heroVideoSourceIndex,
+    setHeroVideoSourceIndex,
+    videoSources,
+    playlistLength,
+  } = useHomeHeroVideo()
 
   /** Як на головній: ≤768px — поточна сітка; планшет+ — горизонтальний свайп. */
   const [isNarrowViewport, setIsNarrowViewport] = useState(false)
@@ -564,8 +568,8 @@ export default function FullMenuPageClient() {
           setHeroVideoFailed={setHeroVideoFailed}
           heroVideoRef={heroVideoRef}
           heroVideoSrc={heroVideoSrc}
-          videoSources={WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES}
-          playlistLength={WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES.length}
+          videoSources={videoSources}
+          playlistLength={playlistLength}
           ariaLabel={`${mv.fullMenuIntroHeadlineLead} — ${mv.fullMenuIntroHeadlineMark}`}
         >
           <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
@@ -598,7 +602,8 @@ export default function FullMenuPageClient() {
   )
 
   return (
-    <div className="watta-full-menu-page menu-page-web watta-page-bg flex min-h-full w-full max-w-[100vw] min-w-0 flex-1 flex-col">
+    <div className="watta-full-menu-page menu-page-web watta-site-hero-page-web watta-page-bg flex min-h-full w-full max-w-[100vw] min-w-0 flex-1 flex-col">
+      <div className="menu-content-top-gap-web w-full shrink-0" aria-hidden="true" />
       <div
         className={`watta-full-menu-top-stack w-full shrink-0 ${isNarrowViewport ? 'watta-full-menu-top-stack--intro-first' : ''}`}
       >
