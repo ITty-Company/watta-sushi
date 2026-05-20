@@ -77,6 +77,7 @@ import AdminReviewsPanel, { type AdminReviewRow } from './admin/AdminReviewsPane
 import AdminCartUpsellPanel from './admin/AdminCartUpsellPanel'
 import AdminCustomersPanel from './admin/AdminCustomersPanel'
 import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
+import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSave'
 
 function notifyCountriesCatalogUpdated() {
   broadcastWattaCatalogUpdate('countries')
@@ -1718,6 +1719,22 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         toast.error('Укажите корректную цену (число ≥ 0).')
         return
       }
+      const saveToastId = toast.loading('Сохранение…')
+      let imageUrlsForSave: string[]
+      try {
+        imageUrlsForSave = await resolveProductImageUrlsForSave(
+          formData.imageUrls,
+          uploadProductImageFiles,
+          GALLERY_MAX,
+        )
+      } catch (imgErr: unknown) {
+        toast.dismiss(saveToastId)
+        const msg =
+          imgErr instanceof Error ? imgErr.message : 'Не удалось загрузить фото перед сохранением'
+        toast.error(msg)
+        return
+      }
+
       const payload = {
         name_ru: (formData.name_ru || '').trim() || anyName,
         name_ua: (formData.name_ua || '').trim() || anyName,
@@ -1729,8 +1746,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         description_nl: '',
         price: priceNum,
         categoryId: Number(formData.categoryId),
-        imageUrl: formData.imageUrls[0] || '',
-        imageUrls: formData.imageUrls,
+        imageUrl: imageUrlsForSave[0] || '',
+        imageUrls: imageUrlsForSave,
         cityIds: (formData.cityIds || [])
           .map((id) => Number(id))
           .filter((n) => Number.isFinite(n) && n > 0),
@@ -1766,12 +1783,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         const saved = (await res.json()) as Product
         const normalized = normalizeAdminProductRow(saved)
         if (
-          formData.imageUrls.length > 0 &&
+          imageUrlsForSave.length > 0 &&
           !adminProductCoverSrc(normalized)
         ) {
           toast.error(
             'Товар збережено, але фото не збереглось на сервері. Перевірте UPLOAD_DIR на Render або спробуйте менший файл.',
+            { id: saveToastId },
           )
+        } else {
+          toast.dismiss(saveToastId)
         }
         skipCatalogRefetchRef.current = true
         setProducts((prev) => {
@@ -1790,6 +1810,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           skipCatalogRefetchRef.current = false
         }, 400)
       } else {
+        toast.dismiss(saveToastId)
         let errorMessage = 'Ошибка при сохранении'
         try {
           const error = await res.json()
@@ -1797,10 +1818,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
+        if (res.status === 502 || res.status === 504) {
+          errorMessage =
+            'Сервер не ответил вовремя (502). Загрузите фото кнопкой «Добавить», не вставляйте огромные файлы, подождите 10 сек и сохраните снова.'
+        }
         toast.error(errorMessage)
       }
     } catch (error: any) { 
       console.error('Ошибка сохранения товара:', error)
+      toast.dismiss()
       const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
       toast.error(`Ошибка соединения: ${errorMessage}`)
     } finally {
