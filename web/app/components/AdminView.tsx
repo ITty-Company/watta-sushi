@@ -1649,6 +1649,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { archived?: boolean; message?: string }
         setProducts((prev) => prev.filter((p) => p.id !== id))
         if (editingId === id) {
           setIsModalOpen(false)
@@ -1657,7 +1658,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('products')
         }
-        toast.success(t.adminPage.products.deleted)
+        toast.success(
+          data.archived
+            ? (data.message || 'Товар убран из меню (есть в заказах)')
+            : t.adminPage.products.deleted,
+        )
       } else {
         let errorMessage = 'Ошибка удаления'
         try {

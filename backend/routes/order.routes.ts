@@ -286,7 +286,9 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const productIds = [...new Set(requestedLines.map((l) => l.productId))];
-    const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds }, isArchived: false },
+    });
     if (products.length !== productIds.length) {
       res.status(400).json({ message: 'Деякі товари більше недоступні. Оновіть кошик.' });
       return;

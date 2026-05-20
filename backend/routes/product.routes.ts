@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC, PUBLIC_CACHE_MENU_SEC } from '../lib/publicApiCache.js';
 import path from 'path';
@@ -118,6 +118,8 @@ function sanitizeProductImagesForApi<T extends { imageUrl?: string | null; image
   return { ...p, imageUrl, imageUrls };
 }
 
+const whereNotArchived = { isArchived: false } as const;
+
 /** Доступність у місті: явне додавання в ProductCity АБО «усі міста» (нема жодного зв’язку). */
 function whereVisibleInCity(cityId: number | null) {
   if (cityId == null || !Number.isFinite(cityId) || cityId <= 0) return undefined;
@@ -138,7 +140,7 @@ router.get('/', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req, res) => {
     // Список для меню/адмін-таблиці: тільки category. Інакше 100+ товарів × ingredients → величезний JSON,
     // Safari/мобілка можуть не отримати тіло. Деталі — GET /:id, інгредієнти — /api/ingredients.
     const products = await prisma.product.findMany({
-      where: cityWhere,
+      where: { ...whereNotArchived, ...(cityWhere ? cityWhere : {}) },
       include: { category: true },
     });
     res.json(products.map(sanitizeProductImagesForApi));
@@ -528,7 +530,7 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
   }
 });
 
-// 5. Удалить товар
+// 5. Удалить товар (повне видалення або архівація, якщо є в замовленнях)
 router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -540,17 +542,67 @@ router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
     if (!existing) {
       return res.status(404).json({ message: 'Товар не найден' });
     }
-    await prisma.product.delete({
-      where: { id: productId },
-    });
-    res.json({ message: 'Товар удален', id: productId });
-  } catch (error: unknown) {
-    console.error(error);
-    const code = typeof error === 'object' && error && 'code' in error ? String((error as { code: string }).code) : '';
-    if (code === 'P2003') {
-      return res.status(409).json({
-        message: 'Нельзя удалить: товар есть в заказах. Снимите с витрины или обратитесь к разработчику.',
+    if (existing.isArchived) {
+      return res.json({
+        message: 'Товар уже убран из меню',
+        id: productId,
+        archived: true,
       });
+    }
+
+    const orderItems = await prisma.orderItem.count({ where: { productId } });
+
+    if (orderItems > 0) {
+      await prisma.$transaction(async (tx) => {
+        await tx.productCity.deleteMany({ where: { productId } });
+        await tx.favorite.deleteMany({ where: { productId } });
+        await tx.product.update({
+          where: { id: productId },
+          data: {
+            isArchived: true,
+            isPopular: false,
+            isMenuNew: false,
+            isHomeHit: false,
+            isCartRecommend: false,
+            ingredients: { set: [] },
+          },
+        });
+      });
+      return res.json({
+        message: 'Товар убран из меню (есть в заказах)',
+        id: productId,
+        archived: true,
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.favorite.deleteMany({ where: { productId } });
+      await tx.productCity.deleteMany({ where: { productId } });
+      await tx.product.update({
+        where: { id: productId },
+        data: { ingredients: { set: [] } },
+      });
+      await tx.product.delete({ where: { id: productId } });
+    });
+
+    res.json({ message: 'Товар удален', id: productId, archived: false });
+  } catch (error: unknown) {
+    console.error('DELETE /api/products/:id', error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2003' || error.code === 'P2014') {
+        return res.status(409).json({
+          message:
+            'Нельзя удалить: товар связан с заказами. Обновите страницу — после деплоя он будет скрыт из меню.',
+        });
+      }
+      if (error.code === 'P2025') {
+        return res.status(404).json({ message: 'Товар не найден' });
+      }
+      if (error.code === 'P2022') {
+        return res.status(503).json({
+          message: 'Нужна миграция БД (isArchived). Запустите deploy бэкенда с migrate deploy.',
+        });
+      }
     }
     res.status(500).json({ message: 'Ошибка удаления' });
   }
@@ -566,6 +618,7 @@ router.get('/recommendations', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req
       cityId && Number.isFinite(cityId) && cityId > 0 ? whereVisibleInCity(cityId) : undefined;
 
     const baseWhere: any = {
+      ...whereNotArchived,
       isCartRecommend: true,
       category: { is: { allowRecommendations: true } },
       ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
@@ -582,6 +635,7 @@ router.get('/recommendations', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req
     if (recommendations.length === 0) {
       recommendations = await prisma.product.findMany({
         where: {
+          ...whereNotArchived,
           ...(excludeId && Number.isFinite(excludeId) ? { id: { not: excludeId } } : {}),
           ...(cityScope || {}),
         },
@@ -620,7 +674,7 @@ router.get('/:id', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req: any, res: 
       } 
     });
 
-    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (!product || product.isArchived) return res.status(404).json({ error: 'Product not found' });
     res.json(sanitizeProductImagesForApi(product));
   } catch (e) {
     console.error(e);

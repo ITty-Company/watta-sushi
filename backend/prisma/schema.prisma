@@ -136,6 +136,8 @@ model Product {
   cartRecommendOrder    Int     @default(0)
   /// Акційна знижка у % (0 = без акції); ціна зі знижкою рахується на клієнті
   promoDiscountPercent Int     @default(0)
+  /// Приховано з меню (якщо товар є в замовленнях — замість фізичного видалення)
+  isArchived           Boolean @default(false)
 
   category   Category @relation(fields: [categoryId], references: [id])
   categoryId Int
