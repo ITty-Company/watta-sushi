@@ -1391,18 +1391,26 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
   const GALLERY_MAX = 24
 
-  const readFilesAsDataUrls = (files: File[]) =>
-    Promise.all(
-      files.map(
-        (f) =>
-          new Promise<string>((ok, err) => {
-            const r = new FileReader()
-            r.onloadend = () => ok(r.result as string)
-            r.onerror = () => err(new Error('read'))
-            r.readAsDataURL(f)
-          }),
-      ),
-    )
+  const uploadProductImageFiles = async (files: File[]): Promise<string[]> => {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Увійдіть знову в адмінку')
+    const urls: string[] = []
+    for (const file of files) {
+      const body = new FormData()
+      body.append('image', file)
+      const res = await fetch('/api/products/upload-image', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      })
+      const data = (await res.json().catch(() => ({}))) as { url?: string; message?: string }
+      if (!res.ok || !data.url?.trim()) {
+        throw new Error(data.message || `Помилка завантаження (${res.status})`)
+      }
+      urls.push(data.url.trim())
+    }
+    return urls
+  }
 
   const productImageInputRef = useRef<HTMLInputElement | null>(null)
   const [productGalleryDnd, setProductGalleryDnd] = useState(false)
@@ -1422,12 +1430,17 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       return
     }
     const slice = images.slice(0, remain)
-    void readFilesAsDataUrls(slice)
+    const toastId = toast.loading('Завантаження фото на сервер…')
+    void uploadProductImageFiles(slice)
       .then((urls) => {
         setFormData((p) => ({ ...p, imageUrls: [...p.imageUrls, ...urls].slice(0, GALLERY_MAX) }))
+        toast.success(urls.length === 1 ? 'Фото завантажено' : `Завантажено фото: ${urls.length}`, {
+          id: toastId,
+        })
       })
-      .catch(() => {
-        toast.error('Не вдалося прочитати файл')
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Не вдалося завантажити фото'
+        toast.error(msg, { id: toastId })
       })
   }
 
@@ -1692,6 +1705,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         if (typeof window !== 'undefined') {
           broadcastWattaCatalogUpdate('products')
         }
+        void fetchTabData('products', { force: true })
         toast.success(t.adminPage.products.saved)
       } else {
         let errorMessage = 'Ошибка при сохранении'

@@ -137,7 +137,10 @@ const nextConfig = {
       { source: '/apple-touch-icon.png', headers: longImmutable },
       { source: '/apple-touch-icon-precomposed.png', headers: longImmutable },
       { source: '/watta-page-texture.png', headers: longImmutable },
-      { source: '/uploads/:path*', headers: longImmutable },
+      {
+        source: '/uploads/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=300, must-revalidate' }],
+      },
       // Не кешировать API: иначе CDN/edge отдаёт чужие или устаревшие 401/403 и ломает админку.
       {
         source: '/api/:path*',
