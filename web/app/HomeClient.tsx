@@ -32,6 +32,8 @@ export default function HomeClient() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  /** Кошик/профіль/адмінка з MenuView — публічний підвал не показуємо */
+  const [hidePublicFooter, setHidePublicFooter] = useState(false)
 
   /**
    * Гідратація + повернення з іншої сторінки (SPA-back / bfcache / pageshow).
@@ -145,6 +147,16 @@ export default function HomeClient() {
     }
   }, [handleSwitchTab])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onHomeOverlay = (e: Event) => {
+      const active = Boolean((e as CustomEvent<{ active?: boolean }>).detail?.active)
+      setHidePublicFooter(active)
+    }
+    window.addEventListener('wattaHomeFullPageOverlay', onHomeOverlay)
+    return () => window.removeEventListener('wattaHomeFullPageOverlay', onHomeOverlay)
+  }, [])
+
   return (
     <WattaBootSplashGate onEnded={handleBootSplashEnded}>
     <div className="app-web flex min-h-0 flex-1 flex-col" suppressHydrationWarning>
@@ -175,7 +187,7 @@ export default function HomeClient() {
         {activeTab !== 0 ? (
           <NotificationsView isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
         ) : null}
-        <Footer />
+        {!hidePublicFooter ? <Footer /> : null}
       </div>
     </div>
     </WattaBootSplashGate>

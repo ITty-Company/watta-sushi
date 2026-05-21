@@ -473,6 +473,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const { t, adminUiLanguage, setAdminUiLanguage, getLocalized } = useLanguage()
   const reduceMotion = useReducedMotion()
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.body.classList.add('watta-admin-shell-open')
+    return () => document.body.classList.remove('watta-admin-shell-open')
+  }, [])
+
   const [activeTab, setActiveTab] = useState<
     | 'dashboard'
     | 'orders'
