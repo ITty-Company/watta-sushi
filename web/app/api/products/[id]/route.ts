@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 export async function PUT(request: NextRequest, context: RouteContext) {
   const { id } = await context.params
-  return proxyBackendRequest(request, `/api/products/${id}`, { method: 'PUT', timeoutMs: 120_000 })
+  return proxyBackendRequest(request, `/api/products/${id}`, { method: 'PUT', timeoutMs: 180_000 })
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {

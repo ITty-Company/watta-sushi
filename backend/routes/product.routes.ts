@@ -85,6 +85,13 @@ function normalizeProductImageList(imageUrls: unknown, imageUrl: unknown): strin
   return single ? [single] : [];
 }
 
+function bodyContainsDataUrl(imageUrls: unknown, imageUrl: unknown): boolean {
+  const check = (v: unknown) => typeof v === 'string' && v.trim().startsWith('data:image/');
+  if (check(imageUrl)) return true;
+  if (Array.isArray(imageUrls)) return imageUrls.some(check);
+  return false;
+}
+
 function hasIncomingImagePayload(imageUrls: unknown, imageUrl: unknown): boolean {
   if (Array.isArray(imageUrls)) {
     return imageUrls.some((x) => typeof x === 'string' && x.trim().length > 0);
@@ -397,6 +404,14 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
 
     const promoPct = Math.min(100, Math.max(0, Math.round(Number(promoDiscountPercent) || 0)))
 
+    if (bodyContainsDataUrl(imageUrlsBody, imageUrl)) {
+      return res.status(400).json({
+        error:
+          'Не отправляйте фото в base64 в JSON. Загрузите через кнопку «Добавить» и дождитесь «Фото загружено», затем сохраните.',
+        message: 'product_image_data_url_forbidden',
+      });
+    }
+
     const gallery = normalizeProductImageList(imageUrlsBody, imageUrl);
     if (hasIncomingImagePayload(imageUrlsBody, imageUrl) && gallery.length === 0) {
       return res.status(400).json({
@@ -499,6 +514,14 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
     });
     if (!existingProduct) {
       return res.status(404).json({ message: 'Товар не найден' });
+    }
+
+    if (bodyContainsDataUrl(imageUrlsBody, imageUrl)) {
+      return res.status(400).json({
+        error:
+          'Не отправляйте фото в base64 в JSON. Загрузите через кнопку «Добавить» и дождитесь «Фото загружено», затем сохраните.',
+        message: 'product_image_data_url_forbidden',
+      });
     }
 
     let gallery = normalizeProductImageList(imageUrlsBody, imageUrl);

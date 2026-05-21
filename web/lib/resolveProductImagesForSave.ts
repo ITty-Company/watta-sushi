@@ -1,12 +1,20 @@
+import { compressProductImageFile } from '@/lib/compressProductImage'
+
 /**
  * Перед PUT/POST товару: data URL у JSON дають 502 на Render — спочатку multipart upload.
  */
 export async function dataUrlToFile(dataUrl: string): Promise<File> {
+  if (dataUrl.length > 6_000_000) {
+    throw new Error(
+      'Зображення занадто велике. Завантажте через кнопку «Додати», не вставляйте з буфера обміну.',
+    )
+  }
   const res = await fetch(dataUrl)
   const blob = await res.blob()
   const type = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg'
   const ext = type.includes('png') ? 'png' : type.includes('webp') ? 'webp' : 'jpg'
-  return new File([blob], `product-${Date.now()}.${ext}`, { type })
+  const raw = new File([blob], `product-${Date.now()}.${ext}`, { type })
+  return compressProductImageFile(raw)
 }
 
 export async function resolveProductImageUrlsForSave(
@@ -36,5 +44,12 @@ export async function resolveProductImageUrlsForSave(
     resolved.push(...uploaded)
   }
 
-  return resolved.slice(0, max)
+  const out = resolved.slice(0, max)
+  const hasData = out.some((u) => u.startsWith('data:image/'))
+  if (hasData) {
+    throw new Error(
+      'Залишились великі фото в форматі base64. Натисніть «Додати» і дочекайтесь «Фото завантажено», потім збережіть.',
+    )
+  }
+  return out
 }
