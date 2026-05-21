@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { preloadImageUrls } from '@/lib/preloadImages'
 
 export type ProductGalleryLabels = {
   prev: string
@@ -124,6 +125,7 @@ export function ProductImageGallery({ images, alt, labels, className }: ProductI
     setIndex(0)
     const el = scrollerRef.current
     if (el) el.scrollTo({ left: 0 })
+    preloadImageUrls(images, { limit: 10, highPriorityCount: 2 })
   }, [images])
 
   useEffect(() => {

@@ -14,7 +14,12 @@ import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { subscribeWattaCatalogCrossTab } from '@/lib/wattaCatalogSync'
 import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
-import { ensureIngredientsCatalog } from '@/lib/wattaIngredientsCatalog'
+import {
+  ensureIngredientsCatalog,
+  readIngredientsCatalogSync,
+} from '@/lib/wattaIngredientsCatalog'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { preloadImageUrls } from '@/lib/preloadImages'
 
 export default function AppClient({
   children,
@@ -102,7 +107,20 @@ export default function AppClient({
 
   useEffect(() => {
     void ensureCountriesCatalog()
-    void ensureIngredientsCatalog()
+    const cachedIng = readIngredientsCatalogSync()
+    if (cachedIng?.size) {
+      preloadImageUrls(
+        [...cachedIng.values()].map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
+        { limit: 32, highPriorityCount: 20 },
+      )
+    }
+    void ensureIngredientsCatalog().then((map) => {
+      if (!map?.size) return
+      preloadImageUrls(
+        [...map.values()].map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
+        { limit: 32, highPriorityCount: 20 },
+      )
+    })
     const w = window as Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
     }

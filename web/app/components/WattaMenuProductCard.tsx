@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { preloadImageUrls } from '@/lib/preloadImages'
 import { prefetchProductById, primeProductPageCache, warmupProductDetail } from '@/lib/fetchProductById'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
@@ -73,6 +74,7 @@ export function WattaMenuProductCard({
   const warmDetail = () => {
     prefetchProductById(product.id)
     void warmupProductDetail(product.id)
+    if (photoSrc) preloadImageUrls([photoSrc], { limit: 1, highPriorityCount: 1 })
   }
   const [imageError, setImageError] = useState(false)
   const [mediaEpoch, setMediaEpoch] = useState(0)
@@ -85,13 +87,16 @@ export function WattaMenuProductCard({
       window.removeEventListener(WATTA_CATALOG_REFRESH_EVENT, bump)
     }
   }, [])
-  useEffect(() => {
-    setImageError(false)
-  }, [product.id, product.imageUrl, mediaEpoch])
   const photoSrc = useMemo(
     () => resolveCatalogMediaUrl(product.imageUrl),
     [product.imageUrl, mediaEpoch],
   )
+  useEffect(() => {
+    setImageError(false)
+  }, [product.id, product.imageUrl, mediaEpoch])
+  useEffect(() => {
+    if (photoSrc) preloadImageUrls([photoSrc], { limit: 1, highPriorityCount: 1 })
+  }, [photoSrc])
   const showPhoto = Boolean(photoSrc) && !imageError
 
   const pillNew =
@@ -133,7 +138,8 @@ export function WattaMenuProductCard({
             alt=""
             className="home-menu-product-card-img-web h-full w-full object-cover"
             decoding="async"
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
             onError={() => setImageError(true)}
           />
         ) : (

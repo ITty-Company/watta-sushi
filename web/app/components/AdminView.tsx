@@ -75,6 +75,10 @@ import {
   readAdminProductsCache,
   writeAdminProductsCache,
 } from '@/lib/adminProductsCache'
+import {
+  readIngredientsCatalogSync,
+  seedIngredientsCatalog,
+} from '@/lib/wattaIngredientsCatalog'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { isAdminRole } from '@/lib/isAdminRole'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
@@ -115,6 +119,8 @@ function AdminProductCoverImage({
           alt={alt}
           className="h-full w-full object-cover"
           onError={() => setBroken(true)}
+          loading="eager"
+          fetchPriority="high"
         />
       ) : (
         <motion.div className="flex h-full w-full items-center justify-center text-gray-300">
@@ -617,7 +623,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     isActive: true
   })
   //Состояния для создания ингредиентов
-  const [ingredients, setIngredients] = useState<any[]>([]);
+  const [ingredients, setIngredients] = useState<any[]>(() => {
+    const map = readIngredientsCatalogSync()
+    return map ? Array.from(map.values()) : []
+  });
   // Состояния для создания ПРОМОКОДА
   const [newPromoCode, setNewPromoCode] = useState('')
   const [newPromoDiscount, setNewPromoDiscount] = useState('')
@@ -861,7 +870,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             }
             if (ingredientsRes.ok) {
               const ingList = await ingredientsRes.json()
-              setIngredients(Array.isArray(ingList) ? ingList : [])
+              const list = Array.isArray(ingList) ? ingList : []
+              if (list.length > 0) {
+                setIngredients(list)
+                seedIngredientsCatalog(list)
+              }
               loadedTabsRef.current.add('ingredients')
             }
             if (citiesRes.ok) {
@@ -871,8 +884,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             break
           }
           case 'ingredients': {
-            const ingredientsRes = await fetch('/api/ingredients', { headers })
-            if (ingredientsRes.ok) setIngredients(await ingredientsRes.json())
+            const ingredientsRes = await fetch('/api/ingredients', { headers, cache: 'no-store' })
+            if (ingredientsRes.ok) {
+              const list = await ingredientsRes.json()
+              const arr = Array.isArray(list) ? list : []
+              if (arr.length > 0) {
+                setIngredients(arr)
+                seedIngredientsCatalog(arr)
+              }
+            }
             loadedTabsRef.current.add('ingredients')
             break
           }
@@ -4446,7 +4466,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           <Trash2 size={14} />
                         </button>
                       </div>
-                      <img src={ing.imageUrl} alt="" className="mb-2 h-12 w-12 object-contain" />
+                      <img
+                        src={ing.imageUrl}
+                        alt=""
+                        className="mb-2 h-12 w-12 object-contain"
+                        loading="eager"
+                        decoding="async"
+                      />
                       <span className="line-clamp-2 text-center text-xs font-bold">
                         {getLocalized(ing, 'name') || ing.name_ru}
                       </span>

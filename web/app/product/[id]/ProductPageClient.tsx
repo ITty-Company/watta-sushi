@@ -15,6 +15,9 @@ import {
   type CatalogIngredient,
 } from '@/lib/wattaIngredientsCatalog'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { productGalleryFromApi } from '@/lib/productGallery'
+import { preloadImageUrls } from '@/lib/preloadImages'
 
 type ProductPageClientProps = {
   productId: string
@@ -38,9 +41,17 @@ export default function ProductPageClient({
   useLayoutEffect(() => {
     if (initialIngredientsCatalog.length > 0) {
       seedIngredientsCatalog(initialIngredientsCatalog)
+      preloadImageUrls(
+        initialIngredientsCatalog.map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
+        { limit: 24, highPriorityCount: 16 },
+      )
     }
     if (initialProduct) {
       writeProductDetailCache(initialProduct)
+      const gallery = productGalleryFromApi(initialProduct)
+        .map((u) => resolveCatalogMediaUrl(u) ?? u)
+        .filter((u) => u.length > 0)
+      preloadImageUrls(gallery, { limit: 8, highPriorityCount: 2 })
     }
   }, [initialProduct, initialIngredientsCatalog])
 
