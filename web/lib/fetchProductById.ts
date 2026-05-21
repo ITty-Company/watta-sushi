@@ -11,8 +11,6 @@ import {
 } from '@/lib/wattaIngredientsCatalog'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { preloadImageUrls } from '@/lib/preloadImages'
-import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
-import { preloadImageUrls } from '@/lib/preloadImages'
 
 export const WATTA_PRODUCT_DETAIL_CACHED_EVENT = 'watta:product-detail-cached' as const
 
