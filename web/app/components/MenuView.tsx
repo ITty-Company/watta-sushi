@@ -290,6 +290,25 @@ export default function MenuView() {
     )
   }, [activePage])
 
+  const homeFullPageOpen = activePage !== null
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent('wattaHomeFullPageOverlay', { detail: { active: homeFullPageOpen } }),
+    )
+  }, [homeFullPageOpen])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (activePage === 'admin') {
+      document.body.classList.add('watta-home-admin-open')
+    } else {
+      document.body.classList.remove('watta-home-admin-open')
+    }
+    return () => document.body.classList.remove('watta-home-admin-open')
+  }, [activePage])
+
   const scrollMainContentToTop = useCallback(() => {
     if (typeof document === 'undefined') return
     document.querySelector<HTMLElement>('.content-web--watta-craft')?.scrollTo({ top: 0, behavior: 'smooth' })

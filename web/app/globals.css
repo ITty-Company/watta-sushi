@@ -16151,6 +16151,28 @@ body.admin-watta-overlay-open {
   flex: 1 1 auto;
 }
 
+/* Адмінка/кошик/профіль з головної — не показувати публічний підвал під оверлеєм */
+.content-web--watta-craft:has(.full-page-web) > .site-footer-watta {
+  display: none !important;
+}
+
+/* Підвал і Instagram-FAB не показуємо в адмінці (головна /admin, модалки, /admin) */
+body.watta-home-admin-open .site-footer-watta,
+body.watta-admin-shell-open .site-footer-watta,
+body.admin-watta-overlay-open .site-footer-watta,
+body.watta-home-admin-open .floating-contact-buttons-root,
+body.watta-admin-shell-open .floating-contact-buttons-root,
+body.admin-watta-overlay-open .floating-contact-buttons-root {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.watta-home-admin-open .content-web--watta-craft:has(> .site-footer-watta),
+body:has(.full-page-web--admin) .content-web--watta-craft:has(> .site-footer-watta) {
+  min-height: 0;
+}
+
 .admin-page-root {
   min-height: 100dvh;
   min-height: 100svh;
