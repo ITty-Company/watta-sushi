@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { 
@@ -90,6 +91,22 @@ import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSav
 
 function notifyCountriesCatalogUpdated() {
   broadcastWattaCatalogUpdate('countries')
+}
+
+/** Модалки в document.body — поверх публічного підвалу та без обрізання overflow батьків */
+function AdminModalPortal({
+  open,
+  children,
+}: {
+  open: boolean
+  children: ReactNode
+}) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  if (!open || !mounted) return null
+  return createPortal(children, document.body)
 }
 
 function AdminProductCoverImage({
@@ -6220,8 +6237,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         </div>
 
         {/* МОДАЛЬНОЕ ОКНО (С ИСПРАВЛЕННЫМИ ПОЛЯМИ ПОД 4 ЯЗЫКА) */}
+        <AdminModalPortal open={isModalOpen}>
         {isModalOpen && (
-        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60">
+        <div className="admin-watta-modal-backdrop fixed inset-0 flex bg-black/60">
           <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
             <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
               <div className="h-10 w-10 shrink-0" aria-hidden />
@@ -6574,10 +6592,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           </div>
         </div>
       )}
+        </AdminModalPortal>
 
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КАТЕГОРИЙ МЕНЮ */}
+      <AdminModalPortal open={isCategoryModalOpen}>
       {isCategoryModalOpen && (
-        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60">
+        <div className="admin-watta-modal-backdrop fixed inset-0 flex bg-black/60">
           <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
             {/* Продолжение тени и фона при прокрутке */}
             <div className="sticky bottom-0 left-0 right-0 h-8 -mb-8 bg-gradient-to-b from-white/80 via-white/80 to-transparent pointer-events-none z-10"></div>
@@ -6773,11 +6793,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           </div>
         </div>
       )}
+      </AdminModalPortal>
 
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ БАННЕРОВ */}
+      <AdminModalPortal open={isBannerModalOpen}>
       {isBannerModalOpen && (
         <div
-          className="admin-watta-modal-backdrop admin-banner-modal-backdrop-animate fixed inset-0 z-[60] flex bg-black/55 p-3 backdrop-blur-[3px] sm:p-4"
+          className="admin-watta-modal-backdrop admin-banner-modal-backdrop-animate fixed inset-0 flex bg-black/55 p-3 backdrop-blur-[3px] sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="banner-modal-title"
@@ -7160,10 +7182,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           </div>
         </div>
       )}
+      </AdminModalPortal>
       
       {/* МОДАЛЬНОЕ ОКНО ДЛЯ КОМАНДЫ */}
+      <AdminModalPortal open={isTeamModalOpen}>
       {isTeamModalOpen && (
-        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60">
+        <div className="admin-watta-modal-backdrop fixed inset-0 flex bg-black/60">
           <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
             <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
               <div className="h-10 w-10 shrink-0" aria-hidden />
@@ -7303,9 +7327,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           </div>
         </div>
       )}
+      </AdminModalPortal>
       {/* МОДАЛКА НОВОСТЕЙ */}
+      <AdminModalPortal open={isNewsModalOpen}>
       {isNewsModalOpen && (
-        <div className="admin-watta-modal-backdrop fixed inset-0 z-[60] flex bg-black/60 p-0 sm:p-4">
+        <div className="admin-watta-modal-backdrop fixed inset-0 flex bg-black/60 p-0 sm:p-4">
           <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl p-4 sm:p-6 shadow-2xl border border-[#145142]/10">
             <div className="flex items-center justify-between gap-2 mb-4 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100 sm:border-0 sm:static">
               <div className="h-10 w-10 shrink-0" aria-hidden />
@@ -7530,6 +7556,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           </div>
         </div>
       )}
+      </AdminModalPortal>
       </div>
     </div>
   )
