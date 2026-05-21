@@ -16162,17 +16162,31 @@ body.admin-watta-overlay-open {
 }
 
 /* Адмінка/кошик/профіль з головної — не показувати публічний підвал під оверлеєм */
-.content-web--watta-craft:has(.full-page-web) > .site-footer-watta {
+.content-web--watta-craft:has(.full-page-web) > .site-footer-watta,
+.content-web--watta-craft:has(.admin-shell-watta-web) > .site-footer-watta,
+.content-web--watta-craft:has(.full-page-web--admin) > .site-footer-watta,
+html:has(.admin-shell-watta-web) .site-footer-watta,
+html:has(.full-page-web--admin) .site-footer-watta,
+html:has(.admin-page-root) .site-footer-watta {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
 }
 
-/* Підвал і Instagram-FAB не показуємо в адмінці (головна /admin, модалки, /admin) */
+/* Підвал і Instagram-FAB не показуємо в адмінці (головна /admin, модалки) */
 body.watta-home-admin-open .site-footer-watta,
 body.watta-admin-shell-open .site-footer-watta,
 body.admin-watta-overlay-open .site-footer-watta,
+html.watta-admin-active .site-footer-watta,
 body.watta-home-admin-open .floating-contact-buttons-root,
 body.watta-admin-shell-open .floating-contact-buttons-root,
-body.admin-watta-overlay-open .floating-contact-buttons-root {
+body.admin-watta-overlay-open .floating-contact-buttons-root,
+html.watta-admin-active .floating-contact-buttons-root {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;

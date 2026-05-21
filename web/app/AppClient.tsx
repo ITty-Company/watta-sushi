@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useEffect, useLayoutEffect, useRef } from 'react'
+import { ReactNode, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import LanguageProviderWrapper from './components/LanguageProviderWrapper'
@@ -36,6 +36,23 @@ export default function AppClient({
   const isCartRoute = pathname === '/cart'
   const isAuthRoute = pathname === '/login' || pathname === '/register'
   const isAdminShellRoute = pathname === '/admin' || pathname?.startsWith('/admin/')
+  const hidePublicSiteChromeExtras = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {}
+      const handler = () => onStoreChange()
+      window.addEventListener('wattaHomeFullPageOverlay', handler)
+      return () => window.removeEventListener('wattaHomeFullPageOverlay', handler)
+    },
+    () => {
+      if (typeof document === 'undefined') return false
+      return (
+        document.documentElement.classList.contains('watta-admin-active') ||
+        document.body.classList.contains('watta-home-admin-open') ||
+        Boolean(document.querySelector('.admin-shell-watta-web, .full-page-web--admin'))
+      )
+    },
+    () => false,
+  )
   const showPublicNavChrome = !isAuthRoute
   /**
    * Шапка + категорії: на `/` — `MenuView`, на `/favorites` — `FavoritesPageClient`, на `/delivery` — `DeliveryView`.
@@ -152,7 +169,9 @@ export default function AppClient({
           </main>
 
           {showPublicNavChrome && <WattaRightNavDrawer />}
-          {!isAuthRoute && !isAdminShellRoute && <FloatingContactButtons />}
+          {!isAuthRoute && !isAdminShellRoute && !hidePublicSiteChromeExtras && (
+            <FloatingContactButtons />
+          )}
         </div>
       </RightNavDrawerProvider>
     </LanguageProviderWrapper>

@@ -292,22 +292,32 @@ export default function MenuView() {
 
   const homeFullPageOpen = activePage !== null
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof window === 'undefined') return
     window.dispatchEvent(
       new CustomEvent('wattaHomeFullPageOverlay', { detail: { active: homeFullPageOpen } }),
     )
-  }, [homeFullPageOpen])
+    const root = document.documentElement
+    if (activePage === 'admin') {
+      document.body.classList.add('watta-home-admin-open')
+      root.classList.add('watta-admin-active')
+    } else {
+      document.body.classList.remove('watta-home-admin-open')
+      if (!document.querySelector('.admin-shell-watta-web, .admin-page-root')) {
+        root.classList.remove('watta-admin-active')
+      }
+    }
+  }, [homeFullPageOpen, activePage])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
-    if (activePage === 'admin') {
-      document.body.classList.add('watta-home-admin-open')
-    } else {
+    return () => {
       document.body.classList.remove('watta-home-admin-open')
+      if (!document.querySelector('.admin-shell-watta-web, .admin-page-root')) {
+        document.documentElement.classList.remove('watta-admin-active')
+      }
     }
-    return () => document.body.classList.remove('watta-home-admin-open')
-  }, [activePage])
+  }, [])
 
   const scrollMainContentToTop = useCallback(() => {
     if (typeof document === 'undefined') return
