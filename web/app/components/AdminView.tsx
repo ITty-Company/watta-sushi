@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -491,10 +491,20 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const { t, adminUiLanguage, setAdminUiLanguage, getLocalized } = useLanguage()
   const reduceMotion = useReducedMotion()
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof document === 'undefined') return
     document.body.classList.add('watta-admin-shell-open')
-    return () => document.body.classList.remove('watta-admin-shell-open')
+    document.documentElement.classList.add('watta-admin-active')
+    window.dispatchEvent(
+      new CustomEvent('wattaHomeFullPageOverlay', { detail: { active: true } }),
+    )
+    return () => {
+      document.body.classList.remove('watta-admin-shell-open')
+      document.documentElement.classList.remove('watta-admin-active')
+      window.dispatchEvent(
+        new CustomEvent('wattaHomeFullPageOverlay', { detail: { active: false } }),
+      )
+    }
   }, [])
 
   const [activeTab, setActiveTab] = useState<

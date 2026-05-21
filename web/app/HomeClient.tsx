@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useLayoutEffect, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useSyncExternalStore } from 'react'
 import dynamic from 'next/dynamic'
 import MenuView from './components/MenuView'
 import Footer from './components/Footer'
@@ -32,8 +32,23 @@ export default function HomeClient() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  /** Кошик/профіль/адмінка з MenuView — публічний підвал не показуємо */
-  const [hidePublicFooter, setHidePublicFooter] = useState(false)
+  const hidePublicFooter = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {}
+      const handler = () => onStoreChange()
+      window.addEventListener('wattaHomeFullPageOverlay', handler)
+      return () => window.removeEventListener('wattaHomeFullPageOverlay', handler)
+    },
+    () => {
+      if (typeof document === 'undefined') return false
+      return (
+        document.body.classList.contains('watta-home-admin-open') ||
+        document.documentElement.classList.contains('watta-admin-active') ||
+        Boolean(document.querySelector('.full-page-web--admin, .admin-shell-watta-web'))
+      )
+    },
+    () => false,
+  )
 
   /**
    * Гідратація + повернення з іншої сторінки (SPA-back / bfcache / pageshow).
@@ -146,16 +161,6 @@ export default function HomeClient() {
       window.removeEventListener('storage', applySwitchTabFromStorage)
     }
   }, [handleSwitchTab])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const onHomeOverlay = (e: Event) => {
-      const active = Boolean((e as CustomEvent<{ active?: boolean }>).detail?.active)
-      setHidePublicFooter(active)
-    }
-    window.addEventListener('wattaHomeFullPageOverlay', onHomeOverlay)
-    return () => window.removeEventListener('wattaHomeFullPageOverlay', onHomeOverlay)
-  }, [])
 
   return (
     <WattaBootSplashGate onEnded={handleBootSplashEnded}>
