@@ -37,6 +37,7 @@ import { useProductFavorite } from '@/hooks/useProductFavorite'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import { ProductImageGallery } from './ProductImageGallery'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { preloadImageUrls } from '@/lib/preloadImages'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import toast from 'react-hot-toast'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
@@ -381,6 +382,23 @@ export default function ProductView({ productId, initialProductRow, onBack }: Pr
       .filter((u) => u.length > 0)
   }, [product, catalogRefreshKey])
 
+  const ingredientsWithPhotos = useMemo(() => {
+    const list = product?.ingredients?.length ? product.ingredients : []
+    return list.map((ing) => ({
+      ...ing,
+      photoSrc: resolveCatalogMediaUrl(ing.imageUrl) ?? '',
+    }))
+  }, [product?.ingredients, catalogRefreshKey])
+
+  useEffect(() => {
+    if (!product) return
+    preloadImageUrls(galleryImages, { limit: 12, highPriorityCount: 3 })
+    preloadImageUrls(
+      ingredientsWithPhotos.map((ing) => ing.photoSrc),
+      { limit: 20, highPriorityCount: 12 },
+    )
+  }, [product, galleryImages, ingredientsWithPhotos])
+
   if (isLoading && !product && !initialProductRow) {
     return (
       <div className="relative flex min-h-[min(100dvh,56rem)] flex-1 flex-col watta-page-bg pb-24">
@@ -451,8 +469,7 @@ export default function ProductView({ productId, initialProductRow, onBack }: Pr
     pd.piecesFallback,
     lang,
   )
-  const ingredients = product.ingredients && product.ingredients.length > 0 ? product.ingredients : []
-  const compositionLoading = compositionPending && ingredients.length === 0
+  const compositionLoading = compositionPending && ingredientsWithPhotos.length === 0
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
   const unitEffective = effectiveUnitPrice(product.price, promoPct)
   const lineTotal = Math.round(product.price * quantity * 100) / 100
@@ -578,7 +595,7 @@ export default function ProductView({ productId, initialProductRow, onBack }: Pr
               </div>
             </div>
 
-            {(ingredients.length > 0 || compositionLoading) && (
+            {(ingredientsWithPhotos.length > 0 || compositionLoading) && (
               <section className="w-full max-w-full rounded-xl border border-[#145142]/20 bg-white sm:rounded-[24px]">
                 <div className="flex items-center gap-1.5 border-b border-[#145142]/12 bg-white px-2.5 py-2 sm:gap-2 sm:px-4 sm:py-2.5">
                   <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#e85d2a] sm:h-4 sm:w-4" strokeWidth={2.4} aria-hidden />
@@ -588,20 +605,21 @@ export default function ProductView({ productId, initialProductRow, onBack }: Pr
                 </div>
                 <div className="bg-white px-2.5 py-2.5 sm:px-4 sm:py-3">
                   <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-2.5 md:gap-3">
-                    {ingredients.length > 0
-                      ? ingredients.map((ing) => (
+                    {ingredientsWithPhotos.length > 0
+                      ? ingredientsWithPhotos.map((ing) => (
                           <div
                             key={ing.id}
                             className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-[#145142]/12 bg-[#f6faf8] p-1.5 text-center sm:rounded-2xl sm:p-2"
                           >
                             <div className="flex min-h-0 flex-1 w-full items-center justify-center">
-                              {ing.imageUrl ? (
+                              {ing.photoSrc ? (
                                 <img
-                                  src={ing.imageUrl}
+                                  src={ing.photoSrc}
                                   alt=""
                                   className="max-h-full max-w-full object-contain"
                                   decoding="async"
-                                  loading={compositionLoading ? 'lazy' : 'eager'}
+                                  loading="eager"
+                                  fetchPriority="high"
                                 />
                               ) : (
                                 <span className="text-lg sm:text-xl" aria-hidden>

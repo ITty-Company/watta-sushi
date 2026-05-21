@@ -1,6 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
+import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
+import {
+  normalizeIngredientImageUrl,
+  persistDataUrlIngredientImage,
+  sanitizeIngredientForApi,
+} from '../lib/ingredientImage.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -19,22 +25,46 @@ function normalizeIngredientNames(body: Record<string, unknown>): {
   return { name_ru, name_ua, name_en, name_nl };
 }
 
-// Получить все ингредиенты
-router.get('/', async (_req: Request, res: Response) => {
+/** Поступово переносить base64 з БД у /uploads/ (не блокує відповідь). */
+function scheduleIngredientImageRepair(
+  rows: { id: number; imageUrl: string }[],
+): void {
+  const pending = rows.filter((r) => String(r.imageUrl).trim().startsWith('data:image/'));
+  if (pending.length === 0) return;
+
+  void (async () => {
+    for (const row of pending) {
+      try {
+        const saved = persistDataUrlIngredientImage(row.imageUrl);
+        if (!saved) continue;
+        await prisma.ingredient.update({
+          where: { id: row.id },
+          data: { imageUrl: saved },
+        });
+      } catch (e) {
+        console.error(`Ingredient image repair failed id=${row.id}:`, e);
+      }
+    }
+  })();
+}
+
+router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (_req: Request, res: Response) => {
   try {
     const list = await prisma.ingredient.findMany({ orderBy: { id: 'asc' } });
-    res.json(list);
+    scheduleIngredientImageRepair(list);
+    res.json(list.map((row) => sanitizeIngredientForApi(row)));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Ошибка загрузки ингредиентов' });
   }
 });
 
-// Создать ингредиент
 router.post('/', checkAdmin, async (req: Request, res: Response) => {
   try {
     const names = normalizeIngredientNames(req.body as Record<string, unknown>);
-    const imageUrl = String((req.body as { imageUrl?: unknown }).imageUrl ?? '').trim();
+    const imageUrl = normalizeIngredientImageUrl(
+      (req.body as { imageUrl?: unknown }).imageUrl,
+    );
     if (!names) {
       return res.status(400).json({ message: 'Укажите название (RU) и переводы' });
     }
@@ -44,14 +74,13 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
     const ing = await prisma.ingredient.create({
       data: { ...names, imageUrl },
     });
-    res.json(ing);
+    res.json(sanitizeIngredientForApi(ing));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Ошибка создания ингредиента' });
   }
 });
 
-// Обновить ингредиент
 router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(String(req.params.id), 10);
@@ -66,8 +95,8 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
     const imageUrlRaw = (req.body as { imageUrl?: unknown }).imageUrl;
     const imageUrl =
       imageUrlRaw !== undefined && imageUrlRaw !== null
-        ? String(imageUrlRaw).trim()
-        : existing.imageUrl;
+        ? normalizeIngredientImageUrl(imageUrlRaw)
+        : normalizeIngredientImageUrl(existing.imageUrl);
     if (!names) {
       return res.status(400).json({ message: 'Укажите название (RU) и переводы' });
     }
@@ -78,7 +107,7 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
       where: { id },
       data: { ...names, imageUrl },
     });
-    res.json(ing);
+    res.json(sanitizeIngredientForApi(ing));
   } catch (error) {
     console.error(error);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -88,7 +117,6 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
   }
 });
 
-// Удалить ингредиент
 router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(String(req.params.id), 10);

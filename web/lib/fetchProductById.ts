@@ -9,6 +9,10 @@ import {
   enrichProductRow,
   parseIngredientIds,
 } from '@/lib/wattaIngredientsCatalog'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { preloadImageUrls } from '@/lib/preloadImages'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { preloadImageUrls } from '@/lib/preloadImages'
 
 export const WATTA_PRODUCT_DETAIL_CACHED_EVENT = 'watta:product-detail-cached' as const
 
@@ -171,6 +175,12 @@ export function primeProductPageCache(product: {
     /* quota */
   }
   memoryDetailCache.set(id, merged as Record<string, unknown>)
+  const cover = resolveCatalogMediaUrl(String(merged.imageUrl ?? gallery[0] ?? ''))
+  if (cover) preloadImageUrls([cover], { limit: 4, highPriorityCount: 2 })
+  preloadImageUrls(
+    gallery.map((u) => resolveCatalogMediaUrl(u) ?? u),
+    { limit: 6, highPriorityCount: 2 },
+  )
 }
 
 async function fetchAndStoreProductDetail(
