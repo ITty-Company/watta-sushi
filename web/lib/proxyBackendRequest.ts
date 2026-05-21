@@ -20,7 +20,7 @@ export async function proxyBackendRequest(
 ): Promise<NextResponse> {
   const apiBase = backendBaseUrl()
   const method = options?.method ?? request.method
-  const timeoutMs = options?.timeoutMs ?? 120_000
+  const timeoutMs = options?.timeoutMs ?? 180_000
   const url = `${apiBase}${backendPath.startsWith('/') ? backendPath : `/${backendPath}`}`
 
   const headers = new Headers()

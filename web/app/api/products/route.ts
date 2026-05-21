@@ -8,5 +8,5 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  return proxyBackendRequest(request, '/api/products', { method: 'POST', timeoutMs: 120_000 })
+  return proxyBackendRequest(request, '/api/products', { method: 'POST', timeoutMs: 180_000 })
 }

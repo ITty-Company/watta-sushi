@@ -88,6 +88,7 @@ import AdminCartUpsellPanel from './admin/AdminCartUpsellPanel'
 import AdminCustomersPanel from './admin/AdminCustomersPanel'
 import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
 import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSave'
+import { compressProductImageFile } from '@/lib/compressProductImage'
 
 function notifyCountriesCatalogUpdated() {
   broadcastWattaCatalogUpdate('countries')
@@ -1539,10 +1540,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const uploadProductImageFiles = async (files: File[]): Promise<string[]> => {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Увійдіть знову в адмінку')
-    const urls: string[] = []
-    for (const file of files) {
+    const uploadOne = async (file: File): Promise<string> => {
+      const image = await compressProductImageFile(file)
       const body = new FormData()
-      body.append('image', file)
+      body.append('image', image)
       const res = await fetch('/api/products/upload-image', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -1550,9 +1551,20 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       })
       const data = (await res.json().catch(() => ({}))) as { url?: string; message?: string }
       if (!res.ok || !data.url?.trim()) {
-        throw new Error(data.message || `Помилка завантаження (${res.status})`)
+        const hint =
+          res.status === 502 || res.status === 504
+            ? ' Сервер на Render ще прокидається — зачекайте 30 с і натисніть «Додати» знову.'
+            : ''
+        throw new Error((data.message || `Помилка завантаження (${res.status})`) + hint)
       }
-      urls.push(data.url.trim())
+      return data.url.trim()
+    }
+    const urls: string[] = []
+    const batchSize = 3
+    for (let i = 0; i < files.length; i += batchSize) {
+      const chunk = files.slice(i, i + batchSize)
+      const part = await Promise.all(chunk.map((f) => uploadOne(f)))
+      urls.push(...part)
     }
     return urls
   }
@@ -1848,6 +1860,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         return
       }
       const saveToastId = toast.loading('Сохранение…')
+      try {
+        await fetch('/api/health', { cache: 'no-store' }).catch(() => {})
+      } catch {
+        /* ignore */
+      }
       let imageUrlsForSave: string[]
       try {
         imageUrlsForSave = await resolveProductImageUrlsForSave(
@@ -1943,15 +1960,18 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       } else {
         toast.dismiss(saveToastId)
         let errorMessage = 'Ошибка при сохранении'
+        let errBody: { message?: string; error?: string } | null = null
         try {
-          const error = await res.json()
-          errorMessage = error.message || error.error || `Ошибка ${res.status}: ${res.statusText}`
+          errBody = (await res.json()) as { message?: string; error?: string }
+          errorMessage = errBody.error || errBody.message || `Ошибка ${res.status}: ${res.statusText}`
         } catch {
           errorMessage = `Ошибка ${res.status}: ${res.statusText}`
         }
         if (res.status === 502 || res.status === 504) {
           errorMessage =
-            'Сервер не ответил вовремя (502). Загрузите фото кнопкой «Добавить», не вставляйте огромные файлы, подождите 10 сек и сохраните снова.'
+            'Сервер не ответил вовремя (502). Сначала «Додати» — дождитесь «Фото завантажено», затем «Зберегти». На Render free tier подождите 30–60 с после простоя и повторите.'
+        } else if (errBody?.message === 'product_image_data_url_forbidden' && errBody?.error) {
+          errorMessage = String(errBody.error)
         }
         toast.error(errorMessage)
       }
