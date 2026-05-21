@@ -3293,9 +3293,18 @@ html.watta-light-chrome body {
   box-sizing: border-box;
 }
 
-.content-web--watta-craft:has(> .site-footer-watta) > *:not(.site-footer-watta) {
+.content-web--watta-craft:has(> .site-footer-watta) > *:not(.site-footer-watta):not(.full-page-web) {
   flex: 0 0 auto;
   min-height: 0;
+}
+
+/* Адмінка з головної — на всю висоту, без «повітря» над прихованим підвалом */
+.content-web--watta-craft:has(.full-page-web--admin) > .full-page-web--admin {
+  flex: 1 1 auto;
+  min-height: 100dvh;
+  min-height: 100svh;
+  width: 100%;
+  min-width: 0;
 }
 
 .content-web--watta-craft:has(> .site-footer-watta) > .site-footer-watta {
@@ -16105,6 +16114,7 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
 }
 
 .admin-watta-modal-backdrop {
+  z-index: 250;
   align-items: center;
   justify-content: center;
   padding: 1rem;
@@ -16138,7 +16148,7 @@ body.admin-watta-overlay-open {
   overflow-y: visible;
   min-height: 100dvh;
   min-height: 100svh;
-  padding-bottom: max(5rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Адмінка з головної (всередині .content-web): довгий таб «Баннери» має скролитись повністю */
@@ -16171,6 +16181,13 @@ body.admin-watta-overlay-open .floating-contact-buttons-root {
 body.watta-home-admin-open .content-web--watta-craft:has(> .site-footer-watta),
 body:has(.full-page-web--admin) .content-web--watta-craft:has(> .site-footer-watta) {
   min-height: 0;
+}
+
+/* Підвал лишається в DOM, але не перекриває модалки адмінки */
+body.watta-home-admin-open .site-footer-watta,
+body.watta-admin-shell-open .site-footer-watta,
+body.admin-watta-overlay-open .site-footer-watta {
+  z-index: 0 !important;
 }
 
 .admin-page-root {
