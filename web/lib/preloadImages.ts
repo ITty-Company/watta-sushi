@@ -1,6 +1,6 @@
 /** Прогрів кешу браузера для /uploads і зовнішніх URL — картинки зʼявляються без «пустих» плиток. */
 export function preloadImageUrls(
-  urls: Iterable<string | null | undefined>,
+  urls: readonly (string | null | undefined)[],
   opts?: { limit?: number; highPriorityCount?: number },
 ): void {
   if (typeof window === 'undefined') return
@@ -9,7 +9,8 @@ export function preloadImageUrls(
   const seen = new Set<string>()
   let n = 0
 
-  for (const raw of urls) {
+  for (let i = 0; i < urls.length; i += 1) {
+    const raw = urls[i]
     if (seen.size >= limit) break
     const u = raw?.trim()
     if (!u || u.startsWith('data:') || u.startsWith('blob:')) continue
