@@ -110,14 +110,14 @@ export default function AppClient({
     const cachedIng = readIngredientsCatalogSync()
     if (cachedIng?.size) {
       preloadImageUrls(
-        [...cachedIng.values()].map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
+        Array.from(cachedIng.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
         { limit: 32, highPriorityCount: 20 },
       )
     }
     void ensureIngredientsCatalog().then((map) => {
       if (!map?.size) return
       preloadImageUrls(
-        [...map.values()].map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
+        Array.from(map.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
         { limit: 32, highPriorityCount: 20 },
       )
     })
