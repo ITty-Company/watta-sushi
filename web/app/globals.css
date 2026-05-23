@@ -9781,8 +9781,8 @@ html.watta-light-chrome body {
   .categories-panel-web {
     --cat-gap: 4px;
     --cat-edge: 8px;
-    /* 4 чіпи + половинка 5-го у видимій зоні */
-    --watta-cat-peek: 4.85;
+    /* ~5 чіпів + половинка 6-го у видимій зоні */
+    --watta-cat-peek: 5.75;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
@@ -9868,10 +9868,10 @@ html.watta-light-chrome body {
     max-width: none !important;
     aspect-ratio: 1 / 1 !important;
     align-self: center;
-    padding: 4px 3px !important;
+    padding: 3px 2px !important;
     font-size: 0.54rem;
     border-radius: 50% !important;
-    gap: 4px !important;
+    gap: 3px !important;
     border-width: 1.5px;
     justify-content: center;
     overflow: hidden !important;
@@ -9946,7 +9946,7 @@ html.watta-light-chrome body {
   .categories-panel-web {
     --cat-gap: 5px;
     --cat-edge: 10px;
-    --watta-cat-peek: 4.5;
+    --watta-cat-peek: 5.4;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
@@ -9965,7 +9965,7 @@ html.watta-light-chrome body {
   }
 
   .category-button-web {
-    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 4.5)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.4)) !important;
     min-width: 0 !important;
     width: auto !important;
     max-width: none !important;
@@ -10036,7 +10036,7 @@ html.watta-light-chrome body {
   .menu-page-web .content-web > .categories-panel-wrapper-web .categories-panel-web {
     --cat-gap: 6px;
     --cat-edge: 12px;
-    --watta-cat-peek: 4.5;
+    --watta-cat-peek: 5.4;
     align-items: center;
     flex: 0 1 auto !important;
     min-width: 0 !important;
@@ -10066,7 +10066,7 @@ html.watta-light-chrome body {
   }
 
   .menu-page-web .category-button-web {
-    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 4.5)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.4)) !important;
     min-width: 0 !important;
     max-width: none !important;
     aspect-ratio: 1 / 1 !important;
@@ -10191,7 +10191,7 @@ html.watta-light-chrome body {
   .categories-panel-web {
     --cat-gap: 5px !important;
     --cat-edge: 10px !important;
-    --watta-cat-peek: 4.5 !important;
+    --watta-cat-peek: 5.4 !important;
     display: flex !important;
     max-width: none !important;
     width: 100% !important;
@@ -10235,7 +10235,7 @@ html.watta-light-chrome body {
     .categories-panel-web {
       --cat-gap: 3px !important;
       --cat-edge: 6px !important;
-      --watta-cat-peek: 4.85 !important;
+      --watta-cat-peek: 5.75 !important;
       padding: 3px var(--cat-edge) !important;
     }
 
@@ -10255,8 +10255,8 @@ html.watta-light-chrome body {
     }
 
     .category-button-web {
-      padding: 4px 2px !important;
-      gap: 4px !important;
+      padding: 3px 2px !important;
+      gap: 3px !important;
     }
   }
 
@@ -10264,7 +10264,7 @@ html.watta-light-chrome body {
     .categories-panel-web {
       --cat-gap: 4px !important;
       --cat-edge: 6px !important;
-      --watta-cat-peek: 8 !important;
+      --watta-cat-peek: 9 !important;
       padding: 3px var(--cat-edge) !important;
     }
 
@@ -10281,7 +10281,7 @@ html.watta-light-chrome body {
     .categories-panel-web {
       --cat-gap: 5px !important;
       --cat-edge: 8px !important;
-      --watta-cat-peek: 8.5 !important;
+      --watta-cat-peek: 9.75 !important;
       padding: 3px var(--cat-edge) !important;
     }
 
@@ -10291,14 +10291,14 @@ html.watta-light-chrome body {
     }
 
     .category-button-web {
-      padding: 4px 2px !important;
-      gap: 5px !important;
+      padding: 3px 2px !important;
+      gap: 4px !important;
     }
   }
 
   .category-button-web {
     scroll-snap-align: center !important;
-    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 4.5)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 5.4)) !important;
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
     box-sizing: border-box !important;
@@ -10307,7 +10307,7 @@ html.watta-light-chrome body {
     max-width: none !important;
     aspect-ratio: 1 / 1 !important;
     align-self: center !important;
-    padding: 6px 4px !important;
+    padding: 4px 3px !important;
     font-size: 0.62rem !important;
     border-radius: 50% !important;
     gap: 2px !important;
@@ -22950,7 +22950,7 @@ body.admin-watta-overlay-open .site-footer-watta {
  */
 @media (min-width: 768px) and (max-width: 1279px) {
   .watta-favorites-page .watta-full-menu-sticky-chrome .categories-panel-web {
-    --watta-cat-peek: 7 !important;
+    --watta-cat-peek: 7.75 !important;
   }
 
   /* Без «підтягування» героя — сітка не заходить під панель категорій */
@@ -23129,7 +23129,7 @@ body.admin-watta-overlay-open .site-footer-watta {
 
 /* /product — смуга категорій як на телефоні (круглі чипи) */
 .watta-app-shell-root:has(.watta-product-page) .categories-panel-web {
-  --watta-cat-peek: 6;
+  --watta-cat-peek: 7;
   --cat-gap: 6px;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -23144,7 +23144,7 @@ body.admin-watta-overlay-open .site-footer-watta {
 }
 
 .watta-app-shell-root:has(.watta-product-page) .category-button-web {
-  flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 6)) !important;
+  flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 7)) !important;
   padding: 6px 4px;
   gap: 3px;
   border-radius: 50% !important;
@@ -23189,13 +23189,13 @@ body.admin-watta-overlay-open .site-footer-watta {
 
 @media (min-width: 481px) {
   .watta-app-shell-root:has(.watta-product-page) .categories-panel-web {
-    --watta-cat-peek: 7.5;
+    --watta-cat-peek: 8.5;
   }
 }
 
 @media (min-width: 769px) {
   .watta-app-shell-root:has(.watta-product-page) .categories-panel-web {
-    --watta-cat-peek: 8.5;
+    --watta-cat-peek: 9.75;
     max-width: min(calc(100vw - 64px), 52rem);
   }
 }

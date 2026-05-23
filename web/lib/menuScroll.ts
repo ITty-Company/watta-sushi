@@ -24,7 +24,8 @@ export function getVerticalScrollTarget(): VerticalScrollTarget {
 }
 
 export function readScrollTop(target: VerticalScrollTarget): number {
-  return target === window ? window.scrollY : target.scrollTop
+  if (target instanceof Window) return target.scrollY
+  return target.scrollTop
 }
 
 export function writeScrollTop(
@@ -33,8 +34,8 @@ export function writeScrollTop(
   behavior: ScrollBehavior = 'auto',
 ) {
   const y = Math.max(0, top)
-  if (target === window) {
-    window.scrollTo({ top: y, left: 0, behavior })
+  if (target instanceof Window) {
+    target.scrollTo({ top: y, left: 0, behavior })
     document.documentElement.scrollTop = y
     document.body.scrollTop = y
   } else {
@@ -85,7 +86,7 @@ export function scrollHomeCatalogToCategory(slug: string): boolean {
 /** @deprecated Використовуйте getVerticalScrollTarget — null означає window. */
 export function getMenuScrollParent(el: HTMLElement | null): HTMLElement | null {
   const target = getVerticalScrollTarget()
-  if (target === window) return el?.closest('.content-web') as HTMLElement | null
+  if (target instanceof Window) return el?.closest('.content-web') as HTMLElement | null
   return target
 }
 

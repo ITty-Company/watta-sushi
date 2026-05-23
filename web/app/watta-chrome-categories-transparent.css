@@ -511,7 +511,7 @@ body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-pa
   body .watta-sticky-chrome-portal .categories-panel-web {
     --cat-gap: 2px;
     --cat-edge: 5px;
-    --watta-cat-peek: 5.35;
+    --watta-cat-peek: 6.25;
     display: flex !important;
     flex: 1 1 auto !important;
     flex-grow: 1 !important;
@@ -541,7 +541,7 @@ body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-pa
   body .watta-sticky-chrome-portal .categories-panel-web {
     --cat-gap: 2px;
     --cat-edge: 5px;
-    --watta-cat-peek: 5.35;
+    --watta-cat-peek: 6.25;
     width: 100% !important;
     max-width: min(calc(100vw - 36px), 30rem) !important;
     flex: 1 1 auto !important;
@@ -584,17 +584,17 @@ body .watta-sticky-chrome-portal .categories-panel-web {
   z-index: 1;
 }
 
-/* Телефон: 4 чіпи + половинка 5-го, решта — свайп */
+/* Телефон: ~5 чіпів + половинка 6-го, решта — свайп */
 @media (max-width: 767px) {
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-web {
     scroll-snap-align: start;
-    flex: 0 0 calc((100% - 2 * var(--cat-gap, 2px)) / var(--watta-cat-peek, 5.35)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap, 2px)) / var(--watta-cat-peek, 6.25)) !important;
     flex-shrink: 0 !important;
     max-width: none !important;
-    padding: 3px 1px !important;
-    gap: 4px !important;
+    padding: 2px 1px !important;
+    gap: 3px !important;
     aspect-ratio: 1 / 1 !important;
   }
 
@@ -616,7 +616,7 @@ body .watta-sticky-chrome-portal .categories-panel-web {
 }
 
 /*
- * Планшет / ноут / ПК (≥768): 6 чіпів + половинка 7-го, решта — горизонтальний свайп.
+ * Планшет / ноут / ПК (≥768): ~7 чіпів + половинка 8-го, решта — горизонтальний свайп.
  */
 @media (min-width: 768px) {
   body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-panel-wrapper-web,
@@ -634,7 +634,7 @@ body .watta-sticky-chrome-portal .categories-panel-web {
   .watta-public-sticky-chrome .categories-panel-web {
     --cat-gap: 3px;
     --cat-edge: 5px;
-    --watta-cat-peek: 8.5;
+    --watta-cat-peek: 9.75;
     box-sizing: border-box !important;
     display: flex !important;
     flex: 1 1 auto !important;
@@ -688,7 +688,7 @@ body .watta-sticky-chrome-portal .categories-panel-web {
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-web {
     scroll-snap-align: start;
-    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 8)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 9.75)) !important;
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
     box-sizing: border-box !important;
@@ -697,10 +697,10 @@ body .watta-sticky-chrome-portal .categories-panel-web {
     max-width: none !important;
     aspect-ratio: 1 / 1 !important;
     align-self: center !important;
-    padding: 3px 2px !important;
+    padding: 2px 1px !important;
     border-radius: 50% !important;
     border-width: 1px !important;
-    gap: 4px !important;
+    gap: 3px !important;
     justify-content: center !important;
     overflow: hidden !important;
   }
@@ -738,7 +738,7 @@ body .watta-sticky-chrome-portal .categories-panel-web {
   .watta-public-sticky-chrome .categories-panel-web {
     --cat-gap: 4px;
     --cat-edge: 6px;
-    --watta-cat-peek: 9;
+    --watta-cat-peek: 10.25;
     max-width: min(calc(100vw - 40px), 44rem) !important;
     padding: 2px var(--cat-edge) !important;
   }
@@ -812,7 +812,7 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   }
 }
 
-/* Планшет / ноут / ПК — компактніша капсула, 6½ чіпів у видимій зоні */
+/* Планшет / ноут / ПК — компактніша капсула, ~7½ чіпів у видимій зоні */
 @media (min-width: 768px) {
   :root {
     --watta-chrome-header-cat-gap: clamp(6px, 0.85vh, 10px);
@@ -864,7 +864,7 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   body .watta-sticky-chrome-portal .categories-panel-web {
     --cat-gap: 3px !important;
     --cat-edge: 5px !important;
-    --watta-cat-peek: 8.5 !important;
+    --watta-cat-peek: 9.75 !important;
     padding: 2px var(--cat-edge) !important;
     max-width: min(calc(100vw - 32px), 42rem) !important;
   }
@@ -872,10 +872,10 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-web,
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web {
-    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 8.5)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap)) / var(--watta-cat-peek, 9.75)) !important;
     max-width: none !important;
-    padding: 3px 2px !important;
-    gap: 4px !important;
+    padding: 2px 1px !important;
+    gap: 3px !important;
     aspect-ratio: 1 / 1 !important;
     border-radius: 50% !important;
     justify-content: center !important;
@@ -939,7 +939,7 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   body .watta-sticky-chrome-portal .categories-panel-web {
     --cat-gap: 4px !important;
     --cat-edge: 6px !important;
-    --watta-cat-peek: 9 !important;
+    --watta-cat-peek: 10.25 !important;
     max-width: min(calc(100vw - 40px), 44rem) !important;
     padding: 2px var(--cat-edge) !important;
   }
@@ -947,8 +947,8 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-web,
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web {
-    padding: 4px 2px !important;
-    gap: 5px !important;
+    padding: 3px 2px !important;
+    gap: 4px !important;
   }
 
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
@@ -967,7 +967,7 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   }
 }
 
-/* Планшет / ноут 768–1279: 7 чіпів у ряд — як на головній та /favorites */
+/* Планшет / ноут 768–1279: компактніші чипи, ~8 у видимій зоні */
 @media (min-width: 768px) and (max-width: 1279px) {
   body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-panel-web,
   body .watta-sticky-chrome-portal .categories-panel-web,
@@ -975,7 +975,7 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   .watta-public-sticky-chrome .watta-chrome-categories-row-web .categories-panel-web,
   .watta-full-menu-sticky-chrome .categories-panel-web,
   .watta-public-sticky-chrome .categories-panel-web {
-    --watta-cat-peek: 7 !important;
+    --watta-cat-peek: 9 !important;
   }
 }
 
@@ -1137,7 +1137,7 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     .categories-panel-web {
     --cat-gap: 2px !important;
     --cat-edge: 5px !important;
-    --watta-cat-peek: 5.35 !important;
+    --watta-cat-peek: 6.25 !important;
     display: flex !important;
     flex: 1 1 auto !important;
     flex-grow: 1 !important;
@@ -1172,11 +1172,11 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     .categories-panel-web
     .category-button-web {
     scroll-snap-align: start;
-    flex: 0 0 calc((100% - 2 * var(--cat-gap, 2px)) / var(--watta-cat-peek, 5.35)) !important;
+    flex: 0 0 calc((100% - 2 * var(--cat-gap, 2px)) / var(--watta-cat-peek, 6.25)) !important;
     flex-shrink: 0 !important;
     max-width: none !important;
-    padding: 3px 1px !important;
-    gap: 4px !important;
+    padding: 2px 1px !important;
+    gap: 3px !important;
     aspect-ratio: 1 / 1 !important;
     border-radius: 50% !important;
   }

@@ -17,6 +17,7 @@ import {
   Clock,
   User,
   ShoppingBag,
+  type LucideIcon,
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
 import { useLanguage } from '../context/LanguageContext'
@@ -33,7 +34,6 @@ import {
   hasBookableSlotsToday,
   addDaysToDateKey,
 } from '@/lib/deliverySlotsAmsterdam'
-import type { WattaLanguage } from '@/lib/i18n/language'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
@@ -166,7 +166,7 @@ function CheckoutSectionHead({
   icon: Icon,
   title,
 }: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  icon: LucideIcon
   title: string
 }) {
   return (
