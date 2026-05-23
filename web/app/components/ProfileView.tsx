@@ -5,7 +5,7 @@ import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
 import { useLanguage } from '../context/LanguageContext'
 import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
-import ClientProfileOrders from './profile/ClientProfileOrders'
+import ClientProfileOrders, { type ProfileOrder } from './profile/ClientProfileOrders'
 import ProfilePublicPageLayout from './profile/ProfilePublicPageLayout'
 import ProfileDeliveryAddressCard from './profile/ProfileDeliveryAddressCard'
 import ProfilePersonalDataForm from './profile/ProfilePersonalDataForm'
@@ -33,41 +33,6 @@ import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
 
 const HERO_BG =
   'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
-
-// --- ТИПЫ ДАННЫХ ---
-interface OrderItem {
-  id: number
-  quantity: number
-  price: number
-  productId?: number
-  product: {
-    name_ru: string
-    name_ua?: string | null
-    name_en?: string | null
-    name_nl?: string | null
-    description_ru?: string
-    description_ua?: string | null
-    description_en?: string | null
-    description_nl?: string | null
-    imageUrl?: string
-  }
-}
-
-interface Order {
-  id: number
-  createdAt: string
-  totalPrice: number
-  status: string
-  items: OrderItem[]
-  review?: {
-    id: number
-    rating: number
-    text: string
-    images?: unknown
-  } | null
-  fulfillmentType?: string
-  readyAt?: string | null
-}
 
 interface UserData {
   name: string
@@ -123,7 +88,7 @@ export default function ProfileView({
   }, [router, layout])
 
   const [activeTab, setActiveTab] = useState<'history' | 'address' | 'favorites' | 'data'>('history')
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<ProfileOrder[]>([])
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -145,7 +110,7 @@ export default function ProfileView({
       return
     }
     if (showSpinner) {
-      const cached = readUserOrdersCache<Order>()
+      const cached = readUserOrdersCache<ProfileOrder>()
       if (cached && cached.length > 0) setOrders(cached)
       setLoading(true)
     }
@@ -163,7 +128,7 @@ export default function ProfileView({
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data)) {
-          for (const o of data as Order[]) {
+          for (const o of data as ProfileOrder[]) {
             const prev = orderStatusRef.current.get(o.id)
             if (prev && prev !== o.status) {
               toast.success(getOrderStatusToastMessage(o.status, o.id, language as WattaLanguage))
@@ -295,7 +260,7 @@ export default function ProfileView({
     []
   )
 
-  const handleReorder = (order: Order) => {
+  const handleReorder = (order: ProfileOrder) => {
     const lang = language as WattaLanguage
     const reorderedItems = order.items.map((item) => {
       const itemId = Number(item.productId ?? item.id)

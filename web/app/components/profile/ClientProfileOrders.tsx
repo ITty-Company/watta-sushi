@@ -144,11 +144,6 @@ interface TProfile {
   readyAtDelivery: string
   activeOrderTitle?: string
   viewReceipt?: string
-  paymentCard?: string
-  paymentCash?: string
-  paymentStatusPaid?: string
-  paymentStatusWaiting?: string
-  paymentStatusError?: string
 }
 
 function formatProfilePaymentStatus(

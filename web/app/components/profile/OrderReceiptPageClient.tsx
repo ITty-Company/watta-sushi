@@ -10,9 +10,11 @@ import LogoBackground from '../LogoBackground'
 import type { ProfileOrder, ProfileOrderItem } from './ClientProfileOrders'
 
 function productLineName(p: ProfileOrderItem['product'], lang: WattaLanguage): string {
+  if (!p) return '—'
   return (
     getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang) ||
-    p.name_ru
+    p.name_ru ||
+    '—'
   )
 }
 

@@ -2,7 +2,9 @@
 
 export function parseBlogIdList(raw: unknown): number[] {
   if (Array.isArray(raw)) {
-    return [...new Set(raw.map((n) => Number(n)).filter((n) => Number.isInteger(n) && n > 0))]
+    return Array.from(
+      new Set(raw.map((n) => Number(n)).filter((n) => Number.isInteger(n) && n > 0)),
+    )
   }
   if (typeof raw === 'string' && raw.trim()) {
     try {
