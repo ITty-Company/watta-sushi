@@ -302,19 +302,17 @@ export default function LogoBackground({ variant = 'default' }: LogoBackgroundPr
       const parent = container.parentElement
       if (!parent) return
       
-      // Получаем полную высоту контента страницы
+      // Висота лише в межах обгортки сторінки — не documentElement (інакше фон тягнеться
+      // під футер і лишає порожню смугу з водяним знаком, напр. на /cart).
       const aboutContainer = document.getElementById('about-page-container')
-      const containerHeight = aboutContainer 
-        ? Math.max(aboutContainer.scrollHeight, aboutContainer.offsetHeight, aboutContainer.clientHeight)
-        : 0
-      
-      const contentHeight = Math.max(
-        containerHeight,
-        parent.scrollHeight,
-        parent.offsetHeight,
-        document.documentElement.scrollHeight,
-        window.innerHeight
-      )
+      const contentHeight = aboutContainer
+        ? Math.max(
+            aboutContainer.scrollHeight,
+            aboutContainer.offsetHeight,
+            aboutContainer.clientHeight,
+            window.innerHeight,
+          )
+        : Math.max(parent.scrollHeight, parent.offsetHeight, parent.clientHeight)
       
       // Устанавливаем высоту контейнера равной высоте контента
       container.style.height = `${contentHeight}px`

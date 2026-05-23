@@ -1,6 +1,17 @@
+import { isWebKitBrowser } from '@/lib/isWebKitBrowser'
+
 /** Hero-відео на головній (MenuView). */
 export const WELCOME_HERO_VIDEO_SELECTOR =
   'section.welcome-hero-section-web.menu-snap-section-welcome-web:not(.delivery-page-hero-embed-web) video.watta-home-hero-native-video'
+
+/** Усі декоративні hero-ролики (головна, /menu, /delivery). */
+const DECORATIVE_HERO_VIDEO_SELECTORS = [
+  WELCOME_HERO_VIDEO_SELECTOR,
+  '.welcome-hero-video-stack-web video.watta-home-hero-native-video',
+  '.welcome-hero-video-stack-web .welcome-video-native-web',
+] as const
+
+let webKitDocUnlockInstalled = false
 
 /** Muted autoplay attrs + play() — одразу при mount <video> (Safari / після сплешу). */
 export function primeHeroVideoElement(video: HTMLVideoElement): void {
@@ -8,6 +19,7 @@ export function primeHeroVideoElement(video: HTMLVideoElement): void {
     video.defaultMuted = true
     video.muted = true
     video.volume = 0
+    video.preload = 'auto'
     video.autoplay = true
     video.playsInline = true
     video.controls = false
@@ -39,22 +51,64 @@ export function primeHeroVideoElement(video: HTMLVideoElement): void {
   attempt()
 }
 
-export function kickWelcomeHeroVideoPlayOnce(): boolean {
+function forEachDecorativeHeroVideo(fn: (video: HTMLVideoElement) => void): boolean {
   if (typeof document === 'undefined') return false
-  const v = document.querySelector<HTMLVideoElement>(WELCOME_HERO_VIDEO_SELECTOR)
-  if (!v) return false
-  try {
-    primeHeroVideoElement(v)
-  } catch {
-    return false
+  let hit = false
+  const seen = new Set<HTMLVideoElement>()
+  for (const sel of DECORATIVE_HERO_VIDEO_SELECTORS) {
+    document.querySelectorAll<HTMLVideoElement>(sel).forEach((v) => {
+      if (seen.has(v)) return
+      seen.add(v)
+      hit = true
+      try {
+        fn(v)
+      } catch {
+        /* ignore */
+      }
+    })
   }
-  return true
+  return hit
+}
+
+export function kickWelcomeHeroVideoPlayOnce(): boolean {
+  return forEachDecorativeHeroVideo(primeHeroVideoElement)
 }
 
 /** Підстраховка autoplay після сплешу / SPA-back / bfcache. */
 export function kickWelcomeHeroVideoPlayBurst(): () => void {
   kickWelcomeHeroVideoPlayOnce()
-  const delays = [16, 120, 400]
+  const delays = isWebKitBrowser()
+    ? [16, 60, 150, 400, 900, 1800, 3200]
+    : [16, 120, 400]
   const ids = delays.map((ms) => window.setTimeout(kickWelcomeHeroVideoPlayOnce, ms))
   return () => ids.forEach((id) => window.clearTimeout(id))
+}
+
+/**
+ * Safari/macOS: після programmatic pause() autoplay часто не відновлюється.
+ * Перший scroll / tap / wheel на сторінці — безпечний unlock (passive, once).
+ */
+export function installWebKitHeroAutoplayDocUnlock(): void {
+  if (typeof window === 'undefined' || webKitDocUnlockInstalled || !isWebKitBrowser()) return
+  webKitDocUnlockInstalled = true
+
+  const unlock = () => {
+    kickWelcomeHeroVideoPlayOnce()
+    cleanup()
+  }
+
+  const opts: AddEventListenerOptions = { passive: true, capture: true, once: true }
+  const cleanup = () => {
+    window.removeEventListener('pointerdown', unlock, opts)
+    window.removeEventListener('touchstart', unlock, opts)
+    window.removeEventListener('wheel', unlock, opts)
+    window.removeEventListener('keydown', unlock, opts)
+    window.removeEventListener('scroll', unlock, opts)
+  }
+
+  window.addEventListener('pointerdown', unlock, opts)
+  window.addEventListener('touchstart', unlock, opts)
+  window.addEventListener('wheel', unlock, opts)
+  window.addEventListener('keydown', unlock, opts)
+  window.addEventListener('scroll', unlock, opts)
 }

@@ -5,6 +5,8 @@ import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { getBlogNotFoundTitle } from '@/lib/i18n/seo'
 import BlogBackToIndex from '../BlogBackToIndex'
 import BlogArticleInner from '../BlogArticleInner'
+import BlogArticleLinks from '../BlogArticleLinks'
+import type { BlogPostLinks } from '@/lib/blogLinks'
 
 interface BlogPost {
   id: number
@@ -15,6 +17,7 @@ interface BlogPost {
   videoUrl?: string | null
   author: string
   createdAt: string
+  links?: BlogPostLinks
 }
 
 function normalizeVideoUrl(url?: string | null): string | null {
@@ -25,11 +28,12 @@ function normalizeVideoUrl(url?: string | null): string | null {
   return value
 }
 
-async function getPost(slug: string): Promise<BlogPost | null> {
+async function getPost(slug: string, lang: string): Promise<BlogPost | null> {
   try {
-    const res = await fetch(`${serverApiBaseUrl()}/api/blog/${slug}`, {
-      cache: 'no-store',
-    })
+    const res = await fetch(
+      `${serverApiBaseUrl()}/api/blog/${slug}?lang=${encodeURIComponent(lang)}`,
+      { cache: 'no-store' },
+    )
     if (!res.ok) return null
     return res.json()
   } catch {
@@ -39,7 +43,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const lang = await getRequestLocale()
-  const post = await getPost(params.slug)
+  const post = await getPost(params.slug, lang)
   if (!post) {
     return { title: getBlogNotFoundTitle(lang) }
   }
@@ -50,7 +54,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = await getPost(params.slug)
+  const lang = await getRequestLocale()
+  const post = await getPost(params.slug, lang)
   if (!post) notFound()
 
   const videoEmbedUrl = normalizeVideoUrl(post.videoUrl)
@@ -79,6 +84,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               }}
               videoEmbedUrl={videoEmbedUrl}
             />
+            {post.links ? <BlogArticleLinks links={post.links} /> : null}
           </div>
         </article>
       </div>

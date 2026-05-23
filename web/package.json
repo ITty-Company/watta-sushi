@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
+    "dev": "node ../scripts/clear-next-dev-cache.cjs && NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "dev:fast": "node ../scripts/kill-port.cjs 3000 && NODE_OPTIONS='--max-old-space-size=8192' next dev --turbo -H 0.0.0.0 -p 3000",
     "dev:cached": "node ../scripts/kill-port.cjs 3000 && NEXT_WEBPACK_FS_CACHE=1 NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
-    "dev:webpack": "node ../scripts/kill-port.cjs 3000 && NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
+    "dev:webpack": "node ../scripts/clear-next-dev-cache.cjs && NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "dev:poll": "node ../scripts/kill-port.cjs 3000 && WATCHPACK_POLLING=true NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "dev:turbo": "node ../scripts/kill-port.cjs 3000 && NODE_OPTIONS='--max-old-space-size=8192' next dev --turbo -H 0.0.0.0 -p 3000",
     "dev:https": "NODE_OPTIONS='--max-old-space-size=8192' next dev --experimental-https -H 0.0.0.0 -p 3000",

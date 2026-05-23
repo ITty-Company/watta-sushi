@@ -2874,6 +2874,426 @@ html.watta-light-chrome body {
   box-shadow: 0 1px 3px rgba(20, 81, 66, 0.06);
 }
 
+.watta-cart-checkout-layout {
+  align-items: start;
+}
+
+/* Спецпропозиції в кошику — одна горизонтальна стрічка, без сітки/повтору */
+.cart-upsell-rail-scroll {
+  flex-wrap: nowrap !important;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cart-upsell-rail-scroll .home-menu-product-card--rail-web {
+  flex: 0 0 calc((100% - 1rem) / 1.45);
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+@media (min-width: 640px) {
+  .cart-upsell-rail-scroll .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 2rem) / 2.35);
+  }
+}
+
+@media (min-width: 1024px) {
+  .cart-upsell-rail-scroll .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 3rem) / 3.35);
+  }
+}
+
+/* Спецпропозиції в боковій колонці кошика (планшет / десктоп) — компактна стрічка */
+@media (min-width: 768px) {
+  .watta-cart-upsell-sidebar .cart-upsell-rail-scroll .home-menu-product-card--rail-web {
+    flex: 0 0 calc((100% - 0.65rem) / 1.35);
+    max-width: 11.5rem;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-card-media-web {
+    aspect-ratio: 1 / 1;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-card-body-web {
+    padding: 0.45rem 0.5rem 0.5rem;
+    gap: 0.2rem;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-card-title-web {
+    font-size: 0.68rem;
+    line-height: 1.2;
+    -webkit-line-clamp: 2;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-card-desc-web {
+    display: none;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-card-footer-web {
+    padding-top: 0.25rem;
+    gap: 0.25rem;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-price-web {
+    font-size: 0.72rem;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-add-web {
+    min-height: 1.55rem;
+    padding: 0.12rem 0.3rem;
+    font-size: 0.52rem;
+  }
+
+  .watta-cart-upsell-sidebar .home-menu-product-card--rail-web .home-menu-product-add-text-web {
+    max-width: 3.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-cart-checkout-items {
+    position: sticky;
+    top: clamp(5rem, 11vh, 6.5rem);
+    max-height: calc(100dvh - clamp(5rem, 11vh, 6.5rem) - 0.75rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(20, 81, 66, 0.25) transparent;
+    align-self: start;
+  }
+
+  .watta-cart-checkout-panel {
+    align-self: start;
+    min-width: 0;
+  }
+
+  .watta-cart-checkout-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    align-items: start;
+  }
+
+  .watta-cart-checkout-grid__span2 {
+    grid-column: 1 / -1;
+  }
+
+  .watta-cart-checkout-grid__pay {
+    position: sticky;
+    top: clamp(5rem, 11vh, 6.5rem);
+    align-self: start;
+    z-index: 2;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .watta-cart-checkout-layout {
+    gap: 0.75rem;
+  }
+
+  .watta-cart-page .watta-cart-checkout-card {
+    padding: clamp(0.6rem, 1.5vw, 0.75rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-checkout-grid {
+    gap: 0.75rem;
+  }
+}
+
+.watta-cart-page .watta-cart-checkout-card {
+  padding: clamp(0.65rem, 1.2vw, 0.9rem);
+  border-radius: 0.875rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 252, 250, 0.95) 100%);
+  box-shadow:
+    0 1px 2px rgba(20, 81, 66, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+@media (min-width: 768px) {
+  .watta-cart-page .watta-cart-checkout-card {
+    padding: clamp(0.7rem, 1vw, 0.85rem);
+    border-radius: 1rem;
+  }
+}
+
+.watta-cart-checkout-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.watta-cart-checkout-head__ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, rgba(20, 81, 66, 0.14) 0%, rgba(20, 81, 66, 0.06) 100%);
+  color: #145142;
+  flex-shrink: 0;
+}
+
+.watta-cart-checkout-head__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #145142;
+  line-height: 1.2;
+}
+
+.watta-cart-date-rail {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.watta-cart-date-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.watta-cart-date-chip {
+  flex: 0 0 auto;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .watta-cart-date-chip {
+    font-size: 0.72rem;
+    padding: 0.38rem 0.72rem;
+  }
+}
+
+.watta-cart-date-chip:hover {
+  border-color: rgba(20, 81, 66, 0.28);
+  color: #145142;
+}
+
+.watta-cart-date-chip--active {
+  border-color: #145142;
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px -6px rgba(20, 81, 66, 0.55);
+}
+
+.watta-cart-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  max-height: 9rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 1px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 81, 66, 0.22) transparent;
+}
+
+@media (min-width: 768px) {
+  .watta-cart-slot-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-height: 8.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .watta-cart-slot-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.watta-cart-slot-chip {
+  border-radius: 0.55rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.42rem 0.35rem;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #334155;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+
+@media (min-width: 768px) {
+  .watta-cart-slot-chip {
+    font-size: 0.7rem;
+    padding: 0.45rem 0.4rem;
+  }
+}
+
+.watta-cart-slot-chip:hover {
+  border-color: rgba(20, 81, 66, 0.28);
+  color: #145142;
+}
+
+.watta-cart-slot-chip--active {
+  border-color: #145142;
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  color: #fff;
+  box-shadow: 0 3px 10px -4px rgba(20, 81, 66, 0.55);
+}
+
+.watta-cart-slot-chip--asap {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+}
+
+.watta-cart-fee-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.18);
+  background: linear-gradient(90deg, rgba(20, 81, 66, 0.08) 0%, rgba(255, 107, 53, 0.06) 100%);
+  padding: 0.28rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #145142;
+}
+
+.watta-cart-fee-pill--error {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: rgba(254, 242, 242, 0.95);
+  color: #b91c1c;
+}
+
+.watta-cart-fee-pill--muted {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(248, 250, 252, 0.95);
+  color: #64748b;
+  font-weight: 600;
+}
+
+.watta-cart-checkout-total {
+  border-radius: 0.85rem;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: linear-gradient(180deg, rgba(248, 252, 250, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
+  padding: 0.65rem 0.75rem;
+}
+
+.watta-cart-checkout-total__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.watta-cart-checkout-total__grand {
+  margin-top: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed rgba(20, 81, 66, 0.16);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f2a22;
+}
+
+.watta-cart-checkout-total__amount {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #145142;
+  line-height: 1;
+}
+
+.watta-cart-checkout-pay-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.watta-cart-checkout-pay-row--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.watta-cart-checkout-pay-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.55rem 0.6rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+  min-height: 2.65rem;
+}
+
+.watta-cart-checkout-pay-opt--active {
+  border-color: #145142;
+  background: rgba(20, 81, 66, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(20, 81, 66, 0.08);
+}
+
+.watta-cart-checkout-pay-opt__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.15;
+}
+
+.watta-cart-checkout-pay-opt__hint {
+  font-size: 0.62rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.watta-cart-checkout-inline-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+}
+
+.watta-cart-checkout-inline-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  color: #475569;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .watta-cart-checkout-inline-checks label {
+    font-size: 0.72rem;
+  }
+}
+
 
 /* Панель категорий на полностраничных страницах */
 .full-page-web .categories-panel-wrapper-web {
@@ -3529,18 +3949,10 @@ html.watta-light-chrome body {
     scroll-padding-bottom: var(--watta-floating-fab-clearance, calc(4.75rem + env(safe-area-inset-bottom, 0px)));
   }
 
-  .menu-snap-section-welcome-web {
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-
-  .menu-snap-section-cinematic-web {
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-
+  .menu-snap-section-welcome-web,
+  .menu-snap-section-cinematic-web,
   .menu-snap-section-brand-web {
-    scroll-snap-align: start;
+    scroll-snap-align: none;
     scroll-snap-stop: normal;
   }
 }
@@ -4055,12 +4467,12 @@ html.watta-light-chrome body {
 .app-header-web {
   background: #ffffff;
   padding: 10px 28px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-bottom: none;
   position: relative;
   z-index: 1;
   box-shadow: none;
   width: 100%;
-  transition: all 0.3s ease;
+  transition: none;
 }
 
 .app-header-web::before {
@@ -4165,27 +4577,14 @@ html.watta-light-chrome body {
   .header-actions-web .header-profile-btn-web,
   .header-actions-web .header-favorites-btn-web,
   .header-actions-web .header-menu-btn-web,
-  .header-actions-web .header-cart-btn-text-web {
+  .header-actions-web .header-cart-btn-text-web,
+  .header-actions-web .header-lang-btn-web {
     width: 40px !important;
     height: 40px !important;
     min-width: 40px !important;
     max-width: 40px !important;
     box-sizing: border-box !important;
     border-radius: 11px !important;
-  }
-
-  .header-actions-web .header-lang-wrap-web button {
-    width: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    height: 40px !important;
-    box-sizing: border-box !important;
-    border-radius: 11px !important;
-  }
-
-  .header-actions-web .header-lang-wrap-web button svg {
-    width: 15px !important;
-    height: 15px !important;
   }
 }
 
@@ -4250,9 +4649,11 @@ html.watta-light-chrome body {
   flex-shrink: 0;
   min-width: 0;
   padding: 4px 8px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.5);
-  backdrop-filter: blur(10px);
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
 }
 
 .logo-icon-web {
@@ -4286,6 +4687,8 @@ html.watta-light-chrome body {
   object-fit: contain;
   width: 100%;
   height: 100%;
+  filter: none;
+  box-shadow: none;
 }
 
 .logo-text-images-web {
@@ -4301,6 +4704,8 @@ html.watta-light-chrome body {
   height: 100%;
   width: auto;
   max-width: 100%;
+  filter: none;
+  box-shadow: none;
 }
 
 @media (max-width: 480px) {
@@ -4515,8 +4920,8 @@ html.watta-light-chrome body {
   flex-shrink: 0;
 }
 
-/* Кнопка выбора языка в хедере: той самий квадрат, що й інші кнопки дій (40×40) */
-.header-actions-web .header-lang-wrap-web button {
+/* Кнопка мови — той самий squircle, що профіль / обране / меню */
+.header-actions-web .header-lang-btn-web {
   width: 40px !important;
   min-width: 40px !important;
   max-width: 40px !important;
@@ -4524,28 +4929,36 @@ html.watta-light-chrome body {
   padding: 0 !important;
   border-radius: 10px !important;
   border: 2px solid #145142 !important;
+  background: #ffffff !important;
   font-size: 12px !important;
-  gap: 2px !important;
+  font-weight: 600 !important;
+  color: #145142 !important;
+  gap: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-shadow: 0 3px 10px rgba(20,81,66,0.12), inset 0 1px 0 rgba(255,255,255,1) !important;
+  box-shadow: none !important;
   box-sizing: border-box !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: background 0.2s, box-shadow 0.2s, color 0.2s, border-color 0.2s !important;
+  transform: none !important;
 }
 
-.header-actions-web .header-lang-wrap-web button svg {
-  width: 14px !important;
-  height: 14px !important;
+.header-actions-web .header-lang-label-web {
+  letter-spacing: 0.3px;
+  font-weight: 600;
+  line-height: 1;
 }
 
-.header-actions-web .header-lang-wrap-web button:hover {
+.header-actions-web .header-lang-btn-web:hover {
   background: #145142 !important;
+  border-color: #145142 !important;
   box-shadow: 0 6px 16px rgba(20,81,66,0.3) !important;
   color: #ffffff !important;
-}
-
-.header-actions-web .header-lang-wrap-web button:hover svg {
-  color: #ffffff !important;
+  transform: none !important;
 }
 
 .header-actions-web .header-lang-wrap-web {
@@ -4555,7 +4968,7 @@ html.watta-light-chrome body {
 
 /* Після базового font-size: літери мови трохи більші на laptop / desktop */
 @media (min-width: 1025px) {
-  .header-actions-web .header-lang-wrap-web button {
+  .header-actions-web .header-lang-btn-web {
     font-size: 13px !important;
   }
 }
@@ -5890,7 +6303,8 @@ html.watta-light-chrome body {
   gap: 1rem;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x pan-y;
   scroll-padding-inline: max(1.35rem, env(safe-area-inset-left, 0px));
   -webkit-overflow-scrolling: touch;
   padding-bottom: 0.35rem;
@@ -7350,6 +7764,24 @@ html.watta-light-chrome body {
  * JS не викликає bindHeroVideoMirrorToCanvas при цьому matchMedia.
  */
 @media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  /* Головна (MenuView): нативний mp4 на десктопі — той самий cover, що на touch (Safari macOS). */
+  .menu-page-web:not(.watta-full-menu-page)
+    .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web
+    .watta-home-hero-native-video {
+    opacity: 1 !important;
+    visibility: visible !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 2 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
   .watta-full-menu-page .welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
   .welcome-hero-video-source-for-canvas-web.watta-full-menu-intro-video-el,
   .delivery-page-hero-embed-web .welcome-hero-video-source-for-canvas-web.welcome-video-native-web,
@@ -7759,9 +8191,9 @@ html.watta-light-chrome body {
     --watta-home-hero-card-pad-b: clamp(12px, 1.35vh, 20px);
   }
 
-  /* /menu (legacy hero): підтягування потоку — не для .watta-site-hero-page-web (як головна) */
-  .menu-page-web.watta-full-menu-page:not(.watta-site-hero-page-web) .watta-sticky-chrome-flow-anchor {
-    margin-bottom: calc(-1 * clamp(72px, 12vh, 148px)) !important;
+  /* /menu без hero-відео: без негативного margin — текст нижче категорій */
+  .menu-page-web.watta-full-menu-page .watta-sticky-chrome-flow-anchor {
+    margin-bottom: 0 !important;
   }
 
   /* Головна: без негативного margin — див. глобальне правило вище */
@@ -9149,7 +9581,7 @@ html.watta-light-chrome body {
     max-width: min(84px, 24vw);
     box-sizing: border-box;
     padding: 7px 4px;
-    gap: 3px;
+    gap: 5px;
     border-radius: 11px;
   }
 
@@ -9193,7 +9625,7 @@ html.watta-light-chrome body {
   -ms-overflow-style: none;
   overscroll-behavior-x: contain;
   scroll-snap-type: none;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
 }
 
 .categories-panel-web::-webkit-scrollbar {
@@ -9280,7 +9712,7 @@ html.watta-light-chrome body {
   .header-favorites-btn-web:hover,
   .header-menu-btn-web:hover,
   .header-actions-web .header-cart-btn-text-web:hover,
-  .header-actions-web .header-lang-wrap-web button:hover {
+  .header-actions-web .header-lang-btn-web:hover {
     box-shadow: none !important;
   }
 
@@ -9373,7 +9805,7 @@ html.watta-light-chrome body {
     overflow-y: hidden;
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
-    touch-action: pan-x manipulation;
+    touch-action: pan-x pan-y;
     scrollbar-width: none;
     -ms-overflow-style: none;
     display: flex;
@@ -9439,7 +9871,7 @@ html.watta-light-chrome body {
     padding: 4px 3px !important;
     font-size: 0.54rem;
     border-radius: 50% !important;
-    gap: 2px !important;
+    gap: 4px !important;
     border-width: 1.5px;
     justify-content: center;
     overflow: hidden !important;
@@ -9541,7 +9973,7 @@ html.watta-light-chrome body {
     align-self: center;
     padding: 7px 6px !important;
     border-radius: 50% !important;
-    gap: 4px !important;
+    gap: 5px !important;
     justify-content: center;
     overflow: hidden !important;
   }
@@ -9641,7 +10073,7 @@ html.watta-light-chrome body {
     align-self: center !important;
     padding: 6px 5px !important;
     border-radius: 50% !important;
-    gap: 3px !important;
+    gap: 5px !important;
     justify-content: center !important;
     overflow: hidden !important;
     scroll-snap-align: start;
@@ -9778,7 +10210,7 @@ html.watta-light-chrome body {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
     overscroll-behavior-x: contain !important;
-    touch-action: pan-x manipulation !important;
+    touch-action: pan-x pan-y !important;
   }
 
   .watta-full-menu-sticky-chrome .categories-panel-web,
@@ -9824,7 +10256,7 @@ html.watta-light-chrome body {
 
     .category-button-web {
       padding: 4px 2px !important;
-      gap: 1px !important;
+      gap: 4px !important;
     }
   }
 
@@ -9859,8 +10291,8 @@ html.watta-light-chrome body {
     }
 
     .category-button-web {
-      padding: 3px 2px !important;
-      gap: 2px !important;
+      padding: 4px 2px !important;
+      gap: 5px !important;
     }
   }
 
@@ -9889,15 +10321,15 @@ html.watta-light-chrome body {
 
   @media (min-width: 768px) {
     .category-button-web {
-      padding: 2px 1px !important;
-      gap: 1px !important;
+      padding: 3px 2px !important;
+      gap: 4px !important;
     }
   }
 
   @media (min-width: 1025px) {
     .category-button-web {
-      padding: 3px 2px !important;
-      gap: 2px !important;
+      padding: 4px 2px !important;
+      gap: 5px !important;
     }
   }
 
@@ -10691,7 +11123,8 @@ html.watta-light-chrome body {
 
   .header-menu-btn-web,
   .header-profile-btn-web,
-  .header-favorites-btn-web {
+  .header-favorites-btn-web,
+  .header-actions-web .header-lang-btn-web {
     width: 42px !important;
     height: 42px !important;
     min-width: 42px !important;
@@ -10705,20 +11138,8 @@ html.watta-light-chrome body {
     height: 22px !important;
   }
 
-  .header-actions-web .header-lang-wrap-web button {
-    width: 42px !important;
-    min-width: 42px !important;
-    max-width: 42px !important;
-    height: 42px !important;
-    border-radius: 11px !important;
+  .header-actions-web .header-lang-btn-web {
     font-size: 12px !important;
-    gap: 2px !important;
-    box-sizing: border-box !important;
-  }
-
-  .header-actions-web .header-lang-wrap-web button svg {
-    width: 13px !important;
-    height: 13px !important;
   }
 
   .header-menu-icon-web {
@@ -10773,7 +11194,8 @@ html.watta-light-chrome body {
   .header-actions-web .header-profile-btn-web,
   .header-actions-web .header-favorites-btn-web,
   .header-actions-web .header-menu-btn-web,
-  .header-actions-web .header-cart-btn-text-web {
+  .header-actions-web .header-cart-btn-text-web,
+  .header-actions-web .header-lang-btn-web {
     width: 46px !important;
     height: 46px !important;
     min-width: 46px !important;
@@ -10794,20 +11216,8 @@ html.watta-light-chrome body {
     height: 23px !important;
   }
 
-  .header-actions-web .header-lang-wrap-web button {
-    width: 46px !important;
-    min-width: 46px !important;
-    max-width: 46px !important;
-    height: 46px !important;
-    padding: 0 !important;
-    border-radius: 12px !important;
-    box-sizing: border-box !important;
+  .header-actions-web .header-lang-btn-web {
     font-size: 13px !important;
-  }
-
-  .header-actions-web .header-lang-wrap-web button svg {
-    width: 15px !important;
-    height: 15px !important;
   }
   
   .location-section-web {
@@ -11984,6 +12394,30 @@ html.watta-light-chrome body {
   font-weight: 500;
   color: rgba(20, 81, 66, 0.6);
   line-height: 1.35;
+}
+
+.watta-nav-compact__logout {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(20, 81, 66, 0.22);
+  background: rgba(255, 255, 255, 0.95);
+  color: #145142;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.watta-nav-compact__logout:hover {
+  background: rgba(20, 81, 66, 0.06);
+  border-color: rgba(20, 81, 66, 0.35);
 }
 
 .watta-nav-compact__admin {
@@ -16232,6 +16666,11 @@ html[data-watta-boot-splash='1'] .floating-contact-buttons-root {
   overscroll-behavior: contain;
   touch-action: pan-y;
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Форми в модалках: скрол лише в тілі, кнопка «Зберегти» без градієнтної «тіні» зверху */
+.admin-watta-modal-panel.flex {
+  overflow: hidden;
 }
 
 .admin-watta-modal-scroll {
@@ -21505,7 +21944,7 @@ body.admin-watta-overlay-open .site-footer-watta {
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid,
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--phone {
     display: flex;
-    flex: 0 0 auto !important;
+    flex: 1 1 auto !important;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
@@ -21516,6 +21955,28 @@ body.admin-watta-overlay-open .site-footer-watta {
     padding-top: max(0.05rem, calc(env(safe-area-inset-top, 0px) + 0.05rem));
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
     gap: 0.25rem;
+  }
+
+  /* Hero + форма — по центру екрана, трохи нижче геометричного центру */
+  .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--phone .auth-watta-mobile-hero {
+    margin-top: auto;
+    padding-top: clamp(0.65rem, 3.25vh, 1.65rem);
+  }
+
+  .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--phone .auth-watta-form-panel {
+    margin-bottom: auto;
+    padding-bottom: clamp(0.35rem, 1.75vh, 1rem);
+  }
+
+  /* /register — той самий центр, трохи нижче (форма вища за login) */
+  .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--register.auth-watta-page-grid--phone .auth-watta-mobile-hero {
+    margin-top: auto;
+    padding-top: clamp(1rem, 5.5vh, 2.75rem);
+  }
+
+  .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--register.auth-watta-page-grid--phone .auth-watta-form-panel {
+    margin-bottom: auto;
+    padding-bottom: clamp(0.15rem, 0.85vh, 0.55rem);
   }
 
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-top {
@@ -21754,6 +22215,10 @@ body.admin-watta-overlay-open .site-footer-watta {
   .auth-watta-page-grid--register {
     gap: 0.25rem;
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .auth-watta-page-grid--register .auth-watta-mobile-hero .auth-watta-cinema--embedded {
+    height: clamp(6.75rem, 17.5dvh, 9.25rem);
   }
 
   .auth-watta-page-grid--register .auth-watta-form-panel {
@@ -22647,6 +23112,18 @@ body.admin-watta-overlay-open .site-footer-watta {
 @media (min-width: 1025px) {
   .watta-cart-page .watta-cart-page__content {
     padding-top: clamp(8px, 1.25vh, 14px) !important;
+  }
+}
+
+/* /cart — водяний знак не вилазить під ©; менший зазор над FAB (текст зліва) */
+.watta-cart-page {
+  overflow-y: clip;
+}
+
+@media (max-width: 767px) {
+  .watta-app-shell-root:has(.watta-cart-page) .site-footer-watta__nav-colophon,
+  .watta-app-shell-root:has(.watta-cart-page) .site-footer-watta .site-footer-watta__legal-bar {
+    margin-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -23889,75 +24366,47 @@ body.admin-watta-overlay-open .site-footer-watta {
 }
 
 /* ——— Notifications page ——— */
-.notifications-page-hero {
-  position: relative;
-  overflow: hidden;
-  border-bottom: 1px solid rgba(20, 81, 66, 0.08);
-  background:
-    radial-gradient(ellipse 80% 55% at 100% 0%, rgba(255, 140, 60, 0.1) 0%, transparent 58%),
-    linear-gradient(180deg, #ffffff 0%, #f8faf9 100%);
+.notifications-page-web {
+  background: #fff;
 }
 
-.notifications-page-hero__ambient {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  opacity: 0.5;
-  background: repeating-linear-gradient(
-    -32deg,
-    transparent,
-    transparent 18px,
-    rgba(20, 81, 66, 0.025) 18px,
-    rgba(20, 81, 66, 0.025) 19px
-  );
+body:not(.watta-route-home) .watta-app-main-grow:has(> .watta-public-page-shell .notifications-page-web) {
+  background: #fff;
 }
 
-.notifications-page-hero__kicker {
+.notifications-page-intro {
+  background: #fff;
+}
+
+.notifications-page-intro__kicker {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.5rem;
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(20, 81, 66, 0.65);
 }
 
-.notifications-page-hero__kicker-ico {
+.notifications-page-intro__kicker-ico {
   color: #ff5c00;
 }
 
-.notifications-page-hero__title {
-  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.85rem, 6vw, 2.5rem);
+.notifications-page-intro__title {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.12;
   letter-spacing: -0.02em;
-  color: #0f241e;
+  color: #0f2a22;
 }
 
-.notifications-page-hero__sub {
-  margin-top: 0.65rem;
-  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(1rem, 2.5vw, 1.15rem);
+.notifications-page-intro__sub {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
   line-height: 1.5;
-  color: #6b7280;
-}
-
-.notifications-page-hero__live {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 1rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #145142;
-}
-
-.notifications-page-hero__live-ico {
-  color: #ff5c00;
-  animation: notifications-live-pulse 2s ease-in-out infinite;
+  color: rgba(20, 81, 66, 0.72);
 }
 
 @keyframes notifications-live-pulse {
@@ -23971,11 +24420,7 @@ body.admin-watta-overlay-open .site-footer-watta {
 }
 
 .notifications-page-panel {
-  overflow: hidden;
-  border-radius: 24px;
-  border: 1px solid rgba(20, 81, 66, 0.1);
   background: #fff;
-  box-shadow: 0 16px 48px rgba(20, 81, 66, 0.08);
 }
 
 .notifications-page-state {
@@ -24013,8 +24458,8 @@ body.admin-watta-overlay-open .site-footer-watta {
   height: 4.5rem;
   margin-bottom: 1.25rem;
   border-radius: 999px;
-  background: linear-gradient(165deg, #fff7f2 0%, #f4f9f7 100%);
-  border: 1px solid rgba(20, 81, 66, 0.08);
+  background: #fff;
+  border: 1px solid rgba(20, 81, 66, 0.1);
 }
 
 .notifications-page-state__icon {
@@ -24025,10 +24470,9 @@ body.admin-watta-overlay-open .site-footer-watta {
 
 .notifications-page-state__title {
   margin-bottom: 0.35rem;
-  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-size: 1.2rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  color: #0f241e;
+  color: #0f2a22;
 }
 
 .notifications-page-state__sub {
@@ -24112,23 +24556,22 @@ body.admin-watta-overlay-open .site-footer-watta {
 .notifications-page-card {
   display: flex;
   gap: 0.75rem;
-  border-radius: 18px;
-  border: 1px solid rgba(20, 81, 66, 0.08);
+  border-radius: 16px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
   background: #fff;
   padding: 0.85rem 0.9rem;
   text-decoration: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .notifications-page-card:hover {
-  border-color: rgba(20, 81, 66, 0.16);
-  box-shadow: 0 8px 24px rgba(20, 81, 66, 0.08);
-  transform: translateY(-1px);
+  border-color: rgba(20, 81, 66, 0.2);
+  background: #fff;
 }
 
 .notifications-page-card--unread {
-  border-color: rgba(255, 92, 0, 0.22);
-  background: linear-gradient(165deg, #fffaf6 0%, #fff 100%);
+  border-color: rgba(255, 92, 0, 0.35);
+  background: #fff;
 }
 
 .notifications-page-card__ico {
@@ -24139,12 +24582,14 @@ body.admin-watta-overlay-open .site-footer-watta {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 12px;
-  background: #f3f4f6;
+  background: #fff;
+  border: 1px solid rgba(20, 81, 66, 0.1);
   color: #6b7280;
 }
 
 .notifications-page-card__ico--unread {
-  background: rgba(20, 81, 66, 0.1);
+  background: #fff;
+  border-color: rgba(255, 92, 0, 0.25);
   color: #145142;
 }
 
@@ -26173,6 +26618,122 @@ html:has(.watta-delivery-page.watta-site-hero-page-web)
   color: color-mix(in srgb, #0f2a22 88%, #145142);
 }
 
+.watta-blog-links {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid color-mix(in srgb, #145142 18%, transparent);
+}
+
+.watta-blog-links__title {
+  font-size: clamp(1.15rem, 2.8vw, 1.35rem);
+  font-weight: 800;
+  color: #145142;
+  margin-bottom: 1.25rem;
+}
+
+.watta-blog-links__group + .watta-blog-links__group {
+  margin-top: 1.5rem;
+}
+
+.watta-blog-links__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #145142 70%, #0f2a22);
+  margin-bottom: 0.65rem;
+}
+
+.watta-blog-links__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.watta-blog-links__grid--ingredients {
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+}
+
+.watta-blog-links__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, #145142 16%, transparent);
+  background: color-mix(in srgb, #f6fbf8 90%, white);
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  min-height: 100%;
+}
+
+.watta-blog-links__card:hover {
+  border-color: color-mix(in srgb, #145142 40%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, #145142 12%, transparent);
+  transform: translateY(-2px);
+}
+
+.watta-blog-links__img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  background: color-mix(in srgb, #145142 8%, white);
+}
+
+.watta-blog-links__img--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: color-mix(in srgb, #145142 45%, white);
+}
+
+.watta-blog-links__name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0f2a22;
+}
+
+.watta-blog-links__cta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #27ae60;
+}
+
+.watta-blog-links__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.watta-blog-links__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #145142 22%, transparent);
+  background: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #145142;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.watta-blog-links__chip:hover {
+  background: color-mix(in srgb, #145142 10%, white);
+  border-color: #145142;
+}
+
 .watta-blog-route {
   min-height: 0;
   flex: 1 1 auto;
@@ -26639,8 +27200,6 @@ html:has(.watta-delivery-page.watta-site-hero-page-web)
 }
 
 .watta-review-card--featured {
-  position: relative;
-  padding-top: 2.35rem;
   background: linear-gradient(
     145deg,
     color-mix(in srgb, var(--watta-reviews-accent) 8%, #fff) 0%,
@@ -26650,25 +27209,40 @@ html:has(.watta-delivery-page.watta-site-hero-page-web)
   box-shadow: 0 14px 40px color-mix(in srgb, var(--watta-reviews-accent) 12%, transparent);
 }
 
+.watta-review-card__badge-row {
+  display: flex;
+  align-items: center;
+  margin: 0 0 0.15rem;
+}
+
 .watta-review-card__badge {
-  position: absolute;
-  top: 0.85rem;
-  left: 1rem;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
   padding: 0.28rem 0.65rem;
   border-radius: 999px;
   font-size: 0.65rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  line-height: 1.25;
   color: #fff;
   background: linear-gradient(135deg, #ff5c00, #e54d00);
+  white-space: normal;
+  text-align: center;
 }
 
 .watta-review-card__who {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.65rem;
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.watta-review-card__meta {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .watta-review-card__avatar {
@@ -26697,14 +27271,23 @@ html:has(.watta-delivery-page.watta-site-hero-page-web)
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.65rem 0.75rem;
+}
+
+.watta-review-card__rating {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .watta-review-card__author {
   margin: 0;
   font-weight: 800;
   font-size: 0.95rem;
+  line-height: 1.3;
   color: #0f2a22;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .watta-review-card__date {
@@ -26813,13 +27396,13 @@ body.watta-review-compose-open .floating-contact-buttons-root {
   position: relative;
   flex: 0 0 auto;
   width: 100%;
-  max-width: min(26rem, calc(100vw - 2rem));
-  max-height: min(88dvh, 640px);
+  max-width: min(22.5rem, calc(100vw - 1.5rem));
+  max-height: min(82dvh, 520px);
   margin: auto;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: clamp(1.2rem, 3.2vw, 1.65rem);
-  border-radius: clamp(1.15rem, 3vw, 1.65rem);
+  padding: clamp(1rem, 2.8vw, 1.35rem);
+  border-radius: clamp(1rem, 2.6vw, 1.35rem);
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   animation: locationPickerModalIn 0.26s cubic-bezier(0.34, 1.15, 0.55, 1) forwards;
   transform-origin: 50% 42%;
@@ -26855,6 +27438,54 @@ body.watta-review-compose-open .floating-contact-buttons-root {
     radial-gradient(ellipse 55% 40% at 88% 8%, rgba(20, 81, 66, 0.1) 0%, transparent 52%);
 }
 
+.watta-review-compose--thanks {
+  max-width: min(20rem, calc(100vw - 1.5rem));
+  max-height: none;
+}
+
+.watta-review-compose__thanks {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0.25rem 0.15rem;
+}
+
+.watta-review-compose__thanks-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  color: #145142;
+  background: rgba(20, 81, 66, 0.1);
+}
+
+.watta-review-compose__thanks-title {
+  margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.1rem, 3.2vw, 1.28rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0f3d32;
+}
+
+.watta-review-compose__thanks-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--watta-reviews-accent) 55%, #445);
+}
+
+.watta-review-compose__submit--thanks {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
 .watta-review-compose__head {
   position: relative;
   z-index: 1;
@@ -26862,7 +27493,7 @@ body.watta-review-compose-open .floating-contact-buttons-root {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.85rem;
 }
 
 .watta-review-compose__head-copy {
@@ -26935,8 +27566,8 @@ body.watta-review-compose-open .floating-contact-buttons-root {
 .watta-review-compose__rating-block {
   position: relative;
   z-index: 1;
-  margin-bottom: 1rem;
-  padding: 0.85rem 0.65rem 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.55rem 0.6rem;
   text-align: center;
   border-radius: 1.1rem;
   background: rgba(255, 255, 255, 0.55);
@@ -26963,8 +27594,8 @@ body.watta-review-compose-open .floating-contact-buttons-root {
 }
 
 .watta-review-compose__star {
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 1.9rem;
+  height: 1.9rem;
   color: #e2e8f0;
   transition:
     color 0.2s ease,
@@ -26992,7 +27623,7 @@ body.watta-review-compose-open .floating-contact-buttons-root {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
-  min-height: 7rem;
+  min-height: 5.75rem;
   border-radius: 1rem;
   border: 1px solid rgba(20, 81, 66, 0.16);
   background: rgba(255, 255, 255, 0.72);
@@ -27124,6 +27755,24 @@ body.watta-review-compose-open .floating-contact-buttons-root {
   background: color-mix(in srgb, var(--watta-reviews-accent) 88%, #000);
   transform: translateY(-1px);
   box-shadow: 0 14px 32px rgba(20, 81, 66, 0.26);
+}
+
+@media (max-width: 640px) {
+  .watta-review-compose-backdrop {
+    align-items: flex-end;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .watta-review-compose {
+    max-width: 100%;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .watta-review-compose--thanks {
+    border-radius: clamp(1rem, 2.6vw, 1.35rem)
+      clamp(1rem, 2.6vw, 1.35rem) 0 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

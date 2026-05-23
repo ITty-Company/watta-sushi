@@ -138,7 +138,7 @@ export function installVisibleLinkPrefetch(router: AppRouterInstance): () => voi
         if (href?.startsWith('/')) prefetchHref(router, href)
       }
     },
-    { rootMargin: '240px 0px', threshold: 0.01 },
+    { rootMargin: '480px 0px', threshold: 0.01 },
   )
 
   const observeAnchors = () => {

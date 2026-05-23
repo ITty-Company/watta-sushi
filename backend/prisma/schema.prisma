@@ -14,12 +14,18 @@ model User {
   password String // Пароль
   phone    String  @unique // Уникальный телефон (защита от абуза)
   name     String?
+  /// Адреса доставки за замовчуванням (профіль)
+  address  String  @default("")
   role     String  @default("USER")
   bonusBalance Float @default(0)
+  /// Персональний % кешбэку (null = загальний з SiteSetting)
+  bonusCashbackPercentOverride Float?
 
   // Статусы верификации
   isPhoneVerified  Boolean @default(false) // Главный флаг подтверждения
   verificationCode String? // Сюда пишем код из SMS
+  /// Новий номер до підтвердження SMS (зміна телефону в профілі)
+  pendingPhone     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -191,6 +197,8 @@ model Order {
   status     String   @default("PENDING") // PENDING, CONFIRMED, DELIVERED, CANCELLED
   totalPrice Float
   usedBonuses Float   @default(0)
+  /// Кешбэк уже нараховано (захист від повтору при зміні статусу)
+  bonusCashbackAwardedAt DateTime?
 
   customerName  String  @default("Гость")
   phone         String  @default("")
@@ -217,23 +225,24 @@ model Order {
   user   User? @relation(fields: [userId], references: [id])
 
   items OrderItem[]
-  review OrderReview?
+  reviews OrderReview[]
 }
 
-/// Відгук клієнта після отримання замовлення (1 відгук на замовлення)
+/// Відгук клієнта (може бути привʼязаний до замовлення або без нього)
 model OrderReview {
   id        Int      @id @default(autoincrement())
-  orderId   Int      @unique
+  orderId   Int?
   userId    Int
   rating    Int
   text      String
   images    Json     @default("[]")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([orderId])
   @@index([createdAt])
 }
 
@@ -263,6 +272,8 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
+  /// Назва страви на момент замовлення (для історії в профілі)
+  productNameSnapshot String @default("")
 }
 
 // --- БАННЕРЫ ---
@@ -296,6 +307,11 @@ model SiteSetting {
   /// JSON-масив шляхів — порядок відтворення на сторінці доставки
   deliveryHeroVideoUrls String @default("[]")
 
+  /// Меню /menu: перше hero-відео (зворотна сумісність; дублює [0] з menuHeroVideoUrls)
+  menuHeroVideoUrl String @default("/watta-sushi-2-hero.mp4")
+  /// JSON-масив шляхів — плейлист hero на повній сторінці меню
+  menuHeroVideoUrls String @default("[]")
+
   /// Вхід / реєстрація: перше відео в симуляторі телефона (зворотна сумісність; дублює [0] з authHeroVideoUrls)
   authHeroVideoUrl String @default("/watta-sushi-2-hero.mp4")
   /// JSON-масив шляхів — плейлист у передньому «телефоні» на /login та /register
@@ -322,6 +338,11 @@ model SiteSetting {
   deliveryTariffStepKm   Float @default(3)
   /// Вартість одного кроку, €
   deliveryTariffStepEur  Float @default(1.5)
+
+  /// Кешбэк: увімкнено / вимкнено для всіх зареєстрованих клієнтів
+  bonusCashbackEnabled Boolean @default(true)
+  /// Кешбэк для всіх, % від суми товарів (0–100)
+  bonusCashbackPercent Float @default(5)
 }
 
 // --- КОМАНДА ---
@@ -366,10 +387,24 @@ model BlogPost {
   title       String
   slug        String   @unique
   content     String
+  title_ua    String   @default("")
+  title_ru    String   @default("")
+  title_en    String   @default("")
+  title_nl    String   @default("")
+  content_ua  String   @default("")
+  content_ru  String   @default("")
+  content_en  String   @default("")
+  content_nl  String   @default("")
   imageUrl    String?
   videoUrl    String?
   author      String   @default("Шеф Watta Sushi")
   isPublished Boolean  @default(true)
+  /// JSON-масив ID товарів для блоку «згадуємо в статті»
+  linkedProductIds    String @default("[]")
+  /// JSON-масив ID категорій меню
+  linkedCategoryIds   String @default("[]")
+  /// JSON-масив ID інгредієнтів
+  linkedIngredientIds String @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -175,7 +175,7 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     onEndedRef.current?.()
   }, [showBootSplash])
 
-  const loadingLabel = t?.siteAria?.loading ?? 'Загрузка'
+  const loadingLabel = t?.siteAria?.loading ?? 'Loading'
 
   return (
     <>

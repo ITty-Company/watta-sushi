@@ -62,8 +62,10 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
   const scrollPositionRef = useRef(0)
   const isUserScrollingRef = useRef(false)
   const restorePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const categoryTapStartRef = useRef<{ x: number; y: number; scrollLeft: number } | null>(null)
+  const categoryTapStartRef = useRef<{ x: number; y: number } | null>(null)
   const categoryPointerHandledRef = useRef(false)
+  /** Після кліку не відкатувати горизонтальний скрол панелі (scrollActiveChipIntoView). */
+  const suppressPanelRestoreUntilRef = useRef(0)
   const productReqRef = useRef(0)
 
   /** Підсвічування: на /menu та / — підказка зі скролу; інакше URL або slug з картки товару. */
@@ -244,6 +246,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
     const savedPosition = scrollPositionRef.current
     const restorePosition = () => {
       if (!panel || isUserScrollingRef.current) return
+      if (Date.now() < suppressPanelRestoreUntilRef.current) return
       const currentScroll = panel.scrollLeft
       if (savedPosition > 0 && Math.abs(currentScroll - savedPosition) > 5) {
         panel.scrollLeft = savedPosition
@@ -338,15 +341,10 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
     ;[150, 350, 550].forEach((ms) => setTimeout(() => checkScrollButtons(panel), ms))
   }
 
-  const categoryPrefetchHref = useCallback(
-    (key: string) => {
-      const p = pathname || ''
-      if (key === FULL_MENU_ALL_SLUG) return '/menu'
-      if (p === '/menu') return `/menu?cat=${encodeURIComponent(key)}`
-      return `/menu/category/${encodeURIComponent(key)}`
-    },
-    [pathname],
-  )
+  const categoryPrefetchHref = useCallback((key: string) => {
+    if (key === FULL_MENU_ALL_SLUG) return '/menu'
+    return `/menu?cat=${encodeURIComponent(key)}`
+  }, [])
 
   const scrollActiveChipIntoView = useCallback((key: string) => {
     requestAnimationFrame(() => {
@@ -365,6 +363,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
   }, [])
 
   const onCategoryClick = (key: string) => {
+    suppressPanelRestoreUntilRef.current = Date.now() + 700
     if (categoriesPanelRef.current) {
       scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
     }
@@ -376,7 +375,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
         scrollActiveChipIntoView(key)
         router.replace('/menu', { scroll: false })
       } else {
-        router.push('/menu')
+        router.push('/menu', { scroll: false })
       }
       return
     }
@@ -393,29 +392,21 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
       window.dispatchEvent(new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }))
       return
     }
-    router.push(`/menu/category/${encodeURIComponent(key)}`)
+    /* Будь-яка інша сторінка зі стрічкою — повне меню + скрол до секції (не окрема /menu/category/…). */
+    router.push(`/menu?cat=${encodeURIComponent(key)}`, { scroll: false })
   }
 
   const onCategoryTapStart = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (categoriesPanelRef.current) {
-      scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-    }
-    categoryTapStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      scrollLeft: categoriesPanelRef.current?.scrollLeft ?? 0,
-    }
+    categoryTapStartRef.current = { x: e.clientX, y: e.clientY }
   }
 
   const onCategoryTapEnd = (key: string, e: React.PointerEvent<HTMLButtonElement>) => {
     const start = categoryTapStartRef.current
     categoryTapStartRef.current = null
     if (start) {
-      const panel = categoriesPanelRef.current
       const dx = Math.abs(e.clientX - start.x)
       const dy = Math.abs(e.clientY - start.y)
-      const scrollDrift = panel ? Math.abs(panel.scrollLeft - start.scrollLeft) : 0
-      if (dx > 14 || dy > 14 || scrollDrift > 8) return
+      if (dx > 22 || dy > 22) return
     }
     e.preventDefault()
     e.stopPropagation()
@@ -435,10 +426,15 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
         e.preventDefault()
         return
       }
-      if (e.detail === 0) return
       e.preventDefault()
       e.stopPropagation()
       onCategoryClick(key)
+    },
+    onKeyDown: (e: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onCategoryClick(key)
+      }
     },
   })
 
@@ -470,7 +466,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
                 e.currentTarget.blur()
               }}
               tabIndex={-1}
-              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'manipulation' }}
+              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'pan-y' }}
             >
               <div className="category-button-icon-web" aria-hidden>
                 🍱
@@ -489,7 +485,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
                 e.currentTarget.blur()
               }}
               tabIndex={-1}
-              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'manipulation' }}
+              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'pan-y' }}
             >
               <div className="category-button-icon-web">{category.emoji}</div>
               <span className="category-button-label-web">{category.name}</span>

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { sendMassPromo } from '../services/email.service';
 import { checkAdmin } from '../authMiddleware';
+import { parseCashbackPercentInput } from '../lib/bonusCashback.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -137,6 +138,7 @@ router.get('/users', checkAdmin, async (_req: Request, res: Response) => {
         phone: true,
         role: true,
         bonusBalance: true,
+        bonusCashbackPercentOverride: true,
         createdAt: true,
         updatedAt: true,
         _count: { select: { orders: true } },
@@ -147,6 +149,76 @@ router.get('/users', checkAdmin, async (_req: Request, res: Response) => {
   } catch (error) {
     console.error('CRM users error:', error);
     res.status(500).json({ message: 'Ошибка получения пользователей CRM' });
+  }
+});
+
+router.patch('/users/:id/bonus', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(userId)) {
+      res.status(400).json({ message: 'Некорректный id пользователя' });
+      return;
+    }
+
+    const body = req.body || {};
+    const update: {
+      bonusCashbackPercentOverride?: number | null;
+      bonusBalance?: { increment: number };
+    } = {};
+
+    if ('bonusCashbackPercentOverride' in body) {
+      const parsed = parseCashbackPercentInput(body.bonusCashbackPercentOverride);
+      if (parsed === undefined) {
+        res.status(400).json({ message: 'Некорректный персональный % кешбэка' });
+        return;
+      }
+      update.bonusCashbackPercentOverride = parsed;
+    }
+
+    if (body.bonusBalanceDelta != null && body.bonusBalanceDelta !== '') {
+      const delta = Number(body.bonusBalanceDelta);
+      if (!Number.isFinite(delta) || delta === 0) {
+        res.status(400).json({ message: 'Некорректная сумма корректировки баланса' });
+        return;
+      }
+      if (Math.abs(delta) > 10_000) {
+        res.status(400).json({ message: 'Слишком большая корректировка (макс. ±10000 €)' });
+        return;
+      }
+      update.bonusBalance = { increment: Math.round(delta * 100) / 100 };
+    }
+
+    if (Object.keys(update).length === 0) {
+      res.status(400).json({ message: 'Нет полей для обновления' });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: update,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        bonusBalance: true,
+        bonusCashbackPercentOverride: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { orders: true } },
+      },
+    });
+
+    res.json(user);
+  } catch (error) {
+    const code = (error as { code?: string })?.code;
+    if (code === 'P2025') {
+      res.status(404).json({ message: 'Пользователь не найден' });
+      return;
+    }
+    console.error('CRM user bonus patch error:', error);
+    res.status(500).json({ message: 'Ошибка обновления бонусов пользователя' });
   }
 });
 

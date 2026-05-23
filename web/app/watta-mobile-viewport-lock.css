@@ -27,16 +27,12 @@
     overflow-x: clip;
   }
 
-  /* Головна: фіксована висота оболонки — скрол лише всередині .content-web */
+  /*
+   * Головна на телефоні: висота не фіксується в 100vh — скрол body (див. watta-mobile-touch-scroll.css).
+   * Тут лише min-height, щоб коротка сторінка заповнювала екран.
+   */
   body.watta-route-home .watta-app-shell-root {
-    height: var(--watta-screen-min-h);
-    max-height: var(--watta-screen-min-h);
-  }
-
-  body.watta-route-home .watta-app-main-grow > .app-web {
-    height: var(--watta-screen-min-h);
-    max-height: var(--watta-screen-min-h) !important;
-    min-height: 0;
+    min-height: var(--watta-screen-min-h);
   }
 
   /* Інші маршрути: min-height з «замороженого» vh, без dvh що росте/стискається */

@@ -20,9 +20,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildSubpageMetadata(lang, 'blog')
 }
 
-async function getPosts(): Promise<BlogPost[]> {
+async function getPosts(lang: string): Promise<BlogPost[]> {
   try {
-    const res = await fetch(`${serverApiBaseUrl()}/api/blog`, {
+    const res = await fetch(`${serverApiBaseUrl()}/api/blog?lang=${encodeURIComponent(lang)}`, {
       cache: 'no-store',
     })
     if (!res.ok) return []
@@ -34,7 +34,8 @@ async function getPosts(): Promise<BlogPost[]> {
 }
 
 export default async function BlogPage() {
-  const posts = await getPosts()
+  const lang = await getRequestLocale()
+  const posts = await getPosts(lang)
   if (posts.length === 0) notFound()
 
   return (

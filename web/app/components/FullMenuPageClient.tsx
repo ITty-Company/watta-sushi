@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
 import { useLanguage } from '../context/LanguageContext'
@@ -8,13 +9,6 @@ import { getApiUrl } from '@/lib/utils'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
-import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
-import {
-  kickWelcomeHeroVideoPlayBurst,
-  kickWelcomeHeroVideoPlayOnce,
-  primeHeroVideoElement,
-} from '@/lib/kickWelcomeHeroVideo'
-import { useHomeHeroVideo } from '@/hooks/useHomeHeroVideo'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
@@ -29,12 +23,10 @@ import {
   warmMenuCatalogCache,
 } from '@/lib/menuCatalogSessionCache'
 import { productGalleryFromApi } from '@/lib/productGallery'
+import { runUntilScrollSuccess } from '@/lib/menuScroll'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
-import WelcomeHeroSection from './WelcomeHeroSection'
-import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
 import DeliveryHeroCopy from './DeliveryHeroCopy'
-import { cn } from '@/lib/utils'
 
 interface MenuItem {
   id: number
@@ -70,7 +62,9 @@ function normMenuSlug(s: string): string {
 }
 
 export default function FullMenuPageClient() {
-  const { t, language, getLocalized } = useLanguage()
+  const { t, language, getLocalized, formatMenuItemsCount } = useLanguage()
+  const searchParams = useSearchParams()
+  const catFromUrl = searchParams.get('cat')?.trim() ?? ''
   const mv = t.menuView
 
   const [categories, setCategories] = useState<MenuCategoryRow[]>([])
@@ -82,34 +76,12 @@ export default function FullMenuPageClient() {
   /** Під `WattaPublicSiteChrome` (шапка + стрічка) — той самий візуальний блок, що на /product, /cart, … */
   const FULL_MENU_STICKY_RESERVE_PX = 180
 
-  const {
-    heroVideoRef,
-    heroVideoSrc,
-    heroVideoFailed,
-    setHeroVideoFailed,
-    heroVideoSourceIndex,
-    setHeroVideoSourceIndex,
-    videoSources,
-    playlistLength,
-    heroVideoShouldLoop,
-  } = useHomeHeroVideo()
-
   /** Як на головній: ≤768px — поточна сітка; планшет+ — горизонтальний свайп. */
   const [isNarrowViewport, setIsNarrowViewport] = useState(false)
-  /** ≤767px: вступ над відео; з 768px — відео зверху, текст нижче */
-  const [fullMenuIntroBeforeHero, setFullMenuIntroBeforeHero] = useState(false)
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return
     const mq = window.matchMedia('(max-width: 768px)')
     const apply = () => setIsNarrowViewport(mq.matches)
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
-  }, [])
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    const mq = window.matchMedia('(max-width: 767px)')
-    const apply = () => setFullMenuIntroBeforeHero(mq.matches)
     apply()
     mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
@@ -334,54 +306,6 @@ export default function FullMenuPageClient() {
     void warmMenuCatalogCache()
   }, [loadCategories, loadProducts, language])
 
-  /** Як на головній (MenuView): серія nudge до стабільного autoplay після mount / зміни src. */
-  useLayoutEffect(() => {
-    if (heroVideoFailed) return
-    const video = heroVideoRef.current
-    if (!video) return
-    const kick = () => {
-      try {
-        primeHeroVideoElement(video)
-      } catch {
-        /* ignore */
-      }
-    }
-    kick()
-    const delays = [16, 60, 150, 400, 900, 1800]
-    const ids = delays.map((ms) => window.setTimeout(kick, ms))
-    return () => ids.forEach((id) => window.clearTimeout(id))
-  }, [heroVideoSrc, heroVideoFailed, heroVideoRef])
-
-  useEffect(() => {
-    queueMicrotask(kickWelcomeHeroVideoPlayOnce)
-    const raf = requestAnimationFrame(kickWelcomeHeroVideoPlayOnce)
-    const cancelBurst = kickWelcomeHeroVideoPlayBurst()
-    const onPopState = () => kickWelcomeHeroVideoPlayBurst()
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) kickWelcomeHeroVideoPlayBurst()
-      else kickWelcomeHeroVideoPlayOnce()
-    }
-    window.addEventListener('popstate', onPopState)
-    window.addEventListener('pageshow', onPageShow)
-    return () => {
-      cancelAnimationFrame(raf)
-      cancelBurst()
-      window.removeEventListener('popstate', onPopState)
-      window.removeEventListener('pageshow', onPageShow)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (heroVideoFailed) return
-    const video = heroVideoRef.current
-    if (!video) return
-    const offAutoplay = bindHeroVideoAutoplay(video, {
-      extendedRetries: true,
-      loop: heroVideoShouldLoop,
-    })
-    return () => offAutoplay()
-  }, [heroVideoSrc, heroVideoFailed, heroVideoShouldLoop])
-
   useWattaCatalogSync(() => {
     void loadProducts(true)
     void loadCategories()
@@ -534,7 +458,7 @@ export default function FullMenuPageClient() {
     }
   }, [visibleCategories, scrollPadTotal])
 
-  const scrollToCategory = useCallback((slug: string) => {
+  const scrollToCategory = useCallback((slug: string): boolean => {
     const findTarget = (): HTMLElement | null => {
       if (slug === FULL_MENU_ALL_SLUG) {
         return document.getElementById('full-menu-page-start')
@@ -572,28 +496,36 @@ export default function FullMenuPageClient() {
       window.setTimeout(() => {
         scrollLockRef.current = false
       }, 400)
+      return true
     }
 
     const el = findTarget()
-    if (el) {
-      scrollEl(el)
-      return
-    }
-    requestAnimationFrame(() => {
-      const late = findTarget()
-      if (late) scrollEl(late)
-    })
+    if (el) return scrollEl(el)
+    return false
   }, [])
+
+  const scrollToCategoryWithRetry = useCallback(
+    (slug: string) => {
+      runUntilScrollSuccess(() => scrollToCategory(slug))
+    },
+    [scrollToCategory],
+  )
 
   useEffect(() => {
     const onScrollRequest = (ev: Event) => {
       const slug = (ev as CustomEvent<{ slug?: string }>).detail?.slug?.trim()
       if (!slug) return
-      scrollToCategory(slug)
+      scrollToCategoryWithRetry(slug)
     }
     window.addEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
     return () => window.removeEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
-  }, [scrollToCategory])
+  }, [scrollToCategoryWithRetry])
+
+  /** Перехід на /menu?cat= або клік у стрічці з іншої сторінки — скрол одразу після появи секцій. */
+  useEffect(() => {
+    if (loading || !catFromUrl) return
+    scrollToCategoryWithRetry(catFromUrl)
+  }, [loading, catFromUrl, scrollToCategoryWithRetry, visibleCategories.length])
 
   const addToCart = useMenuAddToCart()
   const addToCartFromCard = useCallback(
@@ -613,39 +545,13 @@ export default function FullMenuPageClient() {
     [addToCart, items],
   )
 
-  const fullMenuHeroSection = (
-    <WelcomeHeroSection
-      sectionClassName="delivery-page-hero-standalone-web"
-      heroVideoFailed={heroVideoFailed}
-      setHeroVideoSourceIndex={setHeroVideoSourceIndex}
-      setHeroVideoFailed={setHeroVideoFailed}
-      heroVideoRef={heroVideoRef}
-      heroVideoSrc={heroVideoSrc}
-      videoSources={videoSources}
-      playlistLength={playlistLength}
-      ariaLabel={`${mv.fullMenuIntroHeadlineLead} — ${mv.fullMenuIntroHeadlineMark}`}
-    >
-      {isNarrowViewport ? (
-        <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
-          <WattaHeroMarqueeBar />
-        </div>
-      ) : null}
-    </WelcomeHeroSection>
-  )
-
-  const fullMenuHeroInLayout = isNarrowViewport ? (
-    <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">{fullMenuHeroSection}</div>
-  ) : (
-    fullMenuHeroSection
-  )
-
   const fullMenuIntroBlock = (
     <section
       id="menu-page-after-hero-intro"
       className="home-after-hero-intro-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0"
       aria-labelledby="menu-page-after-hero-intro-title"
     >
-      <div className="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu relative z-[1] mx-auto max-w-7xl px-6 pb-3 pt-6 sm:px-9 sm:pb-4 sm:pt-7 md:px-12 md:pb-5">
+      <div className="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu home-after-hero-intro-inner-web--headroom relative z-[1] mx-auto max-w-7xl px-6 pb-3 pt-6 sm:px-9 sm:pb-4 sm:pt-7 md:px-12 md:pb-5">
         <DeliveryHeroCopy
           titleId="menu-page-after-hero-intro-title"
           kickerScript={mv.fullMenuIntroKickerScript}
@@ -660,38 +566,10 @@ export default function FullMenuPageClient() {
     </section>
   )
 
-  const fullMenuHeroStack = (
-    <div
-      className={cn(
-        'delivery-page-hero-stack w-full shrink-0 bg-transparent',
-        fullMenuIntroBeforeHero
-          ? 'delivery-page-hero-stack--intro-first'
-          : 'delivery-page-hero-stack--video-first',
-      )}
-    >
-      {fullMenuIntroBeforeHero ? (
-        <>
-          {fullMenuIntroBlock}
-          {fullMenuHeroInLayout}
-        </>
-      ) : (
-        <>
-          {fullMenuHeroInLayout}
-          {fullMenuIntroBlock}
-        </>
-      )}
-    </div>
-  )
-
   return (
-    <div
-      className="menu-page-web watta-site-hero-page-web watta-page-bg relative flex min-h-0 w-full max-w-[100vw] flex-col bg-transparent"
-      data-watta-home-narrow-strip-hero={isNarrowViewport ? '1' : undefined}
-    >
+    <div className="menu-page-web watta-page-bg relative flex min-h-0 w-full max-w-[100vw] flex-col bg-transparent">
       <div className="delivery-page-home-flow w-full">
-        <div className="delivery-page-intro-web delivery-page-intro-web--video w-full shrink-0">
-          {fullMenuHeroStack}
-        </div>
+        <div className="delivery-page-intro-web w-full shrink-0">{fullMenuIntroBlock}</div>
       </div>
 
       <div className="watta-full-menu-page flex min-h-0 w-full min-w-0 flex-1 flex-col">
@@ -769,7 +647,7 @@ export default function FullMenuPageClient() {
                           <div className="home-menu-cat-heading-text-web min-w-0">
                             <h2 className="home-menu-cat-title-web">{cat.name}</h2>
                             <p className="home-menu-cat-meta-line-web">
-                              {list.length} {mv.itemsCount}
+                              {formatMenuItemsCount(list.length)}
                             </p>
                           </div>
                         </div>

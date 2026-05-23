@@ -30,11 +30,23 @@ html:has(#contacts-page-container) .delivery-page-intro-web {
   width: 100%;
 }
 
-.watta-delivery-page-about .delivery-page-intro-web--video,
+.watta-delivery-page-about .delivery-page-intro-web,
 .watta-delivery-page-about .delivery-page-hero-stack,
-.menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page) .delivery-page-hero-stack {
+.menu-page-web:has(.watta-full-menu-page) .delivery-page-intro-web {
   background: transparent !important;
   border-top: none;
+}
+
+/* /menu, /delivery — без hero-відео: контент під повною панеллю категорій */
+.menu-page-web:has(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor,
+.watta-delivery-page-about .watta-sticky-chrome-flow-anchor {
+  margin-bottom: 0 !important;
+}
+
+html:not(.watta-html-home-hero) .menu-page-web:has(.watta-full-menu-page) #menu-page-after-hero-intro .home-after-hero-intro-inner-web--headroom,
+html:not(.watta-html-home-hero) .watta-delivery-page-about #delivery-page-lead-intro .home-after-hero-intro-inner-web--headroom,
+html:not(.watta-html-home-hero) .watta-delivery-page-about #delivery-before-hero-intro .home-after-hero-intro-inner-web--headroom {
+  padding-top: clamp(16px, 2.2vh, 28px) !important;
 }
 
 .watta-delivery-page-about #delivery-page-lead-intro.home-after-hero-intro-web,

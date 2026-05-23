@@ -21,14 +21,9 @@ function getAuthUserId(req: Request): number | null {
   }
 }
 
-function maskAuthorName(name: string | null | undefined): string {
-  if (!name || !name.trim()) return 'Гість';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) {
-    const w = parts[0];
-    return w.length <= 2 ? `${w}*` : `${w.slice(0, 2)}***`;
-  }
-  return `${parts[0]} ${parts[1].charAt(0)}.`;
+function formatPublicAuthorName(name: string | null | undefined): string {
+  const trimmed = (name ?? '').trim();
+  return trimmed || 'Гість';
 }
 
 function normalizeImages(raw: unknown): string[] {
@@ -53,7 +48,7 @@ router.get('/', async (_req: Request, res: Response) => {
         text: r.text,
         images: normalizeImages(r.images as unknown),
         createdAt: r.createdAt,
-        authorName: maskAuthorName(r.user?.name),
+        authorName: formatPublicAuthorName(r.user?.name),
       }))
     );
   } catch (error) {
@@ -62,7 +57,25 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-/** Створити відгук (лише власник замовлення, після COMPLETED/DELIVERED) */
+function mapCreatedReview(row: {
+  id: number;
+  rating: number;
+  text: string;
+  images: unknown;
+  createdAt: Date;
+  user?: { name: string | null } | null;
+}) {
+  return {
+    id: row.id,
+    rating: row.rating,
+    text: row.text,
+    images: normalizeImages(row.images),
+    createdAt: row.createdAt,
+    authorName: formatPublicAuthorName(row.user?.name),
+  };
+}
+
+/** Створити відгук (авторизований користувач; orderId необовʼязковий) */
 router.post('/', async (req: Request, res: Response) => {
   try {
     const userId = getAuthUserId(req);
@@ -72,11 +85,8 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const { orderId, rating, text, images } = req.body;
-    const oid = Number(orderId);
-    if (!Number.isFinite(oid)) {
-      res.status(400).json({ message: 'Невірний orderId' });
-      return;
-    }
+    const oidRaw = orderId === undefined || orderId === null || orderId === '' ? null : Number(orderId);
+    const oid = oidRaw != null && Number.isFinite(oidRaw) ? oidRaw : null;
     const r = Number(rating);
     if (!Number.isFinite(r) || r < 1 || r > 5) {
       res.status(400).json({ message: 'Оцінка від 1 до 5' });
@@ -106,41 +116,36 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    const order = await prisma.order.findFirst({
-      where: { id: oid, userId },
-    });
-    if (!order) {
-      res.status(404).json({ message: 'Замовлення не знайдено' });
-      return;
-    }
-    const terminal = order.status === 'COMPLETED' || order.status === 'DELIVERED';
-    if (!terminal) {
-      res.status(400).json({ message: 'Відгук можна залишити після отримання замовлення' });
-      return;
-    }
-
-    const exists = await prisma.orderReview.findUnique({ where: { orderId: oid } });
-    if (exists) {
-      res.status(400).json({ message: 'Ви вже залишили відгук на це замовлення' });
-      return;
+    if (oid != null) {
+      const order = await prisma.order.findFirst({
+        where: { id: oid, userId },
+      });
+      if (!order) {
+        res.status(404).json({ message: 'Замовлення не знайдено' });
+        return;
+      }
+      const terminal = order.status === 'COMPLETED' || order.status === 'DELIVERED';
+      if (!terminal) {
+        res.status(400).json({ message: 'Відгук можна залишити після отримання замовлення' });
+        return;
+      }
     }
 
     const created = await prisma.orderReview.create({
       data: {
-        orderId: oid,
+        ...(oid != null ? { orderId: oid } : {}),
         userId,
         rating: Math.round(r),
         text: txt,
         images: imgArr as object,
       },
+      include: {
+        user: { select: { name: true } },
+      },
     });
 
-    res.json(created);
+    res.json(mapCreatedReview(created));
   } catch (error: any) {
-    if (error?.code === 'P2002') {
-      res.status(400).json({ message: 'Відгук вже існує' });
-      return;
-    }
     console.error('review create error:', error);
     res.status(500).json({ message: 'Не вдалося зберегти відгук' });
   }
@@ -170,6 +175,7 @@ router.get('/all', checkAdmin, async (_req: Request, res: Response) => {
         authorName: r.user?.name ?? '—',
         authorEmail: r.user?.email ?? '',
         orderStatus: r.order?.status ?? '',
+        published: true,
       }))
     );
   } catch (error) {

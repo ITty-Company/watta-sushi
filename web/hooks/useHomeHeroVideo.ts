@@ -10,24 +10,24 @@ import {
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
 } from '@/lib/wattaHeroVideo'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { readSiteSettingsRecord } from '@/lib/heroSettingsSiteCache'
 
 const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v2'
 
 export function useHomeHeroVideo() {
-  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>([])
-
-  useEffect(() => {
+  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return []
     try {
       const raw = sessionStorage.getItem(HOME_HERO_URLS_CACHE_KEY)
-      if (!raw) return
+      if (!raw) return []
       const parsed = JSON.parse(raw) as unknown
-      if (!Array.isArray(parsed)) return
-      const urls = parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-      if (urls.length > 0) setHomeHeroVideoUrls(urls)
+      return Array.isArray(parsed)
+        ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+        : []
     } catch {
-      /* ignore */
+      return []
     }
-  }, [])
+  })
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)
@@ -116,7 +116,25 @@ export function useHomeHeroVideo() {
       void fetchSettings(true)
     }
 
-    void fetchSettings()
+    const cached = readSiteSettingsRecord()
+    if (cached) {
+      applySettings(cached)
+      type IdleWindow = Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+      }
+      const w = typeof window !== 'undefined' ? (window as IdleWindow) : null
+      const revalidate = () => {
+        void fetchSettings()
+      }
+      if (w && typeof w.requestIdleCallback === 'function') {
+        w.requestIdleCallback(revalidate, { timeout: 800 })
+      } else if (typeof window !== 'undefined') {
+        window.setTimeout(revalidate, 300)
+      }
+    } else {
+      void fetchSettings()
+    }
+
     window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
     window.addEventListener('settingsUpdated', onSettingsUpdated)
     return () => {

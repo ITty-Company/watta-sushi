@@ -1,3 +1,5 @@
+import { isWebKitBrowser } from '@/lib/isWebKitBrowser'
+
 /**
  * Декоративне hero-відео: muted autoplay + loop.
  * Оптимізовано під швидкі кліки по UI: без глобальних gesture-слухачів на document,
@@ -15,6 +17,8 @@ export function bindHeroVideoAutoplay(
 ): () => void {
   const extendedRetries = options?.extendedRetries ?? false
   const shouldLoop = options?.loop !== false
+  const webKit = isWebKitBrowser()
+  const aggressiveRetries = extendedRetries || webKit
 
   const applyLoopMode = () => {
     try {
@@ -28,7 +32,7 @@ export function bindHeroVideoAutoplay(
 
   let lastPlayAt = 0
   let playScheduled = 0
-  const MIN_PLAY_GAP_MS = extendedRetries ? 90 : 140
+  const MIN_PLAY_GAP_MS = aggressiveRetries ? 90 : 140
 
   const safePlay = () => {
     const now = performance.now()
@@ -50,6 +54,7 @@ export function bindHeroVideoAutoplay(
       video.volume = 0
       video.playsInline = true
       video.autoplay = true
+      video.preload = 'auto'
       applyLoopMode()
       video.controls = false
       video.removeAttribute('controls')
@@ -190,17 +195,17 @@ export function bindHeroVideoAutoplay(
   if (video.readyState >= 1) safePlay()
   if (video.readyState >= 2) safePlay()
 
-  const delays = extendedRetries ? [0, 80, 280, 700] : [0, 120]
+  const delays = aggressiveRetries ? [0, 80, 280, 700, 1500, 3000] : [0, 120]
   const timers = delays.map((ms) => window.setTimeout(safePlay, ms))
 
-  const watchdogMs = extendedRetries ? 2800 : 6000
+  const watchdogMs = aggressiveRetries ? 1200 : 6000
   const watchdogId = window.setInterval(watchdog, watchdogMs)
 
   const burstId = window.setInterval(() => {
     if (video.ended || video.error) return
     if (!video.paused) return
     safePlay()
-  }, extendedRetries ? 700 : 1800)
+  }, aggressiveRetries ? 450 : 1800)
 
   let intersectionObserver: IntersectionObserver | null = null
   if (typeof IntersectionObserver !== 'undefined') {
@@ -210,7 +215,8 @@ export function bindHeroVideoAutoplay(
           if (e.target !== video) continue
           if (e.isIntersecting) {
             safePlay()
-          } else {
+          } else if (!webKit) {
+            /* WebKit (Safari macOS/iOS): pause() часто «ламає» muted-autoplay до жесту користувача */
             try {
               video.pause()
             } catch {

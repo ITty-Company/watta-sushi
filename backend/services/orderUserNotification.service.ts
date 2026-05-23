@@ -67,9 +67,9 @@ function statusTitle(
     const when = formatReadyAt(readyAt, 'uk');
     const isPickup = String(fulfillmentType || '').toUpperCase() === 'PICKUP';
     if (isPickup) {
-      body = `Замовлення №${orderId} буде готове до ${when} (самовивіз)`;
+      body = `Замовлення №${orderId}: ви можете забрати його о ${when}`;
     } else {
-      body = `Замовлення №${orderId} буде доставлено до ${when}`;
+      body = `Замовлення №${orderId}: доставка буде о ${when}`;
     }
   }
 

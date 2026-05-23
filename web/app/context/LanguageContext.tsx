@@ -13,6 +13,7 @@ import {
 } from '@/lib/i18n/language'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import { privacyPageByLang, type PrivacyPageContent } from '@/lib/i18n/privacyPageContent'
+import { formatMenuItemsCount } from '@/lib/i18n/formatMenuItemsCount'
 
 export type Language = WattaLanguage
 
@@ -247,6 +248,10 @@ export interface Translations {
     deliveryTimeTitle: string
     /** Підказка під заголовком часу доставки (часовий пояс Амстердама) */
     deliveryTimeHint: string
+    /** Заголовок слота для самовивозу (коментар і UI) */
+    pickupTimeTitle: string
+    slotDayLabelPickup: string
+    slotTimeLabelPickup: string
     orderDetailsTitle: string
     paymentMethodTitle: string
     promoCodeTitle: string
@@ -275,14 +280,37 @@ export interface Translations {
     deliveryZoneStandardHint: string
     citiesGroupAria: string
     streetPlaceholder: string
+    postalCodePlaceholder: string
+    enterStreetAndPostalForDeliveryFee: string
+    toastPostalCodeRequired: string
+    toastDeliveryFeeRequired: string
+    toastDeliveryOutsideArea: string
+    deliveryFeeFromKitchen: string
     entrancePlaceholder: string
     floorPlaceholder: string
     apartmentPlaceholder: string
     buildingPlaceholder: string
+    intercomPlaceholder: string
+    /** Мітки в рядку адреси замовлення ({{value}}) */
+    addrDetailBuilding: string
+    addrDetailEntrance: string
+    addrDetailFloor: string
+    addrDetailApartment: string
+    addrDetailIntercom: string
+    /** Фрагменти коментаря до замовлення для кухні */
+    orderCommentChangeFrom: string
+    orderCommentSticks: string
+    orderCommentNoCallback: string
+    orderCommentNoDoorbell: string
+    /** {{code}}, {{discount}} — у коментарі замовлення для кухні */
+    orderCommentPromo: string
     optNoCallback: string
     optNoDoorbell: string
     slotDayLabel: string
     slotTimeLabel: string
+    slotAsap: string
+    slotNoTimes: string
+    slotPickDateHint: string
     dayToday: string
     dayTomorrow: string
     partySizeLabel: string
@@ -291,6 +319,7 @@ export interface Translations {
     payCash: string
     payCard: string
     payCardHint: string
+    payCardUnavailable: string
     changeFromPlaceholder: string
     distanceMatrixError: string
     promoInvalidFallback: string
@@ -456,6 +485,12 @@ export interface Translations {
     forgotPasswordSave: string
     forgotPasswordSuccess: string
     forgotPasswordResend: string
+    forgotCodeSent: string
+    forgotCodeResent: string
+    verifyTitle: string
+    verifyHint: string
+    confirmPhone: string
+    confirmPasswordLabel: string
   }
   /** global-error.tsx (без LanguageProvider) — дублюємо по мовах через cookie */
   errorPage: {
@@ -476,6 +511,7 @@ export interface Translations {
     reviewThanksModeration: string
     networkError: string
     removeFavoriteError: string
+    reviewGuestName: string
   }
   aboutPage: {
     title: string
@@ -688,6 +724,15 @@ export interface Translations {
     dataSaved: string
     dataSaveError: string
     dataNameRequired: string
+    phoneChangeHint: string
+    phoneCodeSent: string
+    phoneCodeHint: string
+    phoneCodeLabel: string
+    phoneCodeConfirm: string
+    phoneCodeResend: string
+    phoneCodeWrong: string
+    phoneChangeSuccess: string
+    phoneVerifyCancel: string
     emailReadonlyHint: string
     labelName: string
     labelPhone: string
@@ -699,6 +744,36 @@ export interface Translations {
     publicOrdersCta: string
     /** Підказка в боковій колонці вкладеного профілю (не плутати з publicOrdersCta) */
     inAppNavHint: string
+    /** Час після підтвердження; плейсхолдер {{time}} */
+    readyAtPickup: string
+    readyAtDelivery: string
+    showDetails: string
+    hideDetails: string
+    timelineTitle: string
+    labelAddress: string
+    labelPayment: string
+    labelFulfillment: string
+    labelPhoneShort: string
+    fulfillmentPickup: string
+    fulfillmentDelivery: string
+    stepCurrentBadge: string
+    paymentCard: string
+    paymentCash: string
+    paymentStatusPaid: string
+    paymentStatusWaiting: string
+    paymentStatusError: string
+    activeOrderTitle: string
+    viewReceipt: string
+    receiptTitle: string
+    receiptBackProfile: string
+    receiptPaidAt: string
+    receiptAwaitingPayment: string
+    receiptItemsTitle: string
+    receiptMerchandise: string
+    receiptDeliveryFee: string
+    receiptBonusesUsed: string
+    receiptNotFound: string
+    receiptUnauthorized: string
   }
   /** Публічна сторінка відгуків */
   reviewsPublic: {
@@ -729,6 +804,9 @@ export interface Translations {
     emptyInvite: string
     writeCta: string
     openProfile: string
+    reviewThanksTitle: string
+    reviewThanksBody: string
+    reviewThanksClose: string
   }
   /** Блог — обгортка UI */
   blogPublic: {
@@ -741,6 +819,11 @@ export interface Translations {
     featuredBadge: string
     /** Тег на картці, коли з API немає категорії */
     cardCategoryFallback: string
+    linksTitle: string
+    linksProducts: string
+    linksCategories: string
+    linksIngredients: string
+    linksOrder: string
   }
   /** Сторінка контактів */
   contactPage: {
@@ -991,6 +1074,7 @@ export interface Translations {
       addBtn: string; tabSubtitle: string; editTitle: string; newTitle: string; titleRu: string; titlePlaceholder: string;
       heroVideoTitle: string; heroVideoSubtitle: string;
       deliveryHeroVideoTitle: string; deliveryHeroVideoSubtitle: string;
+      menuHeroVideoTitle: string; menuHeroVideoSubtitle: string;
       authHeroVideoTitle: string; authHeroVideoSubtitle: string; authHeroPlaylistHint: string;
       authHeroPhone1Title: string; authHeroPhone2Title: string;
       authHeroCopyTitle: string; authHeroCopySubtitle: string; authHeroCopyBenefits: string; authHeroCopyCityHint: string;
@@ -1342,7 +1426,8 @@ const translations: Record<Language, Translations> = {
       fulfillmentDelivery: 'Доставка',
       fulfillmentPickup: 'Самовивіз',
       pickupAtRestaurant: 'Заберіть замовлення за адресою:',
-      pickupSubtitle: 'Заберіть замовлення у зазначений час.',
+      pickupSubtitle:
+        'Точний час готовності повідомимо після підтвердження — нижче можна вказати побажання.',
       deliveryFree: 'Безкоштовно',
       deliveryUnlockHint: 'Безкоштовна доставка від {{amount}} €',
       invalidPhone: 'Введіть номер у міжнародному форматі (8–15 цифр, можна +)',
@@ -1350,7 +1435,11 @@ const translations: Record<Language, Translations> = {
       perPiece: 'шт.',
       contactDetails: 'Контактні дані',
       deliveryTimeTitle: 'Час доставки',
-      deliveryTimeHint: 'Інтервали за часом Амстердама (CET/CEST). Минулий слот недоступний.',
+      deliveryTimeHint:
+        'Оберіть дату (до 14 днів наперед) та зручний інтервал. Час — за Амстердамом (CET/CEST). Минулий слот недоступний.',
+      pickupTimeTitle: 'Бажаний час самовивозу',
+      slotDayLabelPickup: 'Дата самовивозу',
+      slotTimeLabelPickup: 'Бажаний час',
       orderDetailsTitle: 'Деталі',
       paymentMethodTitle: 'Спосіб оплати',
       promoCodeTitle: 'Промокод',
@@ -1380,14 +1469,35 @@ const translations: Record<Language, Translations> = {
         'Для цієї зони доставка за км — вкажіть адресу нижче або перевірте індекс на сторінці доставки.',
       citiesGroupAria: 'Місто доставки',
       streetPlaceholder: 'Вулиця та номер будинку *',
+      postalCodePlaceholder: 'Поштовий індекс *',
+      enterStreetAndPostalForDeliveryFee:
+        'Вкажіть вулицю та індекс — одразу порахуємо доставку від нашої кухні',
+      toastPostalCodeRequired: 'Вкажіть поштовий індекс доставки',
+      toastDeliveryFeeRequired: 'Дочекайтесь розрахунку вартості доставки',
+      toastDeliveryOutsideArea: 'За цією адресою доставка недоступна',
+      deliveryFeeFromKitchen: 'Доставка від кухні: {{km}} км — {{sum}} €',
       entrancePlaceholder: "Під'їзд (лише цифри)",
       floorPlaceholder: 'Поверх (лише цифри)',
       apartmentPlaceholder: 'Квартира (лише цифри)',
       buildingPlaceholder: 'Корпус / блок',
+      intercomPlaceholder: 'Домофон',
+      addrDetailBuilding: 'корп./блок: {{value}}',
+      addrDetailEntrance: "під'їзд: {{value}}",
+      addrDetailFloor: 'поверх: {{value}}',
+      addrDetailApartment: 'кв.: {{value}}',
+      addrDetailIntercom: 'домофон: {{value}}',
+      orderCommentChangeFrom: '[Потрібна решта з: {{amount}} €]',
+      orderCommentSticks: '[Прибори: {{sticks}} шт, Особи: {{persons}}]',
+      orderCommentNoCallback: '[Не передзвонювати]',
+      orderCommentNoDoorbell: '[Не дзвонити у двері]',
+      orderCommentPromo: '(ПРОМО: {{code}} -{{discount}}%)',
       optNoCallback: 'Не передзвонювати для підтвердження',
       optNoDoorbell: 'Не дзвонити у двері',
-      slotDayLabel: 'День',
-      slotTimeLabel: 'Час',
+      slotDayLabel: 'Дата доставки',
+      slotTimeLabel: 'Час доставки',
+      slotAsap: 'Якнайшвидше',
+      slotNoTimes: 'На цей день немає вільних слотів — оберіть іншу дату',
+      slotPickDateHint: 'Доступно {{days}} днів наперед',
       dayToday: 'Сьогодні',
       dayTomorrow: 'Завтра',
       partySizeLabel: 'Кількість осіб (1–99)',
@@ -1396,6 +1506,8 @@ const translations: Record<Language, Translations> = {
       payCash: 'Готівкою',
       payCard: 'Карткою онлайн',
       payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      payCardUnavailable:
+        'Онлайн-оплата зараз недоступна — оберіть «Готівка» при отриманні.',
       changeFromPlaceholder: 'Решта з якої суми? (наприклад: 50)',
       distanceMatrixError: 'Не вдалося розрахувати відстань',
       promoInvalidFallback: 'Невірний код',
@@ -1535,6 +1647,12 @@ const translations: Record<Language, Translations> = {
       forgotPasswordSave: 'Зберегти пароль і увійти',
       forgotPasswordSuccess: 'Пароль змінено. Ви увійшли.',
       forgotPasswordResend: 'Надіслати код ще раз',
+      forgotCodeSent: 'Код надіслано',
+      forgotCodeResent: 'Код надіслано знову',
+      verifyTitle: 'Підтвердження номера',
+      verifyHint: 'Ми надіслали SMS з кодом. У dev режимі код у консолі сервера.',
+      confirmPhone: 'Підтвердити',
+      confirmPasswordLabel: 'Підтвердження пароля',
     },
     errorPage: {
       title: 'Щось пішло не так',
@@ -1550,9 +1668,10 @@ const translations: Record<Language, Translations> = {
       reviewDuplicate: 'Ви вже залишили відгук на це замовлення',
       reviewImageRejected: 'Не вдалося додати одне з фото — спробуйте інше зображення',
       reviewThanks: 'Дякуємо!',
-      reviewThanksModeration: 'Дякуємо! Відгук надіслано — з’явиться на сайті після перевірки.',
+      reviewThanksModeration: 'Дякуємо за відгук!',
       networkError: 'Помилка мережі',
-      removeFavoriteError: 'Не вдалося видалити з обраного'
+      removeFavoriteError: 'Не вдалося видалити з обраного',
+      reviewGuestName: 'Гість',
     },
     aboutPage: {
       title: "Про нас",
@@ -1804,7 +1923,7 @@ const translations: Record<Language, Translations> = {
       orderCancelled: 'Замовлення скасовано',
       liveUpdating: 'Онлайн-статус',
       reviewOpen: 'Написати відгук',
-      reviewModalTitle: 'Ваш відгук про замовлення',
+      reviewModalTitle: 'Ваш відгук',
       reviewText: 'Розкажіть, як усе пройшло…',
       reviewPhotos: 'Фото (до 6)',
       pickPhotos: 'Обрати зображення',
@@ -1833,6 +1952,15 @@ const translations: Record<Language, Translations> = {
       dataSaved: 'Дані збережено',
       dataSaveError: 'Не вдалося зберегти дані',
       dataNameRequired: 'Вкажіть ім’я',
+      phoneChangeHint: 'Після збереження надішлемо SMS з кодом для підтвердження нового номера',
+      phoneCodeSent: 'Код надіслано на новий номер',
+      phoneCodeHint: 'Введіть код з SMS. Після підтвердження вхід і відновлення пароля будуть на цьому номері.',
+      phoneCodeLabel: 'Код підтвердження',
+      phoneCodeConfirm: 'Підтвердити номер',
+      phoneCodeResend: 'Надіслати код ще раз',
+      phoneCodeWrong: 'Невірний код',
+      phoneChangeSuccess: 'Номер телефону оновлено',
+      phoneVerifyCancel: 'Скасувати зміну номера',
       emailReadonlyHint: 'Email змінити не можна',
       labelName: "Ім'я",
       labelPhone: 'Телефон',
@@ -1843,6 +1971,35 @@ const translations: Record<Language, Translations> = {
       publicHubTitle: 'Куди далі',
       publicOrdersCta: 'Історія замовлень і бонуси — на головній, вкладка «Профіль»',
       inAppNavHint: 'Розділи зліва на великому екрані; на телефоні — вкладки над контентом.',
+      readyAtPickup: 'Ви можете забрати замовлення о {{time}}',
+      readyAtDelivery: 'Доставка буде о {{time}}',
+      showDetails: 'Деталі замовлення',
+      hideDetails: 'Згорнути',
+      timelineTitle: 'Шлях замовлення',
+      labelAddress: 'Адреса',
+      labelPayment: 'Оплата',
+      labelFulfillment: 'Отримання',
+      labelPhoneShort: 'Тел.',
+      fulfillmentPickup: 'Самовивіз',
+      fulfillmentDelivery: 'Доставка',
+      stepCurrentBadge: 'зараз',
+      paymentCard: 'Картка',
+      paymentCash: 'Готівка',
+      paymentStatusPaid: 'Оплачено',
+      paymentStatusWaiting: 'Очікує оплати',
+      paymentStatusError: 'Помилка оплати',
+      activeOrderTitle: 'Активне замовлення',
+      viewReceipt: 'Чек',
+      receiptTitle: 'Чек оплати',
+      receiptBackProfile: 'Назад до профілю',
+      receiptPaidAt: 'Оплачено:',
+      receiptAwaitingPayment: 'Оплата ще не підтверджена — чек оновиться після оплати.',
+      receiptItemsTitle: 'Склад замовлення',
+      receiptMerchandise: 'Страви',
+      receiptDeliveryFee: 'Доставка',
+      receiptBonusesUsed: 'Бонуси',
+      receiptNotFound: 'Замовлення не знайдено',
+      receiptUnauthorized: 'Увійдіть, щоб переглянути чек',
     },
     reviewsPublic: {
       heroKicker: 'Відгуки гостей',
@@ -1872,16 +2029,24 @@ const translations: Record<Language, Translations> = {
       emptyInvite: 'Станьте першим — натисніть кнопку нижче.',
       writeCta: 'Написати відгук',
       openProfile: 'Профіль',
+      reviewThanksTitle: 'Дякуємо за відгук!',
+      reviewThanksBody: 'Ваш відгук уже на сторінці відгуків. Можете залишати ще — скільки завгодно.',
+      reviewThanksClose: 'Готово',
     },
     blogPublic: {
-      heroKicker: 'Нотатки шефа',
-      title: 'Блог і рецепти шефа',
-      subtitle: 'Секрети приготування, поради та нотатки команди Watta Sushi.',
-      empty: 'Скоро тут з’являться нові статті.',
+      heroKicker: 'Рекомендації від кухні',
+      title: 'Блог Watta Sushi',
+      subtitle: 'Що замовити, поради з меню та доставки — щоб смачно було без готування вдома.',
+      empty: 'Скоро тут з’являться нові рекомендації.',
       readMore: 'Читати',
       backToBlog: 'Усі статті',
       featuredBadge: 'Свіжа публікація',
-      cardCategoryFallback: 'Блог шефа',
+      cardCategoryFallback: 'Рекомендації',
+      linksTitle: 'У статті згадуємо',
+      linksProducts: 'Страви з меню',
+      linksCategories: 'Категорії',
+      linksIngredients: 'Інгредієнти',
+      linksOrder: 'Замовити',
     },
     contactPage: {
       heroKicker: 'Зв’яжіться з нами',
@@ -2125,6 +2290,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Скільки завгодно роликів на головній. Перший — основний; якщо не завантажиться — підключиться наступний. Натисніть «Додати ролик» для нового слота.",
         deliveryHeroVideoTitle: "Відео на сторінці доставки",
         deliveryHeroVideoSubtitle: "Окремі ролики для /delivery — не плутати з головною. Перший — основний; далі запасні з public, якщо не завантажиться.",
+        menuHeroVideoTitle: "Відео на сторінці меню",
+        menuHeroVideoSubtitle: "Окремі ролики для /menu. «Додати ролик» — 2-й, 3-й тощо; на сайті грають по черзі.",
         authHeroVideoTitle: "Телефони на сторінці входу",
         authHeroVideoSubtitle: "Два телефони на /login та /register: окремі відео та тексти. Кнопка «Додати ролик» — ще один ролик у плейлист цього телефона.",
         authHeroPlaylistHint: "Ролики грають по черзі (1 → 2 → 3…); після останнього знову з першого. На телефоні в картці форми — об’єднаний плейлист обох телефонів.",
@@ -2354,7 +2521,8 @@ const translations: Record<Language, Translations> = {
       fulfillmentDelivery: 'Доставка',
       fulfillmentPickup: 'Самовывоз',
       pickupAtRestaurant: 'Заберите заказ по адресу:',
-      pickupSubtitle: 'Заберите заказ в указанное время.',
+      pickupSubtitle:
+        'Точное время готовности сообщим после подтверждения заказа — ниже можно указать пожелание.',
       deliveryFree: 'Бесплатно',
       deliveryUnlockHint: 'Бесплатная доставка от {{amount}} €',
       invalidPhone: 'Введите номер в международном формате (8–15 цифр, можно +)',
@@ -2362,7 +2530,11 @@ const translations: Record<Language, Translations> = {
       perPiece: 'шт.',
       contactDetails: 'Контактные данные',
       deliveryTimeTitle: 'Время доставки',
-      deliveryTimeHint: 'Интервалы по времени Амстердама (CET/CEST). Прошедшие слоты недоступны.',
+      deliveryTimeHint:
+        'Выберите дату (до 14 дней вперёд) и удобный интервал. Время — по Амстердаму (CET/CEST). Прошедшие слоты недоступны.',
+      pickupTimeTitle: 'Желаемое время самовывоза',
+      slotDayLabelPickup: 'Дата самовывоза',
+      slotTimeLabelPickup: 'Желаемое время',
       orderDetailsTitle: 'Детали',
       paymentMethodTitle: 'Способ оплаты',
       promoCodeTitle: 'Промокод',
@@ -2392,14 +2564,35 @@ const translations: Record<Language, Translations> = {
         'Для этой зоны доставка по км — укажите адрес ниже или проверьте индекс на странице доставки.',
       citiesGroupAria: 'Город доставки',
       streetPlaceholder: 'Улица и номер дома *',
+      postalCodePlaceholder: 'Почтовый индекс *',
+      enterStreetAndPostalForDeliveryFee:
+        'Укажите улицу и индекс — сразу посчитаем доставку от нашей кухни',
+      toastPostalCodeRequired: 'Укажите почтовый индекс доставки',
+      toastDeliveryFeeRequired: 'Дождитесь расчёта стоимости доставки',
+      toastDeliveryOutsideArea: 'По этому адресу доставка недоступна',
+      deliveryFeeFromKitchen: 'Доставка от кухни: {{km}} км — {{sum}} €',
       entrancePlaceholder: 'Подъезд (только цифры)',
       floorPlaceholder: 'Этаж (только цифры)',
       apartmentPlaceholder: 'Квартира (только цифры)',
       buildingPlaceholder: 'Корпус / блок',
+      intercomPlaceholder: 'Домофон',
+      addrDetailBuilding: 'корп./блок: {{value}}',
+      addrDetailEntrance: 'подъезд: {{value}}',
+      addrDetailFloor: 'этаж: {{value}}',
+      addrDetailApartment: 'кв.: {{value}}',
+      addrDetailIntercom: 'домофон: {{value}}',
+      orderCommentChangeFrom: '[Нужна сдача с: {{amount}} €]',
+      orderCommentSticks: '[Приборы: {{sticks}} шт, Персоны: {{persons}}]',
+      orderCommentNoCallback: '[Не перезванивать]',
+      orderCommentNoDoorbell: '[Не звонить в дверь]',
+      orderCommentPromo: '(ПРОМО: {{code}} -{{discount}}%)',
       optNoCallback: 'Не перезванивать для подтверждения',
       optNoDoorbell: 'Не звонить в дверь',
-      slotDayLabel: 'День',
-      slotTimeLabel: 'Время',
+      slotDayLabel: 'Дата доставки',
+      slotTimeLabel: 'Время доставки',
+      slotAsap: 'Как можно скорее',
+      slotNoTimes: 'На этот день нет свободных слотов — выберите другую дату',
+      slotPickDateHint: 'Доступно {{days}} дней вперёд',
       dayToday: 'Сегодня',
       dayTomorrow: 'Завтра',
       partySizeLabel: 'Количество персон (1–99)',
@@ -2408,6 +2601,8 @@ const translations: Record<Language, Translations> = {
       payCash: 'Наличными',
       payCard: 'Картой онлайн',
       payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      payCardUnavailable:
+        'Онлайн-оплата сейчас недоступна — выберите «Наличные» при получении.',
       changeFromPlaceholder: 'Сдача с какой суммы? (например: 50)',
       distanceMatrixError: 'Не удалось рассчитать расстояние',
       promoInvalidFallback: 'Неверный код',
@@ -2547,6 +2742,12 @@ const translations: Record<Language, Translations> = {
       forgotPasswordSave: 'Сохранить пароль и войти',
       forgotPasswordSuccess: 'Пароль изменён. Вы вошли.',
       forgotPasswordResend: 'Отправить код ещё раз',
+      forgotCodeSent: 'Код отправлен',
+      forgotCodeResent: 'Код отправлен снова',
+      verifyTitle: 'Подтверждение номера',
+      verifyHint: 'Мы отправили SMS с кодом. В dev код в консоли сервера.',
+      confirmPhone: 'Подтвердить',
+      confirmPasswordLabel: 'Подтверждение пароля',
     },
     errorPage: {
       title: 'Что-то пошло не так',
@@ -2562,9 +2763,10 @@ const translations: Record<Language, Translations> = {
       reviewDuplicate: 'Вы уже оставили отзыв на этот заказ',
       reviewImageRejected: 'Не удалось добавить одно из фото — попробуйте другое изображение',
       reviewThanks: 'Спасибо!',
-      reviewThanksModeration: 'Спасибо! Отзыв отправлен — появится на сайте после проверки.',
+      reviewThanksModeration: 'Спасибо за отзыв!',
       networkError: 'Ошибка сети',
-      removeFavoriteError: 'Не удалось убрать из избранного'
+      removeFavoriteError: 'Не удалось убрать из избранного',
+      reviewGuestName: 'Гость',
     },
     aboutPage: {
       title: "О нас",
@@ -2816,7 +3018,7 @@ const translations: Record<Language, Translations> = {
       orderCancelled: 'Заказ отменён',
       liveUpdating: 'Онлайн-статус',
       reviewOpen: 'Написать отзыв',
-      reviewModalTitle: 'Ваш отзыв о заказе',
+      reviewModalTitle: 'Ваш отзыв',
       reviewText: 'Расскажите, как всё прошло…',
       reviewPhotos: 'Фото (до 6)',
       pickPhotos: 'Выбрать изображения',
@@ -2845,6 +3047,15 @@ const translations: Record<Language, Translations> = {
       dataSaved: 'Данные сохранены',
       dataSaveError: 'Не удалось сохранить данные',
       dataNameRequired: 'Укажите имя',
+      phoneChangeHint: 'После сохранения отправим SMS с кодом для подтверждения нового номера',
+      phoneCodeSent: 'Код отправлен на новый номер',
+      phoneCodeHint: 'Введите код из SMS. После подтверждения восстановление пароля будет на этом номере.',
+      phoneCodeLabel: 'Код подтверждения',
+      phoneCodeConfirm: 'Подтвердить номер',
+      phoneCodeResend: 'Отправить код ещё раз',
+      phoneCodeWrong: 'Неверный код',
+      phoneChangeSuccess: 'Номер телефона обновлён',
+      phoneVerifyCancel: 'Отменить смену номера',
       emailReadonlyHint: 'Email изменить нельзя',
       labelName: 'Имя',
       labelPhone: 'Телефон',
@@ -2855,6 +3066,35 @@ const translations: Record<Language, Translations> = {
       publicHubTitle: 'Куда дальше',
       publicOrdersCta: 'История заказов и бонусы — на главной, вкладка «Профиль»',
       inAppNavHint: 'Разделы слева на большом экране; на телефоне — вкладки над контентом.',
+      readyAtPickup: 'Вы можете забрать заказ в {{time}}',
+      readyAtDelivery: 'Доставка будет в {{time}}',
+      showDetails: 'Детали заказа',
+      hideDetails: 'Свернуть',
+      timelineTitle: 'Путь заказа',
+      labelAddress: 'Адрес',
+      labelPayment: 'Оплата',
+      labelFulfillment: 'Получение',
+      labelPhoneShort: 'Тел.',
+      fulfillmentPickup: 'Самовывоз',
+      fulfillmentDelivery: 'Доставка',
+      stepCurrentBadge: 'сейчас',
+      paymentCard: 'Карта',
+      paymentCash: 'Наличные',
+      paymentStatusPaid: 'Оплачено',
+      paymentStatusWaiting: 'Ожидает оплаты',
+      paymentStatusError: 'Ошибка оплаты',
+      activeOrderTitle: 'Активный заказ',
+      viewReceipt: 'Чек',
+      receiptTitle: 'Чек оплаты',
+      receiptBackProfile: 'Назад в профиль',
+      receiptPaidAt: 'Оплачено:',
+      receiptAwaitingPayment: 'Оплата ещё не подтверждена — чек обновится после оплаты.',
+      receiptItemsTitle: 'Состав заказа',
+      receiptMerchandise: 'Блюда',
+      receiptDeliveryFee: 'Доставка',
+      receiptBonusesUsed: 'Бонусы',
+      receiptNotFound: 'Заказ не найден',
+      receiptUnauthorized: 'Войдите, чтобы посмотреть чек',
     },
     reviewsPublic: {
       heroKicker: 'Отзывы гостей',
@@ -2884,16 +3124,24 @@ const translations: Record<Language, Translations> = {
       emptyInvite: 'Станьте первым — нажмите кнопку ниже.',
       writeCta: 'Написать отзыв',
       openProfile: 'Профиль',
+      reviewThanksTitle: 'Спасибо за отзыв!',
+      reviewThanksBody: 'Ваш отзыв уже на странице отзывов. Можете оставлять ещё — сколько угодно.',
+      reviewThanksClose: 'Готово',
     },
     blogPublic: {
-      heroKicker: 'Заметки шефа',
-      title: 'Блог и рецепты шефа',
-      subtitle: 'Секреты приготовления и заметки команды Watta Sushi.',
-      empty: 'Скоро появятся новые статьи.',
+      heroKicker: 'Рекомендации от кухни',
+      title: 'Блог Watta Sushi',
+      subtitle: 'Что заказать, советы по меню и доставке — вкусно без готовки дома.',
+      empty: 'Скоро появятся новые рекомендации.',
       readMore: 'Читать',
       backToBlog: 'Все статьи',
       featuredBadge: 'Свежая публикация',
-      cardCategoryFallback: 'Блог шефа',
+      cardCategoryFallback: 'Рекомендации',
+      linksTitle: 'В статье упоминаем',
+      linksProducts: 'Блюда из меню',
+      linksCategories: 'Категории',
+      linksIngredients: 'Ингредиенты',
+      linksOrder: 'Заказать',
     },
     contactPage: {
       heroKicker: 'Свяжитесь с нами',
@@ -3137,6 +3385,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Сколько угодно роликов на главной. Первый — основной; если не загрузится — подключится следующий. Нажмите «Добавить ролик» для нового слота.",
         deliveryHeroVideoTitle: "Видео на странице доставки",
         deliveryHeroVideoSubtitle: "Отдельные ролики для /delivery — не путать с главной. Первый — основной; далее запасные из public, если не загрузится.",
+        menuHeroVideoTitle: "Видео на странице меню",
+        menuHeroVideoSubtitle: "Отдельные ролики для /menu. «Добавить ролик» — 2-й, 3-й и т.д.; на сайте идут по очереди.",
         authHeroVideoTitle: "Телефоны на странице входа",
         authHeroVideoSubtitle: "Два телефона на /login и /register: отдельные видео и тексты. «Добавить ролик» — ещё одно видео в плейлист этого телефона.",
         authHeroPlaylistHint: "Ролики идут по очереди (1 → 2 → 3…); после последнего снова с первого. В мобильной карточке — общий плейлист обоих телефонов.",
@@ -3366,7 +3616,8 @@ const translations: Record<Language, Translations> = {
       fulfillmentDelivery: 'Delivery',
       fulfillmentPickup: 'Pickup',
       pickupAtRestaurant: 'Pick up your order at:',
-      pickupSubtitle: 'Pick up your order at the chosen time.',
+      pickupSubtitle:
+        'We will confirm the exact ready time after accepting your order — you can add a preference below.',
       deliveryFree: 'Free',
       deliveryUnlockHint: 'Free delivery on orders over {{amount}} €',
       invalidPhone: 'Enter an international number (8–15 digits, + optional)',
@@ -3374,7 +3625,11 @@ const translations: Record<Language, Translations> = {
       perPiece: 'pc.',
       contactDetails: 'Contact details',
       deliveryTimeTitle: 'Delivery time',
-      deliveryTimeHint: 'Slots are in Amsterdam time (CET/CEST). Past times are not available.',
+      deliveryTimeHint:
+        'Pick a date (up to 14 days ahead) and a time slot. Times are Amsterdam (CET/CEST). Past slots are unavailable.',
+      pickupTimeTitle: 'Preferred pickup time',
+      slotDayLabelPickup: 'Pickup date',
+      slotTimeLabelPickup: 'Preferred time',
       orderDetailsTitle: 'Extras',
       paymentMethodTitle: 'Payment method',
       promoCodeTitle: 'Promo code',
@@ -3404,14 +3659,35 @@ const translations: Record<Language, Translations> = {
         'This zone uses per-km pricing — enter your address below or check your postcode on the delivery page.',
       citiesGroupAria: 'Delivery city',
       streetPlaceholder: 'Street and house number *',
+      postalCodePlaceholder: 'Postcode *',
+      enterStreetAndPostalForDeliveryFee:
+        'Enter street and postcode — we calculate delivery from our kitchen right away',
+      toastPostalCodeRequired: 'Please enter your delivery postcode',
+      toastDeliveryFeeRequired: 'Wait for the delivery fee to be calculated',
+      toastDeliveryOutsideArea: 'Delivery is not available to this address',
+      deliveryFeeFromKitchen: 'Delivery from kitchen: {{km}} km — {{sum}} €',
       entrancePlaceholder: 'Entrance (digits only)',
       floorPlaceholder: 'Floor (digits only)',
       apartmentPlaceholder: 'Apartment (digits only)',
       buildingPlaceholder: 'Building / block',
+      intercomPlaceholder: 'Intercom',
+      addrDetailBuilding: 'bldg/block: {{value}}',
+      addrDetailEntrance: 'entrance: {{value}}',
+      addrDetailFloor: 'floor: {{value}}',
+      addrDetailApartment: 'apt: {{value}}',
+      addrDetailIntercom: 'intercom: {{value}}',
+      orderCommentChangeFrom: '[Change from: {{amount}} €]',
+      orderCommentSticks: '[Cutlery: {{sticks}}, Guests: {{persons}}]',
+      orderCommentNoCallback: '[Do not call back]',
+      orderCommentNoDoorbell: '[Do not ring doorbell]',
+      orderCommentPromo: '(PROMO: {{code}} -{{discount}}%)',
       optNoCallback: 'Do not call to confirm',
       optNoDoorbell: 'Do not ring the doorbell',
-      slotDayLabel: 'Day',
-      slotTimeLabel: 'Time',
+      slotDayLabel: 'Delivery date',
+      slotTimeLabel: 'Delivery time',
+      slotAsap: 'As soon as possible',
+      slotNoTimes: 'No slots left on this day — pick another date',
+      slotPickDateHint: 'Up to {{days}} days ahead',
       dayToday: 'Today',
       dayTomorrow: 'Tomorrow',
       partySizeLabel: 'Party size (1–99)',
@@ -3420,6 +3696,8 @@ const translations: Record<Language, Translations> = {
       payCash: 'Cash',
       payCard: 'Card online',
       payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      payCardUnavailable:
+        'Online card payment is temporarily unavailable — please choose cash on delivery.',
       changeFromPlaceholder: 'Change needed from (e.g. 50)',
       distanceMatrixError: 'Could not calculate distance',
       promoInvalidFallback: 'Invalid code',
@@ -3559,6 +3837,12 @@ const translations: Record<Language, Translations> = {
       forgotPasswordSave: 'Save password & sign in',
       forgotPasswordSuccess: 'Password updated. You are signed in.',
       forgotPasswordResend: 'Resend code',
+      forgotCodeSent: 'Code sent',
+      forgotCodeResent: 'Code sent again',
+      verifyTitle: 'Verify your number',
+      verifyHint: 'We sent an SMS code. In dev, check the server console.',
+      confirmPhone: 'Confirm',
+      confirmPasswordLabel: 'Confirm password',
     },
     errorPage: {
       title: 'Something went wrong',
@@ -3574,9 +3858,10 @@ const translations: Record<Language, Translations> = {
       reviewDuplicate: 'You already reviewed this order',
       reviewImageRejected: 'Could not add one of the photos — try another image',
       reviewThanks: 'Thank you!',
-      reviewThanksModeration: 'Thanks! Your review was sent — it will appear after we approve it.',
+      reviewThanksModeration: 'Thank you for your review!',
       networkError: 'Network error',
-      removeFavoriteError: 'Could not remove from saved'
+      removeFavoriteError: 'Could not remove from saved',
+      reviewGuestName: 'Guest',
     },
     aboutPage: {
       title: "About Us",
@@ -3857,6 +4142,15 @@ const translations: Record<Language, Translations> = {
       dataSaved: 'Details saved',
       dataSaveError: 'Could not save your details',
       dataNameRequired: 'Enter your name',
+      phoneChangeHint: 'After saving we will send an SMS code to confirm your new number',
+      phoneCodeSent: 'Code sent to your new number',
+      phoneCodeHint: 'Enter the SMS code. Password recovery will use this number once confirmed.',
+      phoneCodeLabel: 'Verification code',
+      phoneCodeConfirm: 'Confirm number',
+      phoneCodeResend: 'Resend code',
+      phoneCodeWrong: 'Invalid code',
+      phoneChangeSuccess: 'Phone number updated',
+      phoneVerifyCancel: 'Cancel number change',
       emailReadonlyHint: 'Email cannot be changed',
       labelName: 'Name',
       labelPhone: 'Phone',
@@ -3867,6 +4161,35 @@ const translations: Record<Language, Translations> = {
       publicHubTitle: 'Where next',
       publicOrdersCta: 'Order history & bonuses — open home, then Profile tab',
       inAppNavHint: 'Sidebar on desktop; tabs above content on your phone.',
+      readyAtPickup: 'You can pick up your order at {{time}}',
+      readyAtDelivery: 'Delivery will arrive at {{time}}',
+      showDetails: 'Order details',
+      hideDetails: 'Collapse',
+      timelineTitle: 'Order progress',
+      labelAddress: 'Address',
+      labelPayment: 'Payment',
+      labelFulfillment: 'Fulfillment',
+      labelPhoneShort: 'Tel.',
+      fulfillmentPickup: 'Pickup',
+      fulfillmentDelivery: 'Delivery',
+      stepCurrentBadge: 'now',
+      paymentCard: 'Card',
+      paymentCash: 'Cash',
+      paymentStatusPaid: 'Paid',
+      paymentStatusWaiting: 'Awaiting payment',
+      paymentStatusError: 'Payment error',
+      activeOrderTitle: 'Active order',
+      viewReceipt: 'Receipt',
+      receiptTitle: 'Payment receipt',
+      receiptBackProfile: 'Back to profile',
+      receiptPaidAt: 'Paid at:',
+      receiptAwaitingPayment: 'Payment not confirmed yet — the receipt updates after payment.',
+      receiptItemsTitle: 'Order items',
+      receiptMerchandise: 'Food',
+      receiptDeliveryFee: 'Delivery',
+      receiptBonusesUsed: 'Bonuses',
+      receiptNotFound: 'Order not found',
+      receiptUnauthorized: 'Sign in to view your receipt',
     },
     reviewsPublic: {
       heroKicker: 'Guest reviews',
@@ -3896,16 +4219,24 @@ const translations: Record<Language, Translations> = {
       emptyInvite: 'Be the first — tap the button below.',
       writeCta: 'Write a review',
       openProfile: 'Profile',
+      reviewThanksTitle: 'Thank you for your review!',
+      reviewThanksBody: 'Your review is already on the reviews page. You can leave as many as you like.',
+      reviewThanksClose: 'Done',
     },
     blogPublic: {
-      heroKicker: "Chef's notes",
-      title: 'Chef blog & recipes',
-      subtitle: 'Cooking tips and stories from the Watta Sushi team.',
-      empty: 'New articles are coming soon.',
+      heroKicker: 'From our kitchen',
+      title: 'Watta Sushi blog',
+      subtitle: 'What to order, menu picks, and delivery tips — great sushi without cooking at home.',
+      empty: 'New recommendations are coming soon.',
       readMore: 'Read',
       backToBlog: 'All articles',
       featuredBadge: 'Latest',
-      cardCategoryFallback: "Chef's notes",
+      cardCategoryFallback: 'Recommendations',
+      linksTitle: 'Featured in this article',
+      linksProducts: 'From the menu',
+      linksCategories: 'Categories',
+      linksIngredients: 'Ingredients',
+      linksOrder: 'Order',
     },
     contactPage: {
       heroKicker: 'Get in touch',
@@ -4149,6 +4480,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "As many clips as you need on the home page. First is primary; if it fails to load, the next plays. Click «Add clip» for a new slot.",
         deliveryHeroVideoTitle: "Delivery page hero video",
         deliveryHeroVideoSubtitle: "Separate clips for /delivery — not shared with home. First is primary; then public fallbacks if a clip fails.",
+        menuHeroVideoTitle: "Menu page hero video",
+        menuHeroVideoSubtitle: "Separate clips for /menu. Use “Add clip” for 2nd, 3rd, etc.; they play in order on the site.",
         authHeroVideoTitle: "Login page phones",
         authHeroVideoSubtitle: "Two phones on /login and /register: separate videos and copy. Use “Add clip” for another video in that phone’s playlist.",
         authHeroPlaylistHint: "Clips play in order (1 → 2 → 3…), then loop from the first. On mobile, the form card uses a combined playlist from both phones.",
@@ -4378,7 +4711,8 @@ const translations: Record<Language, Translations> = {
       fulfillmentDelivery: 'Bezorging',
       fulfillmentPickup: 'Afhalen',
       pickupAtRestaurant: 'Haal je bestelling op bij:',
-      pickupSubtitle: 'Haal je bestelling op op het gekozen tijdstip.',
+      pickupSubtitle:
+        'De exacte afhaaltijd bevestigen we na acceptatie — hieronder kunt u een voorkeur aangeven.',
       deliveryFree: 'Gratis',
       deliveryUnlockHint: 'Gratis bezorging vanaf {{amount}} €',
       invalidPhone: 'Voer een internationaal nummer in (8–15 cijfers, + mag)',
@@ -4386,7 +4720,11 @@ const translations: Record<Language, Translations> = {
       perPiece: 'st.',
       contactDetails: 'Contactgegevens',
       deliveryTimeTitle: 'Bezorgtijd',
-      deliveryTimeHint: 'Tijdsloten volgens Amsterdam (CET/CEST). Verstreken tijden zijn niet beschikbaar.',
+      deliveryTimeHint:
+        'Kies een datum (tot 14 dagen vooruit) en een tijdslot. Tijden volgens Amsterdam (CET/CEST). Verstreken tijden zijn niet beschikbaar.',
+      pickupTimeTitle: 'Gewenste afhaaltijd',
+      slotDayLabelPickup: 'Afhaaldatum',
+      slotTimeLabelPickup: 'Gewenste tijd',
       orderDetailsTitle: 'Details',
       paymentMethodTitle: 'Betaalwijze',
       promoCodeTitle: 'Promocode',
@@ -4416,14 +4754,35 @@ const translations: Record<Language, Translations> = {
         'Voor deze zone geldt tarief per km — vul je adres in of controleer je postcode op de bezorgpagina.',
       citiesGroupAria: 'Bezorgstad',
       streetPlaceholder: 'Straat en huisnummer *',
+      postalCodePlaceholder: 'Postcode *',
+      enterStreetAndPostalForDeliveryFee:
+        'Vul straat en postcode in — we berekenen meteen de bezorging vanaf onze keuken',
+      toastPostalCodeRequired: 'Vul je bezorgpostcode in',
+      toastDeliveryFeeRequired: 'Wacht tot de bezorgkosten zijn berekend',
+      toastDeliveryOutsideArea: 'Bezorging is niet beschikbaar op dit adres',
+      deliveryFeeFromKitchen: 'Bezorging vanaf keuken: {{km}} km — {{sum}} €',
       entrancePlaceholder: 'Ingang (alleen cijfers)',
       floorPlaceholder: 'Verdieping (alleen cijfers)',
       apartmentPlaceholder: 'Appartement (alleen cijfers)',
       buildingPlaceholder: 'Gebouw / blok',
+      intercomPlaceholder: 'Deurbel / intercom',
+      addrDetailBuilding: 'gebouw/blok: {{value}}',
+      addrDetailEntrance: 'ingang: {{value}}',
+      addrDetailFloor: 'verdieping: {{value}}',
+      addrDetailApartment: 'app.: {{value}}',
+      addrDetailIntercom: 'intercom: {{value}}',
+      orderCommentChangeFrom: '[Wisselgeld van: {{amount}} €]',
+      orderCommentSticks: '[Bestek: {{sticks}} st, Personen: {{persons}}]',
+      orderCommentNoCallback: '[Niet terugbellen]',
+      orderCommentNoDoorbell: '[Niet aanbellen]',
+      orderCommentPromo: '(PROMO: {{code}} -{{discount}}%)',
       optNoCallback: 'Niet terugbellen ter bevestiging',
       optNoDoorbell: 'Niet aanbellen',
-      slotDayLabel: 'Dag',
-      slotTimeLabel: 'Tijd',
+      slotDayLabel: 'Bezorgdatum',
+      slotTimeLabel: 'Bezorgtijd',
+      slotAsap: 'Zo snel mogelijk',
+      slotNoTimes: 'Geen vrije slots op deze dag — kies een andere datum',
+      slotPickDateHint: 'Tot {{days}} dagen vooruit',
       dayToday: 'Vandaag',
       dayTomorrow: 'Morgen',
       partySizeLabel: 'Aantal personen (1–99)',
@@ -4432,6 +4791,8 @@ const translations: Record<Language, Translations> = {
       payCash: 'Contant',
       payCard: 'Online kaart',
       payCardHint: 'LiqPay, Apple Pay, Google Pay',
+      payCardUnavailable:
+        'Online betalen is tijdelijk niet beschikbaar — kies contant bij aflevering.',
       changeFromPlaceholder: 'Wisselgeld van welk bedrag? (bijv. 50)',
       distanceMatrixError: 'Kon de afstand niet berekenen',
       promoInvalidFallback: 'Ongeldige code',
@@ -4571,6 +4932,12 @@ const translations: Record<Language, Translations> = {
       forgotPasswordSave: 'Wachtwoord opslaan en inloggen',
       forgotPasswordSuccess: 'Wachtwoord gewijzigd. U bent ingelogd.',
       forgotPasswordResend: 'Code opnieuw versturen',
+      forgotCodeSent: 'Code verzonden',
+      forgotCodeResent: 'Code opnieuw verzonden',
+      verifyTitle: 'Nummer bevestigen',
+      verifyHint: 'We hebben een sms-code gestuurd. In dev staat de code in de serverconsole.',
+      confirmPhone: 'Bevestigen',
+      confirmPasswordLabel: 'Wachtwoord bevestigen',
     },
     errorPage: {
       title: 'Er ging iets mis',
@@ -4586,9 +4953,10 @@ const translations: Record<Language, Translations> = {
       reviewDuplicate: 'U heeft dit bestelling al beoordeeld',
       reviewImageRejected: 'Een foto kon niet worden toegevoegd — probeer een andere afbeelding',
       reviewThanks: 'Dank u!',
-      reviewThanksModeration: 'Bedankt! Je review is verstuurd — na goedkeuring verschijnt hij op de site.',
+      reviewThanksModeration: 'Bedankt voor je review!',
       networkError: 'Netwerkfout',
-      removeFavoriteError: 'Verwijderen uit favorieten mislukt'
+      removeFavoriteError: 'Verwijderen uit favorieten mislukt',
+      reviewGuestName: 'Gast',
     },
     aboutPage: {
       title: "Over ons",
@@ -4869,6 +5237,15 @@ const translations: Record<Language, Translations> = {
       dataSaved: 'Gegevens opgeslagen',
       dataSaveError: 'Gegevens opslaan mislukt',
       dataNameRequired: 'Vul je naam in',
+      phoneChangeHint: 'Na opslaan sturen we een sms-code om je nieuwe nummer te bevestigen',
+      phoneCodeSent: 'Code verzonden naar je nieuwe nummer',
+      phoneCodeHint: 'Voer de sms-code in. Wachtwoordherstel gebruikt dit nummer na bevestiging.',
+      phoneCodeLabel: 'Bevestigingscode',
+      phoneCodeConfirm: 'Nummer bevestigen',
+      phoneCodeResend: 'Code opnieuw verzenden',
+      phoneCodeWrong: 'Ongeldige code',
+      phoneChangeSuccess: 'Telefoonnummer bijgewerkt',
+      phoneVerifyCancel: 'Nummerwijziging annuleren',
       emailReadonlyHint: 'E-mail kan niet worden gewijzigd',
       labelName: 'Naam',
       labelPhone: 'Telefoon',
@@ -4879,6 +5256,35 @@ const translations: Record<Language, Translations> = {
       publicHubTitle: 'Waarheen',
       publicOrdersCta: 'Bestelgeschiedenis & bonussen — startpagina, tabblad Profiel',
       inAppNavHint: 'Zijbalk op desktop; tabbladen boven de inhoud op je telefoon.',
+      readyAtPickup: 'Je kunt je bestelling afhalen om {{time}}',
+      readyAtDelivery: 'Bezorging is rond {{time}}',
+      showDetails: 'Bestelgegevens',
+      hideDetails: 'Inklappen',
+      timelineTitle: 'Voortgang bestelling',
+      labelAddress: 'Adres',
+      labelPayment: 'Betaling',
+      labelFulfillment: 'Afhalen / bezorgen',
+      labelPhoneShort: 'Tel.',
+      fulfillmentPickup: 'Afhalen',
+      fulfillmentDelivery: 'Bezorging',
+      stepCurrentBadge: 'nu',
+      paymentCard: 'Kaart',
+      paymentCash: 'Contant',
+      paymentStatusPaid: 'Betaald',
+      paymentStatusWaiting: 'Wacht op betaling',
+      paymentStatusError: 'Betalingsfout',
+      activeOrderTitle: 'Actieve bestelling',
+      viewReceipt: 'Bon',
+      receiptTitle: 'Betalingsbon',
+      receiptBackProfile: 'Terug naar profiel',
+      receiptPaidAt: 'Betaald op:',
+      receiptAwaitingPayment: 'Betaling nog niet bevestigd — de bon wordt bijgewerkt na betaling.',
+      receiptItemsTitle: 'Bestelling',
+      receiptMerchandise: 'Gerechten',
+      receiptDeliveryFee: 'Bezorging',
+      receiptBonusesUsed: 'Bonussen',
+      receiptNotFound: 'Bestelling niet gevonden',
+      receiptUnauthorized: 'Log in om uw bon te bekijken',
     },
     reviewsPublic: {
       heroKicker: 'Gastreviews',
@@ -4908,16 +5314,24 @@ const translations: Record<Language, Translations> = {
       emptyInvite: 'Wees de eerste — tik op de knop hieronder.',
       writeCta: 'Review schrijven',
       openProfile: 'Profiel',
+      reviewThanksTitle: 'Bedankt voor je review!',
+      reviewThanksBody: 'Je review staat al op de reviewpagina. Je mag er zoveel plaatsen als je wilt.',
+      reviewThanksClose: 'Klaar',
     },
     blogPublic: {
-      heroKicker: 'Notities van de chef',
-      title: 'Blog & recepten van de chef',
-      subtitle: 'Tips en verhalen van team Watta Sushi.',
-      empty: 'Binnenkort nieuwe artikelen.',
+      heroKicker: 'Aanbevelingen van de keuken',
+      title: 'Watta Sushi blog',
+      subtitle: 'Wat te bestellen, menutips en bezorgadvies — lekker zonder thuis te koken.',
+      empty: 'Binnenkort nieuwe aanbevelingen.',
       readMore: 'Lezen',
       backToBlog: 'Alle artikelen',
       featuredBadge: 'Nieuw',
-      cardCategoryFallback: 'Blog van de chef',
+      cardCategoryFallback: 'Aanbevelingen',
+      linksTitle: 'In dit artikel',
+      linksProducts: 'Gerechten',
+      linksCategories: 'Categorieën',
+      linksIngredients: 'Ingrediënten',
+      linksOrder: 'Bestellen',
     },
     contactPage: {
       heroKicker: 'Neem contact op',
@@ -5161,6 +5575,8 @@ const translations: Record<Language, Translations> = {
         heroVideoSubtitle: "Zoveel clips als u wilt op de homepage. De eerste is primair; laadt die niet, dan de volgende. Klik op «Clip toevoegen» voor een nieuw slot.",
         deliveryHeroVideoTitle: "Hero-video bezorgpagina",
         deliveryHeroVideoSubtitle: "Aparte clips voor /delivery — niet dezelfde als homepage. Eerste is primair; daarna public-fallbacks bij laadfout.",
+        menuHeroVideoTitle: "Hero-video menupagina",
+        menuHeroVideoSubtitle: "Aparte clips voor /menu. «Clip toevoegen» voor 2e, 3e enz.; op de site achter elkaar.",
         authHeroVideoTitle: "Telefoons op inlogpagina",
         authHeroVideoSubtitle: "Twee telefoons op /login en /register: aparte video's en teksten. «Clip toevoegen» = nog een video in de afspeellijst van die telefoon.",
         authHeroPlaylistHint: "Clips spelen op volgorde (1 → 2 → 3…), daarna opnieuw vanaf de eerste. Op mobiel: gecombineerde afspeellijst van beide telefoons in het formulier.",
@@ -5207,6 +5623,7 @@ interface LanguageContextType {
   setAdminUiLanguage: (lang: AdminUiLanguage) => void
   t: Translations
   getLocalized: (obj: any, field: string) => string
+  formatMenuItemsCount: (count: number) => string
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
@@ -5277,6 +5694,11 @@ export function LanguageProvider({
     [language],
   )
 
+  const formatMenuItemsCountForLang = useCallback(
+    (count: number) => formatMenuItemsCount(count, language),
+    [language],
+  )
+
   const mergedT = useMemo((): Translations => {
     const base = translations[language]
     const admin = translations[adminUiLanguage]
@@ -5295,8 +5717,9 @@ export function LanguageProvider({
       setAdminUiLanguage,
       t: mergedT,
       getLocalized,
+      formatMenuItemsCount: formatMenuItemsCountForLang,
     }),
-    [language, adminUiLanguage, mergedT, getLocalized],
+    [language, adminUiLanguage, mergedT, getLocalized, formatMenuItemsCountForLang],
   )
 
   return <LanguageContext.Provider value={contextValue}>{children}</LanguageContext.Provider>
@@ -5310,6 +5733,8 @@ const defaultContextValue: LanguageContextType = {
   t: translations[WATTA_DEFAULT_SITE_LANGUAGE],
   getLocalized: (obj: any, field: string) =>
     getLocalizedField(obj as Record<string, unknown> | null, field, WATTA_DEFAULT_SITE_LANGUAGE),
+  formatMenuItemsCount: (count: number) =>
+    formatMenuItemsCount(count, WATTA_DEFAULT_SITE_LANGUAGE),
 }
 
 /** Тексти global-error.tsx поза LanguageProvider */

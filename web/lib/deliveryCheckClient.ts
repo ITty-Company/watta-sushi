@@ -43,11 +43,19 @@ export function isDeliveryOutsideArea(status: DeliveryCheckStatus | undefined): 
 export async function fetchDeliveryCheck(
   cityId: number,
   locationQuery: string,
+  addressLine?: string,
 ): Promise<DeliveryCheckResult> {
+  const body: { cityId: number; locationQuery: string; addressLine?: string } = {
+    cityId,
+    locationQuery: locationQuery.trim(),
+  }
+  const extra = addressLine?.trim()
+  if (extra) body.addressLine = extra
+
   const res = await fetch('/api/delivery/check', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cityId, locationQuery: locationQuery.trim() }),
+    body: JSON.stringify(body),
   })
   const data = (await res.json()) as DeliveryCheckResult & { status?: string }
   if (!res.ok) {

@@ -454,7 +454,7 @@ export default function ProductView({ productId, initialProductRow, onBack }: Pr
               onClick={() => router.push('/menu')}
               className="rounded-xl border border-[#145142]/20 bg-white px-4 py-2 text-sm font-bold text-[#145142]"
             >
-              {t.menuView.fullMenuAllTab ?? 'Меню'}
+              {t.menuView.fullMenuAllTab}
             </button>
           </div>
         </div>

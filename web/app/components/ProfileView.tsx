@@ -16,6 +16,8 @@ import {
 import LogoBackground from './LogoBackground'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { logoutClientSession } from '@/lib/authSession'
+import { readUserOrdersCache, writeUserOrdersCache } from '@/lib/userOrdersCache'
 import {
   loadFavoriteProducts,
   readFavoriteIds,
@@ -63,6 +65,8 @@ interface Order {
     text: string
     images?: unknown
   } | null
+  fulfillmentType?: string
+  readyAt?: string | null
 }
 
 interface UserData {
@@ -140,7 +144,11 @@ export default function ProfileView({
       if (showSpinner) setLoading(false)
       return
     }
-    if (showSpinner) setLoading(true)
+    if (showSpinner) {
+      const cached = readUserOrdersCache<Order>()
+      if (cached && cached.length > 0) setOrders(cached)
+      setLoading(true)
+    }
     try {
       const bonusRes = await fetch('/api/orders/bonus', {
         headers: { Authorization: `Bearer ${token}` },
@@ -165,6 +173,7 @@ export default function ProfileView({
           }
         }
         setOrders(data)
+        if (Array.isArray(data)) writeUserOrdersCache(data)
       }
     } catch (error) {
       console.error(error)
@@ -277,9 +286,11 @@ export default function ProfileView({
       orderId: number,
       review: { id: number; rating: number; text: string; images?: unknown }
     ) => {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, review } : o))
-      )
+      setOrders((prev) => {
+        const next = prev.map((o) => (o.id === orderId ? { ...o, review } : o))
+        writeUserOrdersCache(next)
+        return next
+      })
     },
     []
   )
@@ -313,11 +324,7 @@ export default function ProfileView({
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('currentUser')
-    localStorage.removeItem('userId')
-    localStorage.removeItem('userOrders')
-    window.dispatchEvent(new Event('userChanged'))
+    logoutClientSession()
     onBack()
   }
 

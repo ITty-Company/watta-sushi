@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   Bell,
+  ChevronRight,
   Clock,
   Heart,
   LogOut,
@@ -15,6 +16,7 @@ import {
   Shield,
   ShoppingBag,
   Sparkles,
+  Star,
   X,
 } from 'lucide-react'
 import AnimatedHeroIntroBlock from '../AnimatedHeroIntroBlock'
@@ -218,49 +220,78 @@ export default function ProfilePublicPageLayout({
       <div className="watta-profile-page__flow">
         <div className="watta-profile-page__inner mx-auto w-full max-w-6xl px-4 sm:px-6">
           <motion.div {...fade} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#145142]/55 sm:text-[11px]">
-              <Sparkles className="mr-1 inline h-3 w-3 text-[#ff5c00]" aria-hidden />
-              {cp.publicHubTitle}
-            </p>
-            <nav className="watta-profile-quick-nav" aria-label={t.siteAria.profileNav}>
-              {quickNav.map(({ id, icon: Icon, label }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className="watta-profile-quick-nav__btn"
-                  onClick={() => scrollTo(id)}
-                >
-                  <Icon size={14} strokeWidth={2.25} aria-hidden />
-                  {label}
+            <div className="watta-profile-hub">
+              <nav className="watta-profile-hub__sections" aria-label={t.siteAria.profileNav}>
+                {quickNav.map(({ id, icon: Icon, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className="watta-profile-hub__section"
+                    onClick={() => scrollTo(id)}
+                  >
+                    <span className="watta-profile-hub__section-icon" aria-hidden>
+                      <Icon size={20} strokeWidth={2.1} />
+                    </span>
+                    <span className="watta-profile-hub__section-label">{label}</span>
+                  </button>
+                ))}
+              </nav>
+
+              <div className="watta-profile-hub__aside">
+                <p className="watta-profile-hub__aside-title">
+                  <Sparkles className="h-3.5 w-3.5 text-[#ff5c00]" aria-hidden />
+                  {cp.publicHubTitle}
+                </p>
+                <button type="button" className="watta-profile-hub__menu-cta" onClick={onGoMenu}>
+                  {cp.goMenu}
                 </button>
-              ))}
-            </nav>
-            <div className="watta-profile-actions-bar">
-              <button type="button" className="watta-profile-action-link watta-profile-action-link--primary" onClick={onGoMenu}>
-                {cp.goMenu}
-              </button>
-              <Link href="/notifications" className="watta-profile-action-link watta-profile-action-link--ghost">
-                <Bell size={14} aria-hidden />
-                {t.notifications.title}
-              </Link>
-              <Link href="/reviews" className="watta-profile-action-link watta-profile-action-link--ghost">
-                {t.reviewsPublic.title}
-              </Link>
-              {showBlogNav ? (
-                <Link href="/blog" className="watta-profile-action-link watta-profile-action-link--ghost">
-                  {t.blogPublic.title}
-                </Link>
-              ) : null}
-              {isAdmin ? (
-                <button type="button" className="watta-profile-action-link watta-profile-action-link--ghost" onClick={onOpenAdmin}>
-                  <Shield size={14} aria-hidden />
-                  {cp.tabAdmin}
+                <ul className="watta-profile-hub__links">
+                  <li>
+                    <Link href="/notifications" className="watta-profile-hub__link-row">
+                      <span className="watta-profile-hub__link-icon" aria-hidden>
+                        <Bell size={18} strokeWidth={2.1} />
+                      </span>
+                      <span className="watta-profile-hub__link-label">{t.notifications.title}</span>
+                      <ChevronRight className="watta-profile-hub__link-chevron" size={18} strokeWidth={2.25} aria-hidden />
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/reviews" className="watta-profile-hub__link-row">
+                      <span className="watta-profile-hub__link-icon" aria-hidden>
+                        <Star size={18} strokeWidth={2.1} />
+                      </span>
+                      <span className="watta-profile-hub__link-label">{t.reviewsPublic.title}</span>
+                      <ChevronRight className="watta-profile-hub__link-chevron" size={18} strokeWidth={2.25} aria-hidden />
+                    </Link>
+                  </li>
+                  {showBlogNav ? (
+                    <li>
+                      <Link href="/blog" className="watta-profile-hub__link-row">
+                        <span className="watta-profile-hub__link-icon" aria-hidden>
+                          <Sparkles size={18} strokeWidth={2.1} />
+                        </span>
+                        <span className="watta-profile-hub__link-label">{t.blogPublic.title}</span>
+                        <ChevronRight className="watta-profile-hub__link-chevron" size={18} strokeWidth={2.25} aria-hidden />
+                      </Link>
+                    </li>
+                  ) : null}
+                  {isAdmin ? (
+                    <li>
+                      <button type="button" className="watta-profile-hub__link-row" onClick={onOpenAdmin}>
+                        <span className="watta-profile-hub__link-icon" aria-hidden>
+                          <Shield size={18} strokeWidth={2.1} />
+                        </span>
+                        <span className="watta-profile-hub__link-label">{cp.tabAdmin}</span>
+                        <ChevronRight className="watta-profile-hub__link-chevron" size={18} strokeWidth={2.25} aria-hidden />
+                      </button>
+                    </li>
+                  ) : null}
+                </ul>
+                <button type="button" className="watta-profile-hub__logout" onClick={onLogout}>
+                  <LogOut size={18} strokeWidth={2.1} aria-hidden />
+                  {cp.logout}
                 </button>
-              ) : null}
-              <button type="button" className="watta-profile-logout-btn" onClick={onLogout}>
-                <LogOut size={14} aria-hidden />
-                {cp.logout}
-              </button>
+              </div>
             </div>
           </motion.div>
 

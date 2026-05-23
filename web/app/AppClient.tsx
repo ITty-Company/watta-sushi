@@ -81,10 +81,7 @@ export default function AppClient({
     ensureDocumentScrollUnlocked()
     if (prev === path) return
     if (path === '/menu' && prev === '/menu') return
-    requestAnimationFrame(() => {
-      ensureDocumentScrollUnlocked()
-      scrollEntireAppToTop()
-    })
+    scrollEntireAppToTop()
   }, [pathname])
 
   /** F5 на головній — одразу той самий reset, що клік по логотипу (до HomeClient). */
