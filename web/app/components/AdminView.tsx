@@ -60,6 +60,10 @@ import {
 import type { Language } from '../context/LanguageContext'
 import AuthHeroPhonesAdminSection from './admin/AuthHeroPhonesAdminSection'
 import { parseDeliveryHeroVideoUrlsFromApi } from '@/lib/deliveryHeroVideoSettings'
+import {
+  parseMenuHeroVideoUrlsFromApi,
+  WATTA_MENU_HERO_VIDEO_UPDATED_EVENT,
+} from '@/lib/menuHeroVideoSettings'
 import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
 import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaAuthHeroVideo'
 import { uploadHomeHeroVideoFile } from '@/lib/uploadHomeHeroVideo'
@@ -87,9 +91,17 @@ import AdminReviewsPanel, { type AdminReviewRow } from './admin/AdminReviewsPane
 import AdminCartUpsellPanel from './admin/AdminCartUpsellPanel'
 import AdminCustomersPanel from './admin/AdminCustomersPanel'
 import AdminContactInquiriesPanel from './admin/AdminContactInquiriesPanel'
+import AdminUserBonusEditor, { type AdminBonusUser } from './admin/AdminUserBonusEditor'
 import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
 import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSave'
 import { compressProductImageFile } from '@/lib/compressProductImage'
+import { parseBlogIdList } from '@/lib/blogLinks'
+import BlogLinksPicker from '@/app/components/admin/BlogLinksPicker'
+import BlogI18nEditor, {
+  blogI18nFromPost,
+  emptyBlogI18nFields,
+  type BlogI18nFormFields,
+} from '@/app/components/admin/BlogI18nEditor'
 import {
   mergeIngredientIdsFromProducts,
   productRowIngredientIds,
@@ -270,6 +282,17 @@ interface BlogPost {
   videoUrl?: string | null
   author: string
   isPublished: boolean
+  linkedProductIds?: number[]
+  linkedCategoryIds?: number[]
+  linkedIngredientIds?: number[]
+  title_ua?: string
+  title_ru?: string
+  title_en?: string
+  title_nl?: string
+  content_ua?: string
+  content_ru?: string
+  content_en?: string
+  content_nl?: string
   createdAt: string
   updatedAt: string
 }
@@ -345,6 +368,8 @@ interface User {
   name: string | null
   phone: string | null
   role: string
+  bonusBalance?: number
+  bonusCashbackPercentOverride?: number | null
   createdAt: string
   updatedAt: string
   _count: {
@@ -359,6 +384,7 @@ interface CrmUser {
   phone: string | null
   role?: string
   bonusBalance: number
+  bonusCashbackPercentOverride?: number | null
   createdAt: string
   updatedAt?: string
   _count?: {
@@ -480,6 +506,8 @@ interface SiteSettings {
   homeHeroVideoUrls?: string[]
   deliveryHeroVideoUrl: string
   deliveryHeroVideoUrls?: string[]
+  menuHeroVideoUrl: string
+  menuHeroVideoUrls?: string[]
   authHeroVideoUrl: string
   authHeroVideoUrls?: string[]
   authHeroPhone2VideoUrls?: string[]
@@ -491,6 +519,8 @@ interface SiteSettings {
   restaurantPickupAddress: string
   freeDeliveryThreshold: number
   deliveryFee: number
+  bonusCashbackEnabled: boolean
+  bonusCashbackPercent: number
 }
 
 /** Вкладки, які підвантажуються у фоні одразу після входу в адмінку. */
@@ -514,6 +544,8 @@ const defaultSiteSettings: SiteSettings = {
   homeHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   deliveryHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   deliveryHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
+  menuHeroVideoUrl: '/watta-sushi-2-hero.mp4',
+  menuHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   authHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   authHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   telegramUrl: '',
@@ -522,6 +554,8 @@ const defaultSiteSettings: SiteSettings = {
   restaurantPickupAddress: '',
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
+  bonusCashbackEnabled: true,
+  bonusCashbackPercent: 5,
 }
 
 export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
@@ -582,6 +616,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]) // Категории меню
   const [users, setUsers] = useState<User[]>([]) // Пользователи
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([])
+  const [bonusEditorUser, setBonusEditorUser] = useState<AdminBonusUser | null>(null)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]) // Команда
   const [orderStats, setOrderStats] = useState<AdminOrderStats | null>(null)
 
@@ -608,6 +643,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     newHeroVideoSlot(),
   ])
   const deliveryHeroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const [menuHeroVideoSaving, setMenuHeroVideoSaving] = useState(false)
+  const [menuHeroVideoSlots, setMenuHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [
+    newHeroVideoSlot(),
+  ])
+  const menuHeroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [authHeroVideoSaving, setAuthHeroVideoSaving] = useState(false)
   const [authHeroVideoSlots, setAuthHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [
     newHeroVideoSlot(),
@@ -635,6 +675,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       return heroVideoSlotsFromUrls(urls)
     })
   }, [settings.deliveryHeroVideoUrl, settings.deliveryHeroVideoUrls])
+
+  useEffect(() => {
+    const urls = parseMenuHeroVideoUrlsFromApi(settings)
+    setMenuHeroVideoSlots((prev) => {
+      const next = heroVideoSlotsFromUrls(urls.length > 0 ? urls : [])
+      if (prev.length === next.length && prev.every((s, i) => s.savedUrl === next[i]?.savedUrl)) return prev
+      return next
+    })
+  }, [settings.menuHeroVideoUrl, settings.menuHeroVideoUrls])
 
   useEffect(() => {
     const urls = parseAuthHeroVideoUrlsFromApi(settings)
@@ -707,14 +756,19 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [newPromoDiscount, setNewPromoDiscount] = useState('')
   const [blogForm, setBlogForm] = useState({
     id: null as number | null,
-    title: '',
     slug: '',
     imageUrl: '',
     videoUrl: '',
-    content: '',
-    author: 'Шеф Watta Sushi',
+    author: 'Команда Watta Sushi',
     isPublished: true,
+    i18n: emptyBlogI18nFields(),
+    linkedProductIds: [] as number[],
+    linkedCategoryIds: [] as number[],
+    linkedIngredientIds: [] as number[],
   })
+  const blogImageInputRef = useRef<HTMLInputElement | null>(null)
+  const [blogImageUploading, setBlogImageUploading] = useState(false)
+  const [blogTranslating, setBlogTranslating] = useState(false)
   const [crmMailing, setCrmMailing] = useState({
     channel: 'email' as 'email' | 'sms',
     subject: '',
@@ -858,7 +912,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       localStorage.removeItem('token')
       localStorage.removeItem('currentUser')
       localStorage.removeItem('userId')
-      localStorage.removeItem('userOrders')
       window.dispatchEvent(new Event('userChanged'))
       toast.error(
         'Сервер отклонил доступ (401/403). Войдите снова как администратор или проверьте, что backend запущен и NEXT_PUBLIC_API_URL указывает на него.',
@@ -874,7 +927,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     const settingsRes = await fetch('/api/settings', { headers })
     if (settingsRes.ok) {
       const raw = await settingsRes.json()
-      setSettings({ ...defaultSiteSettings, ...raw })
+      setSettings({
+        ...defaultSiteSettings,
+        ...raw,
+        bonusCashbackEnabled: raw.bonusCashbackEnabled !== false,
+        bonusCashbackPercent:
+          Number(raw.bonusCashbackPercent) || defaultSiteSettings.bonusCashbackPercent,
+      })
     }
   }, [])
 
@@ -1004,8 +1063,33 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             break
           }
           case 'blog': {
-            const blogRes = await fetch('/api/blog/all', { headers })
+            const blogBust = Date.now()
+            const [blogRes, prodRes, catRes, ingRes] = await Promise.all([
+              fetch('/api/blog/all', { headers }),
+              products.length === 0
+                ? fetch(`/api/products?_=${blogBust}`, { headers, cache: 'no-store' })
+                : Promise.resolve(null),
+              menuCategories.length === 0
+                ? fetch('/api/products/categories', { headers, cache: 'no-store' })
+                : Promise.resolve(null),
+              ingredients.length === 0
+                ? fetch('/api/ingredients', { headers, cache: 'no-store' })
+                : Promise.resolve(null),
+            ])
             if (blogRes.ok) setBlogPosts(await blogRes.json())
+            if (prodRes?.ok) {
+              const productsData = await prodRes.json()
+              const list = Array.isArray(productsData) ? productsData : []
+              setProducts(list.map((row) => normalizeAdminProductRow(row as Product)))
+            }
+            if (catRes?.ok) {
+              const catData = await catRes.json()
+              setMenuCategories(Array.isArray(catData) ? catData : [])
+            }
+            if (ingRes?.ok) {
+              const ingList = await ingRes.json()
+              setIngredients(Array.isArray(ingList) ? ingList : [])
+            }
             loadedTabsRef.current.add('blog')
             break
           }
@@ -2691,33 +2775,149 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const resetBlogForm = () => {
     setBlogForm({
       id: null,
-      title: '',
       slug: '',
       imageUrl: '',
       videoUrl: '',
-      content: '',
-      author: 'Шеф Watta Sushi',
+      author: 'Команда Watta Sushi',
       isPublished: true,
+      i18n: emptyBlogI18nFields(),
+      linkedProductIds: [],
+      linkedCategoryIds: [],
+      linkedIngredientIds: [],
     })
+  }
+
+  const blogPrimaryTitle = (i18n: BlogI18nFormFields) =>
+    i18n.title_ua.trim() ||
+    i18n.title_ru.trim() ||
+    i18n.title_en.trim() ||
+    i18n.title_nl.trim()
+
+  const blogPrimaryContent = (i18n: BlogI18nFormFields) =>
+    i18n.content_ua.trim() ||
+    i18n.content_ru.trim() ||
+    i18n.content_en.trim() ||
+    i18n.content_nl.trim()
+
+  const handleBlogAutoTranslate = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      toast.error('Вы не авторизованы')
+      return
+    }
+    if (!blogForm.i18n.title_ua.trim() && !blogForm.i18n.content_ua.trim()) {
+      toast.error('Спочатку напишіть заголовок або текст українською (вкладка UA)')
+      return
+    }
+    const toastId = toast.loading('Автопереклад… (це може зайняти хвилину)')
+    setBlogTranslating(true)
+    try {
+      const res = await fetch('/api/blog/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title_ua: blogForm.i18n.title_ua,
+          content_ua: blogForm.i18n.content_ua,
+        }),
+      })
+      const data = (await res.json().catch(() => ({}))) as BlogI18nFormFields & { message?: string }
+      if (!res.ok) throw new Error(data.message || 'Помилка перекладу')
+      setBlogForm((prev) => ({
+        ...prev,
+        i18n: {
+          title_ua: data.title_ua ?? prev.i18n.title_ua,
+          content_ua: data.content_ua ?? prev.i18n.content_ua,
+          title_ru: data.title_ru ?? prev.i18n.title_ru,
+          content_ru: data.content_ru ?? prev.i18n.content_ru,
+          title_en: data.title_en ?? prev.i18n.title_en,
+          content_en: data.content_en ?? prev.i18n.content_en,
+          title_nl: data.title_nl ?? prev.i18n.title_nl,
+          content_nl: data.content_nl ?? prev.i18n.content_nl,
+        },
+      }))
+      toast.success('Переклад готово — перевірте RU, EN, NL', { id: toastId })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Не вдалося перекласти'
+      toast.error(msg, { id: toastId })
+    } finally {
+      setBlogTranslating(false)
+    }
+  }
+
+  const toggleBlogLinkId = (
+    field: 'linkedProductIds' | 'linkedCategoryIds' | 'linkedIngredientIds',
+    id: number,
+  ) => {
+    setBlogForm((prev) => {
+      const list = prev[field]
+      const next = list.includes(id) ? list.filter((x) => x !== id) : [...list, id]
+      return { ...prev, [field]: next }
+    })
+  }
+
+  const uploadBlogCoverImage = async (file: File) => {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Увійдіть знову в адмінку')
+    const image = await compressProductImageFile(file)
+    const body = new FormData()
+    body.append('image', image)
+    const res = await fetch('/api/blog/upload-image', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+    })
+    const data = (await res.json().catch(() => ({}))) as { url?: string; message?: string }
+    if (!res.ok || !data.url?.trim()) {
+      throw new Error(data.message || `Помилка завантаження (${res.status})`)
+    }
+    return data.url.trim()
+  }
+
+  const handleBlogCoverFile = (fileList: FileList | null) => {
+    const file = fileList?.[0]
+    if (!file?.type.startsWith('image/')) {
+      toast.error('Оберіть файл зображення (JPG, PNG, WebP…)')
+      return
+    }
+    const toastId = toast.loading('Завантаження фото…')
+    setBlogImageUploading(true)
+    void uploadBlogCoverImage(file)
+      .then((url) => {
+        setBlogForm((prev) => ({ ...prev, imageUrl: url }))
+        toast.success('Фото завантажено', { id: toastId })
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Не вдалося завантажити фото'
+        toast.error(msg, { id: toastId })
+      })
+      .finally(() => {
+        setBlogImageUploading(false)
+        if (blogImageInputRef.current) blogImageInputRef.current.value = ''
+      })
   }
 
   const handleEditBlogPost = (post: BlogPost) => {
     setBlogForm({
       id: post.id,
-      title: post.title,
       slug: post.slug,
       imageUrl: post.imageUrl || '',
       videoUrl: post.videoUrl || '',
-      content: post.content,
-      author: post.author || 'Шеф Watta Sushi',
+      author: post.author || 'Команда Watta Sushi',
       isPublished: post.isPublished,
+      i18n: blogI18nFromPost(post as unknown as Record<string, unknown>),
+      linkedProductIds: parseBlogIdList(post.linkedProductIds),
+      linkedCategoryIds: parseBlogIdList(post.linkedCategoryIds),
+      linkedIngredientIds: parseBlogIdList(post.linkedIngredientIds),
     })
   }
 
   const handleSaveBlogPost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!blogForm.title.trim() || !blogForm.slug.trim() || !blogForm.content.trim()) {
-      toast.error('Заполните title, slug и content')
+    if (!blogForm.slug.trim() || !blogPrimaryTitle(blogForm.i18n) || !blogPrimaryContent(blogForm.i18n)) {
+      toast.error('Заповніть slug і текст хоча б однією мовою')
       return
     }
     try {
@@ -2735,13 +2935,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          title: blogForm.title,
           slug: blogForm.slug,
           imageUrl: blogForm.imageUrl || null,
           videoUrl: blogForm.videoUrl || null,
-          content: blogForm.content,
-          author: blogForm.author || 'Шеф Watta Sushi',
+          author: blogForm.author || 'Команда Watta Sushi',
           isPublished: blogForm.isPublished,
+          ...blogForm.i18n,
+          linkedProductIds: blogForm.linkedProductIds,
+          linkedCategoryIds: blogForm.linkedCategoryIds,
+          linkedIngredientIds: blogForm.linkedIngredientIds,
         }),
       })
       if (!res.ok) {
@@ -3840,6 +4042,119 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
   }
 
+  const handleMenuHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('video/')) {
+      toast.error(t.adminPanel.banners.heroVideoError)
+      return
+    }
+    if (file.size > 120 * 1024 * 1024) {
+      toast.error(t.adminPanel.banners.heroVideoTooLarge)
+      return
+    }
+    const previewUrl = URL.createObjectURL(file)
+    setMenuHeroVideoSlots((prev) =>
+      prev.map((slot) => {
+        if (slot.id !== slotId) return slot
+        revokeHeroPreviewUrl(slot.pendingPreviewUrl)
+        return { ...slot, pendingFile: file, pendingPreviewUrl: previewUrl }
+      }),
+    )
+  }
+
+  const addMenuHeroVideoSlot = () => {
+    setMenuHeroVideoSlots((prev) => [...prev, newHeroVideoSlot()])
+  }
+
+  const removeMenuHeroVideoSlot = (slotId: string) => {
+    setMenuHeroVideoSlots((prev) => {
+      const target = prev.find((s) => s.id === slotId)
+      revokeHeroPreviewUrl(target?.pendingPreviewUrl ?? null)
+      const next = prev.filter((s) => s.id !== slotId)
+      return next.length > 0 ? next : [newHeroVideoSlot()]
+    })
+  }
+
+  const menuHeroVideoHasFilledSlot = menuHeroVideoSlots.some(
+    (s) => Boolean(s.pendingFile) || Boolean(s.savedUrl?.trim()),
+  )
+
+  const handleSaveMenuHeroVideos = async () => {
+    if (!menuHeroVideoHasFilledSlot) {
+      toast.error(t.adminPanel.banners.heroVideoError)
+      return
+    }
+    setMenuHeroVideoSaving(true)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        toastHeroVideoSaveError(401)
+        return
+      }
+      const payload: string[] = []
+      for (const slot of menuHeroVideoSlots) {
+        if (slot.pendingFile) {
+          const url = await uploadHomeHeroVideoFile(slot.pendingFile, token)
+          payload.push(url)
+        } else if (slot.savedUrl?.trim()) {
+          payload.push(slot.savedUrl.trim())
+        }
+      }
+      if (payload.length === 0) {
+        toast.error(t.adminPanel.banners.heroVideoError)
+        return
+      }
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ menuHeroVideoUrls: payload }),
+      })
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as { error?: string; message?: string } | null
+        toastHeroVideoSaveError(res.status, errBody?.error)
+        return
+      }
+      const saved = await res.json()
+      const urls = parseMenuHeroVideoUrlsFromApi(saved)
+      const primary = urls[0] ?? settings.menuHeroVideoUrl
+      setSettings((prev) => ({
+        ...prev,
+        menuHeroVideoUrl: primary,
+        menuHeroVideoUrls: urls.length > 0 ? urls : prev.menuHeroVideoUrls,
+      }))
+      setMenuHeroVideoSlots(() => {
+        menuHeroVideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
+        return heroVideoSlotsFromUrls(urls)
+      })
+      toast.success(t.adminPanel.banners.heroVideoSaved)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent(WATTA_MENU_HERO_VIDEO_UPDATED_EVENT, {
+            detail: { urls, url: primary },
+          }),
+        )
+        broadcastWattaCatalogUpdate('settings')
+      }
+    } catch (err) {
+      console.error(err)
+      const code = err instanceof Error ? err.message : ''
+      if (code === 'upload_failed' || code === 'invalid_video_type' || code === 'no_file') {
+        toast.error(t.adminPanel.banners.heroVideoErrorUpload)
+      } else if (code === 'mock_mode_no_backend') {
+        toast.error(t.adminPanel.banners.heroVideoErrorMock)
+      } else {
+        toast.error(t.adminPanel.banners.heroVideoError)
+      }
+    } finally {
+      setMenuHeroVideoSaving(false)
+    }
+  }
+
   const handleAuthHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -4208,7 +4523,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   { id: 'cartUpsell' as const, label: 'Кошик: знижки', desc: 'Пороги суми та товари зі знижкою' },
                   { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
                   { id: 'promotions' as const, label: t.adminPanel.news.title, desc: t.adminPanel.sidebar.promosDesc },
-                  { id: 'blog' as const, label: 'Блог / Рецепты', desc: 'SEO статьи и рецепты шефа' },
+                  { id: 'blog' as const, label: 'Блог / Рекомендації', desc: 'Статті для замовлень: що спробувати в Watta' },
                   { id: 'reviews' as const, label: 'Відгуки', desc: 'Модерація відгуків клієнтів' },
                   { id: 'newsletter' as const, label: t.adminPanel.sidebar.newsletter, desc: 'Email рассылка' },
                   { id: 'crm' as const, label: 'CRM / База клиентов', desc: 'Клиенты, рассылки и обращения с сайта' },
@@ -5820,6 +6135,107 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </div>
               </div>
 
+              <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
+                <h3 className="text-lg font-bold text-[#155044] sm:text-xl">
+                  {t.adminPanel.banners.menuHeroVideoTitle}
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#145142]/75">
+                  {t.adminPanel.banners.menuHeroVideoSubtitle}
+                </p>
+                <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  {menuHeroVideoSlots.map((slot, slotIndex) => {
+                    const previewSrc = slot.pendingPreviewUrl ?? slot.savedUrl
+                    const slotLabel = t.adminPanel.banners.heroVideoSlotLabel.replace(
+                      '{{n}}',
+                      String(slotIndex + 1),
+                    )
+                    return (
+                      <motion.div
+                        key={slot.id}
+                        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: slotIndex * 0.05 }}
+                        className="flex flex-col rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/80 p-3"
+                      >
+                        <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">
+                          {slotLabel}
+                        </p>
+                        <motion.div
+                          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                          className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5"
+                        >
+                          <AdminHeroVideoPreview
+                            previewSrc={previewSrc}
+                            savedUrl={slot.savedUrl}
+                            reduceMotion={Boolean(reduceMotion)}
+                          />
+                        </motion.div>
+                        {previewSrc && !slot.pendingFile ? (
+                          <p
+                            className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55"
+                            title={slot.savedUrl}
+                          >
+                            {slot.savedUrl}
+                          </p>
+                        ) : null}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <input
+                            ref={(el) => {
+                              menuHeroVideoFileInputRefs.current[slot.id] = el
+                            }}
+                            type="file"
+                            accept="video/mp4,video/webm,video/quicktime"
+                            className="hidden"
+                            onChange={(e) => handleMenuHeroVideoFileChange(slot.id, e)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => menuHeroVideoFileInputRefs.current[slot.id]?.click()}
+                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-[#145142]/5"
+                          >
+                            <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t.adminPanel.banners.heroVideoUpload}
+                          </button>
+                          {previewSrc || menuHeroVideoSlots.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => removeMenuHeroVideoSlot(slot.id)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-[#145142]/20 bg-white px-3 py-2 text-xs font-semibold text-[#145142]/80 transition hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              {t.adminPanel.banners.heroVideoRemove}
+                            </button>
+                          ) : null}
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={addMenuHeroVideoSlot}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-[#145142]/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-[#145142]/10 sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                  {t.adminPanel.banners.heroVideoAddBtn}
+                </button>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                  <button
+                    type="button"
+                    disabled={menuHeroVideoSaving || !menuHeroVideoHasFilledSlot}
+                    onClick={() => void handleSaveMenuHeroVideos()}
+                    className="admin-hero-video-save-btn relative z-[5] inline-flex touch-manipulation items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4 shrink-0" aria-hidden />
+                    {menuHeroVideoSaving
+                      ? t.adminPanel.banners.heroVideoSaving
+                      : t.adminPanel.banners.heroVideoSave}
+                  </button>
+                </div>
+              </div>
+
               <AuthHeroPhonesAdminSection
                 t={t.adminPanel.banners}
                 reduceMotion={Boolean(reduceMotion)}
@@ -6043,6 +6459,37 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               Заказов: {user._count.orders}
                             </span>
                           </div>
+
+                          <p className="mt-2 text-xs text-[#145142]">
+                            Бонуси:{' '}
+                            <strong className="tabular-nums">
+                              {Number(user.bonusBalance ?? 0).toFixed(2)} €
+                            </strong>
+                            {user.bonusCashbackPercentOverride != null ? (
+                              <span className="text-gray-500">
+                                {' '}
+                                · кешбэк {user.bonusCashbackPercentOverride}%
+                              </span>
+                            ) : null}
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBonusEditorUser({
+                                id: user.id,
+                                name: user.name,
+                                email: user.email,
+                                phone: user.phone,
+                                bonusBalance: Number(user.bonusBalance ?? 0),
+                                bonusCashbackPercentOverride:
+                                  user.bonusCashbackPercentOverride ?? null,
+                              })
+                            }
+                            className="mt-2 w-full rounded-xl border-2 border-[#145142]/25 py-2 text-xs font-bold text-[#145142] hover:bg-[#145142]/5"
+                          >
+                            Налаштувати бонуси
+                          </button>
                           
                           <p className="text-xs text-gray-400 mt-2">
                             Регистрация: {new Date(user.createdAt).toLocaleDateString('ru-RU', {
@@ -6199,7 +6646,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
                 <h2 className="mb-2 text-2xl font-bold text-[#145142]">Відгуки клієнтів</h2>
                 <p className="mb-6 text-sm text-gray-600">
-                  Модерація відгуків: опублікуйте на сайті /reviews або відредагуйте текст і фото.
+                  Відгуки клієнтів на /reviews: редагування тексту та видалення.
                 </p>
                 <AdminReviewsPanel
                   reviews={adminReviews}
@@ -6219,51 +6666,97 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           {activeTab === 'blog' && (
             <div className="flex flex-col gap-6">
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
-                <h2 className="mb-5 text-2xl font-bold text-[#145142]">Блог / Рецепты</h2>
+                <h2 className="mb-2 text-2xl font-bold text-[#145142]">Блог / Рекомендації</h2>
+                <p className="mb-5 text-sm text-[#145142]/75">
+                  Статті для гостей: що замовити в Watta, поради з меню та доставки — без рецептів «готуйте вдома».
+                  Завантажте фото обкладинки з комп&apos;ютера або вставте посилання.
+                </p>
                 <form onSubmit={handleSaveBlogPost} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
                     type="text"
-                    placeholder="Title"
-                    value={blogForm.title}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, title: e.target.value }))}
-                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Slug (e.g. sushi-secrets)"
+                    placeholder="Slug (напр. first-order-watta)"
                     value={blogForm.slug}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
-                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] md:col-span-2"
                     required
                   />
-                  <input
-                    type="url"
-                    placeholder="Image URL"
-                    value={blogForm.imageUrl}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+                  <BlogI18nEditor
+                    value={blogForm.i18n}
+                    onChange={(i18n) => setBlogForm((prev) => ({ ...prev, i18n }))}
+                    onAutoTranslate={handleBlogAutoTranslate}
+                    translating={blogTranslating}
                   />
+                  <div className="md:col-span-2 rounded-xl border-2 border-dashed border-[#145142]/25 bg-[#f6fbf8]/80 p-4">
+                    <p className="text-sm font-semibold text-[#145142]">Фото обкладинки</p>
+                    <p className="mt-1 text-xs text-[#145142]/65">
+                      Горизонтальне фото ролів або сету — на картці блогу та зверху статті.
+                    </p>
+                    {blogForm.imageUrl ? (
+                      <div className="mt-3 flex flex-wrap items-start gap-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={blogForm.imageUrl}
+                          alt=""
+                          className="h-28 w-44 rounded-lg object-cover border border-[#145142]/15"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setBlogForm((prev) => ({ ...prev, imageUrl: '' }))}
+                          className="text-sm font-semibold text-red-600 hover:underline"
+                        >
+                          Прибрати фото
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <input
+                        ref={blogImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleBlogCoverFile(e.target.files)}
+                      />
+                      <button
+                        type="button"
+                        disabled={blogImageUploading}
+                        onClick={() => blogImageInputRef.current?.click()}
+                        className="rounded-xl bg-[#145142] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0f3d34] disabled:opacity-60"
+                      >
+                        {blogImageUploading ? 'Завантаження…' : 'Завантажити фото'}
+                      </button>
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="Або посилання на фото (https://…)"
+                      value={blogForm.imageUrl}
+                      onChange={(e) => setBlogForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                      className="mt-3 w-full p-3 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] text-sm"
+                    />
+                  </div>
                   <input
                     type="url"
-                    placeholder="Video URL (optional)"
+                    placeholder="YouTube (необовʼязково)"
                     value={blogForm.videoUrl}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, videoUrl: e.target.value }))}
                     className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
                   />
                   <input
                     type="text"
-                    placeholder="Author"
+                    placeholder="Автор (напр. Команда Watta Sushi)"
                     value={blogForm.author}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, author: e.target.value }))}
-                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] md:col-span-2"
+                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
                   />
-                  <textarea
-                    placeholder="Content"
-                    value={blogForm.content}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, content: e.target.value }))}
-                    className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] md:col-span-2 min-h-[180px]"
-                    required
+                  <BlogLinksPicker
+                    products={products}
+                    categories={menuCategories}
+                    ingredients={ingredients}
+                    linkedProductIds={blogForm.linkedProductIds}
+                    linkedCategoryIds={blogForm.linkedCategoryIds}
+                    linkedIngredientIds={blogForm.linkedIngredientIds}
+                    onToggleProduct={(id) => toggleBlogLinkId('linkedProductIds', id)}
+                    onToggleCategory={(id) => toggleBlogLinkId('linkedCategoryIds', id)}
+                    onToggleIngredient={(id) => toggleBlogLinkId('linkedIngredientIds', id)}
                   />
                   <label className="md:col-span-2 flex items-center gap-3 text-[#145142] font-semibold">
                     <input
@@ -6292,16 +6785,29 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   <div key={post.id} className="admin-watta-hover-lift rounded-2xl border border-[#145142]/15 bg-white/80 p-5 shadow-md shadow-[#145142]/8 backdrop-blur-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold text-[#145142]">{post.title}</h3>
+                        <h3 className="text-lg font-bold text-[#145142]">
+                          {post.title_ua || post.title}
+                        </h3>
                         <p className="text-sm text-gray-500">/{post.slug}</p>
                         <p className="text-xs mt-1 text-gray-500">{post.isPublished ? 'Опубликовано' : 'Черновик'}</p>
+                        {(parseBlogIdList(post.linkedProductIds).length +
+                          parseBlogIdList(post.linkedCategoryIds).length +
+                          parseBlogIdList(post.linkedIngredientIds).length) > 0 ? (
+                          <p className="text-xs mt-1 text-[#145142]/70">
+                            Звʼязки: {parseBlogIdList(post.linkedProductIds).length} страв,{' '}
+                            {parseBlogIdList(post.linkedCategoryIds).length} кат.,{' '}
+                            {parseBlogIdList(post.linkedIngredientIds).length} інгр.
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => handleEditBlogPost(post)} className="p-2 rounded-lg bg-[#145142]/10 text-[#145142]"><Pencil size={16} /></button>
                         <button onClick={() => handleDeleteBlogPost(post.id)} className="p-2 rounded-lg bg-red-50 text-red-600"><Trash2 size={16} /></button>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mt-3 line-clamp-3">{post.content}</p>
+                    <p className="text-sm text-gray-600 mt-3 line-clamp-3">
+                      {post.content_ua || post.content}
+                    </p>
                   </div>
                 ))}
                 {blogPosts.length === 0 && (
@@ -6401,6 +6907,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       <th className="py-3 pr-4">Телефон</th>
                       <th className="py-3 pr-4">Заказы</th>
                       <th className="py-3 pr-4">Бонусы</th>
+                      <th className="py-3 pr-4">Кешбэк %</th>
+                      <th className="py-3 pr-4" />
                     </tr>
                   </thead>
                   <tbody>
@@ -6411,11 +6919,37 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         <td className="py-3 pr-4">{u.phone || '—'}</td>
                         <td className="py-3 pr-4">{u._count?.orders ?? 0}</td>
                         <td className="py-3 pr-4 text-[#145142] font-bold">{Number(u.bonusBalance || 0).toFixed(2)} €</td>
+                        <td className="py-3 pr-4 text-sm">
+                          {u.bonusCashbackPercentOverride != null
+                            ? `${u.bonusCashbackPercentOverride}% *`
+                            : settings.bonusCashbackEnabled
+                              ? `${settings.bonusCashbackPercent}%`
+                              : '—'}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBonusEditorUser({
+                                id: u.id,
+                                name: u.name,
+                                email: u.email,
+                                phone: u.phone,
+                                bonusBalance: Number(u.bonusBalance ?? 0),
+                                bonusCashbackPercentOverride:
+                                  u.bonusCashbackPercentOverride ?? null,
+                              })
+                            }
+                            className="rounded-lg border border-[#145142]/25 px-2 py-1 text-xs font-semibold text-[#145142] hover:bg-[#145142]/5"
+                          >
+                            Змінити
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {crmUsers.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-gray-400">
+                        <td colSpan={7} className="py-8 text-center text-gray-400">
                           Пользователей пока нет
                         </td>
                       </tr>
@@ -6567,6 +7101,45 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                      </div>
 
                      <div className="border-t border-gray-200 pt-6 space-y-4">
+                        <h3 className="text-sm font-bold text-[#145142] uppercase tracking-wide">Бонуси та кешбэк</h3>
+                        <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-[#145142]">
+                          <input
+                            type="checkbox"
+                            checked={settings.bonusCashbackEnabled}
+                            onChange={(e) =>
+                              setSettings({ ...settings, bonusCashbackEnabled: e.target.checked })
+                            }
+                            className="h-4 w-4 accent-[#145142]"
+                          />
+                          Нараховувати кешбэк зареєстрованим клієнтам
+                        </label>
+                        <div>
+                          <label className="block text-sm font-bold text-[#145142] mb-2">
+                            Кешбэк для всіх, % від суми товарів
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            disabled={!settings.bonusCashbackEnabled}
+                            value={settings.bonusCashbackPercent}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                bonusCashbackPercent: parseFloat(e.target.value) || 0,
+                              })
+                            }
+                            className="w-full p-4 bg-white/80 rounded-[16px] outline-none border-2 border-[#145142]/20 font-bold text-lg focus:border-[#145142] disabled:opacity-50"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Нарахування при статусі замовлення «Доставлено» або «Завершено». Тільки для
+                          клієнтів з акаунтом. Персональний % — у вкладках «Користувачі» та CRM.
+                        </p>
+                     </div>
+
+                     <div className="border-t border-gray-200 pt-6 space-y-4">
                         <h3 className="text-sm font-bold text-[#145142] uppercase tracking-wide">Доставка (фіксована)</h3>
                         <div>
                           <label className="block text-sm font-bold text-[#145142] mb-2">Безкоштовна доставка від (€)</label>
@@ -6624,10 +7197,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         <AdminModalPortal open={isModalOpen}>
         {isModalOpen && (
         <div className="admin-watta-modal-backdrop fixed inset-0 flex bg-black/60">
-          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
-            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative flex flex-col bg-white rounded-2xl p-6">
+            <div className="mb-4 flex shrink-0 items-center justify-between gap-2 sm:mb-6">
               <div className="h-10 w-10 shrink-0" aria-hidden />
-              <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
+              <h2 className="flex-1 px-1 text-center text-xl font-bold text-[#155044] sm:text-2xl">
                 {editingId ? 'Редактировать блюдо' : 'Новое блюдо'}
               </h2>
               <button
@@ -6640,7 +7213,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </button>
             </div>
             
-            <form onSubmit={handleSubmitProduct} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmitProduct} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain sm:space-y-4">
               <div className="mb-3 sm:mb-4 space-y-2">
                 <p className="text-xs font-semibold text-[#145142]/80">
                   Фото (до 24). Первое — в меню и каталоге; на странице блюда можно листать. Можно перетягнути
@@ -7039,10 +7613,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </>
                 )}
               </div>
+              </div>
               <button
                 type="submit"
                 disabled={productSaving}
-                className="relative z-20 mt-2 w-full rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-[15px] sm:py-4 sm:text-base"
+                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-[15px] sm:py-4 sm:text-base"
               >
                 {productSaving
                   ? 'Сохранение…'
@@ -7060,10 +7635,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       <AdminModalPortal open={isCategoryModalOpen}>
       {isCategoryModalOpen && (
         <div className="admin-watta-modal-backdrop fixed inset-0 flex bg-black/60">
-          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
-            {/* Продолжение тени и фона при прокрутке */}
-            <div className="sticky bottom-0 left-0 right-0 h-8 -mb-8 bg-gradient-to-b from-white/80 via-white/80 to-transparent pointer-events-none z-10"></div>
-            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative flex flex-col bg-white rounded-2xl p-6">
+            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6 shrink-0">
               <div className="h-10 w-10 shrink-0" aria-hidden />
               <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
                 {editingCategoryId ? 'Редактировать категорию' : 'Новая категория'}
@@ -7078,7 +7651,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </button>
             </div>
             
-            <form onSubmit={handleSubmitCategory} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmitCategory} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain sm:space-y-4">
               {/* Эмодзи с выбором */}
               <div>
                 <label className="block text-sm font-medium text-[#145142]/80 mb-2">Эмодзи (стикер) *</label>
@@ -7243,15 +7817,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </select>
               </div>
 
-              <button 
-                type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
+              </div>
+              <button
+                type="submit"
+                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-[#103d34] sm:rounded-[15px] sm:py-4 sm:text-base"
               >
                 {editingCategoryId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
             </form>
-            {/* Продолжение тени и фона при прокрутке вниз */}
-            <div className="sticky bottom-0 left-0 right-0 h-12 -mb-12 bg-gradient-to-b from-transparent via-white/80 to-white/80 pointer-events-none z-10 rounded-b-[20px] sm:rounded-b-[25px]"></div>
           </div>
         </div>
       )}
@@ -7635,11 +8208,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   {editingBannerId ? 'Сохранить изменения' : 'Сохранить баннер'}
                 </button>
               </form>
-
-              <div
-                className="pointer-events-none sticky bottom-0 left-0 right-0 z-[5] -mb-12 h-12 rounded-b-[22px] bg-gradient-to-b from-transparent via-white/85 to-white sm:rounded-b-[26px]"
-                aria-hidden
-              />
             </div>
           </div>
         </div>
@@ -7650,10 +8218,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       <AdminModalPortal open={isTeamModalOpen}>
       {isTeamModalOpen && (
         <div className="admin-watta-modal-backdrop fixed inset-0 flex bg-black/60">
-          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative bg-white rounded-2xl p-6">
-            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+          <div className="admin-watta-modal-panel admin-watta-modal-scroll relative flex flex-col bg-white rounded-2xl p-6">
+            <div className="mb-4 flex shrink-0 items-center justify-between gap-2 sm:mb-6">
               <div className="h-10 w-10 shrink-0" aria-hidden />
-              <h2 className="flex-1 text-center text-xl sm:text-2xl font-bold text-[#155044] px-1">
+              <h2 className="flex-1 px-1 text-center text-xl font-bold text-[#155044] sm:text-2xl">
                 {editingTeamId ? 'Редактировать члена команды' : 'Новый член команды'}
               </h2>
               <button
@@ -7666,7 +8234,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </button>
             </div>
             
-            <form onSubmit={handleSubmitTeam} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmitTeam} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain sm:space-y-4">
               {/* Загрузка фото */}
               <div className="flex justify-center mb-3 sm:mb-4">
                 <label className="cursor-pointer w-full h-48 sm:h-56 md:h-64 border-2 border-dashed border-[#145142]/30 rounded-[12px] sm:rounded-[15px] flex flex-col items-center justify-center hover:bg-[#145142]/5 transition relative overflow-hidden group p-2 bg-white/40 backdrop-blur-sm">
@@ -7778,14 +8347,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
-                className="w-full py-3 sm:py-4 bg-[#155044] text-white font-bold rounded-[12px] sm:rounded-[15px] hover:bg-[#103d34] transition shadow-none mt-2 text-sm sm:text-base"
+              </div>
+              <button
+                type="submit"
+                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-[#103d34] sm:rounded-[15px] sm:py-4 sm:text-base"
               >
                 {editingTeamId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
             </form>
-            <div className="sticky bottom-0 left-0 right-0 h-12 -mb-12 bg-gradient-to-b from-transparent via-white/80 to-white/80 pointer-events-none z-10 rounded-b-[20px] sm:rounded-b-[25px]"></div>
           </div>
         </div>
       )}
@@ -8019,6 +8588,39 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         </div>
       )}
       </AdminModalPortal>
+
+      {bonusEditorUser ? (
+        <AdminUserBonusEditor
+          user={bonusEditorUser}
+          globalCashbackPercent={settings.bonusCashbackPercent}
+          globalCashbackEnabled={settings.bonusCashbackEnabled}
+          onClose={() => setBonusEditorUser(null)}
+          onSaved={(updated) => {
+            setUsers((prev) =>
+              prev.map((u) =>
+                u.id === updated.id
+                  ? {
+                      ...u,
+                      bonusBalance: updated.bonusBalance,
+                      bonusCashbackPercentOverride: updated.bonusCashbackPercentOverride,
+                    }
+                  : u,
+              ),
+            )
+            setCrmUsers((prev) =>
+              prev.map((u) =>
+                u.id === updated.id
+                  ? {
+                      ...u,
+                      bonusBalance: updated.bonusBalance,
+                      bonusCashbackPercentOverride: updated.bonusCashbackPercentOverride,
+                    }
+                  : u,
+              ),
+            )
+          }}
+        />
+      ) : null}
       </div>
     </div>
   )

@@ -15,12 +15,19 @@ import {
   ChevronDown,
   MapPin,
   CreditCard,
+  Receipt,
 } from 'lucide-react'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { useLanguage, type Language } from '@/app/context/LanguageContext'
+import { canShowOrderReceipt, isActiveOrderStatus } from '@/lib/orderProfile'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import { readReviewImageDataUrl } from '@/lib/compressReviewImage'
 import { getReviewSubmitErrorMessage } from '@/lib/reviewSubmitErrors'
+import {
+  formatOrderReadyAt,
+  shouldShowOrderReadyAt,
+} from '@/lib/formatOrderReadyAt'
 import type { WattaLanguage } from '@/lib/i18n/language'
 
 export interface ProfileOrderItem {
@@ -28,14 +35,15 @@ export interface ProfileOrderItem {
   quantity: number
   price: number
   productId?: number
-  product: {
+  productNameSnapshot?: string
+  product?: {
     name_ru: string
     name_ua?: string | null
     name_en?: string | null
     name_nl?: string | null
     description_ru?: string
     imageUrl?: string
-  }
+  } | null
 }
 
 export interface ProfileOrderReview {
@@ -59,6 +67,9 @@ export interface ProfileOrder {
   fulfillmentType?: string
   deliveryFee?: number
   comment?: string
+  readyAt?: string | null
+  paidAt?: string | null
+  usedBonuses?: number
 }
 
 function orderPipelineRank(status: string): number {
@@ -74,12 +85,22 @@ function orderPipelineRank(status: string): number {
 }
 
 function productLineName(
-  p: ProfileOrderItem['product'],
-  lang: Language
+  p: ProfileOrderItem['product'] | null | undefined,
+  lang: Language,
+  snapshot?: string
 ): string {
-  return (
-    getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang as WattaLanguage) || p.name_ru
-  )
+  if (p) {
+    const localized = getLocalizedField(
+      p as unknown as Record<string, unknown>,
+      'name',
+      lang as WattaLanguage,
+    )
+    if (localized) return localized
+    if (p.name_ru) return p.name_ru
+  }
+  const snap = String(snapshot || '').trim()
+  if (snap) return snap
+  return '—'
 }
 
 const stepIcons = [Clock, Check, ChefHat, Truck, Package]
@@ -104,14 +125,44 @@ interface TProfile {
   orderLabel: string
   total: string
   reorder: string
-  showDetails?: string
-  hideDetails?: string
-  labelAddress?: string
-  labelFulfillment?: string
-  fulfillmentDelivery?: string
-  fulfillmentPickup?: string
-  labelPayment?: string
-  timelineTitle?: string
+  showDetails: string
+  hideDetails: string
+  labelAddress: string
+  labelFulfillment: string
+  fulfillmentDelivery: string
+  fulfillmentPickup: string
+  labelPayment: string
+  labelPhoneShort: string
+  timelineTitle: string
+  stepCurrentBadge: string
+  paymentCard: string
+  paymentCash: string
+  paymentStatusPaid: string
+  paymentStatusWaiting: string
+  paymentStatusError: string
+  readyAtPickup: string
+  readyAtDelivery: string
+  activeOrderTitle?: string
+  viewReceipt?: string
+  paymentCard?: string
+  paymentCash?: string
+  paymentStatusPaid?: string
+  paymentStatusWaiting?: string
+  paymentStatusError?: string
+}
+
+function formatProfilePaymentStatus(
+  status: string | undefined,
+  t: Pick<
+    TProfile,
+    'paymentStatusPaid' | 'paymentStatusWaiting' | 'paymentStatusError'
+  >,
+): string {
+  const s = String(status || '').toUpperCase()
+  if (s === 'PAID') return t.paymentStatusPaid
+  if (s === 'WAITING' || s === 'PENDING') return t.paymentStatusWaiting
+  if (s === 'ERROR' || s === 'FAILED') return t.paymentStatusError
+  return status || ''
 }
 
 interface Props {
@@ -150,8 +201,13 @@ export default function ClientProfileOrders({
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (highlightOrderId) setExpandedId(highlightOrderId)
-  }, [highlightOrderId])
+    if (highlightOrderId) {
+      setExpandedId(highlightOrderId)
+      return
+    }
+    const firstActive = orders.find((o) => isActiveOrderStatus(o.status))
+    if (firstActive) setExpandedId(firstActive.id)
+  }, [highlightOrderId, orders])
 
   const stepLabels = [
     t.stepPending,
@@ -238,7 +294,8 @@ export default function ClientProfileOrders({
         )
         return
       }
-      toast.success(siteT.appToasts.reviewThanksModeration)
+      toast.success(siteT.appToasts.reviewThanks)
+      window.dispatchEvent(new CustomEvent('reviewsUpdated'))
       onReviewSubmitted(reviewOrder.id, {
         id: data.id,
         rating: data.rating,
@@ -285,6 +342,29 @@ export default function ClientProfileOrders({
     )
   }
 
+  const activeOrders = orders.filter((o) => isActiveOrderStatus(o.status))
+  const pastOrders = orders.filter((o) => !isActiveOrderStatus(o.status))
+
+  const renderOrderList = (list: ProfileOrder[], startIndex: number) =>
+    list.map((order, idx) => (
+      <OrderCard
+        key={order.id}
+        order={order}
+        index={startIndex + idx}
+        lang={lang}
+        t={t}
+        stepLabels={stepLabels}
+        stepIcons={stepIcons}
+        isActive={isActiveOrderStatus(order.status)}
+        expanded={expandedId === order.id}
+        onToggleExpand={() =>
+          setExpandedId((id) => (id === order.id ? null : order.id))
+        }
+        onReorder={() => onReorder(order)}
+        onOpenReview={() => setReviewOrder(order)}
+      />
+    ))
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <p className="flex items-center gap-2 text-sm text-gray-600">
@@ -292,23 +372,16 @@ export default function ClientProfileOrders({
         {t.journeyHint}
       </p>
 
-      {orders.map((order, idx) => (
-        <OrderCard
-          key={order.id}
-          order={order}
-          index={idx}
-          lang={lang}
-          t={t}
-          stepLabels={stepLabels}
-          stepIcons={stepIcons}
-          expanded={expandedId === order.id}
-          onToggleExpand={() =>
-            setExpandedId((id) => (id === order.id ? null : order.id))
-          }
-          onReorder={() => onReorder(order)}
-          onOpenReview={() => setReviewOrder(order)}
-        />
-      ))}
+      {activeOrders.length > 0 ? (
+        <section className="space-y-4">
+          <h3 className="text-base font-bold text-[#145142] sm:text-lg">
+            {t.activeOrderTitle ?? 'Активне замовлення'}
+          </h3>
+          {renderOrderList(activeOrders, 0)}
+        </section>
+      ) : null}
+
+      {renderOrderList(pastOrders, activeOrders.length)}
 
       <AnimatePresence>
         {reviewOrder ? (
@@ -414,6 +487,7 @@ function OrderCard({
   t,
   stepLabels,
   stepIcons,
+  isActive,
   expanded,
   onToggleExpand,
   onReorder,
@@ -425,6 +499,7 @@ function OrderCard({
   t: TProfile
   stepLabels: string[]
   stepIcons: LucideIcon[]
+  isActive?: boolean
   expanded: boolean
   onToggleExpand: () => void
   onReorder: () => void
@@ -435,8 +510,18 @@ function OrderCard({
   const terminal = order.status === 'COMPLETED' || order.status === 'DELIVERED'
   const hasReview = !!order.review
   const showReviewStep = terminal && !cancelled
-  const showDetailsLabel = expanded ? t.hideDetails ?? 'Згорнути' : t.showDetails ?? 'Деталі замовлення'
-  const timelineTitle = t.timelineTitle ?? 'Шлях замовлення'
+  const showDetailsLabel = expanded ? t.hideDetails : t.showDetails
+  const timelineTitle = t.timelineTitle
+  const showReadyAt =
+    !!order.readyAt &&
+    shouldShowOrderReadyAt(order.status) &&
+    !cancelled
+  const isPickup = String(order.fulfillmentType || '').toUpperCase() === 'PICKUP'
+  const readyAtFormatted = order.readyAt
+    ? formatOrderReadyAt(order.readyAt, lang)
+    : ''
+  const readyAtTemplate = isPickup ? t.readyAtPickup : t.readyAtDelivery
+  const readyAtParts = readyAtTemplate.split('{{time}}')
 
   return (
     <motion.article
@@ -445,7 +530,13 @@ function OrderCard({
       transition={{ delay: index * 0.04, duration: 0.25 }}
       className="relative"
     >
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:rounded-2xl sm:p-6">
+      <div
+        className={`rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:rounded-2xl sm:p-6 ${
+          isActive
+            ? 'border-[#ff6b35]/40 ring-2 ring-[#ff6b35]/15 shadow-[0_8px_30px_rgba(255,107,53,0.12)]'
+            : 'border-gray-200'
+        }`}
+      >
         <div className="relative mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#145142] text-white sm:h-14 sm:w-14">
@@ -484,6 +575,24 @@ function OrderCard({
             </button>
           </div>
         </div>
+
+        {showReadyAt ? (
+          <div
+            className="mb-5 flex items-start gap-3 rounded-xl border border-[#145142]/20 bg-gradient-to-r from-[#f4faf7] to-white px-4 py-3.5 sm:px-5"
+            role="status"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#145142] text-white">
+              <Clock className="h-5 w-5" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-snug text-gray-800 sm:text-base">
+                {readyAtParts[0]}
+                <span className="font-bold text-[#145142]">{readyAtFormatted}</span>
+                {readyAtParts[1] ?? ''}
+              </p>
+            </div>
+          </div>
+        ) : null}
 
         <AnimatePresence initial={false}>
           {expanded ? (
@@ -524,7 +633,7 @@ function OrderCard({
                             {label}
                             {current ? (
                               <span className="ml-2 text-[10px] font-bold uppercase text-[#ff6b35]">
-                                · now
+                                · {t.stepCurrentBadge}
                               </span>
                             ) : null}
                           </p>
@@ -539,7 +648,7 @@ function OrderCard({
                       <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#145142]" />
                       <span>
                         <span className="font-semibold text-gray-900">
-                          {t.labelAddress ?? 'Адреса'}:{' '}
+                          {t.labelAddress}:{' '}
                         </span>
                         {order.address}
                       </span>
@@ -547,7 +656,7 @@ function OrderCard({
                   ) : null}
                   {order.phone ? (
                     <p className="text-gray-700">
-                      <span className="font-semibold text-gray-900">Tel: </span>
+                      <span className="font-semibold text-gray-900">{t.labelPhoneShort}: </span>
                       {order.phone}
                     </p>
                   ) : null}
@@ -555,19 +664,21 @@ function OrderCard({
                     <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-[#145142]" />
                     <span>
                       <span className="font-semibold text-gray-900">
-                        {t.labelPayment ?? 'Оплата'}:{' '}
+                        {t.labelPayment}:{' '}
                       </span>
-                      {order.paymentMethod === 'CARD' ? 'Card' : 'Cash'}
-                      {order.paymentStatus ? ` · ${order.paymentStatus}` : ''}
+                      {order.paymentMethod === 'CARD' ? t.paymentCard : t.paymentCash}
+                      {order.paymentStatus
+                        ? ` · ${formatProfilePaymentStatus(order.paymentStatus, t)}`
+                        : ''}
                     </span>
                   </p>
                   <p className="text-gray-700">
                     <span className="font-semibold text-gray-900">
-                      {t.labelFulfillment ?? 'Отримання'}:{' '}
+                      {t.labelFulfillment}:{' '}
                     </span>
                     {order.fulfillmentType === 'PICKUP'
-                      ? t.fulfillmentPickup ?? 'Самовивіз'
-                      : t.fulfillmentDelivery ?? 'Доставка'}
+                      ? t.fulfillmentPickup
+                      : t.fulfillmentDelivery}
                     {order.deliveryFee != null && order.deliveryFee > 0
                       ? ` · ${order.deliveryFee.toFixed(2)} €`
                       : ''}
@@ -576,50 +687,120 @@ function OrderCard({
                     <p className="sm:col-span-2 italic text-gray-600">{order.comment}</p>
                   ) : null}
                 </div>
+                {showReviewStep ? (
+                  <div className="mt-4 flex flex-col gap-3 border-t border-[#145142]/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                          hasReview ? 'bg-emerald-500 text-white' : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        <Star className={`h-5 w-5 ${hasReview ? 'fill-white' : ''}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#145142]">
+                          {hasReview ? t.stepReviewDone : t.stepReview}
+                        </p>
+                        {hasReview && order.review ? (
+                          <p className="text-xs text-gray-500 line-clamp-2">{order.review.text}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onOpenReview}
+                      className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+                    >
+                      {t.reviewOpen}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
 
-        {!cancelled ? (
-          <div className="relative mb-6 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50/80 p-4 sm:p-5">
-            <div className="flex min-w-[520px] sm:min-w-0 sm:flex-wrap gap-0 sm:gap-2">
-              {stepLabels.map((label, si) => {
-                const Icon = stepIcons[si]
-                const done = rank > si
-                const current = rank === si
-                return (
-                  <div key={label} className="flex items-center flex-1 min-w-0">
-                    <div className="flex flex-col items-center flex-1">
+        {!cancelled && !expanded ? (
+          <div
+            className="relative mb-6 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50/80 p-4 sm:p-5"
+            role="group"
+            aria-label={timelineTitle}
+          >
+            <div className="min-w-[min(100%,520px)] sm:min-w-0">
+              <ol className="relative grid grid-cols-5">
+                {stepLabels.map((label, si) => {
+                  const Icon = stepIcons[si]
+                  const done = rank > si
+                  const current = rank === si
+                  const trackY = 'top-5 sm:top-[22px]'
+                  return (
+                    <li key={label} className="relative flex justify-center">
+                      {si > 0 ? (
+                        <span
+                          className={`pointer-events-none absolute right-1/2 ${trackY} z-0 h-0.5 w-1/2 -translate-y-1/2 rounded-full ${
+                            rank > si - 1 ? 'bg-[#145142]' : 'bg-gray-200'
+                          }`}
+                          aria-hidden
+                        />
+                      ) : null}
+                      {si < stepLabels.length - 1 ? (
+                        <span
+                          className={`pointer-events-none absolute left-1/2 ${trackY} z-0 h-0.5 w-1/2 -translate-y-1/2 rounded-full ${
+                            rank > si ? 'bg-[#145142]' : 'bg-gray-200'
+                          }`}
+                          aria-hidden
+                        />
+                      ) : null}
                       <div
-                        className={`relative flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors sm:h-11 sm:w-11 ${
+                        className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all sm:h-11 sm:w-11 ${
                           done
-                            ? 'border-[#145142] bg-[#145142] text-white'
+                            ? 'border-[#145142] bg-[#145142] text-white shadow-[0_4px_14px_rgba(20,81,66,0.4)]'
                             : current
-                              ? 'scale-105 border-[#145142] bg-white text-[#145142] ring-2 ring-[#145142]/20'
-                              : 'border-gray-200 bg-white text-gray-300'
+                              ? 'border-[#145142] bg-[#e8f5f0] text-[#145142] ring-2 ring-[#145142]/35 shadow-[0_2px_10px_rgba(20,81,66,0.18)]'
+                              : 'border-gray-200 bg-white text-gray-400'
                         }`}
                       >
-                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <Icon
+                          className={`h-4 w-4 shrink-0 sm:h-5 sm:w-5 ${
+                            done
+                              ? 'text-white'
+                              : current
+                                ? 'text-[#145142]'
+                                : 'text-gray-400'
+                          }`}
+                          strokeWidth={done || current ? 2.5 : 2}
+                          aria-hidden
+                        />
+                        <span className="sr-only">{label}</span>
                       </div>
+                    </li>
+                  )
+                })}
+              </ol>
+              <ol className="mt-2 grid grid-cols-5 gap-0" aria-hidden>
+                {stepLabels.map((label, si) => {
+                  const done = rank > si
+                  const current = rank === si
+                  return (
+                    <li
+                      key={`${label}-caption`}
+                      className="flex min-h-[2.75rem] items-start justify-center px-0.5 sm:min-h-[2.5rem]"
+                    >
                       <p
-                        className={`mt-2 text-[10px] sm:text-xs font-bold text-center leading-tight max-w-[76px] sm:max-w-none px-0.5 ${
-                          done || current ? 'text-[#145142]' : 'text-gray-400'
+                        className={`text-center text-[10px] font-bold leading-snug sm:text-xs ${
+                          done
+                            ? 'text-[#145142]'
+                            : current
+                              ? 'text-[#145142]'
+                              : 'text-gray-400'
                         }`}
                       >
                         {label}
                       </p>
-                    </div>
-                    {si < stepLabels.length - 1 ? (
-                      <div
-                        className={`h-0.5 flex-1 mx-1 mt-[-1.5rem] rounded-full ${
-                          rank > si ? 'bg-[#145142]' : 'bg-gray-200'
-                        }`}
-                      />
-                    ) : null}
-                  </div>
-                )
-              })}
+                    </li>
+                  )
+                })}
+              </ol>
             </div>
 
             {showReviewStep ? (
@@ -641,15 +822,13 @@ function OrderCard({
                     ) : null}
                   </div>
                 </div>
-                {!hasReview ? (
-                  <button
-                    type="button"
-                    onClick={onOpenReview}
-                    className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
-                  >
-                    {t.reviewOpen}
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={onOpenReview}
+                  className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+                >
+                  {t.reviewOpen}
+                </button>
               </div>
             ) : null}
           </div>
@@ -662,7 +841,7 @@ function OrderCard({
               className="flex justify-between items-center gap-3 py-2 border-b border-gray-100 last:border-0"
             >
               <span className="text-gray-800 font-semibold text-sm sm:text-base">
-                {productLineName(item.product, lang)}
+                {productLineName(item.product, lang, item.productNameSnapshot)}
               </span>
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-gray-500 text-xs font-medium bg-gray-100 px-2 py-0.5 rounded-md">
@@ -680,13 +859,24 @@ function OrderCard({
           <p className="text-xl font-bold text-gray-900 sm:text-2xl">
             {t.total}: {order.totalPrice} €
           </p>
-          <button
-            type="button"
-            onClick={onReorder}
-            className="rounded-xl bg-[#145142] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
-          >
-            {t.reorder}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {canShowOrderReceipt(order.paymentStatus, order.paymentMethod) ? (
+              <Link
+                href={`/profile/order/${order.id}/receipt`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#145142]/25 bg-white px-5 py-2.5 text-sm font-semibold text-[#145142] transition hover:bg-[#145142]/5"
+              >
+                <Receipt className="h-4 w-4" aria-hidden />
+                {t.viewReceipt ?? 'Чек'}
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={onReorder}
+              className="rounded-xl bg-[#145142] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+            >
+              {t.reorder}
+            </button>
+          </div>
         </div>
       </div>
     </motion.article>

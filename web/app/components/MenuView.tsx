@@ -26,10 +26,20 @@ import {
   WATTA_CHROME_CLOSE_HOME_OVERLAY_EVENT,
   WATTA_CHROME_GO_HOME_EVENT,
 } from '@/lib/wattaChromeGoHome'
-import { FULL_MENU_ALL_SLUG, WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
+import {
+  WATTA_HOME_REQUEST_SCROLL_TO_CAT,
+  navigateToFullMenuCategory,
+} from '@/lib/fullMenuCategoryNav'
 import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
-import { scrollEntireAppToTop } from '@/lib/menuScroll'
+import {
+  getVerticalScrollTarget,
+  readScrollTop,
+  runUntilScrollSuccess,
+  scrollEntireAppToTop,
+  scrollHomeCatalogToCategory,
+  writeScrollTop,
+} from '@/lib/menuScroll'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
@@ -247,7 +257,7 @@ export default function MenuView() {
     [router],
   )
   // ИСПОЛЬЗУЕМ getLocalized из контекста
-  const { t, language, getLocalized } = useLanguage()
+  const { t, language, getLocalized, formatMenuItemsCount } = useLanguage()
   const a = t.siteAria
   const welcomeHeroSectionRef = useRef<HTMLElement | null>(null)
   const marqueeBarRef = useRef<HTMLDivElement | null>(null)
@@ -324,42 +334,43 @@ export default function MenuView() {
 
   const scrollMainContentToTop = useCallback(() => {
     if (typeof document === 'undefined') return
-    document.querySelector<HTMLElement>('.content-web--watta-craft')?.scrollTo({ top: 0, behavior: 'smooth' })
+    writeScrollTop(getVerticalScrollTarget(), 0, 'smooth')
   }, [])
 
-  const scrollToHomeCatalogCategory = useCallback((categoryKey: string) => {
-    if (typeof document === 'undefined') return false
-    const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
-    const el = document.getElementById(`home-menu-cat-${categoryKey}`)
-    if (!root || !el) return false
-    const w = typeof window !== 'undefined' ? window.innerWidth : 1200
-    /* Збіг зі scroll-padding: ≤768 — шапка+категорії в fixed-chrome (148), планшет 118, широкий 168 */
-    const headerOffset = w <= 768 ? 148 : w <= 1024 ? 118 : 168
-    const top = el.getBoundingClientRect().top + root.scrollTop - headerOffset
-    root.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
-    return true
-  }, [])
+  const scrollToHomeCatalogCategory = useCallback(
+    (categoryKey: string) => scrollHomeCatalogToCategory(categoryKey),
+    [],
+  )
 
   /** Смуга шапка + категорії на вузьких екранах: завжди та сама, що на ноуті (без «фази відео» без категорій) */
   useEffect(() => {
     const el = document.querySelector<HTMLElement>('.content-web--watta-craft')
-    if (!el) return
     const mqNarrow = window.matchMedia('(max-width: 768px)')
+    const pad = 'calc(148px + env(safe-area-inset-top, 0px))'
 
     const apply = () => {
       if (!mqNarrow.matches) {
-        el.style.removeProperty('scroll-padding-top')
+        el?.style.removeProperty('scroll-padding-top')
+        document.documentElement.style.removeProperty('scroll-padding-top')
         return
       }
-      /* Шапка + категорії завжди в fixed-chrome — той самий резерв, що й без «вузької смуги» */
-      el.style.scrollPaddingTop = 'calc(148px + env(safe-area-inset-top, 0px))'
+      /* Телефон: скрол body; планшет/десктоп головної — .content-web */
+      const scrollTarget = getVerticalScrollTarget()
+      if (scrollTarget === window) {
+        el?.style.removeProperty('scroll-padding-top')
+        document.documentElement.style.scrollPaddingTop = pad
+      } else {
+        document.documentElement.style.removeProperty('scroll-padding-top')
+        if (el) el.style.scrollPaddingTop = pad
+      }
     }
 
     apply()
     mqNarrow.addEventListener('change', apply)
     return () => {
       mqNarrow.removeEventListener('change', apply)
-      el.style.removeProperty('scroll-padding-top')
+      el?.style.removeProperty('scroll-padding-top')
+      document.documentElement.style.removeProperty('scroll-padding-top')
     }
   }, [isNarrowViewport, activePage])
 
@@ -1471,12 +1482,7 @@ export default function MenuView() {
       /* Одразу підсвітити ту саму категорію в панелі (підказка скролу під час lock не оновлюється) */
       window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
       setActivePage((p) => (p === 'delivery' ? null : p))
-      const tryScroll = () => scrollToHomeCatalogCategory(slug)
-      if (!tryScroll()) {
-        requestAnimationFrame(() => {
-          if (!tryScroll()) requestAnimationFrame(tryScroll)
-        })
-      }
+      runUntilScrollSuccess(() => scrollToHomeCatalogCategory(slug))
       window.setTimeout(() => {
         homeStripScrollLockRef.current = false
       }, 400)
@@ -1490,8 +1496,7 @@ export default function MenuView() {
     if (homeCatalogAsSingleList) return
     if (menuCategoriesWithItems.length === 0) return
 
-    const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
-    if (!root) return
+    const scrollTarget = getVerticalScrollTarget()
 
     const scrollPad = () => {
       const w = window.innerWidth
@@ -1537,13 +1542,21 @@ export default function MenuView() {
     }
 
     const { onScroll, cancel } = createRafScrollListener(sync)
-    root.addEventListener('scroll', onScroll, { passive: true })
+    if (scrollTarget === window) {
+      window.addEventListener('scroll', onScroll, { passive: true })
+    } else {
+      scrollTarget.addEventListener('scroll', onScroll, { passive: true })
+    }
     window.addEventListener('resize', onScroll, { passive: true })
     const id = window.requestAnimationFrame(sync)
     return () => {
       window.cancelAnimationFrame(id)
       cancel()
-      root.removeEventListener('scroll', onScroll)
+      if (scrollTarget === window) {
+        window.removeEventListener('scroll', onScroll)
+      } else {
+        scrollTarget.removeEventListener('scroll', onScroll)
+      }
       window.removeEventListener('resize', onScroll)
     }
   }, [pathname, homeCatalogAsSingleList, menuCategoriesWithItems, selectedCategory])
@@ -1692,18 +1705,13 @@ export default function MenuView() {
 
   const handleNavCategorySelect = useCallback(
     (key: string) => {
-      if (key === FULL_MENU_ALL_SLUG) {
-        router.push('/menu')
-        return
+      if (activePage) {
+        handleClosePage()
       }
-      setSelectedCategory(key)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }),
-        )
-      }
+      setIsSidebarOpen(false)
+      navigateToFullMenuCategory(router, pathname || '/', key)
     },
-    [router],
+    [router, pathname, activePage],
   )
 
   const handleSidebarCityChange = useCallback(
@@ -1826,14 +1834,12 @@ export default function MenuView() {
     if (typeof document === 'undefined') return
     const { selectedCategory: cat, activePage: page, pathname: path } = browseStateRef.current
     if (path !== '/') return
-    const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
-    if (!root) return
     const panel = queryGlobalCategoriesPanel()
     const { rec, promo } = readCinematicRailScrolls()
     writeMenuBrowseReturn({
       v: 2,
       pathname: '/',
-      scrollY: root.scrollTop,
+      scrollY: readScrollTop(getVerticalScrollTarget()),
       categoryKey: cat || '',
       categoriesPanelScrollLeft: panel?.scrollLeft ?? 0,
       activePage: page,
@@ -1885,9 +1891,7 @@ export default function MenuView() {
     const panelLeft = payload.categoriesPanelScrollLeft
 
     const apply = () => {
-      const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
-      if (!root) return
-      root.scrollTop = scrollY
+      writeScrollTop(getVerticalScrollTarget(), scrollY, 'auto')
       const panel = queryGlobalCategoriesPanel()
       if (panel) {
         panel.scrollLeft = panelLeft
@@ -2036,7 +2040,7 @@ export default function MenuView() {
             onOpenCart={openCart}
             onSelectCategory={(key) => {
               handleClosePage()
-              setSelectedCategory(key)
+              navigateToFullMenuCategory(router, pathname || '/', key)
             }}
             onOpenAdmin={() => setActivePage('admin')}
             initialTab={profileInitialTab}
@@ -2180,7 +2184,7 @@ export default function MenuView() {
         <>
           <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
           <div className="menu-delivery-embed-web relative z-[1] w-full max-w-[100vw] pb-6 sm:pb-8">
-            <DeliveryView embedInMenu menuWelcomeHeroRef={welcomeHeroSectionRef} />
+            <DeliveryView embedInMenu />
           </div>
         </>
       ) : activePage === 'promotions' && selectedPromoId != null ? (
@@ -2259,7 +2263,7 @@ export default function MenuView() {
       {showSubmenu && currentCategory && currentCategory.subcategories.length > 0 && (
         <div className="submenu-panel-web">
           <div className="submenu-header-web"><h3>{currentCategory.name}</h3><button className="submenu-close-btn-web" onClick={() => setShowSubmenu(false)}>×</button></div>
-          <div className="submenu-content-web">{currentCategory.subcategories.map(sub => (<button key={sub.id} className={`submenu-item-web ${selectedSubcategory === sub.id ? 'submenu-item-active-web' : ''}`} onClick={() => setSelectedSubcategory(sub.id)}><span className="submenu-item-name-web">{sub.name}</span><span className="submenu-item-count-web">{sub.items.length}{t.menuView.itemsCount}</span></button>))}</div>
+          <div className="submenu-content-web">{currentCategory.subcategories.map(sub => (<button key={sub.id} className={`submenu-item-web ${selectedSubcategory === sub.id ? 'submenu-item-active-web' : ''}`} onClick={() => setSelectedSubcategory(sub.id)}><span className="submenu-item-name-web">{sub.name}</span><span className="submenu-item-count-web">{formatMenuItemsCount(sub.items.length)}</span></button>))}</div>
         </div>
       )}
 
@@ -2424,7 +2428,7 @@ export default function MenuView() {
                     <div className="home-menu-cat-heading-text-web min-w-0">
                       <h3 className="home-menu-cat-title-web">{t.menuView.homeCatalogTitle}</h3>
                       <p className="home-menu-cat-meta-line-web">
-                        {menuItems.length} {t.menuView.itemsCount}
+                        {formatMenuItemsCount(menuItems.length)}
                       </p>
                     </div>
                   </div>
@@ -2489,7 +2493,7 @@ export default function MenuView() {
                       <div className="home-menu-cat-heading-text-web min-w-0">
                         <h3 className="home-menu-cat-title-web">{cat.name}</h3>
                         <p className="home-menu-cat-meta-line-web">
-                          {catItems.length} {t.menuView.itemsCount}
+                          {formatMenuItemsCount(catItems.length)}
                         </p>
                       </div>
                     </div>

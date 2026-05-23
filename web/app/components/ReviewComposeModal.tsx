@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Camera, Star, X } from 'lucide-react'
+import { Camera, CheckCircle2, Star, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
@@ -13,7 +13,9 @@ export type ReviewComposeResult = {
   id: number
   rating: number
   text: string
-  images?: unknown
+  images: string[]
+  createdAt: string
+  authorName: string
 }
 
 const RATING_HINTS: Record<string, string[]> = {
@@ -38,10 +40,12 @@ export default function ReviewComposeModal({
 }: ReviewComposeModalProps) {
   const { t, language } = useLanguage()
   const cp = t.clientProfile
+  const rp = t.reviewsPublic
   const [reviewText, setReviewText] = useState('')
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewImages, setReviewImages] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const [phase, setPhase] = useState<'form' | 'thanks'>('form')
   const [portalReady, setPortalReady] = useState(false)
 
   useEffect(() => {
@@ -61,13 +65,20 @@ export default function ReviewComposeModal({
     }
   }, [])
 
+  const finishThanks = useCallback(() => {
+    onClose()
+  }, [onClose])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        if (phase === 'thanks') finishThanks()
+        else onClose()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [finishThanks, onClose, phase])
 
   const onPickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -138,21 +149,32 @@ export default function ReviewComposeModal({
         )
         return
       }
-      toast.success(t.appToasts.reviewThanksModeration)
+      const images = Array.isArray(data.images)
+        ? data.images.filter((x: unknown): x is string => typeof x === 'string')
+        : []
+      const payload: ReviewComposeResult = {
+        id: Number(data.id),
+        rating: Number(data.rating),
+        text: String(data.text ?? txt),
+        images,
+        createdAt:
+          typeof data.createdAt === 'string'
+            ? data.createdAt
+            : new Date().toISOString(),
+        authorName:
+          typeof data.authorName === 'string' && data.authorName.trim()
+            ? data.authorName.trim()
+            : t.appToasts.reviewGuestName,
+      }
       window.dispatchEvent(new CustomEvent('reviewsUpdated'))
-      onSubmitted({
-        id: data.id,
-        rating: data.rating,
-        text: data.text,
-        images: data.images,
-      })
-      onClose()
+      onSubmitted(payload)
+      setPhase('thanks')
     } catch {
       toast.error(t.appToasts.networkError)
     } finally {
       setSubmitting(false)
     }
-  }, [orderId, reviewImages, reviewRating, reviewText, onClose, onSubmitted, t.appToasts])
+  }, [orderId, reviewImages, reviewRating, reviewText, onSubmitted, t.appToasts])
 
   if (!portalReady) return null
 
@@ -164,11 +186,32 @@ export default function ReviewComposeModal({
       aria-labelledby="review-compose-title"
       onClick={onClose}
     >
-      <div className="watta-review-compose watta-review-compose--glass" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`watta-review-compose watta-review-compose--glass${phase === 'thanks' ? ' watta-review-compose--thanks' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="watta-review-compose__ambient" aria-hidden />
+        {phase === 'thanks' ? (
+          <div className="watta-review-compose__thanks" role="status">
+            <div className="watta-review-compose__thanks-icon" aria-hidden>
+              <CheckCircle2 className="h-10 w-10" strokeWidth={2} />
+            </div>
+            <h3 id="review-compose-title" className="watta-review-compose__thanks-title">
+              {rp.reviewThanksTitle}
+            </h3>
+            <p className="watta-review-compose__thanks-text">{rp.reviewThanksBody}</p>
+            <button
+              type="button"
+              onClick={finishThanks}
+              className="watta-review-compose__submit watta-review-compose__submit--thanks"
+            >
+              {rp.reviewThanksClose}
+            </button>
+          </div>
+        ) : (
+          <>
         <div className="watta-review-compose__head">
           <div className="watta-review-compose__head-copy">
-            <p className="watta-review-compose__kicker">Watta Sushi</p>
             <h3 id="review-compose-title" className="watta-review-compose__title">
               {cp.reviewModalTitle}
             </h3>
@@ -211,7 +254,7 @@ export default function ReviewComposeModal({
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
           placeholder={cp.reviewText}
-          rows={5}
+          rows={4}
           maxLength={4000}
           className="watta-review-compose__textarea"
         />
@@ -251,6 +294,8 @@ export default function ReviewComposeModal({
         >
           {submitting ? '…' : cp.reviewSend}
         </button>
+          </>
+        )}
       </div>
     </div>,
     document.body,

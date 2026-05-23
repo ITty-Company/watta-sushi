@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
-import { getDeliveryOriginAddress } from '@/lib/deliveryOrigin'
 import {
   ArrowLeft,
   MapPin,
@@ -15,6 +14,8 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  User,
   ShoppingBag,
 } from 'lucide-react'
 import LogoBackground from './LogoBackground'
@@ -25,8 +26,14 @@ import type { WattaLanguage } from '@/lib/i18n/language'
 import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
 import {
   buildAmsterdamSlots,
-  type DeliveryDay,
+  buildDeliveryDateOptions,
+  DELIVERY_BOOKING_DAYS_AHEAD,
+  getAmsterdamTodayKey,
+  getMaxDeliveryDateKey,
+  hasBookableSlotsToday,
+  addDaysToDateKey,
 } from '@/lib/deliverySlotsAmsterdam'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
@@ -65,33 +72,53 @@ import {
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import {
+  fetchDeliveryCheck,
+  isDeliveryFeeAvailable,
+  isDeliveryOutsideArea,
+  type DeliveryCheckResult,
+} from '@/lib/deliveryCheckClient'
 
 const CART_CHECKOUT_FORM_ID = 'watta-cart-checkout-form'
 
 const CHECKOUT_INPUT_CLASS =
-  'w-full min-w-0 rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-[13px] leading-snug text-neutral-800 placeholder:text-neutral-400 outline-none transition focus:border-[#145142]/40 focus:ring-2 focus:ring-[#145142]/15 sm:px-3 sm:py-2.5 sm:text-[15px] sm:focus:ring-[#145142]/20'
+  'w-full min-w-0 rounded-lg border border-neutral-200/90 bg-white px-2.5 py-1.5 text-[12px] leading-snug text-neutral-800 placeholder:text-neutral-400 outline-none transition focus:border-[#145142]/40 focus:ring-2 focus:ring-[#145142]/12 md:py-2 md:text-[13px] md:focus:ring-[#145142]/18'
 const CHECKOUT_CARD_CLASS =
-  'watta-cart-card rounded-xl border border-[#145142]/10 bg-white/95 p-3 shadow-[0_1px_3px_rgba(20,81,66,0.06)] sm:rounded-2xl sm:p-5'
+  'watta-cart-card watta-cart-checkout-card rounded-xl border border-[#145142]/10 bg-white/95 p-3 shadow-[0_1px_3px_rgba(20,81,66,0.06)]'
 const CHECKOUT_SECTION_TITLE_CLASS =
-  'text-[15px] font-bold tracking-tight text-[#145142] sm:text-lg'
+  'text-[13px] font-bold tracking-tight text-[#145142] md:text-sm'
 const CHECKOUT_FIELD_LABEL_CLASS =
   'mb-1 block text-[11px] font-semibold text-[#145142]/80 sm:text-xs'
 /** Під'їзд / поверх / кв.: лише цифри, до 1000 символів кожне */
 const DIGIT_ADDR_MAX = 4
 const STREET_MAX = 100
+const POSTAL_MAX = 12
 const BUILDING_BLOCK_MAX = 4
 const COMMENT_MAX = 500
+const DELIVERY_CHECK_DEBOUNCE_MS = 650
+
+function deliverySlotLocale(language: WattaLanguage): string {
+  const map: Record<WattaLanguage, string> = {
+    uk: 'uk-UA',
+    ru: 'ru-RU',
+    en: 'en-GB',
+    nl: 'nl-NL',
+  }
+  return map[language] ?? 'en-GB'
+}
 
 interface CheckoutSiteSettings {
   freeDeliveryThreshold: number
   deliveryFee: number
   restaurantPickupAddress: string
+  cardOnlineAvailable: boolean
 }
 
 const defaultCheckoutSettings: CheckoutSiteSettings = {
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
   restaurantPickupAddress: '',
+  cardOnlineAvailable: false,
 }
 
 // --- ТИПЫ ДАННЫХ ---
@@ -135,6 +162,23 @@ function cityDisplayName(language: string, row: Record<string, unknown>): string
   )
 }
 
+function CheckoutSectionHead({
+  icon: Icon,
+  title,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  title: string
+}) {
+  return (
+    <div className="watta-cart-checkout-head">
+      <span className="watta-cart-checkout-head__ico" aria-hidden>
+        <Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
+      </span>
+      <h2 className="watta-cart-checkout-head__title">{title}</h2>
+    </div>
+  )
+}
+
 // Пропсы для навигации
 interface CartViewProps {
   onBack: () => void
@@ -157,21 +201,21 @@ export default function CartView({
   const { t, language, getLocalized } = useLanguage()
   const pd = t.productDetail
   const cs = t.cartSection
+  const d = t.deliveryPage
   const a = t.siteAria
   const recScrollRef = useRef<HTMLDivElement>(null)
 
   const [cartItems, setCartItems] = useState<MenuItem[]>([])
   const [cartUpsellTiers, setCartUpsellTiers] = useState<CartUpsellTierDto[]>([])
-  const [isUpsellModalOpen, setIsUpsellModalOpen] = useState(false)
-  const [isBypassingUpsell, setIsBypassingUpsell] = useState(false)
-  
+
   // Состояния для оформления
   const [isLoading, setIsLoading] = useState(false)
   
   const [formData, setFormData] = useState({ 
     name: '',
     phone: '', 
-    address: '', 
+    address: '',
+    postalCode: '',
     comment: '', 
     needChangeFrom: '',
     entrance: '',
@@ -187,14 +231,14 @@ export default function CartView({
   const [dataProcessingConsent, setDataProcessingConsent] = useState(false)
 
   //---Оплата---
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CARD');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD'>('CASH');
   const [fulfillment, setFulfillment] = useState<'delivery' | 'pickup'>('delivery')
   const [selectedCity, setSelectedCity] = useState('')
   const [cities, setCities] = useState<CityOption[]>([])
-  const [distanceKm, setDistanceKm] = useState<number | null>(null)
-  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false)
-  const [distanceError, setDistanceError] = useState<string | null>(null)
-  const [deliveryDay, setDeliveryDay] = useState<DeliveryDay>('today')
+  const [deliveryCheckResult, setDeliveryCheckResult] = useState<DeliveryCheckResult | null>(null)
+  const [isDeliveryChecking, setIsDeliveryChecking] = useState(false)
+  const deliveryCheckRequestRef = useRef(0)
+  const [deliveryDateKey, setDeliveryDateKey] = useState('')
   const [deliverySlot, setDeliverySlot] = useState('asap')
   // --- ЛОГИКА ПРОМОКОДОВ ---
   // Добавляем эти переменные, чтобы не было ошибок в return
@@ -217,11 +261,16 @@ export default function CartView({
     fetch('/api/settings')
       .then((r) => r.json())
       .then((data) => {
+        const cardOnlineAvailable = data.cardOnlineAvailable === true
         setCheckoutSettings({
           freeDeliveryThreshold: Number(data.freeDeliveryThreshold) || defaultCheckoutSettings.freeDeliveryThreshold,
           deliveryFee: Number(data.deliveryFee) || defaultCheckoutSettings.deliveryFee,
           restaurantPickupAddress: String(data.restaurantPickupAddress ?? '').trim(),
+          cardOnlineAvailable,
         })
+        if (!cardOnlineAvailable) {
+          setPaymentMethod('CASH')
+        }
       })
       .catch(() => {})
   }, [])
@@ -426,8 +475,6 @@ export default function CartView({
     () => cities.find((city) => city.name === selectedCity) ?? null,
     [cities, selectedCity]
   )
-  const selectedCityPricePerKm = Number(selectedCityInfo?.pricePerKm ?? 10)
-
   const zoneMatchesCartCity = Boolean(
     mapZoneSelection &&
       selectedCityInfo &&
@@ -436,6 +483,14 @@ export default function CartView({
 
   const deliveryPrice = useMemo(() => {
     if (fulfillment === 'pickup') return 0
+
+    if (
+      deliveryCheckResult &&
+      isDeliveryFeeAvailable(deliveryCheckResult.status) &&
+      deliveryCheckResult.estimatedDeliveryFee != null
+    ) {
+      return deliveryCheckResult.estimatedDeliveryFee
+    }
 
     const zone = mapZoneSelection
     const cityMatches =
@@ -448,66 +503,66 @@ export default function CartView({
       if (zone.feeMode === 'flat') {
         return Math.max(0, zone.flatAmount ?? 0)
       }
-      if (zone.feeMode === 'standard') {
-        if (distanceKm != null) {
-          return Math.round(distanceKm * selectedCityPricePerKm * 100) / 100
-        }
-        return 0
-      }
     }
 
-    if (distanceKm == null) return 0
-    return Math.round(distanceKm * selectedCityPricePerKm * 100) / 100
+    return 0
   }, [
     fulfillment,
+    deliveryCheckResult,
     mapZoneSelection,
     selectedCityInfo,
     finalPrice,
     checkoutSettings.freeDeliveryThreshold,
     checkoutSettings.deliveryFee,
-    distanceKm,
-    selectedCityPricePerKm,
   ])
+  const distanceKm =
+    deliveryCheckResult?.distanceKm != null && !Number.isNaN(deliveryCheckResult.distanceKm)
+      ? deliveryCheckResult.distanceKm
+      : null
   const subtotalWithDelivery = finalPrice + deliveryPrice
   const appliedBonuses = useBonuses ? Math.min(bonusBalance, subtotalWithDelivery) : 0
   const totalToPay = Math.max(0, subtotalWithDelivery - appliedBonuses)
 
   const pickupAddressDisplay = restaurantPickupAddress || '—'
-  const deliveryOriginAddress = useMemo(() => getDeliveryOriginAddress(), [])
 
-  const estimateDistanceFromAddressMock = (from: string, to: string): number => {
-    const combined = `${from}|${to}`.trim().toLowerCase()
-    const hash = Array.from(combined).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
-    return Math.max(1.5, Math.min(25, (hash % 220) / 10))
-  }
+  const deliveryFeeReady =
+    fulfillment !== 'delivery' ||
+    (deliveryCheckResult != null &&
+      isDeliveryFeeAvailable(deliveryCheckResult.status) &&
+      deliveryCheckResult.estimatedDeliveryFee != null)
 
-  const getDistanceKm = async (origin: string, destination: string): Promise<number> => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    if (!apiKey) {
-      return estimateDistanceFromAddressMock(origin, destination)
-    }
+  const deliveryOutsideArea =
+    fulfillment === 'delivery' &&
+    deliveryCheckResult != null &&
+    isDeliveryOutsideArea(deliveryCheckResult.status)
 
-    try {
-      const url =
-        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}` +
-        `&destinations=${encodeURIComponent(destination)}&units=metric&key=${encodeURIComponent(apiKey)}`
-      const response = await fetch(url)
-      if (!response.ok) throw new Error('Distance Matrix request failed')
-      const data = await response.json()
-      const meters = data?.rows?.[0]?.elements?.[0]?.distance?.value
-      if (typeof meters !== 'number' || !Number.isFinite(meters)) {
-        throw new Error('Distance Matrix response missing distance')
-      }
-      return Math.round((meters / 1000) * 100) / 100
-    } catch {
-      return estimateDistanceFromAddressMock(origin, destination)
-    }
-  }
+  useEffect(() => {
+    const today = getAmsterdamTodayKey()
+    setDeliveryDateKey((prev) => {
+      if (!prev) return today
+      if (prev < today) return today
+      const max = getMaxDeliveryDateKey()
+      if (prev > max) return max
+      return prev
+    })
+  }, [])
+
+  const deliveryDateOptions = useMemo(
+    () =>
+      buildDeliveryDateOptions(deliverySlotLocale(language as WattaLanguage), {
+        today: cs.dayToday,
+        tomorrow: cs.dayTomorrow,
+      }),
+    [language, cs.dayToday, cs.dayTomorrow],
+  )
 
   const amsterdamSlots = useMemo(
-    () => buildAmsterdamSlots(deliveryDay),
-    [deliveryDay]
+    () => buildAmsterdamSlots(deliveryDateKey || getAmsterdamTodayKey(), cs.slotAsap),
+    [deliveryDateKey, cs.slotAsap],
   )
+
+  const minDeliveryDate = getAmsterdamTodayKey()
+  const maxDeliveryDate = getMaxDeliveryDateKey()
 
   const submitLiqPayCheckout = (data: string, signature: string) => {
     const form = document.createElement('form')
@@ -532,57 +587,76 @@ export default function CartView({
   }
 
   useEffect(() => {
+    if (!deliveryDateKey) return
     if (amsterdamSlots.some((s) => s.value === deliverySlot)) return
-    setDeliverySlot('asap')
-  }, [deliveryDay, amsterdamSlots, deliverySlot])
+    setDeliverySlot(amsterdamSlots[0]?.value ?? 'asap')
+  }, [deliveryDateKey, amsterdamSlots, deliverySlot])
+
+  useEffect(() => {
+    if (!deliveryDateKey) return
+    const today = getAmsterdamTodayKey()
+    if (deliveryDateKey !== today) return
+    if (hasBookableSlotsToday()) return
+    setDeliveryDateKey(addDaysToDateKey(today, 1))
+  }, [deliveryDateKey])
 
   useEffect(() => {
     if (fulfillment !== 'delivery') {
-      setDistanceKm(null)
-      setDistanceError(null)
-      setIsCalculatingDistance(false)
+      setDeliveryCheckResult(null)
+      setIsDeliveryChecking(false)
       return
     }
 
-    const destinationAddress = formData.address.trim()
+    const street = formData.address.trim()
+    const postal = formData.postalCode.trim()
+    const cityId = selectedCityInfo?.id
 
-    if (!destinationAddress) {
-      setDistanceKm(null)
-      setDistanceError(null)
-      setIsCalculatingDistance(false)
+    if (!street || postal.length < 4 || !cityId) {
+      setDeliveryCheckResult(null)
+      setIsDeliveryChecking(false)
       return
     }
 
     let cancelled = false
-    setIsCalculatingDistance(true)
-    setDistanceError(null)
+    setIsDeliveryChecking(true)
 
     const timer = setTimeout(async () => {
+      const reqId = ++deliveryCheckRequestRef.current
       try {
-        const destination = `${selectedCity}, ${destinationAddress}`.trim()
-        const km = await getDistanceKm(deliveryOriginAddress, destination)
-        if (!cancelled) setDistanceKm(km)
+        const data = await fetchDeliveryCheck(cityId, postal, street)
+        if (cancelled || reqId !== deliveryCheckRequestRef.current) return
+        setDeliveryCheckResult(data)
       } catch {
-        if (!cancelled) {
-          setDistanceKm(null)
-          setDistanceError(cs.distanceMatrixError)
+        if (!cancelled && reqId === deliveryCheckRequestRef.current) {
+          setDeliveryCheckResult({ status: 'server_error' })
         }
       } finally {
-        if (!cancelled) setIsCalculatingDistance(false)
+        if (!cancelled && reqId === deliveryCheckRequestRef.current) {
+          setIsDeliveryChecking(false)
+        }
       }
-    }, 450)
+    }, DELIVERY_CHECK_DEBOUNCE_MS)
 
     return () => {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [fulfillment, formData.address, selectedCity, deliveryOriginAddress, language])
+  }, [fulfillment, formData.address, formData.postalCode, selectedCityInfo?.id])
+
+  useEffect(() => {
+    if (fulfillment !== 'delivery') return
+    setDeliveryCheckResult(null)
+  }, [selectedCity, fulfillment])
 
   const phoneInvalidHint =
     formData.phone.trim() !== '' && !isValidCheckoutPhone(formData.phone)
   const phoneValid = isValidCheckoutPhone(formData.phone)
   const canSubmitOrder =
-    phoneValid && !isCalculatingDistance && dataProcessingConsent
+    phoneValid &&
+    !isDeliveryChecking &&
+    deliveryFeeReady &&
+    !deliveryOutsideArea &&
+    dataProcessingConsent
 
 
   const upsellItems = tierUpsellItems
@@ -685,9 +759,27 @@ export default function CartView({
       toast.error(cs.dataProcessingConsentRequired)
       return
     }
-    if (fulfillment === 'delivery' && !formData.address.trim()) {
-      toast.error(cs.toastAddressRequired)
-      return
+    if (fulfillment === 'delivery') {
+      if (!formData.address.trim()) {
+        toast.error(cs.toastAddressRequired)
+        return
+      }
+      if (!formData.postalCode.trim()) {
+        toast.error(cs.toastPostalCodeRequired)
+        return
+      }
+      if (isDeliveryChecking) {
+        toast.error(cs.toastDeliveryFeeRequired)
+        return
+      }
+      if (deliveryOutsideArea) {
+        toast.error(cs.toastDeliveryOutsideArea)
+        return
+      }
+      if (!deliveryFeeReady) {
+        toast.error(cs.toastDeliveryFeeRequired)
+        return
+      }
     }
     setIsLoading(true)
     try {
@@ -697,23 +789,20 @@ export default function CartView({
         setIsLoading(false)
         return
       }
-      const promoPart = appliedPromo ? `(ПРОМОКОД: ${appliedPromo.code} -${appliedPromo.discount}%)` : ''
-      const fulfillmentPart =
-        fulfillment === 'pickup' ? `[${cs.fulfillmentPickup}]` : `[${cs.fulfillmentDelivery}]`
-      const dayLabel =
-        deliveryDay === 'today' ? 'Сьогодні (Амстердам)' : 'Завтра (Амстердам)'
-      const slotLabel =
-        deliverySlot === 'asap'
-          ? 'Якнайшвидше'
-          : amsterdamSlots.find((s) => s.value === deliverySlot)?.label ?? deliverySlot
-      const timePart = `[Час (${dayLabel}): ${slotLabel}]`
+      const promoPart = appliedPromo
+        ? cs.orderCommentPromo
+            .replace('{{code}}', appliedPromo.code)
+            .replace('{{discount}}', String(appliedPromo.discount))
+        : ''
       const changePart =
         paymentMethod === 'CASH' && formData.needChangeFrom.trim()
-          ? `[Нужна сдача с: ${formData.needChangeFrom.trim()} €]`
+          ? cs.orderCommentChangeFrom.replace('{{amount}}', formData.needChangeFrom.trim())
           : ''
-      const sticksPart = `[Приборы: ${formData.sticks} шт, Персоны: ${formData.persons}]`
-      const cbPart = formData.noCallbackConfirm ? '[Не перезванивать]' : ''
-      const dbPart = formData.noDoorbellRing ? '[Не звонить в дверь]' : ''
+      const cbPart = formData.noCallbackConfirm ? cs.orderCommentNoCallback : ''
+      const dbPart =
+        fulfillment === 'delivery' && formData.noDoorbellRing
+          ? cs.orderCommentNoDoorbell
+          : ''
       const zoneNote =
         fulfillment === 'delivery' &&
         zoneMatchesCartCity &&
@@ -721,23 +810,37 @@ export default function CartView({
         mapZoneSelection.zoneName.trim()
           ? `[${cs.deliveryFromMap.replace('{{zone}}', mapZoneSelection.zoneName)}]`
           : ''
-      const fullComment =
-        `${zoneNote} ${changePart} ${fulfillmentPart} ${timePart} ${sticksPart} ${cbPart} ${dbPart} ${formData.comment} ${appliedPromo ? promoPart : ''}`
-          .trim()
+      const fullComment = [
+        zoneNote,
+        changePart,
+        cbPart,
+        dbPart,
+        formData.comment.trim(),
+        appliedPromo ? promoPart : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .trim()
 
       const addrDetails: string[] = []
       if (formData.buildingBlock.trim())
-        addrDetails.push(`корп./блок: ${formData.buildingBlock.trim()}`)
-      if (formData.entrance) addrDetails.push(`під'їзд: ${formData.entrance}`)
-      if (formData.floor) addrDetails.push(`поверх: ${formData.floor}`)
-      if (formData.apartment) addrDetails.push(`кв.: ${formData.apartment}`)
-      if (formData.intercom) addrDetails.push(`домофон: ${formData.intercom}`)
+        addrDetails.push(
+          cs.addrDetailBuilding.replace('{{value}}', formData.buildingBlock.trim()),
+        )
+      if (formData.entrance)
+        addrDetails.push(cs.addrDetailEntrance.replace('{{value}}', formData.entrance))
+      if (formData.floor)
+        addrDetails.push(cs.addrDetailFloor.replace('{{value}}', formData.floor))
+      if (formData.apartment)
+        addrDetails.push(cs.addrDetailApartment.replace('{{value}}', formData.apartment))
+      if (formData.intercom)
+        addrDetails.push(cs.addrDetailIntercom.replace('{{value}}', formData.intercom))
 
       const orderAddress =
         fulfillment === 'pickup'
           ? `${cs.fulfillmentPickup}: ${pickupAddressDisplay}`
           : [
-              `${selectedCity}, ${formData.address.trim()}`,
+              `${selectedCity}, ${formData.address.trim()}, ${formData.postalCode.trim()}`,
               addrDetails.length ? addrDetails.join('; ') : '',
             ]
               .filter(Boolean)
@@ -765,13 +868,16 @@ export default function CartView({
         return
       }
 
+      const effectivePaymentMethod: 'CASH' | 'CARD' =
+        paymentMethod === 'CARD' && checkoutSettings.cardOnlineAvailable ? 'CARD' : 'CASH'
+
       const orderPayload: Record<string, unknown> = {
         items: orderItems,
         customerName: formData.name,
         phone: formData.phone,
         address: orderAddress,
         comment: fullComment,
-        paymentMethod: paymentMethod,
+        paymentMethod: effectivePaymentMethod,
         totalAmount: totalAmountNumber,
         merchandiseTotal: merchandiseTotalNumber,
         deliveryPrice: deliveryPriceNumber,
@@ -803,7 +909,7 @@ export default function CartView({
       // 2. Получаем данные созданного заказа
       const orderData = await response.json(); // Наша переменная называется orderData
 
-      if (paymentMethod === 'CARD') {
+      if (effectivePaymentMethod === 'CARD') {
         if (typeof orderData.stripeUrl === 'string' && orderData.stripeUrl) {
           setIsLoading(false)
           window.location.assign(orderData.stripeUrl)
@@ -836,27 +942,7 @@ export default function CartView({
 
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isBypassingUpsell) {
-      await handleOrder()
-      return
-    }
-
-    if (isUpsellQualified) {
-      setIsUpsellModalOpen(true)
-      return
-    }
-
     await handleOrder()
-  }
-
-  const handleContinueCheckout = async () => {
-    setIsUpsellModalOpen(false)
-    setIsBypassingUpsell(true)
-    try {
-      await handleOrder()
-    } finally {
-      setIsBypassingUpsell(false)
-    }
   }
 
   const cartMetaText = cs.cartMeta
@@ -870,9 +956,9 @@ export default function CartView({
       <LogoBackground />
 
       <div
-        className="watta-cart-page__content relative z-10 mx-auto flex w-full min-w-0 max-w-[1200px] flex-col px-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:pb-8"
+        className="watta-cart-page__content relative z-10 mx-auto flex w-full min-w-0 max-w-[1280px] flex-col px-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:px-5 sm:pb-6 md:px-6"
       >
-        <header className="mb-3 flex items-start justify-between gap-3 sm:mb-5 sm:gap-4">
+        <header className="mb-2 flex items-start justify-between gap-3 md:mb-3">
           <div className="min-w-0 flex-1">
             <h1 className="home-after-hero-intro-title-web text-[clamp(1.35rem,4.5vw,2rem)] font-bold leading-[1.12] tracking-[-0.02em] text-[#0f2a22] sm:text-3xl">
               {t.cart}
@@ -935,8 +1021,8 @@ export default function CartView({
               </div>
             </div>
           ) : (
-            <div className="grid w-full min-w-0 grid-cols-1 items-start gap-3 pb-4 sm:gap-5 sm:pb-6 lg:grid-cols-[1fr_minmax(300px,380px)] lg:gap-6">
-              <div className="flex min-w-0 flex-col gap-3 sm:gap-5">
+            <div className="watta-cart-checkout-layout grid w-full min-w-0 grid-cols-1 items-start gap-3 pb-4 sm:pb-6 md:grid-cols-[minmax(0,min(100%,320px))_minmax(0,1fr)] md:gap-4 lg:grid-cols-[minmax(0,min(100%,360px))_minmax(0,1fr)] lg:gap-5 xl:grid-cols-[minmax(0,min(100%,380px))_minmax(0,1fr)]">
+              <div className="watta-cart-checkout-items order-1 flex min-w-0 flex-col gap-2.5 sm:gap-3 md:order-none md:gap-3">
                 <div className={CHECKOUT_CARD_CLASS}>
                   <ul className="divide-y divide-neutral-100/90">
                     {cartItems.map((item) => (
@@ -1054,36 +1140,39 @@ export default function CartView({
                 </div>
 
                 {isUpsellQualified ? (
-                  <section className={CHECKOUT_CARD_CLASS} aria-labelledby="cart-upsell-heading">
-                    <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4">
+                  <section
+                    className={`${CHECKOUT_CARD_CLASS} watta-cart-upsell-sidebar min-w-0`}
+                    aria-labelledby="cart-upsell-heading"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2 sm:mb-2.5">
                       <div className="min-w-0">
                         <h2 id="cart-upsell-heading" className={CHECKOUT_SECTION_TITLE_CLASS}>
                           {cs.cartUpsellOffersTitle}
                         </h2>
                       </div>
-                      <div className="flex shrink-0 gap-1.5">
+                      <div className="flex shrink-0 gap-1">
                         <button
                           type="button"
                           onClick={() => scrollRecRail(-1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#145142] transition hover:border-[#145142]/30 hover:bg-neutral-50 sm:h-9 sm:w-9"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#145142] transition hover:border-[#145142]/30 hover:bg-neutral-50 sm:h-8 sm:w-8"
                           aria-label={cs.recScrollPrev}
                         >
-                          <ChevronLeft className="h-4 w-4" strokeWidth={2.4} />
+                          <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.4} />
                         </button>
                         <button
                           type="button"
                           onClick={() => scrollRecRail(1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#145142] transition hover:border-[#145142]/30 hover:bg-neutral-50 sm:h-9 sm:w-9"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-[#145142] transition hover:border-[#145142]/30 hover:bg-neutral-50 sm:h-8 sm:w-8"
                           aria-label={cs.recScrollNext}
                         >
-                          <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
+                          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.4} />
                         </button>
                       </div>
                     </div>
-                    <div id="cart-recommendations-rail" className="relative -mx-1">
+                    <div id="cart-recommendations-rail" className="cart-upsell-rail-outer relative">
                       <div
                         ref={recScrollRef}
-                        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden"
+                        className="cart-upsell-rail-scroll home-menu-category-rail-web flex flex-nowrap gap-2.5 overflow-x-auto overflow-y-hidden scroll-smooth px-0.5 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-3 [&::-webkit-scrollbar]:hidden"
                       >
                         {upsellItems.map((item) => {
                           const discountEur = Number(item.upsellDiscountEur ?? 0)
@@ -1094,36 +1183,32 @@ export default function CartView({
                             discountEur,
                           )
                           return (
-                            <div
+                            <WattaMenuProductCard
                               key={item.id}
-                              className="snap-start pl-0 first:pl-1 last:pr-1 sm:first:pl-2 sm:last:pr-2"
-                            >
-                              <WattaMenuProductCard
-                                variant="grid"
-                                className="w-[min(200px,68vw)] shrink-0 sm:w-[min(240px,72vw)]"
-                                product={{
-                                  id: item.id,
-                                  name: item.name,
-                                  description: item.description,
-                                  price: item.price,
-                                  emoji: item.emoji,
-                                  imageUrl: item.imageUrl,
-                                  promoDiscountPercent: item.promoDiscountPercent,
-                                  saleUnitPrice: salePrice,
-                                  compareAtPrice: catalogEff,
-                                  cartFixedDiscountEur: discountEur,
-                                }}
-                                subtitleLine={
-                                  parseProductSpecsFromDescription(
-                                    item.description,
-                                    pd.weightFallback,
-                                    pd.piecesFallback,
-                                    language as WattaLanguage,
-                                  ).weightLine
-                                }
-                                onAddToCart={() => handleAddUpsell(item)}
-                              />
-                            </div>
+                              variant="rail"
+                              className="home-menu-product-card--rail-web shrink-0 snap-start"
+                              product={{
+                                id: item.id,
+                                name: item.name,
+                                description: item.description,
+                                price: item.price,
+                                emoji: item.emoji,
+                                imageUrl: item.imageUrl,
+                                promoDiscountPercent: item.promoDiscountPercent,
+                                saleUnitPrice: salePrice,
+                                compareAtPrice: catalogEff,
+                                cartFixedDiscountEur: discountEur,
+                              }}
+                              subtitleLine={
+                                parseProductSpecsFromDescription(
+                                  item.description,
+                                  pd.weightFallback,
+                                  pd.piecesFallback,
+                                  language as WattaLanguage,
+                                ).weightLine
+                              }
+                              onAddToCart={() => handleAddUpsell(item)}
+                            />
                           )
                         })}
                       </div>
@@ -1133,17 +1218,17 @@ export default function CartView({
 
               </div>
 
-              <div className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:sticky lg:top-[10.5rem] lg:z-20 lg:self-start">
+              <div className="watta-cart-checkout-panel order-2 min-w-0 md:order-none">
                 <form
                   id={CART_CHECKOUT_FORM_ID}
-                  className="flex min-w-0 flex-col gap-3 sm:gap-4"
+                  className="watta-cart-checkout-grid flex min-w-0 flex-col gap-3 md:gap-3"
                   onSubmit={handleCheckoutSubmit}
                   noValidate
                 >
                 {/* 1. Контактные данные */}
                 <div className={CHECKOUT_CARD_CLASS}>
-                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-3`}>{cs.contactDetails}</h2>
-                   <div className="flex flex-col gap-2.5 sm:gap-3">
+                   <CheckoutSectionHead icon={User} title={cs.contactDetails} />
+                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                       <div className="min-w-0">
                         <label htmlFor="cart-checkout-name" className={CHECKOUT_FIELD_LABEL_CLASS}>
                           {t.auth.name} *
@@ -1162,7 +1247,7 @@ export default function CartView({
                           required
                         />
                       </div>
-                      <div className="flex min-w-0 flex-col gap-1">
+                      <div className="flex min-w-0 flex-col gap-1 md:col-span-2">
                         <label htmlFor="cart-checkout-phone" className={CHECKOUT_FIELD_LABEL_CLASS}>
                           {t.auth.phone} *
                         </label>
@@ -1206,17 +1291,17 @@ export default function CartView({
                       </div>
                       <label
                         htmlFor="cart-data-processing-consent"
-                        className="mt-1 flex cursor-pointer items-start gap-3 rounded-lg border border-[#145142]/15 bg-[#145142]/[0.04] px-3 py-3"
+                        className="mt-0.5 flex cursor-pointer items-start gap-2 rounded-lg border border-[#145142]/12 bg-[#145142]/[0.03] px-2.5 py-2 md:col-span-2"
                       >
                         <input
                           id="cart-data-processing-consent"
                           type="checkbox"
                           checked={dataProcessingConsent}
                           onChange={(e) => setDataProcessingConsent(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#145142]"
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#145142]"
                           required
                         />
-                        <span className="text-xs leading-snug text-[#145142]/90 sm:text-sm">
+                        <span className="text-[10px] leading-snug text-[#145142]/90 md:text-[11px]">
                           {cs.dataProcessingConsentPrefix}{' '}
                           <Link
                             href="/privacy"
@@ -1228,12 +1313,19 @@ export default function CartView({
                       </label>
                    </div>
                 </div>
-                {/* 2. Доставка / самовивіз */}
-                <div className={`${CHECKOUT_CARD_CLASS} relative z-10`}>
-                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-3`}>{t.delivery}</h2>
+                {/* 2. Доставка + время */}
+                <div className={`${CHECKOUT_CARD_CLASS} watta-cart-checkout-grid__span2`}>
+                   <CheckoutSectionHead
+                     icon={fulfillment === 'pickup' ? Store : Truck}
+                     title={
+                       fulfillment === 'pickup'
+                         ? `${cs.fulfillmentPickup} · ${cs.pickupTimeTitle}`
+                         : `${t.delivery} · ${cs.deliveryTimeTitle}`
+                     }
+                   />
 
                    <div
-                     className="mb-4 flex w-full min-w-0 gap-1 rounded-lg border border-neutral-200 bg-neutral-100 p-1 sm:mb-5"
+                     className="mb-3 flex w-full min-w-0 gap-1 rounded-lg border border-neutral-200/90 bg-neutral-100/80 p-0.5"
                      role="group"
                      aria-label={`${cs.fulfillmentDelivery} / ${cs.fulfillmentPickup}`}
                    >
@@ -1282,23 +1374,71 @@ export default function CartView({
                           ))}
                        </div>
 
-                       <input 
-                          type="text" 
-                          placeholder={cs.streetPlaceholder}
-                          className={`${CHECKOUT_INPUT_CLASS} mb-3 sm:mb-4`}
-                          maxLength={STREET_MAX}
-                          value={formData.address} 
-                          onChange={e =>
-                            setFormData({
-                              ...formData,
-                              address: e.target.value,
-                            })
-                          }
-                          required 
-                          autoComplete="street-address"
-                       />
+                       <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-[1fr_minmax(7rem,9rem)]">
+                         <input
+                           type="text"
+                           placeholder={cs.streetPlaceholder}
+                           className={CHECKOUT_INPUT_CLASS}
+                           maxLength={STREET_MAX}
+                           value={formData.address}
+                           onChange={(e) =>
+                             setFormData({
+                               ...formData,
+                               address: e.target.value,
+                             })
+                           }
+                           required
+                           autoComplete="street-address"
+                         />
+                         <input
+                           type="text"
+                           placeholder={cs.postalCodePlaceholder}
+                           className={CHECKOUT_INPUT_CLASS}
+                           maxLength={POSTAL_MAX}
+                           value={formData.postalCode}
+                           onChange={(e) =>
+                             setFormData({
+                               ...formData,
+                               postalCode: e.target.value.toUpperCase(),
+                             })
+                           }
+                           required
+                           autoComplete="postal-code"
+                         />
+                       </div>
 
-                        <div className="mb-3 grid grid-cols-2 gap-2 sm:mb-4 sm:gap-3 lg:grid-cols-4 lg:gap-4">
+                       <div className="mb-2 flex flex-wrap items-center gap-2" aria-live="polite">
+                         {!formData.address.trim() || formData.postalCode.trim().length < 4 ? (
+                           <span className="watta-cart-fee-pill watta-cart-fee-pill--muted">
+                             {cs.enterStreetAndPostalForDeliveryFee}
+                           </span>
+                         ) : isDeliveryChecking ? (
+                           <span className="watta-cart-fee-pill watta-cart-fee-pill--muted">{d.postalChecking}</span>
+                         ) : deliveryFeeReady && distanceKm != null ? (
+                           <span className="watta-cart-fee-pill">
+                             {cs.deliveryFeeFromKitchen
+                               .replace('{{km}}', distanceKm.toFixed(1))
+                               .replace('{{sum}}', deliveryPrice.toFixed(2))}
+                           </span>
+                         ) : deliveryOutsideArea ||
+                           deliveryCheckResult?.status === 'geocode_failed' ||
+                           deliveryCheckResult?.status === 'postcode_format_invalid' ? (
+                           <span className="watta-cart-fee-pill watta-cart-fee-pill--error">
+                             {deliveryOutsideArea ? cs.toastDeliveryOutsideArea : d.postalGeocodeFail}
+                           </span>
+                         ) : (
+                           <span className="watta-cart-fee-pill watta-cart-fee-pill--muted">
+                             {cs.enterAddressForDeliveryFee}
+                           </span>
+                         )}
+                         {deliveryCheckResult?.placeLabel ? (
+                           <span className="text-[10px] text-neutral-500 md:text-[11px]">
+                             {d.postalAddressFound}: {deliveryCheckResult.placeLabel}
+                           </span>
+                         ) : null}
+                       </div>
+
+                       <div className="mb-2 grid grid-cols-4 gap-1.5">
                         <input
                         type="text" 
                         inputMode="numeric" 
@@ -1354,11 +1494,11 @@ export default function CartView({
                           />
                         </div>
 
-                       <div className="flex flex-col gap-3">
-                          <label className="flex items-start gap-3 cursor-pointer group">
+                       <div className="watta-cart-checkout-inline-checks mb-2">
+                          <label>
                              <input
                                type="checkbox"
-                               className="mt-0.5 w-5 h-5 shrink-0 accent-[#145142] rounded border-[#145142]/40 focus:ring-2 focus:ring-[#ff6b35]/50"
+                               className="h-3.5 w-3.5 accent-[#145142]"
                                checked={formData.noCallbackConfirm}
                                onChange={e =>
                                  setFormData({
@@ -1367,12 +1507,12 @@ export default function CartView({
                                  })
                                }
                              />
-                             <span className="text-neutral-600 group-hover:text-[#145142]">{cs.optNoCallback}</span>
+                             {cs.optNoCallback}
                           </label>
-                          <label className="flex items-start gap-3 cursor-pointer group">
+                          <label>
                              <input
                                type="checkbox"
-                               className="mt-0.5 w-5 h-5 shrink-0 accent-[#145142] rounded border-[#145142]/40 focus:ring-2 focus:ring-[#ff6b35]/50"
+                               className="h-3.5 w-3.5 accent-[#145142]"
                                checked={formData.noDoorbellRing}
                                onChange={e =>
                                  setFormData({
@@ -1381,7 +1521,7 @@ export default function CartView({
                                  })
                                }
                              />
-                             <span className="text-neutral-600 group-hover:text-[#145142]">{cs.optNoDoorbell}</span>
+                             {cs.optNoDoorbell}
                           </label>
                        </div>
                      </>
@@ -1401,406 +1541,251 @@ export default function CartView({
                        </div>
                      </div>
                    )}
-                </div>
-
-                {/* 3. Время доставки (Europe/Amsterdam) */}
-                <div className={CHECKOUT_CARD_CLASS}>
-                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-1`}>{cs.deliveryTimeTitle}</h2>
-                   <p className="mb-5 text-xs text-neutral-500">{cs.deliveryTimeHint}</p>
-                   <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
-                      <div className="min-w-0">
-                         <label className="mb-1 block text-sm text-neutral-500">{cs.slotDayLabel}</label>
-                         <select
-                           className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
-                           value={deliveryDay}
-                           onChange={(e) =>
-                             setDeliveryDay(e.target.value as DeliveryDay)
-                           }
+                   <div className="mt-3 border-t border-[#145142]/10 pt-3">
+                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                       <p className={`${CHECKOUT_FIELD_LABEL_CLASS} mb-0`}>
+                         {fulfillment === 'pickup' ? cs.slotTimeLabelPickup : cs.slotTimeLabel}
+                       </p>
+                       <span className="text-[10px] font-medium text-[#145142]/65">
+                         {cs.slotPickDateHint.replace('{{days}}', String(DELIVERY_BOOKING_DAYS_AHEAD + 1))}
+                       </span>
+                     </div>
+                     <div
+                       className="watta-cart-date-rail"
+                       role="listbox"
+                       aria-label={
+                         fulfillment === 'pickup' ? cs.slotDayLabelPickup : cs.slotDayLabel
+                       }
+                     >
+                       {deliveryDateOptions.map((opt) => (
+                         <button
+                           key={opt.value}
+                           type="button"
+                           role="option"
+                           aria-selected={deliveryDateKey === opt.value}
+                           onClick={() => setDeliveryDateKey(opt.value)}
+                           className={`watta-cart-date-chip${deliveryDateKey === opt.value ? ' watta-cart-date-chip--active' : ''}`}
                          >
-                            <option value="today">{cs.dayToday}</option>
-                            <option value="tomorrow">{cs.dayTomorrow}</option>
-                         </select>
-                      </div>
-                      <div className="min-w-0">
-                         <label className="mb-1 block text-sm text-neutral-500">{cs.slotTimeLabel}</label>
-                         <select
-                           className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
-                           value={deliverySlot}
-                           onChange={(e) => setDeliverySlot(e.target.value)}
-                         >
-                            {amsterdamSlots.map((s) => (
-                              <option key={s.value} value={s.value}>
-                                {s.label}
-                              </option>
-                            ))}
-                         </select>
-                      </div>
+                           {opt.label}
+                         </button>
+                       ))}
+                     </div>
+                     <input
+                       id="cart-delivery-date"
+                       type="date"
+                       className="sr-only"
+                       tabIndex={-1}
+                       min={minDeliveryDate}
+                       max={maxDeliveryDate}
+                       value={deliveryDateKey}
+                       onChange={(e) => {
+                         const next = e.target.value
+                         if (next) setDeliveryDateKey(next)
+                       }}
+                       required
+                     />
+                     {amsterdamSlots.length === 0 ? (
+                       <p className="text-xs text-amber-800">{cs.slotNoTimes}</p>
+                     ) : (
+                       <div
+                         className="watta-cart-slot-grid"
+                         role="listbox"
+                         aria-label={
+                           fulfillment === 'pickup' ? cs.slotTimeLabelPickup : cs.slotTimeLabel
+                         }
+                       >
+                         {amsterdamSlots.map((s) => {
+                           const selected = deliverySlot === s.value
+                           return (
+                             <button
+                               key={s.value}
+                               type="button"
+                               role="option"
+                               aria-selected={selected}
+                               onClick={() => setDeliverySlot(s.value)}
+                               className={`watta-cart-slot-chip${s.value === 'asap' ? ' watta-cart-slot-chip--asap' : ''}${selected ? ' watta-cart-slot-chip--active' : ''}`}
+                             >
+                               {s.label}
+                             </button>
+                           )
+                         })}
+                       </div>
+                     )}
                    </div>
                 </div>
 
                 {/* 4. Комментарий и приборы */}
                 <div className={CHECKOUT_CARD_CLASS}>
-                   <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-4`}>{cs.orderDetailsTitle}</h2>
-                   <div className="flex flex-col gap-4 mb-4">
+                   <CheckoutSectionHead icon={Clock} title={cs.orderDetailsTitle} />
+                   <div className="mb-2 grid grid-cols-2 gap-2">
                       <div>
-                         <label className="mb-1 block text-sm text-neutral-500">{cs.partySizeLabel}</label>
-                         <div className="flex flex-col gap-2">
-                           <input
-                             type="range"
-                             min={1}
-                             max={99}
-                             value={Math.min(99, Math.max(1, formData.persons))}
-                             onChange={(e) =>
-                               setFormData({
-                                 ...formData,
-                                 persons: Number(e.target.value),
-                               })
-                             }
-                             className="w-full accent-[#145142] h-2 rounded-full"
-                           />
-                           <input
-                             type="number"
-                             min={1}
-                             max={99}
-                             className={CHECKOUT_INPUT_CLASS + ' font-semibold'}
-                             value={formData.persons}
-                             onChange={(e) => {
-                               const raw = parseInt(e.target.value, 10)
-                               const v = Number.isFinite(raw)
-                                 ? Math.min(99, Math.max(1, raw))
-                                 : 1
-                               setFormData({ ...formData, persons: v })
-                             }}
-                           />
-                         </div>
+                         <label className={CHECKOUT_FIELD_LABEL_CLASS}>{cs.partySizeLabel}</label>
+                         <input
+                           type="number"
+                           min={1}
+                           max={99}
+                           className={`${CHECKOUT_INPUT_CLASS} font-semibold`}
+                           value={formData.persons}
+                           onChange={(e) => {
+                             const raw = parseInt(e.target.value, 10)
+                             const v = Number.isFinite(raw) ? Math.min(99, Math.max(1, raw)) : 1
+                             setFormData({ ...formData, persons: v })
+                           }}
+                         />
                       </div>
                       <div>
-                         <label className="mb-1 block text-sm text-neutral-500">{cs.chopsticksLabel}</label>
+                         <label className={CHECKOUT_FIELD_LABEL_CLASS}>{cs.chopsticksLabel}</label>
                          <select
-                           className={`${CHECKOUT_INPUT_CLASS} font-semibold cursor-pointer`}
+                           className={`${CHECKOUT_INPUT_CLASS} cursor-pointer font-semibold`}
                            value={formData.sticks}
                            onChange={(e) =>
-                             setFormData({
-                               ...formData,
-                               sticks: Number(e.target.value),
-                             })
+                             setFormData({ ...formData, sticks: Number(e.target.value) })
                            }
                          >
                             {Array.from({ length: 21 }, (_, i) => (
-                              <option key={i} value={i}>
-                                {i}
-                              </option>
+                              <option key={i} value={i}>{i}</option>
                             ))}
                          </select>
                       </div>
                    </div>
-                   <textarea 
+                   <textarea
                       placeholder={cs.commentPlaceholder}
-                      className={`${CHECKOUT_INPUT_CLASS} h-24 resize-none min-h-[5.5rem] sm:h-32 sm:min-h-[8rem]`}
+                      className={`${CHECKOUT_INPUT_CLASS} min-h-[3.5rem] resize-none`}
+                      rows={2}
                       maxLength={COMMENT_MAX}
-                      value={formData.comment} 
-                      onChange={e =>
+                      value={formData.comment}
+                      onChange={(e) =>
                         setFormData({
                           ...formData,
                           comment: e.target.value.slice(0, COMMENT_MAX),
                         })
                       }
                    />
-                   <p className="mt-1 text-right text-xs text-neutral-400">
+                   <p className="mt-0.5 text-right text-[10px] text-neutral-400">
                      {formData.comment.length}/{COMMENT_MAX}
                    </p>
                 </div>
-                  
-                  {/* 5. Блок Оплаты */}
-                  <div className={CHECKOUT_CARD_CLASS}>
-                    <h2 className={`${CHECKOUT_SECTION_TITLE_CLASS} mb-4`}>{cs.paymentMethodTitle}</h2>
-                    
-                    <div className="flex flex-col gap-3">
+
+                  {/* 5. Оплата + итого */}
+                  <div className={`${CHECKOUT_CARD_CLASS} watta-cart-checkout-grid__pay watta-cart-checkout-grid__span2`}>
+                    <CheckoutSectionHead icon={Sparkles} title={cs.paymentMethodTitle} />
+                    <div
+                      className={`watta-cart-checkout-pay-row mb-2${checkoutSettings.cardOnlineAvailable ? '' : ' watta-cart-checkout-pay-row--single'}`}
+                    >
                       <label
                         onClick={() => setPaymentMethod('CASH')}
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition ${
-                          paymentMethod === 'CASH'
-                            ? 'border-[#145142] bg-[#145142]/[0.06]'
-                            : 'border-neutral-200 hover:border-[#145142]/25 hover:bg-neutral-50'
-                        }`}
+                        className={`watta-cart-checkout-pay-opt${paymentMethod === 'CASH' ? ' watta-cart-checkout-pay-opt--active' : ''}`}
                       >
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                            paymentMethod === 'CASH' ? 'border-[#145142]' : 'border-gray-300'
-                          }`}
-                        >
-                          {paymentMethod === 'CASH' && (
-                            <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
-                          )}
-                        </div>
-                        <span className="font-semibold text-neutral-800">{cs.payCash}</span>
-                        <input
-                          type="radio"
-                          name="payment"
-                          className="hidden"
-                          checked={paymentMethod === 'CASH'}
-                          onChange={() => setPaymentMethod('CASH')}
-                        />
+                        <span className="watta-cart-checkout-pay-opt__label">{cs.payCash}</span>
+                        <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
                       </label>
-                      {paymentMethod === 'CASH' && (
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          placeholder={cs.changeFromPlaceholder}
-                          className={CHECKOUT_INPUT_CLASS}
-                          value={formData.needChangeFrom}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              needChangeFrom: e.target.value.replace(/\D/g, '').slice(0, 4),
-                            })
-                          }
-                        />
-                      )}
-
-                      <label
-                        onClick={() => setPaymentMethod('CARD')}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
-                          paymentMethod === 'CARD'
-                            ? 'border-[#145142] bg-[#145142]/[0.06]'
-                            : 'border-neutral-200 hover:border-[#145142]/25 hover:bg-neutral-50'
-                        }`}
-                      >
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                            paymentMethod === 'CARD' ? 'border-[#145142]' : 'border-gray-300'
-                          }`}>
-                            {paymentMethod === 'CARD' && (
-                              <div className="w-2.5 h-2.5 bg-[#145142] rounded-full" />
-                            )}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-neutral-800">{cs.payCard}</span>
-                            <span className="text-xs text-neutral-500">{cs.payCardHint}</span>
-                          </div>
-                          <input
-                            type="radio"
-                            name="payment"
-                            className="hidden"
-                            checked={paymentMethod === 'CARD'}
-                            onChange={() => setPaymentMethod('CARD')}
-                          />
+                      {checkoutSettings.cardOnlineAvailable ? (
+                        <label
+                          onClick={() => setPaymentMethod('CARD')}
+                          className={`watta-cart-checkout-pay-opt${paymentMethod === 'CARD' ? ' watta-cart-checkout-pay-opt--active' : ''}`}
+                        >
+                          <span className="watta-cart-checkout-pay-opt__label">{cs.payCard}</span>
+                          <span className="watta-cart-checkout-pay-opt__hint">{cs.payCardHint}</span>
+                          <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} />
                         </label>
-                      </div>
+                      ) : null}
                     </div>
-                    {/* 6. Блок Итого (Объединенный с Промокодом) */}
-                    <div className={`${CHECKOUT_CARD_CLASS} flex flex-col gap-5`}>
-                      <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4">
-                        <h3 className="mb-3 text-base font-semibold text-[#145142]">{cs.promoCodeTitle}</h3>
-                        <div className="flex w-full flex-wrap items-center gap-2">
-                          <input
-                            type="text"
-                            placeholder={cs.promoPlaceholder}
-                            className="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-[15px] font-semibold uppercase text-[#145142] outline-none placeholder:font-normal placeholder:normal-case focus:ring-2 focus:ring-[#145142]/30"
-                            value={promoCode}
-                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleApplyPromo}
-                            className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d34]"
-                          >
-                            OK
-                          </button>
+                    {!checkoutSettings.cardOnlineAvailable ? (
+                      <p className="mb-2 text-[10px] leading-snug text-[#145142]/70 sm:text-[11px]">
+                        {cs.payCardUnavailable}
+                      </p>
+                    ) : null}
+                    {paymentMethod === 'CASH' ? (
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder={cs.changeFromPlaceholder}
+                        className={`${CHECKOUT_INPUT_CLASS} mb-2`}
+                        value={formData.needChangeFrom}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            needChangeFrom: e.target.value.replace(/\D/g, '').slice(0, 4),
+                          })
+                        }
+                      />
+                    ) : null}
+
+                    <div className="mb-2 flex gap-1.5">
+                      <input
+                        type="text"
+                        placeholder={cs.promoPlaceholder}
+                        className={`${CHECKOUT_INPUT_CLASS} min-w-0 flex-1 font-semibold uppercase`}
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyPromo}
+                        className="shrink-0 rounded-lg bg-[#145142] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#0f3d34]"
+                      >
+                        OK
+                      </button>
+                    </div>
+                    {promoError ? (
+                      <p className="mb-2 text-center text-[11px] font-medium text-red-600">{promoError}</p>
+                    ) : null}
+                    {appliedPromo ? (
+                      <p className="mb-2 text-center text-[11px] font-semibold text-[#145142]">
+                        {cs.promoApplied.replace('{{code}}', appliedPromo.code)}
+                      </p>
+                    ) : null}
+
+                    <div className="watta-cart-checkout-total">
+                      <div className="watta-cart-checkout-total__row">
+                        <span>{cs.subtotalLabel}</span>
+                        <span className="tabular-nums font-medium">{basePrice} €</span>
+                      </div>
+                      {appliedPromo ? (
+                        <div className="watta-cart-checkout-total__row text-[#145142]">
+                          <span>{cs.discountPrefix} ({appliedPromo.code})</span>
+                          <span className="tabular-nums">−{discountAmount} €</span>
                         </div>
-                        {promoError ? (
-                          <p className="mt-2 rounded-lg bg-red-50 p-2 text-center text-sm font-medium text-red-600">
-                            {promoError}
-                          </p>
-                        ) : null}
-                        {appliedPromo ? (
-                          <div className="mt-3 rounded-lg bg-[#145142]/10 p-2 text-center text-sm font-semibold text-[#145142]">
-                            <span>
-                              {cs.promoApplied.replace('{{code}}', appliedPromo.code)}
-                            </span>
-                          </div>
-                        ) : null}
+                      ) : null}
+                      <div className="watta-cart-checkout-total__row">
+                        <span>{fulfillment === 'pickup' ? cs.fulfillmentPickup : t.delivery}</span>
+                        <span className="tabular-nums font-medium">
+                          {fulfillment === 'pickup' ? '—' : deliveryPrice === 0 ? cs.deliveryFree : `${deliveryPrice} €`}
+                        </span>
                       </div>
-                      <div className="h-px w-full bg-neutral-200" />
-                      <div className="flex flex-col gap-3">
-                          <div className="flex items-center justify-between text-sm text-neutral-600">
-                            <span>{cs.subtotalLabel}</span>
-                            <span className="tabular-nums font-medium text-neutral-900">{basePrice} €</span>
-                          </div>
-                          {appliedPromo && (
-                            <div className="flex items-center justify-between text-sm font-semibold text-[#145142]">
-                              <span>
-                                {cs.discountPrefix} ({appliedPromo.code})
-                              </span>
-                              <span className="tabular-nums">−{discountAmount} €</span>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between gap-3 text-sm text-neutral-600">
-                            <span>
-                              {fulfillment === 'pickup'
-                                ? cs.fulfillmentPickup
-                                : t.delivery}
-                            </span>
-                            <span
-                              className={`text-right font-medium tabular-nums ${
-                                fulfillment === 'delivery' && deliveryPrice === 0
-                                  ? 'text-[#145142]'
-                                  : 'text-neutral-800'
-                              }`}
-                            >
-                              {fulfillment === 'pickup'
-                                ? '—'
-                                : deliveryPrice === 0
-                                  ? cs.deliveryFree
-                                  : `${deliveryPrice} €`}
-                            </span>
-                          </div>
-                          {fulfillment === 'delivery' && (
-                            <div className="-mt-1 space-y-1 text-xs">
-                              {zoneMatchesCartCity && mapZoneSelection ? (
-                                <p className="font-semibold text-[#145142]">
-                                  {cs.deliveryFromMap.replace('{{zone}}', mapZoneSelection.zoneName)}
-                                </p>
-                              ) : null}
-                              {zoneMatchesCartCity &&
-                              mapZoneSelection?.feeMode === 'standard' &&
-                              distanceKm == null ? (
-                                <p className="text-amber-800">{cs.deliveryZoneStandardHint}</p>
-                              ) : null}
-                              {isCalculatingDistance ? (
-                                <p className="text-neutral-500">{cs.calculatingDistance}</p>
-                              ) : distanceKm != null ? (
-                                <p className="text-[#145142]">
-                                  {cs.distanceBreakdown
-                                    .replace('{{km}}', distanceKm.toFixed(2))
-                                    .replace('{{rate}}', selectedCityPricePerKm.toFixed(2))
-                                    .replace('{{sum}}', deliveryPrice.toFixed(2))}
-                                </p>
-                              ) : (
-                                <p className="text-neutral-500">{cs.enterAddressForDeliveryFee}</p>
-                              )}
-                              {distanceError ? <p className="text-red-600">{distanceError}</p> : null}
-                            </div>
-                          )}
-                          {bonusBalance > 0 && (
-                            <div className="rounded-lg border border-[#145142]/15 bg-[#145142]/[0.04] p-3">
-                              <label className="flex cursor-pointer items-center justify-between gap-3">
-                                <span className="text-sm font-medium text-[#145142]">
-                                  {cs.bonusAvailableLabel.replace(
-                                    '{{amount}}',
-                                    bonusBalance.toFixed(2),
-                                  )}
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  checked={useBonuses}
-                                  onChange={(e) => setUseBonuses(e.target.checked)}
-                                  className="h-4 w-4 accent-[#145142]"
-                                />
-                              </label>
-                              {useBonuses && (
-                                <p className="mt-2 text-sm text-[#145142]">
-                                  {cs.bonusDeductLine.replace(
-                                    '{{amount}}',
-                                    appliedBonuses.toFixed(2),
-                                  )}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          {useBonuses && appliedBonuses > 0 && (
-                            <div className="flex items-center justify-between text-sm font-semibold text-[#145142]">
-                              <span>{cs.bonusSpentLabel}</span>
-                              <span className="tabular-nums">−{appliedBonuses.toFixed(2)} €</span>
-                            </div>
-                          )}
-                          <div className="my-1 h-px w-full bg-neutral-200" />
-                          <div className="flex items-end justify-between gap-3">
-                            <span className="text-base font-bold text-neutral-900 sm:text-lg">{cs.total}</span>
-                            <span className="text-xl font-bold tabular-nums text-[#145142] sm:text-2xl">
-                              {totalToPay.toFixed(2)} €
-                            </span>
-                          </div>
-                          <button
-                            disabled={isLoading || !canSubmitOrder}
-                            type="submit"
-                            className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#145142] text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f3d34] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40 sm:h-12 sm:text-base"
-                          >
-                            {isLoading ? cs.processing : cs.order}
-                          </button>
+                      {bonusBalance > 0 ? (
+                        <label className="mt-2 flex cursor-pointer items-center justify-between gap-2 text-[11px] font-medium text-[#145142]">
+                          <span>{cs.bonusAvailableLabel.replace('{{amount}}', bonusBalance.toFixed(2))}</span>
+                          <input type="checkbox" checked={useBonuses} onChange={(e) => setUseBonuses(e.target.checked)} className="h-3.5 w-3.5 accent-[#145142]" />
+                        </label>
+                      ) : null}
+                      {useBonuses && appliedBonuses > 0 ? (
+                        <div className="watta-cart-checkout-total__row text-[#145142]">
+                          <span>{cs.bonusSpentLabel}</span>
+                          <span className="tabular-nums">−{appliedBonuses.toFixed(2)} €</span>
+                        </div>
+                      ) : null}
+                      <div className="watta-cart-checkout-total__grand flex items-end justify-between">
+                        <span>{cs.total}</span>
+                        <span className="watta-cart-checkout-total__amount">{totalToPay.toFixed(2)} €</span>
                       </div>
                     </div>
+
+                    <button
+                      disabled={isLoading || !canSubmitOrder}
+                      type="submit"
+                      className="mt-2.5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#145142] to-[#1a6b58] text-sm font-bold text-white shadow-[0_8px_20px_-10px_rgba(20,81,66,0.65)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 md:h-11"
+                    >
+                      {isLoading ? cs.processing : cs.order}
+                    </button>
+                  </div>
+
                   </form>
                 </div>
-              </div>
+            </div>
             )}
         </>
       </div>
-
-      {isUpsellModalOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-[#145142]/15 overflow-hidden">
-            <div className="bg-[#145142] px-6 py-5 text-white">
-              <h3 className="text-xl font-bold tracking-tight sm:text-2xl">
-                {cs.cartUpsellOffersTitle}
-              </h3>
-            </div>
-
-            <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {upsellItems.map((item) => {
-                const discountEur = Number(
-                  (item as MenuItem & { upsellDiscountEur?: number }).upsellDiscountEur ?? 0,
-                )
-                const compareAt = effectiveUnitPrice(item.price, item.promoDiscountPercent)
-                const salePrice = cartUpsellSaleUnitPrice(
-                  item.price,
-                  item.promoDiscountPercent,
-                  discountEur,
-                )
-                return (
-                  <div key={item.id} className="rounded-2xl border border-[#145142]/15 p-4 bg-[#F9FAFB] flex flex-col">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-2xl">{item.emoji}</div>
-                      <span className="text-xs font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-[#ff6b35]/15 text-[#ff6b35]">
-                        −{discountEur.toFixed(2)} €
-                      </span>
-                    </div>
-                    <h4 className="mt-3 text-base font-semibold leading-tight text-neutral-900">{item.name}</h4>
-                    <p className="mt-1 min-h-[2.5rem] text-sm text-neutral-500">
-                      {item.description || cs.upsellOfferFallback}
-                    </p>
-                    <div className="mt-3 flex items-end justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl font-extrabold text-[#145142]">{salePrice} €</span>
-                        <span className="text-sm text-gray-400 line-through">{compareAt} €</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleAddUpsell(item as MenuItem & { upsellDiscountEur?: number })
-                      }
-                      className="mt-4 h-10 rounded-lg bg-[#145142] text-sm font-semibold text-white transition hover:bg-[#0f3d34]"
-                    >
-                      {cs.upsellAddToCart}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="px-5 sm:px-6 pb-6 pt-2">
-              <button
-                type="button"
-                onClick={handleContinueCheckout}
-                className="h-12 w-full rounded-lg bg-[#145142] text-base font-semibold text-white shadow-sm transition hover:bg-[#0f3d34]"
-              >
-                {cs.upsellContinue}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

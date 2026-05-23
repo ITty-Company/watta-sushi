@@ -297,13 +297,7 @@ function AuthScreenBody({
       const res = await authFetch('/api/auth/forgot-password', { phone: forgotPhone })
       const data = await res.json()
       if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
-      toast.success(
-        language === 'uk'
-          ? 'Код надіслано'
-          : language === 'en'
-            ? 'Code sent'
-            : 'Код отправлен',
-      )
+      toast.success(t.auth.forgotCodeSent)
       setForgotStep(2)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.auth.errors.generic
@@ -321,13 +315,7 @@ function AuthScreenBody({
       const res = await authFetch('/api/auth/forgot-password', { phone: forgotPhone })
       const data = await res.json()
       if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
-      toast.success(
-        language === 'uk'
-          ? 'Код надіслано знову'
-          : language === 'en'
-            ? 'Code resent'
-            : 'Код отправлен снова',
-      )
+      toast.success(t.auth.forgotCodeResent)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t.auth.errors.generic)
     } finally {
@@ -383,24 +371,9 @@ function AuthScreenBody({
   }
 
   const verifyCopy = {
-    title:
-      language === 'uk'
-        ? 'Підтвердження номера'
-        : language === 'en'
-          ? 'Verify your number'
-          : 'Подтверждение номера',
-    hint:
-      language === 'uk'
-        ? 'Ми надіслали SMS з кодом. У dev режимі код у консолі сервера.'
-        : language === 'en'
-          ? 'We sent an SMS code. In dev, check the server console.'
-          : 'Мы отправили SMS с кодом. В dev код в консоли сервера.',
-    back:
-      language === 'uk'
-        ? 'Назад'
-        : language === 'en'
-          ? 'Back'
-          : 'Назад',
+    title: t.auth.verifyTitle,
+    hint: t.auth.verifyHint,
+    back: t.auth.back,
   }
 
   const cinemaFallbackPrimary = useMemo(
@@ -613,13 +586,7 @@ function AuthScreenBody({
                     value={forgotConfirmPassword}
                     onChange={(e) => setForgotConfirmPassword(e.target.value)}
                     className="auth-watta-input w-full"
-                    placeholder={
-                      language === 'uk'
-                        ? 'Підтвердження пароля'
-                        : language === 'en'
-                          ? 'Confirm password'
-                          : 'Подтверждение пароля'
-                    }
+                    placeholder={t.auth.confirmPasswordLabel}
                   />
                 </span>
                 <button type="submit" disabled={isLoading} className="auth-watta-btn-primary">
@@ -678,7 +645,7 @@ function AuthScreenBody({
                 disabled={isLoading || verificationCode.length < 4}
                 className="auth-watta-btn-primary"
               >
-                {isLoading ? '…' : language === 'uk' ? 'Підтвердити' : language === 'en' ? 'Confirm' : 'Подтвердить'}
+                {isLoading ? '…' : t.auth.confirmPhone}
               </button>
               <button
                 type="button"
@@ -696,7 +663,7 @@ function AuthScreenBody({
 
   const shellClass =
     variant === 'page'
-      ? 'auth-watta-root auth-watta-page-shell flex w-full flex-1 flex-col relative min-h-0'
+      ? 'auth-watta-root auth-watta-page-shell flex w-full flex-1 flex-col relative min-h-0 max-md:min-h-[100dvh]'
       : 'auth-watta-root min-h-[100dvh] h-[100dvh] flex flex-col relative overflow-hidden'
 
   return (
@@ -709,7 +676,7 @@ function AuthScreenBody({
       <div
         className={
           variant === 'page'
-            ? `auth-watta-page-grid auth-watta-page-grid--phone relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-3 pb-3 max-md:h-auto max-md:min-h-0 max-md:flex-none max-md:items-center max-md:gap-0.25 sm:px-4 sm:pb-6 md:h-full md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-start md:gap-4 md:px-5 md:pb-6 lg:max-w-6xl lg:gap-5 lg:px-6 lg:pb-8${isRegister ? ' auth-watta-page-grid--register' : ''}`
+            ? `auth-watta-page-grid auth-watta-page-grid--phone relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-3 pb-3 max-md:min-h-0 max-md:flex-1 max-md:items-center max-md:gap-0.25 sm:px-4 sm:pb-6 md:h-full md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-start md:gap-4 md:px-5 md:pb-6 lg:max-w-6xl lg:gap-5 lg:px-6 lg:pb-8${isRegister ? ' auth-watta-page-grid--register' : ''}`
             : 'relative z-10 mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-2.5 pt-12 sm:px-4 sm:pt-14'
         }
       >
@@ -904,7 +871,7 @@ function AuthScreenBody({
                 aria-hidden={!isRegister}
               >
                 <span className="auth-watta-label-text">
-                  {language === 'uk' ? 'Підтвердження пароля' : language === 'en' ? 'Confirm password' : 'Подтверждение'}
+                  {t.auth.confirmPasswordLabel}
                 </span>
                 <span className="auth-watta-input-wrap">
                   <Lock className="auth-watta-input-icon" />

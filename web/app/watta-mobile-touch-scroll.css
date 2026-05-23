@@ -1,0 +1,61 @@
+/**
+ * Телефон: один вертикальний скрол (body), жести не «застрягають» у горизонтальних стрічках.
+ */
+@media (max-width: 767px) {
+  /* Головна — як /menu, /cart: без вкладеного .content-web у фіксованому 100vh */
+  body.watta-route-home .watta-app-shell-root,
+  body.watta-route-home .watta-app-main-grow > .app-web {
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  body.watta-route-home .app-web {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  body.watta-route-home .content-web,
+  body.watta-route-home .content-web--watta-craft {
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    overscroll-behavior-y: auto !important;
+    flex: 0 0 auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  body.watta-route-home {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
+  }
+
+  /* Горизонтальні стрічки: вертикальний свайп проходить на сторінку */
+  .categories-panel-web,
+  .home-menu-category-rail-web,
+  #home-menu-catalog .home-menu-category-rail-web,
+  .watta-full-menu-page .home-menu-category-rail-web {
+    touch-action: pan-x pan-y !important;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+    scroll-snap-type: x proximity !important;
+  }
+
+  .category-button-web {
+    touch-action: pan-y !important;
+  }
+
+  .menu-snap-section-welcome-web,
+  .menu-snap-section-cinematic-web,
+  .menu-snap-section-brand-web {
+    scroll-snap-align: none !important;
+    scroll-snap-stop: normal !important;
+  }
+
+  .content-web--watta-craft:has(.menu-page-web) {
+    overscroll-behavior-y: auto !important;
+  }
+}

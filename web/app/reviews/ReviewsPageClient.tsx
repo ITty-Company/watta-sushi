@@ -118,20 +118,26 @@ function ReviewCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
     >
-      {featured ? <span className="watta-review-card__badge">{featuredBadge}</span> : null}
+      {featured ? (
+        <div className="watta-review-card__badge-row">
+          <span className="watta-review-card__badge">{featuredBadge}</span>
+        </div>
+      ) : null}
       <div className="watta-review-card__head">
         <div className="watta-review-card__who">
           <span className="watta-review-card__avatar" aria-hidden>
             {authorInitials(rev.authorName)}
           </span>
-          <div>
+          <div className="watta-review-card__meta">
             <p className="watta-review-card__author">{rev.authorName}</p>
             <time className="watta-review-card__date" dateTime={rev.createdAt}>
               {formatReviewDate(rev.createdAt, language)}
             </time>
           </div>
         </div>
-        <StarsRow rating={rev.rating} size={featured ? 'md' : 'sm'} />
+        <div className="watta-review-card__rating">
+          <StarsRow rating={rev.rating} size={featured ? 'md' : 'sm'} />
+        </div>
       </div>
       <p
         className={`watta-review-card__text${featured ? ' watta-review-card__text--featured' : ''}`}
@@ -252,9 +258,7 @@ export default function ReviewsPageClient() {
 
   const eligibleOrders = useMemo(() => {
     if (!myOrders) return []
-    return myOrders.filter(
-      (o) => (o.status === 'COMPLETED' || o.status === 'DELIVERED') && !o.review,
-    )
+    return myOrders.filter((o) => o.status === 'COMPLETED' || o.status === 'DELIVERED')
   }, [myOrders])
 
   const featured = useMemo(() => pickFeaturedReview(list ?? []), [list])
@@ -265,23 +269,36 @@ export default function ReviewsPageClient() {
   }, [featured, list])
 
   const handleReviewSubmitted = useCallback(
-    (_review: ReviewComposeResult) => {
-      setComposeOpen(false)
-      setComposeOrder(null)
+    (review: ReviewComposeResult) => {
+      const row: PublicReview = {
+        id: review.id,
+        rating: review.rating,
+        text: review.text,
+        images: review.images,
+        createdAt: review.createdAt,
+        authorName: review.authorName,
+      }
+      setList((prev) => {
+        const base = prev ?? []
+        if (base.some((r) => r.id === row.id)) return base
+        const next = [row, ...base]
+        writePublicReviewsCache(next)
+        return next
+      })
       void loadReviews()
       void loadMyOrders()
     },
     [loadMyOrders, loadReviews],
   )
 
+  const handleComposeClose = useCallback(() => {
+    setComposeOpen(false)
+    setComposeOrder(null)
+  }, [])
+
   const openCompose = useCallback((order?: MyOrder) => {
     setComposeOrder(order ?? null)
     setComposeOpen(true)
-  }, [])
-
-  const closeCompose = useCallback(() => {
-    setComposeOpen(false)
-    setComposeOrder(null)
   }, [])
 
   const hasReviews = Boolean(list && list.length > 0)
@@ -409,7 +426,7 @@ export default function ReviewsPageClient() {
               ? r.orderPickLabel.replace('{{id}}', String(composeOrder.id))
               : undefined
           }
-          onClose={closeCompose}
+          onClose={handleComposeClose}
           onSubmitted={handleReviewSubmitted}
         />
       ) : null}

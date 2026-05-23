@@ -9,6 +9,13 @@ import { sendOrderReceipt } from '../services/email.service';
 import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service';
 import Stripe from 'stripe';
 import crypto from 'crypto';
+import {
+  hasLiqPayConfigured,
+  hasStripeConfigured,
+  isCardOnlinePaymentAvailable,
+} from '../lib/paymentProviders.js';
+import { awardOrderCashbackIfEligible } from '../lib/bonusCashback.js';
+import { linkGuestOrdersToUser } from '../lib/linkGuestOrders.js';
 
 function getStripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY?.trim()
@@ -30,10 +37,6 @@ function getAuthUserId(req: Request): number | null {
   } catch {
     return null;
   }
-}
-
-function hasLiqPayKeys(): boolean {
-  return Boolean(process.env.LIQPAY_PUBLIC_KEY?.trim() && process.env.LIQPAY_PRIVATE_KEY?.trim());
 }
 
 function effectiveProductUnitPrice(price: number, promoPercent: number): number {
@@ -110,22 +113,85 @@ router.get('/my', async (req: Request, res: Response) => {
 
     // 2. Расшифровываем токен, чтобы узнать userId
     const decoded = jwt.verify(token, getJwtSecret()) as { userId: string | number };
-    
-    // 3. Ищем заказы этого пользователя
+    const userId = Number(decoded.userId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true },
+    });
+    if (user?.phone) {
+      await linkGuestOrdersToUser(prisma, userId, user.phone);
+    }
+
+    // 3. Ищем заказы этого пользователя (усі, без ліміту)
     const orders = await prisma.order.findMany({
-      where: { userId: Number(decoded.userId) },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: { 
         items: { 
           include: { product: true } 
         },
-        review: true,
+        reviews: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       }
     });
 
-    res.json(orders);
+    res.json(
+      orders.map((o) => {
+        const { reviews, ...rest } = o;
+        return { ...rest, review: reviews[0] ?? null };
+      }),
+    );
   } catch (error) {
     console.error('Ошибка получения моих заказов:', error);
+    res.status(401).json({ message: 'Неверный токен или ошибка сервера' });
+  }
+});
+
+router.get('/my/:id', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      res.status(401).json({ message: 'Нет токена авторизации' });
+      return;
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string | number };
+    const orderId = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(orderId)) {
+      res.status(400).json({ message: 'Некорректный id заказа' });
+      return;
+    }
+
+    const userId = Number(decoded.userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true },
+    });
+    if (user?.phone) {
+      await linkGuestOrdersToUser(prisma, userId, user.phone);
+    }
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: {
+        items: { include: { product: true } },
+        reviews: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ message: 'Заказ не найден' });
+      return;
+    }
+
+    const { reviews, ...rest } = order;
+    res.json({ ...rest, review: reviews[0] ?? null });
+  } catch (error) {
+    console.error('Ошибка получения заказа:', error);
     res.status(401).json({ message: 'Неверный токен или ошибка сервера' });
   }
 });
@@ -258,10 +324,15 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const payMethod = String(paymentMethod || 'CASH').toUpperCase() === 'CARD' ? 'CARD' : 'CASH';
-    if (payMethod === 'CARD' && !getStripeClient() && !hasLiqPayKeys()) {
+    if (payMethod === 'CARD' && !isCardOnlinePaymentAvailable()) {
+      const devHint =
+        process.env.NODE_ENV !== 'production' &&
+        !hasStripeConfigured() &&
+        !hasLiqPayConfigured()
+          ? ' Для розробки додайте STRIPE_SECRET_KEY або LIQPAY_* у backend/.env.'
+          : '';
       res.status(503).json({
-        message:
-          'Онлайн-оплата тимчасово недоступна. Оберіть «Готівка» або додайте STRIPE_SECRET_KEY / LIQPAY_* у backend/.env.',
+        message: `Онлайн-оплата тимчасово недоступна. Оберіть «Готівка».${devHint}`,
       });
       return;
     }
@@ -396,11 +467,15 @@ router.post('/', async (req: Request, res: Response) => {
           status: 'PENDING',
           userId: effectiveUserId,
           items: {
-            create: normalizedLines.map((line) => ({
-              productId: line.productId,
-              quantity: line.quantity,
-              price: line.price,
-            })),
+            create: normalizedLines.map((line) => {
+              const p = productById.get(line.productId)!;
+              return {
+                productId: line.productId,
+                quantity: line.quantity,
+                price: line.price,
+                productNameSnapshot: String(p.name_ru || '').trim(),
+              };
+            }),
           },
         },
         include: {
@@ -412,6 +487,17 @@ router.post('/', async (req: Request, res: Response) => {
     });
 
     if (effectiveUserId) {
+      const linkedUser = await prisma.user.findUnique({
+        where: { id: effectiveUserId },
+        select: { phone: true },
+      });
+      if (linkedUser?.phone) {
+        await linkGuestOrdersToUser(prisma, effectiveUserId, linkedUser.phone);
+      }
+      const orderPhone = String(phone || '').trim();
+      if (orderPhone) {
+        await linkGuestOrdersToUser(prisma, effectiveUserId, orderPhone);
+      }
       await notifyUserOrderStatusChange(prisma, effectiveUserId, order.id, 'PENDING', null);
     }
 
@@ -484,18 +570,26 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    try {
-      const liqpay = buildLiqPayCheckout(order.id, totalWithBonuses);
-      res.json({ ...order, liqpay });
-      return;
-    } catch (liqErr) {
-      console.error('LiqPay checkout error:', liqErr);
-      await rollbackFailedCardOrder(order.id, safeUsedBonuses, effectiveUserId);
-      res.status(502).json({
-        message: 'Не вдалося відкрити онлайн-оплату. Спробуйте готівку.',
-      });
-      return;
+    if (hasLiqPayConfigured()) {
+      try {
+        const liqpay = buildLiqPayCheckout(order.id, totalWithBonuses);
+        res.json({ ...order, liqpay });
+        return;
+      } catch (liqErr) {
+        console.error('LiqPay checkout error:', liqErr);
+        await rollbackFailedCardOrder(order.id, safeUsedBonuses, effectiveUserId);
+        res.status(502).json({
+          message: 'Не вдалося відкрити онлайн-оплату. Спробуйте готівку.',
+        });
+        return;
+      }
     }
+
+    await rollbackFailedCardOrder(order.id, safeUsedBonuses, effectiveUserId);
+    res.status(503).json({
+      message: 'Онлайн-оплата тимчасово недоступна. Оберіть «Готівка».',
+    });
+    return;
 
   } catch (error) {
     console.error('Ошибка создания заказа:', error);
@@ -535,21 +629,7 @@ router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
     });
 
     if ((status === 'DELIVERED' || status === 'COMPLETED') && updatedOrder.userId) {
-      const orderItems = await prisma.orderItem.findMany({
-        where: { orderId: updatedOrder.id },
-        select: { price: true, quantity: true },
-      });
-      const merchandiseTotal = orderItems.reduce(
-        (sum, item) => sum + Number(item.price) * Number(item.quantity),
-        0
-      );
-      const cashback = Math.round(merchandiseTotal * 0.05 * 100) / 100;
-      if (cashback > 0) {
-        await prisma.user.update({
-          where: { id: updatedOrder.userId },
-          data: { bonusBalance: { increment: cashback } },
-        });
-      }
+      await awardOrderCashbackIfEligible(prisma, updatedOrder.id, updatedOrder.userId);
     }
 
     if (status !== undefined && updatedOrder.userId) {

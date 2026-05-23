@@ -5,6 +5,7 @@ import {
   readRawMenuCategoriesFromSession,
   warmMenuCatalogCache,
 } from '@/lib/menuCatalogSessionCache'
+import { prefetchRouteChunk } from '@/lib/prefetchRouteChunks'
 
 /** Публічні маршрути — префетч при старті, щоб тап відчувався миттєво. */
 export const WATTA_PUBLIC_PREFETCH_ROUTES = [
@@ -53,6 +54,7 @@ export function prefetchHref(router: AppRouterInstance, href: string): void {
   const target = normalizeInternalHref(href)
   if (!target || prefetchedPaths.has(target)) return
   prefetchedPaths.add(target)
+  prefetchRouteChunk(target)
   try {
     router.prefetch(target)
   } catch {

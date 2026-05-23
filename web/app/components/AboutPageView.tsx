@@ -253,7 +253,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       body={a.darkHeroSubtitle}
       accentLineIndex={1}
       headingLevel="h1"
-      reserveTopSpace={false}
+      reserveTopSpace
       innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone about-page-lead-intro-inner relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
     />
   )

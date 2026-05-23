@@ -7,6 +7,11 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { getUploadsDir } from '../lib/uploadsDir.js'
 import { cachePublicGet, PUBLIC_CACHE_SETTINGS_SEC } from '../lib/publicApiCache.js'
+import {
+  cardOnlinePaymentProvider,
+  isCardOnlinePaymentAvailable,
+} from '../lib/paymentProviders.js'
+import { clampCashbackPercent, DEFAULT_BONUS_CASHBACK_PERCENT } from '../lib/bonusCashback.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -14,6 +19,7 @@ const prisma = new PrismaClient()
 const uploadDir = getUploadsDir()
 const DEFAULT_HOME_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const DEFAULT_DELIVERY_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
+const DEFAULT_MENU_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const DEFAULT_AUTH_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const MAX_VIDEO_URL_LENGTH = 2048
 /** Захист від надто великого JSON у SiteSetting (адмінка без жорсткого ліміту в UI). */
@@ -169,6 +175,18 @@ function normalizeDeliveryHeroVideoUrls(input: unknown): string[] {
   return normalizeHomeHeroVideoUrls(input)
 }
 
+function parseStoredMenuHeroVideoUrls(raw: string | null | undefined): string[] {
+  return parseStoredHomeHeroVideoUrls(raw)
+}
+
+function serializeMenuHeroVideoUrls(urls: string[]): string {
+  return serializeHomeHeroVideoUrls(urls)
+}
+
+function normalizeMenuHeroVideoUrls(input: unknown): string[] {
+  return normalizeHomeHeroVideoUrls(input)
+}
+
 function parseStoredAuthHeroVideoUrls(raw: string | null | undefined): string[] {
   return parseStoredHomeHeroVideoUrls(raw)
 }
@@ -270,6 +288,17 @@ function effectiveDeliveryHeroVideoUrls(row: {
   return [DEFAULT_DELIVERY_HERO_VIDEO]
 }
 
+function effectiveMenuHeroVideoUrls(row: {
+  menuHeroVideoUrls?: string | null
+  menuHeroVideoUrl?: string | null
+}): string[] {
+  const fromJson = filterExistingUploadVideoUrls(parseStoredMenuHeroVideoUrls(row.menuHeroVideoUrls))
+  if (fromJson.length > 0) return fromJson
+  const single = row.menuHeroVideoUrl?.trim()
+  if (single && uploadVideoFileExists(single)) return [single]
+  return [DEFAULT_MENU_HERO_VIDEO]
+}
+
 function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) {
   const homeHeroVideoUrls = effectiveHomeHeroVideoUrls(settings as {
     homeHeroVideoUrls?: string | null
@@ -278,6 +307,10 @@ function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) 
   const deliveryHeroVideoUrls = effectiveDeliveryHeroVideoUrls(settings as {
     deliveryHeroVideoUrls?: string | null
     deliveryHeroVideoUrl?: string | null
+  })
+  const menuHeroVideoUrls = effectiveMenuHeroVideoUrls(settings as {
+    menuHeroVideoUrls?: string | null
+    menuHeroVideoUrl?: string | null
   })
   const authHeroVideoUrls = effectiveAuthHeroVideoUrls(settings as {
     authHeroVideoUrls?: string | null
@@ -298,11 +331,15 @@ function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) 
     homeHeroVideoUrl: homeHeroVideoUrls[0] ?? DEFAULT_HOME_HERO_VIDEO,
     deliveryHeroVideoUrls,
     deliveryHeroVideoUrl: deliveryHeroVideoUrls[0] ?? DEFAULT_DELIVERY_HERO_VIDEO,
+    menuHeroVideoUrls,
+    menuHeroVideoUrl: menuHeroVideoUrls[0] ?? DEFAULT_MENU_HERO_VIDEO,
     authHeroVideoUrls,
     authHeroVideoUrl: authHeroVideoUrls[0] ?? DEFAULT_AUTH_HERO_VIDEO,
     authHeroPhone2VideoUrls,
     authHeroPhone1Copy,
     authHeroPhone2Copy,
+    cardOnlineAvailable: isCardOnlinePaymentAvailable(),
+    cardOnlineProvider: cardOnlinePaymentProvider(),
   }
 }
 
@@ -313,6 +350,8 @@ const defaultSettings = {
   homeHeroVideoUrls: serializeHomeHeroVideoUrls([DEFAULT_HOME_HERO_VIDEO]),
   deliveryHeroVideoUrl: DEFAULT_DELIVERY_HERO_VIDEO,
   deliveryHeroVideoUrls: serializeDeliveryHeroVideoUrls([DEFAULT_DELIVERY_HERO_VIDEO]),
+  menuHeroVideoUrl: DEFAULT_MENU_HERO_VIDEO,
+  menuHeroVideoUrls: serializeMenuHeroVideoUrls([DEFAULT_MENU_HERO_VIDEO]),
   authHeroVideoUrl: DEFAULT_AUTH_HERO_VIDEO,
   authHeroVideoUrls: serializeAuthHeroVideoUrls([DEFAULT_AUTH_HERO_VIDEO]),
   authHeroPhone2VideoUrls: serializeHomeHeroVideoUrls([]),
@@ -329,6 +368,8 @@ const defaultSettings = {
   deliveryKitchenLng: null,
   deliveryTariffStepKm: 3,
   deliveryTariffStepEur: 1.5,
+  bonusCashbackEnabled: true,
+  bonusCashbackPercent: DEFAULT_BONUS_CASHBACK_PERCENT,
 }
 
 async function geocodeKitchenLatLng(address: string): Promise<{ lat: number; lng: number } | null> {
@@ -406,6 +447,10 @@ router.post('/', checkAdmin, async (req, res) => {
       b.deliveryTariffStepEur != null && b.deliveryTariffStepEur !== ''
         ? parseFloat(String(b.deliveryTariffStepEur))
         : undefined
+    const bonusCashbackPercent =
+      b.bonusCashbackPercent != null && b.bonusCashbackPercent !== ''
+        ? parseFloat(String(b.bonusCashbackPercent))
+        : undefined
 
     const update: Record<string, unknown> = {}
     if (bannerInterval != null && !Number.isNaN(bannerInterval)) update.bannerInterval = bannerInterval
@@ -438,6 +483,21 @@ router.post('/', checkAdmin, async (req, res) => {
       )
       update.deliveryHeroVideoUrl = urls[0]
       update.deliveryHeroVideoUrls = serializeDeliveryHeroVideoUrls(urls)
+    }
+    if (b.menuHeroVideoUrls !== undefined) {
+      const urls = persistableHeroVideoUrls(
+        normalizeMenuHeroVideoUrls(b.menuHeroVideoUrls),
+        DEFAULT_MENU_HERO_VIDEO,
+      )
+      update.menuHeroVideoUrls = serializeMenuHeroVideoUrls(urls)
+      update.menuHeroVideoUrl = urls[0]
+    } else if (b.menuHeroVideoUrl !== undefined) {
+      const urls = persistableHeroVideoUrls(
+        normalizeMenuHeroVideoUrls(b.menuHeroVideoUrl),
+        DEFAULT_MENU_HERO_VIDEO,
+      )
+      update.menuHeroVideoUrl = urls[0]
+      update.menuHeroVideoUrls = serializeMenuHeroVideoUrls(urls)
     }
     if (b.authHeroVideoUrls !== undefined) {
       const urls = persistableHeroVideoUrls(
@@ -494,6 +554,12 @@ router.post('/', checkAdmin, async (req, res) => {
       deliveryTariffStepEur >= 0
     ) {
       update.deliveryTariffStepEur = deliveryTariffStepEur
+    }
+    if (b.bonusCashbackEnabled !== undefined) {
+      update.bonusCashbackEnabled = Boolean(b.bonusCashbackEnabled)
+    }
+    if (bonusCashbackPercent != null && !Number.isNaN(bonusCashbackPercent)) {
+      update.bonusCashbackPercent = clampCashbackPercent(bonusCashbackPercent)
     }
 
     const cleanUpdate = Object.fromEntries(

@@ -10,6 +10,7 @@ import {
 } from '@/lib/wattaDeliveryHeroVideo'
 import { filterReachableHeroUrls } from '@/lib/wattaHeroVideo'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { readSiteSettingsRecord } from '@/lib/heroSettingsSiteCache'
 
 const DELIVERY_HERO_URLS_CACHE_KEY = 'watta_delivery_hero_urls_v2'
 
@@ -121,7 +122,25 @@ export function useDeliveryHeroVideo() {
       void fetchSettings(true)
     }
 
-    void fetchSettings()
+    const cached = readSiteSettingsRecord()
+    if (cached) {
+      applySettings(cached)
+      type IdleWindow = Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+      }
+      const w = typeof window !== 'undefined' ? (window as IdleWindow) : null
+      const revalidate = () => {
+        void fetchSettings()
+      }
+      if (w && typeof w.requestIdleCallback === 'function') {
+        w.requestIdleCallback(revalidate, { timeout: 800 })
+      } else if (typeof window !== 'undefined') {
+        window.setTimeout(revalidate, 300)
+      }
+    } else {
+      void fetchSettings()
+    }
+
     window.addEventListener(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
     window.addEventListener('settingsUpdated', onSettingsUpdated)
     return () => {

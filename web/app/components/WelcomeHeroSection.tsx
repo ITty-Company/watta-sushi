@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import {
   WATTA_BOOT_SPLASH_ENDED_EVENT,
@@ -8,7 +8,11 @@ import {
   WATTA_HOME_HERO_POSTER,
   WATTA_HERO_OCEAN_GRADIENT,
 } from '@/lib/wattaHeroVideo'
-import { kickWelcomeHeroVideoPlayBurst, primeHeroVideoElement } from '@/lib/kickWelcomeHeroVideo'
+import {
+  installWebKitHeroAutoplayDocUnlock,
+  kickWelcomeHeroVideoPlayBurst,
+  primeHeroVideoElement,
+} from '@/lib/kickWelcomeHeroVideo'
 
 export type WelcomeHeroSectionProps = {
   sectionRef?: Ref<HTMLElement>
@@ -48,8 +52,13 @@ export default function WelcomeHeroSection({
   const { t } = useLanguage()
   const label = ariaLabel ?? t.siteAria.heroVideo
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsClientMounted(true)
+  }, [])
+
+  useEffect(() => {
+    installWebKitHeroAutoplayDocUnlock()
+    kickWelcomeHeroVideoPlayBurst()
   }, [])
 
   const notifyHeroVideoReady = useCallback(() => {

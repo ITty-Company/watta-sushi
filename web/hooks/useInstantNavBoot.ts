@@ -4,6 +4,10 @@ import { useEffect, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { installInstantNavClick, installInstantNavIntent, prefetchPublicRoutes } from '@/lib/instantNav'
 import { warmMenuCatalogCache } from '@/lib/menuCatalogSessionCache'
+import {
+  prefetchPriorityRouteChunks,
+  scheduleIdleRouteChunkPrefetch,
+} from '@/lib/prefetchRouteChunks'
 import { installVisibleLinkPrefetch, warmPublicRouteCaches } from '@/lib/publicRouteWarmCache'
 
 /**
@@ -16,6 +20,8 @@ export function useInstantNavBoot(): void {
     void warmMenuCatalogCache()
     void warmPublicRouteCaches()
     prefetchPublicRoutes(router)
+    prefetchPriorityRouteChunks()
+    scheduleIdleRouteChunkPrefetch()
   }, [router])
 
   useEffect(() => {

@@ -1,13 +1,24 @@
 /** Клієнтська сесія: token + currentUser, без витоку «привида» адміна для гостей. */
 
+import { clearUserOrdersCache } from '@/lib/userOrdersCache'
+
 export function purgeAuthStorage(): void {
   if (typeof window === 'undefined') return
   try {
     localStorage.removeItem('token')
     localStorage.removeItem('currentUser')
     localStorage.removeItem('userId')
+    clearUserOrdersCache()
   } catch {
     /* ignore */
+  }
+}
+
+/** Повний вихід з акаунта на клієнті (localStorage + подія для UI). */
+export function logoutClientSession(): void {
+  purgeAuthStorage()
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('userChanged'))
   }
 }
 

@@ -6,8 +6,12 @@ import MenuView from './components/MenuView'
 import Footer from './components/Footer'
 import WattaBootSplashGate from './components/WattaBootSplashGate'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
-import { kickWelcomeHeroVideoPlayBurst, kickWelcomeHeroVideoPlayOnce } from '@/lib/kickWelcomeHeroVideo'
-import { useRouter } from 'next/navigation'
+import {
+  installWebKitHeroAutoplayDocUnlock,
+  kickWelcomeHeroVideoPlayBurst,
+  kickWelcomeHeroVideoPlayOnce,
+} from '@/lib/kickWelcomeHeroVideo'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 
 /**
  * Перший екран — лише `MenuView`. `CartView`/`ProfileView`/`NotificationsView`
@@ -29,7 +33,7 @@ const NotificationsView = dynamic(
 )
 
 export default function HomeClient() {
-  const router = useRouter()
+  const router = useInstantRouter()
   const [activeTab, setActiveTab] = useState(0)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const hidePublicFooter = useSyncExternalStore(
@@ -62,6 +66,7 @@ export default function HomeClient() {
   }, [])
 
   useEffect(() => {
+    installWebKitHeroAutoplayDocUnlock()
     queueMicrotask(kickWelcomeHeroVideoPlayOnce)
     const raf = requestAnimationFrame(() => {
       kickWelcomeHeroVideoPlayOnce()

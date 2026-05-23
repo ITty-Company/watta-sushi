@@ -628,6 +628,8 @@ export const mockSiteSettings = {
   homeHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   deliveryHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   deliveryHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
+  menuHeroVideoUrl: '/watta-sushi-2-hero.mp4',
+  menuHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   authHeroVideoUrl: '',
   authHeroVideoUrls: [],
   authHeroPhone2VideoUrls: [],
@@ -639,6 +641,8 @@ export const mockSiteSettings = {
   restaurantPickupAddress: 'Amstelveenseweg 192, 1075 XR Amsterdam (mock, самовивіз)',
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
+  bonusCashbackEnabled: true,
+  bonusCashbackPercent: 5,
 }
 
 export const mockBanners = [

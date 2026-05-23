@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendSms } from '../utils/smsSender';
 import { getJwtSecret } from '../lib/jwtSecret';
+import { linkGuestOrdersToUser } from '../lib/linkGuestOrders.js';
+import { authenticateUser, AuthRequest } from '../authMiddleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -115,6 +117,7 @@ router.post('/verify', async (req: any, res: any) => {
     
     // Если уже подтвержден - просто отдаем токен (чтобы не было ошибки)
     if (user.isPhoneVerified) {
+        await linkGuestOrdersToUser(prisma, user.id, user.phone);
         const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, getJwtSecret(), { expiresIn: '30d' });
         return res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
     }
@@ -131,6 +134,8 @@ router.post('/verify', async (req: any, res: any) => {
       where: { id: user.id }, // Надежнее обновлять по ID
       data: { isPhoneVerified: true, verificationCode: null }
     });
+
+    await linkGuestOrdersToUser(prisma, updatedUser.id, updatedUser.phone);
 
     // Генерируем токен
     const token = jwt.sign(
@@ -242,6 +247,8 @@ router.post('/reset-password', async (req: any, res: any) => {
       data: { password: hashedPassword, verificationCode: null },
     });
 
+    await linkGuestOrdersToUser(prisma, updatedUser.id, updatedUser.phone);
+
     res.json(issueAuthToken(updatedUser));
   } catch (error) {
     console.error('Ошибка reset-password:', error);
@@ -263,16 +270,239 @@ router.post('/login', async (req: any, res: any) => {
         return res.status(403).json({ message: 'Номер телефона не подтвержден.' });
     }
 
+    await linkGuestOrdersToUser(prisma, user.id, user.phone);
+
     const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role }, 
         getJwtSecret(), 
         { expiresIn: '30d' }
     );
     
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
-  } catch (e) {
-    res.status(500).json({ message: 'Ошибка входа' });
-  }
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: formatPhoneOut(user.phone),
+        role: user.role,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ message: 'Ошибка входа' });
+  }
+});
+
+const profileUserSelect = {
+  id: true,
+  email: true,
+  name: true,
+  phone: true,
+  role: true,
+  bonusBalance: true,
+  address: true,
+} as const;
+
+function formatPhoneOut(phone: string | null | undefined): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  return digits ? `+${digits}` : '';
+}
+
+function serializeProfileUser(user: {
+  id: number;
+  email: string;
+  name: string | null;
+  phone: string;
+  role: string;
+  bonusBalance: number;
+  address: string;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name ?? '',
+    phone: formatPhoneOut(user.phone),
+    role: user.role,
+    bonusBalance: user.bonusBalance,
+    address: user.address ?? '',
+  };
+}
+
+async function clearUnverifiedPhoneConflict(cleanPhone: string, keepUserId: number) {
+  const existing = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+  if (!existing || existing.id === keepUserId) return;
+  if (existing.isPhoneVerified) {
+    throw new Error('PHONE_TAKEN');
+  }
+  await prisma.user.delete({ where: { id: existing.id } });
+}
+
+// Профіль: поточний користувач
+router.get('/me', authenticateUser, async (req: AuthRequest, res: any) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: profileUserSelect,
+    });
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+    res.json({ user: serializeProfileUser(user) });
+  } catch (error) {
+    console.error('Ошибка GET /auth/me:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Профіль: ім'я та адреса (телефон — окремим потоком з SMS)
+router.patch('/profile', authenticateUser, async (req: AuthRequest, res: any) => {
+  const { name, address, phone } = req.body ?? {};
+
+  if (phone !== undefined) {
+    return res.status(400).json({
+      message: 'Для смены телефона подтвердите номер кодом из SMS',
+    });
+  }
+
+  try {
+    const data: { name?: string; address?: string } = {};
+
+    if (name !== undefined) {
+      const trimmed = String(name).trim();
+      if (!trimmed) {
+        return res.status(400).json({ message: 'Укажите имя' });
+      }
+      if (trimmed.length > 120) {
+        return res.status(400).json({ message: 'Имя слишком длинное' });
+      }
+      data.name = trimmed;
+    }
+
+    if (address !== undefined) {
+      const trimmed = String(address).trim();
+      if (trimmed.length > 500) {
+        return res.status(400).json({ message: 'Адрес слишком длинный' });
+      }
+      data.address = trimmed;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ message: 'Нет данных для сохранения' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: req.user!.id },
+      data,
+      select: profileUserSelect,
+    });
+
+    res.json({ user: serializeProfileUser(updated) });
+  } catch (error) {
+    console.error('Ошибка PATCH /auth/profile:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Зміна телефону: надіслати SMS на новий номер
+router.post('/profile/phone/send-code', authenticateUser, async (req: AuthRequest, res: any) => {
+  const { phone } = req.body ?? {};
+
+  try {
+    if (!phone) {
+      return res.status(400).json({ message: 'Не указан телефон' });
+    }
+
+    const cleanPhone = cleanPhoneInput(phone);
+    if (cleanPhone.length < 8 || cleanPhone.length > 15) {
+      return res.status(400).json({ message: 'Некорректный номер телефона' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+
+    if (user.phone === cleanPhone) {
+      return res.status(400).json({ message: 'Этот номер уже привязан к аккаунту' });
+    }
+
+    const taken = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+    if (taken && taken.id !== user.id && taken.isPhoneVerified) {
+      return res.status(400).json({ message: 'Этот номер телефона уже зарегистрирован' });
+    }
+
+    const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { pendingPhone: cleanPhone, verificationCode },
+    });
+
+    const smsPhone = formatPhoneOut(cleanPhone);
+    try {
+      await sendSms(smsPhone, `Код подтверждения Watta Sushi: ${verificationCode}`);
+    } catch (smsError) {
+      console.error('Ошибка отправки СМС:', smsError);
+      console.log('>>> КОД СМЕНЫ ТЕЛЕФОНА:', verificationCode, '<<<');
+    }
+
+    res.json({ message: 'Код подтверждения отправлен' });
+  } catch (error) {
+    console.error('Ошибка profile/phone/send-code:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Зміна телефону: підтвердити код і застосувати номер
+router.post('/profile/phone/verify', authenticateUser, async (req: AuthRequest, res: any) => {
+  const { phone, code } = req.body ?? {};
+
+  try {
+    if (!phone || !code) {
+      return res.status(400).json({ message: 'Укажите телефон и код' });
+    }
+
+    const cleanPhone = cleanPhoneInput(phone);
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+
+    if (!user.pendingPhone || user.pendingPhone !== cleanPhone) {
+      return res.status(400).json({ message: 'Запросите новый код для этого номера' });
+    }
+
+    if (!user.verificationCode || user.verificationCode !== String(code)) {
+      return res.status(400).json({ message: 'Неверный код' });
+    }
+
+    try {
+      await clearUnverifiedPhoneConflict(cleanPhone, user.id);
+    } catch (e) {
+      if (e instanceof Error && e.message === 'PHONE_TAKEN') {
+        return res.status(400).json({ message: 'Этот номер телефона уже зарегистрирован' });
+      }
+      throw e;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        phone: cleanPhone,
+        pendingPhone: null,
+        verificationCode: null,
+        isPhoneVerified: true,
+      },
+      select: profileUserSelect,
+    });
+
+    await linkGuestOrdersToUser(prisma, updated.id, updated.phone);
+
+    res.json({ user: serializeProfileUser(updated), message: 'Номер телефона обновлён' });
+  } catch (error) {
+    console.error('Ошибка profile/phone/verify:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
 });
 
 export default router;

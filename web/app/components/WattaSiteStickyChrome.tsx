@@ -25,9 +25,8 @@ export default function WattaSiteStickyChrome({
   const router = useInstantRouter()
   const pathname = usePathname() || '/'
   const isHome = pathname === '/'
-  /** Hero з нахльостом під категоріями (відео/прозорий intro). /contacts — звичайна сторінка, контент нижче чіпів. */
-  const isHeroOverlayPage =
-    isHome || pathname === '/about' || pathname === '/delivery'
+  /** Hero-відео лише на головній — категорії «над» роликом. Інші сторінки: текст нижче панелі категорій. */
+  const isHeroOverlayPage = isHome
   const isChromeHeroPage = isHeroOverlayPage || pathname === '/contacts'
   /** ≥768: категорії «над» hero; телефон — повний резерв шапка+чіпи, контент нижче панелі. */
   const isDesktopViewport = useSyncExternalStore(

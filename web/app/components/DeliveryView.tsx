@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import type { ReactNode, Ref } from 'react'
+import type { ReactNode } from 'react'
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react'
 import { DeliveryExperienceBlocks } from './DeliveryExperienceBlocks'
 import DeliveryPageStats from './DeliveryPageStats'
@@ -29,9 +29,6 @@ import {
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { readCitiesCacheRaw, writeCitiesCache } from '@/lib/wattaCitiesCache'
 import { readSiteSettingsCache } from '@/lib/publicRouteWarmCache'
-import { useHomeHeroVideo } from '@/hooks/useHomeHeroVideo'
-import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
-import WelcomeHeroSection from './WelcomeHeroSection'
 import { ArrowUpRight, MapPin, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -68,13 +65,18 @@ function escapeHtml(s: string) {
     .replace(/"/g, '&quot;')
 }
 
+function DeliveryMapLoading() {
+  const { t } = useLanguage()
+  return (
+    <div className="flex h-full min-h-[320px] items-center justify-center rounded-[12px] bg-[#e8f0ed] text-sm font-semibold text-[#145142]/70">
+      {t.deliveryPage.loading}
+    </div>
+  )
+}
+
 const DeliveryZonesInteractiveMap = dynamic(() => import('./DeliveryZonesInteractiveMap'), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-full min-h-[320px] items-center justify-center rounded-[12px] bg-[#e8f0ed] text-sm font-semibold text-[#145142]/70">
-      Завантаження карти…
-    </div>
-  ),
+  loading: () => <DeliveryMapLoading />,
 })
 
 interface City {
@@ -105,7 +107,10 @@ interface DeliveryZone {
 const defaultCities: City[] = [
   {
     id: 'amsterdam',
-    name: 'Амстердам',
+    name: 'Amsterdam',
+    name_ua: 'Амстердам',
+    name_en: 'Amsterdam',
+    name_nl: 'Amsterdam',
     coordinates: { lat: WATTA_RESTAURANT.lat, lng: WATTA_RESTAURANT.lng },
     restaurantLatitude: WATTA_RESTAURANT.lat,
     restaurantLongitude: WATTA_RESTAURANT.lng,
@@ -113,7 +118,7 @@ const defaultCities: City[] = [
     deliveryZones: [
       {
         id: 'amsterdam-center',
-        name: 'Центр',
+        name: 'Center',
         color: '#145142',
         isFreeDelivery: false,
         flatDeliveryFee: null,
@@ -305,11 +310,9 @@ function DeliveryKitchenMapBar({
 type DeliveryViewProps = {
   /** Усередині головного меню: один фон з меню, без другої шапки / «картки» */
   embedInMenu?: boolean
-  /** Для MenuView: ref на hero, щоб IntersectionObserver ховав панель категорій на мобільному */
-  menuWelcomeHeroRef?: Ref<HTMLElement>
 }
 
-export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }: DeliveryViewProps) {
+export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps) {
   const { t, getLocalized } = useLanguage()
   const d = t.deliveryPage
   const lp = t.locationPicker
@@ -328,39 +331,6 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     deliveryTariffStepKm: 3,
     deliveryTariffStepEur: 1.5,
   })
-
-  const {
-    heroVideoRef: deliveryHeroVideoRef,
-    heroVideoSrc: deliveryHeroVideoSrc,
-    heroVideoFailed: deliveryHeroVideoFailed,
-    setHeroVideoFailed: setDeliveryHeroVideoFailed,
-    setHeroVideoSourceIndex: setDeliveryHeroVideoIndex,
-    videoSources: deliveryHeroPlaylist,
-    playlistLength: deliveryHeroPlaylistLength,
-  } = useHomeHeroVideo()
-
-  const [isNarrowViewport, setIsNarrowViewport] = useState(false)
-  /** ≤767px: вступ над відео; з 768px (планшет/ноут/ПК) — відео зверху, текст нижче */
-  const [deliveryIntroBeforeHero, setDeliveryIntroBeforeHero] = useState(false)
-  const deliveryNarrowStripHero = isNarrowViewport
-
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    const mqNarrow = window.matchMedia('(max-width: 768px)')
-    const applyNarrow = () => setIsNarrowViewport(mqNarrow.matches)
-    applyNarrow()
-    mqNarrow.addEventListener('change', applyNarrow)
-    return () => mqNarrow.removeEventListener('change', applyNarrow)
-  }, [])
-
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    const mqIntroFirst = window.matchMedia('(max-width: 767px)')
-    const apply = () => setDeliveryIntroBeforeHero(mqIntroFirst.matches)
-    apply()
-    mqIntroFirst.addEventListener('change', apply)
-    return () => mqIntroFirst.removeEventListener('change', apply)
-  }, [])
 
   const cityLabel = useCallback((c: City) => getLocalized(c, 'name') || c.name, [getLocalized])
 
@@ -728,6 +698,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
       titleLines={[d.headlineLead, d.headlineMark]}
       body={d.sub}
       accentLineIndex={1}
+      reserveTopSpace
     >
       {embedInMenu ? (
         <ul
@@ -742,42 +713,7 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     </AnimatedHeroIntroBlock>
   )
 
-  const deliveryHeroVideoBlock = (
-    <WelcomeHeroSection
-      sectionClassName={
-        embedInMenu ? 'delivery-page-hero-embed-web' : 'delivery-page-hero-standalone-web'
-      }
-      sectionRef={menuWelcomeHeroRef}
-      heroVideoFailed={deliveryHeroVideoFailed}
-      setHeroVideoSourceIndex={setDeliveryHeroVideoIndex}
-      setHeroVideoFailed={setDeliveryHeroVideoFailed}
-      heroVideoRef={deliveryHeroVideoRef}
-      heroVideoSrc={deliveryHeroVideoSrc}
-      videoSources={deliveryHeroPlaylist}
-      playlistLength={deliveryHeroPlaylistLength}
-    >
-      {embedInMenu ? (
-        <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
-          <WattaHeroMarqueeBar />
-        </div>
-      ) : null}
-    </WelcomeHeroSection>
-  )
-
-  const deliveryHeroVideoInStrip = deliveryNarrowStripHero ? (
-    <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
-      {deliveryHeroVideoBlock}
-    </div>
-  ) : (
-    deliveryHeroVideoBlock
-  )
-
-  const deliveryEmbedHeroStack = (
-    <>
-      {deliveryHeroVideoInStrip}
-      {deliveryIntroSection}
-    </>
-  )
+  const deliveryEmbedHeroStack = deliveryIntroSection
 
   const deliveryPageLeadIntro = (
     <AnimatedHeroIntroBlock
@@ -787,31 +723,14 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
       body={d.sub}
       accentLineIndex={1}
       headingLevel="h1"
-      reserveTopSpace={deliveryIntroBeforeHero}
+      reserveTopSpace
       innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
     />
   )
 
   const deliveryStandaloneHeroStack = (
-    <div
-      className={cn(
-        'delivery-page-hero-stack w-full shrink-0 bg-transparent',
-        deliveryIntroBeforeHero
-          ? 'delivery-page-hero-stack--intro-first'
-          : 'delivery-page-hero-stack--video-first',
-      )}
-    >
-      {deliveryIntroBeforeHero ? (
-        <>
-          {deliveryPageLeadIntro}
-          {deliveryHeroVideoInStrip}
-        </>
-      ) : (
-        <>
-          {deliveryHeroVideoInStrip}
-          {deliveryPageLeadIntro}
-        </>
-      )}
+    <div className="delivery-page-hero-stack delivery-page-hero-stack--intro-only w-full shrink-0 bg-transparent">
+      {deliveryPageLeadIntro}
       <DeliveryPageStats labels={d} />
     </div>
   )
@@ -1648,10 +1567,10 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
   return (
     <div
       id="delivery-page-container"
-      className="menu-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about watta-site-hero-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
+      className="menu-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
     >
       <div className="delivery-page-home-flow w-full">
-        <div className="delivery-page-intro-web delivery-page-intro-web--video w-full shrink-0">
+        <div className="delivery-page-intro-web w-full shrink-0">
           {deliveryStandaloneHeroStack}
         </div>
         <div className="delivery-page-tools-flow">{deliveryPageBody}</div>

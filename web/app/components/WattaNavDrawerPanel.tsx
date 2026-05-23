@@ -10,6 +10,7 @@ import {
   Home,
   Info,
   LogIn,
+  LogOut,
   MapPin,
   Menu,
   Send,
@@ -35,6 +36,8 @@ import {
   WATTA_TELEGRAM_URL,
 } from '@/lib/wattaSiteDefaults'
 import { useSiteAdmin } from '@/lib/useSiteAdmin'
+import { useIsLoggedIn } from '@/hooks/useIsLoggedIn'
+import { logoutClientSession } from '@/lib/authSession'
 import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
 import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
 
@@ -257,6 +260,28 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
   const categories = useDrawerCategories(categoriesProp)
   const displayCategories = categories
   const isSiteAdmin = useSiteAdmin()
+  const isLoggedIn = useIsLoggedIn()
+
+  const visibleNavPages = useMemo(
+    () =>
+      mainNavPages.filter((item) => {
+        if (isLoggedIn && (item.key === 'login' || item.key === 'register')) return false
+        return true
+      }),
+    [mainNavPages, isLoggedIn],
+  )
+
+  const handleLogout = useCallback(() => {
+    logoutClientSession()
+    onClose()
+    if (props.mode === 'embedded') {
+      props.onGoHome()
+      return
+    }
+    if (typeof window !== 'undefined') {
+      window.location.assign('/')
+    }
+  }, [onClose, props])
 
   const handleCategory = useCallback(
     (key: string, e?: React.MouseEvent<HTMLAnchorElement>) => {
@@ -403,7 +428,7 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
           ) : null}
 
           <nav className="watta-nav-compact__nav-grid" aria-label={nav.bottomNavAria}>
-            {mainNavPages.map((item, i) => (
+            {visibleNavPages.map((item, i) => (
               <WattaLink
                 key={item.key}
                 href={item.href}
@@ -423,7 +448,7 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
             <WattaLink
               href={privacyNavPage.href}
               className="watta-nav-compact__nav-privacy watta-nav-compact__pop"
-              style={{ animationDelay: `${220 + mainNavPages.length * 28}ms` }}
+              style={{ animationDelay: `${220 + visibleNavPages.length * 28}ms` }}
               onClick={(e) => handleNavClick(privacyNavPage, e)}
             >
               <Shield size={14} strokeWidth={2} aria-hidden />
@@ -455,6 +480,17 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
               </a>
               <p className="watta-nav-compact__hours">{sf.hoursLine}</p>
             </div>
+
+            {isLoggedIn ? (
+              <button
+                type="button"
+                className="watta-nav-compact__logout"
+                onClick={handleLogout}
+              >
+                <LogOut size={14} strokeWidth={2.2} aria-hidden />
+                <span>{t.clientProfile.logout}</span>
+              </button>
+            ) : null}
 
             {isSiteAdmin ? (
               <WattaLink

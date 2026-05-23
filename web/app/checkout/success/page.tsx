@@ -43,18 +43,34 @@ function CheckoutSuccessContent() {
           {t.cartSection.checkoutSuccessSubtitle}
         </p>
         {orderId ? (
-          <p className="text-lg font-bold text-[#194A38] mb-8 px-4 py-3 rounded-2xl bg-[#145142]/[0.08] border border-[#145142]/15 w-full">
+          <p className="text-lg font-bold text-[#194A38] mb-6 px-4 py-3 rounded-2xl bg-[#145142]/[0.08] border border-[#145142]/15 w-full">
             {t.cartSection.checkoutOrderNumber}{' '}
             <span className="text-[#ff6b35]">{orderId}</span>
           </p>
         ) : null}
-        <WattaLink
-          href="/menu"
-          onClick={clearClientCart}
-          className="inline-flex items-center justify-center min-h-[52px] w-full sm:w-auto px-10 rounded-2xl font-bold text-white bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] shadow-lg shadow-[#145142]/25 border border-white/20 ring-1 ring-[#ff6b35]/30 hover:brightness-105 active:scale-[0.98] transition"
-        >
-          {t.cartSection.checkoutBackToMenu}
-        </WattaLink>
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+          {orderId ? (
+            <WattaLink
+              href={`/profile/order/${orderId}/receipt`}
+              className="inline-flex items-center justify-center min-h-[52px] w-full sm:w-auto px-8 rounded-2xl font-bold text-[#145142] bg-white border-2 border-[#145142]/20 hover:bg-[#145142]/5 active:scale-[0.98] transition"
+            >
+              {t.clientProfile.viewReceipt}
+            </WattaLink>
+          ) : null}
+          <WattaLink
+            href={orderId ? `/profile?tab=history&order=${orderId}` : '/profile?tab=history'}
+            className="inline-flex items-center justify-center min-h-[52px] w-full sm:w-auto px-8 rounded-2xl font-bold text-white bg-[#1a6b58] hover:brightness-105 active:scale-[0.98] transition"
+          >
+            {t.clientProfile.tabHistory}
+          </WattaLink>
+          <WattaLink
+            href="/menu"
+            onClick={clearClientCart}
+            className="inline-flex items-center justify-center min-h-[52px] w-full sm:w-auto px-8 rounded-2xl font-semibold text-[#145142] underline-offset-2 hover:underline active:scale-[0.98] transition"
+          >
+            {t.cartSection.checkoutBackToMenu}
+          </WattaLink>
+        </div>
       </div>
     </div>
   )
