@@ -446,6 +446,16 @@ export interface Translations {
     welcomeAfterVerify: string
     wrongVerificationCode: string
     signedInToast: string
+    forgotPassword: string
+    forgotPasswordTitle: string
+    forgotPasswordPhoneHint: string
+    forgotPasswordCodeHint: string
+    forgotPasswordNewHint: string
+    forgotPasswordSendCode: string
+    forgotPasswordContinue: string
+    forgotPasswordSave: string
+    forgotPasswordSuccess: string
+    forgotPasswordResend: string
   }
   /** global-error.tsx (без LanguageProvider) — дублюємо по мовах через cookie */
   errorPage: {
@@ -940,6 +950,10 @@ export interface Translations {
       orderNum: string; noComment: string; payment: string; cash: string; online: string;
       paid: string; error: string; waiting: string; hintConfirmed: string; hintCooking: string; hintDelivering: string; 
       hintCompleted: string; hintCancel: string;
+      btnConfirmed: string; btnCooking: string; btnDelivering: string; btnCompleted: string; btnCancel: string;
+      readyTimeTitleAccept: string; readyTimeTitleCooking: string; readyTimePickupHint: string; readyTimeDeliveryHint: string;
+      readyTimeNotifyHint: string; readyTimeLabel: string; readyTimeMinutes: string; readyTimeRequired: string;
+      readyTimeSubmitAccept: string; readyTimeSubmitCooking: string; readyAtPickup: string; readyAtDelivery: string;
       fulfillmentDelivery: string; fulfillmentPickup: string; deliveryFeeAdmin: string;
     }
     news: {
@@ -1510,7 +1524,17 @@ const translations: Record<Language, Translations> = {
       phoneLost: 'Помилка: телефон втрачено. Спробуйте ще раз.',
       welcomeAfterVerify: 'Вітаємо!',
       wrongVerificationCode: 'Невірний код',
-      signedInToast: 'Ви увійшли'
+      signedInToast: 'Ви увійшли',
+      forgotPassword: 'Забули пароль?',
+      forgotPasswordTitle: 'Відновлення пароля',
+      forgotPasswordPhoneHint: 'Введіть номер телефону з акаунта — надішлемо SMS з кодом.',
+      forgotPasswordCodeHint: 'Введіть 4-значний код з SMS.',
+      forgotPasswordNewHint: 'Придумайте новий пароль (мінімум 6 символів).',
+      forgotPasswordSendCode: 'Надіслати код',
+      forgotPasswordContinue: 'Далі',
+      forgotPasswordSave: 'Зберегти пароль і увійти',
+      forgotPasswordSuccess: 'Пароль змінено. Ви увійшли.',
+      forgotPasswordResend: 'Надіслати код ще раз',
     },
     errorPage: {
       title: 'Щось пішло не так',
@@ -2070,7 +2094,7 @@ const translations: Record<Language, Translations> = {
       },
       actions: { add: "+ Додати", edit: "Редагувати", editShort: "Змінити", delete: "Видалити", save: "Зберегти", saveChanges: "Зберегти зміни", cancel: "Скасувати" },
       common: { menuChangeSection: "Меню / змінити розділ", emptyOrders: "Немає активних замовлень", emptyCities: "Міст поки немає", emptyBanners: "Банерів поки немає", emptyCategories: "Категорій поки немає", emptyUsers: "Користувачів поки немає", emptyTeam: "Членів команди поки немає", emptyPromos: "Промокодів поки немає", clickToUpload: "Натисніть, щоб завантажити фото", changeFile: "Змінити", selectFromList: "Вибрати зі списку", activeLabel: "Активно", inactiveLabel: "Неактивно", yes: "Так", no: "Ні", orderIndex: "Порядок відображення", choose: "Вибрати", notFound: "Нічого не знайдено. Спробуйте інший запит.", searching: "пошук...", bannerDragHint: "Перетягніть картку на іншу, щоб змінити порядок на сайті", bannerOrderSaved: "Порядок банерів збережено", bannerOrderSaveError: "Не вдалося зберегти порядок банерів" },
-      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintConfirmed: "Підтверджено", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовивіз", deliveryFeeAdmin: "Доставка:" },
+      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintConfirmed: "Підтверджено", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати", btnConfirmed: "Прийняти замовлення", btnCooking: "Готуємо", btnDelivering: "В доставці", btnCompleted: "Виконано", btnCancel: "Скасувати", readyTimeTitleAccept: "Прийняти замовлення", readyTimeTitleCooking: "Час готовності", readyTimePickupHint: "Клієнт отримає сповіщення: замовлення буде готове до вказаного часу (самовивіз).", readyTimeDeliveryHint: "Клієнт отримає сповіщення: доставка орієнтовно до вказаного часу.", readyTimeNotifyHint: "Час надсилається в сповіщення клієнту в профілі.", readyTimeLabel: "Готово / доставка до", readyTimeMinutes: "хв", readyTimeRequired: "Вкажіть час", readyTimeSubmitAccept: "Прийняти та надіслати", readyTimeSubmitCooking: "Зберегти та надіслати", readyAtPickup: "Готово до:", readyAtDelivery: "Доставка до:", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовивіз", deliveryFeeAdmin: "Доставка:" },
       news: { title: "Новини", addBtn: "+ Додати", editTitle: "Редагувати", newTitle: "Нова новина", titlePlaceholder: "Заголовок", descPlaceholder: "Короткий опис", textPlaceholder: "Повний текст", isHit: "Хіт продажу", galleryLabel: "Галерея фото", uploadPhotos: "Додати фото (кілька)", removePhotoAria: "Прибрати фото", dishesBlock: "Страви зі знижкою в цій новині", selectProduct: "Оберіть страву", discountShort: "Знижка %", addDish: "Додати страву", dishDuplicate: "Ця страва вже додана", pickProductFirst: "Спочатку оберіть страву" },
       products: { addBtn: "+ Додати товар", hit: "ХІТ", editTitle: "Редагувати страву", newTitle: "Нова страва", nameLabel: "Назва товару", namePlaceholder: "Наприклад: Філадельфія", descLabel: "Опис", descPlaceholder: "Склад, вага, особливості...", priceLabel: "Ціна (€)", categoryLabel: "Категорія", selectCategory: "Оберіть...", deliveryCities: "Міста доставки *", addCitiesFirst: "Спочатку додайте міста у вкладці 'Міста'", descComposition: "Описи (Склад)", ingComposition: "Інгредієнти (Склад)" },
       ingredients: {
@@ -2512,7 +2536,17 @@ const translations: Record<Language, Translations> = {
       phoneLost: 'Ошибка: телефон не найден. Попробуйте снова.',
       welcomeAfterVerify: 'Добро пожаловать!',
       wrongVerificationCode: 'Неверный код',
-      signedInToast: 'Вы вошли'
+      signedInToast: 'Вы вошли',
+      forgotPassword: 'Забыли пароль?',
+      forgotPasswordTitle: 'Восстановление пароля',
+      forgotPasswordPhoneHint: 'Введите номер телефона из аккаунта — отправим SMS с кодом.',
+      forgotPasswordCodeHint: 'Введите 4-значный код из SMS.',
+      forgotPasswordNewHint: 'Придумайте новый пароль (минимум 6 символов).',
+      forgotPasswordSendCode: 'Отправить код',
+      forgotPasswordContinue: 'Далее',
+      forgotPasswordSave: 'Сохранить пароль и войти',
+      forgotPasswordSuccess: 'Пароль изменён. Вы вошли.',
+      forgotPasswordResend: 'Отправить код ещё раз',
     },
     errorPage: {
       title: 'Что-то пошло не так',
@@ -3072,7 +3106,7 @@ const translations: Record<Language, Translations> = {
       },
       actions: { add: "+ Добавить", edit: "Редактировать", editShort: "Изменить", delete: "Удалить", save: "Сохранить", saveChanges: "Сохранить изменения", cancel: "Отмена" },
       common: { menuChangeSection: "Меню / изменить раздел", emptyOrders: "Нет активных заказов", emptyCities: "Городов пока нет", emptyBanners: "Баннеров пока нет", emptyCategories: "Категорий пока нет", emptyUsers: "Пользователей пока нет", emptyTeam: "Членов команды пока нет", emptyPromos: "Промокодов пока нет", clickToUpload: "Нажмите, чтобы загрузить фото", changeFile: "Изменить", selectFromList: "Выбрать из списка", activeLabel: "Активен", inactiveLabel: "Неактивен", yes: "Да", no: "Нет", orderIndex: "Порядок отображения", choose: "Выбрать", notFound: "Ничего не найдено. Попробуйте другой запрос.", searching: "поиск...", bannerDragHint: "Перетащите карточку на другую, чтобы изменить порядок на сайте", bannerOrderSaved: "Порядок баннеров сохранён", bannerOrderSaveError: "Не удалось сохранить порядок баннеров" },
-      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintConfirmed: "Подтверждён", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовывоз", deliveryFeeAdmin: "Доставка:" },
+      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintConfirmed: "Подтверждён", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить", btnConfirmed: "Принять заказ", btnCooking: "Готовим", btnDelivering: "В доставке", btnCompleted: "Выполнен", btnCancel: "Отменить", readyTimeTitleAccept: "Принять заказ", readyTimeTitleCooking: "Время готовности", readyTimePickupHint: "Клиент получит уведомление: заказ будет готов к указанному времени (самовывоз).", readyTimeDeliveryHint: "Клиент получит уведомление: доставка ориентировочно к указанному времени.", readyTimeNotifyHint: "Время отправляется клиенту в уведомлениях в профиле.", readyTimeLabel: "Готово / доставка к", readyTimeMinutes: "мин", readyTimeRequired: "Укажите время", readyTimeSubmitAccept: "Принять и отправить", readyTimeSubmitCooking: "Сохранить и отправить", readyAtPickup: "Готово к:", readyAtDelivery: "Доставка к:", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовывоз", deliveryFeeAdmin: "Доставка:" },
       news: { title: "Новости", addBtn: "+ Добавить", editTitle: "Редактировать", newTitle: "Новая новость", titlePlaceholder: "Заголовок", descPlaceholder: "Краткое описание", textPlaceholder: "Полный текст", isHit: "Хит продаж", galleryLabel: "Галерея фото", uploadPhotos: "Добавить фото (несколько)", removePhotoAria: "Убрать фото", dishesBlock: "Блюда со скидкой в этой новости", selectProduct: "Выберите блюдо", discountShort: "Скидка %", addDish: "Добавить блюдо", dishDuplicate: "Это блюдо уже добавлено", pickProductFirst: "Сначала выберите блюдо" },
       products: { addBtn: "+ Добавить товар", hit: "ХИТ", editTitle: "Редактировать блюдо", newTitle: "Новое блюдо", nameLabel: "Название товара", namePlaceholder: "Например: Филадельфия", descLabel: "Описание", descPlaceholder: "Состав, вес, особенности...", priceLabel: "Цена (€)", categoryLabel: "Категория", selectCategory: "Выберите...", deliveryCities: "Города доставки *", addCitiesFirst: "Сначала добавьте города во вкладке 'Города'", descComposition: "Описания (Состав)", ingComposition: "Ингредиенты (Состав)" },
       ingredients: {
@@ -3514,7 +3548,17 @@ const translations: Record<Language, Translations> = {
       phoneLost: 'Error: phone number lost. Please try again.',
       welcomeAfterVerify: 'Welcome!',
       wrongVerificationCode: 'Invalid code',
-      signedInToast: 'Signed in'
+      signedInToast: 'Signed in',
+      forgotPassword: 'Forgot password?',
+      forgotPasswordTitle: 'Reset password',
+      forgotPasswordPhoneHint: 'Enter the phone number on your account — we will send an SMS code.',
+      forgotPasswordCodeHint: 'Enter the 4-digit code from SMS.',
+      forgotPasswordNewHint: 'Choose a new password (at least 6 characters).',
+      forgotPasswordSendCode: 'Send code',
+      forgotPasswordContinue: 'Continue',
+      forgotPasswordSave: 'Save password & sign in',
+      forgotPasswordSuccess: 'Password updated. You are signed in.',
+      forgotPasswordResend: 'Resend code',
     },
     errorPage: {
       title: 'Something went wrong',
@@ -4074,7 +4118,7 @@ const translations: Record<Language, Translations> = {
       },
       actions: { add: "+ Add", edit: "Edit", editShort: "Edit", delete: "Delete", save: "Save", saveChanges: "Save changes", cancel: "Cancel" },
       common: { menuChangeSection: "Menu / change section", emptyOrders: "No active orders", emptyCities: "No cities yet", emptyBanners: "No banners yet", emptyCategories: "No categories yet", emptyUsers: "No users yet", emptyTeam: "No team members yet", emptyPromos: "No promos yet", clickToUpload: "Click to upload photo", changeFile: "Change", selectFromList: "Select from list", activeLabel: "Active", inactiveLabel: "Inactive", yes: "Yes", no: "No", orderIndex: "Display order", choose: "Choose", notFound: "Nothing found. Try another query.", searching: "searching...", bannerDragHint: "Drag a card onto another to change the order on the site", bannerOrderSaved: "Banner order saved", bannerOrderSaveError: "Could not save banner order" },
-      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintConfirmed: "Confirmed", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel", fulfillmentDelivery: "Delivery", fulfillmentPickup: "Pickup", deliveryFeeAdmin: "Delivery fee:" },
+      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintConfirmed: "Confirmed", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel", btnConfirmed: "Accept order", btnCooking: "Preparing", btnDelivering: "Out for delivery", btnCompleted: "Completed", btnCancel: "Cancel", readyTimeTitleAccept: "Accept order", readyTimeTitleCooking: "Ready time", readyTimePickupHint: "Customer will be notified: order ready for pickup by this time.", readyTimeDeliveryHint: "Customer will be notified: delivery expected by this time.", readyTimeNotifyHint: "Time is sent to the customer in profile notifications.", readyTimeLabel: "Ready / delivery by", readyTimeMinutes: "min", readyTimeRequired: "Set a time", readyTimeSubmitAccept: "Accept & notify", readyTimeSubmitCooking: "Save & notify", readyAtPickup: "Ready by:", readyAtDelivery: "Delivery by:", fulfillmentDelivery: "Delivery", fulfillmentPickup: "Pickup", deliveryFeeAdmin: "Delivery fee:" },
       news: { title: "News", addBtn: "+ Add", editTitle: "Edit", newTitle: "New news", titlePlaceholder: "Title", descPlaceholder: "Short description", textPlaceholder: "Full text", isHit: "Bestseller", galleryLabel: "Photo gallery", uploadPhotos: "Add photos (multiple)", removePhotoAria: "Remove photo", dishesBlock: "Discounted dishes in this story", selectProduct: "Pick a dish", discountShort: "Discount %", addDish: "Add dish", dishDuplicate: "This dish is already added", pickProductFirst: "Select a dish first" },
       products: { addBtn: "+ Add product", hit: "HOT", editTitle: "Edit dish", newTitle: "New dish", nameLabel: "Product name", namePlaceholder: "e.g.: Philadelphia", descLabel: "Description", descPlaceholder: "Ingredients, weight, features...", priceLabel: "Price (€)", categoryLabel: "Category", selectCategory: "Select...", deliveryCities: "Delivery cities *", addCitiesFirst: "Add cities in the 'Cities' tab first", descComposition: "Descriptions (Composition)", ingComposition: "Ingredients (Composition)" },
       ingredients: {
@@ -4516,7 +4560,17 @@ const translations: Record<Language, Translations> = {
       phoneLost: 'Fout: telefoon verloren. Probeer opnieuw.',
       welcomeAfterVerify: 'Welkom!',
       wrongVerificationCode: 'Ongeldige code',
-      signedInToast: 'U bent ingelogd'
+      signedInToast: 'U bent ingelogd',
+      forgotPassword: 'Wachtwoord vergeten?',
+      forgotPasswordTitle: 'Wachtwoord herstellen',
+      forgotPasswordPhoneHint: 'Voer het telefoonnummer van uw account in — we sturen een SMS-code.',
+      forgotPasswordCodeHint: 'Voer de 4-cijferige code uit de SMS in.',
+      forgotPasswordNewHint: 'Kies een nieuw wachtwoord (minimaal 6 tekens).',
+      forgotPasswordSendCode: 'Code versturen',
+      forgotPasswordContinue: 'Verder',
+      forgotPasswordSave: 'Wachtwoord opslaan en inloggen',
+      forgotPasswordSuccess: 'Wachtwoord gewijzigd. U bent ingelogd.',
+      forgotPasswordResend: 'Code opnieuw versturen',
     },
     errorPage: {
       title: 'Er ging iets mis',
@@ -5076,7 +5130,7 @@ const translations: Record<Language, Translations> = {
       },
       actions: { add: "+ Toevoegen", edit: "Bewerken", editShort: "Wijzig", delete: "Verwijderen", save: "Opslaan", saveChanges: "Wijzigingen opslaan", cancel: "Annuleren" },
       common: { menuChangeSection: "Menu / sectie wijzigen", emptyOrders: "Geen actieve bestellingen", emptyCities: "Nog geen steden", emptyBanners: "Nog geen banners", emptyCategories: "Nog geen categorieën", emptyUsers: "Nog geen gebruikers", emptyTeam: "Nog geen teamleden", emptyPromos: "Nog geen promo's", clickToUpload: "Klik om foto te uploaden", changeFile: "Wijzig", selectFromList: "Selecteer uit lijst", activeLabel: "Actief", inactiveLabel: "Inactief", yes: "Ja", no: "Nee", orderIndex: "Weergavevolgorde", choose: "Kiezen", notFound: "Niets gevonden. Probeer een andere zoekopdracht.", searching: "zoeken...", bannerDragHint: "Sleep een kaart op een andere om de volgorde op de site te wijzigen", bannerOrderSaved: "Bannervolgorde opgeslagen", bannerOrderSaveError: "Kon bannervolgorde niet opslaan" },
-      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintConfirmed: "Bevestigd", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren", fulfillmentDelivery: "Bezorging", fulfillmentPickup: "Afhalen", deliveryFeeAdmin: "Bezorgkosten:" },
+      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintConfirmed: "Bevestigd", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren", btnConfirmed: "Bestelling accepteren", btnCooking: "Bereiden", btnDelivering: "Onderweg", btnCompleted: "Voltooid", btnCancel: "Annuleren", readyTimeTitleAccept: "Bestelling accepteren", readyTimeTitleCooking: "Klaar om", readyTimePickupHint: "Klant krijgt melding: bestelling klaar voor afhalen op dit tijdstip.", readyTimeDeliveryHint: "Klant krijgt melding: bezorging rond dit tijdstip.", readyTimeNotifyHint: "Tijd wordt naar de klant gestuurd in profielmeldingen.", readyTimeLabel: "Klaar / bezorging om", readyTimeMinutes: "min", readyTimeRequired: "Stel een tijd in", readyTimeSubmitAccept: "Accepteren & melden", readyTimeSubmitCooking: "Opslaan & melden", readyAtPickup: "Klaar om:", readyAtDelivery: "Bezorging om:", fulfillmentDelivery: "Bezorging", fulfillmentPickup: "Afhalen", deliveryFeeAdmin: "Bezorgkosten:" },
       news: { title: "Nieuws", addBtn: "+ Toevoegen", editTitle: "Bewerken", newTitle: "Nieuw nieuws", titlePlaceholder: "Titel", descPlaceholder: "Korte beschrijving", textPlaceholder: "Volledige tekst", isHit: "Bestseller", galleryLabel: "Fotogalerij", uploadPhotos: "Foto’s toevoegen (meerdere)", removePhotoAria: "Foto verwijderen", dishesBlock: "Gerechten met korting in dit bericht", selectProduct: "Kies een gerecht", discountShort: "Korting %", addDish: "Gerecht toevoegen", dishDuplicate: "Dit gerecht staat al in de lijst", pickProductFirst: "Kies eerst een gerecht" },
       products: { addBtn: "+ Product toevoegen", hit: "HOT", editTitle: "Gerecht bewerken", newTitle: "Nieuw gerecht", nameLabel: "Productnaam", namePlaceholder: "bijv.: Philadelphia", descLabel: "Beschrijving", descPlaceholder: "Ingrediënten, gewicht, kenmerken...", priceLabel: "Prijs (€)", categoryLabel: "Categorie", selectCategory: "Selecteer...", deliveryCities: "Bezorgsteden *", addCitiesFirst: "Voeg eerst steden toe op het tabblad 'Steden'", descComposition: "Beschrijvingen (Samenstelling)", ingComposition: "Ingrediënten (Samenstelling)" },
       ingredients: {

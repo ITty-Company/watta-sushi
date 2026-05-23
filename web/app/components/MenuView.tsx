@@ -328,15 +328,16 @@ export default function MenuView() {
   }, [])
 
   const scrollToHomeCatalogCategory = useCallback((categoryKey: string) => {
-    if (typeof document === 'undefined') return
+    if (typeof document === 'undefined') return false
     const root = document.querySelector<HTMLElement>('.content-web--watta-craft')
     const el = document.getElementById(`home-menu-cat-${categoryKey}`)
-    if (!root || !el) return
+    if (!root || !el) return false
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200
     /* Збіг зі scroll-padding: ≤768 — шапка+категорії в fixed-chrome (148), планшет 118, широкий 168 */
     const headerOffset = w <= 768 ? 148 : w <= 1024 ? 118 : 168
     const top = el.getBoundingClientRect().top + root.scrollTop - headerOffset
-    root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    root.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
+    return true
   }, [])
 
   /** Смуга шапка + категорії на вузьких екранах: завжди та сама, що на ноуті (без «фази відео» без категорій) */
@@ -1458,6 +1459,11 @@ export default function MenuView() {
       const inCatalog = menuCategoriesWithItems.some((c) => c.key === slug)
       if (!inStrip && !inCatalog) return
 
+      if (inStrip && !inCatalog) {
+        router.push(`/menu?cat=${encodeURIComponent(slug)}`, { scroll: false })
+        return
+      }
+
       homeStripScrollLockRef.current = true
       if (inStrip || inCatalog) {
         setSelectedCategory(slug)
@@ -1465,18 +1471,19 @@ export default function MenuView() {
       /* Одразу підсвітити ту саму категорію в панелі (підказка скролу під час lock не оновлюється) */
       window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
       setActivePage((p) => (p === 'delivery' ? null : p))
-      requestAnimationFrame(() => {
+      const tryScroll = () => scrollToHomeCatalogCategory(slug)
+      if (!tryScroll()) {
         requestAnimationFrame(() => {
-          scrollToHomeCatalogCategory(slug)
-          window.setTimeout(() => {
-            homeStripScrollLockRef.current = false
-          }, 700)
+          if (!tryScroll()) requestAnimationFrame(tryScroll)
         })
-      })
+      }
+      window.setTimeout(() => {
+        homeStripScrollLockRef.current = false
+      }, 400)
     }
     window.addEventListener(WATTA_HOME_REQUEST_SCROLL_TO_CAT, onHomeCat as EventListener)
     return () => window.removeEventListener(WATTA_HOME_REQUEST_SCROLL_TO_CAT, onHomeCat as EventListener)
-  }, [scrollToHomeCatalogCategory, categoriesForTopStrip, menuCategoriesWithItems])
+  }, [scrollToHomeCatalogCategory, categoriesForTopStrip, menuCategoriesWithItems, router])
 
   useEffect(() => {
     if (pathname !== '/') return
@@ -1672,15 +1679,6 @@ export default function MenuView() {
       window.removeEventListener(WATTA_CHROME_CLOSE_HOME_OVERLAY_EVENT, onGoHome)
     }
   })
-
-  const openSidebar = useCallback(() => {
-    if (isSidebarOpen) return
-    if (activePage && activePage !== 'admin') {
-      setActivePage(null)
-    }
-    setSidebarStaggerKey((k) => k + 1)
-    setIsSidebarOpen(true)
-  }, [isSidebarOpen, activePage])
 
   const navDrawerCategories = useMemo(
     () =>
@@ -2058,7 +2056,6 @@ export default function MenuView() {
         <NavigationSidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
-          onOpen={openSidebar}
           staggerKey={sidebarStaggerKey}
           categories={navDrawerCategories}
           onCategorySelect={handleNavCategorySelect}
@@ -2550,7 +2547,6 @@ export default function MenuView() {
       <NavigationSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        onOpen={openSidebar}
         staggerKey={sidebarStaggerKey}
         categories={navDrawerCategories}
         onCategorySelect={handleNavCategorySelect}

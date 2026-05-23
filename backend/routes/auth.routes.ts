@@ -157,7 +157,98 @@ router.post('/verify', async (req: any, res: any) => {
   }
 });
 
-// ... логин оставляем как был
+function cleanPhoneInput(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
+function issueAuthToken(user: { id: number; email: string; name: string | null; role: string }) {
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, role: user.role },
+    getJwtSecret(),
+    { expiresIn: '30d' },
+  );
+  return {
+    token,
+    user: { id: user.id, email: user.email, name: user.name, role: user.role },
+  };
+}
+
+// Восстановление пароля: отправка SMS-кода на подтверждённый номер
+router.post('/forgot-password', async (req: any, res: any) => {
+  const { phone } = req.body;
+
+  try {
+    if (!phone) return res.status(400).json({ message: 'Не указан телефон' });
+
+    const cleanPhone = cleanPhoneInput(phone);
+    const user = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь с таким номером не найден' });
+    }
+    if (!user.isPhoneVerified) {
+      return res.status(403).json({ message: 'Номер телефона не подтверждён. Завершите регистрацию.' });
+    }
+
+    const resetCode = Math.floor(1000 + Math.random() * 9000).toString();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { verificationCode: resetCode },
+    });
+
+    const smsPhone = phone.startsWith('+') ? phone : `+${cleanPhone}`;
+    try {
+      await sendSms(smsPhone, `Код восстановления пароля Watta Sushi: ${resetCode}`);
+    } catch (smsError) {
+      console.error('Ошибка отправки СМС:', smsError);
+      console.log('>>> КОД ВОССТАНОВЛЕНИЯ ПАРОЛЯ:', resetCode, '<<<');
+    }
+
+    res.json({ message: 'Код восстановления отправлен' });
+  } catch (error) {
+    console.error('Ошибка forgot-password:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Восстановление пароля: проверка кода, смена пароля и автоматический вход
+router.post('/reset-password', async (req: any, res: any) => {
+  const { phone, code, password } = req.body;
+
+  try {
+    if (!phone || !code || !password) {
+      return res.status(400).json({ message: 'Заполните телефон, код и новый пароль' });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: 'Пароль должен содержать минимум 6 символов' });
+    }
+
+    const cleanPhone = cleanPhoneInput(phone);
+    const user = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь с таким номером не найден' });
+    }
+    if (!user.isPhoneVerified) {
+      return res.status(403).json({ message: 'Номер телефона не подтверждён' });
+    }
+    if (!user.verificationCode || user.verificationCode !== String(code)) {
+      return res.status(400).json({ message: 'Неверный код' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword, verificationCode: null },
+    });
+
+    res.json(issueAuthToken(updatedUser));
+  } catch (error) {
+    console.error('Ошибка reset-password:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
 router.post('/login', async (req: any, res: any) => {
   const { email, password } = req.body;
   

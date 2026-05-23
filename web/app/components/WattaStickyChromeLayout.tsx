@@ -55,6 +55,7 @@ export default function WattaStickyChromeLayout({
   const [flowH, setFlowH] = useState(0)
   const [headerFlowH, setHeaderFlowH] = useState(0)
   const localRef = useRef<HTMLDivElement | null>(null)
+  const lastChromeWidthRef = useRef<number | null>(null)
 
   const toFlowLayoutHeight = useCallback(
     (raw: number) => {
@@ -120,7 +121,15 @@ export default function WattaStickyChromeLayout({
       requestAnimationFrame(measure)
     })
     ro.observe(el)
-    const onResize = () => measure()
+    const onResize = () => {
+      if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+        const w = window.innerWidth
+        if (lastChromeWidthRef.current !== null && lastChromeWidthRef.current === w) return
+        lastChromeWidthRef.current = w
+      }
+      measure()
+    }
+    lastChromeWidthRef.current = typeof window !== 'undefined' ? window.innerWidth : null
     const onLayoutSync = () => measure()
     window.addEventListener('resize', onResize)
     window.addEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
@@ -156,7 +165,7 @@ export default function WattaStickyChromeLayout({
         ref={setInnerNode}
         data-watta-sticky-chrome-portal=""
         className={clsx(
-          'watta-sticky-chrome-portal fixed top-0 left-0 right-0 z-[200] w-full max-w-[100vw] pointer-events-auto',
+          'watta-sticky-chrome-portal fixed top-0 left-0 right-0 z-[200] w-full max-w-[100vw] pointer-events-none',
           chromeClassName,
         )}
       >

@@ -29,9 +29,9 @@ import {
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { readCitiesCacheRaw, writeCitiesCache } from '@/lib/wattaCitiesCache'
 import { readSiteSettingsCache } from '@/lib/publicRouteWarmCache'
-import { useDeliveryHeroVideo } from '@/hooks/useDeliveryHeroVideo'
+import { useHomeHeroVideo } from '@/hooks/useHomeHeroVideo'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
-import DeliveryWelcomeHeroSection from './DeliveryWelcomeHeroSection'
+import WelcomeHeroSection from './WelcomeHeroSection'
 import { ArrowUpRight, MapPin, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -334,11 +334,10 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     heroVideoSrc: deliveryHeroVideoSrc,
     heroVideoFailed: deliveryHeroVideoFailed,
     setHeroVideoFailed: setDeliveryHeroVideoFailed,
-    heroVideoSourceIndex: deliveryHeroVideoIndex,
     setHeroVideoSourceIndex: setDeliveryHeroVideoIndex,
     videoSources: deliveryHeroPlaylist,
     playlistLength: deliveryHeroPlaylistLength,
-  } = useDeliveryHeroVideo()
+  } = useHomeHeroVideo()
 
   const [isNarrowViewport, setIsNarrowViewport] = useState(false)
   /** ≤767px: вступ над відео; з 768px (планшет/ноут/ПК) — відео зверху, текст нижче */
@@ -743,10 +742,12 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
     </AnimatedHeroIntroBlock>
   )
 
-  const deliveryHeroVideoBlock = () => (
-    <DeliveryWelcomeHeroSection
+  const deliveryHeroVideoBlock = (
+    <WelcomeHeroSection
+      sectionClassName={
+        embedInMenu ? 'delivery-page-hero-embed-web' : 'delivery-page-hero-standalone-web'
+      }
       sectionRef={menuWelcomeHeroRef}
-      embedInMenu={embedInMenu}
       heroVideoFailed={deliveryHeroVideoFailed}
       setHeroVideoSourceIndex={setDeliveryHeroVideoIndex}
       setHeroVideoFailed={setDeliveryHeroVideoFailed}
@@ -760,15 +761,15 @@ export default function DeliveryView({ embedInMenu = false, menuWelcomeHeroRef }
           <WattaHeroMarqueeBar />
         </div>
       ) : null}
-    </DeliveryWelcomeHeroSection>
+    </WelcomeHeroSection>
   )
 
   const deliveryHeroVideoInStrip = deliveryNarrowStripHero ? (
     <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
-      {deliveryHeroVideoBlock()}
+      {deliveryHeroVideoBlock}
     </div>
   ) : (
-    deliveryHeroVideoBlock()
+    deliveryHeroVideoBlock
   )
 
   const deliveryEmbedHeroStack = (

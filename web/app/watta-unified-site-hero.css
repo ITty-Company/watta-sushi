@@ -67,7 +67,7 @@ html:has(.watta-delivery-page.watta-site-hero-page-web) .watta-sticky-chrome-flo
   .welcome-hero-video-fill-web {
   position: relative !important;
   width: 100% !important;
-  max-width: min(100%, 1120px) !important;
+  max-width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
   z-index: 2 !important;
@@ -122,8 +122,8 @@ html:has(.watta-delivery-page.watta-site-hero-page-web) .watta-sticky-chrome-flo
   .welcome-hero-video-input-shield-web {
   border-radius: inherit !important;
   object-fit: cover !important;
-  object-position: center center !important;
-  background-position: center center !important;
+  object-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
+  background-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
   background-size: cover !important;
 }
 
@@ -141,8 +141,8 @@ html:has(.watta-delivery-page.watta-site-hero-page-web) .watta-sticky-chrome-flo
 .watta-full-menu-page.watta-site-hero-page-web .welcome-hero-fallback-image-web,
 .watta-delivery-page.watta-site-hero-page-web .welcome-video-native-web,
 .watta-delivery-page.watta-site-hero-page-web .welcome-hero-fallback-image-web {
-  object-position: center center !important;
-  background-position: center center !important;
+  object-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
+  background-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
 }
 
 .watta-full-menu-page.watta-site-hero-page-web
@@ -456,9 +456,9 @@ html:has(.watta-delivery-page.watta-site-hero-page-web) .watta-sticky-chrome-flo
   .welcome-hero-section-web.watta-home-hero-as-card-web
   .welcome-hero-fallback-image-web {
   object-fit: cover !important;
-  object-position: center center !important;
+  object-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
   background-size: cover !important;
-  background-position: center center !important;
+  background-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
 }
 
 @media (min-width: 1025px) {
@@ -494,7 +494,7 @@ html:has(.watta-delivery-page.watta-site-hero-page-web) .watta-sticky-chrome-flo
   position: relative !important;
   inset: auto !important;
   width: 100% !important;
-  max-width: min(100%, 1120px) !important;
+  max-width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
   background: transparent !important;

@@ -90,6 +90,10 @@ import AdminContactInquiriesPanel from './admin/AdminContactInquiriesPanel'
 import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
 import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSave'
 import { compressProductImageFile } from '@/lib/compressProductImage'
+import {
+  mergeIngredientIdsFromProducts,
+  productRowIngredientIds,
+} from '@/lib/mergeSetIngredientsFromProducts'
 
 function notifyCountriesCatalogUpdated() {
   broadcastWattaCatalogUpdate('countries')
@@ -178,6 +182,7 @@ interface Product {
   /** Порядок у рекомендаціях кошика */
   cartRecommendOrder?: number
   promoDiscountPercent?: number
+  ingredientIds?: number[]
 }
 
 interface OrderItem {
@@ -213,9 +218,40 @@ interface Order {
   items: OrderItem[]
   fulfillmentType?: string
   deliveryFee?: number
+  readyAt?: string | null
 
   paymentMethod: 'CASH' | 'CARD' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'IDEAL'
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED'
+}
+
+type OrderReadyTimeModal = {
+  orderId: number
+  status: 'CONFIRMED' | 'COOKING'
+  fulfillmentType: string
+  readyAtInput: string
+}
+
+function toDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function defaultReadyAtInput(): string {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() + 30)
+  return toDatetimeLocalValue(d)
+}
+
+function formatReadyAtDisplay(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleString('uk-UA', {
+    timeZone: 'Europe/Amsterdam',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 interface PromoCode {
@@ -531,6 +567,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [crmSubview, setCrmSubview] = useState<'customers' | 'inquiries'>('customers')
   
   const [orders, setOrders] = useState<Order[]>([])
+  const [orderReadyTimeModal, setOrderReadyTimeModal] = useState<OrderReadyTimeModal | null>(null)
+  const [orderStatusSaving, setOrderStatusSaving] = useState(false)
   const initialAdminProducts = useMemo(() => readAdminProductsCache() ?? [], [])
   const [products, setProducts] = useState<Product[]>(() => initialAdminProducts as Product[])
   const [productsListReady, setProductsListReady] = useState(() => initialAdminProducts.length > 0)
@@ -692,6 +730,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     imageUrls: [] as string[],
     cityIds: [] as number[],
     ingredientIds: [] as number[],
+    setSourceProductIds: [] as number[],
     isPopular: false,
     isHomeHit: false,
     isMenuNew: false,
@@ -1571,6 +1610,51 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const setsCategoryId = useMemo(
+    () => menuCategories.find((c) => c.slug === 'sets')?.id ?? null,
+    [menuCategories],
+  )
+
+  const isSetProductForm = useMemo(() => {
+    const cid = Number(formData.categoryId)
+    if (!Number.isFinite(cid) || cid < 1) return false
+    if (setsCategoryId != null) return cid === setsCategoryId
+    const cat = menuCategories.find((c) => c.id === cid)
+    return cat?.slug === 'sets'
+  }, [formData.categoryId, menuCategories, setsCategoryId])
+
+  const productsCatalogWithIngredients = useMemo(
+    () =>
+      products.map((p) => ({
+        ...p,
+        ingredientIds: p.ingredientIds?.length
+          ? p.ingredientIds
+          : productRowIngredientIds(p),
+      })),
+    [products],
+  )
+
+  const setPickerProductOptions = useMemo(() => {
+    return productsCatalogWithIngredients
+      .filter((p) => p.id !== editingId && (setsCategoryId == null || p.categoryId !== setsCategoryId))
+      .sort((a, b) => String(a.name_ru).localeCompare(String(b.name_ru), 'uk'))
+  }, [productsCatalogWithIngredients, editingId, setsCategoryId])
+
+  const toggleSetSourceProduct = (productId: number) => {
+    setFormData((prev) => {
+      const current = prev.setSourceProductIds || []
+      const nextSource = current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId]
+      const merged = mergeIngredientIdsFromProducts(
+        nextSource,
+        productsCatalogWithIngredients,
+        editingId,
+      )
+      return { ...prev, setSourceProductIds: nextSource, ingredientIds: merged }
+    })
+  }
+
   const GALLERY_MAX = 24
 
   const uploadProductImageFiles = async (files: File[]): Promise<string[]> => {
@@ -1696,6 +1780,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     imageUrls: [] as string[],
     cityIds: [] as number[],
     ingredientIds: [] as number[],
+    setSourceProductIds: [] as number[],
     isPopular: false,
     isHomeHit: false,
     isMenuNew: false,
@@ -1723,7 +1808,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         imageUrls: product.imageUrls,
       }),
       cityIds: [] as number[],
-      ingredientIds: [] as number[],
+      ingredientIds: product.ingredientIds?.length
+        ? [...product.ingredientIds]
+        : productRowIngredientIds(product),
+      setSourceProductIds: [] as number[],
       isPopular: hitsOn,
       isHomeHit: hitsOn,
       isMenuNew: Boolean(product.isMenuNew),
@@ -1755,6 +1843,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       }),
       cityIds: cities?.map((pc) => pc.cityId) || [],
       ingredientIds: ings?.map((i) => i.id) || [],
+      setSourceProductIds: [] as number[],
       isPopular: hitsOn,
       isHomeHit: hitsOn,
       isMenuNew: Boolean(productData.isMenuNew),
@@ -1964,7 +2053,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       
       if (res.ok) {
         const saved = (await res.json()) as Product
-        const normalized = normalizeAdminProductRow(saved)
+        const normalized = {
+          ...normalizeAdminProductRow(saved),
+          ingredientIds:
+            payload.ingredientIds.length > 0
+              ? payload.ingredientIds
+              : productRowIngredientIds(saved),
+        }
         if (
           imageUrlsForSave.length > 0 &&
           !adminProductCoverSrc(normalized)
@@ -2022,43 +2117,108 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   }
 
   // --- ЛОГИКА ЗАКАЗОВ (СТАТУСЫ) ---
-  const updateStatus = async (orderId: number, newStatus: string) => {
-    if (!confirm(`${t.adminPage.orders.changeStatusConfirm} "${newStatus}"?`)) return
+  const patchOrderStatus = async (
+    orderId: number,
+    newStatus: string,
+    readyAt?: string,
+  ) => {
+    setOrderStatusSaving(true)
     try {
       const token = localStorage.getItem('token')
       if (!token) {
         notifyError(t.adminPage.auth.notAuthorized)
-        return
+        return false
       }
+      const body: { status: string; readyAt?: string } = { status: newStatus }
+      if (readyAt) body.readyAt = readyAt
       const res = await fetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(body),
       })
       if (res.ok) {
+        const updated = (await res.json()) as Order
         setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+          prev.map((o) =>
+            o.id === orderId
+              ? {
+                  ...o,
+                  status: updated.status ?? newStatus,
+                  readyAt: updated.readyAt ?? (readyAt ? new Date(readyAt).toISOString() : o.readyAt),
+                }
+              : o,
+          ),
         )
         void refreshTab('dashboard')
         toast.success(t.adminPage.common.statusUpdated)
-      } else {
-        let errorMessage = t.adminPage.common.updateError
-        try {
-          const error = await res.json()
-          errorMessage = error.message || error.error || `Ошибка ${res.status}: ${res.statusText}`
-        } catch {
-          errorMessage = `Ошибка ${res.status}: ${res.statusText}`
-        }
-        toast.error(errorMessage)
+        return true
       }
-    } catch (error: any) { 
+      let errorMessage = t.adminPage.common.updateError
+      try {
+        const error = await res.json()
+        errorMessage = error.message || error.error || `Ошибка ${res.status}: ${res.statusText}`
+      } catch {
+        errorMessage = `Ошибка ${res.status}: ${res.statusText}`
+      }
+      toast.error(errorMessage)
+      return false
+    } catch (error: unknown) {
       console.error('Ошибка обновления статуса:', error)
-      const errorMessage = error.message || 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.'
       toast.error(`Ошибка соединения: ${errorMessage}`)
+      return false
+    } finally {
+      setOrderStatusSaving(false)
     }
+  }
+
+  const requestOrderStatusChange = (order: Order, newStatus: string) => {
+    if (newStatus === 'CONFIRMED' || newStatus === 'COOKING') {
+      const existing = order.readyAt ? toDatetimeLocalValue(new Date(order.readyAt)) : defaultReadyAtInput()
+      setOrderReadyTimeModal({
+        orderId: order.id,
+        status: newStatus,
+        fulfillmentType: order.fulfillmentType || 'DELIVERY',
+        readyAtInput: existing,
+      })
+      return
+    }
+    const label =
+      newStatus === 'DELIVERING'
+        ? t.adminPanel.orders.btnDelivering
+        : newStatus === 'COMPLETED'
+          ? t.adminPanel.orders.btnCompleted
+          : newStatus === 'CANCELLED'
+            ? t.adminPanel.orders.btnCancel
+            : newStatus
+    if (!confirm(`${t.adminPage.orders.changeStatusConfirm} «${label}»?`)) return
+    void patchOrderStatus(order.id, newStatus)
+  }
+
+  const submitOrderReadyTimeModal = async () => {
+    if (!orderReadyTimeModal) return
+    const { orderId, status, readyAtInput } = orderReadyTimeModal
+    if (!readyAtInput.trim()) {
+      toast.error(t.adminPanel.orders.readyTimeRequired)
+      return
+    }
+    const ok = await patchOrderStatus(orderId, status, readyAtInput)
+    if (ok) setOrderReadyTimeModal(null)
+  }
+
+  const addReadyTimeMinutes = (minutes: number) => {
+    setOrderReadyTimeModal((prev) => {
+      if (!prev) return prev
+      const d = new Date()
+      d.setMinutes(d.getMinutes() + minutes)
+      return { ...prev, readyAtInput: toDatetimeLocalValue(d) }
+    })
   }
 
   // --- ЛОГИКА ГОРОДОВ ---
@@ -4194,6 +4354,17 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              order.status === 'COMPLETED' || order.status === 'DELIVERED'
+                                ? 'bg-green-100 text-green-800 border border-green-200'
+                                : order.status === 'CANCELLED'
+                                  ? 'bg-red-100 text-red-800 border border-red-200'
+                                  : 'bg-slate-100 text-slate-800 border border-slate-200'
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
                               order.fulfillmentType === 'PICKUP'
                                 ? 'bg-violet-100 text-violet-800 border border-violet-200'
                                 : 'bg-emerald-100 text-emerald-900 border border-emerald-200'
@@ -4203,6 +4374,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               ? t.adminPanel.orders.fulfillmentPickup
                               : t.adminPanel.orders.fulfillmentDelivery}
                           </span>
+                          {order.readyAt ? (
+                            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">
+                              {order.fulfillmentType === 'PICKUP'
+                                ? t.adminPanel.orders.readyAtPickup
+                                : t.adminPanel.orders.readyAtDelivery}{' '}
+                              {formatReadyAtDisplay(order.readyAt)}
+                            </span>
+                          ) : null}
                           {order.fulfillmentType !== 'PICKUP' && typeof order.deliveryFee === 'number' && (
                             <span className="text-xs font-semibold text-gray-600">
                               {t.adminPanel.orders.deliveryFeeAdmin}{' '}
@@ -4285,13 +4464,47 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     <div className="mt-4 pt-4 border-t border-[#145142]/10 flex flex-col md:flex-row justify-between items-center gap-6">
                       
                       {/* Кнопки смены статуса */}
-                      <div className="admin-watta-scroll-x flex shrink-0 gap-2 pb-2 w-full md:w-auto">
-                         <button onClick={() => updateStatus(order.id, 'CONFIRMED')} className="p-2 bg-lime-50 text-lime-700 rounded-lg hover:bg-lime-100" title={t.adminPanel.orders.hintConfirmed}><CheckCircle/></button>
-                         <button onClick={() => updateStatus(order.id, 'COOKING')} className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100" title={t.adminPanel.orders.hintCooking}><ChefHat/></button>
-                         <button onClick={() => updateStatus(order.id, 'DELIVERING')} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title={t.adminPanel.orders.hintDelivering}><Truck/></button>
-                         <button onClick={() => updateStatus(order.id, 'COMPLETED')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100" title={t.adminPanel.orders.hintCompleted}><Check/></button>
-                         <div className="w-px bg-[#145142]/20 mx-2"></div>
-                         <button onClick={() => updateStatus(order.id, 'CANCELLED')} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100" title={t.adminPanel.orders.hintCancel}><XCircle/></button>
+                      <div className="admin-watta-scroll-x flex min-w-0 shrink-0 flex-wrap gap-2 pb-2 w-full md:w-auto">
+                         <button
+                           type="button"
+                           onClick={() => requestOrderStatusChange(order, 'CONFIRMED')}
+                           className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-lime-50 px-3 py-2 text-xs font-bold text-lime-800 hover:bg-lime-100 sm:text-sm"
+                         >
+                           <CheckCircle size={16} className="shrink-0" />
+                           <span>{t.adminPanel.orders.btnConfirmed}</span>
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => requestOrderStatusChange(order, 'COOKING')}
+                           className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 sm:text-sm"
+                         >
+                           <ChefHat size={16} className="shrink-0" />
+                           <span>{t.adminPanel.orders.btnCooking}</span>
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => requestOrderStatusChange(order, 'DELIVERING')}
+                           className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 sm:text-sm"
+                         >
+                           <Truck size={16} className="shrink-0" />
+                           <span>{t.adminPanel.orders.btnDelivering}</span>
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => requestOrderStatusChange(order, 'COMPLETED')}
+                           className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700 hover:bg-green-100 sm:text-sm"
+                         >
+                           <Check size={16} className="shrink-0" />
+                           <span>{t.adminPanel.orders.btnCompleted}</span>
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => requestOrderStatusChange(order, 'CANCELLED')}
+                           className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100 sm:text-sm"
+                         >
+                           <XCircle size={16} className="shrink-0" />
+                           <span>{t.adminPanel.orders.btnCancel}</span>
+                         </button>
                       </div>
 
                       <div className="text-[#194A38] text-[28px] font-bold">
@@ -4303,6 +4516,87 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               )}
             </div>
           )}
+          {orderReadyTimeModal && typeof document !== 'undefined'
+            ? createPortal(
+                <div
+                  className="fixed inset-0 z-[12000] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="admin-order-ready-time-title"
+                  onClick={() => !orderStatusSaving && setOrderReadyTimeModal(null)}
+                >
+                  <div
+                    className="w-full max-w-md rounded-2xl border border-[#145142]/15 bg-white p-5 shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3
+                      id="admin-order-ready-time-title"
+                      className="text-lg font-bold text-[#145142]"
+                    >
+                      {orderReadyTimeModal.status === 'CONFIRMED'
+                        ? t.adminPanel.orders.readyTimeTitleAccept
+                        : t.adminPanel.orders.readyTimeTitleCooking}
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-600">
+                      {orderReadyTimeModal.fulfillmentType === 'PICKUP'
+                        ? t.adminPanel.orders.readyTimePickupHint
+                        : t.adminPanel.orders.readyTimeDeliveryHint}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">{t.adminPanel.orders.readyTimeNotifyHint}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {([15, 30, 45, 60] as const).map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          disabled={orderStatusSaving}
+                          onClick={() => addReadyTimeMinutes(m)}
+                          className="rounded-lg border border-[#145142]/20 bg-[#145142]/5 px-3 py-1.5 text-xs font-semibold text-[#145142] hover:bg-[#145142]/10 disabled:opacity-50"
+                        >
+                          +{m} {t.adminPanel.orders.readyTimeMinutes}
+                        </button>
+                      ))}
+                    </div>
+                    <label className="mt-4 block text-xs font-bold uppercase tracking-wide text-gray-500">
+                      {t.adminPanel.orders.readyTimeLabel}
+                      <input
+                        type="datetime-local"
+                        className="mt-1.5 w-full rounded-xl border border-[#145142]/20 px-3 py-2.5 text-sm font-medium text-black"
+                        value={orderReadyTimeModal.readyAtInput}
+                        onChange={(e) =>
+                          setOrderReadyTimeModal((prev) =>
+                            prev ? { ...prev, readyAtInput: e.target.value } : prev,
+                          )
+                        }
+                        disabled={orderStatusSaving}
+                      />
+                    </label>
+                    <div className="mt-5 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={orderStatusSaving}
+                        onClick={() => setOrderReadyTimeModal(null)}
+                        className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        {t.adminPanel.actions.cancel}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={orderStatusSaving}
+                        onClick={() => void submitOrderReadyTimeModal()}
+                        className="flex-1 rounded-xl bg-[#145142] py-2.5 text-sm font-bold text-white hover:bg-[#103d34] disabled:opacity-50"
+                      >
+                        {orderStatusSaving
+                          ? t.adminPanel.dashboard.loading
+                          : orderReadyTimeModal.status === 'CONFIRMED'
+                            ? t.adminPanel.orders.readyTimeSubmitAccept
+                            : t.adminPanel.orders.readyTimeSubmitCooking}
+                      </button>
+                    </div>
+                  </div>
+                </div>,
+                document.body,
+              )
+            : null}
           {/* ВКЛАДКА НОВОСТИ */}
           {!isRightPanelOpen && activeTab === 'promotions' && (
             <div className="space-y-6">
@@ -6614,58 +6908,136 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </div>
               </div>
 
-              {/* --- ВЫБОР ИНГРЕДИЕНТОВ --- */}
+              {/* --- СОСТАВ: сет из товаров или ингредиенты вручную --- */}
               <div className="mb-4">
-                <label className="block text-sm font-bold text-[#145142]/70 mb-2">
-                  Склад (ингредиенты на сайте)
-                </label>
-                
-                <p className="mb-2 text-[11px] text-gray-500">
-                  Выберите из библиотеки (вкладка «Ингредиенты»). На странице товара показываются только названия и фото плиток.
-                </p>
-                <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto p-2 border border-[#145142]/15 rounded-xl bg-[#f6faf8] sm:max-h-64">
-                  {ingredients.length === 0 ? (
-                    <p className="col-span-4 py-4 text-center text-xs text-gray-500">
-                      Сначала добавьте ингредиенты во вкладке «Ингредиенты».
+                {isSetProductForm ? (
+                  <>
+                    <label className="mb-2 block text-sm font-bold text-[#145142]/70">
+                      Состав сета — позиции из меню
+                    </label>
+                    <p className="mb-2 text-[11px] text-gray-500">
+                      Отметьте роллы и другие товары: их ингредиенты автоматически попадут в состав сета на сайте
+                      (без дублей).
                     </p>
-                  ) : (
-                    ingredients.map((ing) => {
-                      const isSelected = formData.ingredientIds?.includes(ing.id)
-                      return (
-                        <button
-                          key={ing.id}
-                          type="button"
-                          onClick={() => {
-                            const currentIds = formData.ingredientIds || []
-                            const newIds = isSelected
-                              ? currentIds.filter((id: number) => id !== ing.id)
-                              : [...currentIds, ing.id]
-                            setFormData((prev) => ({ ...prev, ingredientIds: newIds }))
-                          }}
-                          className={`aspect-square cursor-pointer rounded-xl p-1.5 flex flex-col items-center justify-center gap-1 border-2 transition-all ${
-                            isSelected
-                              ? 'border-[#145142] bg-[#145142]/12 ring-1 ring-[#145142]/25'
-                              : 'border-[#145142]/10 bg-white hover:border-[#145142]/30'
-                          }`}
-                        >
-                          <img
-                            src={ing.imageUrl}
-                            className="h-8 w-8 object-contain sm:h-9 sm:w-9"
-                            alt={getLocalized(ing, 'name') || ing.name_ru}
-                          />
-                          <span className="line-clamp-2 w-full text-[9px] text-center font-bold leading-tight text-[#145142] sm:text-[10px]">
-                            {getLocalized(ing, 'name') || ing.name_ru}
-                          </span>
-                        </button>
-                      )
-                    })
-                  )}
-                </div>
-                {formData.ingredientIds.length > 0 ? (
-                  <p className="mt-1.5 text-[11px] font-medium text-[#145142]/70">
-                    Выбрано: {formData.ingredientIds.length}
-                  </p>
-                ) : null}
+                    <div className="max-h-56 overflow-y-auto rounded-xl border border-[#145142]/15 bg-[#f6faf8] p-2 sm:max-h-64">
+                      {setPickerProductOptions.length === 0 ? (
+                        <p className="px-2 py-4 text-center text-xs text-gray-500">
+                          Сначала добавьте товары в других категориях (не «Сеты») и укажите им ингредиенты.
+                        </p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {setPickerProductOptions.map((p) => {
+                            const checked = (formData.setSourceProductIds || []).includes(p.id)
+                            const ingCount = p.ingredientIds?.length ?? 0
+                            return (
+                              <li key={p.id}>
+                                <label
+                                  className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition ${
+                                    checked ? 'bg-[#145142]/12' : 'hover:bg-white'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleSetSourceProduct(p.id)}
+                                    className="h-4 w-4 shrink-0 accent-[#145142]"
+                                  />
+                                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#145142]">
+                                    {p.name_ru}
+                                  </span>
+                                  <span className="shrink-0 text-xs text-[#145142]/60">
+                                    {p.price} €
+                                    {ingCount > 0 ? ` · ${ingCount} ингр.` : ' · без состава'}
+                                  </span>
+                                </label>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                    {(formData.setSourceProductIds?.length ?? 0) > 0 ? (
+                      <p className="mt-1.5 text-[11px] font-medium text-[#145142]/70">
+                        Позиций в сете: {formData.setSourceProductIds.length} · ингредиентов на сайте:{' '}
+                        {formData.ingredientIds.length}
+                      </p>
+                    ) : null}
+                    {formData.ingredientIds.length > 0 ? (
+                      <div className="mt-3">
+                        <p className="mb-1.5 text-[11px] font-semibold text-[#145142]/75">
+                          Итоговый состав (из выбранных товаров)
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {formData.ingredientIds.map((id) => {
+                            const ing = ingredients.find((i) => i.id === id)
+                            if (!ing) return null
+                            return (
+                              <span
+                                key={id}
+                                className="inline-flex items-center gap-1 rounded-full border border-[#145142]/15 bg-white px-2 py-0.5 text-[10px] font-medium text-[#145142]"
+                              >
+                                {getLocalized(ing, 'name') || ing.name_ru}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <label className="mb-2 block text-sm font-bold text-[#145142]/70">
+                      Склад (ингредиенты на сайте)
+                    </label>
+                    <p className="mb-2 text-[11px] text-gray-500">
+                      Выберите из библиотеки (вкладка «Ингредиенты»). На странице товара показываются только
+                      названия и фото плиток.
+                    </p>
+                    <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-xl border border-[#145142]/15 bg-[#f6faf8] p-2 sm:max-h-64">
+                      {ingredients.length === 0 ? (
+                        <p className="col-span-4 py-4 text-center text-xs text-gray-500">
+                          Сначала добавьте ингредиенты во вкладке «Ингредиенты».
+                        </p>
+                      ) : (
+                        ingredients.map((ing) => {
+                          const isSelected = formData.ingredientIds?.includes(ing.id)
+                          return (
+                            <button
+                              key={ing.id}
+                              type="button"
+                              onClick={() => {
+                                const currentIds = formData.ingredientIds || []
+                                const newIds = isSelected
+                                  ? currentIds.filter((id: number) => id !== ing.id)
+                                  : [...currentIds, ing.id]
+                                setFormData((prev) => ({ ...prev, ingredientIds: newIds }))
+                              }}
+                              className={`flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 p-1.5 transition-all ${
+                                isSelected
+                                  ? 'border-[#145142] bg-[#145142]/12 ring-1 ring-[#145142]/25'
+                                  : 'border-[#145142]/10 bg-white hover:border-[#145142]/30'
+                              }`}
+                            >
+                              <img
+                                src={ing.imageUrl}
+                                className="h-8 w-8 object-contain sm:h-9 sm:w-9"
+                                alt={getLocalized(ing, 'name') || ing.name_ru}
+                              />
+                              <span className="line-clamp-2 w-full text-center text-[9px] font-bold leading-tight text-[#145142] sm:text-[10px]">
+                                {getLocalized(ing, 'name') || ing.name_ru}
+                              </span>
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                    {formData.ingredientIds.length > 0 ? (
+                      <p className="mt-1.5 text-[11px] font-medium text-[#145142]/70">
+                        Выбрано: {formData.ingredientIds.length}
+                      </p>
+                    ) : null}
+                  </>
+                )}
               </div>
               <button
                 type="submit"

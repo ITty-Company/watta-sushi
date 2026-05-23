@@ -30,9 +30,9 @@ import {
 } from '@/lib/menuCatalogSessionCache'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
-import { MenuHighlightStack } from './MenuHighlightStack'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import WelcomeHeroSection from './WelcomeHeroSection'
+import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
 import DeliveryHeroCopy from './DeliveryHeroCopy'
 import { cn } from '@/lib/utils'
 
@@ -72,9 +72,6 @@ function normMenuSlug(s: string): string {
 export default function FullMenuPageClient() {
   const { t, language, getLocalized } = useLanguage()
   const mv = t.menuView
-  const cf = t.cinematicFooter
-  const wf = t.productDetail.weightFallback
-  const pf = t.productDetail.piecesFallback
 
   const [categories, setCategories] = useState<MenuCategoryRow[]>([])
   const [items, setItems] = useState<MenuItem[]>([])
@@ -117,7 +114,6 @@ export default function FullMenuPageClient() {
     mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
   }, [])
-  const highlightLayout = isNarrowViewport ? 'stack' : 'rail'
 
   const mapProductsToItems = useCallback(
     (data: unknown[]) =>
@@ -571,11 +567,11 @@ export default function FullMenuPageClient() {
       const marginParsed = Number.parseFloat(marginRaw)
       const margin = Number.isFinite(marginParsed) ? marginParsed : FULL_MENU_STICKY_RESERVE_PX
       const top = el.getBoundingClientRect().top + scroller.scrollTop - margin
-      scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+      scroller.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
 
       window.setTimeout(() => {
         scrollLockRef.current = false
-      }, 700)
+      }, 400)
     }
 
     const el = findTarget()
@@ -617,18 +613,9 @@ export default function FullMenuPageClient() {
     [addToCart, items],
   )
 
-  const menuNewItems = useMemo(
-    () =>
-      items
-        .filter((i) => i.isMenuNew === true && i.allowRecommendations !== false)
-        .sort((a, b) => b.id - a.id),
-    [items],
-  )
-
-  const showHighlightStacks = menuNewItems.length > 0
-
   const fullMenuHeroSection = (
     <WelcomeHeroSection
+      sectionClassName="delivery-page-hero-standalone-web"
       heroVideoFailed={heroVideoFailed}
       setHeroVideoSourceIndex={setHeroVideoSourceIndex}
       setHeroVideoFailed={setHeroVideoFailed}
@@ -637,7 +624,13 @@ export default function FullMenuPageClient() {
       videoSources={videoSources}
       playlistLength={playlistLength}
       ariaLabel={`${mv.fullMenuIntroHeadlineLead} — ${mv.fullMenuIntroHeadlineMark}`}
-    />
+    >
+      {isNarrowViewport ? (
+        <div className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full">
+          <WattaHeroMarqueeBar />
+        </div>
+      ) : null}
+    </WelcomeHeroSection>
   )
 
   const fullMenuHeroInLayout = isNarrowViewport ? (
@@ -667,55 +660,41 @@ export default function FullMenuPageClient() {
     </section>
   )
 
+  const fullMenuHeroStack = (
+    <div
+      className={cn(
+        'delivery-page-hero-stack w-full shrink-0 bg-transparent',
+        fullMenuIntroBeforeHero
+          ? 'delivery-page-hero-stack--intro-first'
+          : 'delivery-page-hero-stack--video-first',
+      )}
+    >
+      {fullMenuIntroBeforeHero ? (
+        <>
+          {fullMenuIntroBlock}
+          {fullMenuHeroInLayout}
+        </>
+      ) : (
+        <>
+          {fullMenuHeroInLayout}
+          {fullMenuIntroBlock}
+        </>
+      )}
+    </div>
+  )
+
   return (
     <div
       className="menu-page-web watta-site-hero-page-web watta-page-bg relative flex min-h-0 w-full max-w-[100vw] flex-col bg-transparent"
       data-watta-home-narrow-strip-hero={isNarrowViewport ? '1' : undefined}
     >
-      {!isNarrowViewport ? (
-        <div className="menu-content-top-gap-web w-full shrink-0 bg-transparent" aria-hidden="true" />
-      ) : null}
-
-      <div
-        className={cn(
-          'watta-full-menu-top-stack w-full max-w-[100vw] shrink-0',
-          fullMenuIntroBeforeHero
-            ? 'watta-full-menu-top-stack--intro-first'
-            : 'watta-full-menu-top-stack--video-first',
-        )}
-      >
-        {fullMenuIntroBeforeHero ? (
-          <>
-            {fullMenuIntroBlock}
-            {fullMenuHeroInLayout}
-          </>
-        ) : (
-          <>
-            {fullMenuHeroInLayout}
-            {fullMenuIntroBlock}
-          </>
-        )}
+      <div className="delivery-page-home-flow w-full">
+        <div className="delivery-page-intro-web delivery-page-intro-web--video w-full shrink-0">
+          {fullMenuHeroStack}
+        </div>
       </div>
 
       <div className="watta-full-menu-page flex min-h-0 w-full min-w-0 flex-1 flex-col">
-      {showHighlightStacks ? (
-        <div
-          id="menu-cinematic-block"
-          className="menu-snap-section-cinematic-web menu-cinematic-block--ribbon w-full shrink-0"
-        >
-          <MenuHighlightStack
-            title={cf.sectionNewInMenu}
-            lead={cf.sectionNewInMenuLead}
-            ariaLabel={cf.sectionNewInMenu}
-            items={menuNewItems}
-            weightFallback={wf}
-            piecesFallback={pf}
-            onAddToCart={addToCart}
-            layout={highlightLayout}
-          />
-        </div>
-      ) : null}
-
       <div
         id="full-menu-page-start"
         style={{ scrollMarginTop: scrollPadPx }}

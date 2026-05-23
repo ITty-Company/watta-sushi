@@ -4,21 +4,17 @@ import React, { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useRightNavDrawer } from '../context/RightNavDrawerContext'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
-import {
-  useNavDrawerCloseSwipeHandlers,
-  useNavDrawerOpenSwipe,
-} from '@/components/NavDrawerSwipeGestures'
+import { useNavDrawerCloseSwipeHandlers } from '@/components/NavDrawerSwipeGestures'
 import WattaNavDrawerPanel from './WattaNavDrawerPanel'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
 
 export default function WattaRightNavDrawer() {
   const pathname = usePathname() || '/'
-  const { isOpen, open, close, enabled, cityChangeHandlerRef } = useRightNavDrawer()
+  const { isOpen, close, enabled, cityChangeHandlerRef } = useRightNavDrawer()
   useEffect(() => {
     close()
   }, [pathname, close])
 
-  useNavDrawerOpenSwipe(enabled && !isOpen, open)
   const closeSwipe = useNavDrawerCloseSwipeHandlers(isOpen, close)
 
   useEffect(() => {

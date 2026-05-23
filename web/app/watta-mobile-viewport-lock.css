@@ -1,0 +1,73 @@
+/**
+ * Телефон: розмір «вікна» не змінюється при переходах, скролі адресного рядка чи клавіатурі.
+ * Контент листається; layout не роздувається по ширині/висоті.
+ */
+@media (max-width: 767px) {
+  :root {
+    --watta-screen-min-h: calc(var(--watta-vh-locked, 1svh) * 100);
+  }
+
+  html.watta-light-chrome {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html.watta-light-chrome body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .watta-app-shell-root {
+    min-height: var(--watta-screen-min-h) !important;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  /* Головна: фіксована висота оболонки — скрол лише всередині .content-web */
+  body.watta-route-home .watta-app-shell-root {
+    height: var(--watta-screen-min-h);
+    max-height: var(--watta-screen-min-h);
+  }
+
+  body.watta-route-home .watta-app-main-grow > .app-web {
+    height: var(--watta-screen-min-h);
+    max-height: var(--watta-screen-min-h) !important;
+    min-height: 0;
+  }
+
+  /* Інші маршрути: min-height з «замороженого» vh, без dvh що росте/стискається */
+  body:not(.watta-route-home) .watta-app-shell-root {
+    height: auto;
+    max-height: none;
+    min-height: var(--watta-screen-min-h);
+  }
+
+  body:not(.watta-route-home) .watta-app-shell-root > main,
+  body:not(.watta-route-home) .watta-app-shell-root > main > .watta-app-main-grow {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  /* /login, /register — не розтягуються при фокусі в полі */
+  .auth-watta-root {
+    height: var(--watta-screen-min-h) !important;
+    max-height: var(--watta-screen-min-h) !important;
+    min-height: var(--watta-screen-min-h) !important;
+  }
+
+  .auth-watta-root .watta-public-page-shell__bg--auth {
+    height: var(--watta-screen-min-h) !important;
+    min-height: var(--watta-screen-min-h) !important;
+  }
+
+  /* iOS Safari: без auto-zoom при фокусі (font-size < 16px) */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']):not([type='hidden']),
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}

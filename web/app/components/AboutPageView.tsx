@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -27,13 +27,7 @@ import { useLanguage } from '../context/LanguageContext'
 import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
 import { WattaStatPillsBand, type WattaStatPillItem } from './DeliveryPageStats'
 import AboutTeamSection from './AboutTeamSection'
-import WelcomeHeroSection from './WelcomeHeroSection'
 import type { PublicTeamMember } from '@/lib/teamMembers'
-import { useHomeHeroVideo } from '@/hooks/useHomeHeroVideo'
-import {
-  kickWelcomeHeroVideoPlayBurst,
-  kickWelcomeHeroVideoPlayOnce,
-} from '@/lib/kickWelcomeHeroVideo'
 import { cn } from '@/lib/utils'
 
 const ACCENT = '#FF5C00'
@@ -181,53 +175,6 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
 
   const [teamMembers, setTeamMembers] = useState<PublicTeamMember[]>([])
   const [teamReady, setTeamReady] = useState(false)
-  const [isNarrowViewport, setIsNarrowViewport] = useState(false)
-  const [aboutIntroBeforeHero, setAboutIntroBeforeHero] = useState(false)
-  const aboutNarrowStripHero = isNarrowViewport
-
-  const {
-    heroVideoRef,
-    heroVideoSrc,
-    heroVideoFailed,
-    setHeroVideoFailed,
-    setHeroVideoSourceIndex,
-    videoSources: heroVideoSources,
-    playlistLength: homeHeroPlaylistLength,
-  } = useHomeHeroVideo()
-
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    const mqNarrow = window.matchMedia('(max-width: 768px)')
-    const applyNarrow = () => setIsNarrowViewport(mqNarrow.matches)
-    applyNarrow()
-    mqNarrow.addEventListener('change', applyNarrow)
-    return () => mqNarrow.removeEventListener('change', applyNarrow)
-  }, [])
-
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    const mqIntroFirst = window.matchMedia('(max-width: 767px)')
-    const apply = () => setAboutIntroBeforeHero(mqIntroFirst.matches)
-    apply()
-    mqIntroFirst.addEventListener('change', apply)
-    return () => mqIntroFirst.removeEventListener('change', apply)
-  }, [])
-
-  useEffect(() => {
-    if (embedded) return
-    queueMicrotask(kickWelcomeHeroVideoPlayOnce)
-    const raf = requestAnimationFrame(kickWelcomeHeroVideoPlayOnce)
-    const cancelBurst = kickWelcomeHeroVideoPlayBurst()
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') kickWelcomeHeroVideoPlayOnce()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => {
-      cancelAnimationFrame(raf)
-      cancelBurst()
-      document.removeEventListener('visibilitychange', onVisible)
-    }
-  }, [embedded])
 
   const goBack = useCallback(() => {
     if (embedded && onBack) {
@@ -306,52 +253,14 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       body={a.darkHeroSubtitle}
       accentLineIndex={1}
       headingLevel="h1"
-      reserveTopSpace={aboutIntroBeforeHero}
+      reserveTopSpace={false}
       innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone about-page-lead-intro-inner relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
     />
   )
 
-  const aboutHeroVideoBlock = (
-    <WelcomeHeroSection
-      sectionClassName="delivery-page-hero-standalone-web"
-      heroVideoFailed={heroVideoFailed}
-      setHeroVideoSourceIndex={setHeroVideoSourceIndex}
-      setHeroVideoFailed={setHeroVideoFailed}
-      heroVideoRef={heroVideoRef}
-      heroVideoSrc={heroVideoSrc}
-      videoSources={heroVideoSources}
-      playlistLength={homeHeroPlaylistLength}
-    />
-  )
-
-  const aboutHeroVideoInStrip = aboutNarrowStripHero ? (
-    <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
-      {aboutHeroVideoBlock}
-    </div>
-  ) : (
-    aboutHeroVideoBlock
-  )
-
-  const aboutStandaloneHeroStack = (
-    <div
-      className={cn(
-        'delivery-page-hero-stack about-page-intro-band w-full shrink-0 bg-transparent',
-        aboutIntroBeforeHero
-          ? 'delivery-page-hero-stack--intro-first'
-          : 'delivery-page-hero-stack--video-first',
-      )}
-    >
-      {aboutIntroBeforeHero ? (
-        <>
-          {aboutPageLeadIntro}
-          {aboutHeroVideoInStrip}
-        </>
-      ) : (
-        <>
-          {aboutHeroVideoInStrip}
-          {aboutPageLeadIntro}
-        </>
-      )}
+  const aboutIntroBand = (
+    <div className="about-page-intro-band w-full shrink-0 bg-transparent">
+      {aboutPageLeadIntro}
       <WattaStatPillsBand
         items={stats}
         className="about-page-hero-stats"
@@ -654,12 +563,10 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
   return (
     <div
       id="about-page-container"
-      className="menu-page-web delivery-page-web contact-page-web watta-about-page watta-delivery-page watta-delivery-page-about watta-site-hero-page-web about-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
+      className="menu-page-web delivery-page-web contact-page-web watta-about-page watta-delivery-page watta-delivery-page-about about-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
     >
       <div className="delivery-page-home-flow w-full">
-        <div className="delivery-page-intro-web delivery-page-intro-web--video w-full shrink-0">
-          {aboutStandaloneHeroStack}
-        </div>
+        {aboutIntroBand}
         <div className="about-page-content-flow w-full">{aboutMainContent}</div>
       </div>
     </div>

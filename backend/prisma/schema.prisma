@@ -203,6 +203,9 @@ model Order {
   paidAt       DateTime?
   comment       String?
 
+  /// Час готовності / доставки, який адмін встановлює при підтвердженні
+  readyAt       DateTime?
+
   noCallbackConfirm Boolean @default(false) // не перезванивать для подтверждения
   noDoorbellRing    Boolean @default(false) // не звонить в дверь
 

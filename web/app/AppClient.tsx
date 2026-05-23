@@ -12,6 +12,8 @@ import WattaHtmlRouteClass from './components/WattaHtmlRouteClass'
 import { RightNavDrawerProvider } from './context/RightNavDrawerContext'
 import { sanitizeAuthStorage } from '@/lib/authSession'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
+import { ensureDocumentScrollUnlocked } from '@/lib/ensureDocumentScroll'
+import { bindMobileViewportHeightLock, lockMobileViewportHeight } from '@/lib/lockMobileViewportHeight'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { subscribeWattaCatalogCrossTab } from '@/lib/wattaCatalogSync'
 import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
@@ -60,8 +62,9 @@ export default function AppClient({
     () => false,
   )
   const showPublicNavChrome = !isAuthRoute
-  /** Єдина fixed шапка + категорії (як на головній) на всіх публічних маршрутах. */
-  const showGlobalSiteChrome = !isAuthRoute && !isAdminShellRoute
+  /** Єдина fixed шапка + категорії (як на головній) на всіх публічних маршрутах; не в адмінці. */
+  const showGlobalSiteChrome =
+    !isAuthRoute && !isAdminShellRoute && !hidePublicSiteChromeExtras
   /**
    * Скрол наверх лише при зміні pathname; raніше тригерилось і на кожну зміну `searchParams`
    * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.
@@ -75,9 +78,13 @@ export default function AppClient({
     const path = pathname ?? '/'
     const prev = prevPathnameForScrollRef.current
     prevPathnameForScrollRef.current = path
+    ensureDocumentScrollUnlocked()
     if (prev === path) return
     if (path === '/menu' && prev === '/menu') return
-    requestAnimationFrame(() => scrollEntireAppToTop())
+    requestAnimationFrame(() => {
+      ensureDocumentScrollUnlocked()
+      scrollEntireAppToTop()
+    })
   }, [pathname])
 
   /** F5 на головній — одразу той самий reset, що клік по логотипу (до HomeClient). */
@@ -132,6 +139,19 @@ export default function AppClient({
     window.addEventListener('userChanged', onUser)
     return () => window.removeEventListener('userChanged', onUser)
   }, [])
+
+  /** Після bfcache / жесту «назад» — зняти залишковий overflow:hidden з модалок. */
+  useEffect(() => {
+    const onPageShow = () => {
+      ensureDocumentScrollUnlocked()
+      lockMobileViewportHeight()
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
+
+  /** Телефон: «заморожена» висота вікна — не стискається від клавіатури. */
+  useEffect(() => bindMobileViewportHeightLock(), [])
 
   useEffect(() => subscribeWattaCatalogCrossTab(() => {}), [])
 

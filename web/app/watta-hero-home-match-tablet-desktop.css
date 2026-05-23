@@ -1,0 +1,218 @@
+/**
+ * /menu і /delivery: розміри та відступи hero-відео — як на головній `/`.
+ * Основні правила — watta-home-chrome-lock.css (html.watta-html-home-hero).
+ * Нижче — резерв через :has() до застосування класу на <html>.
+ */
+
+@media (min-width: 768px) {
+  html.watta-html-delivery-hero,
+  html:has(.watta-delivery-page.watta-site-hero-page-web),
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)) {
+    --watta-home-hero-video-extra-h: clamp(52px, 5.2vh, 72px);
+    --watta-home-hero-below-cats-gap: clamp(20px, 2.35vh, 34px);
+    --watta-home-hero-inline-pad: clamp(6px, 1.2vw, 14px);
+    --watta-home-hero-video-max-w: min(100%, calc(100vw - 2 * var(--watta-home-hero-inline-pad, 20px)));
+    --watta-home-hero-media-scale-x: 1.1;
+    --watta-home-hero-media-scale-y: 1.07;
+    --watta-home-hero-media-pos-y: 46%;
+  }
+
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    width: 100% !important;
+    max-width: var(--watta-home-hero-video-max-w, min(100%, calc(100vw - 40px))) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: var(--watta-home-hero-below-cats-gap, clamp(20px, 2.35vh, 34px)) !important;
+    padding-top: clamp(8px, 1vh, 14px) !important;
+    padding-bottom: clamp(10px, 1.15vh, 16px) !important;
+    padding-left: var(--watta-home-hero-inline-pad, clamp(6px, 1.2vw, 14px)) !important;
+    padding-right: var(--watta-home-hero-inline-pad, clamp(6px, 1.2vw, 14px)) !important;
+    box-sizing: border-box !important;
+  }
+
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web,
+  .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web,
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-fill-web {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web,
+  .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web,
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web {
+    aspect-ratio: 16 / 7.75 !important;
+    min-height: min(328px, 60vw, 60vh) !important;
+    max-height: min(
+      calc(66vh + var(--watta-home-hero-video-extra-h, 52px) * 0.85),
+      calc(100svh - var(--watta-chrome-header-measured-h, 86px) - 2px)
+    ) !important;
+    height: auto !important;
+  }
+
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web,
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web {
+    transform: scale(var(--watta-home-hero-media-scale-x), var(--watta-home-hero-media-scale-y)) !important;
+    -webkit-transform: scale(var(--watta-home-hero-media-scale-x), var(--watta-home-hero-media-scale-y))
+      !important;
+    background-position: center var(--watta-home-hero-media-pos-y) !important;
+  }
+
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web
+    > .watta-home-hero-native-video,
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web
+    > .welcome-hero-fallback-image-web,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web
+    > .watta-home-hero-native-video,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web
+    > .welcome-hero-fallback-image-web,
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web
+    > .watta-home-hero-native-video,
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .welcome-hero-media-frame-web
+    > .welcome-hero-fallback-image-web,
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .welcome-hero-video-stack-web
+    > .watta-home-hero-native-video,
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .welcome-hero-video-stack-web
+    > .welcome-hero-fallback-image-web,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .welcome-hero-video-stack-web
+    > .watta-home-hero-native-video,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .welcome-hero-video-stack-web
+    > .welcome-hero-fallback-image-web {
+    object-fit: cover !important;
+    object-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
+    background-size: cover !important;
+    background-position: center var(--watta-home-hero-media-pos-y, 46%) !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  html.watta-html-delivery-hero,
+  html:has(.watta-delivery-page.watta-site-hero-page-web),
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)) {
+    --watta-home-hero-below-cats-gap: clamp(26px, 2.85vh, 44px);
+    --watta-home-hero-inline-pad: clamp(8px, 1.4vw, 22px);
+    --watta-home-hero-video-max-w: min(100%, calc(100vw - 2 * var(--watta-home-hero-inline-pad, 18px)));
+    --watta-home-hero-video-extra-h: clamp(56px, 5.6vh, 84px);
+    --watta-home-hero-viewport-h: max(
+      440px,
+      calc(
+        100svh - env(safe-area-inset-top, 0px) - clamp(88px, 9.2vh, 118px) -
+          var(--watta-home-hero-card-pad-b, 18px) + var(--watta-home-hero-video-extra-h, 56px) * 0.52
+      )
+    );
+    --watta-home-hero-media-scale-x: 1.12;
+    --watta-home-hero-media-scale-y: 1.09;
+  }
+
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web),
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web) {
+    max-width: var(--watta-home-hero-video-max-w, min(100%, calc(100vw - 56px))) !important;
+    padding-left: var(--watta-home-hero-inline-pad, clamp(8px, 1.4vw, 22px)) !important;
+    padding-right: var(--watta-home-hero-inline-pad, clamp(8px, 1.4vw, 22px)) !important;
+    margin-top: var(--watta-home-hero-below-cats-gap, clamp(26px, 2.85vh, 44px)) !important;
+    padding-top: clamp(10px, 1.15vh, 16px) !important;
+    padding-bottom: clamp(12px, 1.35vh, 20px) !important;
+  }
+
+  html.watta-html-delivery-hero
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web,
+  html:has(.watta-delivery-page.watta-site-hero-page-web)
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web,
+  .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web,
+  html:has(.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page))
+    .delivery-page-hero-stack
+    .delivery-page-hero-standalone-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+    .welcome-hero-video-stack-web {
+    aspect-ratio: 16 / 7.55 !important;
+    min-height: min(368px, 56vw, 62vh) !important;
+    max-height: min(
+      var(--watta-home-hero-viewport-h),
+      calc(94dvh + var(--watta-home-hero-video-extra-h, 60px) * 0.45),
+      calc(100svh - var(--watta-chrome-header-measured-h, 90px) - 2px)
+    ) !important;
+  }
+}

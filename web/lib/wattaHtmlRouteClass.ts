@@ -12,11 +12,15 @@ const BASE_HTML_CLASS = 'watta-light-chrome'
 
 function heroRouteClassForPathname(pathname: string): string | null {
   const p = pathname || '/'
-  if (p === '/' || p === '') return WATTA_HTML_ROUTE_CLASSES.home
-  if (p === '/delivery') return WATTA_HTML_ROUTE_CLASSES.delivery
-  if (p === '/about' || p.startsWith('/about/')) return WATTA_HTML_ROUTE_CLASSES.about
+  if (p === '/' || p === '' || p === '/menu' || p === '/delivery') return WATTA_HTML_ROUTE_CLASSES.home
   if (p === '/contacts') return WATTA_HTML_ROUTE_CLASSES.contacts
   return null
+}
+
+/** Hero-відео як на головній: `/`, `/menu`, `/delivery` (без body.watta-route-home на /menu і /delivery). */
+export function isWattaHomeHeroVideoPathname(pathname: string): boolean {
+  const p = pathname || '/'
+  return p === '/' || p === '' || p === '/menu' || p === '/delivery'
 }
 
 /** SSR layout: класи на <html> з pathname (middleware → x-watta-pathname). */
@@ -34,8 +38,8 @@ export function isWattaHomeHeroPathname(pathname: string): boolean {
 export const WATTA_HOME_HERO_CRITICAL_CSS = `
 html.watta-html-home-hero{
   --watta-chrome-header-measured-h:76px;
-  --watta-chrome-categories-band-h:92px;
-  --watta-sticky-chrome-measured-h:168px;
+  --watta-chrome-categories-band-h:80px;
+  --watta-sticky-chrome-measured-h:156px;
   --delivery-hero-video-offset:clamp(24px,2.8vh,40px);
   --watta-home-hero-media-scale-x:1.08;
   --watta-home-hero-media-scale-y:1.05;
@@ -55,7 +59,7 @@ html.watta-html-home-hero .watta-sticky-chrome-portal .categories-panel-wrapper-
   background:transparent!important;background-color:transparent!important;box-shadow:none!important;
 }
 html.watta-html-home-hero .watta-sticky-chrome-portal .categories-panel-web{
-  display:flex!important;width:fit-content!important;max-width:min(calc(100vw - 28px),40rem)!important;
+  display:flex!important;width:fit-content!important;max-width:min(calc(100vw - 36px),36rem)!important;
   margin-left:auto!important;margin-right:auto!important;border-radius:9999px!important;
   background:linear-gradient(165deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.68) 48%,rgba(255,255,255,.74) 100%)!important;
   border:none!important;box-shadow:0 6px 22px rgba(20,81,66,.09),inset 0 1px 0 rgba(255,255,255,.88)!important;
@@ -141,7 +145,7 @@ html.watta-html-home-hero .watta-sticky-chrome-flow-anchor--header-only{
 /** Клієнт: примусово скляна капсула + нахльост hero (страховка після Reload). */
 export function applyWattaHomeChromeGlass(): void {
   if (typeof document === 'undefined') return
-  if (!isWattaHomeHeroPathname(window.location.pathname || '/')) return
+  if (!isWattaHomeHeroVideoPathname(window.location.pathname || '/')) return
 
   const root = document.documentElement
   const glass =
@@ -191,7 +195,17 @@ export function syncWattaHtmlRouteClass(pathname: string): void {
   if (isWattaHomeHeroPathname(pathname)) {
     body?.classList.add('watta-route-home')
   }
+  if (isWattaHomeHeroVideoPathname(pathname)) {
+    const ww = window.innerWidth || 0
+    const hh = ww >= 1025 ? '90px' : ww >= 768 ? '86px' : '76px'
+    const cb = ww >= 1025 ? '46px' : ww >= 768 ? '48px' : '80px'
+    const tot = ww >= 1025 ? '136px' : ww >= 768 ? '134px' : '156px'
+    root.style.setProperty('--watta-chrome-header-measured-h', hh)
+    root.style.setProperty('--watta-chrome-categories-band-h', cb)
+    root.style.setProperty('--watta-sticky-chrome-measured-h', tot)
+    queueMicrotask(() => applyWattaHomeChromeGlass())
+  }
 }
 
 /** Синхронний скрипт у layout — до React, щоб Reload одразу мав правильний chrome/hero. */
-export const WATTA_HTML_ROUTE_BOOT_SCRIPT = `(function(){try{var HOME='/';function isHome(p){return p===HOME||p===''}function setRouteClass(p){var h=document.documentElement,b=document.body,c=['watta-html-home-hero','watta-html-delivery-hero','watta-html-about-hero','watta-html-contacts-hero'];for(var i=0;i<c.length;i++)h.classList.remove(c[i]);if(b)b.classList.remove('watta-route-home');if(isHome(p)){h.classList.add('watta-html-home-hero');if(b)b.classList.add('watta-route-home');var ww=window.innerWidth||0;var hh=ww>=1025?'90px':ww>=768?'86px':'76px';var cb=ww>=1025?'46px':ww>=768?'48px':'92px';var tot=ww>=1025?'136px':ww>=768?'134px':'168px';h.style.setProperty('--watta-chrome-header-measured-h',hh);h.style.setProperty('--watta-chrome-categories-band-h',cb);h.style.setProperty('--watta-sticky-chrome-measured-h',tot);}else if(p==='/delivery')h.classList.add('watta-html-delivery-hero');else if(p==='/about'||p.indexOf('/about/')===0)h.classList.add('watta-html-about-hero');else if(p==='/contacts')h.classList.add('watta-html-contacts-hero');}function applyHomeChrome(){var p=location.pathname||'/';if(!isHome(p))return;var h=document.documentElement,cs=getComputedStyle(h);var mh=(cs.getPropertyValue('--watta-sticky-chrome-measured-h')||'168px').trim();var hh=(cs.getPropertyValue('--watta-chrome-header-measured-h')||'76px').trim();var glass='linear-gradient(165deg,rgba(255,255,255,.52) 0%,rgba(255,255,255,.42) 50%,rgba(255,255,255,.48) 100%)';var portal=document.querySelector('.watta-sticky-chrome-portal');if(portal){portal.style.setProperty('background','transparent','important');portal.style.setProperty('background-color','transparent','important');}var row=document.querySelector('.watta-sticky-chrome-portal .watta-chrome-categories-row-web');if(row){row.style.setProperty('background','transparent','important');}var wrap=document.querySelector('.watta-sticky-chrome-portal .categories-panel-wrapper-web');if(wrap){wrap.style.setProperty('background','transparent','important');}var panel=document.querySelector('.watta-sticky-chrome-portal .categories-panel-web');if(panel){panel.style.setProperty('background',glass,'important');panel.style.setProperty('backdrop-filter','blur(18px) saturate(1.14)','important');panel.style.setProperty('-webkit-backdrop-filter','blur(18px) saturate(1.14)','important');panel.style.setProperty('border-radius','9999px','important');panel.style.setProperty('box-shadow','0 6px 22px rgba(20,81,66,.09), inset 0 1px 0 rgba(255,255,255,.88)','important');}var intro=document.querySelector('.delivery-page-intro-web--video');if(intro){intro.style.setProperty('margin-top','0','important');intro.style.setProperty('background','transparent','important');}try{window.dispatchEvent(new CustomEvent('wattaChromeLayoutSync'));}catch(e){}}var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];var rel=n&&n.type==='reload'||(performance.navigation&&performance.navigation.type===1);if(rel){try{sessionStorage.removeItem('watta_menu_browse_return_v1')}catch(e){}}var p=location.pathname||'/';try{if(sessionStorage.getItem('watta_boot_splash_done')==='1')document.documentElement.setAttribute('data-watta-skip-splash','1');}catch(e){}if(rel&&isHome(p)){document.documentElement.setAttribute('data-watta-skip-splash','1');}setRouteClass(p);if(isHome(p))applyHomeChrome();window.addEventListener('pageshow',function(){var pp=location.pathname||'/';setRouteClass(pp);if(isHome(pp))applyHomeChrome();});requestAnimationFrame(function(){if(isHome(location.pathname||'/'))applyHomeChrome();});}}catch(e){}})();`
+export const WATTA_HTML_ROUTE_BOOT_SCRIPT = `(function(){try{var HOME='/';function isHome(p){return p===HOME||p===''}function isHomeHeroVideo(p){return isHome(p)||p==='/menu'||p==='/delivery'}function setRouteClass(p){var h=document.documentElement,b=document.body,c=['watta-html-home-hero','watta-html-delivery-hero','watta-html-about-hero','watta-html-contacts-hero'];for(var i=0;i<c.length;i++)h.classList.remove(c[i]);if(b)b.classList.remove('watta-route-home');if(isHomeHeroVideo(p)){h.classList.add('watta-html-home-hero');if(isHome(p)&&b)b.classList.add('watta-route-home');var ww=window.innerWidth||0;var hh=ww>=1025?'90px':ww>=768?'86px':'76px';var cb=ww>=1025?'46px':ww>=768?'48px':'80px';var tot=ww>=1025?'136px':ww>=768?'134px':'156px';h.style.setProperty('--watta-chrome-header-measured-h',hh);h.style.setProperty('--watta-chrome-categories-band-h',cb);h.style.setProperty('--watta-sticky-chrome-measured-h',tot);}else if(p==='/contacts')h.classList.add('watta-html-contacts-hero');}function applyHomeChrome(){var p=location.pathname||'/';if(!isHomeHeroVideo(p))return;var h=document.documentElement,cs=getComputedStyle(h);var mh=(cs.getPropertyValue('--watta-sticky-chrome-measured-h')||'156px').trim();var hh=(cs.getPropertyValue('--watta-chrome-header-measured-h')||'76px').trim();var glass='linear-gradient(165deg,rgba(255,255,255,.52) 0%,rgba(255,255,255,.42) 50%,rgba(255,255,255,.48) 100%)';var portal=document.querySelector('.watta-sticky-chrome-portal');if(portal){portal.style.setProperty('background','transparent','important');portal.style.setProperty('background-color','transparent','important');}var row=document.querySelector('.watta-sticky-chrome-portal .watta-chrome-categories-row-web');if(row){row.style.setProperty('background','transparent','important');}var wrap=document.querySelector('.watta-sticky-chrome-portal .categories-panel-wrapper-web');if(wrap){wrap.style.setProperty('background','transparent','important');}var panel=document.querySelector('.watta-sticky-chrome-portal .categories-panel-web');if(panel){panel.style.setProperty('background',glass,'important');panel.style.setProperty('backdrop-filter','blur(18px) saturate(1.14)','important');panel.style.setProperty('-webkit-backdrop-filter','blur(18px) saturate(1.14)','important');panel.style.setProperty('border-radius','9999px','important');panel.style.setProperty('box-shadow','0 6px 22px rgba(20,81,66,.09), inset 0 1px 0 rgba(255,255,255,.88)','important');}var intro=document.querySelector('.delivery-page-intro-web--video');if(intro){intro.style.setProperty('margin-top','0','important');intro.style.setProperty('background','transparent','important');}try{window.dispatchEvent(new CustomEvent('wattaChromeLayoutSync'));}catch(e){}}var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];var rel=n&&n.type==='reload'||(performance.navigation&&performance.navigation.type===1);if(rel){try{sessionStorage.removeItem('watta_menu_browse_return_v1')}catch(e){}}var p=location.pathname||'/';try{if(sessionStorage.getItem('watta_boot_splash_done')==='1')document.documentElement.setAttribute('data-watta-skip-splash','1');}catch(e){}if(rel&&isHome(p)){document.documentElement.setAttribute('data-watta-skip-splash','1');}setRouteClass(p);if(isHomeHeroVideo(p))applyHomeChrome();window.addEventListener('pageshow',function(){var pp=location.pathname||'/';setRouteClass(pp);if(isHomeHeroVideo(pp))applyHomeChrome();});requestAnimationFrame(function(){if(isHomeHeroVideo(location.pathname||'/'))applyHomeChrome();});}catch(e){}})();`
