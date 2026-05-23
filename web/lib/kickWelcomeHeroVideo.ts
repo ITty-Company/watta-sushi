@@ -54,7 +54,7 @@ export function kickWelcomeHeroVideoPlayOnce(): boolean {
 /** Підстраховка autoplay після сплешу / SPA-back / bfcache. */
 export function kickWelcomeHeroVideoPlayBurst(): () => void {
   kickWelcomeHeroVideoPlayOnce()
-  const delays = [16, 80, 200, 500, 1000]
+  const delays = [16, 120, 400]
   const ids = delays.map((ms) => window.setTimeout(kickWelcomeHeroVideoPlayOnce, ms))
   return () => ids.forEach((id) => window.clearTimeout(id))
 }

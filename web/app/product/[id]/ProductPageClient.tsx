@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import ProductView from '../../components/ProductView'
 import { readIsAdminFromCurrentUserJson } from '@/lib/isAdminRole'
 import {
@@ -30,7 +31,7 @@ export default function ProductPageClient({
   initialProduct,
   initialIngredientsCatalog,
 }: ProductPageClientProps) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const params = useParams()
   const productId = useMemo(() => {
     const id = normalizeProductRouteId(params?.id)

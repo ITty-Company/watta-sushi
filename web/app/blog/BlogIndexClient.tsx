@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { motion } from 'framer-motion'
 import { ArrowLeft, BookOpen } from 'lucide-react'
 import { useMemo } from 'react'
@@ -58,7 +58,7 @@ function BlogBackButton({ label, onBack }: { label: string; onBack: () => void }
 }
 
 export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] }) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, language } = useLanguage()
   const b = t.blogPublic
 

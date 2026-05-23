@@ -4,8 +4,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Clock3, Gift, Zap } from 'lucide-react'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
 import { primeHeroVideoElement } from '@/lib/kickWelcomeHeroVideo'
-import { getPrimaryAuthHeroVideoSrc } from '@/lib/wattaAuthHeroVideo'
+import {
+  AUTH_HERO_FALLBACK_VIDEO,
+  getPrimaryAuthHeroVideoSrc,
+  WATTA_AUTH_HERO_POSTER,
+} from '@/lib/wattaAuthHeroVideo'
 import { getAuthHeroVideoSources } from '@/lib/authHeroVideoSources'
+import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
 
 type Benefit = { label: string }
 
@@ -23,6 +28,8 @@ type AuthCinemaPanelProps = {
   /** Задній телефон */
   secondary: AuthCinemaPhoneContent
   compact?: boolean
+  /** Мобільний баннер всередині картки форми (без окремої «панелі») */
+  embedded?: boolean
 }
 
 const BENEFIT_ICONS = [
@@ -45,9 +52,14 @@ function usePhonePlaylist(videoUrls?: readonly string[]) {
   const playlistKey = useMemo(() => playlist.join('\0'), [playlist])
   const hasVideo = playlist.length > 0
   const safeIndex = playlist.length > 0 ? videoIndex % playlist.length : 0
-  const videoSrc =
+  const rawVideoSrc =
     (hasVideo ? playlist[safeIndex] ?? playlist[0] : null) ??
-    getPrimaryAuthHeroVideoSrc(videoUrls)
+    getPrimaryAuthHeroVideoSrc(videoUrls) ??
+    AUTH_HERO_FALLBACK_VIDEO
+  const videoSrc = useMemo(
+    () => resolveUploadMediaUrl(rawVideoSrc) ?? rawVideoSrc,
+    [rawVideoSrc],
+  )
   const videoLoop = playlist.length <= 1
   const showVideo = hasVideo && Boolean(videoSrc) && !videoFailed
 
@@ -69,13 +81,24 @@ function usePhonePlaylist(videoUrls?: readonly string[]) {
     const video = videoRef.current
     if (!video) return
     const off = bindHeroVideoAutoplay(video, { extendedRetries: true, loop: videoLoop })
-    return off
-  }, [showVideo, videoSrc, videoLoop, playlistKey])
+    playVideo()
+    const retry = window.setInterval(() => {
+      const v = videoRef.current
+      if (v?.paused) playVideo()
+    }, 700)
+    const stopRetry = window.setTimeout(() => window.clearInterval(retry), 10_000)
+    return () => {
+      off()
+      window.clearInterval(retry)
+      window.clearTimeout(stopRetry)
+    }
+  }, [showVideo, videoSrc, videoLoop, playlistKey, playVideo])
 
   const onVideoEnded = () => {
     if (playlist.length <= 1) return
     setVideoIndex((i) => (i + 1) % playlist.length)
     setVideoReady(false)
+    queueMicrotask(() => playVideo())
   }
 
   const onVideoError = () => {
@@ -116,6 +139,7 @@ export default function AuthCinemaPanel({
   primary,
   secondary,
   compact = false,
+  embedded = false,
 }: AuthCinemaPanelProps) {
   const [allowPhoneMotion, setAllowPhoneMotion] = useState(false)
   const primaryMedia = usePhonePlaylist(primary.videoUrls)
@@ -140,10 +164,18 @@ export default function AuthCinemaPanel({
 
   if (compact) {
     return (
-      <aside className="auth-watta-cinema auth-watta-cinema--compact relative shrink-0 overflow-hidden rounded-2xl border border-white/15 shadow-[0_20px_60px_rgba(6,42,34,0.35)] md:hidden">
+      <aside
+        className={`auth-watta-cinema auth-watta-cinema--compact relative shrink-0 overflow-hidden md:hidden${
+          embedded
+            ? ' auth-watta-cinema--embedded'
+            : ' rounded-2xl border border-white/15 shadow-[0_20px_60px_rgba(6,42,34,0.35)]'
+        }`}
+      >
         <CompactStripMedia {...primaryMedia} />
+        <div className="auth-watta-cinema__sheen" aria-hidden />
         <ScreenOverlay
           compact
+          embedded={embedded}
           brandName={brandName}
           title={primary.title}
           subtitle={primary.subtitle}
@@ -236,11 +268,13 @@ function CompactStripMedia(props: ScreenMediaProps) {
           ref={videoRef}
           className={`auth-watta-cinema__video${videoReady ? ' auth-watta-cinema__video--ready' : ''}`}
           src={videoSrc}
+          poster={WATTA_AUTH_HERO_POSTER}
           muted
           loop={videoLoop}
           playsInline
           autoPlay
           preload="auto"
+          fetchPriority="high"
           disablePictureInPicture
           disableRemotePlayback
           onLoadedData={onVideoReady}
@@ -256,20 +290,40 @@ function CompactStripMedia(props: ScreenMediaProps) {
 
 function ScreenOverlay({
   compact,
+  embedded = false,
   brandName,
   title,
   subtitle,
   benefits,
 }: {
   compact?: boolean
+  embedded?: boolean
   brandName: string
   title: string
   subtitle: string
   benefits: [Benefit, Benefit, Benefit]
 }) {
+  const showEmbeddedChrome = compact && embedded
+
   return (
-    <div className={`auth-watta-phone-sim__overlay${compact ? ' auth-watta-phone-sim__overlay--compact' : ''}`}>
+    <div
+      className={`auth-watta-phone-sim__overlay${compact ? ' auth-watta-phone-sim__overlay--compact' : ''}${embedded ? ' auth-watta-phone-sim__overlay--embedded' : ''}`}
+    >
       <div className="auth-watta-phone-sim__scrim" aria-hidden />
+      {showEmbeddedChrome ? (
+        <>
+          <span className="auth-watta-hero-badge" aria-hidden>
+            <span className="auth-watta-cinema__live" />
+            <span className="auth-watta-hero-badge__text">{brandName}</span>
+          </span>
+          {benefits[0] ? (
+            <span className="auth-watta-hero-chip" aria-hidden>
+              {BENEFIT_ICONS[0]}
+              <span>{benefits[0].label}</span>
+            </span>
+          ) : null}
+        </>
+      ) : null}
       <div className="auth-watta-phone-sim__ui">
         {!compact ? (
           <div className="auth-watta-phone-sim__chips" aria-hidden>

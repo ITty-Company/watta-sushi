@@ -1,0 +1,294 @@
+/**
+ * /delivery — типографика и ритм текста для планшета (≥768) и ноутбука/ПК (≥1025).
+ * Телефон (≤767px): не трогаем — остаются delivery-page-web, theme и Tailwind в компонентах.
+ */
+
+/* ——— Планшет ——— */
+@media (min-width: 768px) {
+  .delivery-page-web.watta-delivery-page-about .delivery-page-flow .delivery-flow-section > div {
+    padding-left: clamp(1.35rem, 3.2vw, 2rem);
+    padding-right: clamp(1.35rem, 3.2vw, 2rem);
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-page-flow .delivery-flow-section {
+    padding-top: clamp(1.35rem, 2.8vw, 1.85rem);
+    padding-bottom: clamp(1.35rem, 2.8vw, 1.85rem);
+  }
+
+  /* Hero: видео → текст */
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    .delivery-page-intro-inner-web--standalone.home-after-hero-intro-inner-web--home-menu {
+    max-width: 44rem;
+    padding-left: clamp(1.35rem, 3.5vw, 2.25rem) !important;
+    padding-right: clamp(1.35rem, 3.5vw, 2.25rem) !important;
+    padding-bottom: clamp(0.65rem, 1.5vh, 1rem) !important;
+  }
+
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #delivery-page-lead-intro
+    .home-after-hero-intro-title-web,
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #contact-page-lead-intro
+    .home-after-hero-intro-title-web {
+    font-size: clamp(1.75rem, 3.2vw, 2.35rem) !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.025em;
+  }
+
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #delivery-page-lead-intro
+    .home-after-hero-intro-body-web,
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #contact-page-lead-intro
+    .home-after-hero-intro-body-web {
+    margin-top: 0.65rem !important;
+    max-width: 40rem;
+    font-size: 0.9375rem !important;
+    line-height: 1.62 !important;
+    color: #2d4a42 !important;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-page-stats-band {
+    padding-bottom: clamp(2rem, 4vw, 2.75rem);
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-page-stats-band .grid {
+    gap: 0.75rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-stat-pill--blob .contact-watta-stat-pill__val,
+  .delivery-page-web.watta-delivery-page-about .delivery-stat-pill__val {
+    font-size: clamp(1rem, 1.8vw, 1.12rem);
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-stat-pill--blob .contact-watta-stat-pill__label {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .contact-watta-section-title {
+    font-size: clamp(1.85rem, 3.2vw, 2.15rem);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-page-section-lead {
+    max-width: 40rem;
+    font-size: 1.0625rem;
+    line-height: 1.68;
+    color: #2d4a42;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-promise-flat__kicker {
+    font-size: 0.72rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-promise-flat__note {
+    font-size: 0.9375rem;
+    line-height: 1.58;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-designer-hub__map-hint {
+    font-size: 1.0625rem;
+    line-height: 1.55;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-designer-hub__form-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.11em;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-designer-hub__input {
+    min-height: 3.25rem;
+    font-size: 1rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-designer-hub__submit {
+    font-size: 1rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-postal-result-title {
+    font-size: 1.0625rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-postal-result-meta {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-postal-fee-hero__amount {
+    font-size: clamp(1.35rem, 2.5vw, 1.55rem);
+  }
+
+  .delivery-page-web.watta-delivery-page-about .contact-watta-topic-chip {
+    padding: 11px 18px;
+    font-size: 0.875rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .contact-watta-channel-card {
+    padding: 1.5rem 1.35rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .contact-watta-channel-card__value {
+    font-size: 1.125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-zone-name {
+    font-size: 1.125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-zone-ok,
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-zone-fee {
+    font-size: 0.875rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-how-channels__title {
+    font-size: 1.125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-how-channels__desc {
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-how-channels__meta {
+    font-size: 0.8125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-flow-how__lead {
+    margin-bottom: 1.15rem;
+  }
+}
+
+/* ——— Ноутбук / десктоп ——— */
+@media (min-width: 1025px) {
+  .delivery-page-web.watta-delivery-page-about .delivery-page-flow .delivery-flow-section > div {
+    padding-left: clamp(1.5rem, 2.5vw, 2.5rem);
+    padding-right: clamp(1.5rem, 2.5vw, 2.5rem);
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-page-flow .delivery-flow-section {
+    padding-top: clamp(1.5rem, 2.2vw, 2rem);
+    padding-bottom: clamp(1.5rem, 2.2vw, 2rem);
+  }
+
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    .delivery-page-intro-inner-web--standalone.home-after-hero-intro-inner-web--home-menu {
+    max-width: 48rem;
+    padding-left: clamp(1.75rem, 2.8vw, 3rem) !important;
+    padding-right: clamp(1.75rem, 2.8vw, 3rem) !important;
+  }
+
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #delivery-page-lead-intro
+    .home-after-hero-intro-title-web,
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #contact-page-lead-intro
+    .home-after-hero-intro-title-web {
+    font-size: clamp(2rem, 2.45vw, 2.75rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #delivery-page-lead-intro
+    .home-after-hero-intro-body-web,
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-hero-stack--video-first
+    #contact-page-lead-intro
+    .home-after-hero-intro-body-web {
+    max-width: 42rem;
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+  }
+
+  .delivery-page-web.watta-delivery-page-about
+    .delivery-page-intro-inner-web--standalone
+    .home-after-hero-intro-body-web {
+    max-width: 42rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-page-stats-band .grid {
+    gap: 0.875rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-stat-pill--blob .contact-watta-stat-pill__val,
+  .delivery-page-web.watta-delivery-page-about .delivery-stat-pill__val {
+    font-size: 1.125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-stat-pill--blob .contact-watta-stat-pill__label {
+    font-size: 0.8125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .contact-watta-section-title {
+    font-size: clamp(2rem, 2.35vw, 2.35rem);
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-page-section-lead {
+    max-width: 42rem;
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-promise-flat {
+    max-width: 44rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-promise-flat__note {
+    font-size: 1rem;
+    max-width: 40rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-designer-hub__map-hint {
+    font-size: 1.125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-designer-hub__submit {
+    font-size: 1rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-postal-result {
+    padding: 1.125rem 1.35rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-postal-result-title {
+    font-size: 1.125rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-postal-result-meta {
+    font-size: 0.9375rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .contact-watta-topic-chip {
+    font-size: 0.9375rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .contact-watta-channel-card__value {
+    font-size: 1.1875rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-watta-zone-name {
+    font-size: 1.1875rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-how-channels__item {
+    padding: 1.1rem 1.25rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-how-channels__title {
+    font-size: 1.1875rem;
+  }
+
+  .delivery-page-web.watta-delivery-page-about .delivery-how-channels__desc {
+    font-size: 0.9375rem;
+  }
+}

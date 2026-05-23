@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Bell, Package } from 'lucide-react'
 import {
   fetchMyNotifications,
@@ -11,6 +12,9 @@ import {
   WATTA_NOTIFICATIONS_CHANGED_EVENT,
 } from '@/lib/userNotificationsApi'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { cn } from '@/lib/utils'
+
+const POLL_MS = 20000
 
 export function useUnreadNotificationCount(pollMs = 45000) {
   const [unread, setUnread] = useState(0)
@@ -43,35 +47,98 @@ export function useUnreadNotificationCount(pollMs = 45000) {
   return { unread, refresh }
 }
 
-export default function UserNotificationsPanel({ compact }: { compact?: boolean }) {
-  const { t } = useLanguage()
-  const n = t.notifications
-  const [items, setItems] = useState<UserNotificationItem[]>([])
-  const [loading, setLoading] = useState(true)
+function orderStatusFromItem(item: UserNotificationItem): string | null {
+  const meta = item.meta
+  if (meta && typeof meta.status === 'string') return meta.status
+  return null
+}
 
-  const load = useCallback(async () => {
+const STATUS_STYLES: Record<string, string> = {
+  PENDING: 'notifications-page-status--pending',
+  CONFIRMED: 'notifications-page-status--confirmed',
+  COOKING: 'notifications-page-status--cooking',
+  DELIVERING: 'notifications-page-status--delivering',
+  DELIVERED: 'notifications-page-status--done',
+  COMPLETED: 'notifications-page-status--done',
+  CANCELLED: 'notifications-page-status--cancelled',
+}
+
+function formatWhen(iso: string, lang: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  if (lang === 'en') {
+    return d.toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  if (lang === 'nl') {
+    return d.toLocaleString('nl-NL', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  return d.toLocaleString('uk-UA', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+export default function UserNotificationsPanel({ compact }: { compact?: boolean }) {
+  const { t, language } = useLanguage()
+  const n = t.notifications
+  const reduceMotion = useReducedMotion()
+  const [items, setItems] = useState<UserNotificationItem[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
     const token = localStorage.getItem('token')
     if (!token) {
       setItems([])
+      setUnreadCount(0)
       setLoading(false)
       return
     }
-    setLoading(true)
+    if (!opts?.silent) setLoading(true)
+    else setSyncing(true)
     try {
       const data = await fetchMyNotifications(token)
       setItems(data.items)
+      setUnreadCount(data.unreadCount)
     } catch {
       setItems([])
+      setUnreadCount(0)
     } finally {
       setLoading(false)
+      setSyncing(false)
     }
   }, [])
 
   useEffect(() => {
     void load()
-    const onChange = () => void load()
+    const onChange = () => void load({ silent: true })
     window.addEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
-    return () => window.removeEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load({ silent: true })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      void load({ silent: true })
+    }, POLL_MS)
+    return () => {
+      window.removeEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.clearInterval(id)
+    }
   }, [load])
 
   const onRead = async (item: UserNotificationItem) => {
@@ -92,67 +159,95 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
 
   if (loading) {
     return (
-      <p className={`text-center text-sm text-gray-500 ${compact ? 'py-10' : 'py-16'}`}>
-        {t.clientProfile.loading}
-      </p>
+      <div className={cn('notifications-page-state', compact && 'notifications-page-state--compact')}>
+        <div className="notifications-page-state__spinner" aria-hidden />
+        <p>{t.clientProfile.loading}</p>
+      </div>
     )
   }
 
   if (items.length === 0) {
     return (
-      <div className={`flex flex-col items-center text-center ${compact ? 'px-4 py-10' : 'px-6 py-14 sm:py-16'}`}>
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-          <Bell className="h-10 w-10 text-gray-400" strokeWidth={1.5} />
+      <div className={cn('notifications-page-state', compact && 'notifications-page-state--compact')}>
+        <div className="notifications-page-state__icon-wrap">
+          <Bell className="notifications-page-state__icon" strokeWidth={1.5} aria-hidden />
         </div>
-        <h3 className="mb-2 text-lg font-black text-gray-900">{n.empty}</h3>
-        <p className="max-w-[280px] text-sm text-gray-500">{n.emptySubtext}</p>
+        <h3 className="notifications-page-state__title">{n.empty}</h3>
+        <p className="notifications-page-state__sub">{n.emptySubtext}</p>
       </div>
     )
   }
 
   return (
-    <div className={compact ? 'px-2 py-2' : 'px-4 py-4 sm:px-5'}>
-      <div className="mb-3 flex justify-end">
-        <button
-          type="button"
-          onClick={() => void onReadAll()}
-          className="text-xs font-bold text-[#145142] hover:underline"
-        >
+    <div className={cn('notifications-page-list-wrap', compact && 'notifications-page-list-wrap--compact')}>
+      <div className="notifications-page-list-toolbar">
+        {syncing ? (
+          <span className="notifications-page-list-sync" role="status">
+            <span className="notifications-page-list-sync__dot" aria-hidden />
+            {n.liveActive}
+          </span>
+        ) : unreadCount > 0 ? (
+          <span className="notifications-page-list-count" aria-live="polite">
+            {unreadCount}
+          </span>
+        ) : (
+          <span className="notifications-page-list-count notifications-page-list-count--muted" aria-live="polite">
+            —
+          </span>
+        )}
+        <button type="button" onClick={() => void onReadAll()} className="notifications-page-list-mark-all">
           {n.markAllRead}
         </button>
       </div>
-      <ul className="max-h-[min(60vh,420px)] space-y-2 overflow-y-auto">
-        {items.map((item) => (
-          <li key={item.id}>
-            <Link
-              href={item.orderId ? `/profile?tab=history&order=${item.orderId}` : '/profile'}
-              onClick={() => void onRead(item)}
-              className={`flex gap-3 rounded-2xl border p-3.5 transition hover:shadow-sm ${
-                item.isRead
-                  ? 'border-gray-100 bg-gray-50/80'
-                  : 'border-[#145142]/15 bg-emerald-50/40'
-              }`}
-            >
-              <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                  item.isRead ? 'bg-gray-200 text-gray-600' : 'bg-[#145142] text-white'
-                }`}
+      <ul className="notifications-page-list">
+        <AnimatePresence initial={false}>
+          {items.map((item, i) => {
+            const status = orderStatusFromItem(item)
+            const statusClass = status ? STATUS_STYLES[status] : 'notifications-page-status--default'
+            return (
+              <motion.li
+                key={item.id}
+                layout={!reduceMotion}
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: Math.min(i * 0.03, 0.2) }}
               >
-                <Package className="h-5 w-5" />
-              </span>
-              <span className="min-w-0 flex-1 text-left">
-                <span className="block text-sm font-bold text-gray-900">{item.title}</span>
-                <span className="mt-0.5 block text-xs leading-snug text-gray-600">{item.body}</span>
-                <span className="mt-1 block text-[10px] font-medium text-gray-400">
-                  {new Date(item.createdAt).toLocaleString()}
-                </span>
-              </span>
-              {!item.isRead ? (
-                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#ff6b35]" aria-hidden />
-              ) : null}
-            </Link>
-          </li>
-        ))}
+                <Link
+                  href={item.orderId ? `/profile?tab=history&order=${item.orderId}` : '/profile'}
+                  onClick={() => void onRead(item)}
+                  className={cn(
+                    'notifications-page-card',
+                    !item.isRead && 'notifications-page-card--unread',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'notifications-page-card__ico',
+                      !item.isRead && 'notifications-page-card__ico--unread',
+                    )}
+                  >
+                    <Package className="h-5 w-5" strokeWidth={2} aria-hidden />
+                  </span>
+                  <span className="notifications-page-card__body">
+                    <span className="notifications-page-card__row">
+                      <span className="notifications-page-card__title">{item.title}</span>
+                      {status ? (
+                        <span className={cn('notifications-page-status', statusClass)}>{status}</span>
+                      ) : null}
+                    </span>
+                    <span className="notifications-page-card__text">{item.body}</span>
+                    <span className="notifications-page-card__time">
+                      {formatWhen(item.createdAt, language)}
+                    </span>
+                  </span>
+                  {!item.isRead ? (
+                    <span className="notifications-page-card__dot" aria-hidden />
+                  ) : null}
+                </Link>
+              </motion.li>
+            )
+          })}
+        </AnimatePresence>
       </ul>
     </div>
   )

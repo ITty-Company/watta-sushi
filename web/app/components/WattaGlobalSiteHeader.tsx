@@ -1,10 +1,13 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { useCallback, useEffect, useSyncExternalStore, type CSSProperties } from 'react'
+import WattaLink from './WattaLink'
+import { usePathname } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
+import { useCallback, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
+import { resetHomepageLikeLogoClick } from '@/lib/wattaChromeGoHome'
+import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react'
 import { getLiveCartPieceCount, subscribeCartStorage } from '@/lib/cartStorage'
 import { readFavoriteIds, subscribeFavoriteIds } from '@/lib/favoritesStorage'
@@ -59,19 +62,19 @@ const headerSquircleStyle = (extra?: CSSProperties): CSSProperties => ({
 
 const headerCornerBadgeStyle = (value: number): CSSProperties => ({
   position: 'absolute',
-  top: '-3px',
+  top: '-2px',
   right: 0,
-  transform: 'translate(36%, -48%)',
+  transform: 'translate(28%, -42%)',
   transformOrigin: 'center',
   zIndex: 6,
   background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%)',
   color: 'white',
-  fontSize: '11px',
+  fontSize: '10px',
   fontWeight: '800',
-  borderRadius: '12px',
-  minHeight: '20px',
-  minWidth: '20px',
-  padding: value > 9 ? '3px 5px' : '3px',
+  borderRadius: '10px',
+  minHeight: '17px',
+  minWidth: '17px',
+  padding: value > 9 ? '2px 4px' : '2px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -109,12 +112,24 @@ export default function WattaGlobalSiteHeader({
   onLogoClick,
 }: WattaGlobalSiteHeaderProps) {
   const { t } = useLanguage()
-  const router = useRouter()
+  const router = useInstantRouter()
   const rightNavDrawer = useOptionalRightNavDrawer()
   const pathname = usePathname()
   const cartCount = useLiveCartCount()
   const favoritesCount = useLiveFavoritesCount()
   const { showPromotionsNav } = usePublicPromotionsNav()
+  const [loggedIn, setLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const sync = () => setLoggedIn(isUserLoggedIn())
+    sync()
+    window.addEventListener('userChanged', sync)
+    return () => window.removeEventListener('userChanged', sync)
+  }, [])
+
+  const cartHref = loggedIn ? '/cart' : getAuthUrl('/cart')
+  const profileHref = loggedIn ? '/profile' : getAuthUrl('/profile')
+  const favoritesHref = loggedIn ? '/favorites' : getAuthUrl('/favorites')
 
   useEffect(() => {
     const ref = rightNavDrawer?.cityChangeHandlerRef
@@ -145,6 +160,9 @@ export default function WattaGlobalSiteHeader({
     onLogoClick?.()
     if (pathname !== '/') {
       router.push('/')
+    } else {
+      resetHomepageLikeLogoClick(router)
+      return
     }
     scrollEntireAppToTop()
   }, [onLogoClick, pathname, router])
@@ -221,27 +239,39 @@ export default function WattaGlobalSiteHeader({
             <div className="header-center-nav-inner-web">
               <CountryCitySelector onCityChange={onCityChange} />
 
-              <Link href="/delivery" style={navTextStyle(deliveryNavActive)} className="header-center-nav-tight-web">
+              <WattaLink href="/delivery" prefetch style={navTextStyle(deliveryNavActive)} className="header-center-nav-tight-web">
                 {t.navigation.delivery}
-              </Link>
+              </WattaLink>
 
-              <Link href="/about" style={navTextStyle(pathname === '/about')} className="header-center-nav-tight-web">
+              <WattaLink href="/about" prefetch style={navTextStyle(pathname === '/about')} className="header-center-nav-tight-web">
                 {t.navigation.about}
-              </Link>
+              </WattaLink>
 
               {showPromotionsNav ? (
-                <button
-                  type="button"
-                  onClick={onPromotionsClick}
-                  style={navTextStyle(pathname === '/promotions' || pathname?.startsWith('/promotions/'))}
-                  className="header-center-nav-tight-web"
-                >
-                  {t.navigation.promotions}
-                </button>
+                pathname === '/' ? (
+                  <button
+                    type="button"
+                    onClick={onPromotionsClick}
+                    style={navTextStyle(false)}
+                    className="header-center-nav-tight-web"
+                  >
+                    {t.navigation.promotions}
+                  </button>
+                ) : (
+                  <WattaLink
+                    href="/promotions"
+                    prefetch
+                    style={navTextStyle(pathname === '/promotions' || pathname?.startsWith('/promotions/'))}
+                    className="header-center-nav-tight-web"
+                  >
+                    {t.navigation.promotions}
+                  </WattaLink>
+                )
               ) : null}
 
-              <Link
+              <WattaLink
                 href="/contacts"
+                prefetch
                 className="header-nav-contacts-link-web"
                 style={{
                   display: 'flex',
@@ -271,27 +301,27 @@ export default function WattaGlobalSiteHeader({
                 >
                   <path d="M3 4.5L6 7.5L9 4.5" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </Link>
+              </WattaLink>
             </div>
           </div>
 
           <div className="header-actions-web">
-            <button
-              type="button"
+            <WattaLink
+              href={profileHref}
+              prefetch
               className="header-profile-btn-web"
-              onClick={onProfileClick}
               aria-label={a.profile}
-              style={headerSquircleStyle()}
+              style={headerSquircleStyle({ textDecoration: 'none' })}
             >
               <User size={20} className="header-profile-icon-web" style={{ color: '#145142', strokeWidth: 2.25 }} />
-            </button>
+            </WattaLink>
 
-            <button
-              type="button"
+            <WattaLink
+              href={favoritesHref}
+              prefetch
               className="header-favorites-btn-web"
-              onClick={onFavoritesClick}
               aria-label={a.favorites}
-              style={headerSquircleStyle({ overflow: 'visible', zIndex: 2 })}
+              style={headerSquircleStyle({ overflow: 'visible', zIndex: 2, textDecoration: 'none' })}
             >
               <Heart
                 size={20}
@@ -308,22 +338,23 @@ export default function WattaGlobalSiteHeader({
                   {favoritesCount > 99 ? '99+' : favoritesCount}
                 </span>
               ) : null}
-            </button>
+            </WattaLink>
 
             <div className="location-section-web header-lang-wrap-web" style={{ display: 'flex', alignItems: 'center' }}>
               <LanguageSelector />
             </div>
 
-            <button
-              type="button"
+            <WattaLink
+              href={cartHref}
+              prefetch
               className="header-cart-btn-text-web"
-              onClick={onCartClick}
               aria-label={a.cart}
               style={headerSquircleStyle({
                 color: '#145142',
                 fontWeight: 600,
                 overflow: 'visible',
                 zIndex: 2,
+                textDecoration: 'none',
               })}
             >
               <ShoppingBag
@@ -339,7 +370,7 @@ export default function WattaGlobalSiteHeader({
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               ) : null}
-            </button>
+            </WattaLink>
 
             <button
               type="button"

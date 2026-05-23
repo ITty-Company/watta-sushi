@@ -1,7 +1,9 @@
 'use client'
 
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { readMenuCategoriesFromSessionCache } from '@/lib/readMenuCategoriesCache'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useLanguage } from '../context/LanguageContext'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
 import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
@@ -27,12 +29,16 @@ type MenuCategory = {
 
 /**
  * Горизонтальні категорії як на головній.
- * Підсвічування: URL (/menu?cat=, /menu/category/…, /product/:id), скрол на /menu та на головній (події з FullMenuPageClient / MenuView).
+ * Підсвічування: URL (/menu?cat=, /menu/category/…, /product/:id). Скрол до секції — по кліку (події з FullMenuPageClient / MenuView).
  */
-function WattaMenuCategoryStripInner() {
-  const router = useRouter()
+type WattaMenuCategoryStripInnerProps = {
+  /** Лише для `/menu?cat=` — решта маршрутів без useSearchParams (без Suspense). */
+  menuCatQuery?: string | null
+}
+
+function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryStripInnerProps) {
+  const router = useInstantRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const { language, t } = useLanguage()
   const fallbackCategories = useMemo<MenuCategory[]>(
     () =>
@@ -89,7 +95,7 @@ function WattaMenuCategoryStripInner() {
       return
     }
     if (p === '/menu') {
-      const c = searchParams.get('cat')?.trim()
+      const c = menuCatQuery?.trim()
       if (c) {
         setUrlHighlight(c)
       } else {
@@ -116,7 +122,17 @@ function WattaMenuCategoryStripInner() {
       return
     }
     setUrlHighlight(null)
-  }, [pathname, searchParams])
+  }, [pathname, menuCatQuery])
+
+  useLayoutEffect(() => {
+    const cached = readMenuCategoriesFromSessionCache(
+      language,
+      t.categories as Record<string, string>,
+    )
+    if (cached?.length) {
+      setMenuCategories(cached)
+    }
+  }, [language, t.categories])
 
   useEffect(() => {
     const h = (ev: Event) => {
@@ -320,6 +336,16 @@ function WattaMenuCategoryStripInner() {
     ;[150, 350, 550].forEach((ms) => setTimeout(() => checkScrollButtons(panel), ms))
   }
 
+  const categoryPrefetchHref = useCallback(
+    (key: string) => {
+      const p = pathname || ''
+      if (key === FULL_MENU_ALL_SLUG) return '/menu'
+      if (p === '/menu') return `/menu?cat=${encodeURIComponent(key)}`
+      return `/menu/category/${encodeURIComponent(key)}`
+    },
+    [pathname],
+  )
+
   const onCategoryClick = (key: string) => {
     if (categoriesPanelRef.current) {
       scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
@@ -369,6 +395,7 @@ function WattaMenuCategoryStripInner() {
               key="full-menu-all"
               type="button"
               data-watta-cat={FULL_MENU_ALL_SLUG}
+              data-prefetch-href={categoryPrefetchHref(FULL_MENU_ALL_SLUG)}
               className={`category-button-web ${activeKey === FULL_MENU_ALL_SLUG ? 'category-button-active-web' : ''}`}
               onClick={(e) => {
                 e.preventDefault()
@@ -398,6 +425,7 @@ function WattaMenuCategoryStripInner() {
               key={category.key}
               type="button"
               data-watta-cat={category.key}
+              data-prefetch-href={categoryPrefetchHref(category.key)}
               className={`category-button-web ${activeKey === category.key ? 'category-button-active-web' : ''}`}
               onClick={(e) => {
                 e.preventDefault()
@@ -434,15 +462,24 @@ function WattaMenuCategoryStripInner() {
           ›
         </button>
       </div>
-      <div className="categories-panel-spacer-web" aria-hidden />
     </>
   )
 }
 
+function WattaMenuCategoryStripWithSearch() {
+  const searchParams = useSearchParams()
+  return <WattaMenuCategoryStripInner menuCatQuery={searchParams.get('cat')} />
+}
+
+/** На головній та hero-сторінках — без Suspense; на `/menu` — лише для ?cat=. */
 export function WattaMenuCategoryStrip() {
-  return (
-    <Suspense fallback={null}>
-      <WattaMenuCategoryStripInner />
-    </Suspense>
-  )
+  const pathname = usePathname() || ''
+  if (pathname === '/menu') {
+    return (
+      <Suspense fallback={<WattaMenuCategoryStripInner />}>
+        <WattaMenuCategoryStripWithSearch />
+      </Suspense>
+    )
+  }
+  return <WattaMenuCategoryStripInner />
 }

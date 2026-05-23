@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { useLanguage } from '../context/LanguageContext'
+import { usePhoneMenuOneColumn } from '@/hooks/usePhoneMenuOneColumn'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 
 export type MenuHighlightStackItem = {
@@ -56,6 +57,8 @@ export function MenuHighlightStack({
 }: Props) {
   const { language } = useLanguage()
   const lang = language as WattaLanguage
+  const phoneOneCol = usePhoneMenuOneColumn()
+  const effectiveLayout = phoneOneCol ? 'stack' : layout
 
   if (items.length === 0) return null
 
@@ -72,7 +75,7 @@ export function MenuHighlightStack({
     </header>
   )
 
-  if (layout === 'rail') {
+  if (effectiveLayout === 'rail') {
     return (
       <section
         className="menu-highlight-stack-web w-full max-w-[100vw] shrink-0 border-b border-[#145142]/10 bg-transparent px-0 py-4 sm:py-5"
@@ -125,7 +128,7 @@ export function MenuHighlightStack({
       {suppressHeading ? null : <div className="mb-3 sm:mb-4">{headingBlock}</div>}
       <div
         className={cn(
-          'menu-highlight-stack-products mx-auto grid w-full max-w-lg grid-cols-1 items-start gap-3 sm:max-w-xl sm:grid-cols-2 sm:gap-2.5',
+          'menu-highlight-stack-products mx-auto grid w-full max-w-lg grid-cols-1 items-start gap-3 md:max-w-xl md:grid-cols-2 md:gap-2.5',
           productsGridClassName,
         )}
       >

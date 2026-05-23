@@ -1,0 +1,417 @@
+/* /profile — delivery/reviews typography + glass sections */
+
+#profile-page-root.profile-page-web {
+  --profile-accent: #145142;
+  --profile-orange: #ff5c00;
+  overflow-x: clip;
+}
+
+#profile-page-root.profile-page-web .delivery-page-intro-web--video,
+#profile-page-root.profile-page-web .delivery-page-hero-stack,
+#profile-page-root.profile-page-web .home-after-hero-intro-web {
+  background: #fff !important;
+  border-top: none;
+}
+
+/* Hero: «Профиль» + ім’я — один рядок */
+#profile-page-root.profile-page-web #profile-page-lead-intro .home-after-hero-intro-title-web {
+  white-space: nowrap;
+}
+
+#profile-page-root.profile-page-web #profile-page-lead-intro .home-after-hero-intro-title-web > span {
+  display: inline !important;
+}
+
+#profile-page-root.profile-page-web #profile-page-lead-intro .home-after-hero-intro-title-web > span + span::before {
+  content: ' ';
+}
+
+.watta-profile-page__flow {
+  position: relative;
+  z-index: 4;
+  flex: 1 1 auto;
+  width: 100%;
+  background: var(--watta-page-fill, #ffffff);
+  border-top: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+.watta-profile-page__inner {
+  padding-top: clamp(0.75rem, 2vw, 1.25rem);
+  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+}
+
+.watta-profile-page__section-title {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.2rem, 4vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #0f241e;
+}
+
+.watta-profile-page__section-title-accent {
+  color: var(--profile-orange, #ff5c00);
+}
+
+.watta-profile-page__section-sub {
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--profile-accent) 45%, #64748b);
+}
+
+.watta-profile-stat-pill {
+  border-radius: 1.15rem;
+  padding: 0.85rem 0.65rem;
+  min-height: 5.5rem;
+}
+
+.watta-profile-quick-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.watta-profile-quick-nav__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--profile-accent);
+  background: linear-gradient(165deg, #f8fbf9 0%, #f0f6f3 100%);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 18%, transparent);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.watta-profile-quick-nav__btn:hover {
+  border-color: color-mix(in srgb, var(--profile-orange) 35%, var(--profile-accent));
+  transform: translateY(-1px);
+}
+
+.watta-profile-section-card {
+  margin-bottom: clamp(1rem, 2.5vw, 1.35rem);
+  padding: clamp(1rem, 3vw, 1.35rem);
+  border-radius: 1.25rem;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(255, 255, 255, 0.82) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 12px 40px rgba(20, 81, 66, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  scroll-margin-top: calc(var(--watta-sticky-chrome-height, 7.5rem) + 0.75rem);
+}
+
+.watta-profile-data-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .watta-profile-data-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.watta-profile-data-field {
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+}
+
+.watta-profile-data-field__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--profile-accent) 55%, #64748b);
+}
+
+.watta-profile-data-field__value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #0f241e;
+  word-break: break-word;
+}
+
+.watta-profile-data-field__value--readonly {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(20, 81, 66, 0.04);
+  border: 1px dashed rgba(20, 81, 66, 0.18);
+}
+
+.watta-profile-data-field__input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(20, 81, 66, 0.15);
+  background: #fff;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #0f241e;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.watta-profile-data-field__input:focus {
+  border-color: rgba(20, 81, 66, 0.45);
+  box-shadow: 0 0 0 3px rgba(20, 81, 66, 0.12);
+}
+
+.watta-profile-data-field__input--invalid {
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+.watta-profile-data-field__error {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #b91c1c;
+}
+
+.watta-profile-data-field__readonly-hint {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.watta-profile-address-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(155deg, #f0f7f4 0%, #ffffff 100%);
+  border: 1px solid rgba(20, 81, 66, 0.12);
+}
+
+.watta-profile-address-card__icon {
+  display: flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  background: linear-gradient(145deg, #145142, #1a6b58);
+  color: #fff;
+}
+
+.watta-profile-fav-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.watta-profile-fav-card:hover {
+  border-color: color-mix(in srgb, var(--profile-orange) 25%, rgba(20, 81, 66, 0.15));
+  box-shadow: 0 8px 24px rgba(20, 81, 66, 0.08);
+}
+
+.watta-profile-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.watta-profile-action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.watta-profile-action-link--primary {
+  color: #fff;
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  box-shadow: 0 6px 20px rgba(20, 81, 66, 0.22);
+}
+
+.watta-profile-action-link--primary:hover {
+  transform: translateY(-1px);
+}
+
+.watta-profile-action-link--ghost {
+  color: var(--profile-accent);
+  background: #fff;
+  border: 1px solid rgba(20, 81, 66, 0.18);
+}
+
+.watta-profile-action-link--ghost:hover {
+  border-color: color-mix(in srgb, var(--profile-accent) 40%, transparent);
+}
+
+.watta-profile-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid rgba(185, 28, 28, 0.2);
+  transition: background 0.2s ease;
+}
+
+.watta-profile-logout-btn:hover {
+  background: #fee2e2;
+}
+
+.watta-profile-empty {
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  border-radius: 1rem;
+  background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
+  border: 1px dashed rgba(20, 81, 66, 0.18);
+}
+
+.watta-profile-embedded-tabs {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.25rem 0 0.5rem;
+  margin-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.watta-profile-embedded-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.watta-profile-embedded-tab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.watta-profile-embedded-tab--on {
+  background: #145142;
+  color: #fff;
+}
+
+.watta-profile-embedded-tab--off {
+  background: #f0f6f3;
+  color: #145142;
+}
+
+.watta-profile-address-form__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--profile-accent) 55%, #64748b);
+}
+
+.watta-profile-address-form__input {
+  width: 100%;
+  resize: vertical;
+  min-height: 5.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(20, 81, 66, 0.15);
+  background: #fff;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #0f241e;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.watta-profile-address-form__input:focus {
+  border-color: rgba(20, 81, 66, 0.45);
+  box-shadow: 0 0 0 3px rgba(20, 81, 66, 0.12);
+}
+
+.watta-profile-address-form__hint {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.watta-profile-address-form__result {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
+}
+
+.watta-profile-address-form__result--ok {
+  border-color: rgba(20, 81, 66, 0.22);
+  background: linear-gradient(165deg, #f0faf4 0%, #ffffff 100%);
+}
+
+.watta-profile-address-form__result--error {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: #fff5f5;
+}
+
+.watta-profile-address-form__save {
+  margin-top: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  padding: 0.75rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.watta-profile-address-form__save:hover:not(:disabled) {
+  opacity: 0.95;
+}
+
+.watta-profile-address-form__save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

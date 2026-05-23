@@ -1,8 +1,8 @@
 'use client'; // <--- ВАЖНО для Next.js (компонент с интерактивностью)
 
 import { ShoppingBag, User, Menu as MenuIcon } from 'lucide-react';
-import Link from 'next/link';       // Вместо react-router-dom
-import { useRouter } from 'next/navigation'; // Вместо react-router-dom
+import WattaLink from './components/WattaLink';
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useEffect, useState } from 'react';
 
 interface HeaderProps {
@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 export function Header({ cartCount, onOpenCart }: HeaderProps) {
-  const router = useRouter(); // Хук роутера Next.js
+  const router = useInstantRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Проверяем логин только на клиенте (чтобы избежать ошибок гидратации)
@@ -25,21 +25,23 @@ export function Header({ cartCount, onOpenCart }: HeaderProps) {
         
         {/* Логотип */}
         <div className="flex items-center gap-2">
-          <Link href="/" className="text-2xl font-bold text-gray-900">
+          <WattaLink href="/" className="text-2xl font-bold text-gray-900">
             Sushi <span className="text-pink-500">Watta</span>
-          </Link>
+          </WattaLink>
         </div>
 
         {/* Навигация */}
         <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600">
-          <Link href="/" className="hover:text-pink-500 transition">Меню</Link>
-          <Link href="/delivery" className="hover:text-pink-500 transition">Доставка</Link>
-          <Link href="/blog" className="hover:text-pink-500 transition">Блог</Link>
+          <WattaLink href="/" className="hover:text-pink-500 transition">Меню</WattaLink>
+          <WattaLink href="/delivery" className="hover:text-pink-500 transition">Доставка</WattaLink>
+          <WattaLink href="/blog" className="hover:text-pink-500 transition">Блог</WattaLink>
         </nav>
 
         {/* Иконки */}
         <div className="flex items-center gap-4">
-          <button 
+          <button
+            type="button"
+            data-prefetch-href={isLoggedIn ? '/profile' : '/login'}
             onClick={() => router.push(isLoggedIn ? '/profile' : '/login')}
             className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 hover:text-pink-500"
           >

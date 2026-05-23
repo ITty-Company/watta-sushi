@@ -8,6 +8,7 @@ import FloatingContactButtons from './components/FloatingContactButtons'
 import Footer from './components/Footer'
 import WattaRightNavDrawer from './components/WattaRightNavDrawer'
 import WattaPublicSiteChrome from './components/WattaPublicSiteChrome'
+import WattaHtmlRouteClass from './components/WattaHtmlRouteClass'
 import { RightNavDrawerProvider } from './context/RightNavDrawerContext'
 import { sanitizeAuthStorage } from '@/lib/authSession'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
@@ -20,6 +21,12 @@ import {
 } from '@/lib/wattaIngredientsCatalog'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { preloadImageUrls } from '@/lib/preloadImages'
+import { preloadLocationPickerMascot } from '@/lib/locationPickerMascot'
+import { useInstantNavBoot } from '@/hooks/useInstantNavBoot'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
+import { isBrowserReloadOnHome } from '@/lib/menuBrowseRestore'
+import { resetHomepageLikeLogoClick } from '@/lib/wattaChromeGoHome'
+import { warmMenuCatalogCache } from '@/lib/menuCatalogSessionCache'
 
 export default function AppClient({
   children,
@@ -29,11 +36,10 @@ export default function AppClient({
   initialLocale: WattaLanguage
 }) {
   const pathname = usePathname()
+  const router = useInstantRouter()
+  useInstantNavBoot()
   const prevPathnameForScrollRef = useRef<string | null>(null)
   const isHomeRoute = pathname === '/'
-  const isFavoritesRoute = pathname === '/favorites'
-  const isDeliveryRoute = pathname === '/delivery'
-  const isCartRoute = pathname === '/cart'
   const isAuthRoute = pathname === '/login' || pathname === '/register'
   const isAdminShellRoute = pathname === '/admin' || pathname?.startsWith('/admin/')
   const hidePublicSiteChromeExtras = useSyncExternalStore(
@@ -54,24 +60,31 @@ export default function AppClient({
     () => false,
   )
   const showPublicNavChrome = !isAuthRoute
-  /**
-   * Шапка + категорії: на `/` — `MenuView`, на `/favorites` — `FavoritesPageClient`, на `/delivery` — `DeliveryView`.
-   * На інших публічних маршрутах — `WattaPublicSiteChrome`.
-   */
-  /** Шапка + категорії на всіх публічних сторінках, крім головної (там — MenuView). */
-  const showGlobalSiteChrome = !isAuthRoute && !isAdminShellRoute && !isHomeRoute
+  /** Єдина fixed шапка + категорії (як на головній) на всіх публічних маршрутах. */
+  const showGlobalSiteChrome = !isAuthRoute && !isAdminShellRoute
   /**
    * Скрол наверх лише при зміні pathname; raніше тригерилось і на кожну зміну `searchParams`
    * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.
    */
+  useLayoutEffect(() => {
+    void warmMenuCatalogCache()
+    preloadLocationPickerMascot()
+  }, [])
+
   useLayoutEffect(() => {
     const path = pathname ?? '/'
     const prev = prevPathnameForScrollRef.current
     prevPathnameForScrollRef.current = path
     if (prev === path) return
     if (path === '/menu' && prev === '/menu') return
-    scrollEntireAppToTop()
+    requestAnimationFrame(() => scrollEntireAppToTop())
   }, [pathname])
+
+  /** F5 на головній — одразу той самий reset, що клік по логотипу (до HomeClient). */
+  useLayoutEffect(() => {
+    if (!isBrowserReloadOnHome()) return
+    resetHomepageLikeLogoClick(router, { skipRefresh: true })
+  }, [router])
 
   /**
    * Одноразова міграція схеми кешу меню. Запускається через requestIdleCallback,
@@ -123,31 +136,32 @@ export default function AppClient({
   useEffect(() => subscribeWattaCatalogCrossTab(() => {}), [])
 
   useEffect(() => {
-    void ensureCountriesCatalog()
-    const cachedIng = readIngredientsCatalogSync()
-    if (cachedIng?.size) {
-      preloadImageUrls(
-        Array.from(cachedIng.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
-        { limit: 32, highPriorityCount: 20 },
-      )
-    }
-    void ensureIngredientsCatalog().then((map) => {
-      if (!map?.size) return
-      preloadImageUrls(
-        Array.from(map.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
-        { limit: 32, highPriorityCount: 20 },
-      )
-    })
-    const w = window as Window & {
+    type IdleWindow = Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
     }
-    const warm = () => {
-      void fetch('/api/products', { credentials: 'same-origin' }).catch(() => {})
+    const w = window as IdleWindow
+    const runDeferred = () => {
+      void ensureCountriesCatalog()
+      const cachedIng = readIngredientsCatalogSync()
+      if (cachedIng?.size) {
+        preloadImageUrls(
+          Array.from(cachedIng.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
+          { limit: 12, highPriorityCount: 8 },
+        )
+      }
+      void ensureIngredientsCatalog().then((map) => {
+        if (!map?.size) return
+        preloadImageUrls(
+          Array.from(map.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
+          { limit: 12, highPriorityCount: 8 },
+        )
+      })
+      void warmMenuCatalogCache()
     }
     if (typeof w.requestIdleCallback === 'function') {
-      w.requestIdleCallback(warm, { timeout: 2500 })
+      w.requestIdleCallback(runDeferred, { timeout: 800 })
     } else {
-      window.setTimeout(warm, 400)
+      window.setTimeout(runDeferred, 250)
     }
   }, [])
 
@@ -156,6 +170,7 @@ export default function AppClient({
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
         {/* Мінімум висоти вікна: футер лишається внизу; фон сторінки — як у шапки контенту */}
         <div className="watta-app-shell-root watta-page-bg flex min-h-[100dvh] min-h-[100svh] flex-col">
+          <WattaHtmlRouteClass />
           {/* flex-1: основний блок забирає вільну висоту до min-h екрана — інакше «повітря» лишалось під футером */}
           <main className="flex min-h-0 w-full max-w-[100vw] flex-1 flex-col">
             {showGlobalSiteChrome ? <WattaPublicSiteChrome /> : null}

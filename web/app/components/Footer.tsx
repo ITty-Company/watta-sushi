@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import WattaLink from './WattaLink'
 import Image from 'next/image'
 import { Instagram, Mail, Send } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
@@ -82,7 +82,7 @@ export default function Footer({ className }: FooterProps) {
     const links = [
       { href: '/menu', label: nav.menu },
       { href: '/promotions', label: nav.promotions },
-      { href: '/delivery', label: nav.deliveryPage },
+      { href: '/delivery', label: nav.delivery },
       { href: '/blog', label: sf.blog },
       { href: '/reviews', label: sf.reviews },
       { href: '/about', label: nav.about },
@@ -179,9 +179,9 @@ export default function Footer({ className }: FooterProps) {
 
           <nav className="site-footer-watta__pills" aria-label={sf.navAria}>
             {pillLinks.map(({ href, label }) => (
-              <Link key={href + label} href={href} className="site-footer-watta__pill">
+              <WattaLink key={href + label} href={href} className="site-footer-watta__pill">
                 {label}
-              </Link>
+              </WattaLink>
             ))}
           </nav>
         </div>
@@ -226,18 +226,18 @@ export default function Footer({ className }: FooterProps) {
               <ul className="site-footer-watta__list">
                 {navLinksCol1.map(({ href, label }) => (
                   <li key={`${href}:${label}`}>
-                    <Link href={href} className="site-footer-watta__text-link">
+                    <WattaLink href={href} className="site-footer-watta__text-link">
                       {label}
-                    </Link>
+                    </WattaLink>
                   </li>
                 ))}
               </ul>
               <ul className="site-footer-watta__list">
                 {navLinksCol2.map(({ href, label }) => (
                   <li key={`${href}:${label}`}>
-                    <Link href={href} className="site-footer-watta__text-link">
+                    <WattaLink href={href} className="site-footer-watta__text-link">
                       {label}
-                    </Link>
+                    </WattaLink>
                   </li>
                 ))}
               </ul>
@@ -299,9 +299,9 @@ export default function Footer({ className }: FooterProps) {
             <span className="site-footer-watta__nav-colophon-sep" aria-hidden>
               ·
             </span>
-            <Link href="/privacy" className="site-footer-watta__nav-colophon-link">
+            <WattaLink href="/privacy" className="site-footer-watta__nav-colophon-link">
               {sf.privacy}
-            </Link>
+            </WattaLink>
           </div>
         </div>
       </div>

@@ -2,17 +2,15 @@
 
 import {
   useCallback,
-  useEffect,
   useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
   type MutableRefObject,
   type ReactNode,
   type RefObject,
 } from 'react'
-import { createPortal } from 'react-dom'
 import clsx from 'clsx'
+import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 
 type WattaStickyChromeLayoutProps = {
   children: ReactNode
@@ -27,6 +25,11 @@ type WattaStickyChromeLayoutProps = {
   flowHeightFudgePx?: number
   /** Верхня межа резерву висоти в потоці (шапка + категорії на головній можуть бути >220px). */
   flowHeightMaxPx?: number
+  /**
+   * Hero-сторінки: у потоці лишаємо лише білу шапку; категорії «висять» над контентом —
+   * при скролі відео видно під прозорою зоною до шапки.
+   */
+  flowAnchorHeaderOnly?: boolean
 }
 
 /**
@@ -38,8 +41,8 @@ const defaultFlowHeightFudgePx = 10
 const DEFAULT_FLOW_LAYOUT_MAX_PX = 320
 
 /**
- * Липка верхня зона: fixed до viewport (portal на body) + резерв висоти в потоці.
- * Portal потрібен: .content-web на головній скролиться з overflow — інакше fixed «пливе» разом із контентом.
+ * Липка верхня зона: fixed у потоці (без portal — однаковий SSR/клієнт, без hydration error).
+ * Chrome у <main>, не всередині .content-web — fixed привʼязаний до viewport.
  */
 export default function WattaStickyChromeLayout({
   children,
@@ -47,23 +50,38 @@ export default function WattaStickyChromeLayout({
   innerRef,
   flowHeightFudgePx = defaultFlowHeightFudgePx,
   flowHeightMaxPx = DEFAULT_FLOW_LAYOUT_MAX_PX,
+  flowAnchorHeaderOnly = false,
 }: WattaStickyChromeLayoutProps) {
   const [flowH, setFlowH] = useState(0)
-  const [portalReady, setPortalReady] = useState(false)
+  const [headerFlowH, setHeaderFlowH] = useState(0)
   const localRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    setPortalReady(true)
-  }, [])
 
   const toFlowLayoutHeight = useCallback(
     (raw: number) => {
       if (raw < 8) return 0
-      /* ceil — трохи більший резерв, щоб fixed chrome не накривав перший блок контенту / футер */
       return Math.min(flowHeightMaxPx, Math.max(8, Math.ceil(raw) - flowHeightFudgePx))
     },
-    [flowHeightFudgePx, flowHeightMaxPx]
+    [flowHeightFudgePx, flowHeightMaxPx],
   )
+
+  const syncMeasuredCssVars = useCallback((el: HTMLDivElement) => {
+    const root = document.documentElement
+    const raw = el.offsetHeight
+    const headerEl = el.querySelector('.watta-chrome-top-band-web')
+    const headerRaw = headerEl?.offsetHeight ?? 0
+    if (raw >= 8) {
+      root.style.setProperty('--watta-sticky-chrome-measured-h', `${raw}px`)
+    }
+    if (headerRaw >= 8) {
+      root.style.setProperty('--watta-chrome-header-measured-h', `${headerRaw}px`)
+    }
+    if (raw >= 8 && headerRaw >= 8) {
+      root.style.setProperty(
+        '--watta-chrome-categories-band-h',
+        `${Math.max(0, raw - headerRaw)}px`,
+      )
+    }
+  }, [])
 
   const setInnerNode = useCallback(
     (el: HTMLDivElement | null) => {
@@ -76,9 +94,10 @@ export default function WattaStickyChromeLayout({
         if (h >= 8) {
           setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
         }
+        syncMeasuredCssVars(el)
       }
     },
-    [innerRef, toFlowLayoutHeight]
+    [innerRef, toFlowLayoutHeight, syncMeasuredCssVars],
   )
 
   useLayoutEffect(() => {
@@ -88,70 +107,61 @@ export default function WattaStickyChromeLayout({
       const h = toFlowLayoutHeight(el.offsetHeight)
       if (h < 8) return
       setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
+      const headerEl = el.querySelector('.watta-chrome-top-band-web')
+      const headerRaw = headerEl?.offsetHeight ?? 0
+      if (headerRaw >= 8) {
+        const headerFlow = toFlowLayoutHeight(headerRaw)
+        setHeaderFlowH((prev) => (Math.abs(prev - headerFlow) > 1 ? headerFlow : prev))
+      }
+      syncMeasuredCssVars(el)
     }
     measure()
     const ro = new ResizeObserver(() => {
       requestAnimationFrame(measure)
     })
     ro.observe(el)
-    window.addEventListener('resize', measure)
+    const onResize = () => measure()
+    const onLayoutSync = () => measure()
+    window.addEventListener('resize', onResize)
+    window.addEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
     return () => {
       ro.disconnect()
-      window.removeEventListener('resize', measure)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
     }
-  }, [children, chromeClassName, toFlowLayoutHeight, flowHeightFudgePx, flowHeightMaxPx])
+  }, [children, chromeClassName, toFlowLayoutHeight, flowHeightFudgePx, flowHeightMaxPx, syncMeasuredCssVars])
 
   useLayoutEffect(() => {
     const el = localRef.current
     const root = document.documentElement
-    const sync = () => {
-      const raw = el?.offsetHeight ?? 0
-      if (raw >= 8) {
-        root.style.setProperty('--watta-sticky-chrome-measured-h', `${raw}px`)
-      }
-      if (flowH >= 8) {
-        root.style.setProperty('--watta-sticky-chrome-flow-h', `${flowH}px`)
-      }
+    if (!el) return
+    const anchorFlowH =
+      flowAnchorHeaderOnly && headerFlowH >= 8 ? headerFlowH : flowH
+    if (flowH >= 8) {
+      root.style.setProperty('--watta-sticky-chrome-flow-h', `${flowH}px`)
     }
-    sync()
-    return () => {
-      requestAnimationFrame(() => {
-        if (document.querySelector('.watta-sticky-chrome-flow-anchor')) return
-        root.style.removeProperty('--watta-sticky-chrome-measured-h')
-        root.style.removeProperty('--watta-sticky-chrome-flow-h')
-      })
+    if (anchorFlowH >= 8) {
+      root.style.setProperty('--watta-sticky-chrome-anchor-h', `${anchorFlowH}px`)
     }
-  }, [flowH])
-
-  const anchorStyle: CSSProperties | undefined = flowH
-    ? {
-        minHeight: flowH,
-        ['--watta-sticky-chrome-flow-h' as string]: `${flowH}px`,
-      }
-    : undefined
-
-  const chromeNode = (
-    <div
-      ref={setInnerNode}
-      data-watta-sticky-chrome-portal=""
-      className={clsx(
-        'watta-sticky-chrome-portal fixed top-0 left-0 right-0 z-[200] w-full max-w-[100vw] pointer-events-auto',
-        chromeClassName
-      )}
-    >
-      {children}
-    </div>
-  )
+  }, [flowH, headerFlowH, flowAnchorHeaderOnly])
 
   return (
     <div
-      className="watta-sticky-chrome-flow-anchor shrink-0 w-full"
-      style={anchorStyle}
-      aria-hidden={false}
+      className={clsx(
+        'watta-sticky-chrome-flow-anchor shrink-0 w-full',
+        flowAnchorHeaderOnly && 'watta-sticky-chrome-flow-anchor--header-only',
+      )}
     >
-      {portalReady && typeof document !== 'undefined'
-        ? createPortal(chromeNode, document.body)
-        : null}
+      <div
+        ref={setInnerNode}
+        data-watta-sticky-chrome-portal=""
+        className={clsx(
+          'watta-sticky-chrome-portal fixed top-0 left-0 right-0 z-[200] w-full max-w-[100vw] pointer-events-auto',
+          chromeClassName,
+        )}
+      >
+        {children}
+      </div>
     </div>
   )
 }

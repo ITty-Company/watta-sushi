@@ -1,5 +1,5 @@
 /** Після заміни mp4 у `public/` — змініть bust, щоб не тримати старий кеш. */
-export const WATTA_DELIVERY_HERO_FALLBACK_CACHE_BUST = '1080p-20260516'
+export const WATTA_DELIVERY_HERO_FALLBACK_CACHE_BUST = 'hq-1080p60-20260521'
 
 const withDeliveryHeroFallbackCacheBust = (path: string) =>
   `${path}?${WATTA_DELIVERY_HERO_FALLBACK_CACHE_BUST}`
@@ -13,15 +13,24 @@ export const WATTA_DELIVERY_HERO_VIDEO_FALLBACKS = [
 
 export const WATTA_DELIVERY_HERO_PRIMARY_MP4 = WATTA_DELIVERY_HERO_VIDEO_FALLBACKS[0]
 
-export const WATTA_DELIVERY_HERO_POSTER = '/sushi.webp' as const
+export const WATTA_DELIVERY_HERO_POSTER = '/watta-home-hero-poster.jpg' as const
 
 export const WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT = 'watta:delivery-hero-video-updated' as const
+
+function normalizeDeliveryPublicHeroMp4Url(url: string): string {
+  const trimmed = url.trim()
+  const base = trimmed.split('?')[0]
+  if (base === WATTA_DELIVERY_HERO_VIDEO_PATH) {
+    return withDeliveryHeroFallbackCacheBust(WATTA_DELIVERY_HERO_VIDEO_PATH)
+  }
+  return trimmed
+}
 
 function dedupeAdminUrls(adminUrls?: readonly string[] | null): string[] {
   const seen = new Set<string>()
   const out: string[] = []
   for (const raw of adminUrls ?? []) {
-    const u = raw.trim()
+    const u = normalizeDeliveryPublicHeroMp4Url(raw.trim())
     if (!u || seen.has(u)) continue
     seen.add(u)
     out.push(u)

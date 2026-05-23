@@ -86,6 +86,7 @@ import AdminDashboardStudio from './admin/AdminDashboardStudio'
 import AdminReviewsPanel, { type AdminReviewRow } from './admin/AdminReviewsPanel'
 import AdminCartUpsellPanel from './admin/AdminCartUpsellPanel'
 import AdminCustomersPanel from './admin/AdminCustomersPanel'
+import AdminContactInquiriesPanel from './admin/AdminContactInquiriesPanel'
 import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
 import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSave'
 import { compressProductImageFile } from '@/lib/compressProductImage'
@@ -526,6 +527,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     | 'ingredients'
     | 'cartUpsell'
   >('dashboard')
+
+  const [crmSubview, setCrmSubview] = useState<'customers' | 'inquiries'>('customers')
   
   const [orders, setOrders] = useState<Order[]>([])
   const initialAdminProducts = useMemo(() => readAdminProductsCache() ?? [], [])
@@ -1068,6 +1071,29 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       void fetchTabData('products', { force: true })
     }
   }, ['products', 'cartUpsell'])
+
+  /** Замовлення, дашборд і товари — автооновлення поки вкладка відкрита */
+  useEffect(() => {
+    const liveTab =
+      activeTab === 'orders' || activeTab === 'dashboard' || activeTab === 'products' || activeTab === 'cartUpsell'
+    if (!liveTab) return
+
+    const tick = () => {
+      if (document.visibilityState !== 'visible') return
+      if (activeTab === 'dashboard' || activeTab === 'orders') {
+        void fetchTabData('orders', { force: true })
+      } else {
+        void fetchTabData('products', { force: true })
+      }
+    }
+
+    const id = window.setInterval(tick, 15000)
+    window.addEventListener('focus', tick)
+    return () => {
+      window.clearInterval(id)
+      window.removeEventListener('focus', tick)
+    }
+  }, [activeTab, fetchTabData])
 
   useEffect(() => {
     if (!editingCityId) {
@@ -3524,6 +3550,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             detail: { urls, url: primary },
           }),
         )
+        broadcastWattaCatalogUpdate('settings')
       }
     } catch (err) {
       console.error(err)
@@ -3636,6 +3663,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             detail: { urls, url: primary },
           }),
         )
+        broadcastWattaCatalogUpdate('settings')
       }
     } catch (err) {
       console.error(err)
@@ -3806,6 +3834,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             detail: { urls, url: primary, phone2Urls: urls2, phone1Copy: copy1, phone2Copy: copy2 },
           }),
         )
+        broadcastWattaCatalogUpdate('settings')
       }
     } catch (err) {
       console.error(err)
@@ -4022,7 +4051,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   { id: 'blog' as const, label: 'Блог / Рецепты', desc: 'SEO статьи и рецепты шефа' },
                   { id: 'reviews' as const, label: 'Відгуки', desc: 'Модерація відгуків клієнтів' },
                   { id: 'newsletter' as const, label: t.adminPanel.sidebar.newsletter, desc: 'Email рассылка' },
-                  { id: 'crm' as const, label: 'CRM / База клиентов', desc: 'База клиентов, поиск и рассылки' },
+                  { id: 'crm' as const, label: 'CRM / База клиентов', desc: 'Клиенты, рассылки и обращения с сайта' },
                   { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
                   { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
                   { id: 'menuCategories' as const, label: t.adminPanel.sidebar.categories, desc: t.adminPanel.sidebar.categoriesDesc },
@@ -5876,7 +5905,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
                 <h2 className="mb-2 text-2xl font-bold text-[#145142]">Відгуки клієнтів</h2>
                 <p className="mb-6 text-sm text-gray-600">
-                  Редагування та видалення відгуків. Зміни одразу відображаються на сторінці /reviews.
+                  Модерація відгуків: опублікуйте на сайті /reviews або відредагуйте текст і фото.
                 </p>
                 <AdminReviewsPanel
                   reviews={adminReviews}
@@ -5990,6 +6019,33 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
           {activeTab === 'crm' && (
             <div className="flex flex-col gap-6">
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-[#145142]/15 bg-white/60 p-2">
+                <button
+                  type="button"
+                  onClick={() => setCrmSubview('customers')}
+                  className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                    crmSubview === 'customers'
+                      ? 'bg-[#145142] text-white shadow-md'
+                      : 'text-[#145142] hover:bg-[#145142]/10'
+                  }`}
+                >
+                  База клиентов
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCrmSubview('inquiries')}
+                  className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                    crmSubview === 'inquiries'
+                      ? 'bg-[#145142] text-white shadow-md'
+                      : 'text-[#145142] hover:bg-[#145142]/10'
+                  }`}
+                >
+                  Обращения с сайта
+                </button>
+              </div>
+
+              {crmSubview === 'customers' ? (
+                <>
               <AdminCustomersPanel />
 
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
@@ -6073,6 +6129,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </tbody>
                 </table>
               </div>
+                </>
+              ) : (
+                <AdminContactInquiriesPanel getAuthHeaders={adminAuthHeaders} />
+              )}
             </div>
           )}
 

@@ -1,6 +1,4 @@
-import WattaAppRouteLoading from '../components/WattaAppRouteLoading'
-
-/** Лише сегмент `/menu` — без кореневого `app/loading.tsx`, щоб головна `/` не блимала сплешем. */
+/** Без повноекранного сплеша — контент меню з’являється одразу після prefetch. */
 export default function MenuLoading() {
-  return <WattaAppRouteLoading />
+  return null
 }

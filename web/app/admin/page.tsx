@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import dynamic from 'next/dynamic'
 import { useLanguage } from '../context/LanguageContext'
 import { readIsSiteAdminFromStorage } from '@/lib/isAdminRole'
@@ -19,7 +19,7 @@ function readIsAdmin(): boolean {
 
 export default function AdminPage() {
   const { t } = useLanguage()
-  const router = useRouter()
+  const router = useInstantRouter()
   const [allowed, setAllowed] = useState(false)
 
   useEffect(() => {

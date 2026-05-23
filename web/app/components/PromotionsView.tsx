@@ -1,8 +1,12 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { ArrowLeft, ShoppingBag } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import { LocationPickerMascot } from './LocationPickerMascot'
+import { cn } from '@/lib/utils'
+import { catalogSyncEventNames } from '@/lib/wattaCatalogSync'
 import {
   promoCoverUrl,
   promoGalleryUrls,
@@ -11,8 +15,10 @@ import {
   normalizePromoList,
   type PromoListItem,
 } from '@/app/lib/promoDisplay'
-
-const READ_LINK = '#27AE60'
+import {
+  readPromotionsListCache,
+  writePromotionsListCache,
+} from '@/lib/publicRouteWarmCache'
 
 interface PromotionsViewProps {
   embedded?: boolean
@@ -41,6 +47,20 @@ function formatListDate(iso: string | undefined, lang: string): string {
   return `${day}.${month}.${y}`
 }
 
+function promoTitleParts(title: string) {
+  const words = title.trim().split(/\s+/).filter(Boolean)
+  if (words.length <= 1) return { lead: title, accent: '' }
+  return {
+    lead: words.slice(0, -1).join(' '),
+    accent: words[words.length - 1] ?? '',
+  }
+}
+
+function pickFeaturedPromo(list: PromoListItem[]): PromoListItem | null {
+  if (!list.length) return null
+  return list.find((p) => p.isHit) ?? list[0]
+}
+
 function PromoBackButton({
   label,
   onBack,
@@ -54,7 +74,10 @@ function PromoBackButton({
     <button
       type="button"
       onClick={onBack}
-      className={`auth-watta-back-fab watta-promotions-back${inline ? ' watta-promotions-back--inline' : ''}`}
+      className={cn(
+        'auth-watta-back-fab watta-promotions-back',
+        inline && 'watta-promotions-back--inline',
+      )}
     >
       <span className="auth-watta-back-fab__icon" aria-hidden>
         <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
@@ -64,33 +87,20 @@ function PromoBackButton({
   )
 }
 
-function PromoListSkeleton() {
-  return (
-    <div className="watta-promotions-grid" aria-hidden>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="watta-promo-card watta-promo-card--skeleton">
-          <div className="watta-promo-card__media-skeleton" />
-          <div className="watta-promo-card__body">
-            <div className="watta-promo-skeleton-line watta-promo-skeleton-line--short" />
-            <div className="watta-promo-skeleton-line watta-promo-skeleton-line--title" />
-            <div className="watta-promo-skeleton-line" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function PromoCard({
   promo,
   language,
   p,
+  featured,
   onOpenDetail,
+  index,
 }: {
   promo: PromoListItem
   language: string
   p: ReturnType<typeof useLanguage>['t']['promotionsPage']
+  featured?: boolean
   onOpenDetail: (id: number) => void
+  index: number
 }) {
   const cover = promoCoverUrl(promo)
   const galleryCount = promoGalleryUrls(promo).length
@@ -105,7 +115,13 @@ function PromoCard({
       : formatListDate(promo.createdAt, language)
 
   return (
-    <article className="watta-promo-card" role="listitem">
+    <motion.article
+      role="listitem"
+      className={cn('watta-promo-card', featured && 'watta-promo-card--featured')}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+    >
       <button
         type="button"
         className="watta-promo-card__hit-area"
@@ -113,24 +129,30 @@ function PromoCard({
         aria-label={`${p.readCta}: ${promo.title}`}
       >
         <div className="watta-promo-card__media">
+          {featured ? (
+            <span className="watta-promo-card__badge-featured">{p.featuredBadge}</span>
+          ) : null}
           {cover ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={cover} alt="" className="watta-promo-card__img" loading="lazy" decoding="async" />
           ) : (
             <div className="watta-promo-card__no-photo" aria-hidden>
               <span className="watta-promo-card__no-photo-mark">W</span>
             </div>
           )}
-          {galleryCount > 1 && (
+          {galleryCount > 1 ? (
             <span className="watta-promo-card__badge watta-promo-card__badge--photos">
               {promoTpl(p.morePhotosBadge, { count: galleryCount - 1 })}
             </span>
-          )}
-          {offers > 0 && (
+          ) : null}
+          {offers > 0 ? (
             <span className="watta-promo-card__badge watta-promo-card__badge--offers">
               {promoTpl(p.offersBadge, { count: offers })}
             </span>
-          )}
-          {promo.isHit ? <span className="watta-promo-card__hit">{p.hitBadge}</span> : null}
+          ) : null}
+          {promo.isHit && !featured ? (
+            <span className="watta-promo-card__hit">{p.hitBadge}</span>
+          ) : null}
         </div>
 
         <div className="watta-promo-card__body">
@@ -140,96 +162,152 @@ function PromoCard({
           </div>
           <h2 className="watta-promo-card__title">{promo.title}</h2>
           {promo.description ? <p className="watta-promo-card__desc">{promo.description}</p> : null}
-          <span className="watta-promo-card__cta" style={{ color: READ_LINK }}>
-            {p.readCta}
-          </span>
+          <span className="watta-promo-card__cta">{p.readCta}</span>
         </div>
       </button>
-    </article>
+    </motion.article>
   )
 }
 
 export default function PromotionsView({
   embedded = false,
   onBack,
+  onMenuClick,
   onOpenDetail,
 }: PromotionsViewProps) {
   const { t, language } = useLanguage()
-  const [promotions, setPromotions] = useState<PromoListItem[]>([])
-  const [loaded, setLoaded] = useState(false)
+  const [promotions, setPromotions] = useState<PromoListItem[] | null>(() => {
+    if (typeof window === 'undefined') return null
+    const cached = readPromotionsListCache()
+    return cached ? normalizePromoList(cached) : null
+  })
   const p = t.promotionsPage
-  const hasPosts = promotions.length > 0
+  const titleParts = useMemo(() => promoTitleParts(p.listHeading), [p.listHeading])
 
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/promotions')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (!cancelled) setPromotions(normalizePromoList(data))
-      })
-      .catch(() => {
-        if (!cancelled) setPromotions([])
-      })
-      .finally(() => {
-        if (!cancelled) setLoaded(true)
-      })
-    return () => {
-      cancelled = true
+  const loadPromotions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/promotions', { cache: 'no-store' })
+      const data = res.ok ? await res.json() : []
+      const list = normalizePromoList(data)
+      if (Array.isArray(data) && data.length > 0) writePromotionsListCache(data)
+      setPromotions(list)
+    } catch {
+      setPromotions([])
     }
   }, [])
 
+  useEffect(() => {
+    void loadPromotions()
+    const events = catalogSyncEventNames('promotions')
+    const onRefresh = () => void loadPromotions()
+    for (const name of events) {
+      window.addEventListener(name, onRefresh)
+    }
+    return () => {
+      for (const name of events) {
+        window.removeEventListener(name, onRefresh)
+      }
+    }
+  }, [loadPromotions])
+
+  const hasPosts = Boolean(promotions && promotions.length > 0)
+  const showEmptyHint = promotions !== null && promotions.length === 0
+  const featured = useMemo(() => pickFeaturedPromo(promotions ?? []), [promotions])
+  const feedList = useMemo(() => {
+    if (!promotions?.length) return []
+    if (!featured) return promotions
+    return promotions.filter((item) => item.id !== featured.id)
+  }, [featured, promotions])
+
+  const pageClass = cn(
+    'watta-promotions-page relative flex w-full max-w-[100vw] min-w-0 flex-col',
+    !embedded && 'menu-page-web watta-promotions-route',
+    hasPosts ? 'flex-1 pb-24' : 'watta-promotions-page--empty',
+    embedded && 'watta-promotions-page--embedded',
+  )
+
   return (
     <div
-      className={
-        embedded
-          ? 'watta-promotions-page watta-promotions-page--embedded relative w-full min-w-0'
-          : 'watta-promotions-page watta-promotions-page--route relative w-full min-w-0'
-      }
+      id={embedded ? undefined : 'promotions-page-container'}
+      className={pageClass}
     >
-      <div className="watta-promotions-page__toolbar">
-        <PromoBackButton label={t.auth.back} onBack={onBack} inline={embedded} />
+      <div className="watta-promotions-hero-zone">
+        <div className="watta-promotions-page__toolbar">
+          <PromoBackButton label={t.auth.back} onBack={onBack} inline />
+        </div>
+
+        <header className="watta-promotions-hero-static" aria-labelledby="promotions-hero-title">
+          <div className="watta-promotions-hero-static__inner mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="watta-promotions-hero-static__mascot-wrap" aria-hidden>
+              <LocationPickerMascot className="watta-promotions-hero-static__mascot" />
+            </div>
+            <div className="watta-promotions-hero-static__copy">
+              <h1 id="promotions-hero-title" className="watta-promotions-hero-static__title">
+                {titleParts.lead}
+                {titleParts.accent ? (
+                  <>
+                    {' '}
+                    <span className="watta-promotions-hero-static__title-accent">{titleParts.accent}</span>
+                  </>
+                ) : null}
+              </h1>
+              <p className="watta-promotions-hero-static__subtitle">{p.description}</p>
+              {showEmptyHint ? (
+                <p className="watta-promotions-hero-empty-hint" role="status">
+                  {p.emptyList} {p.emptyInvite}
+                </p>
+              ) : null}
+              <div className="watta-promotions-hero-actions">
+                <button
+                  type="button"
+                  className="watta-promotions-hero-actions__btn watta-promotions-hero-actions__btn--primary"
+                  onClick={onMenuClick}
+                >
+                  <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden />
+                  {p.menuCta}
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
       </div>
 
-      <div className="watta-promotions-page__inner">
-        {!loaded ? (
-          <>
-            {embedded ? null : (
-              <header className="watta-promotions-page__header watta-promotions-page__header--placeholder" aria-hidden>
-                <div className="watta-promo-skeleton-line watta-promo-skeleton-line--hero" />
-              </header>
-            )}
-            <PromoListSkeleton />
-          </>
-        ) : !hasPosts ? (
-          <div className="watta-promotions-page__empty">
-            <header className="watta-promotions-page__header">
-              <h1 className="watta-promotions-page__title home-after-hero-intro-title-web">{p.listHeading}</h1>
-              <p className="watta-promotions-page__subtitle home-after-hero-intro-body-web">{p.description}</p>
-            </header>
-            <p className="watta-promotions-page__empty-hint" role="status">
-              {p.emptyList}
-            </p>
-          </div>
-        ) : (
-          <>
-            <header className="watta-promotions-page__header">
-              <h1 className="watta-promotions-page__title home-after-hero-intro-title-web">{p.listHeading}</h1>
-              <p className="watta-promotions-page__subtitle home-after-hero-intro-body-web">{p.description}</p>
-            </header>
+      {promotions === null ? (
+        <div className="watta-promotions-page__loading mx-auto px-4 py-8" aria-busy="true">
+          <div
+            className="mx-auto h-11 w-11 animate-spin rounded-2xl border-2 border-[#145142]/25 border-t-[#145142]"
+            aria-hidden
+          />
+        </div>
+      ) : hasPosts ? (
+        <section className="watta-promotions-page__flow" aria-label={p.feedTitle}>
+          <div className="watta-promotions-page__inner">
+            <p className="watta-promotions-page__feed-label">{p.feedTitle}</p>
             <div className="watta-promotions-grid" role="list">
-              {promotions.map((promo) => (
+              {featured ? (
+                <PromoCard
+                  promo={featured}
+                  language={language}
+                  p={p}
+                  featured
+                  onOpenDetail={onOpenDetail}
+                  index={0}
+                />
+              ) : null}
+              {feedList.map((promo, i) => (
                 <PromoCard
                   key={promo.id}
                   promo={promo}
                   language={language}
                   p={p}
                   onOpenDetail={onOpenDetail}
+                  index={i + (featured ? 1 : 0)}
                 />
               ))}
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   )
 }

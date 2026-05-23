@@ -90,7 +90,7 @@ export default function AnimatedHeroIntroBlock({
 
         <Heading
           id={titleId}
-          className="home-after-hero-intro-title-web mx-auto max-w-3xl text-center text-[clamp(1.35rem,3.8vw,2.35rem)] font-semibold leading-[1.18] tracking-[-0.02em] text-[#0f2a22]"
+          className="home-after-hero-intro-title-web mx-auto max-w-3xl text-center text-[clamp(1.35rem,3.8vw,2.35rem)] font-semibold leading-[1.18] tracking-[-0.02em] text-[#0f2a22] md:text-[clamp(1.9rem,3.5vw,2.7rem)] md:leading-[1.1] md:tracking-[-0.03em]"
         >
           {titleLines.map((line, i) => {
             const isAccent = i === accentLineIndex
@@ -119,7 +119,7 @@ export default function AnimatedHeroIntroBlock({
         </Heading>
 
         <p
-          className={`home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl text-center text-[13px] leading-snug text-[#145142]/88 sm:mt-5 sm:text-[14px] max-xl:max-w-[min(52rem,96vw)] xl:max-w-2xl xl:whitespace-normal xl:leading-relaxed${reduceMotion ? ' text-balance' : ''}`}
+          className={`home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl text-center text-[13px] leading-snug text-[#145142]/88 sm:mt-5 sm:text-[14px] md:mt-5 md:max-w-[min(46rem,92vw)] md:text-[15px] md:leading-[1.72] lg:text-base lg:leading-[1.78] max-xl:max-w-[min(52rem,96vw)] xl:max-w-2xl xl:whitespace-normal${reduceMotion ? ' text-balance' : ''}`}
         >
           <AnimatedMultilineBody
             text={body}

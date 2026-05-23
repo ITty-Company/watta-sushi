@@ -1,9 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -15,43 +14,30 @@ import {
   HandMetal,
   Heart,
   Layers,
-  MapPin,
   Menu,
   Milk,
-  Phone,
   Rocket,
   Salad,
-  Smartphone,
   Sparkles,
   Users,
   Wheat,
   Zap,
-  Clock,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
+import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
+import { WattaStatPillsBand, type WattaStatPillItem } from './DeliveryPageStats'
+import AboutTeamSection from './AboutTeamSection'
+import WelcomeHeroSection from './WelcomeHeroSection'
+import type { PublicTeamMember } from '@/lib/teamMembers'
+import { useHomeHeroVideo } from '@/hooks/useHomeHeroVideo'
+import {
+  kickWelcomeHeroVideoPlayBurst,
+  kickWelcomeHeroVideoPlayOnce,
+} from '@/lib/kickWelcomeHeroVideo'
 import { cn } from '@/lib/utils'
 
 const ACCENT = '#FF5C00'
-/** Герой у кольорах бренду замість чорного */
-const HERO_BG =
-  'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
-
-interface TeamMember {
-  id: number
-  name_ru: string
-  name_ua?: string
-  name_en?: string
-  name_nl?: string
-  position_ru: string
-  position_ua?: string
-  position_en?: string
-  position_nl?: string
-  imageUrl?: string
-  bio_ru?: string
-  bio_ua?: string
-  bio_en?: string
-  bio_nl?: string
-}
+const BRAND_GREEN = '#145142'
 
 function PhilosophySlideCard({
   icon: Icon,
@@ -59,6 +45,7 @@ function PhilosophySlideCard({
   body,
   fade,
   delay,
+  accentOrange = true,
 }: {
   icon: LucideIcon
   title: string
@@ -67,26 +54,25 @@ function PhilosophySlideCard({
     | { initial: false }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
+  accentOrange?: boolean
 }) {
   return (
     <motion.article
-      className="flex flex-col rounded-[22px] border border-gray-200/80 bg-white p-4 shadow-[0_8px_40px_rgba(0,0,0,0.06)] transition hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)] sm:p-6"
+      className={cn(
+        'about-page-philosophy-card delivery-page-stat-card flex flex-col items-center rounded-[18px] p-3.5 text-center sm:rounded-[22px] sm:p-5',
+        accentOrange ? 'delivery-page-stat-card--orange' : 'delivery-page-stat-card--green',
+      )}
       {...fade}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.45, delay }}
+      whileHover={fade.initial === false ? undefined : { y: -3 }}
     >
-      <div className="relative mb-5 flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center">
-        <div
-          className="absolute h-16 w-20 -rotate-12 rounded-[45%_55%_50%_50%] opacity-90"
-          style={{
-            background: `linear-gradient(135deg, rgba(255,180,140,0.95) 0%, rgba(255,92,0,0.25) 55%, rgba(255,200,170,0.4) 100%)`,
-          }}
-          aria-hidden
-        />
-        <Icon className="relative z-[1] h-9 w-9 text-gray-900" strokeWidth={1.35} />
+      <div className="delivery-page-stat-card__icon-wrap" aria-hidden>
+        <div className="delivery-page-stat-card__icon-blob" />
+        <Icon className="delivery-page-stat-card__icon" strokeWidth={1.35} />
       </div>
-      <h3 className="text-lg font-black leading-tight text-gray-900 sm:text-xl">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-[#7a7a7a] sm:text-[15px]">{body}</p>
+      <h3 className="delivery-page-stat-card__value mt-0 text-base sm:text-lg">{title}</h3>
+      <p className="delivery-page-stat-card__label mt-2">{body}</p>
     </motion.article>
   )
 }
@@ -97,6 +83,7 @@ function InsideCard({
   body,
   fade,
   delay,
+  accentIndex = 0,
 }: {
   icon: LucideIcon
   title: string
@@ -105,20 +92,78 @@ function InsideCard({
     | { initial: false }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
+  accentIndex?: number
 }) {
+  const blobTints = [
+    'rgba(255,92,0,0.32)',
+    'rgba(20,81,66,0.28)',
+    'rgba(255,140,60,0.3)',
+    'rgba(26,107,88,0.25)',
+    'rgba(255,180,140,0.45)',
+    'rgba(255,92,0,0.22)',
+  ]
+  const blobTint = blobTints[accentIndex % blobTints.length]
+
   return (
     <motion.article
-      className="flex flex-col rounded-[26px] border border-gray-100 bg-white p-4 shadow-sm sm:p-6 md:p-7"
+      className="about-page-inside-card group flex flex-col rounded-[22px] border border-gray-200/70 bg-white p-4 shadow-[0_8px_36px_rgba(20,81,66,0.07)] transition hover:-translate-y-0.5 hover:border-[#145142]/15 hover:shadow-[0_14px_44px_rgba(20,81,66,0.12)] sm:p-6"
       {...fade}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.45, delay }}
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-800">
-        <Icon className="h-7 w-7" strokeWidth={1.35} />
+      <div className="relative mb-4 flex h-[4rem] w-[4rem] shrink-0 items-center justify-center sm:mb-5 sm:h-[4.5rem] sm:w-[4.5rem]">
+        <div
+          className="absolute h-14 w-[4.25rem] -rotate-12 rounded-[45%_55%_50%_50%] opacity-95 transition group-hover:scale-105"
+          style={{
+            background: `linear-gradient(135deg, rgba(255,200,170,0.95) 0%, ${blobTint} 55%, rgba(246,249,247,0.5) 100%)`,
+          }}
+          aria-hidden
+        />
+        <Icon className="relative z-[1] h-8 w-8 text-gray-900 sm:h-9 sm:w-9" strokeWidth={1.35} />
       </div>
-      <h3 className="text-lg font-black text-gray-900 sm:text-xl">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-[#7a7a7a] sm:text-[15px]">{body}</p>
+      <h3 className="text-lg font-black leading-tight text-gray-900 sm:text-xl">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-[#6b7280] sm:text-[15px]">{body}</p>
     </motion.article>
+  )
+}
+
+function AboutStatPill({
+  icon: Icon,
+  value,
+  label,
+  fade,
+  delay,
+  accent,
+}: {
+  icon: LucideIcon
+  value: string
+  label: string
+  fade:
+    | { initial: false }
+    | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
+  delay: number
+  accent?: boolean
+}) {
+  return (
+    <motion.div
+      className="about-page-stat-pill flex flex-col items-center justify-center rounded-2xl bg-white/10 px-2 py-3.5 text-center backdrop-blur-sm sm:rounded-[18px] sm:px-3 sm:py-4"
+      {...fade}
+      viewport={{ once: true, margin: '-30px' }}
+      transition={{ duration: 0.4, delay }}
+    >
+      <Icon
+        className="mb-1.5 h-5 w-5 text-white/90 sm:mb-2 sm:h-6 sm:w-6"
+        strokeWidth={2}
+        style={accent ? { color: ACCENT } : undefined}
+      />
+      <div
+        className="text-xl font-black leading-none text-white sm:text-2xl md:text-[1.65rem]"
+        style={accent ? { color: ACCENT } : undefined}
+      >
+        {value}
+      </div>
+      <div className="mt-1.5 text-[10px] font-semibold leading-snug text-white/75 sm:text-xs">{label}</div>
+    </motion.div>
   )
 }
 
@@ -129,12 +174,60 @@ export type AboutPageViewProps = {
 }
 
 function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewProps) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, getLocalized } = useLanguage()
   const a = t.aboutPage
   const reduce = useReducedMotion()
 
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [teamMembers, setTeamMembers] = useState<PublicTeamMember[]>([])
+  const [teamReady, setTeamReady] = useState(false)
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false)
+  const [aboutIntroBeforeHero, setAboutIntroBeforeHero] = useState(false)
+  const aboutNarrowStripHero = isNarrowViewport
+
+  const {
+    heroVideoRef,
+    heroVideoSrc,
+    heroVideoFailed,
+    setHeroVideoFailed,
+    setHeroVideoSourceIndex,
+    videoSources: heroVideoSources,
+    playlistLength: homeHeroPlaylistLength,
+  } = useHomeHeroVideo()
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    const mqNarrow = window.matchMedia('(max-width: 768px)')
+    const applyNarrow = () => setIsNarrowViewport(mqNarrow.matches)
+    applyNarrow()
+    mqNarrow.addEventListener('change', applyNarrow)
+    return () => mqNarrow.removeEventListener('change', applyNarrow)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    const mqIntroFirst = window.matchMedia('(max-width: 767px)')
+    const apply = () => setAboutIntroBeforeHero(mqIntroFirst.matches)
+    apply()
+    mqIntroFirst.addEventListener('change', apply)
+    return () => mqIntroFirst.removeEventListener('change', apply)
+  }, [])
+
+  useEffect(() => {
+    if (embedded) return
+    queueMicrotask(kickWelcomeHeroVideoPlayOnce)
+    const raf = requestAnimationFrame(kickWelcomeHeroVideoPlayOnce)
+    const cancelBurst = kickWelcomeHeroVideoPlayBurst()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') kickWelcomeHeroVideoPlayOnce()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      cancelAnimationFrame(raf)
+      cancelBurst()
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [embedded])
 
   const goBack = useCallback(() => {
     if (embedded && onBack) {
@@ -154,6 +247,9 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
           if (!cancelled) setTeamMembers(Array.isArray(data) ? data : [])
         })
         .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setTeamReady(true)
+        })
     }
     load()
     return () => {
@@ -161,14 +257,14 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
     }
   }, [])
 
-  const stats = useMemo(
+  const stats = useMemo<WattaStatPillItem[]>(
     () => [
       { icon: Users, value: '10K+', label: a.stats.clients },
       { icon: Award, value: '5+', label: a.stats.experience },
-      { icon: Zap, value: '30', label: a.stats.delivery },
+      { icon: Zap, value: a.features.fastTitle, label: '' },
       { icon: Heart, value: '100%', label: a.stats.quality },
     ],
-    [a.stats]
+    [a.stats, a.features.fastTitle],
   )
 
   const philosophySlides = useMemo(
@@ -176,7 +272,6 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       { icon: CircleDot, title: a.slide1Title, body: a.slide1Body },
       { icon: Fish, title: a.slide2Title, body: a.slide2Body },
       { icon: ChefHat, title: a.slide3Title, body: a.slide3Body },
-      { icon: Smartphone, title: a.slide4Title, body: a.slide4Body },
       { icon: HandMetal, title: a.slide5Title, body: a.slide5Body },
       { icon: Rocket, title: a.slide6Title, body: a.slide6Body },
     ],
@@ -202,14 +297,71 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
         whileInView: { opacity: 1, y: 0 },
       } as const)
 
-  return (
+  const aboutPageLeadIntro = (
+    <AnimatedHeroIntroBlock
+      sectionId="about-page-lead-intro"
+      ariaLabel={`${a.philosophyTitlePart1} ${a.philosophyTitlePart2}`}
+      titleId="about-page-lead-title"
+      titleLines={[a.philosophyTitlePart1, a.philosophyTitlePart2]}
+      body={a.darkHeroSubtitle}
+      accentLineIndex={1}
+      headingLevel="h1"
+      reserveTopSpace={aboutIntroBeforeHero}
+      innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone about-page-lead-intro-inner relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
+    />
+  )
+
+  const aboutHeroVideoBlock = (
+    <WelcomeHeroSection
+      sectionClassName="delivery-page-hero-standalone-web"
+      heroVideoFailed={heroVideoFailed}
+      setHeroVideoSourceIndex={setHeroVideoSourceIndex}
+      setHeroVideoFailed={setHeroVideoFailed}
+      heroVideoRef={heroVideoRef}
+      heroVideoSrc={heroVideoSrc}
+      videoSources={heroVideoSources}
+      playlistLength={homeHeroPlaylistLength}
+    />
+  )
+
+  const aboutHeroVideoInStrip = aboutNarrowStripHero ? (
+    <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
+      {aboutHeroVideoBlock}
+    </div>
+  ) : (
+    aboutHeroVideoBlock
+  )
+
+  const aboutStandaloneHeroStack = (
     <div
-      id="about-page-container"
       className={cn(
-        'about-page-web relative min-h-screen w-full overflow-x-hidden pb-16',
-        embedded ? 'watta-page-bg' : 'bg-transparent',
+        'delivery-page-hero-stack about-page-intro-band w-full shrink-0 bg-transparent',
+        aboutIntroBeforeHero
+          ? 'delivery-page-hero-stack--intro-first'
+          : 'delivery-page-hero-stack--video-first',
       )}
     >
+      {aboutIntroBeforeHero ? (
+        <>
+          {aboutPageLeadIntro}
+          {aboutHeroVideoInStrip}
+        </>
+      ) : (
+        <>
+          {aboutHeroVideoInStrip}
+          {aboutPageLeadIntro}
+        </>
+      )}
+      <WattaStatPillsBand
+        items={stats}
+        className="about-page-hero-stats"
+        accentPattern="delivery"
+      />
+    </div>
+  )
+
+  const aboutMainContent = (
+    <>
       {embedded ? (
         <header className="sticky top-0 z-40 border-b border-gray-200/80 bg-white/90 px-4 py-3 backdrop-blur-xl sm:px-6">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
@@ -241,10 +393,13 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
         </header>
       ) : null}
 
-      {/* Кінематографічний герой: одразу під глобальною шапкою + категоріями */}
+      {embedded ? (
       <section
-        className={cn('about-page-hero-web relative overflow-hidden text-white')}
-        style={{ background: HERO_BG }}
+        className="about-page-hero-web relative overflow-hidden text-white"
+        style={{
+          background:
+            'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)',
+        }}
         aria-labelledby="about-dark-hero-title"
       >
         <div
@@ -299,35 +454,53 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
           </div>
         </div>
       </section>
+      ) : null}
 
-      {/* Філософія + слайди-картки */}
       <section
         className="about-page-section-web relative z-10 w-full watta-page-bg px-4 py-10 sm:px-6 sm:py-16 md:py-20"
         aria-labelledby="about-philosophy-heading"
       >
         <div className="mx-auto max-w-6xl">
+        {embedded ? (
         <motion.div
-          className="about-page-philosophy-heading-wrap mb-8 flex flex-col items-center justify-center gap-3 text-center sm:mb-12 sm:gap-4 md:mb-16"
+          className="about-page-philosophy-heading-wrap mb-8 flex justify-center sm:mb-12 md:mb-16"
           {...fade}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
           <h2
             id="about-philosophy-heading"
-            className="about-page-philosophy-heading text-[clamp(1.75rem,7.5vw,3.75rem)] font-black leading-[1.08] tracking-tight text-gray-900"
+            className="about-page-philosophy-heading inline-flex max-w-full flex-wrap items-center justify-center gap-2 text-center text-[clamp(1.75rem,7.5vw,3.75rem)] font-black leading-[1.08] tracking-tight text-gray-900 sm:gap-3"
           >
             <span>{a.philosophyTitlePart1}</span>{' '}
-            <span style={{ color: ACCENT }}>{a.philosophyTitlePart2}</span>
+            <span className="inline-flex items-center gap-2 whitespace-nowrap sm:gap-3">
+              <span style={{ color: ACCENT }}>{a.philosophyTitlePart2}</span>
+              <span
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25 sm:h-14 sm:w-14"
+                aria-hidden
+              >
+                <Heart className="h-5 w-5 fill-white sm:h-7 sm:w-7" strokeWidth={1.5} />
+              </span>
+            </span>
           </h2>
-          <span
-            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25 sm:h-14 sm:w-14"
-            aria-hidden
-          >
-            <Heart className="h-6 w-6 fill-white sm:h-7 sm:w-7" strokeWidth={1.5} />
-          </span>
         </motion.div>
+        ) : (
+          <motion.div
+            className="about-page-why-heading-wrap mb-8 flex w-full justify-center sm:mb-10 md:mb-12"
+            {...fade}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2
+              id="about-philosophy-heading"
+              className="about-page-why-heading contact-watta-section-title text-center"
+            >
+              {a.whyUs}
+            </h2>
+          </motion.div>
+        )}
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <div className="delivery-page-stats-grid grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
           {philosophySlides.map((slide, i) => (
             <PhilosophySlideCard
               key={slide.title}
@@ -336,6 +509,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
               body={slide.body}
               fade={fade}
               delay={i * 0.05}
+              accentOrange={i % 2 === 0}
             />
           ))}
         </div>
@@ -343,8 +517,8 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
 
       {/* Арт-блок + «плаваюче» зображення */}
-      <section className="about-page-art-web relative z-10 border-y border-gray-100 watta-page-bg">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:gap-10 sm:px-6 sm:py-16 md:py-20 lg:grid-cols-[1fr_0.9fr] lg:gap-14">
+      <section className="about-page-art-web relative z-10 watta-page-bg">
+        <div className="mx-auto grid max-w-6xl items-center gap-6 px-4 pb-2 pt-8 sm:gap-8 sm:px-6 sm:pb-4 sm:pt-12 md:pt-14 lg:grid-cols-[1fr_0.9fr] lg:gap-14 lg:pb-6">
           <motion.div {...fade} viewport={{ once: true }} transition={{ duration: 0.5 }}>
             <p className="text-2xl font-black leading-[1.12] tracking-tight text-balance text-gray-900 sm:text-3xl md:text-[2.75rem] lg:text-5xl">
               {a.artHeadlineLine1}
@@ -378,205 +552,116 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
         </div>
       </section>
 
-      {/* Що всередині ролу */}
-      <section
-        className="about-page-section-web relative z-10 watta-page-bg py-10 sm:py-16 md:py-20"
-        aria-labelledby="about-inside-heading"
-      >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <motion.h2
-            id="about-inside-heading"
-            className="mb-8 text-center text-[clamp(1.5rem,5.5vw,2.25rem)] font-black text-gray-900 sm:mb-12"
-            {...fade}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45 }}
-          >
-            {a.insideSectionTitle}
-          </motion.h2>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-            {insideSlides.map((item, i) => (
-              <InsideCard
-                key={item.title}
-                icon={item.icon}
-                title={item.title}
-                body={item.body}
-                fade={fade}
-                delay={i * 0.05}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Статистика */}
-      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-10 sm:px-6 sm:pt-16 md:pt-20">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:gap-4">
-          {stats.map((s, i) => (
+      {/* Що всередині + статистика + історія + команда + контакти — єдиний потік без роздільників */}
+      <div className="about-page-lower-flow relative z-10 watta-page-bg">
+        <section
+          className="about-page-inside-web relative px-4 pt-1 pb-8 sm:px-6 sm:pt-2 sm:pb-12"
+          aria-labelledby="about-inside-heading"
+        >
+          <div className="about-page-inside-shell mx-auto max-w-6xl rounded-[28px] bg-gradient-to-b from-[#f6f9f7] via-[#f6f9f7] to-white px-3 py-6 sm:rounded-[32px] sm:px-5 sm:py-8 md:py-10">
             <motion.div
-              key={s.label}
-              className="rounded-[18px] border border-gray-100 bg-white p-3.5 text-center shadow-[0_6px_32px_rgba(0,0,0,0.05)] sm:rounded-[22px] sm:p-5"
+              className="mb-6 text-center sm:mb-8"
               {...fade}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.45, delay: i * 0.05 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.45 }}
             >
-              <s.icon className="mx-auto mb-1.5 h-6 w-6 text-gray-800 sm:mb-2 sm:h-8 sm:w-8" strokeWidth={2} style={{ color: i % 2 === 0 ? ACCENT : undefined }} />
-              <div className="text-xl font-black text-gray-900 sm:text-2xl md:text-3xl">{s.value}</div>
-              <div className="mt-1 text-xs font-semibold leading-snug text-[#7a7a7a] sm:text-sm">{s.label}</div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Історія */}
-      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-12 sm:px-6 sm:pt-16 md:pt-20">
-        <div className="mx-auto max-w-6xl">
-        <motion.h3
-          className="mb-5 text-[clamp(1.5rem,5.5vw,2.25rem)] font-black text-gray-900 sm:mb-6"
-          {...fade}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
-          {a.storyTitle}
-        </motion.h3>
-        <motion.div
-          className="max-w-3xl space-y-4 text-[15px] leading-relaxed text-gray-700 sm:space-y-5 sm:text-base md:text-lg"
-          {...fade}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55 }}
-        >
-          <p className="font-semibold text-gray-900">{a.storyLead}</p>
-          <p>{a.storyP2}</p>
-          <p>{a.storyP3}</p>
-        </motion.div>
-        </div>
-      </section>
-
-      {/* Команда */}
-      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-14 sm:px-6 sm:pt-20 md:pt-24">
-        <div className="mx-auto max-w-6xl">
-        <motion.h3
-          className="mb-6 text-center text-[clamp(1.5rem,5.5vw,2.25rem)] font-black text-gray-900 sm:mb-8"
-          {...fade}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
-          {a.team}
-        </motion.h3>
-        {teamMembers.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {teamMembers.map((member, index) => (
-              <motion.article
-                key={member.id}
-                className="group overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-md transition hover:-translate-y-1 hover:shadow-xl"
-                {...fade}
-                viewport={{ once: true, margin: '-20px' }}
-                transition={{ duration: 0.45, delay: index * 0.06 }}
+              <h2
+                id="about-inside-heading"
+                className="text-[clamp(1.45rem,5.5vw,2.35rem)] font-black leading-tight tracking-tight text-gray-900"
               >
-                <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50">
-                  {member.imageUrl ? (
-                    <Image
-                      src={member.imageUrl}
-                      alt={getLocalized(member, 'name') || member.name_ru}
-                      fill
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <Users className="h-20 w-20 text-gray-300" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-4 sm:p-5">
-                  <h4 className="text-lg font-black text-gray-900 sm:text-xl">{getLocalized(member, 'name') || member.name_ru}</h4>
-                  <p className="mt-1 font-semibold" style={{ color: ACCENT }}>
-                    {getLocalized(member, 'position') || member.position_ru}
-                  </p>
-                  {getLocalized(member, 'bio') ? (
-                    <p className="mt-3 text-sm text-gray-600">{getLocalized(member, 'bio')}</p>
-                  ) : null}
-                </div>
-              </motion.article>
-            ))}
+                {a.insideSectionTitle}
+              </h2>
+              <span
+                className="mx-auto mt-3 block h-1 w-12 rounded-full"
+                style={{ background: `linear-gradient(90deg, ${ACCENT}, #145142)` }}
+                aria-hidden
+              />
+            </motion.div>
+
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+              {insideSlides.map((item, i) => (
+                <InsideCard
+                  key={item.title}
+                  icon={item.icon}
+                  title={item.title}
+                  body={item.body}
+                  fade={fade}
+                  delay={i * 0.05}
+                  accentIndex={i}
+                />
+              ))}
+            </div>
+
+            {embedded ? (
+              <div
+                className="about-page-stats-band mt-6 grid grid-cols-2 gap-2 rounded-[22px] p-3 sm:mt-8 sm:grid-cols-4 sm:gap-3 sm:rounded-[26px] sm:p-4 md:p-5"
+                style={{
+                  background: 'linear-gradient(135deg, #0c3028 0%, #145142 48%, #1a6b58 100%)',
+                  boxShadow: '0 16px 48px rgba(20, 81, 66, 0.22)',
+                }}
+              >
+                {stats.map((s, i) => (
+                  <AboutStatPill
+                    key={s.label}
+                    icon={s.icon}
+                    value={s.value}
+                    label={s.label}
+                    fade={fade}
+                    delay={0.15 + i * 0.04}
+                    accent={i % 2 === 0}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
-        ) : (
+        </section>
+
+        <section className="about-page-story-web px-4 pb-6 sm:px-6 sm:pb-8">
           <motion.div
-            className="rounded-[24px] border border-dashed border-gray-300 bg-gray-50/80 p-6 text-center sm:p-10"
+            className="about-page-story-card mx-auto max-w-6xl rounded-[24px] border border-[#145142]/10 bg-white p-5 shadow-[0_10px_40px_rgba(20,81,66,0.08)] sm:rounded-[28px] sm:p-8 md:p-10"
             {...fade}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <Users className="mx-auto mb-4 h-14 w-14 text-gray-300" />
-            <p className="text-lg font-bold text-gray-900">{a.teamEmptyTitle}</p>
-            <p className="mx-auto mt-2 max-w-lg text-gray-600">{a.teamEmptyBody}</p>
+            <h3 className="text-[clamp(1.35rem,5vw,2rem)] font-black leading-tight text-gray-900">
+              <span className="mr-2 inline-block h-8 w-1.5 rounded-full align-middle sm:h-9" style={{ background: ACCENT }} aria-hidden />
+              {a.storyTitle}
+            </h3>
+            <div className="mt-5 max-w-3xl space-y-4 text-[15px] leading-relaxed text-gray-600 sm:mt-6 sm:space-y-5 sm:text-base">
+              <p className="font-semibold text-gray-900">{a.storyLead}</p>
+              <p>{a.storyP2}</p>
+              <p>{a.storyP3}</p>
+            </div>
           </motion.div>
-        )}
-        </div>
-      </section>
+        </section>
 
-      {/* Візит / контакти */}
-      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pt-12 sm:px-6 sm:pt-16 md:pt-20">
-        <div className="mx-auto max-w-6xl">
-        <motion.h3
-          className="mb-5 text-center text-[clamp(1.35rem,4.5vw,1.875rem)] font-black text-gray-900 sm:mb-6"
-          {...fade}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
-          {a.visitStripTitle}
-        </motion.h3>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { icon: MapPin, title: a.contacts.address, text: a.addressLine },
-            { icon: Clock, title: a.contacts.workTime, text: a.hoursLine },
-            { icon: Phone, title: a.contacts.contact, text: a.phoneLine },
-          ].map((row, i) => (
-            <motion.div
-              key={row.title}
-              className="flex flex-col rounded-[22px] border border-gray-100 bg-white p-4 shadow-sm sm:p-6"
-              {...fade}
-              viewport={{ once: true, margin: '-30px' }}
-              transition={{ duration: 0.45, delay: i * 0.05 }}
-            >
-              <row.icon className="mb-3 h-9 w-9 text-gray-800" style={{ color: ACCENT }} />
-              <h4 className="font-bold text-gray-900">{row.title}</h4>
-              <p className="mt-2 text-sm font-medium text-gray-600">{row.text}</p>
-            </motion.div>
-          ))}
-        </div>
-        </div>
-      </section>
+        <AboutTeamSection teamMembers={teamMembers} teamReady={teamReady} fade={fade} />
+      </div>
+    </>
+  )
 
-      {/* Нижні CTA */}
-      <section className="about-page-section-web relative z-10 w-full watta-page-bg px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pt-16">
-        <div className="mx-auto max-w-6xl">
-        <motion.div
-          className="about-page-cta-web flex w-full flex-col items-stretch justify-center gap-3 rounded-[24px] border border-gray-200 bg-gray-50/80 px-4 py-8 text-center sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4 sm:px-6 sm:py-10"
-          {...fade}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
-          <Link
-            href="/"
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-[#145142] px-6 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-[#1a6b58] sm:w-auto sm:min-w-[200px] sm:px-8"
-          >
-            {a.ctaMenu}
-          </Link>
-          <Link
-            href="/contacts"
-            className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-[#145142] bg-transparent px-6 py-3.5 text-sm font-bold text-[#145142] transition hover:bg-[#145142]/5 sm:w-auto sm:min-w-[200px] sm:px-8"
-          >
-            {a.ctaContacts}
-          </Link>
-          <Link
-            href="/delivery"
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-gray-300 bg-white px-6 py-3.5 text-sm font-bold text-gray-800 transition hover:border-gray-400 sm:w-auto sm:min-w-[200px] sm:px-8"
-          >
-            {a.ctaDelivery}
-          </Link>
-        </motion.div>
+  if (embedded) {
+    return (
+      <div
+        id="about-page-container"
+        className="about-page-web delivery-page-web relative min-h-screen w-full min-w-0 overflow-x-hidden watta-page-bg pb-16"
+      >
+        {aboutMainContent}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      id="about-page-container"
+      className="menu-page-web delivery-page-web contact-page-web watta-about-page watta-delivery-page watta-delivery-page-about watta-site-hero-page-web about-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
+    >
+      <div className="delivery-page-home-flow w-full">
+        <div className="delivery-page-intro-web delivery-page-intro-web--video w-full shrink-0">
+          {aboutStandaloneHeroStack}
         </div>
-      </section>
+        <div className="about-page-content-flow w-full">{aboutMainContent}</div>
+      </div>
     </div>
   )
 }

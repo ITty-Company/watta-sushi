@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import {
   ArrowLeft,
   Mail,
@@ -16,18 +17,14 @@ import {
 import LogoBackground from '../LogoBackground'
 import WattaAppRouteLoading from '../WattaAppRouteLoading'
 import AuthCinemaPanel from './AuthCinemaPanel'
-import { parseAuthHeroVideoUrlsFromApi } from '@/lib/authHeroVideoSettings'
-import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { mergeAuthHeroVideoUrls } from '@/lib/authHeroVideoSettings'
 import {
   applyCityPlaceholdersToAuthHeroCopy,
   applyCityPlaceholdersToText,
-  parseAuthHeroPhone2VideoUrlsFromApi,
-  parseAuthHeroPhoneCopyFromApi,
   resolveAuthHeroPhoneCopy,
-  type AuthHeroPhoneCopyMap,
 } from '@/lib/authHeroPhoneSettings'
 import { useAuthHeroDeliveryCity } from '@/hooks/useAuthHeroDeliveryCity'
-import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, type AuthHeroPhonesUpdatedDetail } from '@/lib/wattaAuthHeroVideo'
+import { useAuthHeroVideos } from '@/hooks/useAuthHeroVideos'
 import { useLanguage } from '../../context/LanguageContext'
 import toast from 'react-hot-toast'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
@@ -79,7 +76,7 @@ function AuthScreenBody({
   returnUrl,
 }: AuthScreenBodyProps) {
   const { t, language } = useLanguage()
-  const router = useRouter()
+  const router = useInstantRouter()
   const deliveryCityName = useAuthHeroDeliveryCity(language, variant === 'page')
 
   const [isRegister, setIsRegister] = useState(initialRegister)
@@ -97,49 +94,13 @@ function AuthScreenBody({
 
   const [isVerifying, setIsVerifying] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
-  const [authHeroPhone1Urls, setAuthHeroPhone1Urls] = useState<string[]>([])
-  const [authHeroPhone2Urls, setAuthHeroPhone2Urls] = useState<string[]>([])
-  const [authHeroPhone1Copy, setAuthHeroPhone1Copy] = useState<AuthHeroPhoneCopyMap>({})
-  const [authHeroPhone2Copy, setAuthHeroPhone2Copy] = useState<AuthHeroPhoneCopyMap>({})
 
-  useEffect(() => {
-    if (variant !== 'page') return
-    const applySettings = (data: Record<string, unknown>) => {
-      const urls = parseAuthHeroVideoUrlsFromApi(data)
-      if (urls.length > 0) setAuthHeroPhone1Urls(urls)
-      setAuthHeroPhone2Urls(parseAuthHeroPhone2VideoUrlsFromApi(data))
-      setAuthHeroPhone1Copy(parseAuthHeroPhoneCopyFromApi(data.authHeroPhone1Copy))
-      setAuthHeroPhone2Copy(parseAuthHeroPhoneCopyFromApi(data.authHeroPhone2Copy))
-    }
-    const fetchSettings = async (fresh = false) => {
-      try {
-        const res = await (fresh ? fetchPublicApiFresh : fetchPublicApi)('/api/settings')
-        if (res.ok) applySettings(await res.json())
-      } catch {
-        /* ignore */
-      }
-    }
-    const onHeroUpdated = (ev: Event) => {
-      const detail = (ev as CustomEvent<AuthHeroPhonesUpdatedDetail>).detail
-      const fromEvent = parseAuthHeroVideoUrlsFromApi({
-        authHeroVideoUrls: detail?.urls,
-        authHeroVideoUrl: detail?.url,
-      })
-      if (fromEvent.length > 0) setAuthHeroPhone1Urls(fromEvent)
-      if (detail?.phone2Urls) setAuthHeroPhone2Urls(detail.phone2Urls)
-      if (detail?.phone1Copy) setAuthHeroPhone1Copy(parseAuthHeroPhoneCopyFromApi(detail.phone1Copy))
-      if (detail?.phone2Copy) setAuthHeroPhone2Copy(parseAuthHeroPhoneCopyFromApi(detail.phone2Copy))
-      if (!fromEvent.length && !detail?.phone2Urls) void fetchSettings(true)
-    }
-    void fetchSettings()
-    const onSettings = () => void fetchSettings(true)
-    window.addEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
-    window.addEventListener('settingsUpdated', onSettings)
-    return () => {
-      window.removeEventListener(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
-      window.removeEventListener('settingsUpdated', onSettings)
-    }
-  }, [variant])
+  const {
+    phone1Urls: authHeroPhone1Urls,
+    phone2Urls: authHeroPhone2Urls,
+    phone1Copy: authHeroPhone1Copy,
+    phone2Copy: authHeroPhone2Copy,
+  } = useAuthHeroVideos({ enabled: true })
 
   useEffect(() => {
     setIsRegister(initialRegister)
@@ -172,19 +133,6 @@ function AuthScreenBody({
     return () => {
       document.body.style.overflow = ''
       document.documentElement.style.overflow = ''
-    }
-  }, [variant])
-
-  /** Сторінки /login і /register: без «скролу в нікуди» — тільки внутрішня зона форми */
-  useEffect(() => {
-    if (variant !== 'page') return
-    const prevHtml = document.documentElement.style.overflow
-    const prevBody = document.body.style.overflow
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.documentElement.style.overflow = prevHtml
-      document.body.style.overflow = prevBody
     }
   }, [variant])
 
@@ -383,30 +331,39 @@ function AuthScreenBody({
     }
   }, [authHeroPhone2Copy, authHeroPhone2Urls, language, cinemaFallbackSecondary, deliveryCityName])
 
-  const backFab =
-    variant === 'page' ? (
-      <Link href="/" className="auth-watta-back-fab">
-        <span className="auth-watta-back-fab__icon" aria-hidden>
-          <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
-        </span>
-        <span className="auth-watta-back-fab__text">{t.auth.back}</span>
-      </Link>
-    ) : (
-      <button type="button" onClick={onBack} className="auth-watta-back-fab auth-watta-back-fab--modal">
-        <span className="auth-watta-back-fab__icon" aria-hidden>
-          <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
-        </span>
-        <span className="auth-watta-back-fab__text">{t.auth.back}</span>
-      </button>
-    )
+  const cinemaEmbeddedPrimary = useMemo(
+    () => ({
+      ...cinemaPrimary,
+      videoUrls: mergeAuthHeroVideoUrls(authHeroPhone1Urls, authHeroPhone2Urls),
+    }),
+    [cinemaPrimary, authHeroPhone1Urls, authHeroPhone2Urls],
+  )
+
+  const pageBackLink = (
+    <Link href="/" className="auth-watta-back-link">
+      <ArrowLeft className="auth-watta-back-link__icon" strokeWidth={2.25} aria-hidden />
+      <span>{t.auth.back}</span>
+    </Link>
+  )
+
+  const modalBackFab = (
+    <button type="button" onClick={onBack} className="auth-watta-back-fab auth-watta-back-fab--modal">
+      <span className="auth-watta-back-fab__icon" aria-hidden>
+        <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
+      </span>
+      <span className="auth-watta-back-fab__text">{t.auth.back}</span>
+    </button>
+  )
 
   if (isVerifying) {
     return (
-      <div className="auth-watta-root auth-watta-page-shell auth-watta-page-lock flex flex-col relative overflow-hidden">
+      <div className="auth-watta-root auth-watta-page-shell flex flex-col relative">
         <LogoBackground variant="auth" />
-        {backFab}
+        <div className="auth-watta-page-top auth-watta-page-top--centered relative z-10 shrink-0 px-3 pt-2 sm:px-4">
+          {pageBackLink}
+        </div>
         <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-3 py-2 sm:px-4 sm:py-4">
-          <div className="auth-watta-verify-card w-full max-w-md shrink-0 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
+          <div className="auth-watta-verify-card w-full max-w-md shrink-0 p-4 sm:p-6">
             <div className="mb-2 flex justify-center text-[#145142]">
               <ShieldCheck className="h-11 w-11 sm:h-12 sm:w-12" strokeWidth={1.25} />
             </div>
@@ -453,7 +410,7 @@ function AuthScreenBody({
 
   const shellClass =
     variant === 'page'
-      ? 'auth-watta-root auth-watta-page-shell auth-watta-page-lock flex flex-col relative overflow-hidden'
+      ? 'auth-watta-root auth-watta-page-shell flex w-full flex-1 flex-col relative min-h-0'
       : 'auth-watta-root min-h-[100dvh] h-[100dvh] flex flex-col relative overflow-hidden'
 
   return (
@@ -461,33 +418,43 @@ function AuthScreenBody({
       <LogoBackground variant="auth" />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/22 via-white/5 to-[#145142]/[0.06]" aria-hidden />
 
-      {backFab}
+      {variant === 'modal' && modalBackFab}
 
       <div
         className={
           variant === 'page'
-            ? 'auth-watta-page-grid relative z-10 mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 px-2.5 pt-14 pb-6 sm:px-4 sm:pt-16 sm:pb-8 md:grid md:grid-cols-2 md:items-center md:gap-6 md:px-6 md:pt-[4.5rem] md:pb-10'
+            ? `auth-watta-page-grid auth-watta-page-grid--phone relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-3 pb-3 max-md:h-auto max-md:min-h-0 max-md:flex-none max-md:items-center max-md:gap-0.5 sm:px-4 sm:pb-6 md:h-full md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-center md:gap-4 md:px-5 md:pb-6 lg:max-w-6xl lg:gap-5 lg:px-6 lg:pb-8${isRegister ? ' auth-watta-page-grid--register' : ''}`
             : 'relative z-10 mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-2.5 pt-12 sm:px-4 sm:pt-14'
         }
       >
-        {variant === 'page' && (
-          <AuthCinemaPanel compact brandName={t.common.brandName} primary={cinemaPrimary} secondary={cinemaSecondary} />
-        )}
+        {variant === 'page' && <div className="auth-watta-page-top shrink-0 md:col-span-2">{pageBackLink}</div>}
 
         {variant === 'page' && (
           <AuthCinemaPanel brandName={t.common.brandName} primary={cinemaPrimary} secondary={cinemaSecondary} />
         )}
 
-        <div className="auth-watta-form-panel flex min-h-0 flex-1 flex-col justify-stretch py-0 sm:justify-center sm:py-2 lg:py-6 lg:pl-1">
+        <div className="auth-watta-form-panel flex min-h-0 flex-col justify-stretch py-0 max-md:w-full max-md:max-w-[min(100%,20.25rem)] max-md:flex-none max-md:shrink-0 max-md:justify-start max-md:py-0 md:flex-none md:justify-center md:py-0 lg:pl-0.5">
           <div
             className={
               variant === 'page'
-                ? 'auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated mx-auto flex w-full max-w-md min-h-0 flex-1 flex-col overflow-hidden rounded-2xl sm:max-h-none sm:flex-none sm:rounded-[1.35rem] lg:min-h-0 lg:flex-none'
-                : 'auth-watta-form-card auth-watta-form-card--elevated mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl sm:max-h-none sm:flex-none sm:rounded-[1.35rem] sm:p-5'
+                ? `auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated auth-watta-form-card--mobile-fit auth-watta-form-card--premium-mobile mx-auto flex w-full max-w-[min(100%,20.25rem)] min-h-0 flex-col overflow-hidden max-md:h-auto max-md:flex-none max-md:shrink-0 md:max-w-[22.5rem] md:h-auto md:flex-none lg:max-w-[23.5rem]${isRegister ? ' auth-watta-form-card--register' : ''}`
+                : 'auth-watta-form-card auth-watta-form-card--elevated mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden sm:max-h-none sm:flex-none sm:p-5'
             }
           >
-            <div className="shrink-0 p-3 pb-0 pt-2 sm:p-5 sm:pb-0 sm:pt-5">
-            <div className="auth-watta-tabs relative mb-2 flex rounded-xl bg-[#e8f0ec]/90 p-0.5 sm:mb-4">
+            {variant === 'page' && (
+              <div className="hidden max-md:block">
+                <AuthCinemaPanel
+                  compact
+                  embedded
+                  brandName={t.common.brandName}
+                  primary={cinemaEmbeddedPrimary}
+                  secondary={cinemaSecondary}
+                />
+              </div>
+            )}
+
+            <div className="auth-watta-form-head shrink-0 p-3 pb-0 pt-2.5 max-md:px-3 max-md:pt-2 md:p-4 md:pb-0 md:pt-3.5">
+            <div className="auth-watta-tabs relative mb-2 flex rounded-[0.85rem] bg-[#e8f0ec]/95 p-0.5 max-md:mb-2 md:mb-2.5 md:rounded-[0.75rem] md:p-0.5">
               {variant === 'page' && (
                 <span
                   className="auth-watta-tabs__indicator"
@@ -500,7 +467,7 @@ function AuthScreenBody({
                 onClick={() => switchAuthMode(false)}
                 className={
                   variant === 'page'
-                    ? `auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                    ? `auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors md:rounded-[0.65rem] md:py-2 md:text-[0.8125rem] ${
                         !isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
                       }`
                     : `flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
@@ -515,7 +482,7 @@ function AuthScreenBody({
                 onClick={() => switchAuthMode(true)}
                 className={
                   variant === 'page'
-                    ? `auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors sm:rounded-xl sm:py-2.5 sm:text-sm ${
+                    ? `auth-watta-tabs__btn relative z-[1] flex-1 rounded-lg py-1.5 text-center text-xs font-bold transition-colors md:rounded-[0.65rem] md:py-2 md:text-[0.8125rem] ${
                         isRegister ? 'text-[#0f3d32]' : 'text-gray-600 hover:text-[#145142]'
                       }`
                     : `flex-1 rounded-lg py-2 text-center text-xs font-bold transition-all sm:rounded-xl sm:py-2.5 sm:text-sm ${
@@ -527,12 +494,16 @@ function AuthScreenBody({
               </button>
             </div>
 
-            <h1 className="mb-0 text-lg font-bold leading-tight text-[#0f3d32] sm:mb-0.5 sm:text-2xl">
-              {isRegister ? t.auth.registerTitle : t.auth.loginTitle}
-            </h1>
-            <p className="auth-watta-form-desc mt-1 line-clamp-2 text-[11px] leading-snug text-gray-600 sm:mt-0 sm:mb-4 sm:text-sm">
-              {isRegister ? t.auth.registerDescription : t.auth.loginDescription}
-            </p>
+            <div className="auth-watta-form-intro">
+              <h1 className="auth-watta-form-title mb-0 text-base leading-tight md:mb-0.5 md:text-xl lg:text-[1.375rem]">
+                <span className="auth-watta-form-title__text">
+                  {isRegister ? t.auth.registerTitle : t.auth.loginTitle}
+                </span>
+              </h1>
+              <p className={`auth-watta-form-desc mt-1 text-[11px] leading-snug text-gray-600 max-md:line-clamp-1 md:mt-0.5 md:mb-2.5 md:text-xs md:leading-snug lg:mb-3${isRegister ? ' max-md:hidden md:line-clamp-1' : ' md:line-clamp-2'}`}>
+                {isRegister ? t.auth.registerDescription : t.auth.loginDescription}
+              </p>
+            </div>
 
             {error && (
               <div
@@ -544,10 +515,10 @@ function AuthScreenBody({
             )}
             </div>
 
-            <div className="auth-watta-form-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-1 sm:px-5 sm:pb-2 lg:flex-none lg:overflow-visible">
-            <form onSubmit={handleSubmit} className="auth-watta-form-fields flex flex-col gap-1.5 sm:gap-2">
+            <div className="auth-watta-form-scroll min-h-0 max-md:flex-none max-md:overflow-visible flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-0 max-md:px-3 md:px-4 md:pb-2 lg:flex-none lg:overflow-visible">
+            <form onSubmit={handleSubmit} className="auth-watta-form-fields auth-watta-form-fields--stack flex flex-col gap-2 max-md:gap-1.5 md:gap-1.5">
               <div
-                className={`auth-watta-register-block grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2${isRegister ? '' : ' auth-watta-register-block--hidden'}`}
+                className={`auth-watta-register-block grid grid-cols-1 gap-1.5 md:grid-cols-2 md:gap-1.5${isRegister ? '' : ' max-md:hidden auth-watta-register-block--hidden'}`}
                 aria-hidden={!isRegister}
               >
                   <label className="auth-watta-label min-w-0">
@@ -627,7 +598,7 @@ function AuthScreenBody({
               </label>
 
               <label
-                className={`auth-watta-label auth-watta-register-block${isRegister ? '' : ' auth-watta-register-block--hidden'}`}
+                className={`auth-watta-label auth-watta-register-block${isRegister ? '' : ' max-md:hidden auth-watta-register-block--hidden'}`}
                 aria-hidden={!isRegister}
               >
                 <span className="auth-watta-label-text">
@@ -648,7 +619,11 @@ function AuthScreenBody({
                 </span>
               </label>
 
-              <button type="submit" disabled={isLoading} className="auth-watta-btn-primary mt-0.5 sm:mt-1">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="auth-watta-btn-primary auth-watta-btn-primary--shine mt-0.5 sm:mt-1"
+              >
                 {isLoading
                   ? '…'
                   : isRegister
@@ -659,7 +634,35 @@ function AuthScreenBody({
             </div>
 
             {variant === 'page' && (
-              <p className="shrink-0 border-t border-gray-100/90 bg-white/80 px-3 py-2 text-center text-[10px] leading-tight text-gray-600 backdrop-blur-sm sm:mt-4 sm:border-0 sm:bg-transparent sm:px-5 sm:py-3 sm:text-xs">
+              <p className="auth-watta-mobile-switch shrink-0 px-3 pb-2 pt-1.5 text-center text-[10px] leading-snug text-gray-600 md:hidden">
+                {isRegister ? (
+                  <>
+                    {t.auth.haveAccount}{' '}
+                    <button
+                      type="button"
+                      onClick={() => switchAuthMode(false)}
+                      className="font-semibold text-[#145142] hover:underline"
+                    >
+                      {t.auth.login}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {t.auth.noAccount}{' '}
+                    <button
+                      type="button"
+                      onClick={() => switchAuthMode(true)}
+                      className="font-semibold text-[#145142] hover:underline"
+                    >
+                      {t.auth.register}
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
+
+            {variant === 'page' && (
+              <p className="auth-watta-desktop-switch hidden shrink-0 px-3 py-2.5 text-center text-[11px] leading-snug text-gray-600 sm:mt-3 sm:block sm:px-5 sm:py-3 sm:text-xs">
                 {isRegister ? (
                   <>
                     {t.auth.haveAccount}{' '}

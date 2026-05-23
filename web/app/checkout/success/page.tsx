@@ -2,11 +2,10 @@
 
 import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import LogoBackground from '../../components/LogoBackground'
-import WattaAppRouteLoading from '../../components/WattaAppRouteLoading'
+import WattaLink from '../../components/WattaLink'
 
 function clearClientCart() {
   if (typeof window === 'undefined') return
@@ -49,13 +48,13 @@ function CheckoutSuccessContent() {
             <span className="text-[#ff6b35]">{orderId}</span>
           </p>
         ) : null}
-        <Link
+        <WattaLink
           href="/menu"
           onClick={clearClientCart}
           className="inline-flex items-center justify-center min-h-[52px] w-full sm:w-auto px-10 rounded-2xl font-bold text-white bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#145142] shadow-lg shadow-[#145142]/25 border border-white/20 ring-1 ring-[#ff6b35]/30 hover:brightness-105 active:scale-[0.98] transition"
         >
           {t.cartSection.checkoutBackToMenu}
-        </Link>
+        </WattaLink>
       </div>
     </div>
   )
@@ -63,7 +62,7 @@ function CheckoutSuccessContent() {
 
 export default function CheckoutSuccessPage() {
   return (
-    <Suspense fallback={<WattaAppRouteLoading />}>
+    <Suspense fallback={null}>
       <CheckoutSuccessContent />
     </Suspense>
   )

@@ -1,19 +1,21 @@
 'use client'
 
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { LOCATION_PICKER_MASCOT_SRC } from '@/lib/locationPickerMascot'
 
-/** Маскот модалки локації — PNG з прозорим фоном (`/location-picker-mascot.png`). */
+/** Маскот модалки локації — PNG з прозорим фоном (без Next/Image, щоб не чекати оптимізатор). */
 export function LocationPickerMascot({ className }: { className?: string }) {
   return (
     <div className={cn('location-picker-mascot', className)} aria-hidden>
-      <Image
-        src="/location-picker-mascot.png"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={LOCATION_PICKER_MASCOT_SRC}
         alt=""
-        fill
-        priority
+        width={400}
+        height={400}
         className="location-picker-mascot__img"
-        sizes="(max-width: 640px) 140px, 168px"
+        decoding="async"
+        fetchPriority="high"
         draggable={false}
       />
     </div>

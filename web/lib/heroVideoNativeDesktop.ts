@@ -3,8 +3,9 @@
  * без даунскейлу по DPR і без CSS scale — максимальна різкість ролика.
  * (На touch / вузьких — лишається canvas-шлях з autoplay-обхідниками WebKit.)
  */
+/** Планшет landscape + десктоп: нативне <video> без canvas (максимальна різкість). */
 export const HERO_VIDEO_NATIVE_ON_DESKTOP_MEDIA =
-  '(min-width: 1025px) and (hover: hover) and (pointer: fine)' as const
+  '(min-width: 769px) and (hover: hover) and (pointer: fine)' as const
 
 /** Телефон / планшет — hero не перехоплює touch (вертикальний скрол сторінки). */
 export const HERO_VIDEO_TOUCH_LIKE_MEDIA =

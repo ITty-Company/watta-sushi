@@ -1,0 +1,38 @@
+/**
+ * Стабільна висота chrome до виміру JS — без стрибків контенту й «миготіння» категорій.
+ */
+:root {
+  --watta-chrome-header-measured-h: 76px;
+  --watta-chrome-categories-band-h: 64px;
+  --watta-sticky-chrome-measured-h: 140px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --watta-chrome-header-measured-h: 86px;
+    --watta-chrome-categories-band-h: 48px;
+    --watta-sticky-chrome-measured-h: 134px;
+  }
+}
+
+@media (min-width: 1025px) {
+  :root {
+    --watta-chrome-header-measured-h: 90px;
+    --watta-chrome-categories-band-h: 46px;
+    --watta-sticky-chrome-measured-h: 136px;
+  }
+}
+
+.watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+  min-height: var(--watta-sticky-chrome-measured-h, 140px);
+}
+
+.watta-sticky-chrome-flow-anchor--header-only {
+  min-height: var(--watta-chrome-header-measured-h, 76px);
+}
+
+/* Категорії видимі з першого кадру (glass — у watta-chrome-categories-transparent.css) */
+body .watta-sticky-chrome-portal .categories-panel-web {
+  visibility: visible;
+  opacity: 1;
+}

@@ -48,7 +48,7 @@ export default function WattaNavDrawerShell({
         aria-modal="true"
         aria-hidden={!isOpen}
         className={cn(
-          'watta-nav-sidebar-drawer watta-nav-sidebar-drawer--fullscreen',
+          'watta-nav-sidebar-drawer watta-nav-sidebar-drawer--sheet',
           isOpen && 'is-open',
         )}
         {...closeSwipeHandlers}

@@ -8,16 +8,14 @@ import {
   kickWelcomeHeroVideoPlayBurst,
   kickWelcomeHeroVideoPlayOnce,
 } from '@/lib/kickWelcomeHeroVideo'
+import { isBrowserReloadOnHome } from '@/lib/menuBrowseRestore'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
 /** Швидке заповнення зеленої смуги — не затримуємо hero довше за decode */
-export const BOOT_SPLASH_FILL_MS = 320
-/** Коротка пауза на 100%, якщо відео ще не готове */
-const BOOT_SPLASH_HOLD_FULL_MS = 60
-/** Якщо hero не віддав ready — все одно показуємо головну */
-const BOOT_SPLASH_FAILSAFE_MS = 1_200
-/** Мінімум для логотипу сплешу (уникнути миготіння) */
-const BOOT_SPLASH_MIN_MS = 120
+export const BOOT_SPLASH_FILL_MS = 220
+const BOOT_SPLASH_HOLD_FULL_MS = 40
+const BOOT_SPLASH_FAILSAFE_MS = 480
+const BOOT_SPLASH_MIN_MS = 0
 
 type WattaBootSplashGateProps = {
   children: ReactNode
@@ -34,33 +32,45 @@ function markBootSplashDone(): void {
 
 function shouldSkipBootSplash(): boolean {
   try {
-    if (
-      process.env.NODE_ENV === 'development' &&
-      process.env.NEXT_PUBLIC_WATTA_HOME_RELOAD_SPLASH === '1'
-    ) {
-      return false
+    /** За замовчуванням — миттєва головна; сплеш лише якщо явно увімкнено в .env */
+    if (process.env.NEXT_PUBLIC_WATTA_BOOT_SPLASH !== '1') {
+      return true
     }
+    if (typeof document !== 'undefined') {
+      if (document.documentElement.getAttribute('data-watta-skip-splash') === '1') {
+        return true
+      }
+    }
+    if (isBrowserReloadOnHome()) return true
     return sessionStorage.getItem(BOOT_SPLASH_DONE_KEY) === '1'
   } catch {
-    return false
+    return true
   }
+}
+
+function shouldShowBootSplashNow(): boolean {
+  return !shouldSkipBootSplash()
 }
 
 export default function WattaBootSplashGate({ children, onEnded }: WattaBootSplashGateProps) {
   const { t } = useLanguage()
   const [bootProgress, setBootProgress] = useState(0)
-  const [showBootSplash, setShowBootSplash] = useState(true)
+  /** SSR без білого оверлею; на клієнті вмикаємо сплеш лише для першого візиту. */
+  const [showBootSplash, setShowBootSplash] = useState(false)
   const dismissedRef = useRef(false)
   const splashRunRef = useRef(0)
   const onEndedRef = useRef(onEnded)
   onEndedRef.current = onEnded
 
   useLayoutEffect(() => {
-    if (shouldSkipBootSplash()) {
+    if (!shouldShowBootSplashNow()) {
       dismissedRef.current = true
       setBootProgress(100)
       setShowBootSplash(false)
+      return
     }
+    dismissedRef.current = false
+    setShowBootSplash(true)
   }, [])
 
   const dismissSplash = useCallback(() => {
@@ -124,7 +134,7 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
 
     kickHero()
     queueMicrotask(kickHero)
-    videoKickId = window.setInterval(kickHero, 120)
+    videoKickId = window.setInterval(kickHero, 400)
 
     const onHeroReady = () => {
       kickHero()

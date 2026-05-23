@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
 import { Heart, UtensilsCrossed } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -9,7 +9,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
-import { loadFavoriteProducts } from '@/lib/favoritesStorage'
+import { loadFavoriteProducts, syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import { MenuHighlightStack, type MenuHighlightStackItem } from './MenuHighlightStack'
 import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
@@ -30,7 +30,7 @@ function FavoritesGridSkeleton() {
 }
 
 export default function FavoritesPageClient() {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, getLocalized, language } = useLanguage()
   const cp = t.clientProfile
   const wf = t.productDetail.weightFallback
@@ -58,6 +58,9 @@ export default function FavoritesPageClient() {
   const load = useCallback(async (fresh = false) => {
     setLoading(true)
     try {
+      if (isUserLoggedIn()) {
+        await syncFavoritesAfterAuth()
+      }
       const list = await loadFavoriteProducts((p) => mapRawToCard(p), { fresh })
       setItems(list)
     } catch {

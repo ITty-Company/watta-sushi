@@ -71,6 +71,11 @@ const nextConfig = {
    */
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    /** Довше тримати prefetched RSC у клієнті — повторні переходи майже без затримки. */
+    staleTimes: {
+      dynamic: 300,
+      static: 300,
+    },
   },
   
   async rewrites() {
@@ -125,6 +130,7 @@ const nextConfig = {
       // Спочатку явні шляхи — щоб Cache-Control для чанків не «губився» після catch-all
       { source: '/_next/static/:path*', headers: nextStaticCache },
       { source: '/watta-sushi-2-hero.mp4', headers: heroVideoHeaders },
+      { source: '/watta-home-hero-poster.jpg', headers: longImmutable },
       /* Картинки/іконки — імутабельні. При заміні файлу — оновити ім'я або bust через query. */
       { source: '/logo.png', headers: longImmutable },
       { source: '/logo.webp', headers: longImmutable },
@@ -137,6 +143,7 @@ const nextConfig = {
       { source: '/apple-touch-icon.png', headers: longImmutable },
       { source: '/apple-touch-icon-precomposed.png', headers: longImmutable },
       { source: '/watta-page-texture.png', headers: longImmutable },
+      { source: '/location-picker-mascot.png', headers: longImmutable },
       {
         source: '/uploads/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=300, must-revalidate' }],

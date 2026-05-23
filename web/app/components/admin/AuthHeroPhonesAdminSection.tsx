@@ -260,6 +260,9 @@ export default function AuthHeroPhonesAdminSection({
     <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
       <h3 className="text-lg font-bold text-[#155044] sm:text-xl">{t.authHeroVideoTitle}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-[#145142]/75">{t.authHeroVideoSubtitle}</p>
+      <p className="mt-2 rounded-[12px] border border-[#145142]/12 bg-[#f0f7f3] px-3 py-2 text-xs leading-relaxed text-[#145142]/85">
+        {t.authHeroPlaylistHint}
+      </p>
 
       <h4 className="mt-6 text-base font-bold text-[#155044]">{phone1Title}</h4>
       <VideoSlotGrid

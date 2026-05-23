@@ -127,8 +127,8 @@ export function bindHeroVideoMirrorToCanvas(
     if (w <= 0 || h <= 0) return
 
     const rawDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-    /* Повний DPR до 3 (Retina / iPhone); вище — рідко, але розмір canvas стає великим. */
-    const dpr = Math.min(Math.max(rawDpr, 1), 3)
+    /* Повний DPR до 4 (Retina / iPhone Pro); обмеження — розмір canvas. */
+    const dpr = Math.min(Math.max(rawDpr, 1), 4)
     const cw = Math.max(1, Math.floor(w * dpr))
     const ch = Math.max(1, Math.floor(h * dpr))
     if (canvas.width !== cw || canvas.height !== ch) {
@@ -159,7 +159,7 @@ export function bindHeroVideoMirrorToCanvas(
    * картинка вже в кеші браузера (тег <video poster> або CSS background) — drawImage синхронний.
    */
   const drawPoster = () => {
-    const posterUrl = video.getAttribute('poster') || '/watta-sushi.jpg'
+    const posterUrl = video.getAttribute('poster') || '/watta-home-hero-poster.jpg'
     const img = new Image()
     img.decoding = 'async'
     img.onload = () => {
@@ -171,7 +171,7 @@ export function bindHeroVideoMirrorToCanvas(
       const h = rect.height
       if (w <= 0 || h <= 0) return
       const rawDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-      const dpr = Math.min(Math.max(rawDpr, 1), 3)
+      const dpr = Math.min(Math.max(rawDpr, 1), 4)
       const cw = Math.max(1, Math.floor(w * dpr))
       const ch = Math.max(1, Math.floor(h * dpr))
       if (canvas.width !== cw || canvas.height !== ch) {
@@ -347,6 +347,33 @@ export function bindHeroVideoMirrorToCanvas(
     document.addEventListener('visibilitychange', onDocVisibility)
   }
 
+  let visibilityIo: IntersectionObserver | null = null
+  if (typeof IntersectionObserver !== 'undefined') {
+    const observeTarget = canvas.parentElement ?? canvas
+    visibilityIo = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((e) => e.isIntersecting)
+        if (visible) {
+          if (!running) {
+            running = true
+            pump()
+          }
+          return
+        }
+        running = false
+        cancelRvfc()
+        cancelRaf()
+        cancelPoll()
+        if (timeUpdateRaf) {
+          cancelAnimationFrame(timeUpdateRaf)
+          timeUpdateRaf = 0
+        }
+      },
+      { threshold: 0.02, rootMargin: '48px 0px' },
+    )
+    visibilityIo.observe(observeTarget)
+  }
+
   pump()
 
   return () => {
@@ -359,6 +386,7 @@ export function bindHeroVideoMirrorToCanvas(
     cancelRaf()
     cancelPoll()
     ro?.disconnect()
+    visibilityIo?.disconnect()
     if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', onDocVisibility)
     }

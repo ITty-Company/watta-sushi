@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -14,9 +15,7 @@ import {
   Clock,
   Send,
   ChevronDown,
-  Sparkles,
   Instagram,
-  MessageCircle,
   Truck,
   UtensilsCrossed,
   Building2,
@@ -24,7 +23,6 @@ import {
   Star,
   BadgeCheck,
   ArrowRight,
-  Zap,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import {
@@ -33,10 +31,8 @@ import {
 } from '@/lib/wattaRestaurantLocation'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 import { cn } from '@/lib/utils'
-
-const ACCENT = '#FF5C00'
-const HERO_BG =
-  'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
+import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
+import ContactPageStats from './ContactPageStats'
 
 type SiteLinks = { telegramUrl: string; whatsappUrl: string; instagramUrl: string }
 type FormTopic = 'menu' | 'delivery' | 'corporate' | 'other'
@@ -96,6 +92,28 @@ function TopicChip({
   )
 }
 
+function ContactFlowSection({
+  children,
+  className,
+  ariaLabel,
+  ariaLabelledBy,
+}: {
+  children: ReactNode
+  className?: string
+  ariaLabel?: string
+  ariaLabelledBy?: string
+}) {
+  return (
+    <section
+      className={cn('delivery-flow-section bg-white py-14 sm:py-18', className)}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+    >
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">{children}</div>
+    </section>
+  )
+}
+
 function FlowStep({
   step,
   title,
@@ -137,7 +155,8 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
   const [faqOpen, setFaqOpen] = useState<number | null>(0)
   const [activeTopic, setActiveTopic] = useState(0)
   const [formTopic, setFormTopic] = useState<FormTopic>('other')
-  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '', website: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })
+  const [honeypot, setHoneypot] = useState('')
   const [sending, setSending] = useState(false)
 
   useEffect(() => {
@@ -190,8 +209,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
 
   const submitForm = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (String(form.website || '').trim()) {
-      toast.success(c.formSuccess)
+    if (String(honeypot || '').trim()) {
       return
     }
     const name = form.name.trim()
@@ -220,17 +238,27 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
           email,
           phone: form.phone.trim(),
           message,
-          website: form.website,
+          website: honeypot,
         }),
       })
-      const data = await res.json().catch(() => ({}))
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean
+        error?: string
+        message?: string
+      }
       if (!res.ok) {
-        toast.error(c.formError)
+        const err = data?.error
+        if (err === 'bad_name') toast.error(c.errName)
+        else if (err === 'bad_email') toast.error(c.errEmail)
+        else if (err === 'bad_message') toast.error(c.errMessage)
+        else if (data?.message) toast.error(data.message)
+        else toast.error(c.formError)
         return
       }
       if (data?.ok) {
         toast.success(c.formSuccess)
-        setForm({ name: '', email: '', phone: '', message: '', website: '' })
+        setForm({ name: '', email: '', phone: '', message: '' })
+        setHoneypot('')
         setFormTopic('other')
       } else {
         toast.error(c.formError)
@@ -250,13 +278,6 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
         initial: { opacity: 0, y: 28 },
         whileInView: { opacity: 1, y: 0 },
       } as const)
-
-  const statCards = [
-    { val: c.stat1Val, label: c.stat1Label, icon: Zap },
-    { val: c.stat2Val, label: c.stat2Label, icon: MapPin },
-    { val: c.stat3Val, label: c.stat3Label, icon: BadgeCheck },
-    { val: c.stat4Val, label: c.stat4Label, icon: Star },
-  ]
 
   const quickLinks = [
     { href: '/menu', label: c.quickMenu },
@@ -311,9 +332,46 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
     aria: string
   }[]
 
+  const contactPageLeadIntro = (
+    <AnimatedHeroIntroBlock
+      sectionId="contact-page-lead-intro"
+      ariaLabel={c.heroTitle}
+      titleLines={[c.heroTitleLead, c.heroTitleMark]}
+      body={c.heroSubtitle}
+      accentLineIndex={1}
+      headingLevel="h1"
+      reserveTopSpace
+      innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
+    >
+      <div className="contact-page-hero-cta-row mt-6 flex flex-wrap justify-center gap-3">
+        <button
+          type="button"
+          onClick={scrollToForm}
+          className="rounded-2xl bg-[#145142] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-[#1a6b58]"
+        >
+          {c.ctaForm}
+        </button>
+        <Link
+          href="/delivery"
+          className="rounded-2xl border-2 border-[#145142]/25 bg-white px-5 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/45"
+        >
+          {c.ctaDelivery}
+        </Link>
+      </div>
+    </AnimatedHeroIntroBlock>
+  )
+
+  const contactStandaloneHeroStack = (
+    <div className="delivery-page-hero-stack delivery-page-hero-stack--intro-first w-full shrink-0 bg-transparent">
+      {contactPageLeadIntro}
+      <ContactPageStats labels={c} />
+    </div>
+  )
+
   return (
     <motion.div
-      className="contact-page-web relative min-h-[100dvh] w-full overflow-x-hidden watta-page-bg pb-24"
+      id="contacts-page-container"
+      className="menu-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about watta-site-hero-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
@@ -362,182 +420,30 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
         </motion.div>
       ) : null}
 
-      {/* Кінематографічний герой */}
-      <section
-        className="contact-page-hero-web relative overflow-hidden text-white"
-        style={{ background: HERO_BG }}
-        aria-labelledby="contacts-hero-title"
-      >
-        <motion.div
-          className="pointer-events-none absolute inset-0 opacity-[0.4]"
-          style={{
-            background: `repeating-linear-gradient(
-              -32deg,
-              transparent,
-              transparent 14px,
-              rgba(255, 255, 255, 0.04) 14px,
-              rgba(255, 255, 255, 0.04) 15px
-            )`,
-          }}
-          aria-hidden
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 0.4 }}
-          transition={{ duration: 0.8 }}
-        />
-        <div
-          className="pointer-events-none absolute -right-[18%] top-1/2 h-[min(75vw,500px)] w-[min(75vw,500px)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,92,0,0.16)_0%,transparent_68%)]"
-          aria-hidden
-        />
-
-        <div className="relative z-[1] mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-14 lg:py-24">
-          <div>
-            <motion.p
-              className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur-sm sm:text-xs"
-              {...fadeUp}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <Sparkles size={14} style={{ color: ACCENT }} />
-              {c.heroKicker}
-            </motion.p>
-            <motion.h1
-              id="contacts-hero-title"
-              className="max-w-xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.5rem]"
-              {...fadeUp}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: 0.05 }}
-            >
-              {c.heroTitle}
-            </motion.h1>
-            <motion.p
-              className="mt-5 max-w-xl text-base leading-relaxed text-white/78 sm:text-lg"
-              {...fadeUp}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: 0.1 }}
-            >
-              {c.heroSubtitle}
-            </motion.p>
-
-            <motion.div
-              className="mt-8 flex flex-wrap gap-3"
-              {...fadeUp}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.12 }}
-            >
-              <button
-                type="button"
-                onClick={scrollToForm}
-                className="rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-[#145142] shadow-lg transition hover:scale-[1.02] hover:bg-white/95"
-              >
-                {c.ctaForm}
-              </button>
-              <Link
-                href="/delivery"
-                className="rounded-2xl border-2 border-white/35 bg-white/10 px-6 py-3.5 text-sm font-black text-white backdrop-blur-sm transition hover:border-white/55 hover:bg-white/15"
-              >
-                {c.ctaDelivery}
-              </Link>
-              <Link
-                href="/menu"
-                className="rounded-2xl border-2 border-white/20 px-6 py-3.5 text-sm font-bold text-white/90 transition hover:border-white/40"
-              >
-                {c.ctaMenu}
-              </Link>
-            </motion.div>
-
-            <motion.div
-              className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4"
-              {...fadeUp}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: 0.16 }}
-            >
-              {statCards.map((s, i) => (
-                <motion.div
-                  key={i}
-                  className="contact-watta-stat-pill"
-                  whileHover={reduce ? undefined : { y: -3 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-                >
-                  <s.icon size={16} className="mb-2 text-white/55" strokeWidth={2.2} />
-                  <motion.div
-                    className="text-xl font-black sm:text-2xl"
-                    initial={reduce ? false : { opacity: 0, scale: 0.92 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.2 + i * 0.06, duration: 0.4 }}
-                  >
-                    {s.val}
-                  </motion.div>
-                  <motion.div
-                    className="mt-1 text-[10px] font-semibold leading-snug text-white/65 sm:text-xs"
-                    initial={reduce ? false : { opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.28 + i * 0.06 }}
-                  >
-                    {s.label}
-                  </motion.div>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            <p className="mt-8 text-center text-xs font-medium text-white/45 sm:text-left">{c.trustLine}</p>
-          </div>
-
-          <motion.div
-            className="relative mx-auto w-full max-w-[360px] lg:max-w-none lg:justify-self-end"
-            {...fadeUp}
-            viewport={{ once: true }}
-            transition={{ duration: 0.55, delay: 0.12 }}
-          >
-            <div className="contact-watta-hero-visual">
-              <div className="contact-watta-hero-visual__glow" aria-hidden />
-              <Image
-                src="/sushi.webp"
-                alt=""
-                width={420}
-                height={420}
-                className="contact-watta-hero-visual__img"
-                priority
-              />
-              <motion.div
-                className="contact-watta-hero-visual__badge"
-                animate={reduce ? undefined : { y: [0, -6, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <MessageCircle size={18} className="text-[#145142]" />
-                <span>{c.stat1Val}</span>
-                <span className="text-white/70">·</span>
-                <span className="font-semibold text-white/90">{c.stat1Label}</span>
-              </motion.div>
-            </div>
-          </motion.div>
+      <div className="delivery-page-home-flow w-full">
+        <div className="delivery-page-intro-web w-full shrink-0">
+          {contactStandaloneHeroStack}
         </div>
-      </section>
 
+        <div className="delivery-page-tools-flow">
+          <div className="delivery-page-flow delivery-page-web relative">
       {/* Теми звернень */}
-      <section className="border-b border-gray-100 watta-page-bg py-14 sm:py-18" aria-labelledby="contact-topics-heading">
+      <ContactFlowSection ariaLabelledBy="contact-topics-heading">
         <motion.div
-          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.55 }}
         >
-          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <motion.div
-              initial={reduce ? false : { opacity: 0, x: -12 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45 }}
-            >
-              <h2 id="contact-topics-heading" className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
-                {c.topicsTitle}
-              </h2>
-              <p className="mt-2 max-w-xl text-base text-gray-600">{c.topicsSub}</p>
-            </motion.div>
+          <div className="mb-8 text-center sm:mb-10">
+            <h2 id="contact-topics-heading" className="contact-watta-section-title mb-2">
+              {c.topicsTitle}
+            </h2>
+            <p className="contact-watta-topics-sub delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
+              {c.topicsSub}
+            </p>
           </div>
           <motion.div
-            className="flex flex-wrap gap-2.5"
+            className="flex flex-wrap justify-center gap-2.5"
             initial={reduce ? false : { opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -564,16 +470,17 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
             ))}
           </motion.div>
         </motion.div>
-      </section>
+      </ContactFlowSection>
 
       {/* Як відповідаємо */}
-      <section className="border-b border-gray-100 bg-white py-14 sm:py-18" aria-labelledby="contact-flow-heading">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <ContactFlowSection ariaLabelledBy="contact-flow-heading">
           <motion.div className="mb-10 text-center sm:mb-12" {...fadeUp} viewport={{ once: true }}>
-            <h2 id="contact-flow-heading" className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
+            <h2 id="contact-flow-heading" className="contact-watta-section-title">
               {c.flowTitle}
             </h2>
-            <p className="mx-auto mt-2 max-w-lg text-gray-600">{c.flowSub}</p>
+            <p className="contact-watta-flow-sub delivery-page-section-lead contact-watta-section-sub mx-auto text-center">
+              {c.flowSub}
+            </p>
           </motion.div>
           <div className="contact-watta-flow-grid">
             {flowSteps.map((step, i) => (
@@ -587,87 +494,106 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               />
             ))}
           </div>
-        </div>
-      </section>
+      </ContactFlowSection>
 
       {/* Канали */}
-      <section className="watta-page-bg py-14 sm:py-18" aria-labelledby="contact-channels-heading">
+      <ContactFlowSection ariaLabelledBy="contact-channels-heading">
         <motion.div
-          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.55 }}
         >
-          <h2 id="contact-channels-heading" className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
-            {c.channelsTitle}
-          </h2>
-          <p className="mb-10 max-w-2xl text-base text-gray-600 sm:text-lg">{c.channelsSub}</p>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+          <div className="mb-10 text-center sm:mb-12">
+            <h2 id="contact-channels-heading" className="contact-watta-section-title mb-2">
+              {c.channelsTitle}
+            </h2>
+            <p className="contact-watta-channels-sub delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
+              {c.channelsSub}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
             <motion.a
               href={`tel:${c.phoneTel.replace(/\s/g, '')}`}
               className="contact-watta-channel-card group"
-              whileHover={reduce ? undefined : { y: -4 }}
+              whileHover={reduce ? undefined : { y: -3 }}
             >
               <motion.div
                 className="contact-watta-channel-card__ico"
                 whileHover={reduce ? undefined : { scale: 1.06, rotate: -4 }}
               >
-                <Phone size={22} />
+                <Phone size={18} strokeWidth={2.1} />
               </motion.div>
               <span className="contact-watta-channel-card__label">{c.cardCall}</span>
-              <span className="contact-watta-channel-card__value">{c.phoneDisplay}</span>
-              <ArrowRight size={18} className="mt-4 text-[#145142]/40 transition group-hover:translate-x-1 group-hover:text-[#145142]" />
+              <div className="contact-watta-channel-card__value-row">
+                <span className="contact-watta-channel-card__value">{c.phoneDisplay}</span>
+                <ArrowRight
+                  size={15}
+                  strokeWidth={2.25}
+                  className="contact-watta-channel-card__arrow shrink-0 text-[#145142]/40 transition group-hover:translate-x-0.5 group-hover:text-[#145142]"
+                  aria-hidden
+                />
+              </div>
             </motion.a>
             <motion.a
               href={`mailto:${c.emailMailto}`}
               className="contact-watta-channel-card group"
-              whileHover={reduce ? undefined : { y: -4 }}
+              whileHover={reduce ? undefined : { y: -3 }}
             >
               <motion.div className="contact-watta-channel-card__ico contact-watta-channel-card__ico--grad" whileHover={reduce ? undefined : { scale: 1.06 }}>
-                <Mail size={22} />
+                <Mail size={18} strokeWidth={2.1} />
               </motion.div>
               <span className="contact-watta-channel-card__label">{c.cardEmail}</span>
-              <span className="contact-watta-channel-card__value break-all">{c.emailDisplay}</span>
-              <ArrowRight size={18} className="mt-4 text-[#145142]/40 transition group-hover:translate-x-1 group-hover:text-[#145142]" />
+              <div className="contact-watta-channel-card__value-row">
+                <span className="contact-watta-channel-card__value break-all">{c.emailDisplay}</span>
+                <ArrowRight
+                  size={15}
+                  strokeWidth={2.25}
+                  className="contact-watta-channel-card__arrow shrink-0 text-[#145142]/40 transition group-hover:translate-x-0.5 group-hover:text-[#145142]"
+                  aria-hidden
+                />
+              </div>
             </motion.a>
-            <motion.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -4 }}>
+            <motion.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -3 }}>
               <motion.div className="contact-watta-channel-card__ico" whileHover={reduce ? undefined : { scale: 1.06 }}>
-                <MapPin size={22} />
+                <MapPin size={18} strokeWidth={2.1} />
               </motion.div>
               <span className="contact-watta-channel-card__label">{c.cardAddress}</span>
-              <p className="contact-watta-channel-card__value text-sm leading-snug">{addressLine}</p>
+              <p className="contact-watta-channel-card__value leading-snug">{addressLine}</p>
               <a
                 href={wattaRestaurantExternalMapsUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-[#145142] hover:underline"
+                className="contact-watta-channel-card__maps-link inline-flex items-center gap-1 font-bold text-[#145142] hover:underline"
               >
                 {c.openMaps}
-                <ArrowRight size={16} />
+                <ArrowRight size={14} strokeWidth={2.25} />
               </a>
             </motion.div>
-            <motion.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -4 }}>
+            <motion.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -3 }}>
               <motion.div className="contact-watta-channel-card__ico" whileHover={reduce ? undefined : { scale: 1.06 }}>
-                <Clock size={22} />
+                <Clock size={18} strokeWidth={2.1} />
               </motion.div>
               <span className="contact-watta-channel-card__label">{c.cardHours}</span>
               <p className="contact-watta-channel-card__value">{c.hoursDetail}</p>
             </motion.div>
           </div>
         </motion.div>
-      </section>
+      </ContactFlowSection>
 
       {/* Месенджери */}
       {messengerCards.length > 0 ? (
-        <section className="border-y border-gray-100 bg-[#f6f9f7] py-14 sm:py-18">
+        <ContactFlowSection>
           <motion.div
-            className="mx-auto max-w-6xl px-4 sm:px-6"
             {...fadeUp}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.socialTitle}</h2>
-            <p className="mb-8 max-w-2xl text-gray-600">{c.messengerSub}</p>
+            <div className="mb-8 text-center sm:mb-10">
+              <h2 className="contact-watta-section-title mb-2">{c.socialTitle}</h2>
+              <p className="delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
+                {c.messengerSub}
+              </p>
+            </div>
             <motion.div
               className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
               initial={reduce ? false : { opacity: 0 }}
@@ -696,13 +622,12 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               ))}
             </motion.div>
           </motion.div>
-        </section>
+        </ContactFlowSection>
       ) : null}
 
       {/* Корпоративи */}
-      <section className="watta-page-bg py-10 sm:py-14">
+      <ContactFlowSection className="py-10 sm:py-14">
         <motion.div
-          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -715,50 +640,47 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               viewport={{ once: true }}
             >
               <span className="contact-watta-corporate__kicker">{c.topicCorporate}</span>
-              <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl md:text-4xl">{c.corporateTitle}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-white/80 sm:text-base">{c.corporateSub}</p>
+              <h2 className="contact-watta-corporate__title">{c.corporateTitle}</h2>
+              <p className="contact-watta-corporate__sub">{c.corporateSub}</p>
               <button
                 type="button"
                 onClick={() => scrollToFormWithTopic('corporate')}
-                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-[#145142] shadow-lg transition hover:scale-[1.02]"
+                className="contact-watta-corporate__cta"
               >
                 {c.corporateCta}
-                <ArrowRight size={18} />
+                <ArrowRight size={18} aria-hidden />
               </button>
             </motion.div>
-            <Building2
-              className="pointer-events-none absolute -right-4 bottom-0 h-32 w-32 text-white/10 sm:h-40 sm:w-40"
-              strokeWidth={1}
-              aria-hidden
-            />
+            <Building2 className="contact-watta-corporate__deco sm:h-40 sm:w-40" strokeWidth={1} aria-hidden />
           </div>
         </motion.div>
-      </section>
+      </ContactFlowSection>
 
       {/* Швидкі посилання */}
-      <section className="border-t border-gray-100 bg-white py-10">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#145142]/70">{c.quickLinksTitle}</p>
-          <motion.div className="flex flex-wrap gap-2">
+      <ContactFlowSection className="py-10">
+          <p className="delivery-flow-kicker mb-4 text-center">{c.quickLinksTitle}</p>
+          <motion.div className="flex flex-wrap justify-center gap-2">
             {quickLinks.map((link) => (
               <Link key={link.href} href={link.href} className="contact-watta-quick-link">
                 {link.label}
               </Link>
             ))}
           </motion.div>
-        </div>
-      </section>
+      </ContactFlowSection>
 
       {/* Карта */}
-      <section className="watta-page-bg py-14 sm:py-18">
+      <ContactFlowSection>
         <motion.div
-          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
         >
-          <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.mapTitle}</h2>
-          <p className="mb-8 max-w-2xl text-base text-gray-600 sm:text-lg">{c.mapSub}</p>
+          <div className="mb-8 text-center sm:mb-10">
+            <h2 className="contact-watta-section-title mb-2">{c.mapTitle}</h2>
+            <p className="contact-watta-map-sub delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
+              {c.mapSub}
+            </p>
+          </div>
           <div className="contact-watta-map-wrap">
             <div className="aspect-[16/10] min-h-[280px] w-full sm:min-h-[380px]">
               <iframe
@@ -770,41 +692,23 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                 allowFullScreen
               />
             </div>
-            <motion.div
-              className="contact-watta-map-card"
-              initial={reduce ? false : { opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <p className="font-black text-gray-900">{addressLine}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="contact-watta-map-badge">{c.mapBadgePickup}</span>
-                <span className="contact-watta-map-badge contact-watta-map-badge--open">{c.mapBadgeOpen}</span>
-              </div>
-              <a
-                href={wattaRestaurantExternalMapsUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#145142]"
-              >
-                {c.openMaps}
-                <ArrowRight size={16} />
-              </a>
-            </motion.div>
           </div>
         </motion.div>
-      </section>
+      </ContactFlowSection>
 
       {/* FAQ */}
-      <section className="border-t border-gray-100 bg-white py-14 sm:py-18">
+      <ContactFlowSection>
         <motion.div
-          className="mx-auto max-w-6xl px-4 sm:px-6"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
         >
-          <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.faqTitle}</h2>
-          <p className="mb-10 max-w-2xl text-gray-600">{c.faqSub}</p>
+          <div className="mb-8 text-center sm:mb-10">
+            <h2 className="contact-watta-section-title mb-2">{c.faqTitle}</h2>
+            <p className="delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
+              {c.faqSub}
+            </p>
+          </div>
           <div className="grid gap-3 lg:grid-cols-2">
             {faqs.map((item, i) => {
               const open = faqOpen === i
@@ -844,15 +748,15 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
             })}
           </div>
         </motion.div>
-      </section>
+      </ContactFlowSection>
 
       {/* Форма */}
-      <section
-        id="watta-contact-form"
-        className="scroll-mt-[calc(5rem+env(safe-area-inset-top))] border-t border-gray-100 watta-page-bg py-14 sm:py-18"
+      <ContactFlowSection
+        className="scroll-mt-[calc(5rem+env(safe-area-inset-top))]"
+        ariaLabelledBy="contact-form-heading"
       >
         <motion.div
-          className="mx-auto max-w-6xl px-4 sm:px-6"
+          id="watta-contact-form"
           {...fadeUp}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
@@ -863,20 +767,23 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <div className="overflow-hidden rounded-[28px] border border-gray-200/90 bg-white p-6 shadow-[0_20px_70px_rgba(20,81,66,0.1)] sm:p-10">
-              <h2 className="mb-2 text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">{c.formTitle}</h2>
-              <p className="mb-8 text-gray-600 sm:text-lg">{c.formSub}</p>
+            <div className="overflow-hidden rounded-[28px] border border-gray-200/90 bg-white p-6 shadow-[0_20px_70px_rgba(15,36,30,0.06)] sm:p-10">
+              <h2 id="contact-form-heading" className="contact-watta-section-title mb-2">
+                {c.formTitle}
+              </h2>
+              <p className="delivery-page-section-lead contact-watta-section-sub mb-8">{c.formSub}</p>
               <form onSubmit={submitForm} className="grid gap-5">
                 <label className="sr-only" htmlFor="contact-honey">
                   {c.honeyLabel}
                 </label>
                 <input
                   id="contact-honey"
-                  name="website"
-                  value={form.website}
-                  onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-                  className="hidden"
+                  type="text"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  className="pointer-events-none absolute -left-[9999px] h-px w-px opacity-0"
                   tabIndex={-1}
+                  aria-hidden
                   autoComplete="off"
                 />
                 <motion.div
@@ -884,13 +791,11 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   whileInView={{ opacity: 1 }}
                   viewport={{ once: true }}
                 >
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#145142]/80">
-                    {c.formTopicLabel}
-                  </label>
+                  <label className="contact-watta-form-label">{c.formTopicLabel}</label>
                   <select
                     value={formTopic}
                     onChange={(e) => setFormTopic(e.target.value as FormTopic)}
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-inner outline-none ring-[#145142]/30 transition focus:ring-2"
+                    className="contact-watta-form-input"
                   >
                     <option value="menu">{c.formTopicMenu}</option>
                     <option value="delivery">{c.formTopicDelivery}</option>
@@ -900,14 +805,12 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                 </motion.div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#145142]/80">
-                      {c.phName}
-                    </label>
+                    <label className="contact-watta-form-label">{c.phName}</label>
                     <input
                       required
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-inner outline-none ring-[#145142]/30 transition focus:ring-2"
+                      className="contact-watta-form-input"
                       placeholder={c.phName}
                       maxLength={120}
                     />
@@ -918,42 +821,36 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                     viewport={{ once: true }}
                     transition={{ delay: 0.05 }}
                   >
-                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#145142]/80">
-                      {c.phEmail}
-                    </label>
+                    <label className="contact-watta-form-label">{c.phEmail}</label>
                     <input
                       required
                       type="email"
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-inner outline-none ring-[#145142]/30 transition focus:ring-2"
+                      className="contact-watta-form-input"
                       placeholder={c.phEmail}
                       maxLength={120}
                     />
                   </motion.div>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#145142]/80">
-                    {c.phPhone}
-                  </label>
+                  <label className="contact-watta-form-label">{c.phPhone}</label>
                   <input
                     value={form.phone}
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-inner outline-none ring-[#145142]/30 transition focus:ring-2"
+                    className="contact-watta-form-input"
                     placeholder={c.phPhone}
                     maxLength={48}
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#145142]/80">
-                    {c.phMessage}
-                  </label>
+                  <label className="contact-watta-form-label">{c.phMessage}</label>
                   <textarea
                     required
                     value={form.message}
                     onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
                     rows={5}
-                    className="w-full resize-y rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-inner outline-none ring-[#145142]/30 transition focus:ring-2"
+                    className="contact-watta-form-input resize-y"
                     placeholder={c.phMessage}
                     maxLength={4000}
                   />
@@ -961,7 +858,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                 <motion.button
                   type="submit"
                   disabled={sending}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#145142] px-8 py-4 text-base font-bold text-white shadow-lg shadow-[#145142]/30 transition hover:bg-[#1a6b58] disabled:opacity-60"
+                  className="contact-watta-form-submit"
                   whileTap={reduce ? undefined : { scale: 0.98 }}
                 >
                   <Send size={20} />
@@ -971,7 +868,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
             </div>
 
             <aside className="contact-watta-form-aside">
-              <h3 className="text-lg font-black text-[#0f241e]">{c.formAsideTitle}</h3>
+              <h3 className="contact-watta-form-aside__title">{c.formAsideTitle}</h3>
               <ul className="mt-5 space-y-4">
                 {[c.formAside1, c.formAside2, c.formAside3].map((line, i) => (
                   <motion.li
@@ -998,42 +895,10 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
             </aside>
           </motion.div>
         </motion.div>
-      </section>
+      </ContactFlowSection>
 
-      {/* Низ */}
-      <div className="border-t border-gray-100 watta-page-bg px-4 py-12 sm:px-6 sm:py-16">
-        <motion.div
-          className="contact-watta-bottom-cta relative mx-auto max-w-6xl overflow-hidden rounded-[28px] p-8 text-center text-white sm:p-12"
-          {...fadeUp}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55 }}
-        >
-          <motion.div
-            className="pointer-events-none absolute inset-0 opacity-30"
-            style={{
-              background: 'linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%)',
-              backgroundSize: '200% 100%',
-            }}
-            animate={reduce ? undefined : { backgroundPosition: ['200% 0', '-200% 0'] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-            aria-hidden
-          />
-          <h3 className="relative z-[1] text-2xl font-black sm:text-3xl md:text-4xl">{c.bottomTitle}</h3>
-          <div className="relative z-[1] mt-6 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/"
-              className="inline-flex rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-[#145142] shadow-lg transition hover:scale-[1.02]"
-            >
-              {c.bottomCta}
-            </Link>
-            <Link
-              href="/menu"
-              className="inline-flex rounded-2xl border-2 border-white/40 px-8 py-3.5 text-base font-bold text-white transition hover:bg-white/10"
-            >
-              {c.ctaMenu}
-            </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   )

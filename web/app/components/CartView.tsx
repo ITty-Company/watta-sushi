@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
 import { getDeliveryOriginAddress } from '@/lib/deliveryOrigin'
 import {
@@ -153,7 +153,7 @@ export default function CartView({
   onOpenNotifications, 
   onMenuClick 
 }: CartViewProps) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, language, getLocalized } = useLanguage()
   const pd = t.productDetail
   const cs = t.cartSection
