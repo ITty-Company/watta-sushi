@@ -25,6 +25,7 @@ export type AdminProductCacheRow = {
   recommendOrder?: number
   cartRecommendOrder?: number
   promoDiscountPercent?: number
+  ingredientIds?: number[]
 }
 
 function isRow(row: unknown): row is AdminProductCacheRow {

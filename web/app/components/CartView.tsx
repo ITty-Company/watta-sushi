@@ -866,7 +866,7 @@ export default function CartView({
   const isEmpty = cartItems.length === 0
 
   return (
-    <div className="watta-cart-page menu-page-web watta-public-page-shell watta-page-bg relative flex w-full min-h-0 max-w-[100vw] flex-1 flex-col overflow-x-hidden font-sans">
+    <div className="watta-cart-page menu-page-web watta-public-page-shell watta-page-bg relative flex w-full max-w-[100vw] flex-1 flex-col overflow-x-hidden font-sans">
       <LogoBackground />
 
       <div

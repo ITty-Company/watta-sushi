@@ -62,6 +62,8 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
   const scrollPositionRef = useRef(0)
   const isUserScrollingRef = useRef(false)
   const restorePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const categoryTapStartRef = useRef<{ x: number; y: number; scrollLeft: number } | null>(null)
+  const categoryPointerHandledRef = useRef(false)
   const productReqRef = useRef(0)
 
   /** Підсвічування: на /menu та / — підказка зі скролу; інакше URL або slug з картки товару. */
@@ -346,6 +348,22 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
     [pathname],
   )
 
+  const scrollActiveChipIntoView = useCallback((key: string) => {
+    requestAnimationFrame(() => {
+      const panel = categoriesPanelRef.current
+      if (!panel) return
+      const safe =
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+          ? CSS.escape(key)
+          : key.replace(/"/g, '\\"')
+      panel.querySelector<HTMLElement>(`[data-watta-cat="${safe}"]`)?.scrollIntoView({
+        behavior: 'auto',
+        inline: 'center',
+        block: 'nearest',
+      })
+    })
+  }, [])
+
   const onCategoryClick = (key: string) => {
     if (categoriesPanelRef.current) {
       scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
@@ -355,6 +373,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
     if (key === FULL_MENU_ALL_SLUG) {
       if (p === '/menu') {
         dispatchFullMenuScrollToCategory(key)
+        scrollActiveChipIntoView(key)
         router.replace('/menu', { scroll: false })
       } else {
         router.push('/menu')
@@ -364,15 +383,64 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
 
     if (p === '/menu') {
       dispatchFullMenuScrollToCategory(key)
+      scrollActiveChipIntoView(key)
       router.replace(`/menu?cat=${encodeURIComponent(key)}`, { scroll: false })
       return
     }
     if (p === '/' || p === '') {
+      window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug: key } }))
+      scrollActiveChipIntoView(key)
       window.dispatchEvent(new CustomEvent(WATTA_HOME_REQUEST_SCROLL_TO_CAT, { detail: { slug: key } }))
       return
     }
     router.push(`/menu/category/${encodeURIComponent(key)}`)
   }
+
+  const onCategoryTapStart = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (categoriesPanelRef.current) {
+      scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
+    }
+    categoryTapStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: categoriesPanelRef.current?.scrollLeft ?? 0,
+    }
+  }
+
+  const onCategoryTapEnd = (key: string, e: React.PointerEvent<HTMLButtonElement>) => {
+    const start = categoryTapStartRef.current
+    categoryTapStartRef.current = null
+    if (start) {
+      const panel = categoriesPanelRef.current
+      const dx = Math.abs(e.clientX - start.x)
+      const dy = Math.abs(e.clientY - start.y)
+      const scrollDrift = panel ? Math.abs(panel.scrollLeft - start.scrollLeft) : 0
+      if (dx > 14 || dy > 14 || scrollDrift > 8) return
+    }
+    e.preventDefault()
+    e.stopPropagation()
+    categoryPointerHandledRef.current = true
+    onCategoryClick(key)
+  }
+
+  const categoryButtonHandlers = (key: string) => ({
+    onPointerDown: onCategoryTapStart,
+    onPointerUp: (e: React.PointerEvent<HTMLButtonElement>) => onCategoryTapEnd(key, e),
+    onPointerCancel: () => {
+      categoryTapStartRef.current = null
+    },
+    onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (categoryPointerHandledRef.current) {
+        categoryPointerHandledRef.current = false
+        e.preventDefault()
+        return
+      }
+      if (e.detail === 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      onCategoryClick(key)
+    },
+  })
 
   const mv = t.menuView
 
@@ -397,23 +465,12 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
               data-watta-cat={FULL_MENU_ALL_SLUG}
               data-prefetch-href={categoryPrefetchHref(FULL_MENU_ALL_SLUG)}
               className={`category-button-web ${activeKey === FULL_MENU_ALL_SLUG ? 'category-button-active-web' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onCategoryClick(FULL_MENU_ALL_SLUG)
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                if (categoriesPanelRef.current) {
-                  scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-                }
-              }}
+              {...categoryButtonHandlers(FULL_MENU_ALL_SLUG)}
               onFocus={(e) => {
-                e.preventDefault()
                 e.currentTarget.blur()
               }}
               tabIndex={-1}
-              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
+              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'manipulation' }}
             >
               <div className="category-button-icon-web" aria-hidden>
                 🍱
@@ -427,23 +484,12 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
               data-watta-cat={category.key}
               data-prefetch-href={categoryPrefetchHref(category.key)}
               className={`category-button-web ${activeKey === category.key ? 'category-button-active-web' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onCategoryClick(category.key)
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                if (categoriesPanelRef.current) {
-                  scrollPositionRef.current = categoriesPanelRef.current.scrollLeft
-                }
-              }}
+              {...categoryButtonHandlers(category.key)}
               onFocus={(e) => {
-                e.preventDefault()
                 e.currentTarget.blur()
               }}
               tabIndex={-1}
-              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none' }}
+              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'manipulation' }}
             >
               <div className="category-button-icon-web">{category.emoji}</div>
               <span className="category-button-label-web">{category.name}</span>

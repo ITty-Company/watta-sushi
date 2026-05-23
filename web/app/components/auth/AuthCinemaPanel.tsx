@@ -237,13 +237,16 @@ function PhoneScreenMedia({
         <video
           key={videoSrc}
           ref={videoRef}
-          className={`auth-watta-phone-sim__video${videoReady ? ' auth-watta-phone-sim__video--ready' : ''}`}
+          className="auth-watta-phone-sim__video auth-watta-phone-sim__video--ready"
           src={videoSrc}
+          poster={WATTA_AUTH_HERO_POSTER}
           muted
           loop={videoLoop}
           playsInline
           autoPlay
           preload="auto"
+          // @ts-expect-error fetchPriority для Chromium
+          fetchPriority="high"
           disablePictureInPicture
           disableRemotePlayback
           onLoadedData={onVideoReady}
@@ -266,7 +269,7 @@ function CompactStripMedia(props: ScreenMediaProps) {
         <video
           key={videoSrc}
           ref={videoRef}
-          className={`auth-watta-cinema__video${videoReady ? ' auth-watta-cinema__video--ready' : ''}`}
+          className="auth-watta-cinema__video auth-watta-cinema__video--ready"
           src={videoSrc}
           poster={WATTA_AUTH_HERO_POSTER}
           muted

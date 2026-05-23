@@ -8,6 +8,7 @@ import './globals.css'
 import './watta-chrome-stable-layout.css'
 import './watta-chrome-categories-transparent.css'
 import './watta-home-chrome-lock.css'
+import './watta-mobile-viewport-lock.css'
 import './home-after-hero-intro-tablet-desktop.css'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildRootMetadata, getJsonLdDescription } from '@/lib/i18n/seo'
@@ -16,6 +17,7 @@ import {
   WATTA_HOME_HERO_CRITICAL_CSS,
   WATTA_HTML_ROUTE_BOOT_SCRIPT,
 } from '@/lib/wattaHtmlRouteClass'
+import { WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT } from '@/lib/lockMobileViewportHeight'
 import { LOCATION_PICKER_MASCOT_SRC } from '@/lib/locationPickerMascot'
 
 const BASE_HTML_CLASS = 'watta-light-chrome'
@@ -68,6 +70,7 @@ export default async function RootLayout({
   return (
     <html lang={htmlLang} className={htmlClassName} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: WATTA_HTML_ROUTE_BOOT_SCRIPT }} />
         <style dangerouslySetInnerHTML={{ __html: WATTA_HOME_HERO_CRITICAL_CSS }} />
         <link rel="preload" href={LOCATION_PICKER_MASCOT_SRC} as="image" type="image/png" fetchPriority="high" />

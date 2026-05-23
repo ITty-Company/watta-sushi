@@ -14,19 +14,20 @@ import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v2'
 
 export function useHomeHeroVideo() {
-  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return []
+  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>([])
+
+  useEffect(() => {
     try {
       const raw = sessionStorage.getItem(HOME_HERO_URLS_CACHE_KEY)
-      if (!raw) return []
+      if (!raw) return
       const parsed = JSON.parse(raw) as unknown
-      return Array.isArray(parsed)
-        ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-        : []
+      if (!Array.isArray(parsed)) return
+      const urls = parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+      if (urls.length > 0) setHomeHeroVideoUrls(urls)
     } catch {
-      return []
+      /* ignore */
     }
-  })
+  }, [])
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)

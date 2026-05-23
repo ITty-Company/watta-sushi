@@ -3,8 +3,8 @@
  */
 :root {
   --watta-chrome-header-measured-h: 76px;
-  --watta-chrome-categories-band-h: 64px;
-  --watta-sticky-chrome-measured-h: 140px;
+  --watta-chrome-categories-band-h: 56px;
+  --watta-sticky-chrome-measured-h: 132px;
 }
 
 @media (min-width: 768px) {
@@ -24,7 +24,7 @@
 }
 
 .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
-  min-height: var(--watta-sticky-chrome-measured-h, 140px);
+  min-height: var(--watta-sticky-chrome-measured-h, 132px);
 }
 
 .watta-sticky-chrome-flow-anchor--header-only {

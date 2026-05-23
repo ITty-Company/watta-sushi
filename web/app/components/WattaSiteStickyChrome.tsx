@@ -25,8 +25,10 @@ export default function WattaSiteStickyChrome({
   const router = useInstantRouter()
   const pathname = usePathname() || '/'
   const isHome = pathname === '/'
-  const isHeroVideoPage =
-    isHome || pathname === '/about' || pathname === '/delivery' || pathname === '/contacts'
+  /** Hero з нахльостом під категоріями (відео/прозорий intro). /contacts — звичайна сторінка, контент нижче чіпів. */
+  const isHeroOverlayPage =
+    isHome || pathname === '/about' || pathname === '/delivery'
+  const isChromeHeroPage = isHeroOverlayPage || pathname === '/contacts'
   /** ≥768: категорії «над» hero; телефон — повний резерв шапка+чіпи, контент нижче панелі. */
   const isDesktopViewport = useSyncExternalStore(
     (onStoreChange) => {
@@ -42,7 +44,7 @@ export default function WattaSiteStickyChrome({
   )
   /** Головна та hero-сторінки: точний резерв під fixed chrome — відео одразу під категоріями. */
   const chromeFlowFudgePx =
-    pathname === '/cart' ? Math.max(flowHeightFudgePx, 16) : isHeroVideoPage ? 12 : flowHeightFudgePx
+    pathname === '/cart' ? Math.max(flowHeightFudgePx, 16) : isChromeHeroPage ? 12 : flowHeightFudgePx
   const [homeDeliveryEmbed, setHomeDeliveryEmbed] = useState(false)
 
   useEffect(() => {
@@ -89,7 +91,7 @@ export default function WattaSiteStickyChrome({
       chromeClassName="watta-full-menu-sticky-chrome"
       flowHeightFudgePx={chromeFlowFudgePx}
       flowHeightMaxPx={flowHeightMaxPx}
-      flowAnchorHeaderOnly={isHeroVideoPage && isDesktopViewport}
+      flowAnchorHeaderOnly={isHeroOverlayPage && isDesktopViewport}
     >
       <div className="watta-chrome-top-band-web">
         <WattaGlobalSiteHeader

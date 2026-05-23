@@ -95,6 +95,13 @@ function AuthScreenBody({
   const [isVerifying, setIsVerifying] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
 
+  /** 0 — звичайний вхід; 1 — телефон; 2 — код SMS; 3 — новий пароль */
+  const [forgotStep, setForgotStep] = useState(0)
+  const [forgotPhone, setForgotPhone] = useState('')
+  const [forgotCode, setForgotCode] = useState('')
+  const [forgotNewPassword, setForgotNewPassword] = useState('')
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('')
+
   const {
     phone1Urls: authHeroPhone1Urls,
     phone2Urls: authHeroPhone2Urls,
@@ -250,6 +257,131 @@ function AuthScreenBody({
     setFormData({ ...formData, phone: val ? `+${val}` : '' })
   }
 
+  const handleForgotPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, '')
+    if (val.length > 0 && !val.startsWith('380')) val = '380' + val
+    if (val.length > 12) val = val.slice(0, 12)
+    setForgotPhone(val ? `+${val}` : '')
+  }
+
+  const exitForgotFlow = () => {
+    setForgotStep(0)
+    setForgotPhone('')
+    setForgotCode('')
+    setForgotNewPassword('')
+    setForgotConfirmPassword('')
+    setError(null)
+  }
+
+  const persistAuthSession = async (data: { token?: string; user?: { id?: number } }) => {
+    if (typeof window !== 'undefined' && data.token) {
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('currentUser', JSON.stringify(data.user))
+      if (data.user?.id != null) {
+        localStorage.setItem('userId', String(data.user.id))
+      }
+    }
+    window.dispatchEvent(new Event('userChanged'))
+    await syncFavoritesAfterAuth()
+  }
+
+  const handleForgotSendCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!forgotPhone || forgotPhone.replace(/\D/g, '').length < 12) {
+      toast.error(t.auth.errors.phoneInvalid)
+      return
+    }
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await authFetch('/api/auth/forgot-password', { phone: forgotPhone })
+      const data = await res.json()
+      if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
+      toast.success(
+        language === 'uk'
+          ? 'Код надіслано'
+          : language === 'en'
+            ? 'Code sent'
+            : 'Код отправлен',
+      )
+      setForgotStep(2)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t.auth.errors.generic
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleForgotResendCode = async () => {
+    if (!forgotPhone) return
+    setIsLoading(true)
+    try {
+      const res = await authFetch('/api/auth/forgot-password', { phone: forgotPhone })
+      const data = await res.json()
+      if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
+      toast.success(
+        language === 'uk'
+          ? 'Код надіслано знову'
+          : language === 'en'
+            ? 'Code resent'
+            : 'Код отправлен снова',
+      )
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t.auth.errors.generic)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleForgotCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (forgotCode.length < 4) {
+      toast.error(t.auth.wrongVerificationCode)
+      return
+    }
+    setForgotStep(3)
+    setError(null)
+  }
+
+  const handleForgotResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (forgotNewPassword.length < 6) {
+      toast.error(t.auth.errors.passwordMin)
+      return
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      toast.error(t.auth.passwordMismatch)
+      return
+    }
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await authFetch('/api/auth/reset-password', {
+        phone: forgotPhone,
+        code: forgotCode,
+        password: forgotNewPassword,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
+      await persistAuthSession(data)
+      toast.success(t.auth.forgotPasswordSuccess)
+      exitForgotFlow()
+      goAfterAuth()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t.auth.errors.generic
+      setError(msg)
+      toast.error(msg)
+      if (msg.toLowerCase().includes('код') || msg.toLowerCase().includes('code')) {
+        setForgotCode('')
+        setForgotStep(2)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const verifyCopy = {
     title:
       language === 'uk'
@@ -355,6 +487,160 @@ function AuthScreenBody({
     </button>
   )
 
+  if (forgotStep > 0) {
+    const forgotHint =
+      forgotStep === 1
+        ? t.auth.forgotPasswordPhoneHint
+        : forgotStep === 2
+          ? t.auth.forgotPasswordCodeHint
+          : t.auth.forgotPasswordNewHint
+
+    return (
+      <div className="auth-watta-root auth-watta-page-shell flex flex-col relative">
+        <LogoBackground variant="auth" />
+        <div className="auth-watta-page-top auth-watta-page-top--centered relative z-10 shrink-0 px-3 pt-2 sm:px-4">
+          {pageBackLink}
+        </div>
+        <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-3 py-2 sm:px-4 sm:py-4">
+          <div className="auth-watta-verify-card w-full max-w-md shrink-0 p-4 sm:p-6">
+            <div className="mb-2 flex justify-center text-[#145142]">
+              <ShieldCheck className="h-11 w-11 sm:h-12 sm:w-12" strokeWidth={1.25} />
+            </div>
+            <h2 className="mb-1 text-center text-lg font-bold text-[#0f3d32] sm:text-xl">
+              {t.auth.forgotPasswordTitle}
+            </h2>
+            <p className="auth-watta-form-desc mb-4 text-center text-xs leading-snug text-gray-600 sm:mb-5 sm:text-sm">
+              {forgotHint}
+            </p>
+
+            {error && (
+              <div
+                role="alert"
+                className="mb-3 rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] leading-snug text-red-800 sm:text-xs"
+              >
+                {error}
+              </div>
+            )}
+
+            {forgotStep === 1 && (
+              <form onSubmit={handleForgotSendCode} className="flex flex-col gap-2.5">
+                <span className="auth-watta-input-wrap">
+                  <Phone className="auth-watta-input-icon" />
+                  <input
+                    type="tel"
+                    required
+                    maxLength={13}
+                    autoComplete="tel"
+                    value={forgotPhone}
+                    onChange={handleForgotPhoneChange}
+                    className="auth-watta-input w-full"
+                    placeholder="+380…"
+                    autoFocus
+                  />
+                </span>
+                <button type="submit" disabled={isLoading} className="auth-watta-btn-primary">
+                  {isLoading ? '…' : t.auth.forgotPasswordSendCode}
+                </button>
+              </form>
+            )}
+
+            {forgotStep === 2 && (
+              <form onSubmit={handleForgotCodeSubmit} className="flex flex-col gap-2.5">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0000"
+                  value={forgotCode}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '')
+                    if (v.length <= 4) setForgotCode(v)
+                  }}
+                  className="rounded-xl border-2 border-gray-200 px-3 py-3 text-center text-2xl font-bold tracking-[0.35em] text-[#145142] outline-none transition-all focus:border-[#145142] focus:ring-2 focus:ring-[#145142]/15 sm:text-3xl sm:tracking-[0.4em]"
+                  required
+                  maxLength={4}
+                  autoComplete="one-time-code"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={forgotCode.length < 4}
+                  className="auth-watta-btn-primary"
+                >
+                  {t.auth.forgotPasswordContinue}
+                </button>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={handleForgotResendCode}
+                  className="text-center text-xs text-[#145142] transition-colors hover:underline sm:text-sm"
+                >
+                  {t.auth.forgotPasswordResend}
+                </button>
+              </form>
+            )}
+
+            {forgotStep === 3 && (
+              <form onSubmit={handleForgotResetPassword} className="flex flex-col gap-2.5">
+                <span className="auth-watta-input-wrap">
+                  <Lock className="auth-watta-input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={forgotNewPassword}
+                    onChange={(e) => setForgotNewPassword(e.target.value)}
+                    className="auth-watta-input w-full pr-10"
+                    placeholder={t.auth.password}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-[#145142]"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </span>
+                <span className="auth-watta-input-wrap">
+                  <Lock className="auth-watta-input-icon" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={forgotConfirmPassword}
+                    onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                    className="auth-watta-input w-full"
+                    placeholder={
+                      language === 'uk'
+                        ? 'Підтвердження пароля'
+                        : language === 'en'
+                          ? 'Confirm password'
+                          : 'Подтверждение пароля'
+                    }
+                  />
+                </span>
+                <button type="submit" disabled={isLoading} className="auth-watta-btn-primary">
+                  {isLoading ? '…' : t.auth.forgotPasswordSave}
+                </button>
+              </form>
+            )}
+
+            <button
+              type="button"
+              onClick={exitForgotFlow}
+              className="mt-3 w-full text-center text-xs text-gray-500 transition-colors hover:text-[#145142] sm:text-sm"
+            >
+              {verifyCopy.back}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (isVerifying) {
     return (
       <div className="auth-watta-root auth-watta-page-shell flex flex-col relative">
@@ -423,11 +709,23 @@ function AuthScreenBody({
       <div
         className={
           variant === 'page'
-            ? `auth-watta-page-grid auth-watta-page-grid--phone relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-3 pb-3 max-md:h-auto max-md:min-h-0 max-md:flex-none max-md:items-center max-md:gap-0.5 sm:px-4 sm:pb-6 md:h-full md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-center md:gap-4 md:px-5 md:pb-6 lg:max-w-6xl lg:gap-5 lg:px-6 lg:pb-8${isRegister ? ' auth-watta-page-grid--register' : ''}`
+            ? `auth-watta-page-grid auth-watta-page-grid--phone relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-3 pb-3 max-md:h-auto max-md:min-h-0 max-md:flex-none max-md:items-center max-md:gap-0.25 sm:px-4 sm:pb-6 md:h-full md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-start md:gap-4 md:px-5 md:pb-6 lg:max-w-6xl lg:gap-5 lg:px-6 lg:pb-8${isRegister ? ' auth-watta-page-grid--register' : ''}`
             : 'relative z-10 mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-2.5 pt-12 sm:px-4 sm:pt-14'
         }
       >
         {variant === 'page' && <div className="auth-watta-page-top shrink-0 md:col-span-2">{pageBackLink}</div>}
+
+        {variant === 'page' && (
+          <div className="auth-watta-mobile-hero shrink-0 md:hidden w-full max-w-[min(100%,20.25rem)]">
+            <AuthCinemaPanel
+              compact
+              embedded
+              brandName={t.common.brandName}
+              primary={cinemaEmbeddedPrimary}
+              secondary={cinemaSecondary}
+            />
+          </div>
+        )}
 
         {variant === 'page' && (
           <AuthCinemaPanel brandName={t.common.brandName} primary={cinemaPrimary} secondary={cinemaSecondary} />
@@ -437,22 +735,10 @@ function AuthScreenBody({
           <div
             className={
               variant === 'page'
-                ? `auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated auth-watta-form-card--mobile-fit auth-watta-form-card--premium-mobile mx-auto flex w-full max-w-[min(100%,20.25rem)] min-h-0 flex-col overflow-hidden max-md:h-auto max-md:flex-none max-md:shrink-0 md:max-w-[22.5rem] md:h-auto md:flex-none lg:max-w-[23.5rem]${isRegister ? ' auth-watta-form-card--register' : ''}`
+                ? `auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated auth-watta-form-card--mobile-fit auth-watta-form-card--premium-mobile mx-auto flex w-full max-w-[min(100%,20.25rem)] min-h-0 flex-col overflow-hidden max-md:h-auto max-md:flex-none max-md:shrink-0 md:max-w-[22.5rem] md:h-auto md:flex-none lg:max-w-[23.5rem]${isRegister ? ' auth-watta-form-card--register' : ' auth-watta-form-card--login'}`
                 : 'auth-watta-form-card auth-watta-form-card--elevated mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden sm:max-h-none sm:flex-none sm:p-5'
             }
           >
-            {variant === 'page' && (
-              <div className="hidden max-md:block">
-                <AuthCinemaPanel
-                  compact
-                  embedded
-                  brandName={t.common.brandName}
-                  primary={cinemaEmbeddedPrimary}
-                  secondary={cinemaSecondary}
-                />
-              </div>
-            )}
-
             <div className="auth-watta-form-head shrink-0 p-3 pb-0 pt-2.5 max-md:px-3 max-md:pt-2 md:p-4 md:pb-0 md:pt-3.5">
             <div className="auth-watta-tabs relative mb-2 flex rounded-[0.85rem] bg-[#e8f0ec]/95 p-0.5 max-md:mb-2 md:mb-2.5 md:rounded-[0.75rem] md:p-0.5">
               {variant === 'page' && (
@@ -515,10 +801,10 @@ function AuthScreenBody({
             )}
             </div>
 
-            <div className="auth-watta-form-scroll min-h-0 max-md:flex-none max-md:overflow-visible flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-0 max-md:px-3 md:px-4 md:pb-2 lg:flex-none lg:overflow-visible">
+            <div className="auth-watta-form-scroll min-h-0 max-md:flex-none max-md:overflow-visible flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-0 max-md:px-3 md:flex-none md:overflow-visible md:px-4 md:pb-2">
             <form onSubmit={handleSubmit} className="auth-watta-form-fields auth-watta-form-fields--stack flex flex-col gap-2 max-md:gap-1.5 md:gap-1.5">
               <div
-                className={`auth-watta-register-block grid grid-cols-1 gap-1.5 md:grid-cols-2 md:gap-1.5${isRegister ? '' : ' max-md:hidden auth-watta-register-block--hidden'}`}
+                className={`auth-watta-register-block${isRegister ? ' grid grid-cols-1 gap-1.5 md:grid-cols-2 md:gap-1.5' : ' auth-watta-register-block--hidden'}`}
                 aria-hidden={!isRegister}
               >
                   <label className="auth-watta-label min-w-0">
@@ -597,8 +883,24 @@ function AuthScreenBody({
                 </span>
               </label>
 
+              {!isRegister && (
+                <div className="-mt-0.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotStep(1)
+                      setForgotPhone(formData.phone)
+                      setError(null)
+                    }}
+                    className="text-[11px] font-medium text-[#145142] hover:underline sm:text-xs"
+                  >
+                    {t.auth.forgotPassword}
+                  </button>
+                </div>
+              )}
+
               <label
-                className={`auth-watta-label auth-watta-register-block${isRegister ? '' : ' max-md:hidden auth-watta-register-block--hidden'}`}
+                className={`auth-watta-label auth-watta-register-block${isRegister ? '' : ' auth-watta-register-block--hidden'}`}
                 aria-hidden={!isRegister}
               >
                 <span className="auth-watta-label-text">

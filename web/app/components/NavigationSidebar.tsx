@@ -2,10 +2,7 @@
 
 import { useEffect } from 'react'
 import { useLanguage } from '../context/LanguageContext'
-import {
-  useNavDrawerCloseSwipeHandlers,
-  useNavDrawerOpenSwipe,
-} from '@/components/NavDrawerSwipeGestures'
+import { useNavDrawerCloseSwipeHandlers } from '@/components/NavDrawerSwipeGestures'
 import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
 import WattaNavDrawerPanel, { type NavDrawerCategory } from './WattaNavDrawerPanel'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
@@ -13,7 +10,6 @@ import WattaNavDrawerShell from './WattaNavDrawerShell'
 export interface NavigationSidebarProps {
   isOpen: boolean
   onClose: () => void
-  onOpen: () => void
   staggerKey?: number
   categories?: NavDrawerCategory[]
   onCategorySelect?: (key: string) => void
@@ -27,7 +23,6 @@ export interface NavigationSidebarProps {
 export default function NavigationSidebar({
   isOpen,
   onClose,
-  onOpen,
   staggerKey = 0,
   categories,
   onCategorySelect,
@@ -39,7 +34,6 @@ export default function NavigationSidebar({
 }: NavigationSidebarProps) {
   const { t } = useLanguage()
 
-  useNavDrawerOpenSwipe(!isOpen, onOpen)
   const closeSwipe = useNavDrawerCloseSwipeHandlers(isOpen, onClose)
   useWattaNavDrawerOpenSync(isOpen)
 

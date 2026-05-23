@@ -509,17 +509,25 @@ router.post('/', async (req: Request, res: Response) => {
 router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, paymentStatus } = req.body;
+    const { status, paymentStatus, readyAt } = req.body;
     const orderId = parseInt(String(id), 10);
     const previous = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { status: true, userId: true },
+      select: { status: true, userId: true, fulfillmentType: true, readyAt: true },
     });
+
+    let parsedReadyAt: Date | undefined;
+    if (readyAt !== undefined && readyAt !== null && readyAt !== '') {
+      const d = new Date(String(readyAt));
+      if (!Number.isNaN(d.getTime())) parsedReadyAt = d;
+    }
+
     const updatedOrder = await prisma.order.update({
       where: { id: parseInt(String(id)) },
       data: {
         ...(status !== undefined ? { status } : {}),
         ...(paymentStatus !== undefined ? { paymentStatus } : {}),
+        ...(parsedReadyAt !== undefined ? { readyAt: parsedReadyAt } : {}),
       },
       include: {
         items: { include: { product: true } },
@@ -551,6 +559,10 @@ router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
         updatedOrder.id,
         String(status),
         previous?.status ?? null,
+        {
+          readyAt: updatedOrder.readyAt ?? parsedReadyAt ?? null,
+          fulfillmentType: updatedOrder.fulfillmentType ?? previous?.fulfillmentType ?? null,
+        },
       );
     }
 

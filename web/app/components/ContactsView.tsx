@@ -371,7 +371,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
   return (
     <motion.div
       id="contacts-page-container"
-      className="menu-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about watta-site-hero-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
+      className="menu-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about watta-contacts-page relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}

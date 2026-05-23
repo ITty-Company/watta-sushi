@@ -44,15 +44,20 @@ export default function WelcomeHeroSection({
   const heroVideoLoop = playlistLength <= 1
   const heroReadySentRef = useRef(false)
   const [heroFrameReady, setHeroFrameReady] = useState(false)
+  const [isClientMounted, setIsClientMounted] = useState(false)
   const { t } = useLanguage()
   const label = ariaLabel ?? t.siteAria.heroVideo
 
+  useEffect(() => {
+    setIsClientMounted(true)
+  }, [])
+
   const notifyHeroVideoReady = useCallback(() => {
-    if (heroReadySentRef.current) return
+    if (!isClientMounted || heroReadySentRef.current) return
     heroReadySentRef.current = true
     setHeroFrameReady(true)
     window.dispatchEvent(new CustomEvent(WATTA_HERO_VIDEO_READY_EVENT))
-  }, [])
+  }, [isClientMounted])
 
   useEffect(() => {
     heroReadySentRef.current = false
@@ -62,14 +67,19 @@ export default function WelcomeHeroSection({
   const attachHeroVideoRef = useCallback(
     (el: HTMLVideoElement | null) => {
       heroVideoRef.current = el
-      if (!el) return
-      primeHeroVideoElement(el)
-      if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        queueMicrotask(notifyHeroVideoReady)
-      }
+      if (el) primeHeroVideoElement(el)
     },
-    [heroVideoRef, notifyHeroVideoReady],
+    [heroVideoRef],
   )
+
+  useEffect(() => {
+    if (!isClientMounted) return
+    const video = heroVideoRef.current
+    if (!video || heroVideoFailed) return
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      notifyHeroVideoReady()
+    }
+  }, [heroVideoSrc, heroVideoFailed, heroVideoRef, notifyHeroVideoReady, isClientMounted])
 
   useEffect(() => {
     const onBootSplashEnded = () => {
@@ -96,22 +106,22 @@ export default function WelcomeHeroSection({
   }, [setHeroVideoSourceIndex, setHeroVideoFailed, videoSources.length])
 
   useEffect(() => {
-    if (heroVideoFailed) return
+    if (heroVideoFailed || !isClientMounted) return
     const readyFallbackId = window.setTimeout(() => {
       if (!heroReadySentRef.current) notifyHeroVideoReady()
     }, 1200)
     return () => window.clearTimeout(readyFallbackId)
-  }, [heroVideoSrc, heroVideoFailed, notifyHeroVideoReady])
+  }, [heroVideoSrc, heroVideoFailed, notifyHeroVideoReady, isClientMounted])
 
   useEffect(() => {
-    if (heroVideoFailed || heroFrameReady) return
+    if (heroVideoFailed || heroFrameReady || !isClientMounted) return
     const timeoutId = window.setTimeout(() => {
       const v = heroVideoRef.current
       if (v && v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return
       advanceHeroVideoSource()
     }, 4500)
     return () => window.clearTimeout(timeoutId)
-  }, [heroVideoSrc, heroVideoFailed, heroFrameReady, heroVideoRef, advanceHeroVideoSource])
+  }, [heroVideoSrc, heroVideoFailed, heroFrameReady, heroVideoRef, advanceHeroVideoSource, isClientMounted])
 
   return (
     <section
@@ -159,6 +169,7 @@ export default function WelcomeHeroSection({
                 backgroundRepeat: 'no-repeat',
               }}
             >
+              {isClientMounted ? (
               <video
                 key={heroVideoSrc}
                 ref={attachHeroVideoRef}
@@ -167,6 +178,7 @@ export default function WelcomeHeroSection({
                 height={1080}
                 src={heroVideoSrc}
                 poster={posterUrl}
+                suppressHydrationWarning
               autoPlay
               muted
               loop={heroVideoLoop}
@@ -221,6 +233,7 @@ export default function WelcomeHeroSection({
                 setHeroVideoSourceIndex((prev) => (prev + 1) % playlistLength)
               }}
               />
+              ) : null}
             </div>
             <div
               className="welcome-hero-video-input-shield-web"
