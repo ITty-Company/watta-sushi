@@ -1,0 +1,173 @@
+/**
+ * Головна: вступ «Доставка суші — …» після hero-відео на планшеті / ноуті / ПК (≥768).
+ * Телефон (intro над відео) — globals.css + Tailwind у AnimatedHeroIntroBlock.
+ */
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro.home-after-hero-intro-web {
+    background: #ffffff !important;
+    border-top: none !important;
+    scroll-margin-top: calc(var(--watta-sticky-chrome-measured-h, 140px) + 16px);
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro.home-after-hero-intro-web::before {
+    content: '';
+    display: block;
+    width: min(11rem, 36vw);
+    height: 3px;
+    margin: clamp(0.35rem, 0.9vh, 0.65rem) auto clamp(1rem, 2.2vh, 1.5rem);
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, #145142 42%, transparent) 50%,
+      transparent 100%
+    );
+    opacity: 0.9;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-inner-web--home-menu {
+    max-width: 50rem !important;
+    padding-top: clamp(1.15rem, 2.4vh, 1.85rem) !important;
+    padding-bottom: clamp(2rem, 4.2vh, 3rem) !important;
+    padding-left: clamp(1.35rem, 3.8vw, 2.75rem) !important;
+    padding-right: clamp(1.35rem, 3.8vw, 2.75rem) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-title-web {
+    max-width: 54rem !important;
+    font-size: clamp(1.9rem, 3.55vw, 2.7rem) !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.032em !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-title-web
+    > span:nth-child(1) {
+    color: #0f2a22 !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-script-line {
+    font-size: clamp(1.4rem, 2.95vw, 2rem) !important;
+    line-height: 1.08 !important;
+    color: #145142 !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-body-web {
+    margin-top: clamp(1rem, 2.1vh, 1.4rem) !important;
+    max-width: 46rem !important;
+    font-size: clamp(0.96875rem, 1.42vw, 1.09375rem) !important;
+    line-height: 1.74 !important;
+    letter-spacing: -0.012em;
+    color: color-mix(in srgb, #145142 78%, #1a3d34) !important;
+    text-wrap: pretty;
+    white-space: pre-line !important;
+  }
+
+  /* Відео → текст: легкий зазор під карткою hero */
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    > .delivery-page-hero-standalone-web.watta-home-hero-as-card-web
+    + #home-after-hero-intro,
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    > .welcome-hero-section-web
+    + #home-after-hero-intro {
+    margin-top: clamp(0.25rem, 0.65vh, 0.5rem);
+  }
+
+  /* Текст → «Наші хіти» / cinematic */
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page):has(#home-after-hero-intro)
+    > #menu-cinematic-block {
+    margin-top: clamp(28px, 4.2vh, 56px) !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-inner-web--home-menu {
+    max-width: 54rem !important;
+    padding-top: clamp(1.35rem, 2.6vh, 2rem) !important;
+    padding-bottom: clamp(2.25rem, 4.4vh, 3.25rem) !important;
+    padding-left: clamp(1.75rem, 2.8vw, 3.25rem) !important;
+    padding-right: clamp(1.75rem, 2.8vw, 3.25rem) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-title-web {
+    font-size: clamp(2.05rem, 2.55vw, 2.85rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-script-line {
+    font-size: clamp(1.55rem, 2.2vw, 2.15rem) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-body-web {
+    max-width: 48rem !important;
+    font-size: 1.0625rem !important;
+    line-height: 1.78 !important;
+    margin-top: 1.25rem !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page):has(#home-after-hero-intro)
+    .delivery-page-home-flow
+    > #menu-cinematic-block {
+    margin-top: clamp(48px, 5.8vh, 84px) !important;
+  }
+}
+
+/* Телефон: вступ → відео → «Вибір гостей» */
+.menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page):has(#home-after-hero-intro)
+  .delivery-page-home-flow
+  > #menu-cinematic-block {
+  margin-top: clamp(28px, 4vh, 48px) !important;
+}
+
+/* Планшет: заголовок в один ритмічний ряд (як на /delivery) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-title-web
+    > span {
+    display: inline !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
+    .delivery-page-hero-stack--video-first
+    #home-after-hero-intro
+    .home-after-hero-intro-title-web
+    > span
+    + span::before {
+    content: ' ';
+  }
+}
