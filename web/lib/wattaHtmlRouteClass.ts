@@ -147,15 +147,15 @@ export function applyWattaHomeChromeGlass(): void {
   const glass =
     'linear-gradient(165deg,rgba(255,255,255,.52) 0%,rgba(255,255,255,.42) 50%,rgba(255,255,255,.48) 100%)'
 
-  const portal = document.querySelector('body .watta-sticky-chrome-portal')
+  const portal = document.querySelector<HTMLElement>('body .watta-sticky-chrome-portal')
   portal?.style.setProperty('background', 'transparent', 'important')
 
-  const row = document.querySelector(
+  const row = document.querySelector<HTMLElement>(
     'body .watta-sticky-chrome-portal .watta-chrome-categories-row-web',
   )
   row?.style.setProperty('background', 'transparent', 'important')
 
-  const wrap = document.querySelector(
+  const wrap = document.querySelector<HTMLElement>(
     'body .watta-sticky-chrome-portal .categories-panel-wrapper-web',
   )
   wrap?.style.setProperty('background', 'transparent', 'important')
