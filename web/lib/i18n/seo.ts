@@ -8,6 +8,7 @@ const BRAND = 'Watta Sushi'
 type PageKey =
   | 'home'
   | 'about'
+  | 'teamGallery'
   | 'contacts'
   | 'delivery'
   | 'privacy'
@@ -41,6 +42,10 @@ const SEO: Record<
     about: {
       title: 'Про нас',
       description: 'Команда Watta Sushi: кухня, філософія та історія бренду.',
+    },
+    teamGallery: {
+      title: 'Галерея команди',
+      description: 'Фото команди Watta Sushi — усі портрети з адмін-панелі.',
     },
     contacts: {
       title: 'Контакти',
@@ -101,6 +106,10 @@ const SEO: Record<
       title: 'О нас',
       description: 'Команда Watta Sushi: кухня, философия и история бренда.',
     },
+    teamGallery: {
+      title: 'Галерея команды',
+      description: 'Фото команды Watta Sushi — все портреты из админ-панели.',
+    },
     contacts: {
       title: 'Контакты',
       description: 'Телефон, email, адрес кухни, мессенджеры и форма обратной связи.',
@@ -160,6 +169,10 @@ const SEO: Record<
       title: 'About us',
       description: 'The Watta Sushi team: our kitchen, philosophy, and brand story.',
     },
+    teamGallery: {
+      title: 'Team gallery',
+      description: 'Watta Sushi team photos — every portrait from the admin panel.',
+    },
     contacts: {
       title: 'Contacts',
       description: 'Phone, email, kitchen address, messengers, and contact form.',
@@ -218,6 +231,10 @@ const SEO: Record<
     about: {
       title: 'Over ons',
       description: 'Team Watta Sushi: keuken, filosofie en het merkverhaal.',
+    },
+    teamGallery: {
+      title: 'Teamgalerij',
+      description: 'Teamfoto’s van Watta Sushi — alle portretten uit het adminpaneel.',
     },
     contacts: {
       title: 'Contact',

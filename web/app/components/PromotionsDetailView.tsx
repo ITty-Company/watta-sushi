@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import toast from 'react-hot-toast'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
 import { ArrowLeft } from 'lucide-react'
@@ -85,7 +85,7 @@ export default function PromotionsDetailView({
   onOpenFavorites: _onOpenFavorites,
   onOpenProfile: _onOpenProfile,
 }: PromotionsDetailViewProps) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, getLocalized, language } = useLanguage()
   const p = t.promotionsPage
   const [promo, setPromo] = useState<PromoListItem | null>(null)

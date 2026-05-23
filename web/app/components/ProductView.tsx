@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, startTransition, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import {
   ArrowLeft,
   ChevronLeft,
@@ -142,7 +142,7 @@ function readInitialProductState(
 }
 
 export default function ProductView({ productId, initialProductRow, onBack }: ProductViewProps) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, language } = useLanguage()
   const pd = t.productDetail
   const cs = t.cartSection

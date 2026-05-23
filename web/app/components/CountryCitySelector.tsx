@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, MapPin, X } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
@@ -19,6 +19,7 @@ import {
   isCityChoiceExplicit,
   persistUserCityChoice,
 } from '@/lib/wattaSiteLocalePrefs'
+import { preloadLocationPickerMascot } from '@/lib/locationPickerMascot'
 
 const COUNTRIES_CATALOG_EVENT = 'countriesCatalogUpdated'
 
@@ -77,13 +78,6 @@ function normalizeCountry(raw: Record<string, unknown>): Country {
   }
 }
 
-function initialCountriesFromCache(): Country[] {
-  if (typeof window === 'undefined') return []
-  const cached = getCountriesCatalogIfCached()
-  if (!cached?.length) return []
-  return cached.map((row) => normalizeCountry(row)).filter((c) => c.isActive)
-}
-
 interface CountryCitySelectorProps {
   onCityChange?: (cityId: number) => void
   /** Компактна кнопка в боковому меню (без подвійної рамки) */
@@ -96,7 +90,6 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
 }) => {
   const { t, getLocalized } = useLanguage()
   const lp = t.locationPicker
-  const bootCountries = initialCountriesFromCache()
   const labelCountry = useCallback(
     (c: Country) => getLocalized(c, 'name') || c.name,
     [getLocalized]
@@ -107,10 +100,11 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   )
 
   const [isOpen, setIsOpen] = useState(false)
-  const [countries, setCountries] = useState<Country[]>(bootCountries)
+  /** Початковий стан однаковий на SSR і клієнті — кеш підвантажується в useLayoutEffect. */
+  const [countries, setCountries] = useState<Country[]>([])
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null)
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
-  const [loading, setLoading] = useState(bootCountries.length === 0)
+  const [loading, setLoading] = useState(true)
   const [catalogRefreshing, setCatalogRefreshing] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -121,11 +115,13 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   const selectedCityRef = useRef<City | null>(null)
   selectedCityRef.current = selectedCity
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setMounted(true)
+    preloadLocationPickerMascot()
   }, [])
 
   const warmupCatalog = useCallback(() => {
+    preloadLocationPickerMascot()
     void ensureCountriesCatalog()
   }, [])
 
@@ -181,7 +177,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
     }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let dead = false
 
     const hydrateFromRows = (rows: Record<string, unknown>[]) => {
@@ -189,7 +185,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
       applyResolvedList(list)
     }
 
-    const cached = typeof window !== 'undefined' ? getCountriesCatalogIfCached() : null
+    const cached = getCountriesCatalogIfCached()
     if (cached && cached.length > 0) {
       hydrateFromRows(cached)
       setLoadError(false)

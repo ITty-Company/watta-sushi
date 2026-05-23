@@ -1,0 +1,179 @@
+/* «Как заказать» — брендовые визуалы каналов */
+
+.delivery-how-channel-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.delivery-how-channel-visual__brand-tile,
+.delivery-how-channel-visual__web-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 1rem;
+  box-shadow: 0 8px 28px rgba(17, 24, 39, 0.08);
+}
+
+.delivery-how-channel-visual__ig-svg {
+  display: block;
+  height: 3.5rem;
+  width: 3.5rem;
+}
+
+.delivery-how-channel-visual__badge {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 41, 118, 0.2);
+  background: linear-gradient(90deg, rgba(254, 218, 117, 0.2), rgba(214, 41, 118, 0.08));
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9d174d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Телефон — мини-экран с номером */
+.delivery-how-channel-visual__phone-shell {
+  position: relative;
+  display: block;
+  width: 5.5rem;
+  padding: 0.35rem;
+  border-radius: 1.1rem;
+  border: 2px solid rgba(17, 24, 39, 0.12);
+  background: linear-gradient(165deg, #f3f4f6 0%, #e5e7eb 100%);
+  box-shadow:
+    0 10px 28px rgba(17, 24, 39, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.delivery-how-channel-visual__phone-notch {
+  display: block;
+  width: 1.75rem;
+  height: 0.22rem;
+  margin: 0 auto 0.35rem;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.15);
+}
+
+.delivery-how-channel-visual__phone-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.4rem 0.55rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, #ecfdf5 0%, #fff 100%);
+  text-align: center;
+}
+
+.delivery-how-channel-visual__phone-ico-wrap {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.28);
+}
+
+.delivery-how-channel-visual__phone-ico {
+  height: 1.1rem;
+  width: 1.1rem;
+  color: #fff;
+}
+
+.delivery-how-channel-visual__phone-num {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: #0f2a22;
+  word-break: break-word;
+}
+
+/* Сайт */
+.delivery-how-channel-visual__web-tile {
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 5.25rem;
+  height: 5.25rem;
+  background: linear-gradient(165deg, #f6fcf5 0%, #f0f7f4 55%, #fff 100%);
+  border: 1px solid rgba(20, 81, 66, 0.12);
+}
+
+.delivery-how-channel-visual__web-ico {
+  height: 1.65rem;
+  width: 1.65rem;
+  color: #145142;
+}
+
+.delivery-how-channel-visual__web-wordmark {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #0f2a22;
+  text-transform: lowercase;
+}
+
+/* Карточки + типографика як на головній */
+.watta-delivery-page-about .delivery-about-panel--how .delivery-watta-how__title,
+.delivery-showcase-flow .delivery-about-panel--how .delivery-watta-how__title {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-weight: 600;
+  color: #0f2a22;
+}
+
+.delivery-showcase-flow .delivery-about-how-card__title,
+.watta-delivery-page-about .delivery-about-how-card__title {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.05rem, 3vw, 1.2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #0f2a22;
+}
+
+.delivery-showcase-flow .delivery-about-how-card__desc,
+.watta-delivery-page-about .delivery-about-how-card__desc {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #7a7a7a;
+}
+
+.delivery-showcase-flow .delivery-about-how-card__ico {
+  display: none;
+}
+
+.delivery-showcase-flow .delivery-about-how-card {
+  gap: 0.75rem;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: #fff;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06);
+}
+
+.delivery-showcase-flow .delivery-about-how-card:hover {
+  border-color: rgba(26, 107, 88, 0.2);
+  box-shadow: 0 14px 40px rgba(17, 24, 39, 0.08);
+}
+
+.delivery-showcase-flow .delivery-about-how-card__arrow {
+  color: #1a6b58;
+  opacity: 0.85;
+}
+
+.delivery-about-panel--how {
+  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
+  border-color: rgba(17, 24, 39, 0.07);
+}

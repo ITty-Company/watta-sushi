@@ -1,9 +1,9 @@
 /** Локальне обране: масив id (узгоджено з useProductFavorite та картками меню). */
 
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { isUserLoggedIn } from '@/lib/authGate'
 import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { getApiUrl } from '@/lib/utils'
-import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 
 export function readFavoriteIds(): number[] {
   if (typeof window === 'undefined') return []
@@ -65,11 +65,7 @@ export function notifyFavoritesUpdated() {
 }
 
 function isAuthedForFavorites(): boolean {
-  if (typeof window === 'undefined') return false
-  const userStr = localStorage.getItem('currentUser')
-  if (!userStr) return false
-  const authHeaders = getBearerAuthHeaders()
-  return Object.keys(authHeaders as Record<string, string>).length > 0
+  return isUserLoggedIn()
 }
 
 /** Після входу: локальні id (гість) додаються на сервер, потім зливаються назад у localStorage. */
@@ -133,9 +129,38 @@ export async function mergeServerFavoritesIntoLocal(): Promise<void> {
 
 type ProductWithId = { id: number }
 
+function isArchivedProduct(raw: Record<string, unknown>): boolean {
+  return raw.isArchived === true
+}
+
+/** Каталог без cityId — обране може містити позиції з інших міст. */
+async function resolveFavoriteProductsByIds<T extends ProductWithId>(
+  ids: number[],
+  mapProduct: (raw: Record<string, unknown>) => T | null,
+  fresh: boolean,
+): Promise<T[]> {
+  if (ids.length === 0) return []
+
+  const url = getApiUrl('/api/products')
+  const res = fresh
+    ? await fetchPublicApiFresh(url)
+    : await fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
+  const data = res.ok ? await res.json() : []
+  const idSet = new Set(ids)
+  const byId = new Map<number, T>()
+  for (const raw of Array.isArray(data) ? data : []) {
+    const rec = raw as Record<string, unknown>
+    const id = Number(rec.id)
+    if (!idSet.has(id) || isArchivedProduct(rec)) continue
+    const mapped = mapProduct(rec)
+    if (mapped) byId.set(id, mapped)
+  }
+  return ids.map((id) => byId.get(id)).filter((x): x is T => x != null)
+}
+
 /**
  * Єдине завантаження списку обраного: сервер (якщо є акаунт) або каталог за id з localStorage.
- * Після успішного /list оновлює localStorage, щоб бейдж і сердечка збігалися з /favorites.
+ * Після успішного завантаження оновлює localStorage, щоб бейдж і сердечка збігалися з /favorites.
  */
 export async function loadFavoriteProducts<T extends ProductWithId>(
   mapProduct: (raw: Record<string, unknown>) => T | null,
@@ -144,7 +169,13 @@ export async function loadFavoriteProducts<T extends ProductWithId>(
   const fresh = options?.fresh === true
   if (typeof window === 'undefined') return []
 
-  await mergeServerFavoritesIntoLocal()
+  if (isAuthedForFavorites()) {
+    await syncLocalFavoritesToServer()
+    await mergeServerFavoritesIntoLocal()
+  }
+
+  const ids = readFavoriteIds()
+  if (ids.length === 0) return []
 
   if (isAuthedForFavorites()) {
     try {
@@ -156,41 +187,28 @@ export async function loadFavoriteProducts<T extends ProductWithId>(
       if (res.ok) {
         const data = await res.json()
         const list: T[] = []
-        const ids: number[] = []
+        const foundIds: number[] = []
         for (const raw of Array.isArray(data) ? data : []) {
-          const mapped = mapProduct(raw as Record<string, unknown>)
+          if (!raw || typeof raw !== 'object') continue
+          const rec = raw as Record<string, unknown>
+          if (isArchivedProduct(rec)) continue
+          const mapped = mapProduct(rec)
           if (mapped && mapped.id > 0) {
             list.push(mapped)
-            ids.push(mapped.id)
+            foundIds.push(mapped.id)
           }
         }
-        syncFavoriteIdsToStorage(ids)
-        return list
+        if (list.length > 0) {
+          syncFavoriteIdsToStorage(foundIds)
+          return list
+        }
       }
     } catch {
-      /* guest path */
+      /* catalog fallback */
     }
   }
 
-  const ids = readFavoriteIds()
-  if (ids.length === 0) return []
-
-  const cityId = readCityIdForProductApi()
-  const url =
-    cityId != null && cityId > 0
-      ? getApiUrl(`/api/products?cityId=${cityId}`)
-      : getApiUrl('/api/products')
-  const res = fresh
-    ? await fetchPublicApiFresh(url)
-    : await fetch(url, { headers: { 'Cache-Control': 'max-age=120' } })
-  const data = res.ok ? await res.json() : []
-  const idSet = new Set(ids)
-  const byId = new Map<number, T>()
-  for (const raw of Array.isArray(data) ? data : []) {
-    const id = Number((raw as { id?: number }).id)
-    if (!idSet.has(id)) continue
-    const mapped = mapProduct(raw as Record<string, unknown>)
-    if (mapped) byId.set(id, mapped)
-  }
-  return ids.map((id) => byId.get(id)).filter((x): x is T => x != null)
+  const resolved = await resolveFavoriteProductsByIds(ids, mapProduct, fresh)
+  syncFavoriteIdsToStorage(resolved.map((p) => p.id))
+  return resolved
 }

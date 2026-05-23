@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import WattaLink from './WattaLink'
 import {
   Bell,
   BookOpen,
@@ -28,6 +28,7 @@ import { CountryCitySelector } from './CountryCitySelector'
 import { LanguageSelector } from './LanguageSelector'
 import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
+import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import {
   WATTA_PHONE_DISPLAY,
   WATTA_PHONE_E164,
@@ -97,7 +98,19 @@ function useDrawerCategories(external?: NavDrawerCategory[]): NavDrawerCategory[
     }
   }, [external, language, t.categories])
 
-  return external && external.length > 0 ? external : fromCache
+  const fallback = useMemo<NavDrawerCategory[]>(
+    () =>
+      MENU_CATEGORY_FALLBACK_SLUGS.map((key) => ({
+        key,
+        name: t.categories[key as keyof typeof t.categories] ?? key,
+        emoji: MENU_CATEGORY_EMOJI[key],
+      })),
+    [t.categories],
+  )
+
+  if (external && external.length > 0) return external
+  if (fromCache.length > 0) return fromCache
+  return fallback
 }
 
 const NAV_ICON_TONE_COUNT = 4
@@ -246,10 +259,15 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
   const isSiteAdmin = useSiteAdmin()
 
   const handleCategory = useCallback(
-    (key: string) => {
+    (key: string, e?: React.MouseEvent<HTMLAnchorElement>) => {
+      if (props.mode === 'link') {
+        onClose()
+        props.onNavigate?.()
+        return
+      }
+      e?.preventDefault()
       onClose()
       onCategorySelect?.(key)
-      if (props.mode === 'link') props.onNavigate?.()
     },
     [onClose, onCategorySelect, props],
   )
@@ -258,12 +276,13 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
 
   const handleNavClick = useCallback(
     (item: DrawerNavPage, e: React.MouseEvent<HTMLAnchorElement>) => {
-      onClose()
       if (props.mode === 'link') {
+        onClose()
         props.onNavigate?.()
         return
       }
       e.preventDefault()
+      onClose()
       const { embedded } = item
       if (embedded.type === 'home') {
         props.onGoHome()
@@ -289,7 +308,10 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
   const legal = nav.footerLegal.replace('{{year}}', String(new Date().getFullYear()))
 
   return (
-    <div className="watta-nav-compact flex h-full min-h-0 flex-col">
+    <div
+      className="watta-nav-compact flex h-full min-h-0 flex-col"
+      {...(props.mode === 'embedded' ? { 'data-watta-embedded-nav': '1' } : {})}
+    >
 
       <header className="watta-nav-compact__head">
         <div className="watta-nav-compact__head-brand">
@@ -352,16 +374,16 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
                   const animStyle = { animationDelay: `${70 + i * 32}ms` }
                   if (props.mode === 'link') {
                     return (
-                      <Link
+                      <WattaLink
                         key={cat.key}
                         href={`/menu?cat=${encodeURIComponent(cat.key)}`}
                         className="watta-nav-compact__cat watta-nav-compact__pop"
                         style={animStyle}
                         role="listitem"
-                        onClick={() => handleCategory(cat.key)}
+                        onClick={(e) => handleCategory(cat.key, e)}
                       >
                         {content}
-                      </Link>
+                      </WattaLink>
                     )
                   }
                   return (
@@ -382,10 +404,9 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
 
           <nav className="watta-nav-compact__nav-grid" aria-label={nav.bottomNavAria}>
             {mainNavPages.map((item, i) => (
-              <Link
+              <WattaLink
                 key={item.key}
                 href={item.href}
-                prefetch
                 className="watta-nav-compact__nav-tile watta-nav-compact__pop"
                 style={{ animationDelay: `${220 + i * 28}ms` }}
                 onClick={(e) => handleNavClick(item, e)}
@@ -394,21 +415,20 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
                   <item.Icon size={14} strokeWidth={2} className="watta-nav-compact__nav-ico" />
                 </NavIconWrap>
                 <span className="watta-nav-compact__nav-label">{item.label}</span>
-              </Link>
+              </WattaLink>
             ))}
           </nav>
 
           {privacyNavPage ? (
-            <Link
+            <WattaLink
               href={privacyNavPage.href}
-              prefetch
               className="watta-nav-compact__nav-privacy watta-nav-compact__pop"
               style={{ animationDelay: `${220 + mainNavPages.length * 28}ms` }}
               onClick={(e) => handleNavClick(privacyNavPage, e)}
             >
               <Shield size={14} strokeWidth={2} aria-hidden />
               <span>{privacyNavPage.label}</span>
-            </Link>
+            </WattaLink>
           ) : null}
 
           <div
@@ -437,9 +457,8 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
             </div>
 
             {isSiteAdmin ? (
-              <Link
+              <WattaLink
                 href="/admin"
-                prefetch
                 className="watta-nav-compact__admin"
                 onClick={(e) => {
                   onClose()
@@ -453,7 +472,7 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
               >
                 <Sparkles size={14} strokeWidth={2.2} />
                 <span>{t.admin}</span>
-              </Link>
+              </WattaLink>
             ) : null}
 
             <p className="watta-nav-compact__legal" suppressHydrationWarning>

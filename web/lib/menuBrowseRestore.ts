@@ -49,6 +49,21 @@ export function shouldRestoreMenuBrowse(payload: MenuBrowseReturnPayload): boole
   return payload.pathname === '/'
 }
 
+/** Повне перезавантаження (F5 / Reload) — не відновлюємо вбудовану доставку/акції з sessionStorage. */
+export function isDocumentReloadNavigation(): boolean {
+  if (typeof performance === 'undefined') return false
+  const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+  if (nav?.type === 'reload') return true
+  const legacy = (performance as Performance & { navigation?: { type?: number } }).navigation
+  return legacy?.type === 1
+}
+
+export function isBrowserReloadOnHome(): boolean {
+  if (typeof window === 'undefined') return false
+  const p = window.location.pathname || '/'
+  return (p === '/' || p === '') && isDocumentReloadNavigation()
+}
+
 export function writeMenuBrowseReturn(
   fields: Omit<MenuBrowseReturnPayload, 'v' | 'savedAt'> & {
     pathname: string

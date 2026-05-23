@@ -1,12 +1,12 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import CartView from '../components/CartView'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 
 export default function CartPage() {
-  const router = useRouter()
+  const router = useInstantRouter()
 
   const handleProfile = () =>
     router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))

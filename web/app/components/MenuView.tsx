@@ -3,14 +3,12 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import WattaHeroMarqueeBar from './WattaHeroMarqueeBar'
 import WelcomeHeroSection from './WelcomeHeroSection'
-import WattaStickyChromeLayout from './WattaStickyChromeLayout'
-import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
-import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
 import PhoneView from './PhoneView'
 import { NotificationsView } from './NotificationsView'
 import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
@@ -19,16 +17,21 @@ import { HomeCategoryProductRail } from './HomeCategoryProductRail'
 import { CinematicFooter, type CinematicFooterAdminProduct } from '@/components/ui/motion-footer'
 import {
   MENU_BROWSE_RETURN_KEY,
+  isDocumentReloadNavigation,
   parseMenuBrowseReturn,
   shouldRestoreMenuBrowse,
   writeMenuBrowseReturn,
 } from '@/lib/menuBrowseRestore'
+import {
+  WATTA_CHROME_CLOSE_HOME_OVERLAY_EVENT,
+  WATTA_CHROME_GO_HOME_EVENT,
+} from '@/lib/wattaChromeGoHome'
 import { FULL_MENU_ALL_SLUG, WATTA_HOME_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
 import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
+import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
-import { getHeroVideoTouchLikeViewport } from '@/lib/heroVideoNativeDesktop'
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
@@ -235,13 +238,13 @@ function homeBannerObjectPosition(b: { focalX?: number; focalY?: number }): stri
 
 
 export default function MenuView() {
-  const router = useRouter()
+  const router = useInstantRouter()
   const pathname = usePathname()
   const navigateToCategoryPage = useCallback(
     (categoryKey: string) => {
       router.push(`/menu/category/${encodeURIComponent(categoryKey)}`)
     },
-    [router]
+    [router],
   )
   // ИСПОЛЬЗУЕМ getLocalized из контекста
   const { t, language, getLocalized } = useLanguage()
@@ -253,7 +256,7 @@ export default function MenuView() {
   const [isNarrowViewport, setIsNarrowViewport] = useState(false)
   /** ≤767px: «Наші хіти» вертикальним стеком; з 768 — горизонтальна стрічка (3+½ на планшеті) */
   const [isPhoneViewport, setIsPhoneViewport] = useState(false)
-  /** ≤1024px: вступ «Доставка суші…» над відео; на десктопі — під відео */
+  /** ≤767px: вступ над відео; з 768px — відео одразу під категоріями (як /delivery) */
   const [homeIntroBeforeHero, setHomeIntroBeforeHero] = useState(false)
 
   useLayoutEffect(() => {
@@ -276,7 +279,7 @@ export default function MenuView() {
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return
-    const mq = window.matchMedia('(max-width: 1024px)')
+    const mq = window.matchMedia('(max-width: 767px)')
     const apply = () => setHomeIntroBeforeHero(mq.matches)
     apply()
     mq.addEventListener('change', apply)
@@ -468,26 +471,11 @@ export default function MenuView() {
     if (heroVideoFailed) return
     const video = heroVideoRef.current
     if (!video) return
-    const stack = video.closest('.welcome-hero-video-stack-web')
-
-    /*
-     * Головна (MenuView): завжди нативне <video> без canvas-mirror.
-     * На широкому десктопі mirror + opacity 0.001 на <video> іноді лишав лише
-     * постер / один кадр — виглядає як «немає відео», хоча `play()` ок.
-     * Ken Burns тут вимикаємо на користь стабільного руху кадрів.
-     */
-    const offMirror = () => {}
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
-      /* На телефоні/планшеті не перехоплюємо touch — інакше не скролиться сторінка повз hero */
-      blockInteractionRoot:
-        !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
       loop: heroVideoShouldLoop,
     })
-    return () => {
-      offMirror()
-      offAutoplay()
-    }
+    return offAutoplay
   }, [heroVideoSrc, heroVideoFailed, activePage, heroVideoShouldLoop])
 
   useEffect(() => {
@@ -967,6 +955,9 @@ export default function MenuView() {
     [getLocalized, t.categories, language],
   )
 
+  const mapProductsToItemsRef = useRef(mapProductsToItems)
+  mapProductsToItemsRef.current = mapProductsToItems
+
   const loadMenuItems = useCallback((opts?: { fresh?: boolean }) => {
     const fresh = opts?.fresh === true
     void ensureCountriesCatalog()
@@ -986,7 +977,7 @@ export default function MenuView() {
       try {
         const data = JSON.parse(cached)
         if (Array.isArray(data) && data.length > 0) {
-          setMenuItems(mapProductsToItems(data))
+          setMenuItems(mapProductsToItemsRef.current(data))
           // Если кэш свежий — только фоновое обновление
           if ((now - parseInt(cacheTime, 10)) < CACHE_TTL) {
             fetcher(url)
@@ -1008,7 +999,7 @@ export default function MenuView() {
                         sessionStorage.setItem(cacheKey, JSON.stringify(allList))
                         sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
                       }
-                      setMenuItems(mapProductsToItems(allList))
+                      setMenuItems(mapProductsToItemsRef.current(allList))
                     })
                     .catch(() => {
                       setHomeMenuProductsLoadFailed(true)
@@ -1020,7 +1011,7 @@ export default function MenuView() {
                   sessionStorage.setItem(cacheKey, JSON.stringify(list))
                   sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
                 }
-                setMenuItems(mapProductsToItems(list))
+                setMenuItems(mapProductsToItemsRef.current(list))
               })
               .catch(() => {})
             return
@@ -1076,7 +1067,7 @@ export default function MenuView() {
                 sessionStorage.setItem(cacheKey, JSON.stringify(allList))
                 sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
               }
-              setMenuItems(mapProductsToItems(allList))
+              setMenuItems(mapProductsToItemsRef.current(allList))
             })
             .catch((err) => {
               console.error('Ошибка fallback загрузки меню:', err)
@@ -1089,18 +1080,38 @@ export default function MenuView() {
           sessionStorage.setItem(cacheKey, JSON.stringify(list))
           sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString())
         }
-        setMenuItems(mapProductsToItems(list))
+        setMenuItems(mapProductsToItemsRef.current(list))
       })
       .catch(err => {
         console.error('Ошибка загрузки меню:', err)
         setHomeMenuProductsLoadFailed(true)
         setMenuItems([])
       })
-  }, [selectedCityId, deliveryCities, language, getLocalized, mapProductsToItems])
-  
+  }, [selectedCityId, deliveryCities])
+
   useEffect(() => {
     loadMenuItems()
-  }, [loadMenuItems]); // Используем мемоизированную функцию
+  }, [loadMenuItems])
+
+  /** Перемикач мови — лише локалізація з sessionStorage, без повторного GET /api/products. */
+  useEffect(() => {
+    if (typeof sessionStorage === 'undefined') return
+    const cityIdToUse =
+      selectedCityId ||
+      cityIdPreferAmsterdam(deliveryCities) ||
+      (deliveryCities.length > 0 ? deliveryCities[0].id : null)
+    const cacheKey = menuItemsSessionKey(cityIdToUse)
+    const cached = sessionStorage.getItem(cacheKey)
+    if (!cached) return
+    try {
+      const data = JSON.parse(cached)
+      if (Array.isArray(data) && data.length > 0) {
+        setMenuItems(mapProductsToItems(data))
+      }
+    } catch {
+      /* ignore corrupt cache */
+    }
+  }, [language, mapProductsToItems, selectedCityId, deliveryCities])
 
   useEffect(() => {
     if (menuItems.length > 0) setHomeMenuProductsLoadFailed(false)
@@ -1557,49 +1568,44 @@ export default function MenuView() {
     if (page === 'promotions') {
       setSelectedPromoId(null)
     }
-    if (page === 'about') {
-      router.push('/about')
+    const go = (href: string) => {
       setIsSidebarOpen(false)
+      router.push(href)
+    }
+    if (page === 'about') {
+      go('/about')
       return
     }
     if (page === 'contacts') {
-      router.push('/contacts')
-      setIsSidebarOpen(false)
+      go('/contacts')
       return
     }
     if (page === 'reviews') {
-      router.push('/reviews')
-      setIsSidebarOpen(false)
+      go('/reviews')
       return
     }
     if (page === 'blog') {
-      router.push('/blog')
-      setIsSidebarOpen(false)
+      go('/blog')
       return
     }
     if (page === 'catalogMenu') {
-      router.push('/menu')
-      setIsSidebarOpen(false)
+      go('/menu')
       return
     }
     if (page === 'delivery' || page === 'deliveryPublic') {
-      router.push('/delivery')
-      setIsSidebarOpen(false)
+      go('/delivery')
       return
     }
     if (page === 'cartPublic') {
-      router.push(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
-      setIsSidebarOpen(false)
+      go(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
       return
     }
     if (page === 'favoritesPublic') {
-      router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
-      setIsSidebarOpen(false)
+      go(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
       return
     }
     if (page === 'profilePublic') {
-      router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
-      setIsSidebarOpen(false)
+      go(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
       return
     }
     if (page === 'notifications') {
@@ -1608,18 +1614,15 @@ export default function MenuView() {
       return
     }
     if (page === 'login') {
-      router.push('/login')
-      setIsSidebarOpen(false)
+      go('/login')
       return
     }
     if (page === 'register') {
-      router.push('/register')
-      setIsSidebarOpen(false)
+      go('/register')
       return
     }
     if (page === 'privacy') {
-      router.push('/privacy')
-      setIsSidebarOpen(false)
+      go('/privacy')
       return
     }
     setActivePage(page)
@@ -1633,6 +1636,15 @@ export default function MenuView() {
     setSelectedSubcategory(null)
     setSelectedPromoId(null)
   }
+
+  const handleGoHome = useCallback(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(MENU_BROWSE_RETURN_KEY)
+    }
+    handleClosePage()
+    setIsSidebarOpen(false)
+    scrollEntireAppToTop()
+  }, [])
   
   const toggleSidebar = () => {
     const opening = !isSidebarOpen
@@ -1644,6 +1656,22 @@ export default function MenuView() {
     }
     setIsSidebarOpen(opening)
   }
+
+  useEffect(() => {
+    const onMenu = () => toggleSidebar()
+    const onPromo = () => handlePageOpen('promotions')
+    const onGoHome = () => handleGoHome()
+    window.addEventListener('wattaChromeMenuClick', onMenu)
+    window.addEventListener('wattaChromeOpenPromotions', onPromo)
+    window.addEventListener(WATTA_CHROME_GO_HOME_EVENT, onGoHome)
+    window.addEventListener(WATTA_CHROME_CLOSE_HOME_OVERLAY_EVENT, onGoHome)
+    return () => {
+      window.removeEventListener('wattaChromeMenuClick', onMenu)
+      window.removeEventListener('wattaChromeOpenPromotions', onPromo)
+      window.removeEventListener(WATTA_CHROME_GO_HOME_EVENT, onGoHome)
+      window.removeEventListener(WATTA_CHROME_CLOSE_HOME_OVERLAY_EVENT, onGoHome)
+    }
+  })
 
   const openSidebar = useCallback(() => {
     if (isSidebarOpen) return
@@ -1820,6 +1848,16 @@ export default function MenuView() {
     if (pathname !== '/') return
     if (menuCategories.length === 0) return
 
+    /* Reload (F5) — завжди актуальна головна з hero, не «стара» вбудована доставка з sessionStorage */
+    if (isDocumentReloadNavigation()) {
+      sessionStorage.removeItem(MENU_BROWSE_RETURN_KEY)
+      setActivePage(null)
+      setSelectedPromoId(null)
+      setShowSubmenu(false)
+      setSelectedSubcategory(null)
+      return
+    }
+
     const raw = sessionStorage.getItem(MENU_BROWSE_RETURN_KEY)
     const payload = parseMenuBrowseReturn(raw)
     if (!payload) return
@@ -1837,8 +1875,12 @@ export default function MenuView() {
     if (payload.categoryKey) {
       setSelectedCategory(payload.categoryKey)
     }
-    if (payload.activePage === null || payload.activePage === 'delivery') {
-      setActivePage(payload.activePage)
+    /* activePage — лише при поверненні «назад» з товару, не при Reload */
+    const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+    if (nav?.type === 'back_forward') {
+      if (payload.activePage === null || payload.activePage === 'delivery') {
+        setActivePage(payload.activePage)
+      }
     }
 
     const scrollY = payload.scrollY
@@ -2064,7 +2106,7 @@ export default function MenuView() {
     .filter((s) => s.length > 0)
 
   const homeAfterHeroIntroSection =
-    pathname === '/' && homeNarrowStripHero ? (
+    pathname === '/' ? (
       <AnimatedHeroIntroBlock
         sectionId="home-after-hero-intro"
         ariaLabel={fillHomeAfterHeroCity(t.menuView.homeAfterHeroIntroAria)}
@@ -2073,8 +2115,63 @@ export default function MenuView() {
         body={t.menuView.homeAfterHeroIntroBody}
         accentLineIndex={1}
         scriptLineIndex={1}
-        reserveTopSpace
+        reserveTopSpace={homeIntroBeforeHero}
+        innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
       />
+    ) : null
+
+  const homeHeroVideoBlock = (
+    <WelcomeHeroSection
+      sectionClassName="delivery-page-hero-standalone-web"
+      sectionRef={welcomeHeroSectionRef}
+      heroVideoFailed={heroVideoFailed}
+      setHeroVideoSourceIndex={setHeroVideoSourceIndex}
+      setHeroVideoFailed={setHeroVideoFailed}
+      heroVideoRef={heroVideoRef}
+      heroVideoSrc={heroVideoSrc}
+      videoSources={heroVideoSources}
+      playlistLength={homeHeroPlaylist.length}
+    >
+      {homeNarrowStripHero ? (
+        <div
+          ref={marqueeBarRef}
+          className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full"
+        >
+          <WattaHeroMarqueeBar />
+        </div>
+      ) : null}
+    </WelcomeHeroSection>
+  )
+
+  const homeHeroVideoInStrip = homeNarrowStripHero ? (
+    <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
+      {homeHeroVideoBlock}
+    </div>
+  ) : (
+    homeHeroVideoBlock
+  )
+
+  const homeStandaloneHeroStack =
+    pathname === '/' ? (
+      <div
+        className={`delivery-page-hero-stack w-full shrink-0 bg-transparent${
+          homeIntroBeforeHero
+            ? ' delivery-page-hero-stack--intro-first'
+            : ' delivery-page-hero-stack--video-first'
+        }`}
+      >
+        {homeIntroBeforeHero ? (
+          <>
+            {homeAfterHeroIntroSection}
+            {homeHeroVideoInStrip}
+          </>
+        ) : (
+          <>
+            {homeHeroVideoInStrip}
+            {homeAfterHeroIntroSection}
+          </>
+        )}
+      </div>
     ) : null
 
   return (
@@ -2082,36 +2179,6 @@ export default function MenuView() {
       className="menu-page-web watta-site-hero-page-web relative flex min-h-0 w-full max-w-[100vw] flex-col bg-transparent"
       data-watta-home-narrow-strip-hero={homeNarrowStripHero ? '1' : undefined}
     >
-      <WattaStickyChromeLayout
-        chromeClassName="watta-full-menu-sticky-chrome"
-        flowHeightFudgePx={0}
-        flowHeightMaxPx={480}
-      >
-        <WattaGlobalSiteHeader
-          disableSticky
-          onCityChange={(cityId: number) => {
-            setSelectedCityId(cityId)
-            loadMenuItems()
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('cityChanged', { detail: { cityId } }))
-            }
-          }}
-          deliveryEmbeddedActive={activePage === 'delivery'}
-          onPromotionsClick={() => handlePageOpen('promotions')}
-          onCartClick={openCart}
-          onMenuClick={toggleSidebar}
-          onProfileClick={() => {
-            if (isUserLoggedIn()) openProfileTab('history')
-            else router.push(getAuthUrl('/profile'))
-          }}
-          onFavoritesClick={() =>
-            router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
-          }
-          onLogoClick={handleClosePage}
-        />
-        <WattaMenuCategoryStrip />
-      </WattaStickyChromeLayout>
-
       {activePage === 'delivery' ? (
         <>
           <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
@@ -2142,7 +2209,7 @@ export default function MenuView() {
             <PromotionsView
               embedded
               onBack={handleClosePage}
-              onMenuClick={toggleSidebar}
+              onMenuClick={handleClosePage}
               onOpenDetail={(id) => setSelectedPromoId(id)}
               onOpenPhone={() => handlePageOpen('phone')}
               onOpenNotifications={() => handlePageOpen('notifications')}
@@ -2153,46 +2220,10 @@ export default function MenuView() {
         </>
       ) : (
       <>
-      {homeNarrowStripHero ? null : (
-        <div className="menu-content-top-gap-web w-full bg-transparent shrink-0" aria-hidden="true" />
-      )}
-
-      {homeIntroBeforeHero ? homeAfterHeroIntroSection : null}
-
-      {homeNarrowStripHero ? (
-        <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
-          <WelcomeHeroSection
-            sectionRef={welcomeHeroSectionRef}
-            heroVideoFailed={heroVideoFailed}
-            setHeroVideoSourceIndex={setHeroVideoSourceIndex}
-            setHeroVideoFailed={setHeroVideoFailed}
-            heroVideoRef={heroVideoRef}
-            heroVideoSrc={heroVideoSrc}
-            videoSources={heroVideoSources}
-            playlistLength={homeHeroPlaylist.length}
-          >
-            <div
-              ref={marqueeBarRef}
-              className="home-hero-after-marquee-wrap-web home-hero-marquee-over-video-web pointer-events-none absolute inset-x-0 bottom-0 z-[25] w-full"
-            >
-              <WattaHeroMarqueeBar />
-            </div>
-          </WelcomeHeroSection>
+      <div className="delivery-page-home-flow w-full">
+        <div className="delivery-page-intro-web delivery-page-intro-web--video w-full shrink-0">
+          {homeStandaloneHeroStack}
         </div>
-      ) : (
-        <WelcomeHeroSection
-          sectionRef={welcomeHeroSectionRef}
-          heroVideoFailed={heroVideoFailed}
-          setHeroVideoSourceIndex={setHeroVideoSourceIndex}
-          setHeroVideoFailed={setHeroVideoFailed}
-          heroVideoRef={heroVideoRef}
-          heroVideoSrc={heroVideoSrc}
-          videoSources={heroVideoSources}
-          playlistLength={homeHeroPlaylist.length}
-        />
-      )}
-
-      {!homeIntroBeforeHero ? homeAfterHeroIntroSection : null}
 
       {cinematicAdminRecommendedProducts.length > 0 ? (
         <div
@@ -2501,6 +2532,7 @@ export default function MenuView() {
         </div>
       </section>
       ) : null}
+      </div>
       </>
       )}
       {showCategoryAdmin && (

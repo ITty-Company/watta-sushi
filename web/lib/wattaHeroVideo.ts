@@ -1,5 +1,5 @@
-/** Після заміни mp4 у `public/` — змініть, щоб браузер не тримав старий 480p у кеші. */
-export const WATTA_HOME_HERO_FALLBACK_CACHE_BUST = '1080p-20260516'
+/** Після заміни mp4 у `public/` — змініть, щоб браузер не тримав старий ролик у кеші. */
+export const WATTA_HOME_HERO_FALLBACK_CACHE_BUST = 'hq-1080p60-20260521'
 
 const withHeroFallbackCacheBust = (path: string) =>
   `${path}?${WATTA_HOME_HERO_FALLBACK_CACHE_BUST}`
@@ -25,17 +25,27 @@ export const WATTA_FULL_MENU_PAGE_HERO_VIDEO_SOURCES = WATTA_HOME_HERO_VIDEO_FAL
 /** Preload на головній — перший кадр головного hero (не сторінка `/menu`). */
 export const WATTA_HERO_PRIMARY_MP4 = WATTA_HOME_HERO_VIDEO_FALLBACKS[0]
 
-/** Постер hero — їжа/атмосфера, не логотип (логотип у cover на iOS виглядав як «TA SU» + play). */
-export const WATTA_HOME_HERO_POSTER = '/sushi.webp' as const
+/** Постер hero 1920×1080 (кадр з ролика) — не розтягувати маленький sushi.webp на весь hero. */
+export const WATTA_HOME_HERO_POSTER = '/watta-home-hero-poster.jpg' as const
 
 /** Після збереження hero-відео в адмінці — оновити MenuView без reload */
 export const WATTA_HOME_HERO_VIDEO_UPDATED_EVENT = 'watta:home-hero-video-updated' as const
+
+/** Адмінка часто зберігає `/watta-sushi-2-hero.mp4` без bust — вирівнюємо з preload і fallbacks. */
+function normalizePublicHeroMp4Url(url: string): string {
+  const trimmed = url.trim()
+  const base = trimmed.split('?')[0]
+  if (base === WATTA_HOME_HERO_VIDEO_PATH) {
+    return withHeroFallbackCacheBust(WATTA_HOME_HERO_VIDEO_PATH)
+  }
+  return trimmed
+}
 
 function dedupeAdminUrls(adminUrls?: readonly string[] | null): string[] {
   const seen = new Set<string>()
   const out: string[] = []
   for (const raw of adminUrls ?? []) {
-    const u = raw.trim()
+    const u = normalizePublicHeroMp4Url(raw.trim())
     if (!u || seen.has(u)) continue
     seen.add(u)
     out.push(u)

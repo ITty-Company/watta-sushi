@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
 import { useLanguage } from '../context/LanguageContext'
 import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import ClientProfileOrders from './profile/ClientProfileOrders'
+import ProfilePublicPageLayout from './profile/ProfilePublicPageLayout'
+import ProfileDeliveryAddressCard from './profile/ProfileDeliveryAddressCard'
+import ProfilePersonalDataForm from './profile/ProfilePersonalDataForm'
 import {
   Phone, Bell, Heart, ShoppingBag, User, Menu,
   MapPin, Clock, Settings, LogOut, Shield, Mail, X, Sparkles
@@ -98,7 +101,7 @@ export default function ProfileView({
   layout = 'embedded',
   highlightOrderId,
 }: ProfileViewProps) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, language, getLocalized } = useLanguage()
   const { showBlogNav } = usePublicBlogNav()
   const a = t.siteAria
@@ -190,6 +193,76 @@ export default function ProfileView({
   }, [loadOrdersAndBonus])
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !profileAllowed) return
+    const auth = getBearerAuthHeaders()
+    if (Object.keys(auth).length === 0) return
+    void (async () => {
+      try {
+        const res = await fetch('/api/auth/me', { headers: auth })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!data?.user) return
+        setUser((prev) => ({
+          name: data.user.name ?? prev?.name ?? '',
+          email: data.user.email ?? prev?.email ?? '',
+          phone: data.user.phone ?? prev?.phone ?? '',
+          address: data.user.address ?? prev?.address ?? '',
+        }))
+        try {
+          const raw = localStorage.getItem('currentUser')
+          const parsed = raw ? JSON.parse(raw) : {}
+          localStorage.setItem('currentUser', JSON.stringify({ ...parsed, ...data.user }))
+          setIsAdmin(isAdminRole(data.user.role))
+        } catch {
+          /* ignore */
+        }
+      } catch {
+        /* ignore */
+      }
+    })()
+  }, [profileAllowed])
+
+  const handleAddressSaved = useCallback((address: string) => {
+    setUser((prev) => {
+      const next = {
+        name: prev?.name ?? '',
+        email: prev?.email ?? '',
+        phone: prev?.phone ?? '',
+        address,
+      }
+      try {
+        const raw = localStorage.getItem('currentUser')
+        const parsed = raw ? JSON.parse(raw) : {}
+        localStorage.setItem('currentUser', JSON.stringify({ ...parsed, address }))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+    window.dispatchEvent(new Event('userChanged'))
+  }, [])
+
+  const handlePersonalDataSaved = useCallback(({ name, phone }: { name: string; phone: string }) => {
+    setUser((prev) => {
+      const next = {
+        name,
+        email: prev?.email ?? '',
+        phone,
+        address: prev?.address ?? '',
+      }
+      try {
+        const raw = localStorage.getItem('currentUser')
+        const parsed = raw ? JSON.parse(raw) : {}
+        localStorage.setItem('currentUser', JSON.stringify({ ...parsed, name, phone }))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+    window.dispatchEvent(new Event('userChanged'))
+  }, [])
+
+  useEffect(() => {
     if (activeTab !== 'history' || typeof document === 'undefined') return
     const tick = () => {
       if (document.visibilityState !== 'visible') return
@@ -236,7 +309,7 @@ export default function ProfileView({
     })
 
     writeCartToStorage(reorderedItems)
-    window.location.href = '/cart'
+    router.push('/cart')
   }
 
   const handleLogout = () => {
@@ -267,10 +340,10 @@ export default function ProfileView({
   }, [getLocalized])
 
   useEffect(() => {
-    if (activeTab === 'favorites') {
+    if (layout === 'page' || activeTab === 'favorites') {
       void loadFavoritesList()
     }
-  }, [activeTab, loadFavoritesList])
+  }, [activeTab, layout, loadFavoritesList])
 
   useEffect(() => {
     const onUser = () => {
@@ -415,6 +488,60 @@ export default function ProfileView({
     layout === 'page'
       ? 'pb-16 pt-2 font-sans sm:pb-20 sm:pt-3'
       : 'pb-16 pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16'
+
+  const embeddedTabs = (
+    [
+      { id: 'history' as const, icon: Clock, label: t.clientProfile.tabHistory },
+      { id: 'address' as const, icon: MapPin, label: t.clientProfile.tabAddress },
+      { id: 'favorites' as const, icon: Heart, label: t.clientProfile.tabFavorites },
+      { id: 'data' as const, icon: Settings, label: t.clientProfile.tabData },
+    ] as const
+  ).map(({ id, icon: Icon, label }) => {
+    const on = activeTab === id
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => setActiveTab(id)}
+        className={`watta-profile-embedded-tab ${on ? 'watta-profile-embedded-tab--on' : 'watta-profile-embedded-tab--off'}`}
+      >
+        <Icon size={16} strokeWidth={2.25} className={id === 'favorites' && on ? 'fill-current' : ''} aria-hidden />
+        {label}
+      </button>
+    )
+  })
+
+  if (layout === 'page') {
+    return (
+      <ProfilePublicPageLayout
+        t={t}
+        language={language}
+        displayName={displayName}
+        headingName={headingName}
+        user={user}
+        bonusBalance={bonusBalance}
+        isAdmin={isAdmin}
+        orders={orders}
+        ordersLoading={loading}
+        favoriteItems={favoriteItems}
+        favLoading={favLoading}
+        showBlogNav={showBlogNav}
+        highlightOrderId={highlightOrderId}
+        initialTab={initialTab}
+        onGoMenu={() => router.push('/menu')}
+        onReorder={handleReorder}
+        onReviewSubmitted={handleReviewSubmitted}
+        onRemoveFavorite={removeFavorite}
+        onAddFavoriteToCart={addFavoriteToCart}
+        onLogout={handleLogout}
+        onOpenAdmin={onOpenAdmin}
+        onAddressSaved={handleAddressSaved}
+        onPersonalDataSaved={handlePersonalDataSaved}
+        removeFavoriteAria={a.remove}
+        addCartAria={a.cart}
+      />
+    )
+  }
 
   return (
     <div className={`menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden watta-page-bg ${rootPad}`}>
@@ -570,7 +697,10 @@ export default function ProfileView({
         </div>
 
         {/* ПРАВАЯ КОЛОНКА - КОНТЕНТ */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
+          <nav className="watta-profile-embedded-tabs lg:hidden" aria-label={a.profileNav}>
+            {embeddedTabs}
+          </nav>
           <div
             className={`relative min-h-[420px] rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:min-h-[520px] sm:p-8 ${
               activeTab === 'favorites' ? 'overflow-visible' : 'overflow-hidden'
@@ -606,7 +736,7 @@ export default function ProfileView({
                   t={t.clientProfile}
                   emptyMessage={t.clientProfile.emptyOrders}
                   goMenuLabel={t.clientProfile.goMenu}
-                  onGoMenu={layout === 'page' ? () => router.push('/menu') : onBack}
+                  onGoMenu={onBack}
                   onReorder={handleReorder}
                   onReviewSubmitted={handleReviewSubmitted}
                   highlightOrderId={highlightOrderId}
@@ -681,22 +811,13 @@ export default function ProfileView({
                     {t.clientProfile.addrSub}
                   </p>
                 </div>
-                {user?.address ? (
-                  <div className="flex items-start gap-4 rounded-xl border border-gray-200 bg-gray-50/50 p-5 shadow-sm">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#145142] text-white">
-                      <MapPin size={22} />
-                    </div>
-                    <p className="pt-1 text-base font-medium leading-relaxed text-gray-800">{user.address}</p>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 px-4 py-16 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-gray-300 shadow-sm">
-                      <MapPin size={36} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900">{t.clientProfile.addrEmptyTitle}</h3>
-                    <p className="mx-auto mt-2 max-w-md text-sm text-gray-600">{t.clientProfile.addrEmptySub}</p>
-                  </div>
-                )}
+                <ProfileDeliveryAddressCard
+                  initialAddress={user?.address ?? ''}
+                  onSaved={handleAddressSaved}
+                  cp={t.clientProfile}
+                  d={t.deliveryPage}
+                  enterAddressHint={t.cartSection.enterAddressForDeliveryFee}
+                />
               </div>
             )}
             {activeTab === 'data' && (
@@ -708,35 +829,14 @@ export default function ProfileView({
                     {t.clientProfile.dataSub}
                   </p>
                 </div>
-                <div className="max-w-2xl space-y-5">
-                  <div>
-                    <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      <User size={14} className="text-[#145142]" />
-                      {t.clientProfile.labelName}
-                    </label>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-base font-medium text-gray-900">
-                      {user?.name || t.clientProfile.notSpecified}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      <Phone size={14} className="text-[#145142]" />
-                      {t.clientProfile.labelPhone}
-                    </label>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-base font-medium text-gray-900">
-                      {user?.phone || t.clientProfile.notSpecified}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      <Mail size={14} className="text-[#145142]" />
-                      {t.clientProfile.labelEmail}
-                    </label>
-                    <div className="rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-base font-medium text-gray-900">
-                      {user?.email || t.clientProfile.notSpecified}
-                    </div>
-                  </div>
-                </div>
+                <ProfilePersonalDataForm
+                  initialName={user?.name ?? ''}
+                  initialPhone={user?.phone ?? ''}
+                  email={user?.email ?? ''}
+                  cp={t.clientProfile}
+                  invalidPhoneMessage={t.cartSection.invalidPhone}
+                  onSaved={handlePersonalDataSaved}
+                />
               </div>
             )}
             </div>

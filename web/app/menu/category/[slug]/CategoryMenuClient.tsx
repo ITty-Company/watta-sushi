@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
@@ -49,7 +49,7 @@ function sortCategoryItems(arr: MenuItem[]): MenuItem[] {
 }
 
 export default function CategoryMenuClient({ slug }: { slug: string }) {
-  const router = useRouter()
+  const router = useInstantRouter()
   const { t, language, getLocalized } = useLanguage()
   const [items, setItems] = useState<MenuItem[]>([])
   const [categoryTitle, setCategoryTitle] = useState('')
@@ -230,7 +230,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 items-start gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((item) => (
               <WattaMenuProductCard
                 key={item.id}

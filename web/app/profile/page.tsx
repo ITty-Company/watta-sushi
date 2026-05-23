@@ -1,12 +1,11 @@
 'use client'
 
 import { Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
 import ProfileView from '../components/ProfileView'
-import WattaAppRouteLoading from '../components/WattaAppRouteLoading'
-
 function ProfilePageInner() {
-  const router = useRouter()
+  const router = useInstantRouter()
   const searchParams = useSearchParams()
   const tab = searchParams.get('tab')
   const initialTab =
@@ -33,7 +32,7 @@ function ProfilePageInner() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<WattaAppRouteLoading />}>
+    <Suspense fallback={null}>
       <ProfilePageInner />
     </Suspense>
   )

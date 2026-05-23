@@ -1,0 +1,171 @@
+/* /privacy — типографіка як /delivery (home-after-hero-intro + delivery-flow) */
+
+#privacy-page-container.privacy-page-web {
+  --privacy-ink: #0f241e;
+  --privacy-muted: #6b7280;
+  overflow-x: clip;
+}
+
+.watta-delivery-page-about #privacy-page-container .delivery-page-intro-inner-web--standalone .home-after-hero-intro-title-web {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.watta-delivery-page-about
+  #privacy-page-container
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web
+  > span:nth-child(1) {
+  color: #111827 !important;
+}
+
+.watta-delivery-page-about
+  #privacy-page-container
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web
+  > span:nth-child(2) {
+  color: var(--delivery-orange, #ff5c00) !important;
+}
+
+.watta-delivery-page-about #privacy-page-container .delivery-page-intro-inner-web--standalone .home-after-hero-intro-body-web {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 36rem;
+  text-align: center;
+  color: #2d4a42 !important;
+}
+
+.privacy-page-hero-web__badge {
+  margin-top: 1.15rem;
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: rgba(20, 81, 66, 0.06);
+  padding: 0.35rem 0.85rem;
+  font-family: var(--font-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #145142;
+}
+
+.privacy-page-hero-web__updated {
+  margin-top: 0.85rem;
+  font-family: var(--font-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(15, 36, 30, 0.5);
+  text-align: center;
+}
+
+.privacy-page-hero-web__intro {
+  margin-top: 1rem;
+  margin-inline: auto;
+  max-width: 40rem;
+  font-family: var(--font-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--privacy-muted);
+  text-align: center;
+}
+
+.privacy-page-intro-web,
+.privacy-page-toc-web,
+.privacy-page-block-web p,
+.privacy-page-block-web li,
+.privacy-page-rights-web p,
+.privacy-page-rights-web li,
+.privacy-page-contact-web p {
+  font-family: var(--font-inter, 'Inter'), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.privacy-page-section-label {
+  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.watta-delivery-page-about #privacy-page-container .privacy-page-block-web h2,
+.watta-delivery-page-about #privacy-page-container .privacy-page-rights-web h2,
+.watta-delivery-page-about #privacy-page-container .privacy-page-contact-web h2 {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #111827;
+}
+
+.watta-delivery-page-about #privacy-page-container .delivery-page-flow .delivery-flow-section:nth-child(odd) {
+  border-top-color: rgba(20, 81, 66, 0.1);
+}
+
+.watta-delivery-page-about #privacy-page-container .delivery-page-flow .delivery-flow-section:nth-child(even) {
+  border-top-color: rgba(255, 92, 0, 0.12);
+}
+
+.watta-delivery-page-about #privacy-page-container .delivery-page-flow .delivery-flow-section:nth-child(odd) .delivery-flow-kicker {
+  color: rgba(20, 81, 66, 0.55);
+}
+
+.watta-delivery-page-about #privacy-page-container .delivery-page-flow .delivery-flow-section:nth-child(even) .delivery-flow-kicker {
+  color: rgba(255, 92, 0, 0.72);
+}
+
+.privacy-page-layout {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .privacy-page-layout {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+
+  .privacy-page-toc-web {
+    position: sticky;
+    top: calc(var(--watta-sticky-chrome-height, 120px) + 1rem);
+    max-height: calc(100dvh - var(--watta-sticky-chrome-height, 120px) - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 0.25rem;
+  }
+}
+
+.privacy-page-toc-link {
+  display: block;
+  border-radius: 12px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #4b5563;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.privacy-page-toc-link:hover {
+  background: rgba(20, 81, 66, 0.06);
+  color: #145142;
+}
+
+.privacy-page-toc-link--active {
+  background: rgba(20, 81, 66, 0.1);
+  color: #145142;
+  font-weight: 600;
+}
+
+.privacy-page-block-web {
+  scroll-margin-top: calc(var(--watta-sticky-chrome-height, 120px) + 1.25rem);
+}
+
+@media (max-width: 480px) {
+  .privacy-page-hero-web__intro {
+    font-size: 0.8125rem;
+  }
+}

@@ -1,0 +1,128 @@
+/* /delivery — «Как заказать»: лёгкий список каналов */
+
+.delivery-page-web .delivery-flow-how__lead {
+  margin-bottom: clamp(0.85rem, 2.5vw, 1.15rem);
+  text-align: left;
+}
+
+.delivery-how-channels {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(20, 81, 66, 0.05);
+}
+
+.delivery-how-channels__item {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.75rem, 2.5vw, 1rem);
+  padding: clamp(0.85rem, 2.5vw, 1.05rem) clamp(0.9rem, 2.5vw, 1.1rem);
+  border-bottom: 1px solid rgba(20, 81, 66, 0.08);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s ease;
+}
+
+.delivery-how-channels__item:last-child {
+  border-bottom: none;
+}
+
+@media (hover: hover) {
+  .delivery-how-channels__item:hover {
+    background: rgba(246, 250, 248, 0.95);
+  }
+}
+
+.delivery-how-channels__ico {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-top: 0.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: linear-gradient(165deg, #fff 0%, #f4f9f7 100%);
+  color: #145142;
+  box-shadow: 0 4px 14px rgba(20, 81, 66, 0.06);
+}
+
+.delivery-how-channels__ico--accent {
+  border-color: rgba(255, 92, 0, 0.2);
+  background: linear-gradient(165deg, #fff8f4 0%, #fff 100%);
+  color: #ff5c00;
+}
+
+.delivery-how-channels__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-top: 0.15rem;
+}
+
+.delivery-how-channels__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+}
+
+.delivery-how-channels__num {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgba(20, 81, 66, 0.4);
+}
+
+.delivery-how-channels__num--accent {
+  color: rgba(255, 92, 0, 0.75);
+}
+
+.delivery-how-channels__title {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1rem, 2.8vw, 1.12rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.delivery-how-channels__meta {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.delivery-how-channels__desc {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.delivery-how-channels__arrow {
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+  color: rgba(20, 81, 66, 0.28);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.delivery-how-channels__item:hover .delivery-how-channels__arrow {
+  color: #145142;
+  transform: translate(2px, -2px);
+}
+
+.delivery-how-channels__item--accent:hover .delivery-how-channels__arrow {
+  color: #ff5c00;
+}

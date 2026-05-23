@@ -1,0 +1,264 @@
+/* /about — палитра и типографика как на /delivery */
+
+.watta-about-page.watta-delivery-page-about {
+  --delivery-orange: #ff5c00;
+  --delivery-accent: #1a6b58;
+  --delivery-accent-soft: #8ee07a;
+  --delivery-green: #145142;
+  --delivery-body-muted: #7a7a7a;
+}
+
+.watta-about-page.watta-delivery-page-about
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: none;
+  text-align: center;
+}
+
+.watta-about-page.watta-delivery-page-about
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web
+  > span:nth-child(1) {
+  color: #111827 !important;
+}
+
+.watta-about-page.watta-delivery-page-about
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web
+  > span:nth-child(2) {
+  color: var(--delivery-orange, #ff5c00) !important;
+}
+
+/* «Watta философия» — одна строка, без kicker */
+.watta-about-page #about-page-lead-intro .home-after-hero-intro-title-web {
+  white-space: nowrap;
+}
+
+.watta-about-page #about-page-lead-intro .home-after-hero-intro-title-web > span {
+  display: inline !important;
+}
+
+.watta-about-page #about-page-lead-intro .home-after-hero-intro-title-web > span + span::before {
+  content: '\00a0';
+}
+
+.about-page-intro-band {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+/* Hero stats — компактно, типографика как на /delivery */
+.watta-about-page .about-page-intro-band .about-page-hero-stats.delivery-page-stats-band {
+  padding: 0 0 clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.watta-about-page.watta-delivery-page-about
+  .about-page-intro-band
+  .about-page-hero-stats.delivery-page-stats-band
+  .grid {
+  gap: 0.5rem !important;
+}
+
+@media (min-width: 640px) {
+  .watta-about-page.watta-delivery-page-about
+    .about-page-intro-band
+    .about-page-hero-stats.delivery-page-stats-band
+    .grid {
+    gap: 0.625rem !important;
+  }
+}
+
+.watta-about-page .about-page-intro-band .about-page-hero-stats .contact-watta-stat-pill,
+.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill--blob {
+  padding: clamp(0.5rem, 1.5vw, 0.68rem) clamp(0.42rem, 1.2vw, 0.58rem) !important;
+  border-radius: 12px;
+  box-shadow: 0 3px 14px rgba(20, 81, 66, 0.05);
+}
+
+.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill__icon-wrap {
+  margin: 0 auto 0.35rem;
+  height: 2rem;
+  width: 2rem;
+}
+
+.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill__icon-blob {
+  height: 1.65rem;
+  width: 2rem;
+}
+
+.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill__icon {
+  height: 1.15rem;
+  width: 1.15rem;
+}
+
+.watta-about-page.watta-delivery-page-about
+  .about-page-intro-band
+  .about-page-hero-stats
+  .delivery-stat-pill--blob
+  .contact-watta-stat-pill__val,
+.watta-about-page.watta-delivery-page-about
+  .about-page-intro-band
+  .about-page-hero-stats
+  .delivery-stat-pill__val {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-size: clamp(0.82rem, 2vw, 0.95rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #111827 !important;
+}
+
+.watta-about-page.watta-delivery-page-about
+  .about-page-intro-band
+  .about-page-hero-stats
+  .delivery-stat-pill__val--phrase {
+  font-size: clamp(0.72rem, 1.85vw, 0.88rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.watta-about-page.watta-delivery-page-about
+  .about-page-intro-band
+  .about-page-hero-stats
+  .delivery-stat-pill--blob
+  .contact-watta-stat-pill__label {
+  margin-top: 0.2rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-size: 0.65rem !important;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #7a7a7a !important;
+}
+
+.watta-about-page.watta-delivery-page-about
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-body-web {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 36rem;
+  text-align: center;
+}
+
+.watta-about-page .about-page-philosophy-heading {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.watta-about-page .about-page-why-heading {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  text-align: center;
+}
+
+/* Команда — горизонтальна карусель фото */
+.about-page-team-carousel {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: none;
+}
+
+.about-page-team-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.about-page-team-carousel__track {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem 0.75rem;
+  list-style: none;
+  margin: 0;
+}
+
+.about-page-team-carousel__slide {
+  flex: 0 0 min(72vw, 260px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+@media (min-width: 640px) {
+  .about-page-team-carousel__slide {
+    flex-basis: min(42vw, 280px);
+  }
+
+  .about-page-team-carousel__track {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .about-page-team-carousel__slide {
+    flex-basis: 280px;
+  }
+}
+
+.watta-about-page .about-page-team-heading {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.watta-about-page .about-page-inside-shell > .mb-6 h2,
+.watta-about-page .about-page-story-card h3,
+.watta-about-page .about-page-team-web > h3,
+.watta-about-page .about-page-visit-web > h3 {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.watta-about-page .about-page-art-web p {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.watta-about-page.watta-delivery-page-about .about-page-inside-card,
+.watta-about-page.watta-delivery-page-about .about-page-philosophy-card {
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06);
+}
+
+@media (hover: hover) {
+  .watta-about-page.watta-delivery-page-about .about-page-inside-card:hover,
+  .watta-about-page.watta-delivery-page-about .about-page-philosophy-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(20, 81, 66, 0.18);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.watta-about-page .about-page-cta-web {
+  border-color: rgba(20, 81, 66, 0.12);
+  background: linear-gradient(165deg, #f6f9f7 0%, #fff 55%);
+  box-shadow: 0 10px 40px rgba(20, 81, 66, 0.08);
+}
+
+.watta-about-page.watta-delivery-page-about .about-page-content-flow {
+  background: #fff;
+}
+
+/* Зазор між hero stat-картками та «Почему выбирают нас?» */
+.watta-about-page.watta-delivery-page-about .about-page-section-web:first-of-type {
+  padding-top: clamp(2.25rem, 5.5vw, 3.25rem);
+}
+
+@media (max-width: 1024px) {
+  .watta-about-page.watta-delivery-page-about
+    #about-page-lead-intro.home-after-hero-intro-web
+    .about-page-lead-intro-inner.home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(18px, 2.6vh, 32px) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .watta-about-page #about-page-lead-intro .home-after-hero-intro-title-web {
+    font-size: clamp(1.2rem, 6.5vw, 1.5rem);
+  }
+}

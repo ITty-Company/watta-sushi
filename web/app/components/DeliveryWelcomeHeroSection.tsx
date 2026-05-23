@@ -4,7 +4,6 @@ import type { Ref } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
-import { getHeroVideoTouchLikeViewport } from '@/lib/heroVideoNativeDesktop'
 import { primeHeroVideoElement } from '@/lib/kickWelcomeHeroVideo'
 import {
   WATTA_DELIVERY_HERO_POSTER,
@@ -58,11 +57,8 @@ export default function DeliveryWelcomeHeroSection({
   useEffect(() => {
     const video = heroVideoRef.current
     if (!video || heroVideoFailed) return
-    const stack = video.closest('.welcome-hero-video-stack-web')
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
-      blockInteractionRoot:
-        !getHeroVideoTouchLikeViewport() && stack instanceof HTMLElement ? stack : null,
     })
     return offAutoplay
   }, [heroVideoSrc, heroVideoFailed, heroVideoRef])

@@ -19,6 +19,8 @@ import {
 import toast from 'react-hot-toast'
 import { useLanguage, type Language } from '@/app/context/LanguageContext'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
+import { readReviewImageDataUrl } from '@/lib/compressReviewImage'
+import { getReviewSubmitErrorMessage } from '@/lib/reviewSubmitErrors'
 import type { WattaLanguage } from '@/lib/i18n/language'
 
 export interface ProfileOrderItem {
@@ -166,28 +168,34 @@ export default function ClientProfileOrders({
     setReviewImages([])
   }, [])
 
-  const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files?.length) return
-    const next: string[] = [...reviewImages]
-    const max = 6
-    for (let i = 0; i < files.length && next.length < max; i++) {
-      const f = files[i]
-      if (!f.type.startsWith('image/')) continue
-      if (f.size > 2_000_000) {
-        toast.error(siteT.appToasts.fileTooBig)
-        continue
-      }
-      const reader = new FileReader()
-      reader.onload = () => {
-        const r = String(reader.result || '')
-        if (r) {
-          setReviewImages((prev) => (prev.length >= max ? prev : [...prev, r]))
-        }
-      }
-      reader.readAsDataURL(f)
-    }
     e.target.value = ''
+    const max = 6
+    const maxTotalChars = 3_800_000
+    const prepared: string[] = []
+
+    for (const f of Array.from(files)) {
+      if (prepared.length >= max) break
+      const dataUrl = await readReviewImageDataUrl(f)
+      if (dataUrl) prepared.push(dataUrl)
+    }
+
+    if (!prepared.length) return
+
+    setReviewImages((prev) => {
+      if (prev.length >= max) return prev
+      let total = prev.reduce((sum, src) => sum + src.length, 0)
+      const merged = [...prev]
+      for (const src of prepared) {
+        if (merged.length >= max) break
+        if (total + src.length > maxTotalChars) break
+        merged.push(src)
+        total += src.length
+      }
+      return merged.length === prev.length ? prev : merged
+    })
   }
 
   const submitReview = async () => {
@@ -219,10 +227,18 @@ export default function ClientProfileOrders({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error((data.message as string) || siteT.appToasts.reviewSaveError)
+        toast.error(
+          getReviewSubmitErrorMessage(res.status, data.message as string | undefined, {
+            loginAgain: siteT.appToasts.loginAgain,
+            reviewNeedText: siteT.appToasts.reviewNeedText,
+            reviewSaveError: siteT.appToasts.reviewSaveError,
+            reviewDuplicate: siteT.appToasts.reviewDuplicate,
+            reviewImageRejected: siteT.appToasts.reviewImageRejected,
+          }),
+        )
         return
       }
-      toast.success(siteT.appToasts.reviewThanks)
+      toast.success(siteT.appToasts.reviewThanksModeration)
       onReviewSubmitted(reviewOrder.id, {
         id: data.id,
         rating: data.rating,

@@ -22,6 +22,8 @@ export type WelcomeHeroSectionProps = {
   children?: ReactNode
   ariaLabel?: string
   sectionClassName?: string
+  /** Постер до першого кадру (на /delivery — окремий від головної). */
+  posterUrl?: string
 }
 
 /** Картка з ocean hero — та сама на головній та на /menu */
@@ -37,6 +39,7 @@ export default function WelcomeHeroSection({
   children,
   ariaLabel,
   sectionClassName = '',
+  posterUrl = WATTA_HOME_HERO_POSTER,
 }: WelcomeHeroSectionProps) {
   const heroVideoLoop = playlistLength <= 1
   const heroReadySentRef = useRef(false)
@@ -93,6 +96,14 @@ export default function WelcomeHeroSection({
   }, [setHeroVideoSourceIndex, setHeroVideoFailed, videoSources.length])
 
   useEffect(() => {
+    if (heroVideoFailed) return
+    const readyFallbackId = window.setTimeout(() => {
+      if (!heroReadySentRef.current) notifyHeroVideoReady()
+    }, 1200)
+    return () => window.clearTimeout(readyFallbackId)
+  }, [heroVideoSrc, heroVideoFailed, notifyHeroVideoReady])
+
+  useEffect(() => {
     if (heroVideoFailed || heroFrameReady) return
     const timeoutId = window.setTimeout(() => {
       const v = heroVideoRef.current
@@ -112,36 +123,50 @@ export default function WelcomeHeroSection({
         {heroVideoFailed ? (
           <div className="welcome-hero-video-fail-wrap-web relative w-full shrink-0">
             <div
-              className="welcome-video-native-web welcome-hero-fallback-image-web"
-              role="img"
-              aria-hidden
-              style={{ backgroundImage: `url('${WATTA_HOME_HERO_POSTER}')` }}
-            />
-            {children}
+              className="welcome-hero-video-stack-web watta-hero-video--ready"
+              style={{ backgroundColor: WATTA_HERO_OCEAN_GRADIENT }}
+            >
+              <div
+                className="welcome-hero-media-frame-web"
+                style={{
+                  backgroundImage: `url('${posterUrl}')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center var(--watta-home-hero-media-pos-y, 46%)',
+                  backgroundRepeat: 'no-repeat',
+                }}
+              >
+                <div
+                  className="welcome-video-native-web welcome-hero-fallback-image-web"
+                  role="img"
+                  aria-hidden
+                  style={{ backgroundImage: `url('${posterUrl}')` }}
+                />
+              </div>
+              {children}
+            </div>
           </div>
         ) : (
           <div
             className={`welcome-hero-video-stack-web${heroFrameReady ? ' watta-hero-video--ready' : ''}`}
-            style={{
-              backgroundColor: WATTA_HERO_OCEAN_GRADIENT,
-              ...(heroFrameReady
-                ? {}
-                : {
-                    backgroundImage: `url('${WATTA_HOME_HERO_POSTER}')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center center',
-                    backgroundRepeat: 'no-repeat',
-                  }),
-            }}
+            style={{ backgroundColor: WATTA_HERO_OCEAN_GRADIENT }}
           >
-            <video
-              key={heroVideoSrc}
-              ref={attachHeroVideoRef}
-              className="welcome-video-native-web watta-home-hero-native-video"
-              width={1920}
-              height={1080}
-              src={heroVideoSrc}
-              poster={heroFrameReady ? undefined : WATTA_HOME_HERO_POSTER}
+            <div
+              className="welcome-hero-media-frame-web"
+              style={{
+                backgroundImage: `url('${posterUrl}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center var(--watta-home-hero-media-pos-y, 46%)',
+                backgroundRepeat: 'no-repeat',
+              }}
+            >
+              <video
+                key={heroVideoSrc}
+                ref={attachHeroVideoRef}
+                className="welcome-video-native-web watta-home-hero-native-video"
+                width={1920}
+                height={1080}
+                src={heroVideoSrc}
+                poster={posterUrl}
               autoPlay
               muted
               loop={heroVideoLoop}
@@ -195,7 +220,8 @@ export default function WelcomeHeroSection({
                 if (playlistLength <= 1) return
                 setHeroVideoSourceIndex((prev) => (prev + 1) % playlistLength)
               }}
-            />
+              />
+            </div>
             <div
               className="welcome-hero-video-input-shield-web"
               aria-hidden

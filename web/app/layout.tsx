@@ -4,11 +4,21 @@ import AppClient from './AppClient'
 import DevNoiseCleanup from './components/DevNoiseCleanup'
 import './fonts.local'
 import './globals.css'
+/* Після globals — fixed chrome: лише шапка + капсула чіпів (перебиває правила в globals) */
+import './watta-chrome-stable-layout.css'
+import './watta-chrome-categories-transparent.css'
+import './watta-home-chrome-lock.css'
+import './home-after-hero-intro-tablet-desktop.css'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildRootMetadata, getJsonLdDescription } from '@/lib/i18n/seo'
 import { wattaToHtmlLang } from '@/lib/i18n/language'
+import {
+  WATTA_HOME_HERO_CRITICAL_CSS,
+  WATTA_HTML_ROUTE_BOOT_SCRIPT,
+} from '@/lib/wattaHtmlRouteClass'
+import { LOCATION_PICKER_MASCOT_SRC } from '@/lib/locationPickerMascot'
 
-export const dynamic = 'force-dynamic'
+const BASE_HTML_CLASS = 'watta-light-chrome'
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getRequestLocale()
@@ -35,6 +45,9 @@ export default async function RootLayout({
   const lang = await getRequestLocale()
   const htmlLang = wattaToHtmlLang(lang)
   const jsonLdDescription = getJsonLdDescription(lang)
+  /** Клас hero-маршруту — синхронний boot script + WattaHtmlRouteClass на клієнті (без headers на кожен RSC). */
+  const htmlClassName = BASE_HTML_CLASS
+  const bodyClassName = undefined
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -53,8 +66,13 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang={htmlLang} className="watta-light-chrome" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+    <html lang={htmlLang} className={htmlClassName} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: WATTA_HTML_ROUTE_BOOT_SCRIPT }} />
+        <style dangerouslySetInnerHTML={{ __html: WATTA_HOME_HERO_CRITICAL_CSS }} />
+        <link rel="preload" href={LOCATION_PICKER_MASCOT_SRC} as="image" type="image/png" fetchPriority="high" />
+      </head>
+      <body className={bodyClassName} suppressHydrationWarning>
         <DevNoiseCleanup />
         <script
           type="application/ld+json"

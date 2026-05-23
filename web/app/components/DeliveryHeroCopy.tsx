@@ -11,7 +11,8 @@ import {
 } from './heroCopyMotion'
 
 type DeliveryHeroCopyProps = {
-  kicker: string
+  /** Порожній рядок — лише курсивний слоган (напр. /menu без «WATTA»). */
+  kicker?: string
   kickerScript: string
   headlineLead: string
   headlineMark: string
@@ -79,14 +80,21 @@ export default function DeliveryHeroCopy({
   titleId,
 }: DeliveryHeroCopyProps) {
   const reduceMotion = useReducedMotion() ?? false
+  const kickerText = kicker?.trim() ?? ''
+  const showKickerBrand = kickerText.length > 0
 
-  const kickerDoneMs = reduceMotion ? 0 : kicker.length * HERO_COPY_TYPE_MS + 80
-  const scriptDelay = kickerDoneMs / 1000
-  const headlineDelay = scriptDelay + 0.22
+  const kickerDoneMs =
+    reduceMotion || !showKickerBrand ? 0 : kickerText.length * HERO_COPY_TYPE_MS + 80
+  const headlineDelay = showKickerBrand
+    ? kickerDoneMs / 1000 + 0.22
+    : reduceMotion
+      ? 0
+      : 0.08
   const markDelay =
     headlineDelay + splitHeroWords(headlineLead).length * 0.055 + 0.12
-  const bodyDelay =
-    markDelay + splitHeroWords(headlineMark).length * 0.055 + 0.14
+  const scriptDelay =
+    markDelay + splitHeroWords(headlineMark).length * 0.055 + 0.1
+  const bodyDelay = scriptDelay + 0.14
   const statsDelay = bodyDelay + splitHeroWords(sub).length * 0.028 + 0.2
 
   const statVariants = {
@@ -106,13 +114,40 @@ export default function DeliveryHeroCopy({
   ] as const
 
   return (
-    <header className="delivery-hero-copy-home mx-auto w-full max-w-3xl text-center">
-      <p className="delivery-hero-copy-home__kicker">
-        <TypewriterBrand
-          text={kicker}
-          reduceMotion={reduceMotion}
-          className="delivery-hero-copy-home__kicker-brand"
-        />
+    <header className="delivery-hero-copy-home delivery-hero-copy-home--stage mx-auto w-full max-w-4xl text-center">
+      {showKickerBrand ? (
+        <p className="delivery-hero-copy-home__kicker delivery-hero-copy-home__kicker--brand-only">
+          <TypewriterBrand
+            text={kickerText}
+            reduceMotion={reduceMotion}
+            className="delivery-hero-copy-home__kicker-brand"
+          />
+        </p>
+      ) : null}
+
+      <h1
+        id={titleId}
+        className="delivery-hero-copy-home__title delivery-hero-copy-home__title--stage"
+      >
+        <span className="delivery-hero-copy-home__title-line">
+          <AnimatedWords
+            text={headlineLead}
+            reduceMotion={reduceMotion}
+            delay={headlineDelay}
+            stagger={0.07}
+          />
+        </span>
+        <span className="delivery-hero-copy-home__title-line delivery-hero-copy-home__title-line--accent">
+          <AnimatedWords
+            text={headlineMark}
+            reduceMotion={reduceMotion}
+            delay={markDelay}
+            stagger={0.07}
+          />
+        </span>
+      </h1>
+
+      <p className="delivery-hero-copy-home__kicker delivery-hero-copy-home__kicker--script-after-title">
         <motion.span
           className="delivery-hero-copy-home__script"
           style={{ fontFamily: 'var(--font-brand-marck), cursive' }}
@@ -124,29 +159,7 @@ export default function DeliveryHeroCopy({
         </motion.span>
       </p>
 
-      <h1
-        id={titleId}
-        className="delivery-hero-copy-home__title home-after-hero-intro-title-web mx-auto max-w-3xl text-center text-[clamp(1.35rem,3.8vw,2.35rem)] font-semibold leading-[1.18] tracking-[-0.02em] text-[#0f2a22]"
-      >
-        <span className="block">
-          <AnimatedWords
-            text={headlineLead}
-            reduceMotion={reduceMotion}
-            delay={headlineDelay}
-            stagger={0.07}
-          />
-        </span>
-        <span className="block text-[#145142]">
-          <AnimatedWords
-            text={headlineMark}
-            reduceMotion={reduceMotion}
-            delay={markDelay}
-            stagger={0.07}
-          />
-        </span>
-      </h1>
-
-      <p className="delivery-hero-copy-home__body home-after-hero-intro-body-web mx-auto mt-4 max-w-2xl text-center text-[13px] leading-snug text-[#145142]/88 sm:mt-5 sm:text-[14px] sm:leading-relaxed text-balance">
+      <p className="delivery-hero-copy-home__body delivery-hero-copy-home__body--stage">
         <AnimatedWords
           text={sub}
           reduceMotion={reduceMotion}

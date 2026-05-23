@@ -1,0 +1,269 @@
+/* /delivery — About palette + home typography */
+
+.watta-delivery-page-about {
+  --delivery-orange: #ff5c00;
+  --delivery-accent: #1a6b58;
+  --delivery-accent-soft: #8ee07a;
+  --delivery-action: #92e07a;
+  --delivery-action-end: #5ebf55;
+  --delivery-green: #145142;
+  --delivery-body-muted: #7a7a7a;
+}
+
+/* Фон lead-band — у delivery-page-web.css */
+
+/* Intro: home fonts, centered, orange accent line */
+.watta-delivery-page-about .delivery-page-intro-inner-web--standalone .home-after-hero-intro-title-web {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: none;
+  text-align: center;
+}
+
+.watta-delivery-page-about
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web
+  > span:nth-child(1) {
+  color: #111827 !important;
+}
+
+.watta-delivery-page-about
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web
+  > span:nth-child(2) {
+  color: var(--delivery-orange, #ff5c00) !important;
+}
+
+.watta-delivery-page-about .delivery-page-intro-inner-web--standalone .home-after-hero-intro-body-web {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 36rem;
+  text-align: center;
+}
+
+/* Stat cards — About philosophy cards, centered */
+.watta-delivery-page-about .delivery-page-stats-grid {
+  justify-items: stretch;
+}
+
+.watta-delivery-page.watta-site-hero-page-web.watta-delivery-page-about .delivery-page-stat-card,
+.watta-delivery-page-about .delivery-page-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #fff;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.watta-delivery-page-about .delivery-page-stat-card__icon-wrap {
+  position: relative;
+  display: flex;
+  margin: 0 auto 0.85rem;
+  height: 3.25rem;
+  width: 3.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.watta-delivery-page-about .delivery-page-stat-card__icon-blob {
+  position: absolute;
+  height: 2.75rem;
+  width: 3.25rem;
+  rotate: -12deg;
+  border-radius: 45% 55% 50% 50%;
+  opacity: 0.9;
+}
+
+.watta-delivery-page-about .delivery-page-stat-card--green .delivery-page-stat-card__icon-blob {
+  background: linear-gradient(
+    135deg,
+    rgba(142, 224, 122, 0.55) 0%,
+    rgba(26, 107, 88, 0.18) 55%,
+    rgba(182, 235, 168, 0.45) 100%
+  );
+}
+
+.watta-delivery-page-about .delivery-page-stat-card--orange .delivery-page-stat-card__icon-blob {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 180, 120, 0.55) 0%,
+    rgba(255, 92, 0, 0.2) 55%,
+    rgba(255, 210, 170, 0.45) 100%
+  );
+}
+
+.watta-delivery-page-about .delivery-page-stat-card__icon {
+  position: relative;
+  z-index: 1;
+  height: 1.65rem;
+  width: 1.65rem;
+}
+
+.watta-delivery-page-about .delivery-page-stat-card--green .delivery-page-stat-card__icon {
+  color: var(--delivery-green);
+}
+
+.watta-delivery-page-about .delivery-page-stat-card--orange .delivery-page-stat-card__icon {
+  color: var(--delivery-orange);
+}
+
+.watta-delivery-page-about .delivery-page-stat-card__value {
+  width: 100%;
+  font-size: clamp(1rem, 2.8vw, 1.2rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.watta-delivery-page-about .delivery-page-stat-card--green .delivery-page-stat-card__value {
+  color: var(--delivery-green);
+}
+
+.watta-delivery-page-about .delivery-page-stat-card--orange .delivery-page-stat-card__value {
+  color: var(--delivery-orange);
+}
+
+.watta-delivery-page-about .delivery-page-stat-card__label {
+  width: 100%;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--delivery-body-muted);
+  text-align: center;
+}
+
+@media (hover: hover) {
+  .watta-delivery-page-about .delivery-page-stat-card--green:hover {
+    transform: translateY(-3px);
+    border-color: rgba(26, 107, 88, 0.22);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+  }
+
+  .watta-delivery-page-about .delivery-page-stat-card--orange:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 92, 0, 0.22);
+    box-shadow: 0 16px 48px rgba(255, 92, 0, 0.08);
+  }
+}
+
+/* Hub — панель місто + адреса (delivery-designer-hub.css) */
+.watta-delivery-page-about .delivery-designer-hub__tools .delivery-about-section-kicker,
+.watta-delivery-page-about .delivery-designer-hub__mast-kicker {
+  color: rgba(20, 81, 66, 0.55);
+}
+
+.watta-delivery-page-about .delivery-designer-hub__calc-title {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+  color: #0f2a22;
+}
+
+.watta-delivery-page-about .delivery-designer-hub__calc-title::after {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 3px;
+  margin-top: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--delivery-green), var(--delivery-accent-soft));
+}
+
+.watta-delivery-page-about .delivery-designer-hub__zones-title em {
+  color: var(--delivery-orange);
+}
+
+/* Trust — окрема секція без панелі */
+.watta-delivery-page-about .delivery-flow-section--promise .delivery-watta-trust-strip--promise-only .delivery-watta-trust-strip__grid {
+  display: block;
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip--promise-only .delivery-watta-trust-strip__item--promise {
+  max-width: 40rem;
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip--promise-only .delivery-watta-trust-strip__title {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.1rem, 3.5vw, 1.35rem);
+  font-weight: 600;
+  color: #0f2a22;
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip__mark {
+  color: var(--delivery-orange);
+  opacity: 0.9;
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip__head-ico {
+  color: var(--delivery-green);
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip__kicker {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.55);
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip__title {
+  font-size: clamp(1.05rem, 3vw, 1.25rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip__text,
+.watta-delivery-page-about .delivery-watta-trust-strip__addr {
+  color: var(--delivery-body-muted);
+  line-height: 1.55;
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip__link {
+  color: var(--delivery-green);
+  font-weight: 800;
+}
+
+.watta-delivery-page-about .delivery-watta-trust-strip__link:hover {
+  color: var(--delivery-orange);
+}
+
+.watta-delivery-page-about .delivery-flow-section--promise .delivery-watta-trust-strip__kicker {
+  color: rgba(255, 92, 0, 0.72);
+}
+
+.watta-delivery-page-about .delivery-about-heading__accent {
+  color: var(--delivery-orange);
+}
+
+.watta-delivery-page-about .delivery-about-heading__ico-wrap {
+  background: linear-gradient(135deg, var(--delivery-green), var(--delivery-orange));
+}
+
+/* How to order — Playfair як на головній (деталі в delivery-how-channels.css) */
+.watta-delivery-page-about .delivery-about-panel--how .delivery-watta-how__title {
+  margin: 0 0 clamp(1rem, 2.5vw, 1.35rem);
+  text-align: center;
+  font-size: clamp(1.35rem, 4.5vw, 2rem);
+}
+
+/* Loading */
+.watta-delivery-page-about .delivery-watta-loading {
+  margin: 2rem auto;
+  padding: 1.25rem 1.5rem;
+  max-width: 20rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--delivery-green);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: linear-gradient(165deg, #f6f9f7 0%, #fff 60%);
+  box-shadow: 0 10px 40px rgba(20, 81, 66, 0.08);
+}

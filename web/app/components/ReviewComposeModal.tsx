@@ -1,10 +1,13 @@
 'use client'
 
-import { useCallback, useState } from 'react'
-import { Star, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Camera, Star, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { readReviewImageDataUrl } from '@/lib/compressReviewImage'
+import { getReviewSubmitErrorMessage } from '@/lib/reviewSubmitErrors'
 
 export type ReviewComposeResult = {
   id: number
@@ -13,9 +16,16 @@ export type ReviewComposeResult = {
   images?: unknown
 }
 
+const RATING_HINTS: Record<string, string[]> = {
+  uk: ['Погано', 'Так собі', 'Нормально', 'Добре', 'Чудово!'],
+  ru: ['Плохо', 'Так себе', 'Нормально', 'Хорошо', 'Отлично!'],
+  en: ['Poor', 'Fair', 'Good', 'Great', 'Excellent!'],
+  nl: ['Slecht', 'Matig', 'Goed', 'Erg goed', 'Uitstekend!'],
+}
+
 type ReviewComposeModalProps = {
-  orderId: number
-  orderLabel: string
+  orderId?: number
+  orderLabel?: string
   onClose: () => void
   onSubmitted: (review: ReviewComposeResult) => void
 }
@@ -26,34 +36,67 @@ export default function ReviewComposeModal({
   onClose,
   onSubmitted,
 }: ReviewComposeModalProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const cp = t.clientProfile
   const [reviewText, setReviewText] = useState('')
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewImages, setReviewImages] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const [portalReady, setPortalReady] = useState(false)
 
-  const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
+
+  const ratingHints = RATING_HINTS[language] ?? RATING_HINTS.en
+  const ratingHint = ratingHints[reviewRating - 1] ?? ''
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.body.classList.add('watta-review-compose-open')
+    return () => {
+      document.body.style.overflow = prev
+      document.body.classList.remove('watta-review-compose-open')
+    }
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const onPickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files?.length) return
-    const max = 6
-    for (let i = 0; i < files.length && reviewImages.length < max; i++) {
-      const f = files[i]
-      if (!f.type.startsWith('image/')) continue
-      if (f.size > 2_000_000) {
-        toast.error(t.appToasts.fileTooBig)
-        continue
-      }
-      const reader = new FileReader()
-      reader.onload = () => {
-        const r = String(reader.result || '')
-        if (r) {
-          setReviewImages((prev) => (prev.length >= max ? prev : [...prev, r]))
-        }
-      }
-      reader.readAsDataURL(f)
-    }
     e.target.value = ''
+    const max = 6
+    const maxTotalChars = 3_800_000
+    const prepared: string[] = []
+
+    for (const f of Array.from(files)) {
+      if (prepared.length >= max) break
+      const dataUrl = await readReviewImageDataUrl(f)
+      if (dataUrl) prepared.push(dataUrl)
+    }
+
+    if (!prepared.length) return
+
+    setReviewImages((prev) => {
+      if (prev.length >= max) return prev
+      let total = prev.reduce((sum, src) => sum + src.length, 0)
+      const merged = [...prev]
+      for (const src of prepared) {
+        if (merged.length >= max) break
+        if (total + src.length > maxTotalChars) break
+        merged.push(src)
+        total += src.length
+      }
+      return merged.length === prev.length ? prev : merged
+    })
   }
 
   const submitReview = useCallback(async () => {
@@ -76,7 +119,7 @@ export default function ReviewComposeModal({
           ...auth,
         },
         body: JSON.stringify({
-          orderId,
+          ...(orderId != null ? { orderId } : {}),
           rating: reviewRating,
           text: txt,
           images: reviewImages,
@@ -84,10 +127,19 @@ export default function ReviewComposeModal({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error((data.message as string) || t.appToasts.reviewSaveError)
+        toast.error(
+          getReviewSubmitErrorMessage(res.status, data.message as string | undefined, {
+            loginAgain: t.appToasts.loginAgain,
+            reviewNeedText: t.appToasts.reviewNeedText,
+            reviewSaveError: t.appToasts.reviewSaveError,
+            reviewDuplicate: t.appToasts.reviewDuplicate,
+            reviewImageRejected: t.appToasts.reviewImageRejected,
+          }),
+        )
         return
       }
-      toast.success(t.appToasts.reviewThanks)
+      toast.success(t.appToasts.reviewThanksModeration)
+      window.dispatchEvent(new CustomEvent('reviewsUpdated'))
       onSubmitted({
         id: data.id,
         rating: data.rating,
@@ -95,82 +147,93 @@ export default function ReviewComposeModal({
         images: data.images,
       })
       onClose()
+    } catch {
+      toast.error(t.appToasts.networkError)
     } finally {
       setSubmitting(false)
     }
   }, [orderId, reviewImages, reviewRating, reviewText, onClose, onSubmitted, t.appToasts])
 
-  return (
+  if (!portalReady) return null
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[500] flex items-end justify-center bg-black/45 p-4 sm:items-center"
+      className="watta-review-compose-backdrop fixed inset-0 z-[11060] flex items-center justify-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="review-compose-title"
       onClick={onClose}
     >
-      <div
-        className="w-full max-w-lg rounded-[1.35rem] border border-[#145142]/12 bg-white p-5 shadow-2xl sm:p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h3 id="review-compose-title" className="text-lg font-bold text-[#0f2a22]">
+      <div className="watta-review-compose watta-review-compose--glass" onClick={(e) => e.stopPropagation()}>
+        <div className="watta-review-compose__ambient" aria-hidden />
+        <div className="watta-review-compose__head">
+          <div className="watta-review-compose__head-copy">
+            <p className="watta-review-compose__kicker">Watta Sushi</p>
+            <h3 id="review-compose-title" className="watta-review-compose__title">
               {cp.reviewModalTitle}
             </h3>
-            <p className="mt-1 text-sm text-[#145142]/70">{orderLabel}</p>
+            {orderLabel ? <p className="watta-review-compose__order">{orderLabel}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            className="watta-review-compose__close"
             aria-label={t.auth.back}
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="mb-4 flex gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setReviewRating(n)}
-              className="rounded p-0.5 transition hover:scale-110"
-              aria-label={`${n}`}
-            >
-              <Star
-                className={`h-8 w-8 ${
-                  n <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'
-                }`}
-              />
-            </button>
-          ))}
+        <div className="watta-review-compose__rating-block">
+          <div className="watta-review-compose__stars">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setReviewRating(n)}
+                className="watta-review-compose__star-btn"
+                aria-label={`${n}`}
+              >
+                <Star
+                  className={`watta-review-compose__star ${
+                    n <= reviewRating ? 'watta-review-compose__star--on' : ''
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+          <p className="watta-review-compose__rating-hint" aria-live="polite">
+            {ratingHint}
+          </p>
         </div>
 
         <textarea
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
           placeholder={cp.reviewText}
-          rows={4}
-          className="w-full resize-none rounded-xl border border-[#145142]/18 bg-[#f8faf9] px-4 py-3 text-[15px] text-[#0f2a22] outline-none ring-[#145142]/30 focus:ring-2"
+          rows={5}
+          maxLength={4000}
+          className="watta-review-compose__textarea"
         />
+        <p className="watta-review-compose__counter">{reviewText.trim().length} / 4000</p>
 
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-semibold text-gray-700">{cp.reviewPhotos}</p>
-          <label className="inline-flex cursor-pointer items-center rounded-lg border border-dashed border-[#145142]/25 px-3 py-2 text-sm font-semibold text-[#145142] hover:bg-[#145142]/5">
+        <div className="watta-review-compose__photos">
+          <p className="watta-review-compose__photos-label">{cp.reviewPhotos}</p>
+          <label className="watta-review-compose__upload">
+            <Camera className="h-5 w-5" aria-hidden />
             <input type="file" accept="image/*" multiple className="sr-only" onChange={onPickFiles} />
-            +
           </label>
           {reviewImages.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="watta-review-compose__thumbs">
               {reviewImages.map((src, i) => (
-                <div key={i} className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#145142]/10">
+                <div key={i} className="watta-review-compose__thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
-                    className="absolute right-0 top-0 bg-black/50 px-1 text-xs text-white"
+                    className="watta-review-compose__thumb-remove"
                     onClick={() => setReviewImages((prev) => prev.filter((_, j) => j !== i))}
+                    aria-label="×"
                   >
                     ×
                   </button>
@@ -182,13 +245,14 @@ export default function ReviewComposeModal({
 
         <button
           type="button"
-          disabled={submitting}
+          disabled={submitting || reviewText.trim().length < 3}
           onClick={() => void submitReview()}
-          className="mt-5 w-full rounded-xl bg-[#145142] py-3 text-sm font-bold text-white transition hover:bg-[#0f3d32] disabled:opacity-60"
+          className="watta-review-compose__submit"
         >
           {submitting ? '…' : cp.reviewSend}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

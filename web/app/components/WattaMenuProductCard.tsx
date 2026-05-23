@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { WATTA_CATALOG_REFRESH_EVENT } from '@/lib/wattaCatalogSync'
-import Link from 'next/link'
+import WattaLink from './WattaLink'
 import { Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
@@ -119,7 +119,7 @@ export function WattaMenuProductCard({
     <div className="relative">
       {pills}
       <HomeMenuProductFavoriteButton productId={product.id} />
-      <Link
+      <WattaLink
         href={`/product/${product.id}`}
         className="home-menu-product-card-media-web group/media block"
         prefetch
@@ -145,7 +145,7 @@ export function WattaMenuProductCard({
         ) : (
           <div className="home-menu-product-card-placeholder-web">{emoji}</div>
         )}
-      </Link>
+      </WattaLink>
     </div>
   )
 
@@ -161,7 +161,7 @@ export function WattaMenuProductCard({
     >
       {media}
       <div className="home-menu-product-card-body-web">
-        <Link
+        <WattaLink
           href={`/product/${product.id}`}
           className="home-menu-product-card-title-link-web"
           prefetch
@@ -175,7 +175,7 @@ export function WattaMenuProductCard({
           }}
         >
           <h2 className="home-menu-product-card-title-web">{product.name}</h2>
-        </Link>
+        </WattaLink>
         {subtitleLine ? <p className="home-menu-product-card-subline-web">{subtitleLine}</p> : null}
         {product.description ? <p className="home-menu-product-card-desc-web">{product.description}</p> : null}
 

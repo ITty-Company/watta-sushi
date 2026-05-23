@@ -2,7 +2,7 @@
 
 import WattaSiteStickyChrome from './WattaSiteStickyChrome'
 
-/** Верхня панель для публічних маршрутів (окрім `/`, `/favorites` — там chrome у сторінці). */
+/** Глобальна fixed-шапка + стрічка категорій (як на головній). */
 export default function WattaPublicSiteChrome() {
-  return <WattaSiteStickyChrome flowHeightFudgePx={4} />
+  return <WattaSiteStickyChrome />
 }

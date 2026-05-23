@@ -1,24 +1,19 @@
 /**
- * Декоративне hero-відео: безперервний muted autoplay + loop, 24/7 поки вкладка жива
- * (без кліку для старту).
- * — Не підміняємо `video.pause`: у WebKit це інколи ламає ланцюг автозапуску / залишає «натисни для play».
- * — Навіть у прихованій вкладці не викликаємо `pause()` самі: браузер сам гальмує декодер,
- *   якщо вирішить економити; як тільки вкладка знову видима — відео вже грає, без «розморозки».
- * — Після повернення на вкладку — серія відкладених `play()` (Safari часто лишає paused).
- * — На десктопі `blockInteractionRoot` ловить лише click (не touch) — скрол на телефоні/планшеті не блокується.
- * — Watchdog / burst + повторні play() після відхилення промісу.
+ * Декоративне hero-відео: muted autoplay + loop.
+ * Оптимізовано під швидкі кліки по UI: без глобальних gesture-слухачів на document,
+ * рідші watchdog/burst, throttle play(), debounce on pause.
  */
 export function bindHeroVideoAutoplay(
   video: HTMLVideoElement,
   options?: {
     extendedRetries?: boolean
+    /** @deprecated Відео вже `pointer-events: none`; shield у WelcomeHeroSection */
     blockInteractionRoot?: HTMLElement | null
     /** false — плейлист з адмінки: onEnded перемикає наступний ролик */
     loop?: boolean
   },
 ): () => void {
   const extendedRetries = options?.extendedRetries ?? false
-  const blockRoot = options?.blockInteractionRoot ?? null
   const shouldLoop = options?.loop !== false
 
   const applyLoopMode = () => {
@@ -31,10 +26,24 @@ export function bindHeroVideoAutoplay(
     }
   }
 
+  let lastPlayAt = 0
+  let playScheduled = 0
+  const MIN_PLAY_GAP_MS = extendedRetries ? 90 : 140
+
   const safePlay = () => {
-    /* 24/7: не блокуємо play() навіть коли `document.hidden`. Хром/Safari у фоні
-       все одно знизять частоту таймерів і деко може стихнути; але як тільки вкладка
-       знов видима — `video.paused` уже false, і користувач не бачить «склейку». */
+    const now = performance.now()
+    if (!video.paused && now - lastPlayAt < MIN_PLAY_GAP_MS) return
+    if (video.paused && now - lastPlayAt < MIN_PLAY_GAP_MS) {
+      if (!playScheduled) {
+        playScheduled = window.setTimeout(() => {
+          playScheduled = 0
+          safePlay()
+        }, MIN_PLAY_GAP_MS)
+      }
+      return
+    }
+    lastPlayAt = now
+
     try {
       video.defaultMuted = true
       video.muted = true
@@ -54,7 +63,6 @@ export function bindHeroVideoAutoplay(
         'controlsList',
         'nodownload nofullscreen noremoteplayback noplaybackrate',
       )
-      /* Не знижуємо fetchpriority: у hero залишаємо високий пріоритет з розмітки (швидший перший байт / decode). */
       try {
         video.setAttribute('x-webkit-airplay', 'deny')
       } catch {
@@ -93,18 +101,16 @@ export function bindHeroVideoAutoplay(
     attemptPlay()
   }
 
+  let pauseKickId = 0
   const onPause = () => {
-    /* 24/7: одразу піднімаємо play(), навіть у прихованій вкладці. Якщо браузер сам
-       заглушив декодер з причин економії — наш play() поверне його у грає-стан,
-       щойно вкладка стане видимою. */
     if (video.ended) return
-    safePlay()
-    requestAnimationFrame(() => {
+    window.clearTimeout(pauseKickId)
+    pauseKickId = window.setTimeout(() => {
+      if (!video.paused) return
       safePlay()
-    })
+    }, 80)
   }
 
-  /** Лише «клікоподібні» події — touchstart/touchmove з preventDefault ламають вертикальний скрол на iOS/Android. */
   const blockTapOnVideo = (e: Event) => {
     e.preventDefault()
     e.stopPropagation()
@@ -136,22 +142,14 @@ export function bindHeroVideoAutoplay(
   const onLoadedMeta = () => safePlay()
   const onPageShow = () => safePlay()
   const onVisibility = () => {
-    /* 24/7: НЕ паузимо самі при `hidden`. Браузер автоматично знизить пріоритет декодера,
-       а коли вкладка знову видима — наш play() підстрахує. Якщо ж сам не зупиняли —
-       у багатьох випадках decoder продовжує, і «оживає» миттєво. */
     if (document.visibilityState !== 'visible') return
     safePlay()
-    /* Серія відкладених play() — Safari/WebKit інколи лишає paused після фокусу. */
-    window.setTimeout(safePlay, 40)
     window.setTimeout(safePlay, 120)
-    window.setTimeout(safePlay, 420)
-    window.setTimeout(safePlay, 1200)
+    window.setTimeout(safePlay, 480)
   }
 
   let focusRaf = 0
   const onWindowFocus = () => {
-    /* 24/7: дозволяємо play() навіть якщо document.hidden — у момент колбеку
-       стан може ще не оновитись, а ми хочемо першим зрозуміти, що вкладка ожила. */
     if (focusRaf) return
     focusRaf = requestAnimationFrame(() => {
       focusRaf = 0
@@ -174,21 +172,16 @@ export function bindHeroVideoAutoplay(
   }
 
   const watchdog = () => {
-    /* 24/7: тримаємо play() навіть під час прихованої вкладки. Це майже безкоштовно —
-       видимих кадрів немає, drawImage у canvas-mirror не виконується (rAF
-       призупинено фоновим режимом), але `video.paused` лишається false. */
     if (video.ended || video.error) return
     if (video.paused) safePlay()
   }
 
-  /** Після перезавантаження Safari часто дає stalled/waiting — підштовхуємо play(), не чекаючи 4 с */
   const onWaiting = () => {
     queueMicrotask(safePlay)
     window.setTimeout(safePlay, 80)
   }
   const onStalled = () => {
-    window.setTimeout(safePlay, 40)
-    window.setTimeout(safePlay, 200)
+    window.setTimeout(safePlay, 80)
   }
 
   queueMicrotask(safePlay)
@@ -197,53 +190,48 @@ export function bindHeroVideoAutoplay(
   if (video.readyState >= 1) safePlay()
   if (video.readyState >= 2) safePlay()
 
-  const delays = extendedRetries
-    ? [0, 40, 120, 420, 900]
-    : [0, 60, 200]
+  const delays = extendedRetries ? [0, 80, 280, 700] : [0, 120]
   const timers = delays.map((ms) => window.setTimeout(safePlay, ms))
 
-  /* Рідше будимо цикл, коли відео вже грає — менше навантаження на CPU */
-  const watchdogMs = extendedRetries ? 480 : 2500
+  const watchdogMs = extendedRetries ? 2800 : 6000
   const watchdogId = window.setInterval(watchdog, watchdogMs)
 
-  /** Якщо Safari коротко ставить на паузу — підштовхуємо рідше, ніж щокадру.
-   *  24/7: тримаємо burst навіть у прихованій вкладці; інтервали браузер сам
-   *  заклемпить до 1000ms у фоні, тож затрати мінімальні. */
   const burstId = window.setInterval(() => {
     if (video.ended || video.error) return
     if (!video.paused) return
     safePlay()
-  }, extendedRetries ? 220 : 400)
+  }, extendedRetries ? 700 : 1800)
 
   let intersectionObserver: IntersectionObserver | null = null
   if (typeof IntersectionObserver !== 'undefined') {
     intersectionObserver = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting && e.target === video) safePlay()
+          if (e.target !== video) continue
+          if (e.isIntersecting) {
+            safePlay()
+          } else {
+            try {
+              video.pause()
+            } catch {
+              /* ignore */
+            }
+          }
         }
       },
-      { threshold: 0.02, rootMargin: '120px 0px' }
+      { threshold: 0.04, rootMargin: '64px 0px' },
     )
     intersectionObserver.observe(video)
   }
 
-  /**
-   * Перша взаємодія (tap / клавіша) — підштовхує muted autoplay у Safari.
-   * Не підписуємося на scroll/wheel: інакше кожен скрол викликає safePlay() тисячі разів і «фризить» сторінку + hero.
-   */
+  /** Лише на самому <video> — не на кожен клік по сторінці */
   const gestureOpts: AddEventListenerOptions = { capture: true, passive: true }
-  const onAnyUserGesture = () => {
-    if (video.ended || video.error) return
-    if (!video.paused) return
-    queueMicrotask(safePlay)
-    requestAnimationFrame(safePlay)
-    window.setTimeout(safePlay, 32)
-    window.setTimeout(safePlay, 200)
+  const onVideoGesture = () => {
+    if (video.ended || video.error || !video.paused) return
+    safePlay()
   }
-  document.addEventListener('pointerdown', onAnyUserGesture, gestureOpts)
-  document.addEventListener('touchstart', onAnyUserGesture, gestureOpts)
-  document.addEventListener('keydown', onAnyUserGesture, gestureOpts)
+  video.addEventListener('pointerdown', onVideoGesture, gestureOpts)
+  video.addEventListener('touchstart', onVideoGesture, gestureOpts)
 
   const onPlaying = () => {
     try {
@@ -253,7 +241,6 @@ export function bindHeroVideoAutoplay(
     }
   }
 
-  /** Як тільки з’являється перший шматок буфера — пробуємо play (раніше за canplay на повному файлі). */
   let progressRaf = 0
   const onProgress = () => {
     if (progressRaf) return
@@ -288,17 +275,16 @@ export function bindHeroVideoAutoplay(
   document.addEventListener('fullscreenchange', onFullscreenChange)
   document.addEventListener('resume', onDocumentResume)
   window.addEventListener('online', onOnline)
-  video.addEventListener('webkitendfullscreen' as keyof HTMLVideoElement, onWebkitEndFullscreen as EventListener)
-
-  const rootClickOpts: AddEventListenerOptions = { capture: true, passive: false }
-  if (blockRoot) {
-    blockRoot.addEventListener('click', blockTapOnVideo, rootClickOpts)
-    blockRoot.addEventListener('dblclick', blockTapOnVideo, rootClickOpts)
-    blockRoot.addEventListener('contextmenu', blockTapOnVideo, rootClickOpts)
-    blockRoot.addEventListener('auxclick', blockTapOnVideo, rootClickOpts)
-  }
+  video.addEventListener(
+    'webkitendfullscreen' as keyof HTMLVideoElement,
+    onWebkitEndFullscreen as EventListener,
+  )
 
   return () => {
+    if (playScheduled) window.clearTimeout(playScheduled)
+    playScheduled = 0
+    window.clearTimeout(pauseKickId)
+    pauseKickId = 0
     if (progressRaf) cancelAnimationFrame(progressRaf)
     progressRaf = 0
     if (focusRaf) cancelAnimationFrame(focusRaf)
@@ -307,15 +293,8 @@ export function bindHeroVideoAutoplay(
     window.clearInterval(burstId)
     timers.forEach((id) => window.clearTimeout(id))
     intersectionObserver?.disconnect()
-    document.removeEventListener('pointerdown', onAnyUserGesture, gestureOpts)
-    document.removeEventListener('touchstart', onAnyUserGesture, gestureOpts)
-    document.removeEventListener('keydown', onAnyUserGesture, gestureOpts)
-    if (blockRoot) {
-      blockRoot.removeEventListener('click', blockTapOnVideo, rootClickOpts)
-      blockRoot.removeEventListener('dblclick', blockTapOnVideo, rootClickOpts)
-      blockRoot.removeEventListener('contextmenu', blockTapOnVideo, rootClickOpts)
-      blockRoot.removeEventListener('auxclick', blockTapOnVideo, rootClickOpts)
-    }
+    video.removeEventListener('pointerdown', onVideoGesture, gestureOpts)
+    video.removeEventListener('touchstart', onVideoGesture, gestureOpts)
     video.removeEventListener('waiting', onWaiting)
     video.removeEventListener('stalled', onStalled)
     video.removeEventListener('progress', onProgress)
@@ -338,6 +317,9 @@ export function bindHeroVideoAutoplay(
     document.removeEventListener('fullscreenchange', onFullscreenChange)
     document.removeEventListener('resume', onDocumentResume)
     window.removeEventListener('online', onOnline)
-    video.removeEventListener('webkitendfullscreen' as keyof HTMLVideoElement, onWebkitEndFullscreen as EventListener)
+    video.removeEventListener(
+      'webkitendfullscreen' as keyof HTMLVideoElement,
+      onWebkitEndFullscreen as EventListener,
+    )
   }
 }

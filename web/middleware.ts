@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import {
+  authUsesNextRouteHandler,
+  backendProxyUnavailableResponse,
+  proxyToBackend,
+  subNeedsBackendProxy,
+} from './lib/proxyToBackendInMock'
+import {
   MOCK_PROMO_CODE,
   deliveryZonesForCity,
   getCitiesForMenu,
@@ -15,52 +21,49 @@ import {
   mockPromotions,
   mockSiteSettings,
   mockTeam,
-  productsForFavoriteList,
 } from './lib/localDevMock'
-
-const FAV_COOKIE = 'local_mock_fav_ids'
-
-function parseFavCookie(req: NextRequest): Set<number> {
-  const raw = req.cookies.get(FAV_COOKIE)?.value
-  if (!raw) return new Set()
-  try {
-    const arr = JSON.parse(decodeURIComponent(raw))
-    return new Set((Array.isArray(arr) ? arr : []).map(Number).filter(Number.isFinite))
-  } catch {
-    return new Set()
-  }
-}
-
-function favCookieHeader(ids: Set<number>): string {
-  const payload = encodeURIComponent(JSON.stringify(Array.from(ids).sort((a, b) => a - b)))
-  return `${FAV_COOKIE}=${payload}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly`
-}
-
-/** Узгоджено з API: обране лише з Bearer JWT (мок не валідує підпис). */
-function hasBearerAuth(request: NextRequest): boolean {
-  const a = request.headers.get('authorization')?.trim()
-  return Boolean(a?.startsWith('Bearer ') && a.length > 'Bearer '.length)
-}
 
 /**
  * Відповіді збігаються з Express-роутами (Prisma JSON), див. backend/routes/*.routes.ts
  */
+function nextWithPathname(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-watta-pathname', request.nextUrl.pathname)
+  return NextResponse.next({ request: { headers: requestHeaders } })
+}
+
 export async function middleware(request: NextRequest) {
-  if (process.env.USE_LOCAL_MOCK !== '1') {
-    return NextResponse.next()
-  }
-
   const { pathname } = request.nextUrl
+
   if (!pathname.startsWith('/api/')) {
-    return NextResponse.next()
+    return nextWithPathname(request)
   }
 
-  if (pathname.startsWith('/api/auth/')) {
-    return NextResponse.next()
+  if (process.env.USE_LOCAL_MOCK !== '1') {
+    return nextWithPathname(request)
   }
 
   const method = request.method
   const sub = pathname.replace(/^\/api\/?/, '').replace(/\/$/, '') || ''
+
+  if (pathname.startsWith('/api/auth/')) {
+    if (authUsesNextRouteHandler(sub)) {
+      return NextResponse.next()
+    }
+    try {
+      return await proxyToBackend(request, sub)
+    } catch {
+      return backendProxyUnavailableResponse()
+    }
+  }
+
+  if (subNeedsBackendProxy(sub, request)) {
+    try {
+      return await proxyToBackend(request, sub)
+    } catch {
+      return backendProxyUnavailableResponse()
+    }
+  }
 
   if (method === 'POST') {
     if (sub === 'promo/check') {
@@ -96,24 +99,31 @@ export async function middleware(request: NextRequest) {
       if (!cityId || raw.length < 3) {
         return NextResponse.json({ status: 'bad_request' }, { status: 400 })
       }
+      const normalized = raw.replace(/\s+/g, '').toUpperCase()
+      const looksAmsterdam =
+        /\bAMSTERDAM\b/i.test(raw) ||
+        /^10\d{2}[A-Z]{2}$/.test(normalized) ||
+        /^110\d[A-Z]{2}$/.test(normalized)
+      const status =
+        raw.length < 3 ? 'geocode_failed' : looksAmsterdam ? 'nl_tariff_ok' : 'outside_amsterdam'
       return NextResponse.json({
-        status: raw.length >= 3 ? 'nl_tariff_ok' : 'geocode_failed',
-        lat: 52.37,
-        lng: 4.9,
-        placeLabel: 'Mock (local dev)',
-        zoneName: 'Центр',
-        zoneId: 1,
-        zoneIsFreeDelivery: true,
+        status,
+        lat: looksAmsterdam ? 52.37 : 51.7,
+        lng: looksAmsterdam ? 4.9 : 5.7,
+        placeLabel: looksAmsterdam ? 'Mock Amsterdam (local dev)' : raw,
+        zoneName: looksAmsterdam ? 'Центр' : undefined,
+        zoneId: looksAmsterdam ? 1 : undefined,
+        zoneIsFreeDelivery: looksAmsterdam ? true : undefined,
         zoneFlatDeliveryFee: null,
         pricePerKm: 0.5,
         defaultDeliveryFee: 0,
         freeDeliveryThreshold: 1000,
         deliveryTariffStepKm: 3,
         deliveryTariffStepEur: 1.5,
-        estimatedDeliveryFee: raw.length >= 3 ? 1.5 : null,
-        distanceKm: raw.length >= 3 ? 2.5 : null,
-        routeDurationMinutes: raw.length >= 3 ? 18 : null,
-        minimumOrderEur: raw.length >= 3 ? 25 : null,
+        estimatedDeliveryFee: status === 'nl_tariff_ok' ? 1.5 : null,
+        distanceKm: status === 'nl_tariff_ok' ? 2.5 : null,
+        routeDurationMinutes: status === 'nl_tariff_ok' ? 18 : null,
+        minimumOrderEur: status === 'nl_tariff_ok' ? 25 : null,
       })
     }
 
@@ -140,34 +150,6 @@ export async function middleware(request: NextRequest) {
         return NextResponse.json({ error: 'bad_message' }, { status: 400 })
       }
       return NextResponse.json({ ok: true })
-    }
-
-    if (sub === 'favorites/toggle') {
-      if (!hasBearerAuth(request)) {
-        return NextResponse.json({ message: 'Нужна авторизация' }, { status: 401 })
-      }
-      let body: { productId?: number } = {}
-      try {
-        body = await request.json()
-      } catch {
-        /* empty */
-      }
-      const productId = Number(body.productId)
-      if (!productId) {
-        return NextResponse.json({ message: 'Invalid product' }, { status: 400 })
-      }
-      const set = parseFavCookie(request)
-      let added: boolean
-      if (set.has(productId)) {
-        set.delete(productId)
-        added = false
-      } else {
-        set.add(productId)
-        added = true
-      }
-      const res = NextResponse.json({ added })
-      res.headers.append('Set-Cookie', favCookieHeader(set))
-      return res
     }
 
     return NextResponse.json({ error: 'mock_mode_no_backend' }, { status: 503 })
@@ -243,16 +225,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json(mockSiteSettings)
     case 'banners':
       return NextResponse.json(mockBanners)
-    case 'favorites': {
-      if (!hasBearerAuth(request)) return NextResponse.json([])
-      return NextResponse.json(Array.from(parseFavCookie(request)))
-    }
-    case 'favorites/list': {
-      if (!hasBearerAuth(request)) {
-        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-      }
-      return NextResponse.json(productsForFavoriteList(Array.from(parseFavCookie(request))))
-    }
     case 'promotions':
       return NextResponse.json(mockPromotions)
     case 'team':
@@ -261,18 +233,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json(mockIngredients)
     case 'promo':
       return NextResponse.json([])
-    case 'orders/bonus': {
-      if (!request.headers.get('authorization')) {
-        return NextResponse.json({ message: 'Нет токена авторизации' }, { status: 401 })
-      }
-      return NextResponse.json({ bonusBalance: 0 })
-    }
-    case 'orders/my': {
-      if (!request.headers.get('authorization')) {
-        return NextResponse.json({ message: 'Нет токена авторизации' }, { status: 401 })
-      }
-      return NextResponse.json([])
-    }
     case 'orders/stats': {
       if (!request.headers.get('authorization')) {
         return NextResponse.json({ message: 'Нет токена авторизации' }, { status: 401 })
@@ -291,13 +251,15 @@ export async function middleware(request: NextRequest) {
         rawStatusCounts: {},
       })
     }
-    case 'orders':
-      return NextResponse.json([])
     default:
       return NextResponse.json([])
   }
 }
 
 export const config = {
-  matcher: ['/api/:path*'],
+  matcher: [
+    '/api/:path*',
+    /* document-запити: x-watta-pathname для SSR-класу на <html> (Reload головної) */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|woff2?|css|js|map)$).*)',
+  ],
 }

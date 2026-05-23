@@ -7,7 +7,7 @@ export const WATTA_MENU_REQUEST_SCROLL_TO_CAT = 'wattaMenuRequestScrollToCat' as
 /** Клік по стрічці на головній `/` — скрол до секції каталогу в `MenuView`. */
 export const WATTA_HOME_REQUEST_SCROLL_TO_CAT = 'wattaHomeRequestScrollToCat' as const
 
-/** Підсвітка + скрол до секції на `/menu` (без зміни scroll-позиції Next.js). */
+/** Підсвітка + скрол до секції на `/menu` (лише по кліку в стрічці; без зміни scroll-позиції Next.js). */
 export function dispatchFullMenuScrollToCategory(slug: string) {
   if (typeof window === 'undefined') return
   const trimmed = slug.trim()

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useLayoutEffect, useMemo, ReactNode } from 'react'
+import { createContext, useContext, useState, useLayoutEffect, useMemo, useCallback, ReactNode } from 'react'
 import {
   type WattaLanguage,
   WATTA_DEFAULT_SITE_LANGUAGE,
@@ -12,6 +12,7 @@ import {
   wattaToHtmlLang,
 } from '@/lib/i18n/language'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
+import { privacyPageByLang, type PrivacyPageContent } from '@/lib/i18n/privacyPageContent'
 
 export type Language = WattaLanguage
 
@@ -80,6 +81,14 @@ export interface Translations {
     statFresh: string
     statFast: string
     statCity: string
+    statCardColdValue: string
+    statCardColdLabel: string
+    statCardOrderValue: string
+    statCardOrderLabel: string
+    statCardPriceValue: string
+    statCardPriceLabel: string
+    statCardChannelsValue: string
+    statCardChannelsLabel: string
     citiesLabel: string
     mapAll: string
     mapFocus: string
@@ -170,8 +179,10 @@ export interface Translations {
     postalRouteDuration: string
     /** Пояснення крокового тарифу: {{stepKm}}, {{stepEur}} */
     postalTariffExplain: string
-    /** Індекс не в Амстердамі / інше гементе */
+    /** Адреса не в Амстердамі */
     postalOutsideAmsterdam: string
+    /** Адреса поза Нідерландами */
+    postalOutsideNetherlands: string
     /** Невірний формат NL (1234 AB) */
     postalInvalidNlFormat: string
     /** Вертикальний підпис біля відео в спліт-гері (сторінка /delivery) */
@@ -449,7 +460,10 @@ export interface Translations {
     loginAgain: string
     reviewNeedText: string
     reviewSaveError: string
+    reviewDuplicate: string
+    reviewImageRejected: string
     reviewThanks: string
+    reviewThanksModeration: string
     networkError: string
     removeFavoriteError: string
   }
@@ -518,6 +532,13 @@ export interface Translations {
     phoneLine: string
     teamEmptyTitle: string
     teamEmptyBody: string
+    teamCarouselHint: string
+    teamCarouselAria: string
+    teamGalleryCta: string
+    teamGalleryPageTitle: string
+    teamGalleryPageLead: string
+    teamGalleryBack: string
+    teamGalleryEmpty: string
     marqueeWords: string
     /** Кінематографічний тёмний герой + слайди в стилі преміум-доставки */
     darkHeroSubtitle: string
@@ -581,6 +602,14 @@ export interface Translations {
     defaultCategoryTag: string
     /** Коли список акцій порожній */
     emptyList: string
+    /** Додатковий текст у hero при порожньому списку */
+    emptyInvite: string
+    /** CTA на меню з порожнього стану */
+    menuCta: string
+    /** Підпис над сіткою акцій */
+    feedTitle: string
+    /** Бейдж головної картки */
+    featuredBadge: string
   }
   profilePage: {
     title: string
@@ -636,8 +665,20 @@ export interface Translations {
     addrSub: string
     addrEmptyTitle: string
     addrEmptySub: string
+    addrInputLabel: string
+    addrInputPlaceholder: string
+    addrCheckHint: string
+    addrSave: string
+    addrSaving: string
+    addrSaved: string
     dataTitle: string
     dataSub: string
+    dataSave: string
+    dataSaving: string
+    dataSaved: string
+    dataSaveError: string
+    dataNameRequired: string
+    emailReadonlyHint: string
     labelName: string
     labelPhone: string
     labelEmail: string
@@ -655,6 +696,13 @@ export interface Translations {
     title: string
     subtitle: string
     statsLine: string
+    feedTitlePart1: string
+    feedTitlePart2: string
+    statReviews: string
+    statAverage: string
+    statFiveStar: string
+    statRecommend: string
+    distributionTitle: string
     loginBlockTitle: string
     loginCta: string
     loginButton: string
@@ -662,8 +710,14 @@ export interface Translations {
     writeBlockDesc: string
     writeBlockNoOrders: string
     orderPickLabel: string
+    orderPickAction: string
+    ordersLoading: string
+    emptyMenuCta: string
+    featuredBadge: string
     feedTitle: string
     empty: string
+    emptyInvite: string
+    writeCta: string
     openProfile: string
   }
   /** Блог — обгортка UI */
@@ -682,6 +736,8 @@ export interface Translations {
   contactPage: {
     heroKicker: string
     heroTitle: string
+    heroTitleLead: string
+    heroTitleMark: string
     heroSubtitle: string
     ctaForm: string
     ctaDelivery: string
@@ -789,13 +845,7 @@ export interface Translations {
     ariaInstagram: string
   }
   /** Сторінка політики конфіденційності */
-  privacyPage: {
-    title: string
-    back: string
-    updated: string
-    intro: string
-    blocks: ReadonlyArray<{ title: string; body: string }>
-  }
+  privacyPage: PrivacyPageContent
   adminPage: {
     auth: {
       notAuthorized: string
@@ -927,7 +977,7 @@ export interface Translations {
       addBtn: string; tabSubtitle: string; editTitle: string; newTitle: string; titleRu: string; titlePlaceholder: string;
       heroVideoTitle: string; heroVideoSubtitle: string;
       deliveryHeroVideoTitle: string; deliveryHeroVideoSubtitle: string;
-      authHeroVideoTitle: string; authHeroVideoSubtitle: string;
+      authHeroVideoTitle: string; authHeroVideoSubtitle: string; authHeroPlaylistHint: string;
       authHeroPhone1Title: string; authHeroPhone2Title: string;
       authHeroCopyTitle: string; authHeroCopySubtitle: string; authHeroCopyBenefits: string; authHeroCopyCityHint: string;
       authHeroCopyLangUk: string; authHeroCopyLangRu: string; authHeroCopyLangEn: string; authHeroCopyLangNl: string;
@@ -965,6 +1015,8 @@ export interface Translations {
     empty: string
     emptySubtext: string
     markAllRead: string
+    liveHint: string
+    liveActive: string
   }
   // Додайте це до інтерфейсу Translations:
   menuView: {
@@ -1141,6 +1193,14 @@ const translations: Record<Language, Translations> = {
       statFresh: 'Щоденна свіжість',
       statFast: 'Збираємо швидко',
       statCity: 'Ваше місто на мапі',
+      statCardColdValue: '4°C',
+      statCardColdLabel: 'Холод тримаємо до дверей',
+      statCardOrderValue: 'На замовлення',
+      statCardOrderLabel: 'Не з вітрини — збираємо після кліку',
+      statCardPriceValue: 'По адресі',
+      statCardPriceLabel: 'Вартість бачите на карті до оплати',
+      statCardChannelsValue: '3 канали',
+      statCardChannelsLabel: 'Сайт · Instagram · дзвінок',
       citiesLabel: 'Міста доставки',
       mapAll: 'Усі міста',
       mapFocus: 'Місто',
@@ -1230,7 +1290,8 @@ const translations: Record<Language, Translations> = {
       postalDeliveryFeeTitle: 'Вартість доставки',
       postalRouteDuration: 'Орієнтовно {{minutes}} хв у дорозі',
       postalTariffExplain: 'Тариф: +{{stepEur}} € кожні {{stepKm}} км від кухні',
-      postalOutsideAmsterdam:
+      postalOutsideAmsterdam: 'Поки що доставка у ваше місто недоступна.',
+      postalOutsideNetherlands:
         'Ця адреса поза зоною доставки по Нідерландах. Перевірте адресу або оберіть інше місто.',
       postalInvalidNlFormat:
         'Формат індексу Нідерландів: чотири цифри та дві літери, наприклад 1075 VV.',
@@ -1423,8 +1484,8 @@ const translations: Record<Language, Translations> = {
       back: 'Назад',
       submit: 'Увійти',
       createAccount: 'Створити акаунт',
-      noAccount: 'Немає акаунта? Зареєструватися',
-      haveAccount: 'Є акаунт? Увійти',
+      noAccount: 'Немає акаунта?',
+      haveAccount: 'Є акаунт?',
       promoStrip: 'Роли та суші — швидке замовлення',
       desktopHeroTitle: 'Улюблені роли — у кілька кліків',
       desktopHeroSub: 'Збережіть акаунт — історія замовлень, бонуси та швидке оформлення доставки.',
@@ -1461,8 +1522,11 @@ const translations: Record<Language, Translations> = {
       fileTooBig: 'Файл завеликий (макс. ~2 МБ)',
       loginAgain: 'Увійдіть знову',
       reviewNeedText: 'Додайте трохи тексту до відгуку',
-      reviewSaveError: 'Не вдалося зберегти',
+      reviewSaveError: 'Не вдалося зберегти відгук. Спробуйте ще раз.',
+      reviewDuplicate: 'Ви вже залишили відгук на це замовлення',
+      reviewImageRejected: 'Не вдалося додати одне з фото — спробуйте інше зображення',
       reviewThanks: 'Дякуємо!',
+      reviewThanksModeration: 'Дякуємо! Відгук надіслано — з’явиться на сайті після перевірки.',
       networkError: 'Помилка мережі',
       removeFavoriteError: 'Не вдалося видалити з обраного'
     },
@@ -1475,7 +1539,7 @@ const translations: Record<Language, Translations> = {
       stats: {
         clients: "Задоволених клієнтів",
         experience: "Років досвіду",
-        delivery: "Хвилин доставка",
+        delivery: "Швидка доставка",
         quality: "Якість"
       },
       features: {
@@ -1530,6 +1594,13 @@ const translations: Record<Language, Translations> = {
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Команда на фото з’явиться зовсім скоро",
       teamEmptyBody: "Поки що знайомтесь з нами через страви — кожен рол уже зроблений руками наших шефів.",
+      teamCarouselHint: "Гортайте вправо →",
+      teamCarouselAria: "Фото команди",
+      teamGalleryCta: "Перейти до галереї",
+      teamGalleryPageTitle: "Галерея команди",
+      teamGalleryPageLead: "Усі фото команди Watta Sushi — ті самі, що в адмін-панелі.",
+      teamGalleryBack: "Назад до «Про нас»",
+      teamGalleryEmpty: "Фото команди ще не додані.",
       marqueeWords: "Свіжість|Температура|Смак|Команда|Амстердам|Роли|Суші|Доставка|Якість",
       darkHeroSubtitle: "Преміальний сервіс доставки страв японської кухні",
       darkFoundedLabel: "Засновані в",
@@ -1674,7 +1745,11 @@ const translations: Record<Language, Translations> = {
       hitBadge: "ХІТ",
       readCta: "Читати",
       defaultCategoryTag: "Новини Watta",
-      emptyList: "Поки що немає активних акцій. Загляньте пізніше!",
+      emptyList: "Поки що немає активних акцій.",
+      emptyInvite: "А поки що загляньте в меню — там завжди щось смачне.",
+      menuCta: "Перейти до меню",
+      feedTitle: "Усі пропозиції",
+      featuredBadge: "Головна акція",
     },
     profilePage: { title: "Профіль", logout: "Вийти", orderHistory: "Історія замовлень" },
     clientProfile: {
@@ -1721,8 +1796,20 @@ const translations: Record<Language, Translations> = {
       addrSub: 'Збережені адреси доставки',
       addrEmptyTitle: 'Адреси не збережені',
       addrEmptySub: 'Додайте адресу при оформленні замовлення',
+      addrInputLabel: 'Адреса доставки',
+      addrInputPlaceholder: 'Вулиця, будинок, індекс — наприклад, Damrak 1, 1012 LG Amsterdam',
+      addrCheckHint: 'Вартість доставки розрахується автоматично після введення адреси',
+      addrSave: 'Зберегти адресу',
+      addrSaving: 'Зберігаємо…',
+      addrSaved: 'Адресу збережено',
       dataTitle: 'Особисті дані',
       dataSub: 'Ваша контактна інформація',
+      dataSave: 'Зберегти',
+      dataSaving: 'Зберігаємо…',
+      dataSaved: 'Дані збережено',
+      dataSaveError: 'Не вдалося зберегти дані',
+      dataNameRequired: 'Вкажіть ім’я',
+      emailReadonlyHint: 'Email змінити не можна',
       labelName: "Ім'я",
       labelPhone: 'Телефон',
       labelEmail: 'Email',
@@ -1731,22 +1818,35 @@ const translations: Record<Language, Translations> = {
         'Кухня знає вас у лице: замовлення, бонуси й обране — усе під рукою. Дерзко, по-шефськи, без зайвого шуму.',
       publicHubTitle: 'Куди далі',
       publicOrdersCta: 'Історія замовлень і бонуси — на головній, вкладка «Профіль»',
-      inAppNavHint: 'Розділи зліва на великому екрані; на телефоні — вкладки внизу.',
+      inAppNavHint: 'Розділи зліва на великому екрані; на телефоні — вкладки над контентом.',
     },
     reviewsPublic: {
       heroKicker: 'Відгуки гостей',
       title: 'Відгуки клієнтів',
       subtitle: 'Щирі враження про доставку, смак і сервіс Watta Sushi.',
       statsLine: '{{count}} відгуків · середня оцінка {{avg}}',
+      feedTitlePart1: 'Усі',
+      feedTitlePart2: 'відгуки',
+      statReviews: 'Відгуків',
+      statAverage: 'Середня оцінка',
+      statFiveStar: '5 зірок',
+      statRecommend: 'Рекомендують',
+      distributionTitle: 'Розподіл оцінок',
       loginBlockTitle: 'Хочете поділитися враженням?',
-      loginCta: 'Увійдіть у профіль — після отримання замовлення зможете залишити відгук прямо тут.',
+      loginCta: 'Увійдіть у профіль — зможете залишити відгук з фото в будь-який час.',
       loginButton: 'Увійти',
       writeBlockTitle: 'Залишити відгук',
-      writeBlockDesc: 'Оберіть виконане замовлення — один відгук на замовлення.',
-      writeBlockNoOrders: 'Поки немає замовлень, для яких можна залишити відгук. Після доставки вони з’являться тут.',
+      writeBlockDesc: 'Поділіться враженням — можна додати фото. Після перевірки відгук з’явиться тут.',
+      writeBlockNoOrders: 'Можете написати загальний відгук або обрати замовлення нижче, якщо воно вже є.',
       orderPickLabel: 'Замовлення №{{id}}',
+      orderPickAction: 'Написати відгук',
+      ordersLoading: 'Завантажуємо ваші замовлення…',
+      emptyMenuCta: 'До меню',
+      featuredBadge: 'Відгук тижня',
       feedTitle: 'Усі відгуки',
-      empty: 'Ще немає відгуків — станьте першим після отримання замовлення.',
+      empty: 'Поки немає опублікованих відгуків.',
+      emptyInvite: 'Станьте першим — натисніть кнопку нижче.',
+      writeCta: 'Написати відгук',
       openProfile: 'Профіль',
     },
     blogPublic: {
@@ -1762,16 +1862,18 @@ const translations: Record<Language, Translations> = {
     contactPage: {
       heroKicker: 'Зв’яжіться з нами',
       heroTitle: 'Watta Sushi поруч',
+      heroTitleLead: 'Watta Sushi',
+      heroTitleMark: 'поруч',
       heroSubtitle: 'Питання по меню, доставці, корпоративам або співпраці — напишіть, і команда відповість якнайшвидше.',
       ctaForm: 'Написати нам',
       ctaDelivery: 'Зони доставки',
       stat1Val: '~15 хв',
-      stat1Label: 'Середній час відповіді в чаті',
-      stat2Val: 'Amsterdam+',
-      stat2Label: 'Регіон доставки та самовивіз',
+      stat1Label: 'Середній час прийняття замовлення',
+      stat2Val: '14:00–21:00',
+      stat2Label: 'Щодня на звʼязку',
       stat3Val: '100%',
       stat3Label: 'Свіжі інгредієнти щодня',
-      stat4Val: '4.9★',
+      stat4Val: '5★',
       stat4Label: 'Середня оцінка сервісу',
       topicsTitle: 'З чим допоможемо',
       topicsSub: 'Оберіть тему — підкажемо найкоротший шлях до відповіді.',
@@ -1869,52 +1971,14 @@ const translations: Record<Language, Translations> = {
       ariaWhatsapp: 'WhatsApp',
       ariaInstagram: 'Instagram',
     },
-    privacyPage: {
-      title: 'Політика конфіденційності',
-      back: 'Назад',
-      updated: 'Останнє оновлення: квітень 2026',
-      intro:
-        'Ця сторінка пояснює, як Watta Sushi збирає, використовує та захищає ваші персональні дані під час відвідування сайту, оформлення замовлень і користування сервісом. Ми діємо відповідно до застосовного законодавства, зокрема GDPR (ЄС).',
-      blocks: [
-        {
-          title: 'Контролер персональних даних',
-          body: 'Контролером персональних даних є Watta Sushi (оператор сервісу доставки). Контактні дані для питань щодо приватності — через розділ «Контакти» на сайті або електронну пошту, вказану там.',
-        },
-        {
-          title: 'Які дані ми обробляємо',
-          body: 'Ім’я, телефон, email (за потреби), адреса доставки або самовивозу, історія замовлень, технічні дані (IP, тип браузера, файли cookie), а також повідомлення, які ви надсилаєте через форми зворотного зв’язку.',
-        },
-        {
-          title: 'Мета та правові підстави',
-          body: 'Дані використовуються для прийому й виконання замовлень, зв’язку з вами, покращення сервісу, дотримання юридичних зобов’язань і, за вашою згодою, для маркетингових повідомлень (які можна вимкнути).',
-        },
-        {
-          title: 'Передача третім особам',
-          body: 'Ми можемо передавати обмежений обсяг даних платіжним провайдерам, службам доставки та хостингу лише в обсязі, необхідному для надання послуги, на підставі договорів та вимог безпеки.',
-        },
-        {
-          title: 'Зберігання та безпека',
-          body: 'Дані зберігаються лише стільки, скільки потрібно для цілей обробки або вимог закону. Застосовуємо технічні та організаційні заходи для захисту від несанкціонованого доступу та втрати.',
-        },
-        {
-          title: 'Ваші права',
-          body: 'Ви можете запитати доступ, виправлення, видалення даних, обмеження обробки, перенесення даних або заперечити проти певних видів обробки. Для скарг — до наглядового органу у вашій країні перебування.',
-        },
-        {
-          title: 'Файли cookie',
-          body: 'Сайт може використовувати cookie для роботи кошика, мови інтерфейсу та аналітики. Ви можете керувати cookie в налаштуваннях браузера.',
-        },
-        {
-          title: 'Зміни до політики',
-          body: 'Ми можемо оновлювати цю сторінку; актуальна версія завжди опублікована тут. Продовжуючи користуватися сервісом після змін, ви підтверджуєте ознайомлення з оновленою політикою.',
-        },
-      ],
-    },
+    privacyPage: privacyPageByLang.uk,
     notifications: {
       title: "Повідомлення",
       empty: "Повідомлень немає",
       emptySubtext: "Оновлення статусу замовлення з’являться тут",
       markAllRead: "Позначити всі прочитаними",
+      liveHint: "Статуси замовлень",
+      liveActive: "Оновлення надходять автоматично",
     },
     adminPage: {
       auth: {
@@ -2038,7 +2102,8 @@ const translations: Record<Language, Translations> = {
         deliveryHeroVideoTitle: "Відео на сторінці доставки",
         deliveryHeroVideoSubtitle: "Окремі ролики для /delivery — не плутати з головною. Перший — основний; далі запасні з public, якщо не завантажиться.",
         authHeroVideoTitle: "Телефони на сторінці входу",
-        authHeroVideoSubtitle: "Два телефони на /login та /register: окремі відео та тексти для кожного. Скільки завгодно роликів у плейлисті.",
+        authHeroVideoSubtitle: "Два телефони на /login та /register: окремі відео та тексти. Кнопка «Додати ролик» — ще один ролик у плейлист цього телефона.",
+        authHeroPlaylistHint: "Ролики грають по черзі (1 → 2 → 3…); після останнього знову з першого. На телефоні в картці форми — об’єднаний плейлист обох телефонів.",
         authHeroPhone1Title: "Передній телефон (більший)",
         authHeroPhone2Title: "Задній телефон",
         authHeroCopyTitle: "Заголовок",
@@ -2131,6 +2196,14 @@ const translations: Record<Language, Translations> = {
       statFresh: 'Свежесть каждый день',
       statFast: 'Собираем быстро',
       statCity: 'Ваш город на карте',
+      statCardColdValue: '4°C',
+      statCardColdLabel: 'Холод держим до двери',
+      statCardOrderValue: 'На заказ',
+      statCardOrderLabel: 'Не с полки — собираем после клика',
+      statCardPriceValue: 'По адресу',
+      statCardPriceLabel: 'Стоимость видна на карте до оплаты',
+      statCardChannelsValue: '3 канала',
+      statCardChannelsLabel: 'Сайт · Instagram · звонок',
       citiesLabel: 'Города доставки',
       mapAll: 'Все города',
       mapFocus: 'Город',
@@ -2220,7 +2293,8 @@ const translations: Record<Language, Translations> = {
       postalDeliveryFeeTitle: 'Стоимость доставки',
       postalRouteDuration: 'Ориентировочно {{minutes}} мин в пути',
       postalTariffExplain: 'Тариф: +{{stepEur}} € каждые {{stepKm}} км от кухни',
-      postalOutsideAmsterdam:
+      postalOutsideAmsterdam: 'Пока что доставка в ваш город недоступна.',
+      postalOutsideNetherlands:
         'Этот адрес вне зоны доставки по Нидерландам. Проверьте адрес или выберите другой город.',
       postalInvalidNlFormat: 'Формат индекса Нидерландов: четыре цифры и две буквы, например 1075 VV.',
       splitHeroVideoRail: 'С кухни — к вам',
@@ -2412,8 +2486,8 @@ const translations: Record<Language, Translations> = {
       back: 'Назад',
       submit: 'Войти',
       createAccount: 'Создать аккаунт',
-      noAccount: 'Нет аккаунта? Зарегистрироваться',
-      haveAccount: 'Есть аккаунт? Войти',
+      noAccount: 'Нет аккаунта?',
+      haveAccount: 'Есть аккаунт?',
       promoStrip: 'Роллы и суши — быстрый заказ',
       desktopHeroTitle: 'Любимые роллы — в пару кликов',
       desktopHeroSub: 'Аккаунт — история заказов, бонусы и быстрее оформление.',
@@ -2450,8 +2524,11 @@ const translations: Record<Language, Translations> = {
       fileTooBig: 'Файл слишком большой (макс. ~2 МБ)',
       loginAgain: 'Войдите снова',
       reviewNeedText: 'Добавьте немного текста к отзыву',
-      reviewSaveError: 'Не удалось сохранить',
+      reviewSaveError: 'Не удалось сохранить отзыв. Попробуйте ещё раз.',
+      reviewDuplicate: 'Вы уже оставили отзыв на этот заказ',
+      reviewImageRejected: 'Не удалось добавить одно из фото — попробуйте другое изображение',
       reviewThanks: 'Спасибо!',
+      reviewThanksModeration: 'Спасибо! Отзыв отправлен — появится на сайте после проверки.',
       networkError: 'Ошибка сети',
       removeFavoriteError: 'Не удалось убрать из избранного'
     },
@@ -2464,7 +2541,7 @@ const translations: Record<Language, Translations> = {
       stats: {
         clients: "Довольных клиентов",
         experience: "Лет опыта",
-        delivery: "Минут доставка",
+        delivery: "Быстрая доставка",
         quality: "Качество"
       },
       features: {
@@ -2519,6 +2596,13 @@ const translations: Record<Language, Translations> = {
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Скоро здесь появятся фото команды",
       teamEmptyBody: "Пока знакомьтесь с нами через блюда — каждый ролл уже сделан руками наших шефов.",
+      teamCarouselHint: "Листайте вправо →",
+      teamCarouselAria: "Фотографии команды",
+      teamGalleryCta: "Перейти в галерею",
+      teamGalleryPageTitle: "Галерея команды",
+      teamGalleryPageLead: "Все фото команды Watta Sushi — те же, что добавлены в админ-панели.",
+      teamGalleryBack: "Назад к «О нас»",
+      teamGalleryEmpty: "Фото команды пока не добавлены.",
       marqueeWords: "Свежесть|Температура|Вкус|Команда|Амстердам|Роллы|Суши|Доставка|Качество",
       darkHeroSubtitle: "Премиальный сервис доставки блюд японской кухни",
       darkFoundedLabel: "Основаны в",
@@ -2663,7 +2747,11 @@ const translations: Record<Language, Translations> = {
       hitBadge: "ХИТ",
       readCta: "Читать",
       defaultCategoryTag: "Новости Watta",
-      emptyList: "Пока нет активных акций. Загляните позже!",
+      emptyList: "Пока нет активных акций.",
+      emptyInvite: "А пока загляните в меню — там всегда что-то вкусное.",
+      menuCta: "Перейти в меню",
+      feedTitle: "Все предложения",
+      featuredBadge: "Главная акция",
     },
     profilePage: { title: "Профиль", logout: "Выйти", orderHistory: "История заказов" },
     clientProfile: {
@@ -2710,8 +2798,20 @@ const translations: Record<Language, Translations> = {
       addrSub: 'Сохранённые адреса доставки',
       addrEmptyTitle: 'Адреса не сохранены',
       addrEmptySub: 'Добавьте адрес при оформлении заказа',
+      addrInputLabel: 'Адрес доставки',
+      addrInputPlaceholder: 'Улица, дом, индекс — например, Damrak 1, 1012 LG Amsterdam',
+      addrCheckHint: 'Стоимость доставки рассчитается автоматически после ввода адреса',
+      addrSave: 'Сохранить адрес',
+      addrSaving: 'Сохраняем…',
+      addrSaved: 'Адрес сохранён',
       dataTitle: 'Личные данные',
       dataSub: 'Ваша контактная информация',
+      dataSave: 'Сохранить',
+      dataSaving: 'Сохраняем…',
+      dataSaved: 'Данные сохранены',
+      dataSaveError: 'Не удалось сохранить данные',
+      dataNameRequired: 'Укажите имя',
+      emailReadonlyHint: 'Email изменить нельзя',
       labelName: 'Имя',
       labelPhone: 'Телефон',
       labelEmail: 'Email',
@@ -2720,22 +2820,35 @@ const translations: Record<Language, Translations> = {
         'Кухня знает вас в лицо: заказы, бонусы и избранное — всё под рукой. По-шефски, без лишнего шума.',
       publicHubTitle: 'Куда дальше',
       publicOrdersCta: 'История заказов и бонусы — на главной, вкладка «Профиль»',
-      inAppNavHint: 'Разделы слева на большом экране; на телефоне — вкладки внизу.',
+      inAppNavHint: 'Разделы слева на большом экране; на телефоне — вкладки над контентом.',
     },
     reviewsPublic: {
       heroKicker: 'Отзывы гостей',
       title: 'Отзывы клиентов',
       subtitle: 'Честные впечатления о доставке, вкусе и сервисе Watta Sushi.',
       statsLine: '{{count}} отзывов · средняя оценка {{avg}}',
+      feedTitlePart1: 'Все',
+      feedTitlePart2: 'отзывы',
+      statReviews: 'Отзывов',
+      statAverage: 'Средняя оценка',
+      statFiveStar: '5 звёзд',
+      statRecommend: 'Рекомендуют',
+      distributionTitle: 'Распределение оценок',
       loginBlockTitle: 'Хотите поделиться впечатлением?',
-      loginCta: 'Войдите в профиль — после получения заказа можно оставить отзыв прямо здесь.',
+      loginCta: 'Войдите в профиль — можно оставить отзыв с фото в любое время.',
       loginButton: 'Войти',
       writeBlockTitle: 'Оставить отзыв',
-      writeBlockDesc: 'Выберите выполненный заказ — один отзыв на заказ.',
-      writeBlockNoOrders: 'Пока нет заказов, для которых можно оставить отзыв. После доставки они появятся здесь.',
+      writeBlockDesc: 'Поделитесь впечатлением — можно приложить фото. После проверки отзыв появится здесь.',
+      writeBlockNoOrders: 'Можно написать общий отзыв или выбрать заказ ниже, если он уже есть.',
       orderPickLabel: 'Заказ №{{id}}',
+      orderPickAction: 'Написать отзыв',
+      ordersLoading: 'Загружаем ваши заказы…',
+      emptyMenuCta: 'К меню',
+      featuredBadge: 'Отзыв недели',
       feedTitle: 'Все отзывы',
-      empty: 'Пока нет отзывов — оставьте первый после получения заказа.',
+      empty: 'Пока нет опубликованных отзывов.',
+      emptyInvite: 'Станьте первым — нажмите кнопку ниже.',
+      writeCta: 'Написать отзыв',
       openProfile: 'Профиль',
     },
     blogPublic: {
@@ -2751,16 +2864,18 @@ const translations: Record<Language, Translations> = {
     contactPage: {
       heroKicker: 'Свяжитесь с нами',
       heroTitle: 'Watta Sushi рядом',
+      heroTitleLead: 'Watta Sushi',
+      heroTitleMark: 'рядом',
       heroSubtitle: 'Вопросы по меню, доставке, корпоративам или сотрудничеству — напишите, команда ответит как можно быстрее.',
       ctaForm: 'Написать нам',
       ctaDelivery: 'Зоны доставки',
       stat1Val: '~15 мин',
-      stat1Label: 'Среднее время ответа в чате',
-      stat2Val: 'Amsterdam+',
-      stat2Label: 'Регион доставки и самовывоз',
+      stat1Label: 'Среднее время принятия заказа',
+      stat2Val: '14:00–21:00',
+      stat2Label: 'Ежедневно на связи',
       stat3Val: '100%',
       stat3Label: 'Свежие ингредиенты каждый день',
-      stat4Val: '4.9★',
+      stat4Val: '5★',
       stat4Label: 'Средняя оценка сервиса',
       topicsTitle: 'С чем поможем',
       topicsSub: 'Выберите тему — подскажем самый короткий путь к ответу.',
@@ -2858,52 +2973,14 @@ const translations: Record<Language, Translations> = {
       ariaWhatsapp: 'WhatsApp',
       ariaInstagram: 'Instagram',
     },
-    privacyPage: {
-      title: 'Политика конфиденциальности',
-      back: 'Назад',
-      updated: 'Последнее обновление: апрель 2026',
-      intro:
-        'Здесь описано, как Watta Sushi собирает, использует и защищает ваши персональные данные при посещении сайта, оформлении заказов и пользовании сервисом. Мы действуем в соответствии с применимым правом, включая GDPR (ЕС).',
-      blocks: [
-        {
-          title: 'Контролёр данных',
-          body: 'Ответственным за обработку персональных данных является Watta Sushi (оператор сервиса доставки). Для вопросов о конфиденциальности — раздел «Контакты» на сайте или email, указанный там.',
-        },
-        {
-          title: 'Какие данные мы обрабатываем',
-          body: 'Имя, телефон, email (при необходимости), адрес доставки или самовывоза, история заказов, технические данные (IP, тип браузера, cookie), а также сообщения через формы обратной связи.',
-        },
-        {
-          title: 'Цели и правовые основания',
-          body: 'Данные используются для приёма и выполнения заказов, связи с вами, улучшения сервиса, соблюдения юридических обязательств и, с вашего согласия, для маркетинговых сообщений (их можно отключить).',
-        },
-        {
-          title: 'Передача третьим лицам',
-          body: 'Мы можем передавать ограниченный объём данных платёжным провайдерам, службам доставки и хостинга только в объёме, необходимом для оказания услуги, на основании договоров и требований безопасности.',
-        },
-        {
-          title: 'Хранение и безопасность',
-          body: 'Данные хранятся столько, сколько нужно для целей обработки или требований закона. Применяются технические и организационные меры против несанкционированного доступа и потери.',
-        },
-        {
-          title: 'Ваши права',
-          body: 'Вы можете запросить доступ, исправление, удаление данных, ограничение обработки, перенос данных или возразить против отдельных видов обработки. Жалобы — в надзорный орган в вашей стране.',
-        },
-        {
-          title: 'Файлы cookie',
-          body: 'Сайт может использовать cookie для корзины, языка интерфейса и аналитики. Управлять cookie можно в настройках браузера.',
-        },
-        {
-          title: 'Изменения политики',
-          body: 'Мы можем обновлять эту страницу; актуальная версия всегда опубликована здесь. Продолжая пользоваться сервисом после изменений, вы подтверждаете ознакомление с обновлённой политикой.',
-        },
-      ],
-    },
+    privacyPage: privacyPageByLang.ru,
     notifications: {
       title: "Уведомления",
       empty: "Уведомлений нет",
       emptySubtext: "Обновления статуса заказа появятся здесь",
       markAllRead: "Отметить все прочитанными",
+      liveHint: "Статусы заказов",
+      liveActive: "Обновления приходят автоматически",
     },
     adminPage: {
       auth: {
@@ -3027,7 +3104,8 @@ const translations: Record<Language, Translations> = {
         deliveryHeroVideoTitle: "Видео на странице доставки",
         deliveryHeroVideoSubtitle: "Отдельные ролики для /delivery — не путать с главной. Первый — основной; далее запасные из public, если не загрузится.",
         authHeroVideoTitle: "Телефоны на странице входа",
-        authHeroVideoSubtitle: "Два телефона на /login и /register: отдельные видео и тексты. Любое число роликов в плейлисте.",
+        authHeroVideoSubtitle: "Два телефона на /login и /register: отдельные видео и тексты. «Добавить ролик» — ещё одно видео в плейлист этого телефона.",
+        authHeroPlaylistHint: "Ролики идут по очереди (1 → 2 → 3…); после последнего снова с первого. В мобильной карточке — общий плейлист обоих телефонов.",
         authHeroPhone1Title: "Передний телефон (крупнее)",
         authHeroPhone2Title: "Задний телефон",
         authHeroCopyTitle: "Заголовок",
@@ -3120,6 +3198,14 @@ const translations: Record<Language, Translations> = {
       statFresh: 'Daily freshness',
       statFast: 'Packed fast',
       statCity: 'Your city on the map',
+      statCardColdValue: '4°C',
+      statCardColdLabel: 'Cold chain to your door',
+      statCardOrderValue: 'On demand',
+      statCardOrderLabel: 'Not from a shelf — packed after you click',
+      statCardPriceValue: 'By address',
+      statCardPriceLabel: 'See the fee on the map before paying',
+      statCardChannelsValue: '3 channels',
+      statCardChannelsLabel: 'Site · Instagram · phone',
       citiesLabel: 'Delivery cities',
       mapAll: 'All cities',
       mapFocus: 'City',
@@ -3209,7 +3295,8 @@ const translations: Record<Language, Translations> = {
       postalDeliveryFeeTitle: 'Delivery fee',
       postalRouteDuration: 'About {{minutes}} min drive',
       postalTariffExplain: 'Rate: +€{{stepEur}} per {{stepKm}} km from kitchen',
-      postalOutsideAmsterdam:
+      postalOutsideAmsterdam: 'Delivery to your city is not available yet.',
+      postalOutsideNetherlands:
         'This address is outside our delivery area in the Netherlands. Check the address or pick another city.',
       postalInvalidNlFormat: 'Dutch postcode format: four digits and two letters, e.g. 1075 VV.',
       splitHeroVideoRail: 'From our kitchen to you',
@@ -3401,8 +3488,8 @@ const translations: Record<Language, Translations> = {
       back: 'Back',
       submit: 'Login',
       createAccount: 'Create account',
-      noAccount: 'No account? Register',
-      haveAccount: 'Have an account? Login',
+      noAccount: 'No account?',
+      haveAccount: 'Have an account?',
       promoStrip: 'Rolls & sushi — order fast',
       desktopHeroTitle: 'Your favourite rolls in a few taps',
       desktopHeroSub: 'Keep an account — order history, bonuses and faster checkout.',
@@ -3439,8 +3526,11 @@ const translations: Record<Language, Translations> = {
       fileTooBig: 'File is too large (max. ~2 MB)',
       loginAgain: 'Please sign in again',
       reviewNeedText: 'Add a few words to your review',
-      reviewSaveError: 'Could not save',
+      reviewSaveError: 'Could not save your review. Please try again.',
+      reviewDuplicate: 'You already reviewed this order',
+      reviewImageRejected: 'Could not add one of the photos — try another image',
       reviewThanks: 'Thank you!',
+      reviewThanksModeration: 'Thanks! Your review was sent — it will appear after we approve it.',
       networkError: 'Network error',
       removeFavoriteError: 'Could not remove from saved'
     },
@@ -3453,7 +3543,7 @@ const translations: Record<Language, Translations> = {
       stats: {
         clients: "Happy clients",
         experience: "Years of experience",
-        delivery: "Minutes delivery",
+        delivery: "Fast delivery",
         quality: "Quality"
       },
       features: {
@@ -3508,6 +3598,13 @@ const translations: Record<Language, Translations> = {
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Team portraits are coming soon",
       teamEmptyBody: "For now, meet us through the food — every roll is already shaped by our chefs.",
+      teamCarouselHint: "Swipe right →",
+      teamCarouselAria: "Team photos",
+      teamGalleryCta: "Open full gallery",
+      teamGalleryPageTitle: "Team gallery",
+      teamGalleryPageLead: "Every team photo from Watta Sushi — the same ones added in the admin panel.",
+      teamGalleryBack: "Back to About",
+      teamGalleryEmpty: "No team photos have been added yet.",
       marqueeWords: "Freshness|Temperature|Taste|Team|Amsterdam|Rolls|Sushi|Delivery|Quality",
       darkHeroSubtitle: "Premium delivery of Japanese cuisine",
       darkFoundedLabel: "Founded in",
@@ -3652,7 +3749,11 @@ const translations: Record<Language, Translations> = {
       hitBadge: "HOT",
       readCta: "Read",
       defaultCategoryTag: "Watta news",
-      emptyList: "No active promotions yet. Check back soon!",
+      emptyList: "No active promotions yet.",
+      emptyInvite: "In the meantime, browse the menu — there is always something tasty.",
+      menuCta: "Browse menu",
+      feedTitle: "All offers",
+      featuredBadge: "Featured",
     },
     profilePage: { title: "Profile", logout: "Log out", orderHistory: "Order history" },
     clientProfile: {
@@ -3699,8 +3800,20 @@ const translations: Record<Language, Translations> = {
       addrSub: 'Saved delivery addresses',
       addrEmptyTitle: 'No saved address',
       addrEmptySub: 'Add one at checkout',
+      addrInputLabel: 'Delivery address',
+      addrInputPlaceholder: 'Street, number, postcode — e.g. Damrak 1, 1012 LG Amsterdam',
+      addrCheckHint: 'Delivery cost is calculated automatically as you type',
+      addrSave: 'Save address',
+      addrSaving: 'Saving…',
+      addrSaved: 'Address saved',
       dataTitle: 'Personal details',
       dataSub: 'Your contact information',
+      dataSave: 'Save',
+      dataSaving: 'Saving…',
+      dataSaved: 'Details saved',
+      dataSaveError: 'Could not save your details',
+      dataNameRequired: 'Enter your name',
+      emailReadonlyHint: 'Email cannot be changed',
       labelName: 'Name',
       labelPhone: 'Phone',
       labelEmail: 'Email',
@@ -3709,22 +3822,35 @@ const translations: Record<Language, Translations> = {
         'The kitchen knows you: orders, bonuses, favourites — all in one place. Bold, chef-style, no noise.',
       publicHubTitle: 'Where next',
       publicOrdersCta: 'Order history & bonuses — open home, then Profile tab',
-      inAppNavHint: 'Sidebar on desktop; bottom tabs on your phone.',
+      inAppNavHint: 'Sidebar on desktop; tabs above content on your phone.',
     },
     reviewsPublic: {
       heroKicker: 'Guest reviews',
       title: 'Customer reviews',
       subtitle: 'Real feedback on delivery, taste, and service.',
       statsLine: '{{count}} reviews · average {{avg}}',
+      feedTitlePart1: 'All',
+      feedTitlePart2: 'reviews',
+      statReviews: 'Reviews',
+      statAverage: 'Average rating',
+      statFiveStar: '5 stars',
+      statRecommend: 'Recommend',
+      distributionTitle: 'Rating breakdown',
       loginBlockTitle: 'Want to share your experience?',
-      loginCta: 'Sign in — after your order is delivered you can leave a review right here.',
+      loginCta: 'Sign in — you can leave a review with photos anytime.',
       loginButton: 'Sign in',
       writeBlockTitle: 'Leave a review',
-      writeBlockDesc: 'Pick a completed order — one review per order.',
-      writeBlockNoOrders: 'No orders ready for a review yet. They will appear here after delivery.',
+      writeBlockDesc: 'Share your experience — photos welcome. It will show here after we approve it.',
+      writeBlockNoOrders: 'You can write a general review or pick an order below if you have one.',
       orderPickLabel: 'Order #{{id}}',
+      orderPickAction: 'Write review',
+      ordersLoading: 'Loading your orders…',
+      emptyMenuCta: 'Browse menu',
+      featuredBadge: 'Featured review',
       feedTitle: 'All reviews',
-      empty: 'No reviews yet — be the first after your order arrives.',
+      empty: 'No published reviews yet.',
+      emptyInvite: 'Be the first — tap the button below.',
+      writeCta: 'Write a review',
       openProfile: 'Profile',
     },
     blogPublic: {
@@ -3740,16 +3866,18 @@ const translations: Record<Language, Translations> = {
     contactPage: {
       heroKicker: 'Get in touch',
       heroTitle: 'Watta Sushi, close to you',
+      heroTitleLead: 'Watta Sushi',
+      heroTitleMark: 'close to you',
       heroSubtitle: 'Menu, delivery, events, or partnerships — send a message and our team will reply as soon as possible.',
       ctaForm: 'Write to us',
       ctaDelivery: 'Delivery areas',
       stat1Val: '~15 min',
-      stat1Label: 'Typical chat response time',
-      stat2Val: 'Amsterdam+',
-      stat2Label: 'Delivery & pickup region',
+      stat1Label: 'Average order acceptance time',
+      stat2Val: '14:00–21:00',
+      stat2Label: 'Open daily',
       stat3Val: '100%',
       stat3Label: 'Fresh ingredients daily',
-      stat4Val: '4.9★',
+      stat4Val: '5★',
       stat4Label: 'Average service rating',
       topicsTitle: 'What we can help with',
       topicsSub: 'Pick a topic — we will route you to the fastest answer.',
@@ -3847,52 +3975,14 @@ const translations: Record<Language, Translations> = {
       ariaWhatsapp: 'WhatsApp',
       ariaInstagram: 'Instagram',
     },
-    privacyPage: {
-      title: 'Privacy policy',
-      back: 'Back',
-      updated: 'Last updated: April 2026',
-      intro:
-        'This page explains how Watta Sushi collects, uses, and protects your personal data when you visit our website, place orders, and use our services. We follow applicable law, including the GDPR (EU).',
-      blocks: [
-        {
-          title: 'Data controller',
-          body: 'Watta Sushi (delivery service operator) is responsible for processing your personal data. For privacy questions, use the Contacts section on the website or the email listed there.',
-        },
-        {
-          title: 'Data we process',
-          body: 'Name, phone, email (where needed), delivery or pickup address, order history, technical data (IP, browser type, cookies), and messages you send via contact forms.',
-        },
-        {
-          title: 'Purposes and legal bases',
-          body: 'We use data to take and fulfil orders, communicate with you, improve our service, meet legal obligations, and—with your consent—for marketing (which you can opt out of).',
-        },
-        {
-          title: 'Sharing with third parties',
-          body: 'We may share limited data with payment providers, delivery partners, and hosting services only as needed to provide the service, under contracts and security requirements.',
-        },
-        {
-          title: 'Retention and security',
-          body: 'We keep data only as long as needed for the purposes above or as required by law. We apply technical and organisational measures to protect against unauthorised access and loss.',
-        },
-        {
-          title: 'Your rights',
-          body: 'You may request access, correction, erasure, restriction of processing, data portability, or object to certain processing. You may lodge a complaint with a supervisory authority in your country.',
-        },
-        {
-          title: 'Cookies',
-          body: 'The site may use cookies for the cart, interface language, and analytics. You can manage cookies in your browser settings.',
-        },
-        {
-          title: 'Changes',
-          body: 'We may update this page; the current version is always published here. Continued use of the service after changes means you acknowledge the updated policy.',
-        },
-      ],
-    },
+    privacyPage: privacyPageByLang.en,
     notifications: {
       title: "Notifications",
       empty: "No notifications yet",
       emptySubtext: "Order status updates will appear here",
       markAllRead: "Mark all as read",
+      liveHint: "Order statuses",
+      liveActive: "Updates arrive automatically",
     },
     adminPage: {
       auth: {
@@ -4016,7 +4106,8 @@ const translations: Record<Language, Translations> = {
         deliveryHeroVideoTitle: "Delivery page hero video",
         deliveryHeroVideoSubtitle: "Separate clips for /delivery — not shared with home. First is primary; then public fallbacks if a clip fails.",
         authHeroVideoTitle: "Login page phones",
-        authHeroVideoSubtitle: "Two phones on /login and /register: separate videos and copy per phone. Add as many clips as you need per playlist.",
+        authHeroVideoSubtitle: "Two phones on /login and /register: separate videos and copy. Use “Add clip” for another video in that phone’s playlist.",
+        authHeroPlaylistHint: "Clips play in order (1 → 2 → 3…), then loop from the first. On mobile, the form card uses a combined playlist from both phones.",
         authHeroPhone1Title: "Front phone (larger)",
         authHeroPhone2Title: "Back phone",
         authHeroCopyTitle: "Title",
@@ -4109,6 +4200,14 @@ const translations: Record<Language, Translations> = {
       statFresh: 'Dagelijkse versheid',
       statFast: 'Snel ingepakt',
       statCity: 'Jouw stad op de kaart',
+      statCardColdValue: '4°C',
+      statCardColdLabel: 'Koude keten tot aan je deur',
+      statCardOrderValue: 'Op bestelling',
+      statCardOrderLabel: 'Niet van de plank — ingepakt na je klik',
+      statCardPriceValue: 'Per adres',
+      statCardPriceLabel: 'Kosten op de kaart vóór je betaalt',
+      statCardChannelsValue: '3 kanalen',
+      statCardChannelsLabel: 'Site · Instagram · bellen',
       citiesLabel: 'Bezorgsteden',
       mapAll: 'Alle steden',
       mapFocus: 'Stad',
@@ -4198,7 +4297,8 @@ const translations: Record<Language, Translations> = {
       postalDeliveryFeeTitle: 'Bezorgkosten',
       postalRouteDuration: 'Ca. {{minutes}} min rijden',
       postalTariffExplain: 'Tarief: +€{{stepEur}} per {{stepKm}} km vanaf de keuken',
-      postalOutsideAmsterdam:
+      postalOutsideAmsterdam: 'Bezorging naar uw stad is nog niet beschikbaar.',
+      postalOutsideNetherlands:
         'Dit adres valt buiten ons bezorggebied in Nederland. Controleer het adres of kies een andere stad.',
       postalInvalidNlFormat: 'Nederlands postcodeformaat: vier cijfers en twee letters, bijv. 1075 VV.',
       splitHeroVideoRail: 'Van onze keuken tot bij u',
@@ -4390,8 +4490,8 @@ const translations: Record<Language, Translations> = {
       back: 'Terug',
       submit: 'Inloggen',
       createAccount: 'Account aanmaken',
-      noAccount: 'Geen account? Registreren',
-      haveAccount: 'Heeft u een account? Inloggen',
+      noAccount: 'Geen account?',
+      haveAccount: 'Heeft u een account?',
       promoStrip: 'Rolls en sushi — snel bestellen',
       desktopHeroTitle: 'Favoriete rolls in een paar tikken',
       desktopHeroSub: 'Met een account: bestelhistorie, bonussen en sneller afrekenen.',
@@ -4428,8 +4528,11 @@ const translations: Record<Language, Translations> = {
       fileTooBig: 'Bestand is te groot (max. ~2 MB)',
       loginAgain: 'Log opnieuw in',
       reviewNeedText: 'Voeg wat tekst toe aan je beoordeling',
-      reviewSaveError: 'Opslaan mislukt',
+      reviewSaveError: 'Beoordeling opslaan mislukt. Probeer het opnieuw.',
+      reviewDuplicate: 'U heeft dit bestelling al beoordeeld',
+      reviewImageRejected: 'Een foto kon niet worden toegevoegd — probeer een andere afbeelding',
       reviewThanks: 'Dank u!',
+      reviewThanksModeration: 'Bedankt! Je review is verstuurd — na goedkeuring verschijnt hij op de site.',
       networkError: 'Netwerkfout',
       removeFavoriteError: 'Verwijderen uit favorieten mislukt'
     },
@@ -4442,7 +4545,7 @@ const translations: Record<Language, Translations> = {
       stats: {
         clients: "Tevreden klanten",
         experience: "Jaar ervaring",
-        delivery: "Minuten bezorging",
+        delivery: "Snelle bezorging",
         quality: "Kwaliteit"
       },
       features: {
@@ -4497,6 +4600,13 @@ const translations: Record<Language, Translations> = {
       phoneLine: "+31 6 1234 5678",
       teamEmptyTitle: "Teamfoto’s volgen binnenkort",
       teamEmptyBody: "Ontmoet ons nu via het eten — elke rol is al gevormd door onze chefs.",
+      teamCarouselHint: "Veeg naar rechts →",
+      teamCarouselAria: "Teamfoto’s",
+      teamGalleryCta: "Naar de galerij",
+      teamGalleryPageTitle: "Teamgalerij",
+      teamGalleryPageLead: "Alle teamfoto’s van Watta Sushi — dezelfde als in het adminpaneel.",
+      teamGalleryBack: "Terug naar Over ons",
+      teamGalleryEmpty: "Er zijn nog geen teamfoto’s toegevoegd.",
       marqueeWords: "Versheid|Temperatuur|Smaak|Team|Amsterdam|Rollen|Sushi|Bezorging|Kwaliteit",
       darkHeroSubtitle: "Premium bezorging van Japanse gerechten",
       darkFoundedLabel: "Opgericht in",
@@ -4641,7 +4751,11 @@ const translations: Record<Language, Translations> = {
       hitBadge: "HIT",
       readCta: "Lezen",
       defaultCategoryTag: "Watta-nieuws",
-      emptyList: "Er zijn nog geen actieve aanbiedingen. Kom later terug!",
+      emptyList: "Er zijn nog geen actieve aanbiedingen.",
+      emptyInvite: "Bekijk intussen het menu — daar staat altijd iets lekkers.",
+      menuCta: "Naar het menu",
+      feedTitle: "Alle aanbiedingen",
+      featuredBadge: "Uitgelicht",
     },
     profilePage: { title: "Profiel", logout: "Uitloggen", orderHistory: "Bestelgeschiedenis" },
     clientProfile: {
@@ -4688,8 +4802,20 @@ const translations: Record<Language, Translations> = {
       addrSub: 'Opgeslagen bezorgadressen',
       addrEmptyTitle: 'Geen adres opgeslagen',
       addrEmptySub: 'Voeg een adres toe bij afrekenen',
+      addrInputLabel: 'Bezorgadres',
+      addrInputPlaceholder: 'Straat, huisnummer, postcode — bijv. Damrak 1, 1012 LG Amsterdam',
+      addrCheckHint: 'Bezorgkosten worden automatisch berekend terwijl u typt',
+      addrSave: 'Adres opslaan',
+      addrSaving: 'Opslaan…',
+      addrSaved: 'Adres opgeslagen',
       dataTitle: 'Persoonsgegevens',
       dataSub: 'Je contactgegevens',
+      dataSave: 'Opslaan',
+      dataSaving: 'Opslaan…',
+      dataSaved: 'Gegevens opgeslagen',
+      dataSaveError: 'Gegevens opslaan mislukt',
+      dataNameRequired: 'Vul je naam in',
+      emailReadonlyHint: 'E-mail kan niet worden gewijzigd',
       labelName: 'Naam',
       labelPhone: 'Telefoon',
       labelEmail: 'E-mail',
@@ -4698,22 +4824,35 @@ const translations: Record<Language, Translations> = {
         'De keuken kent je: bestellingen, bonussen, favorieten — alles binnen handbereik. Strak, chef-niveau, zonder ruis.',
       publicHubTitle: 'Waarheen',
       publicOrdersCta: 'Bestelgeschiedenis & bonussen — startpagina, tabblad Profiel',
-      inAppNavHint: 'Zijbalk op desktop; onderaan tabbladen op je telefoon.',
+      inAppNavHint: 'Zijbalk op desktop; tabbladen boven de inhoud op je telefoon.',
     },
     reviewsPublic: {
       heroKicker: 'Gastreviews',
       title: 'Klantreviews',
       subtitle: 'Echte reacties over bezorging, smaak en service.',
       statsLine: '{{count}} reviews · gemiddeld {{avg}}',
+      feedTitlePart1: 'Alle',
+      feedTitlePart2: 'reviews',
+      statReviews: 'Reviews',
+      statAverage: 'Gemiddelde score',
+      statFiveStar: '5 sterren',
+      statRecommend: 'Aanbevelen',
+      distributionTitle: 'Scoreverdeling',
       loginBlockTitle: 'Wil je je ervaring delen?',
-      loginCta: 'Log in — na levering kun je hier direct een review plaatsen.',
+      loginCta: 'Log in — je kunt op elk moment een review met foto plaatsen.',
       loginButton: 'Inloggen',
       writeBlockTitle: 'Review plaatsen',
-      writeBlockDesc: 'Kies een afgeronde bestelling — één review per bestelling.',
-      writeBlockNoOrders: 'Nog geen bestellingen waarvoor je een review kunt plaatsen.',
+      writeBlockDesc: 'Deel je ervaring — foto’s zijn welkom. Na goedkeuring staat de review hier.',
+      writeBlockNoOrders: 'Je kunt een algemene review schrijven of hieronder een bestelling kiezen.',
       orderPickLabel: 'Bestelling #{{id}}',
+      orderPickAction: 'Review schrijven',
+      ordersLoading: 'Je bestellingen laden…',
+      emptyMenuCta: 'Naar het menu',
+      featuredBadge: 'Uitgelichte review',
       feedTitle: 'Alle reviews',
-      empty: 'Nog geen reviews — laat de eerste achter na je bestelling.',
+      empty: 'Nog geen gepubliceerde reviews.',
+      emptyInvite: 'Wees de eerste — tik op de knop hieronder.',
+      writeCta: 'Review schrijven',
       openProfile: 'Profiel',
     },
     blogPublic: {
@@ -4729,16 +4868,18 @@ const translations: Record<Language, Translations> = {
     contactPage: {
       heroKicker: 'Neem contact op',
       heroTitle: 'Watta Sushi dichtbij',
+      heroTitleLead: 'Watta Sushi',
+      heroTitleMark: 'dichtbij',
       heroSubtitle: 'Vragen over menu, bezorging, events of samenwerking — stuur een bericht, we reageren zo snel mogelijk.',
       ctaForm: 'Schrijf ons',
       ctaDelivery: 'Bezorggebieden',
       stat1Val: '~15 min',
-      stat1Label: 'Gemiddelde reactietijd in chat',
-      stat2Val: 'Amsterdam+',
-      stat2Label: 'Regio bezorging & afhalen',
+      stat1Label: 'Gemiddelde tijd orderacceptatie',
+      stat2Val: '14:00–21:00',
+      stat2Label: 'Dagelijks bereikbaar',
       stat3Val: '100%',
       stat3Label: 'Dagvers ingrediënten',
-      stat4Val: '4.9★',
+      stat4Val: '5★',
       stat4Label: 'Gemiddelde servicebeoordeling',
       topicsTitle: 'Waarmee we helpen',
       topicsSub: 'Kies een onderwerp — we wijzen je de snelste route naar een antwoord.',
@@ -4836,52 +4977,14 @@ const translations: Record<Language, Translations> = {
       ariaWhatsapp: 'WhatsApp',
       ariaInstagram: 'Instagram',
     },
-    privacyPage: {
-      title: 'Privacybeleid',
-      back: 'Terug',
-      updated: 'Laatst bijgewerkt: april 2026',
-      intro:
-        'Deze pagina legt uit hoe Watta Sushi uw persoonsgegevens verzamelt, gebruikt en beschermt wanneer u de website bezoekt, bestelt en onze diensten gebruikt. Wij handelen in overeenstemming met toepasselijk recht, waaronder de AVG (EU).',
-      blocks: [
-        {
-          title: 'Verwerkingsverantwoordelijke',
-          body: 'Watta Sushi (exploitant van de bezorgdienst) is verantwoordelijk voor de verwerking van persoonsgegevens. Voor privacyvragen: het contactgedeelte op de site of het daar vermelde e-mailadres.',
-        },
-        {
-          title: 'Welke gegevens verwerken we',
-          body: 'Naam, telefoon, e-mail (indien nodig), bezorg- of afhaaladres, bestelgeschiedenis, technische gegevens (IP, browsertype, cookies) en berichten via contactformulieren.',
-        },
-        {
-          title: 'Doelen en grondslagen',
-          body: 'Gegevens worden gebruikt om bestellingen aan te nemen en uit te voeren, met u te communiceren, de dienst te verbeteren, wettelijke verplichtingen na te komen en, met uw toestemming, voor marketing (afmeldbaar).',
-        },
-        {
-          title: 'Delen met derden',
-          body: 'Beperkte gegevens kunnen worden gedeeld met betaalproviders, bezorgpartners en hosting alleen voor zover nodig voor de dienstverlening, op basis van contracten en beveiligingseisen.',
-        },
-        {
-          title: 'Bewaring en beveiliging',
-          body: 'Gegevens worden bewaard zolang nodig voor de doeleinden of wettelijk verplicht. We passen technische en organisatorische maatregelen toe tegen ongeoorloofde toegang en verlies.',
-        },
-        {
-          title: 'Uw rechten',
-          body: 'U kunt inzage, correctie, verwijdering, beperking van verwerking, gegevensoverdraagbaarheid of bezwaar vragen. Klachten kunnen bij de toezichthouder in uw land.',
-        },
-        {
-          title: 'Cookies',
-          body: 'De site kan cookies gebruiken voor winkelwagen, taal en analytics. Beheer via uw browserinstellingen.',
-        },
-        {
-          title: 'Wijzigingen',
-          body: 'We kunnen deze pagina bijwerken; de actuele versie staat hier. Blijft u de dienst gebruiken na wijzigingen, dan erkent u het bijgewerkte beleid.',
-        },
-      ],
-    },
+    privacyPage: privacyPageByLang.nl,
     notifications: {
       title: "Meldingen",
       empty: "Nog geen meldingen",
       emptySubtext: "Bestelstatusupdates verschijnen hier",
       markAllRead: "Alles als gelezen markeren",
+      liveHint: "Bestelstatussen",
+      liveActive: "Updates komen automatisch binnen",
     },
     adminPage: {
       auth: {
@@ -5005,7 +5108,8 @@ const translations: Record<Language, Translations> = {
         deliveryHeroVideoTitle: "Hero-video bezorgpagina",
         deliveryHeroVideoSubtitle: "Aparte clips voor /delivery — niet dezelfde als homepage. Eerste is primair; daarna public-fallbacks bij laadfout.",
         authHeroVideoTitle: "Telefoons op inlogpagina",
-        authHeroVideoSubtitle: "Twee telefoons op /login en /register: aparte video's en teksten per telefoon. Zoveel clips als nodig per afspeellijst.",
+        authHeroVideoSubtitle: "Twee telefoons op /login en /register: aparte video's en teksten. «Clip toevoegen» = nog een video in de afspeellijst van die telefoon.",
+        authHeroPlaylistHint: "Clips spelen op volgorde (1 → 2 → 3…), daarna opnieuw vanaf de eerste. Op mobiel: gecombineerde afspeellijst van beide telefoons in het formulier.",
         authHeroPhone1Title: "Voorste telefoon (groter)",
         authHeroPhone2Title: "Achterste telefoon",
         authHeroCopyTitle: "Titel",
@@ -5113,8 +5217,11 @@ export function LanguageProvider({
     }
   }
 
-  const getLocalized = (obj: any, field: string) =>
-    getLocalizedField(obj as Record<string, unknown>, field, language)
+  const getLocalized = useCallback(
+    (obj: any, field: string) =>
+      getLocalizedField(obj as Record<string, unknown>, field, language),
+    [language],
+  )
 
   const mergedT = useMemo((): Translations => {
     const base = translations[language]
@@ -5126,20 +5233,19 @@ export function LanguageProvider({
     }
   }, [language, adminUiLanguage])
 
-  return (
-    <LanguageContext.Provider
-      value={{
-        language,
-        setLanguage,
-        adminUiLanguage,
-        setAdminUiLanguage,
-        t: mergedT,
-        getLocalized,
-      }}
-    >
-      {children}
-    </LanguageContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      language,
+      setLanguage,
+      adminUiLanguage,
+      setAdminUiLanguage,
+      t: mergedT,
+      getLocalized,
+    }),
+    [language, adminUiLanguage, mergedT, getLocalized],
   )
+
+  return <LanguageContext.Provider value={contextValue}>{children}</LanguageContext.Provider>
 }
 
 const defaultContextValue: LanguageContextType = {
