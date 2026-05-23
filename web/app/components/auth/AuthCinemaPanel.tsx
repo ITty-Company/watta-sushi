@@ -274,6 +274,7 @@ function CompactStripMedia(props: ScreenMediaProps) {
           playsInline
           autoPlay
           preload="auto"
+          // @ts-expect-error fetchPriority для Chromium
           fetchPriority="high"
           disablePictureInPicture
           disableRemotePlayback

@@ -67,7 +67,7 @@ export default function WattaStickyChromeLayout({
   const syncMeasuredCssVars = useCallback((el: HTMLDivElement) => {
     const root = document.documentElement
     const raw = el.offsetHeight
-    const headerEl = el.querySelector('.watta-chrome-top-band-web')
+    const headerEl = el.querySelector<HTMLElement>('.watta-chrome-top-band-web')
     const headerRaw = headerEl?.offsetHeight ?? 0
     if (raw >= 8) {
       root.style.setProperty('--watta-sticky-chrome-measured-h', `${raw}px`)
@@ -107,7 +107,7 @@ export default function WattaStickyChromeLayout({
       const h = toFlowLayoutHeight(el.offsetHeight)
       if (h < 8) return
       setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
-      const headerEl = el.querySelector('.watta-chrome-top-band-web')
+      const headerEl = el.querySelector<HTMLElement>('.watta-chrome-top-band-web')
       const headerRaw = headerEl?.offsetHeight ?? 0
       if (headerRaw >= 8) {
         const headerFlow = toFlowLayoutHeight(headerRaw)

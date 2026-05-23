@@ -1,4 +1,5 @@
 import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 
@@ -15,7 +16,7 @@ export type CachedMenuCategory = {
 
 /** Синхронно з sessionStorage — панель категорій одразу, без «порожнього» кадру. */
 export function readMenuCategoriesFromSessionCache(
-  language: string,
+  language: WattaLanguage,
   categoryLabels: Record<string, string>,
 ): CachedMenuCategory[] | null {
   if (typeof sessionStorage === 'undefined') return null
