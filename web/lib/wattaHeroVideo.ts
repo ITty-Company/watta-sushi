@@ -149,6 +149,31 @@ export function buildHomeHeroVideoSourcesFromSingle(adminUrl?: string | null): r
 /** Подія після зняття сплешу: MenuView / hero resume play одразу */
 export const WATTA_BOOT_SPLASH_ENDED_EVENT = 'watta:boot-splash-ended' as const
 
+/** Перший видимий кадр hero — з 1 с (перша секунда часто чорна на admin-upload mp4). */
+export const WATTA_HERO_VIDEO_START_SEC = 1
+
+/** Media Fragment для <video src> — браузер одразу seek на startSec. */
+export function appendHeroVideoStartSec(url: string, startSec = WATTA_HERO_VIDEO_START_SEC): string {
+  const trimmed = url.trim()
+  if (!trimmed || trimmed.startsWith('blob:')) return trimmed
+  if (trimmed.includes('#t=')) return trimmed
+  return `${trimmed}#t=${startSec}`
+}
+
+export function seekHeroVideoToStartSec(
+  video: HTMLVideoElement,
+  startSec = WATTA_HERO_VIDEO_START_SEC,
+): void {
+  try {
+    if (video.readyState < HTMLMediaElement.HAVE_METADATA) return
+    if (video.currentTime < startSec - 0.05) {
+      video.currentTime = startSec
+    }
+  } catch {
+    /* ignore — seek до canplay інколи кидає на Safari */
+  }
+}
+
 /** Перший кадр hero готовий (loadeddata / playing) — сплеш можна прибрати */
 export const WATTA_HERO_VIDEO_READY_EVENT = 'watta:hero-video-ready' as const
 

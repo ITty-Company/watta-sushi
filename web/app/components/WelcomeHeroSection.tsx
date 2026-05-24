@@ -7,6 +7,7 @@ import {
   WATTA_HERO_VIDEO_READY_EVENT,
   WATTA_HOME_HERO_POSTER,
   WATTA_HERO_OCEAN_GRADIENT,
+  appendHeroVideoStartSec,
 } from '@/lib/wattaHeroVideo'
 import {
   installWebKitHeroAutoplayDocUnlock,
@@ -132,6 +133,8 @@ export default function WelcomeHeroSection({
     return () => window.clearTimeout(timeoutId)
   }, [heroVideoSrc, heroVideoFailed, heroFrameReady, heroVideoRef, advanceHeroVideoSource, isClientMounted])
 
+  const heroVideoSrcWithStart = appendHeroVideoStartSec(heroVideoSrc)
+
   return (
     <section
       ref={sectionRef}
@@ -180,12 +183,12 @@ export default function WelcomeHeroSection({
             >
               {isClientMounted ? (
               <video
-                key={heroVideoSrc}
+                key={heroVideoSrcWithStart}
                 ref={attachHeroVideoRef}
                 className="welcome-video-native-web watta-home-hero-native-video"
                 width={1920}
                 height={1080}
-                src={heroVideoSrc}
+                src={heroVideoSrcWithStart}
                 poster={posterUrl}
                 suppressHydrationWarning
               autoPlay

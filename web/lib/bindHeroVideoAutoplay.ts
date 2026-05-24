@@ -1,4 +1,5 @@
 import { isWebKitBrowser } from '@/lib/isWebKitBrowser'
+import { seekHeroVideoToStartSec, WATTA_HERO_VIDEO_START_SEC } from '@/lib/wattaHeroVideo'
 
 /**
  * Декоративне hero-відео: muted autoplay + loop.
@@ -47,6 +48,8 @@ export function bindHeroVideoAutoplay(
       return
     }
     lastPlayAt = now
+
+    seekHeroVideoToStartSec(video)
 
     try {
       video.defaultMuted = true
@@ -144,7 +147,10 @@ export function bindHeroVideoAutoplay(
   const onCanPlay = () => safePlay()
   const onCanPlayThrough = () => safePlay()
   const onLoadedData = () => safePlay()
-  const onLoadedMeta = () => safePlay()
+  const onLoadedMeta = () => {
+    seekHeroVideoToStartSec(video)
+    safePlay()
+  }
   const onPageShow = () => safePlay()
   const onVisibility = () => {
     if (document.visibilityState !== 'visible') return
@@ -259,6 +265,13 @@ export function bindHeroVideoAutoplay(
     })
   }
 
+  const onLoopStartClamp = () => {
+    if (!shouldLoop || video.seeking) return
+    if (video.currentTime < WATTA_HERO_VIDEO_START_SEC - 0.08) {
+      seekHeroVideoToStartSec(video)
+    }
+  }
+
   video.addEventListener('waiting', onWaiting)
   video.addEventListener('stalled', onStalled)
   video.addEventListener('progress', onProgress)
@@ -266,6 +279,7 @@ export function bindHeroVideoAutoplay(
   video.addEventListener('canplaythrough', onCanPlayThrough)
   video.addEventListener('loadeddata', onLoadedData)
   video.addEventListener('loadedmetadata', onLoadedMeta)
+  video.addEventListener('timeupdate', onLoopStartClamp)
   video.addEventListener('pause', onPause)
   video.addEventListener('playing', onPlaying)
   video.addEventListener('click', blockTapOnVideo, captureOpts)
@@ -308,6 +322,7 @@ export function bindHeroVideoAutoplay(
     video.removeEventListener('canplaythrough', onCanPlayThrough)
     video.removeEventListener('loadeddata', onLoadedData)
     video.removeEventListener('loadedmetadata', onLoadedMeta)
+    video.removeEventListener('timeupdate', onLoopStartClamp)
     video.removeEventListener('pause', onPause)
     video.removeEventListener('playing', onPlaying)
     video.removeEventListener('click', blockTapOnVideo, captureOpts)

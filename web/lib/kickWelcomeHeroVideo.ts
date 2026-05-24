@@ -1,4 +1,5 @@
 import { isWebKitBrowser } from '@/lib/isWebKitBrowser'
+import { seekHeroVideoToStartSec } from '@/lib/wattaHeroVideo'
 
 /** Hero-відео на головній (MenuView). */
 export const WELCOME_HERO_VIDEO_SELECTOR =
@@ -35,6 +36,18 @@ export function primeHeroVideoElement(video: HTMLVideoElement): void {
   } catch {
     /* ignore */
   }
+  const seekStart = () => seekHeroVideoToStartSec(video)
+  seekStart()
+  if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+    video.addEventListener('loadedmetadata', seekStart, { once: true })
+  }
+  video.addEventListener(
+    'loadeddata',
+    () => {
+      seekStart()
+    },
+    { once: true },
+  )
   const attempt = () => {
     const p = video.play()
     if (p && typeof p.catch === 'function') {

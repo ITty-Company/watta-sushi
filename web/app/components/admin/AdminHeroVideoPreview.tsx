@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
+import { appendHeroVideoStartSec, WATTA_HERO_VIDEO_START_SEC } from '@/lib/wattaHeroVideo'
 
 function primeAdminHeroVideoPreview(video: HTMLVideoElement): void {
   try {
@@ -19,7 +20,9 @@ function primeAdminHeroVideoPreview(video: HTMLVideoElement): void {
   }
   const kick = () => {
     try {
-      if (video.currentTime < 0.05) video.currentTime = 0.1
+      if (video.currentTime < WATTA_HERO_VIDEO_START_SEC - 0.05) {
+        video.currentTime = WATTA_HERO_VIDEO_START_SEC
+      }
     } catch {
       /* ignore */
     }
@@ -91,10 +94,7 @@ export default function AdminHeroVideoPreview({
   }
 
   const resolvedSrc = resolveUploadMediaUrl(previewSrc) ?? previewSrc
-  const srcWithFrameHint =
-    resolvedSrc.startsWith('blob:') || resolvedSrc.includes('#')
-      ? resolvedSrc
-      : `${resolvedSrc}#t=0.001`
+  const srcWithFrameHint = appendHeroVideoStartSec(resolvedSrc)
 
   return (
     <video

@@ -9,6 +9,7 @@ import {
   WATTA_DELIVERY_HERO_POSTER,
   WATTA_HERO_OCEAN_GRADIENT,
 } from '@/lib/wattaDeliveryHeroVideo'
+import { appendHeroVideoStartSec } from '@/lib/wattaHeroVideo'
 
 type DeliveryWelcomeHeroSectionProps = {
   sectionRef?: Ref<HTMLElement>
@@ -68,6 +69,8 @@ export default function DeliveryWelcomeHeroSection({
     if (video) primeHeroVideoElement(video)
   }, [heroVideoSrc, heroVideoRef])
 
+  const heroVideoSrcWithStart = appendHeroVideoStartSec(heroVideoSrc)
+
   return (
     <section
       ref={sectionRef}
@@ -103,12 +106,12 @@ export default function DeliveryWelcomeHeroSection({
             }}
           >
             <video
-              key={heroVideoSrc}
+              key={heroVideoSrcWithStart}
               ref={attachHeroVideoRef}
               className="welcome-video-native-web watta-home-hero-native-video"
               width={1920}
               height={1080}
-              src={heroVideoSrc}
+              src={heroVideoSrcWithStart}
               poster={heroFrameReady ? undefined : WATTA_DELIVERY_HERO_POSTER}
               autoPlay
               muted
