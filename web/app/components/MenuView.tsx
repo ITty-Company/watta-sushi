@@ -48,11 +48,14 @@ import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDa
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
+import {
+  applyHomeHeroVideoFromApi,
+  readInitialHomeHeroVideoUrls,
+} from '@/lib/homeHeroVideoClientState'
 import { formatProductWeightSubtitle } from '@/lib/i18n/parseProductSpecsFromDescription'
 import {
   buildHomeHeroPlaylist,
   buildHomeHeroVideoSources,
-  filterReachableHeroUrls,
   getPrimaryHomeHeroVideoSrc,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
 } from '@/lib/wattaHeroVideo'
@@ -65,6 +68,8 @@ import { applyDefaultCityToStorage, getExplicitSavedCityId } from '@/lib/wattaSi
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
+import { readSiteSettingsRecord, writeSiteSettingsRecord } from '@/lib/heroSettingsSiteCache'
+import { readBannersWarmCache, writeBannersWarmCache } from '@/lib/publicRouteWarmCache'
 import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
 import { ensureIngredientsCatalog } from '@/lib/wattaIngredientsCatalog'
 import { productGalleryFromApi } from '@/lib/productGallery'
@@ -383,20 +388,13 @@ export default function MenuView() {
 
   const [bannerInterval, setBannerInterval] = useState(HOME_BANNER_AUTO_INTERVAL_MS)
   const bannerAutoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v2'
-  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      const raw = sessionStorage.getItem(HOME_HERO_URLS_CACHE_KEY)
-      if (!raw) return []
-      const parsed = JSON.parse(raw) as unknown
-      return Array.isArray(parsed)
-        ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-        : []
-    } catch {
-      return []
-    }
-  })
+  const homeHeroProbeRef = useRef<AbortController | null>(null)
+  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>([])
+
+  useLayoutEffect(() => {
+    const cached = readInitialHomeHeroVideoUrls()
+    if (cached.length > 0) setHomeHeroVideoUrls(cached)
+  }, [])
   const homeHeroPlaylist = useMemo(
     () => buildHomeHeroPlaylist(homeHeroVideoUrls),
     [homeHeroVideoUrls],
@@ -578,8 +576,6 @@ export default function MenuView() {
   }, [])
 
   useEffect(() => {
-    let probeAbort: AbortController | null = null
-
     const applySettings = (data: {
       bannerInterval?: number
       homeHeroVideoUrl?: string
@@ -588,36 +584,18 @@ export default function MenuView() {
       if (data.bannerInterval != null) {
         setBannerInterval(normalizeBannerIntervalMs(data.bannerInterval))
       }
-      const urls = parseHomeHeroVideoUrlsFromApi(data)
-      setHomeHeroVideoUrls(urls)
-      try {
-        sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(urls))
-      } catch {
-        /* ignore */
-      }
-      if (!urls.some((u) => u.startsWith('/uploads/'))) return
-      probeAbort?.abort()
-      probeAbort = new AbortController()
-      const signal = probeAbort.signal
-      void filterReachableHeroUrls(urls, signal).then((reachable) => {
-        if (signal.aborted || reachable.length === 0) return
-        setHomeHeroVideoUrls((prev) => {
-          const next = buildHomeHeroPlaylist(reachable)
-          if (prev.length === next.length && prev.every((u, i) => u === next[i])) return prev
-          try {
-            sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(reachable))
-          } catch {
-            /* ignore */
-          }
-          return [...next]
-        })
-      })
+      applyHomeHeroVideoFromApi(data, setHomeHeroVideoUrls, homeHeroProbeRef)
     }
 
     const fetchSettings = async (fresh = false) => {
       try {
         const res = await (fresh ? fetchPublicApiFresh : fetchPublicApi)('/api/settings')
-        if (res.ok) applySettings(await res.json())
+        if (!res.ok) return
+        const data = await res.json()
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          writeSiteSettingsRecord(data as Record<string, unknown>)
+        }
+        applySettings(data)
       } catch (e) {
         console.error('Error loading settings', e)
       }
@@ -637,11 +615,29 @@ export default function MenuView() {
       void fetchSettings(true)
     }
 
-    void fetchSettings()
+    const cachedSettings = readSiteSettingsRecord()
+    if (cachedSettings) {
+      applySettings(cachedSettings)
+      type IdleWindow = Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+      }
+      const w = typeof window !== 'undefined' ? (window as IdleWindow) : null
+      const revalidate = () => {
+        void fetchSettings()
+      }
+      if (w && typeof w.requestIdleCallback === 'function') {
+        w.requestIdleCallback(revalidate, { timeout: 800 })
+      } else if (typeof window !== 'undefined') {
+        window.setTimeout(revalidate, 300)
+      }
+    } else {
+      void fetchSettings()
+    }
+
     window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
     window.addEventListener('settingsUpdated', onSettingsUpdated)
     return () => {
-      probeAbort?.abort()
+      homeHeroProbeRef.current?.abort()
       window.removeEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
       window.removeEventListener('settingsUpdated', onSettingsUpdated)
     }
@@ -666,16 +662,25 @@ export default function MenuView() {
     try {
       const raw =
         localStorage.getItem('watta_banners_v1') || sessionStorage.getItem('banners') || ''
-      if (!raw) return []
-      const data = JSON.parse(raw) as unknown
-      return Array.isArray(data) ? (data as Banner[]) : []
+      if (raw) {
+        const data = JSON.parse(raw) as unknown
+        if (Array.isArray(data) && data.length > 0) return data as Banner[]
+      }
+      const warm = readBannersWarmCache()
+      if (warm && warm.length > 0) return warm as Banner[]
+      return []
     } catch {
       return []
     }
   }
 
-  const [banners, setBanners] = useState<Banner[]>(() => readCachedBanners())
+  const [banners, setBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
+
+  useLayoutEffect(() => {
+    const cached = readCachedBanners()
+    if (cached.length > 0) setBanners(cached)
+  }, [])
 
   const displayBanners = useMemo(
     () => (banners.length > 0 ? banners : DEFAULT_HOME_BANNERS),
@@ -778,6 +783,7 @@ export default function MenuView() {
         localStorage.setItem(persistTimeKey, t)
         sessionStorage.setItem(sessionKey, JSON.stringify(data))
         sessionStorage.setItem(`${sessionKey}_time`, t)
+        if (data.length > 0) writeBannersWarmCache(data)
       } catch (_) {
         /* quota / private mode */
       }
@@ -809,7 +815,7 @@ export default function MenuView() {
       }
     }
 
-    const bannerFetch = fresh ? fetchPublicApiFresh : fetch
+    const bannerFetch = fresh ? fetchPublicApiFresh : fetchPublicApi
     bannerFetch('/api/banners')
       .then(async (res) => {
         if (!res.ok) {

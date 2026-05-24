@@ -48,6 +48,22 @@ export function readSiteSettingsCache(): Record<string, unknown> | null {
     : null
 }
 
+export function writeSiteSettingsCache(data: Record<string, unknown>): void {
+  writeJsonCache(SETTINGS_CACHE_KEY, SETTINGS_TIME_KEY, data)
+}
+
+const BANNERS_WARM_CACHE_KEY = 'watta_banners_warm_v1'
+const BANNERS_WARM_TIME_KEY = 'watta_banners_warm_v1_time'
+
+export function readBannersWarmCache(): unknown[] | null {
+  const data = readJsonCache(BANNERS_WARM_CACHE_KEY, BANNERS_WARM_TIME_KEY)
+  return Array.isArray(data) ? data : null
+}
+
+export function writeBannersWarmCache(data: unknown[]): void {
+  writeJsonCache(BANNERS_WARM_CACHE_KEY, BANNERS_WARM_TIME_KEY, data)
+}
+
 async function warmPromotionsList(): Promise<void> {
   if (readPromotionsListCache()) return
   try {
@@ -78,7 +94,21 @@ async function warmSiteSettings(): Promise<void> {
     const res = await fetchPublicApi('/api/settings')
     if (!res.ok) return
     const data = await res.json()
-    if (data && typeof data === 'object') writeJsonCache(SETTINGS_CACHE_KEY, SETTINGS_TIME_KEY, data)
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      writeSiteSettingsCache(data as Record<string, unknown>)
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function warmBanners(): Promise<void> {
+  if (readBannersWarmCache()) return
+  try {
+    const res = await fetchPublicApi('/api/banners')
+    if (!res.ok) return
+    const data = await res.json()
+    if (Array.isArray(data) && data.length > 0) writeBannersWarmCache(data)
   } catch {
     /* ignore */
   }
@@ -86,6 +116,11 @@ async function warmSiteSettings(): Promise<void> {
 
 const BLOG_INDEX_CACHE_KEY = 'watta_blog_index_v1'
 const BLOG_INDEX_TIME_KEY = 'watta_blog_index_v1_time'
+
+export function readBlogIndexCache(): unknown[] | null {
+  const data = readJsonCache(BLOG_INDEX_CACHE_KEY, BLOG_INDEX_TIME_KEY)
+  return Array.isArray(data) ? data : null
+}
 
 async function warmBlogIndex(): Promise<void> {
   if (readJsonCache(BLOG_INDEX_CACHE_KEY, BLOG_INDEX_TIME_KEY)) return
@@ -111,6 +146,7 @@ export function warmPublicRouteCaches(): Promise<void> {
     warmMenuCatalogCache(),
     warmCitiesCache(),
     warmSiteSettings(),
+    warmBanners(),
     warmPromotionsList(),
     warmPublicReviews(),
     warmBlogIndex(),
@@ -134,7 +170,10 @@ export function installVisibleLinkPrefetch(router: AppRouterInstance): () => voi
         const el = entry.target
         if (seen.has(el)) continue
         seen.add(el)
-        const href = (el as HTMLAnchorElement).getAttribute('href')
+        const href =
+          el.getAttribute('href') ||
+          el.getAttribute('data-href') ||
+          el.getAttribute('data-prefetch-href')
         if (href?.startsWith('/')) prefetchHref(router, href)
       }
     },
@@ -142,9 +181,15 @@ export function installVisibleLinkPrefetch(router: AppRouterInstance): () => voi
   )
 
   const observeAnchors = () => {
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/"]').forEach((a) => {
-      if (a.target === '_blank' || a.hasAttribute('download')) return
-      io.observe(a)
+    const nodes = document.querySelectorAll<HTMLElement>(
+      'a[href^="/"], [data-href^="/"], [data-prefetch-href^="/"]',
+    )
+    nodes.forEach((el) => {
+      if (el.tagName === 'A') {
+        const a = el as HTMLAnchorElement
+        if (a.target === '_blank' || a.hasAttribute('download')) return
+      }
+      io.observe(el)
     })
   }
 

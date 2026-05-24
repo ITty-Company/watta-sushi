@@ -37,7 +37,6 @@ export function useInstantNavBoot(): void {
     const t0 = window.setTimeout(repeat, 0)
     const t1 = window.setTimeout(repeat, 120)
     const t2 = window.setTimeout(repeat, 500)
-    const t3 = window.setTimeout(repeat, 1500)
 
     type IdleWindow = Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
@@ -47,6 +46,8 @@ export function useInstantNavBoot(): void {
     let idleId: number | undefined
     if (typeof w.requestIdleCallback === 'function') {
       idleId = w.requestIdleCallback(repeat, { timeout: 1500 })
+    } else {
+      window.setTimeout(repeat, 800)
     }
 
     const onVisible = () => {
@@ -61,7 +62,6 @@ export function useInstantNavBoot(): void {
       window.clearTimeout(t0)
       window.clearTimeout(t1)
       window.clearTimeout(t2)
-      window.clearTimeout(t3)
       if (idleId != null && typeof w.cancelIdleCallback === 'function') {
         w.cancelIdleCallback(idleId)
       }

@@ -93,6 +93,18 @@ export function resolveNavHrefFromElement(el: Element | null): string | null {
   return dataEl.getAttribute('data-href') || dataEl.getAttribute('data-prefetch-href')
 }
 
+/** href для кліку: <a> або лише data-href (data-prefetch-href — тільки prefetch). */
+function resolveClickNavHref(el: Element | null): string | null {
+  if (!el) return null
+  const anchor = el.closest?.('a[href]') as HTMLAnchorElement | null
+  if (anchor) {
+    if (anchor.target === '_blank' || anchor.hasAttribute('download')) return null
+    return anchor.getAttribute('href')
+  }
+  const dataEl = el.closest?.('[data-href]') as HTMLElement | null
+  return dataEl?.getAttribute('data-href') ?? null
+}
+
 function prefetchFromIntentTarget(router: AppRouterInstance, target: EventTarget | null): void {
   const href = resolveNavHrefFromElement(target as Element | null)
   if (href) prefetchHref(router, href)
@@ -176,8 +188,8 @@ export function installInstantNavIntent(router: AppRouterInstance): () => void {
 }
 
 /**
- * Після React onClick: миттєвий router.push для звичайних <a> без WattaLink.
- * Кнопки з data-prefetch-href лише префетчаться на pointerdown (installInstantNavIntent).
+ * Capture-фаза: миттєвий перехід для <a> без WattaLink і кнопок з data-href.
+ * stopPropagation — React onClick не дублює router.push.
  */
 export function installInstantNavClick(router: AppRouterInstance): () => void {
   if (typeof document === 'undefined') return () => {}
@@ -187,18 +199,15 @@ export function installInstantNavClick(router: AppRouterInstance): () => void {
     const el = e.target as Element | null
     if (shouldSkipInstantNav(el)) return
 
-    const anchor = el?.closest?.('a[href]') as HTMLAnchorElement | null
-    if (!anchor) return
-    if (anchor.target === '_blank' || anchor.hasAttribute('download')) return
-
-    const href = anchor.getAttribute('href')
+    const href = resolveClickNavHref(el)
     const target = href ? normalizeInternalHref(href) : null
     if (!target || target === currentPathWithSearch()) return
 
     e.preventDefault()
+    e.stopPropagation()
     navigateInstant(router, target)
   }
 
-  document.addEventListener('click', onClick, false)
-  return () => document.removeEventListener('click', onClick, false)
+  document.addEventListener('click', onClick, true)
+  return () => document.removeEventListener('click', onClick, true)
 }

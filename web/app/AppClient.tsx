@@ -173,7 +173,6 @@ export default function AppClient({
           { limit: 12, highPriorityCount: 8 },
         )
       })
-      void warmMenuCatalogCache()
     }
     if (typeof w.requestIdleCallback === 'function') {
       w.requestIdleCallback(runDeferred, { timeout: 800 })

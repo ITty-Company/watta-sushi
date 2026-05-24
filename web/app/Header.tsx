@@ -41,6 +41,7 @@ export function Header({ cartCount, onOpenCart }: HeaderProps) {
         <div className="flex items-center gap-4">
           <button
             type="button"
+            data-href={isLoggedIn ? '/profile' : '/login'}
             data-prefetch-href={isLoggedIn ? '/profile' : '/login'}
             onClick={() => router.push(isLoggedIn ? '/profile' : '/login')}
             className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 hover:text-pink-500"
