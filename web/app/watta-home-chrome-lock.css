@@ -344,9 +344,21 @@ html.watta-html-home-hero .watta-home-hero-entry-shell .welcome-hero-video-stack
   border-radius: inherit;
 }
 
-body.watta-route-home:has(.welcome-hero-media-frame-web .watta-home-hero-native-video)
+html:has(.admin-page-root, .admin-shell-watta-web) .watta-home-hero-entry-shell,
+body.watta-admin-shell-open .watta-home-hero-entry-shell {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+body.watta-route-home:has(.menu-page-web .watta-home-hero-native-video[data-watta-can-play='1'])
   .watta-home-hero-entry-shell,
-body.watta-route-home:has(.menu-page-web.watta-site-hero-page-web) .watta-home-hero-entry-shell {
+body.watta-route-home:has(.menu-page-web .welcome-hero-video-stack-web.watta-hero-video--ready)
+  .watta-home-hero-entry-shell {
   display: none !important;
   height: 0 !important;
   min-height: 0 !important;

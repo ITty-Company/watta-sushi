@@ -82,7 +82,6 @@ import { productGalleryFromApi } from '@/lib/productGallery'
  */
 const ProfileView = dynamic(() => import('./ProfileView'), { ssr: false })
 const DeliveryView = dynamic(() => import('./DeliveryView'), { ssr: false })
-const AdminView = dynamic(() => import('./AdminView'), { ssr: false })
 const PromotionsView = dynamic(() => import('./PromotionsView'), { ssr: false })
 const CartView = dynamic(() => import('./CartView'), { ssr: false })
 const PromotionsDetailView = dynamic(() => import('./PromotionsDetailView'), { ssr: false })
@@ -316,27 +315,7 @@ export default function MenuView() {
     window.dispatchEvent(
       new CustomEvent('wattaHomeFullPageOverlay', { detail: { active: homeFullPageOpen } }),
     )
-    const root = document.documentElement
-    if (activePage === 'admin') {
-      document.body.classList.add('watta-home-admin-open')
-      root.classList.add('watta-admin-active')
-    } else {
-      document.body.classList.remove('watta-home-admin-open')
-      if (!document.querySelector('.admin-shell-watta-web, .admin-page-root')) {
-        root.classList.remove('watta-admin-active')
-      }
-    }
-  }, [homeFullPageOpen, activePage])
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    return () => {
-      document.body.classList.remove('watta-home-admin-open')
-      if (!document.querySelector('.admin-shell-watta-web, .admin-page-root')) {
-        document.documentElement.classList.remove('watta-admin-active')
-      }
-    }
-  }, [])
+  }, [homeFullPageOpen])
 
   const scrollMainContentToTop = useCallback(() => {
     if (typeof document === 'undefined') return
@@ -1652,6 +1631,10 @@ export default function MenuView() {
       go('/privacy')
       return
     }
+    if (page === 'admin') {
+      go('/admin')
+      return
+    }
     setActivePage(page)
     setIsSidebarOpen(false)
     window.scrollTo({ top: 0, behavior: 'instant' in window ? ('instant' as ScrollBehavior) : 'auto' })
@@ -1675,7 +1658,7 @@ export default function MenuView() {
   
   const toggleSidebar = () => {
     const opening = !isSidebarOpen
-    if (opening && activePage && activePage !== 'admin') {
+    if (opening && activePage) {
       setActivePage(null)
     }
     if (opening) {
@@ -2049,7 +2032,7 @@ export default function MenuView() {
               handleClosePage()
               navigateToFullMenuCategory(router, pathname || '/', key)
             }}
-            onOpenAdmin={() => setActivePage('admin')}
+            onOpenAdmin={() => router.push('/admin')}
             initialTab={profileInitialTab}
           />
         </div>
@@ -2058,34 +2041,6 @@ export default function MenuView() {
     )
   }
 
-  if (activePage === 'admin') {
-    return (
-      <>
-        <div className="full-page-web full-page-web--craft full-page-web--admin">
-          <AdminView onBack={handleClosePage} onSiteMenuClick={toggleSidebar} />
-        </div>
-        <NavigationSidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          staggerKey={sidebarStaggerKey}
-          categories={navDrawerCategories}
-          onCategorySelect={handleNavCategorySelect}
-          onCityChange={handleSidebarCityChange}
-          onOpenProfileTab={openProfileTab}
-          onPageOpen={handlePageOpen}
-          onGoHome={handleClosePage}
-          onOpenNotifications={() => {
-            setIsSidebarOpen(false)
-            setIsNotificationsOpen(true)
-          }}
-        />
-        <NotificationsView
-          isOpen={isNotificationsOpen}
-          onClose={() => setIsNotificationsOpen(false)}
-        />
-      </>
-    )
-  }
   if (activePage === 'cart') {
     return (
       <>

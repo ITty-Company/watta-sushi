@@ -28,7 +28,6 @@ import { useInstantNavBoot } from '@/hooks/useInstantNavBoot'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { isBrowserReloadOnHome } from '@/lib/menuBrowseRestore'
 import { resetHomepageLikeLogoClick } from '@/lib/wattaChromeGoHome'
-import { warmMenuCatalogCache } from '@/lib/menuCatalogSessionCache'
 
 export default function AppClient({
   children,
@@ -70,7 +69,6 @@ export default function AppClient({
    * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.
    */
   useLayoutEffect(() => {
-    void warmMenuCatalogCache()
     preloadLocationPickerMascot()
   }, [])
 

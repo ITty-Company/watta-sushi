@@ -450,14 +450,9 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
               <WattaLink
                 href="/admin"
                 className="watta-nav-compact__admin"
-                onClick={(e) => {
+                onClick={() => {
                   onClose()
-                  if (props.mode === 'embedded') {
-                    e.preventDefault()
-                    props.onPageOpen('admin')
-                  } else {
-                    props.onNavigate?.()
-                  }
+                  props.onNavigate?.()
                 }}
               >
                 <Sparkles size={14} strokeWidth={2.2} />

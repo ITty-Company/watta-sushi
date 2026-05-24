@@ -101,13 +101,11 @@ export default function AdminHeroVideoPreview({
       key={srcWithFrameHint}
       ref={videoRef}
       src={srcWithFrameHint}
-      className={`${aspectClassName} bg-black object-cover`}
+      className={`${aspectClassName} max-h-52 w-full bg-[#145142]/8 object-contain`}
       controls
       muted
       playsInline
-      autoPlay
-      loop
-      preload="auto"
+      preload="metadata"
       onLoadedMetadata={(e) => primeAdminHeroVideoPreview(e.currentTarget)}
       onError={() => setBroken(true)}
     />

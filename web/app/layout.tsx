@@ -15,14 +15,16 @@ import './home-after-hero-intro-tablet-desktop.css'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildRootMetadata, getJsonLdDescription } from '@/lib/i18n/seo'
 import { wattaToHtmlLang } from '@/lib/i18n/language'
+import { headers } from 'next/headers'
 import {
+  isWattaAuthPathname,
+  isWattaHomeHeroPathname,
   WATTA_HOME_HERO_CRITICAL_CSS,
   WATTA_HTML_ROUTE_BOOT_SCRIPT,
+  wattaHtmlRouteClassNames,
 } from '@/lib/wattaHtmlRouteClass'
 import { WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT } from '@/lib/lockMobileViewportHeight'
 import { LOCATION_PICKER_MASCOT_SRC } from '@/lib/locationPickerMascot'
-
-const BASE_HTML_CLASS = 'watta-light-chrome'
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getRequestLocale()
@@ -49,9 +51,15 @@ export default async function RootLayout({
   const lang = await getRequestLocale()
   const htmlLang = wattaToHtmlLang(lang)
   const jsonLdDescription = getJsonLdDescription(lang)
-  /** Клас hero-маршруту — синхронний boot script + WattaHtmlRouteClass на клієнті (без headers на кожен RSC). */
-  const htmlClassName = BASE_HTML_CLASS
-  const bodyClassName = undefined
+  /** Клас hero-маршруту на SSR — boot script + WattaHtmlRouteClass дублюють на клієнті. */
+  const pathname = headers().get('x-watta-pathname') || '/'
+  const htmlClassName = wattaHtmlRouteClassNames(pathname)
+  const bodyClassName = [
+    isWattaHomeHeroPathname(pathname) ? 'watta-route-home' : '',
+    isWattaAuthPathname(pathname) ? 'watta-auth-route' : '',
+  ]
+    .filter(Boolean)
+    .join(' ') || undefined
 
   const jsonLd = {
     '@context': 'https://schema.org',

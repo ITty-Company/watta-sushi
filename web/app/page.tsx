@@ -1,6 +1,6 @@
 import HomeClient from './HomeClient'
 import HomeHeroSsrShell from './components/HomeHeroSsrShell'
-import { WATTA_HERO_PRIMARY_MP4, WATTA_HOME_HERO_POSTER } from '@/lib/wattaHeroVideo'
+import { WATTA_HOME_HERO_POSTER } from '@/lib/wattaHeroVideo'
 
 export default function Home() {
   return (
@@ -14,7 +14,6 @@ export default function Home() {
       />
       {/* LCP: постер hero. Mp4 — без high priority, щоб не з’їдати смугу під картинку. */}
       <link rel="preload" as="image" href={WATTA_HOME_HERO_POSTER} fetchPriority="high" />
-      <link rel="preload" as="video" type="video/mp4" href={WATTA_HERO_PRIMARY_MP4} />
       <HomeHeroSsrShell />
       <HomeClient />
     </>

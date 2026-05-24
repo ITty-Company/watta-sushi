@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect } from 'react'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { installInstantNavClick, installInstantNavIntent, prefetchPublicRoutes } from '@/lib/instantNav'
 import { warmMenuCatalogCache } from '@/lib/menuCatalogSessionCache'
 import {
@@ -10,9 +10,43 @@ import {
   scheduleIdleRouteChunkPrefetch,
 } from '@/lib/prefetchRouteChunks'
 import { installVisibleLinkPrefetch, warmPublicRouteCaches } from '@/lib/publicRouteWarmCache'
+import { isWattaHomeHeroPathname } from '@/lib/wattaHtmlRouteClass'
 import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 
 const DEFERRED_PREFETCH_MAX_MS = 6000
+
+function scheduleDeferredHomeWarmCaches(run: () => void): () => void {
+  let ran = false
+  const fire = () => {
+    if (ran) return
+    ran = true
+    run()
+  }
+
+  const onHeroReady = () => {
+    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+    }
+    const w = window as IdleWindow
+    if (typeof w.requestIdleCallback === 'function') {
+      w.requestIdleCallback(fire, { timeout: 1500 })
+    } else {
+      window.setTimeout(fire, 300)
+    }
+  }
+
+  window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
+  const failSafeId = window.setTimeout(() => {
+    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
+    fire()
+  }, DEFERRED_PREFETCH_MAX_MS)
+
+  return () => {
+    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
+    window.clearTimeout(failSafeId)
+  }
+}
 
 function scheduleDeferredRoutePrefetch(router: AppRouterInstance): () => void {
   let ran = false
@@ -55,12 +89,27 @@ function scheduleDeferredRoutePrefetch(router: AppRouterInstance): () => void {
  */
 export function useInstantNavBoot(): void {
   const router = useRouter()
+  const pathname = usePathname() || '/'
+  const deferForHomeHero = isWattaHomeHeroPathname(pathname)
 
   useLayoutEffect(() => {
-    void warmMenuCatalogCache()
-    void warmPublicRouteCaches()
+    const warmCaches = () => {
+      void warmMenuCatalogCache()
+      void warmPublicRouteCaches()
+    }
+
+    if (deferForHomeHero) {
+      const cancelWarm = scheduleDeferredHomeWarmCaches(warmCaches)
+      const cancelPrefetch = scheduleDeferredRoutePrefetch(router)
+      return () => {
+        cancelWarm()
+        cancelPrefetch()
+      }
+    }
+
+    warmCaches()
     return scheduleDeferredRoutePrefetch(router)
-  }, [router])
+  }, [router, deferForHomeHero])
 
   useEffect(() => {
     const removeIntent = installInstantNavIntent(router)
