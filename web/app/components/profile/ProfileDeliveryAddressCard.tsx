@@ -7,10 +7,12 @@ import type { Translations } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import {
   fetchDeliveryCheck,
+  isDeliveryCityUnavailable,
   isDeliveryFeeAvailable,
   isDeliveryOutsideArea,
   type DeliveryCheckResult,
 } from '@/lib/deliveryCheckClient'
+import DeliveryUnavailableCityNotice from '../delivery/DeliveryUnavailableCityNotice'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { cityIdPreferAmsterdam } from '@/lib/wattaPreferredDefaultCity'
 
@@ -162,9 +164,11 @@ export default function ProfileDeliveryAddressCard({
       result.status === 'city_not_found' ||
       result.status === 'server_error')
 
+  const cityUnavailable = result != null && isDeliveryCityUnavailable(result.status)
+
   let statusMessage: string | null = null
-  if (result?.status === 'outside_nl' || result?.status === 'outside_amsterdam') {
-    statusMessage = d.postalOutsideNetherlands
+  if (cityUnavailable) {
+    statusMessage = null
   } else if (result?.status === 'outside') {
     statusMessage = d.postalOutside
   } else if (result?.status === 'geocode_failed' || result?.status === 'postcode_format_invalid') {
@@ -221,6 +225,9 @@ export default function ProfileDeliveryAddressCard({
                 </p>
               ) : null}
             </div>
+          ) : null}
+          {!checking && cityUnavailable ? (
+            <DeliveryUnavailableCityNotice title={d.deliveryUnavailableTitle} compact />
           ) : null}
           {!checking && statusMessage ? (
             <p className="flex items-start gap-2 text-sm text-red-700">

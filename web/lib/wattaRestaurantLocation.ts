@@ -21,3 +21,15 @@ export function wattaRestaurantEmbedUrl(zoom: number = WATTA_RESTAURANT.embedZoo
 export function wattaRestaurantExternalMapsUrl(): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(WATTA_RESTAURANT.query)}`
 }
+
+export function wattaMapsUrlForAddress(address: string): string {
+  const q = address.trim()
+  if (!q) return wattaRestaurantExternalMapsUrl()
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+}
+
+/** Адреса самовивозу: з адмінки → fallback на фактичну адресу кафе. */
+export function resolveRestaurantPickupAddress(fromSettings?: string | null): string {
+  const trimmed = String(fromSettings ?? '').trim()
+  return trimmed || WATTA_RESTAURANT.addressLine
+}

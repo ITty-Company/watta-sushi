@@ -23,6 +23,20 @@ export const sendVerificationEmail = async (to: string, code: string) => {
   });
 };
 
+export const sendPasswordResetEmail = async (to: string, code: string) => {
+  await transporter.sendMail({
+    from: '"Watta Sushi" <no-reply@watta-sushi.com>',
+    to,
+    subject: 'Восстановление пароля Watta Sushi',
+    html: `
+      <h1>Восстановление пароля</h1>
+      <p>Вы запросили сброс пароля. Введите этот код в приложении:</p>
+      <h2 style="color: #155044; letter-spacing: 5px;">${code}</h2>
+      <p>Код действует ограниченное время. Если вы не запрашивали сброс — проигнорируйте письмо.</p>
+    `,
+  });
+};
+
 export const sendNewsletterEmail = async (to: string[], subject: string, htmlContent: string) => {
   // Отправляем скрытой копией (BCC), чтобы получатели не видели адреса друг друга
   await transporter.sendMail({

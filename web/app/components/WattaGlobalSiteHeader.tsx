@@ -4,10 +4,11 @@ import Image from 'next/image'
 import WattaLink from './WattaLink'
 import { usePathname } from 'next/navigation'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { useCallback, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { useCallback, useEffect, useSyncExternalStore, type CSSProperties } from 'react'
 import { scrollEntireAppToTop } from '@/lib/menuScroll'
 import { resetHomepageLikeLogoClick } from '@/lib/wattaChromeGoHome'
-import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
+import { getAuthUrl } from '@/lib/authGate'
+import { useIsLoggedIn } from '@/hooks/useIsLoggedIn'
 import { Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react'
 import { getLiveCartPieceCount, subscribeCartStorage } from '@/lib/cartStorage'
 import { readFavoriteIds, subscribeFavoriteIds } from '@/lib/favoritesStorage'
@@ -117,15 +118,10 @@ export default function WattaGlobalSiteHeader({
   const pathname = usePathname()
   const cartCount = useLiveCartCount()
   const favoritesCount = useLiveFavoritesCount()
+  const loggedIn = useIsLoggedIn()
+  const visibleCartCount = loggedIn ? cartCount : 0
+  const visibleFavoritesCount = loggedIn ? favoritesCount : 0
   const { showPromotionsNav } = usePublicPromotionsNav()
-  const [loggedIn, setLoggedIn] = useState(false)
-
-  useEffect(() => {
-    const sync = () => setLoggedIn(isUserLoggedIn())
-    sync()
-    window.addEventListener('userChanged', sync)
-    return () => window.removeEventListener('userChanged', sync)
-  }, [])
 
   const cartHref = loggedIn ? '/cart' : getAuthUrl('/cart')
   const profileHref = loggedIn ? '/profile' : getAuthUrl('/profile')
@@ -331,11 +327,15 @@ export default function WattaGlobalSiteHeader({
                   color: '#145142',
                   strokeWidth: 2.25,
                 }}
-                fill={favoritesCount > 0 ? 'rgba(20, 81, 66, 0.18)' : 'none'}
+                fill={visibleFavoritesCount > 0 ? 'rgba(20, 81, 66, 0.18)' : 'none'}
               />
-              {favoritesCount > 0 ? (
-                <span className="favorites-badge-web cart-badge-web" style={headerCornerBadgeStyle(favoritesCount)} aria-live="polite">
-                  {favoritesCount > 99 ? '99+' : favoritesCount}
+              {visibleFavoritesCount > 0 ? (
+                <span
+                  className="favorites-badge-web cart-badge-web"
+                  style={headerCornerBadgeStyle(visibleFavoritesCount)}
+                  aria-live="polite"
+                >
+                  {visibleFavoritesCount > 99 ? '99+' : visibleFavoritesCount}
                 </span>
               ) : null}
             </WattaLink>
@@ -365,9 +365,9 @@ export default function WattaGlobalSiteHeader({
                   strokeWidth: 2.25,
                 }}
               />
-              {cartCount > 0 ? (
-                <span className="cart-badge-web" style={headerCornerBadgeStyle(cartCount)} aria-live="polite">
-                  {cartCount > 99 ? '99+' : cartCount}
+              {visibleCartCount > 0 ? (
+                <span className="cart-badge-web" style={headerCornerBadgeStyle(visibleCartCount)} aria-live="polite">
+                  {visibleCartCount > 99 ? '99+' : visibleCartCount}
                 </span>
               ) : null}
             </WattaLink>

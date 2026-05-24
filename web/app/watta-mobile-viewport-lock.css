@@ -1,12 +1,8 @@
 /**
- * Телефон: розмір «вікна» не змінюється при переходах, скролі адресного рядка чи клавіатурі.
- * Контент листається; layout не роздувається по ширині/висоті.
+ * Телефон (≤767px): розмір «вікна» не змінюється при переходах, скролі адресного рядка чи клавіатурі.
+ * Планшет — watta-tablet-viewport-lock.css; JS — lockMobileViewportHeight (до 1366px).
  */
 @media (max-width: 767px) {
-  :root {
-    --watta-screen-min-h: calc(var(--watta-vh-locked, 1svh) * 100);
-  }
-
   html.watta-light-chrome {
     width: 100%;
     max-width: 100%;
@@ -52,7 +48,8 @@
   .auth-watta-root {
     height: var(--watta-screen-min-h) !important;
     max-height: var(--watta-screen-min-h) !important;
-    min-height: var(--watta-screen-min-h) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
 
   .auth-watta-root .watta-public-page-shell__bg--auth {

@@ -51,6 +51,7 @@ export default function WattaRightNavDrawer() {
         pathname={pathname}
         onClose={close}
         onNavigate={close}
+        drawerActive={isOpen}
         onCityChange={(cityId) => cityChangeHandlerRef.current?.(cityId)}
       />
     </WattaNavDrawerShell>

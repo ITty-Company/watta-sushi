@@ -7,6 +7,12 @@ import {
   minimumOrderEurFromDistanceKm,
   netherlandsDeliveryAllowed,
 } from '../lib/amsterdamDelivery.js'
+import { geocodedLocationMatchesServiceCity } from '../lib/deliveryCityMatch.js'
+import {
+  buildNearbyServiceCityPins,
+  filterActiveServiceHubCities,
+  isNlDrivingDistanceInServiceRange,
+} from '../lib/deliveryServiceArea.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -106,6 +112,79 @@ async function googleDrivingRouteMetrics(
   return (await fetchOnce(true)) ?? (await fetchOnce(false))
 }
 
+/** Маршрут по дорогах через OSRM (fallback, якщо Google Distance Matrix недоступний). */
+async function osrmDrivingRouteMetrics(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number }
+): Promise<{ distanceKm: number; durationMinutes: number | null } | null> {
+  const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=false`
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      code?: string
+      routes?: { distance?: number; duration?: number }[]
+    }
+    if (data.code !== 'Ok' || !data.routes?.[0]) return null
+    const route = data.routes[0]
+    const meters = route.distance
+    if (typeof meters !== 'number' || !Number.isFinite(meters) || meters <= 0) return null
+    const distanceKm = meters / 1000
+    const durationSec = route.duration
+    const durationMinutes =
+      typeof durationSec === 'number' && Number.isFinite(durationSec) && durationSec > 0
+        ? Math.max(1, Math.round(durationSec / 60))
+        : null
+    return { distanceKm, durationMinutes }
+  } catch {
+    return null
+  }
+}
+
+async function drivingRouteMetrics(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number }
+): Promise<{ distanceKm: number; durationMinutes: number | null }> {
+  const google = await googleDrivingRouteMetrics(origin, dest)
+  if (google) return google
+  const osrm = await osrmDrivingRouteMetrics(origin, dest)
+  if (osrm) return osrm
+  return {
+    distanceKm: haversineKm(origin.lat, origin.lng, dest.lat, dest.lng),
+    durationMinutes: null,
+  }
+}
+
+function formatNlPostcodeSpaced(raw: string): string {
+  const compact = raw.replace(/\s+/g, '').toUpperCase()
+  const m = compact.match(/^(\d{4})([A-Z]{2})$/)
+  return m ? `${m[1]} ${m[2]}` : raw.trim()
+}
+
+function geocodedPostcodeMatches(inputPostcode: string, geo: {
+  displayName: string
+  address?: Record<string, string>
+}): boolean {
+  const want = inputPostcode.replace(/\s+/g, '').toUpperCase()
+  if (!isValidNlPostcodeFormat(want)) return true
+  const fromAddr = geo.address?.postcode?.replace(/\s+/g, '').toUpperCase()
+  if (fromAddr) return fromAddr === want
+  const fromDisplay = extractNlPostcodeFromAnywhere(geo.displayName)
+  if (fromDisplay) {
+    return fromDisplay.replace(/\s+/g, '').toUpperCase() === want
+  }
+  return true
+}
+
+function isNlGeocodeHit(geo: {
+  lat: number
+  lng: number
+  displayName: string
+  address?: Record<string, string>
+}): boolean {
+  return netherlandsDeliveryAllowed(geo.lat, geo.lng, geo.address, geo.displayName)
+}
+
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
 }
@@ -199,6 +278,37 @@ function citySearchNames(city: {
   return [...new Set(names.map((n) => n.trim()))]
 }
 
+type CityGeoFields = {
+  name: string
+  name_en?: string | null
+  name_nl?: string | null
+  name_ua?: string | null
+  latitude?: number | null
+  longitude?: number | null
+}
+
+function firstGeocodeInServiceCity(
+  hits: unknown[],
+  city: CityGeoFields,
+  countryCode: string
+): { lat: number; lng: number; displayName: string; address?: Record<string, string> } | null {
+  for (const row of hits) {
+    const parsed = parseNominatimHit(row)
+    if (parsed && geocodedLocationMatchesServiceCity(parsed, city, countryCode)) return parsed
+  }
+  return null
+}
+
+async function geocodeGoogleInServiceCity(
+  query: string,
+  countryCode: string,
+  city: CityGeoFields
+): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
+  const g = await geocodeWithGoogle(query, countryCode)
+  if (g && geocodedLocationMatchesServiceCity(g, city, countryCode)) return g
+  return null
+}
+
 function nominatimAddress(hit: Record<string, unknown>): Record<string, string> | undefined {
   const raw = hit.address
   if (!raw || typeof raw !== 'object') return undefined
@@ -227,7 +337,7 @@ function parseNominatimHit(
 
 /** Опційно: той самий ключ, що й NEXT_PUBLIC_GOOGLE_MAPS_API_KEY на фронті (Geocoding API має бути увімкнено). */
 function googleComponentsToAddress(
-  components: { long_name: string; types: string[] }[] | undefined
+  components: { long_name: string; short_name?: string; types: string[] }[] | undefined
 ): Record<string, string> | undefined {
   if (!Array.isArray(components)) return undefined
   const out: Record<string, string> = {}
@@ -237,6 +347,13 @@ function googleComponentsToAddress(
     if (t.includes('administrative_area_level_2')) out.municipality = c.long_name
     if (t.includes('sublocality_level_1') && !out.city_district) out.city_district = c.long_name
     if (t.includes('sublocality') && !out.suburb) out.suburb = c.long_name
+    if (t.includes('postal_code')) out.postcode = c.long_name
+    if (t.includes('country')) {
+      out.country = c.long_name
+      if (c.short_name) out.country_code = c.short_name
+    }
+    if (t.includes('route') && !out.road) out.road = c.long_name
+    if (t.includes('street_number') && !out.house_number) out.house_number = c.long_name
   }
   return Object.keys(out).length ? out : undefined
 }
@@ -257,21 +374,72 @@ async function geocodeWithGoogle(
       results?: {
         geometry?: { location?: { lat?: number; lng?: number } }
         formatted_address?: string
-        address_components?: { long_name: string; types: string[] }[]
+        address_components?: { long_name: string; short_name?: string; types: string[] }[]
       }[]
     }
-    if (data.status !== 'OK' || !data.results?.[0]?.geometry?.location) return null
-    const r0 = data.results[0]
-    const loc = r0.geometry!.location!
-    const lat = Number(loc.lat)
-    const lng = Number(loc.lng)
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-    return {
-      lat,
-      lng,
-      displayName: r0.formatted_address || `${lat}, ${lng}`,
-      address: googleComponentsToAddress(r0.address_components),
+    if (data.status !== 'OK' || !data.results?.length) return null
+    for (const row of data.results) {
+      const loc = row.geometry?.location
+      if (!loc) continue
+      const lat = Number(loc.lat)
+      const lng = Number(loc.lng)
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+      const hit = {
+        lat,
+        lng,
+        displayName: row.formatted_address || `${lat}, ${lng}`,
+        address: googleComponentsToAddress(row.address_components),
+      }
+      if (regionCc.toUpperCase() === 'NL') {
+        if (isNlGeocodeHit(hit)) return hit
+        continue
+      }
+      return hit
     }
+    return null
+  } catch {
+    return null
+  }
+}
+
+async function geocodeWithGoogleNl(
+  query: string,
+  expectedPostcode?: string
+): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
+  const key = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_SERVER_API_KEY
+  if (!key || !query.trim()) return null
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&region=nl&key=${encodeURIComponent(key)}`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      status?: string
+      results?: {
+        geometry?: { location?: { lat?: number; lng?: number } }
+        formatted_address?: string
+        address_components?: { long_name: string; short_name?: string; types: string[] }[]
+      }[]
+    }
+    if (data.status !== 'OK' || !data.results?.length) return null
+    let fallback: { lat: number; lng: number; displayName: string; address?: Record<string, string> } | null =
+      null
+    for (const row of data.results) {
+      const loc = row.geometry?.location
+      if (!loc) continue
+      const lat = Number(loc.lat)
+      const lng = Number(loc.lng)
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+      const hit = {
+        lat,
+        lng,
+        displayName: row.formatted_address || `${lat}, ${lng}`,
+        address: googleComponentsToAddress(row.address_components),
+      }
+      const accepted = acceptNlGeocodeSync(hit, expectedPostcode)
+      if (accepted) return accepted
+      if (!fallback && isNlGeocodeHit(hit)) fallback = hit
+    }
+    return expectedPostcode ? null : fallback
   } catch {
     return null
   }
@@ -280,14 +448,7 @@ async function geocodeWithGoogle(
 async function geocodePostal(
   postal: string,
   countryCode: string,
-  city: {
-    name: string
-    name_en?: string | null
-    name_nl?: string | null
-    name_ua?: string | null
-    latitude?: number | null
-    longitude?: number | null
-  }
+  city: CityGeoFields
 ): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
   const cc = countryCode.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'UA'
   const variants = postalVariantsForCountry(postal, cc)
@@ -348,7 +509,7 @@ async function geocodePostal(
       addressdetails: '1',
     })
     const rows = await trySearch(params)
-    const parsed = parseNominatimHit(rows[0])
+    const parsed = firstGeocodeInServiceCity(rows, city, cc)
     if (parsed) return parsed
   }
 
@@ -362,10 +523,10 @@ async function geocodePostal(
   })
   if (viewbox) {
     qParams.set('viewbox', viewbox)
-    qParams.set('bounded', '0')
+    qParams.set('bounded', '1')
   }
   let rows = await trySearch(qParams)
-  let parsed = parseNominatimHit(rows[0])
+  let parsed = firstGeocodeInServiceCity(rows, city, cc)
   if (parsed) return parsed
 
   if (names[1]) {
@@ -378,10 +539,10 @@ async function geocodePostal(
     })
     if (viewbox) {
       q2.set('viewbox', viewbox)
-      q2.set('bounded', '0')
+      q2.set('bounded', '1')
     }
     rows = await trySearch(q2)
-    parsed = parseNominatimHit(rows[0])
+    parsed = firstGeocodeInServiceCity(rows, city, cc)
     if (parsed) return parsed
   }
 
@@ -393,15 +554,19 @@ async function geocodePostal(
       q: `${pv0} ${primaryCity} ${countryHint}`,
       addressdetails: '1',
     })
+    if (viewbox) {
+      q3.set('viewbox', viewbox)
+      q3.set('bounded', '1')
+    }
     rows = await trySearch(q3)
-    parsed = parseNominatimHit(rows[0])
+    parsed = firstGeocodeInServiceCity(rows, city, cc)
     if (parsed) return parsed
   }
 
-  const g1 = await geocodeWithGoogle(`${pv0} ${primaryCity}`, cc)
+  const g1 = await geocodeGoogleInServiceCity(`${pv0} ${primaryCity}`, cc, city)
   if (g1) return g1
   if (countryHint) {
-    const g2 = await geocodeWithGoogle(`${pv0} ${primaryCity}, ${countryHint}`, cc)
+    const g2 = await geocodeGoogleInServiceCity(`${pv0} ${primaryCity}, ${countryHint}`, cc, city)
     if (g2) return g2
   }
 
@@ -409,15 +574,71 @@ async function geocodePostal(
 }
 
 function kitchenCoordsFromSettings(
-  s: { deliveryKitchenLat?: number | null; deliveryKitchenLng?: number | null } | null | undefined
+  s:
+    | {
+        deliveryKitchenLat?: number | null
+        deliveryKitchenLng?: number | null
+        deliveryKitchenAddress?: string | null
+      }
+    | null
+    | undefined
 ): { lat: number; lng: number } | null {
-  if (!s) return null
-  // Number(null) === 0 — не трактуємо відсутні координати як (0,0)
-  if (s.deliveryKitchenLat == null || s.deliveryKitchenLng == null) return null
-  const lat = Number(s.deliveryKitchenLat)
-  const lng = Number(s.deliveryKitchenLng)
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-  return { lat, lng }
+  const addr = String(s?.deliveryKitchenAddress ?? '').trim().toLowerCase()
+  if (/amstelveenseweg/.test(addr)) return null
+
+  if (s?.deliveryKitchenLat != null && s?.deliveryKitchenLng != null) {
+    const lat = Number(s.deliveryKitchenLat)
+    const lng = Number(s.deliveryKitchenLng)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      const nearAmstelveenseweg =
+        Math.abs(lat - 52.35685) < 0.015 && Math.abs(lng - 4.85335) < 0.02
+      if (nearAmstelveenseweg && !/helicopterstraat/.test(addr)) return null
+      return { lat, lng }
+    }
+  }
+  if (/helicopterstraat/.test(addr)) return WATTA_KITCHEN_AMSTERDAM
+  return null
+}
+
+function resolveKitchenOrigin(
+  settings:
+    | {
+        deliveryKitchenLat?: number | null
+        deliveryKitchenLng?: number | null
+        deliveryKitchenAddress?: string | null
+      }
+    | null
+    | undefined,
+  city: {
+    restaurantLatitude: number | null
+    restaurantLongitude: number | null
+    latitude: number | null
+    longitude: number | null
+  },
+  nlTariffFlow: boolean
+): { lat: number; lng: number } {
+  return (
+    kitchenCoordsFromSettings(settings) ??
+    (nlTariffFlow ? WATTA_KITCHEN_AMSTERDAM : null) ??
+    kitchenOrigin(city) ??
+    WATTA_KITCHEN_AMSTERDAM
+  )
+}
+
+async function loadNearbyServiceCities(
+  countryId: number,
+  countryCode: string,
+  userLat: number,
+  userLng: number,
+  kitchenOrigin: { lat: number; lng: number } | null
+) {
+  const rows = await prisma.city.findMany({
+    where: { isActive: true, countryId },
+    include: { country: true, deliveryZones: true },
+    orderBy: { name: 'asc' },
+  })
+  const hubs = filterActiveServiceHubCities(rows, countryCode, kitchenOrigin)
+  return buildNearbyServiceCityPins(userLat, userLng, hubs)
 }
 
 /** Витягти NL postcode з довільного рядка (напр. «Damrak 1, 1012 JS Amsterdam»). */
@@ -434,14 +655,7 @@ function extractNlPostcodeFromAnywhere(raw: string): string | null {
 async function geocodeFreeText(
   query: string,
   countryCode: string,
-  city: {
-    name: string
-    name_en?: string | null
-    name_nl?: string | null
-    name_ua?: string | null
-    latitude?: number | null
-    longitude?: number | null
-  }
+  city: CityGeoFields
 ): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
   const q = query.trim()
   if (q.length < 3) return null
@@ -457,10 +671,39 @@ async function geocodeFreeText(
   }
   const hint = countryNames[cc] || ''
 
-  const gWide = await geocodeWithGoogle(hint ? `${q}, ${hint}` : q, cc)
-  if (gWide) return gWide
-  const gCity = await geocodeWithGoogle(`${q}, ${primaryCity}${hint ? `, ${hint}` : ''}`, cc)
+  if (cc === 'NL') {
+    const extractedPc = extractNlPostcodeFromAnywhere(q)
+    if (extractedPc) {
+      const line = q
+        .replace(/\b\d{4}\s*[A-Za-z]{2}\b/gi, '')
+        .replace(/[,\s]+/g, ' ')
+        .trim()
+      const dest = await geocodeNetherlandsDestination(
+        extractedPc.replace(/\s+/g, '').toUpperCase(),
+        line || undefined,
+        city
+      )
+      if (dest) return dest
+    }
+    const gNl = await geocodeWithGoogleNl(hint ? `${q}, ${hint}` : `${q}, Netherlands`)
+    if (gNl) return gNl
+  }
+
+  const gCity = await geocodeGoogleInServiceCity(
+    `${q}, ${primaryCity}${hint ? `, ${hint}` : ''}`,
+    cc,
+    city
+  )
   if (gCity) return gCity
+
+  for (const alt of names.slice(1)) {
+    const gAlt = await geocodeGoogleInServiceCity(
+      `${q}, ${alt}${hint ? `, ${hint}` : ''}`,
+      cc,
+      city
+    )
+    if (gAlt) return gAlt
+  }
 
   const headers = {
     Accept: 'application/json',
@@ -494,10 +737,10 @@ async function geocodeFreeText(
   })
   if (viewbox) {
     qParams.set('viewbox', viewbox)
-    qParams.set('bounded', '0')
+    qParams.set('bounded', '1')
   }
   const rows = await trySearch(qParams)
-  const parsed = parseNominatimHit(rows[0])
+  const parsed = firstGeocodeInServiceCity(rows, city, cc)
   if (parsed) return parsed
 
   if (names[1]) {
@@ -510,57 +753,119 @@ async function geocodeFreeText(
     })
     if (viewbox) {
       q2.set('viewbox', viewbox)
-      q2.set('bounded', '0')
+      q2.set('bounded', '1')
     }
     const rows2 = await trySearch(q2)
-    const p2 = parseNominatimHit(rows2[0])
+    const p2 = firstGeocodeInServiceCity(rows2, city, cc)
     if (p2) return p2
   }
 
   return null
 }
 
+async function acceptNlGeocode(
+  geo: { lat: number; lng: number; displayName: string; address?: Record<string, string> } | null,
+  expectedPostcode?: string
+): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
+  return acceptNlGeocodeSync(geo, expectedPostcode)
+}
+
+function acceptNlGeocodeSync(
+  geo: { lat: number; lng: number; displayName: string; address?: Record<string, string> } | null,
+  expectedPostcode?: string
+): { lat: number; lng: number; displayName: string; address?: Record<string, string> } | null {
+  if (!geo || !isNlGeocodeHit(geo)) return null
+  if (expectedPostcode && !geocodedPostcodeMatches(expectedPostcode, geo)) return null
+  return geo
+}
+
+async function geocodeNlPostcodeOnly(
+  postal: string
+): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
+  const pcNorm = postal.replace(/\s+/g, '').toUpperCase()
+  const variants = postalVariantsForCountry(pcNorm, 'NL').slice(0, 3)
+
+  for (const pv of variants) {
+    const g = await geocodeWithGoogleNl(`${pv}, Netherlands`, pcNorm)
+    if (g) return g
+  }
+
+  const headers = {
+    Accept: 'application/json',
+    'User-Agent': 'WattaSushi/1.0 (delivery check; https://wattasushi.nl)',
+  }
+  for (const pv of variants) {
+    const params = new URLSearchParams({
+      format: 'json',
+      limit: '5',
+      countrycodes: 'nl',
+      postalcode: pv,
+      addressdetails: '1',
+    })
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { headers })
+      if (!res.ok) continue
+      const rows = (await res.json()) as unknown[]
+      if (!Array.isArray(rows)) continue
+      for (const row of rows) {
+        const hit = await acceptNlGeocode(parseNominatimHit(row), pcNorm)
+        if (hit) return hit
+      }
+    } catch {
+      /* try next variant */
+    }
+  }
+  return null
+}
+
 async function geocodeNetherlandsDestination(
   postal: string,
   addressLine: string | undefined,
-  city: {
-    name: string
-    name_en?: string | null
-    name_nl?: string | null
-    name_ua?: string | null
-    latitude?: number | null
-    longitude?: number | null
-  }
+  _city: CityGeoFields
 ): Promise<{ lat: number; lng: number; displayName: string; address?: Record<string, string> } | null> {
+  const pcNorm = postal.replace(/\s+/g, '').toUpperCase()
+  const pcSpaced = formatNlPostcodeSpaced(pcNorm)
   const line = addressLine?.trim()
+
   if (line) {
-    const g1 = await geocodeWithGoogle(`${line}, ${postal}, Netherlands`, 'NL')
-    if (g1) return g1
-    const g2 = await geocodeWithGoogle(`${postal} ${line}, Netherlands`, 'NL')
-    if (g2) return g2
+    const streetQueries = [
+      `${line}, ${pcSpaced}, Netherlands`,
+      `${pcSpaced} ${line}, Netherlands`,
+      `${line}, ${pcSpaced}`,
+    ]
+    for (const q of streetQueries) {
+      const g = await geocodeWithGoogleNl(q, pcNorm)
+      if (g) return g
+    }
+
     const headers = {
       Accept: 'application/json',
       'User-Agent': 'WattaSushi/1.0 (delivery check; https://wattasushi.nl)',
     }
-    const q = new URLSearchParams({
-      format: 'json',
-      limit: '8',
-      countrycodes: 'nl',
-      q: `${line}, ${postal}, Netherlands`,
-      addressdetails: '1',
-    })
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?${q}`, { headers })
-      if (res.ok) {
-        const data = (await res.json()) as unknown[]
-        const parsed = parseNominatimHit(data[0])
-        if (parsed) return parsed
+    for (const q of streetQueries) {
+      const params = new URLSearchParams({
+        format: 'json',
+        limit: '8',
+        countrycodes: 'nl',
+        q,
+        addressdetails: '1',
+      })
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { headers })
+        if (!res.ok) continue
+        const rows = (await res.json()) as unknown[]
+        if (!Array.isArray(rows)) continue
+        for (const row of rows) {
+          const hit = await acceptNlGeocode(parseNominatimHit(row), pcNorm)
+          if (hit) return hit
+        }
+      } catch {
+        /* fall through */
       }
-    } catch {
-      /* fall through */
     }
   }
-  return geocodePostal(postal, 'NL', city)
+
+  return geocodeNlPostcodeOnly(pcNorm)
 }
 
 router.post('/check', async (req: Request, res: Response) => {
@@ -601,6 +906,7 @@ router.post('/check', async (req: Request, res: Response) => {
 
     const countryCode = (city.country?.code || 'UA').toUpperCase()
     const nlTariffFlow = countryCode === 'NL'
+    const kitchenOriginPoint = resolveKitchenOrigin(settings, city, nlTariffFlow)
 
     const zonesWithPoly = city.deliveryZones
       .map((z) => {
@@ -655,9 +961,40 @@ router.post('/check', async (req: Request, res: Response) => {
       })
     }
 
+    if (!geocodedLocationMatchesServiceCity(geo, cityGeoFields, countryCode)) {
+      const nearbyServiceCities = await loadNearbyServiceCities(
+        city.countryId,
+        countryCode,
+        geo.lat,
+        geo.lng,
+        kitchenOriginPoint
+      )
+      return res.json({
+        status: 'not_in_service_city' as const,
+        lat: geo.lat,
+        lng: geo.lng,
+        placeLabel: geo.displayName,
+        pricePerKm: nlTariffFlow ? roundMoney(stepEur / Math.max(0.001, stepKm)) : pricePerKm,
+        defaultDeliveryFee: nlTariffFlow ? 0 : defaultDeliveryFee,
+        freeDeliveryThreshold,
+        deliveryTariffStepKm: nlTariffFlow ? stepKm : undefined,
+        deliveryTariffStepEur: nlTariffFlow ? stepEur : undefined,
+        estimatedDeliveryFee: null as number | null,
+        distanceKm: null as number | null,
+        nearbyServiceCities,
+      })
+    }
+
     /** Уся NL: пряма відстань від кухні (SiteSetting / City) + кроковий тариф з адмінки. */
     if (nlTariffFlow) {
       if (!netherlandsDeliveryAllowed(geo.lat, geo.lng, geo.address, geo.displayName)) {
+        const nearbyServiceCities = await loadNearbyServiceCities(
+          city.countryId,
+          countryCode,
+          geo.lat,
+          geo.lng,
+          kitchenOriginPoint
+        )
         return res.json({
           status: 'outside_nl' as const,
           lat: geo.lat,
@@ -670,14 +1007,38 @@ router.post('/check', async (req: Request, res: Response) => {
           deliveryTariffStepEur: stepEur,
           estimatedDeliveryFee: null as number | null,
           distanceKm: null as number | null,
+          nearbyServiceCities,
         })
       }
-      const origin =
-        kitchenCoordsFromSettings(settings) ?? kitchenOrigin(city) ?? WATTA_KITCHEN_AMSTERDAM
-      const route = await googleDrivingRouteMetrics(origin, { lat: geo.lat, lng: geo.lng })
-      const distanceKm = route?.distanceKm ?? haversineKm(origin.lat, origin.lng, geo.lat, geo.lng)
-      const fee = deliveryFeeSteppedEur(distanceKm, stepKm, stepEur)
+      const origin = kitchenOriginPoint
+      const route = await drivingRouteMetrics(origin, { lat: geo.lat, lng: geo.lng })
+      const distanceKm = route.distanceKm
       const distRounded = roundMoney(distanceKm)
+      if (!isNlDrivingDistanceInServiceRange(distanceKm)) {
+        const nearbyServiceCities = await loadNearbyServiceCities(
+          city.countryId,
+          countryCode,
+          geo.lat,
+          geo.lng,
+          origin
+        )
+        return res.json({
+          status: 'not_in_service_city' as const,
+          lat: geo.lat,
+          lng: geo.lng,
+          placeLabel: geo.displayName,
+          pricePerKm: roundMoney(stepEur / Math.max(0.001, stepKm)),
+          defaultDeliveryFee: 0,
+          freeDeliveryThreshold,
+          deliveryTariffStepKm: stepKm,
+          deliveryTariffStepEur: stepEur,
+          estimatedDeliveryFee: null as number | null,
+          distanceKm: distRounded,
+          routeDurationMinutes: route.durationMinutes,
+          nearbyServiceCities,
+        })
+      }
+      const fee = deliveryFeeSteppedEur(distanceKm, stepKm, stepEur)
       return res.json({
         status: 'nl_tariff_ok' as const,
         lat: geo.lat,
@@ -690,10 +1051,7 @@ router.post('/check', async (req: Request, res: Response) => {
         deliveryTariffStepEur: stepEur,
         estimatedDeliveryFee: fee,
         distanceKm: distRounded,
-        routeDurationMinutes:
-          route?.durationMinutes != null && Number.isFinite(route.durationMinutes)
-            ? route.durationMinutes
-            : null,
+        routeDurationMinutes: route.durationMinutes,
         minimumOrderEur: minimumOrderEurFromDistanceKm(distanceKm),
       })
     }
@@ -752,6 +1110,13 @@ router.post('/check', async (req: Request, res: Response) => {
       freeDeliveryThreshold,
       estimatedDeliveryFee: null as number | null,
       distanceKm: null as number | null,
+      nearbyServiceCities: await loadNearbyServiceCities(
+        city.countryId,
+        countryCode,
+        geo.lat,
+        geo.lng,
+        kitchenOriginPoint
+      ),
     })
   } catch (e) {
     console.error('delivery /check', e)

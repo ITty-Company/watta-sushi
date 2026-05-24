@@ -1,3 +1,5 @@
+import type { NearbyServiceCityPin } from '@/lib/nearbyServiceCityPin'
+
 export type DeliveryCheckStatus =
   | 'inside'
   | 'outside'
@@ -10,6 +12,7 @@ export type DeliveryCheckStatus =
   | 'nl_tariff_ok'
   | 'outside_amsterdam'
   | 'outside_nl'
+  | 'not_in_service_city'
   | 'postcode_format_invalid'
 
 export type DeliveryCheckResult = {
@@ -30,14 +33,51 @@ export type DeliveryCheckResult = {
   deliveryTariffStepKm?: number
   deliveryTariffStepEur?: number
   routeDurationMinutes?: number | null
+  nearbyServiceCities?: NearbyServiceCityPin[]
 }
 
 export function isDeliveryFeeAvailable(status: DeliveryCheckStatus | undefined): boolean {
   return status === 'nl_tariff_ok' || status === 'amsterdam_ok' || status === 'inside'
 }
 
+export function isDeliveryCityUnavailable(status: DeliveryCheckStatus | undefined): boolean {
+  return (
+    status === 'not_in_service_city' ||
+    status === 'outside_nl' ||
+    status === 'outside_amsterdam'
+  )
+}
+
 export function isDeliveryOutsideArea(status: DeliveryCheckStatus | undefined): boolean {
-  return status === 'outside_nl' || status === 'outside_amsterdam' || status === 'outside'
+  return status === 'outside' || isDeliveryCityUnavailable(status)
+}
+
+function parseNearbyServiceCities(raw: unknown): NearbyServiceCityPin[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: NearbyServiceCityPin[] = []
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue
+    const o = row as Record<string, unknown>
+    const id = Number(o.id)
+    const lat = Number(o.lat)
+    const lng = Number(o.lng)
+    const distanceKm = Number(o.distanceKm)
+    const name = typeof o.name === 'string' ? o.name : ''
+    if (!Number.isFinite(id) || !Number.isFinite(lat) || !Number.isFinite(lng) || !name) continue
+    out.push({
+      id,
+      name,
+      name_en: typeof o.name_en === 'string' ? o.name_en : null,
+      name_nl: typeof o.name_nl === 'string' ? o.name_nl : null,
+      name_ua: typeof o.name_ua === 'string' ? o.name_ua : null,
+      lat,
+      lng,
+      distanceKm: Number.isFinite(distanceKm) ? distanceKm : 0,
+      countryFlag: typeof o.countryFlag === 'string' ? o.countryFlag : null,
+      hasZones: o.hasZones === true,
+    })
+  }
+  return out.length ? out : undefined
 }
 
 export async function fetchDeliveryCheck(
@@ -90,5 +130,8 @@ export async function fetchDeliveryCheck(
       data.deliveryTariffStepEur != null ? Number(data.deliveryTariffStepEur) : undefined,
     routeDurationMinutes:
       data.routeDurationMinutes != null ? Number(data.routeDurationMinutes) : null,
+    nearbyServiceCities: parseNearbyServiceCities(
+      (data as { nearbyServiceCities?: unknown }).nearbyServiceCities,
+    ),
   }
 }
