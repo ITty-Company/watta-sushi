@@ -4,8 +4,6 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Save, Trash2, Upload } from 'lucide-react'
 import type { Translations } from '@/app/context/LanguageContext'
-import type { Language } from '@/app/context/LanguageContext'
-import type { AuthHeroPhoneCopyForm } from '@/lib/authHeroPhoneSettings'
 import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
 
 export type HeroVideoSlotState = {
@@ -23,14 +21,8 @@ type Props = {
   saving: boolean
   canSave: boolean
   onSave: () => void
-  phone1Title: string
-  phone2Title: string
   phone1Slots: HeroVideoSlotState[]
   phone2Slots: HeroVideoSlotState[]
-  phone1CopyForm: AuthHeroPhoneCopyForm
-  phone2CopyForm: AuthHeroPhoneCopyForm
-  onPhone1CopyChange: (lang: Language, field: keyof AuthHeroPhoneCopyForm['uk'], value: string) => void
-  onPhone2CopyChange: (lang: Language, field: keyof AuthHeroPhoneCopyForm['uk'], value: string) => void
   phone1FileInputRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>
   phone2FileInputRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>
   onPhone1FileChange: (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => void
@@ -40,13 +32,6 @@ type Props = {
   onRemovePhone1Slot: (slotId: string) => void
   onRemovePhone2Slot: (slotId: string) => void
 }
-
-const COPY_LANGS: { id: Language; label: (t: BannersT) => string }[] = [
-  { id: 'uk', label: (t) => t.authHeroCopyLangUk },
-  { id: 'ru', label: (t) => t.authHeroCopyLangRu },
-  { id: 'en', label: (t) => t.authHeroCopyLangEn },
-  { id: 'nl', label: (t) => t.authHeroCopyLangNl },
-]
 
 function AuthPhoneHeroVideoPreview({
   previewSrc,
@@ -71,15 +56,15 @@ function AuthPhoneHeroVideoPreview({
 
   if (broken && !previewSrc.startsWith('blob:')) {
     return (
-      <div className="admin-hero-video-preview-missing !aspect-[9/16] !max-h-[280px]">
+      <motion.div className="admin-hero-video-preview-missing !aspect-[9/16] !max-h-[280px]">
         <span className="font-semibold text-[#145142]/85">Відео на сервері недоступне</span>
-        <span>Завантажте файл знову і збережіть. На Render потрібен Persistent Disk для /uploads.</span>
+        <span>Завантажте файл знову і збережіть.</span>
         {savedUrl ? (
           <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>
             {savedUrl}
           </span>
         ) : null}
-      </div>
+      </motion.div>
     )
   }
 
@@ -118,7 +103,12 @@ function VideoSlotGrid({
 }) {
   return (
     <>
-      <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <motion.div
+        className="grid grid-cols-1 gap-4 lg:grid-cols-3"
+        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      >
         {slots.map((slot, slotIndex) => {
           const previewSrc = slot.pendingPreviewUrl ?? slot.savedUrl
           const slotLabel = t.heroVideoSlotLabel.replace('{{n}}', String(slotIndex + 1))
@@ -139,7 +129,7 @@ function VideoSlotGrid({
                   {slot.savedUrl}
                 </p>
               ) : null}
-              <div className="mt-3 flex flex-wrap gap-2">
+              <motion.div className="mt-3 flex flex-wrap gap-2">
                 <input
                   ref={(el) => {
                     fileInputRefs.current[slot.id] = el
@@ -167,11 +157,11 @@ function VideoSlotGrid({
                     {t.heroVideoRemove}
                   </button>
                 ) : null}
-              </div>
+              </motion.div>
             </motion.div>
           )
         })}
-      </div>
+      </motion.div>
       <button
         type="button"
         onClick={onAddSlot}
@@ -184,69 +174,14 @@ function VideoSlotGrid({
   )
 }
 
-function CopyFields({
-  t,
-  form,
-  onChange,
-}: {
-  t: BannersT
-  form: AuthHeroPhoneCopyForm
-  onChange: (lang: Language, field: keyof AuthHeroPhoneCopyForm['uk'], value: string) => void
-}) {
-  const inputClass =
-    'mt-1 w-full rounded-[10px] border border-[#145142]/20 bg-white px-3 py-2 text-sm text-[#155044] placeholder:text-[#145142]/40 focus:border-[#145142]/45 focus:outline-none focus:ring-2 focus:ring-[#145142]/10'
-
-  return (
-    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-      {COPY_LANGS.map(({ id, label }) => (
-        <div key={id} className="rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/60 p-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">{label(t)}</p>
-          <p className="mt-1.5 text-[10px] leading-snug text-[#145142]/60">{t.authHeroCopyCityHint}</p>
-          <label className="mt-3 block text-xs font-semibold text-[#145142]/80">
-            {t.authHeroCopyTitle}
-            <input
-              className={inputClass}
-              value={form[id].title}
-              onChange={(e) => onChange(id, 'title', e.target.value)}
-            />
-          </label>
-          <label className="mt-2 block text-xs font-semibold text-[#145142]/80">
-            {t.authHeroCopySubtitle}
-            <input
-              className={inputClass}
-              value={form[id].subtitle}
-              onChange={(e) => onChange(id, 'subtitle', e.target.value)}
-            />
-          </label>
-          <p className="mt-2 text-xs font-semibold text-[#145142]/80">{t.authHeroCopyBenefits}</p>
-          {(['benefit1', 'benefit2', 'benefit3'] as const).map((field) => (
-            <input
-              key={field}
-              className={`${inputClass} mt-1`}
-              value={form[id][field]}
-              onChange={(e) => onChange(id, field, e.target.value)}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export default function AuthHeroPhonesAdminSection({
   t,
   reduceMotion,
   saving,
   canSave,
   onSave,
-  phone1Title,
-  phone2Title,
   phone1Slots,
   phone2Slots,
-  phone1CopyForm,
-  phone2CopyForm,
-  onPhone1CopyChange,
-  onPhone2CopyChange,
   phone1FileInputRefs,
   phone2FileInputRefs,
   onPhone1FileChange,
@@ -258,13 +193,6 @@ export default function AuthHeroPhonesAdminSection({
 }: Props) {
   return (
     <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
-      <h3 className="text-lg font-bold text-[#155044] sm:text-xl">{t.authHeroVideoTitle}</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-[#145142]/75">{t.authHeroVideoSubtitle}</p>
-      <p className="mt-2 rounded-[12px] border border-[#145142]/12 bg-[#f0f7f3] px-3 py-2 text-xs leading-relaxed text-[#145142]/85">
-        {t.authHeroPlaylistHint}
-      </p>
-
-      <h4 className="mt-6 text-base font-bold text-[#155044]">{phone1Title}</h4>
       <VideoSlotGrid
         t={t}
         reduceMotion={reduceMotion}
@@ -274,9 +202,14 @@ export default function AuthHeroPhonesAdminSection({
         onRemoveSlot={onRemovePhone1Slot}
         onAddSlot={onAddPhone1Slot}
       />
-      <CopyFields t={t} form={phone1CopyForm} onChange={onPhone1CopyChange} />
 
-      <h4 className="mt-8 text-base font-bold text-[#155044]">{phone2Title}</h4>
+      <motion.div
+        className="my-6 border-t border-[#145142]/10"
+        aria-hidden
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+      />
+
       <VideoSlotGrid
         t={t}
         reduceMotion={reduceMotion}
@@ -286,7 +219,6 @@ export default function AuthHeroPhonesAdminSection({
         onRemoveSlot={onRemovePhone2Slot}
         onAddSlot={onAddPhone2Slot}
       />
-      <CopyFields t={t} form={phone2CopyForm} onChange={onPhone2CopyChange} />
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <button
@@ -296,7 +228,7 @@ export default function AuthHeroPhonesAdminSection({
           className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Save className="h-4 w-4 shrink-0" aria-hidden />
-          {saving ? t.heroVideoSaving : t.authHeroSavePhones}
+          {saving ? t.heroVideoSaving : t.heroVideoSave}
         </button>
       </div>
     </div>

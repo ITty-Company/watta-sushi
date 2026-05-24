@@ -19,6 +19,7 @@
 @import './reviews-page-theme.css';
 @import './profile-page-theme.css';
 @import './privacy-page-theme.css';
+@import './admin-watta-theme.css';
 
 /* shadcn-совместимые токены (Tailwind: bg-background, text-primary, …) */
 @layer base {
@@ -47,6 +48,8 @@
     --watta-page-gradient: #ffffff;
     /* Поля при object-fit:contain біля hero-відео (canvas) — не чорний, видно на ноуті */
     --watta-hero-letterbox-fill: #e4ebe6;
+    /* Телефон/планшет: --watta-vh-locked з JS; десктоп — fallback 1svh */
+    --watta-screen-min-h: calc(var(--watta-vh-locked, 1svh) * 100);
   }
 
   .watta-page-bg {
@@ -2049,6 +2052,100 @@ body:not(.watta-route-home) {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior-y: auto;
+}
+
+/*
+ * /login, /register — без скролу window/body (перебиває body:not(.watta-route-home) вище).
+ * Поза @layer components, інакше програє overflow-y: auto !important.
+ */
+html.watta-light-chrome:has(body.watta-auth-route),
+body.watta-auth-route {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  height: 100dvh;
+  max-height: 100dvh;
+  touch-action: manipulation;
+}
+
+body.watta-auth-route .watta-app-shell-root {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+body.watta-auth-route .watta-app-shell-root > main,
+body.watta-auth-route .watta-app-shell-root > main > .watta-app-main-grow {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+body.watta-auth-route .auth-watta-root.auth-watta-page-shell {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  flex: 1 1 auto;
+}
+
+body.watta-auth-route .auth-watta-page-grid,
+body.watta-auth-route .auth-watta-page-grid--phone {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+body.watta-auth-route .auth-watta-form-panel,
+body.watta-auth-route .auth-watta-form-card.auth-watta-form-card--page {
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+body.watta-auth-route .auth-watta-form-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  body.watta-auth-route .auth-watta-page-grid.auth-watta-page-grid--phone {
+    height: 100%;
+    max-height: 100%;
+    align-items: stretch;
+    align-content: stretch;
+  }
+
+  body.watta-auth-route .auth-watta-page-grid.auth-watta-page-grid--phone .auth-watta-cinema--phone {
+    min-height: 0 !important;
+    max-height: 100%;
+    align-self: stretch;
+  }
+
+  body.watta-auth-route .auth-watta-page-grid.auth-watta-page-grid--phone .auth-watta-form-panel {
+    align-self: stretch;
+    max-height: 100%;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1366px) {
+  body.watta-auth-route .auth-watta-page-grid.auth-watta-page-grid--phone .auth-watta-cinema--phone {
+    min-height: 0 !important;
+    padding-top: 0.1rem;
+    padding-bottom: 0.35rem;
+  }
+
+  body.watta-auth-route .auth-watta-page-grid.auth-watta-page-grid--phone {
+    padding-top: max(0.1rem, env(safe-area-inset-top, 0px));
+    align-content: stretch;
+  }
 }
 
 .watta-app-shell-root > main > .watta-app-main-grow:has(> .watta-delivery-page) + .site-footer-watta {
@@ -20451,6 +20548,7 @@ body.admin-watta-overlay-open .site-footer-watta {
 .delivery-watta-postal-result--outside,
 .delivery-watta-postal-result--outside_amsterdam,
 .delivery-watta-postal-result--outside_nl,
+.delivery-watta-postal-result--not_in_service_city,
 .delivery-watta-postal-result--postcode_format_invalid,
 .delivery-watta-postal-result--geocode_failed,
 .delivery-watta-postal-result--bad_request,
@@ -20471,6 +20569,7 @@ body.admin-watta-overlay-open .site-footer-watta {
 .delivery-watta-postal-result--outside .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--outside_amsterdam .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--outside_nl .delivery-watta-postal-result-ico,
+.delivery-watta-postal-result--not_in_service_city .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--postcode_format_invalid .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--geocode_failed .delivery-watta-postal-result-ico,
 .delivery-watta-postal-result--bad_request .delivery-watta-postal-result-ico,
@@ -20496,6 +20595,175 @@ body.admin-watta-overlay-open .site-footer-watta {
 
 .delivery-watta-postal-result-meta--muted {
   color: rgba(20, 81, 66, 0.82);
+}
+
+.delivery-unavailable-city-notice {
+  flex: 1;
+  min-width: 0;
+}
+
+.delivery-unavailable-city-notice__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.35;
+}
+
+.delivery-unavailable-city-notice__body {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #444;
+}
+
+.delivery-unavailable-city-notice__place {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.delivery-unavailable-city-notice__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.delivery-unavailable-city-notice__link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(131, 58, 180, 0.28);
+}
+
+.delivery-unavailable-city-notice--compact .delivery-unavailable-city-notice__title {
+  font-size: 14px;
+}
+
+.delivery-unavailable-city-notice--compact .delivery-unavailable-city-notice__body {
+  font-size: 12px;
+}
+
+.delivery-unavailable-city-notice--compact .delivery-unavailable-city-notice__link {
+  font-size: 12px;
+  padding: 7px 12px;
+}
+
+.delivery-unavailable-city-notice--with-map {
+  gap: 12px;
+}
+
+.delivery-unavailable-city-notice__map-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.delivery-unavailable-city-notice__nearby-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #145142;
+}
+
+.delivery-unavailable-city-notice__nearby-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(20, 81, 66, 0.78);
+}
+
+.delivery-unavailable-city-notice__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.delivery-unavailable-city-notice__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(20, 81, 66, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #145142;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.delivery-unavailable-city-notice__chip:hover,
+.delivery-unavailable-city-notice__chip.is-selected {
+  border-color: rgba(20, 81, 66, 0.45);
+  background: rgba(240, 250, 244, 0.95);
+  box-shadow: 0 4px 14px rgba(20, 81, 66, 0.08);
+}
+
+.delivery-unavailable-city-notice__chip-flag {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.delivery-unavailable-city-notice__chip-km {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(20, 81, 66, 0.65);
+}
+
+.nearby-service-cities-map--loading {
+  min-height: 220px;
+  border-radius: 12px;
+  background: #eef2f0;
+}
+
+.nearby-service-map__pin {
+  background: transparent;
+  border: none;
+}
+
+.nearby-service-map__pin--city .nearby-service-map__flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #145142;
+  box-shadow: 0 4px 14px rgba(20, 81, 66, 0.28);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.nearby-service-map__pin--city.is-selected .nearby-service-map__flag {
+  outline: 3px solid rgba(255, 92, 0, 0.55);
+}
+
+.nearby-service-map__pin--user span {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+.nearby-service-map__popup strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #145142;
+}
+
+.nearby-service-map__popup p {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(20, 81, 66, 0.75);
 }
 
 .delivery-watta-postal-estimate {
@@ -20566,6 +20834,7 @@ body.admin-watta-overlay-open .site-footer-watta {
     width: 100%;
     height: 100%;
     min-height: 100dvh;
+    min-height: var(--watta-app-height, 100dvh);
   }
 
   .auth-watta-root > *:not(.watta-public-page-shell__bg):not(.auth-watta-back-fab) {
@@ -20632,12 +20901,81 @@ body.admin-watta-overlay-open .site-footer-watta {
     --auth-card-radius: 1.5rem;
     font-family: var(--font-inter, 'Inter'), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     box-sizing: border-box;
-    min-height: min(100vh, 100dvh);
-    min-height: min(100svh, 100dvh);
     width: 100%;
     padding-top: max(0.35rem, env(safe-area-inset-top, 0px));
     padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0px));
     background: var(--watta-page-gradient);
+  }
+
+  /* /login, /register — один екран без прокрутки сторінки; форма скролиться всередині за потреби */
+  html.watta-light-chrome:has(body.watta-auth-route),
+  body.watta-auth-route {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    height: var(--watta-app-height, 100dvh);
+    max-height: var(--watta-app-height, 100dvh);
+  }
+
+  body.watta-auth-route .watta-app-shell-root {
+    height: var(--watta-app-height, 100dvh);
+    max-height: var(--watta-app-height, 100dvh);
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
+  body.watta-auth-route .watta-app-shell-root > main,
+  body.watta-auth-route .watta-app-main-grow {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body.watta-auth-route .auth-watta-root.auth-watta-page-shell {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0 !important;
+    overflow: hidden;
+    flex: 1 1 auto;
+  }
+
+  body.watta-auth-route .auth-watta-page-grid,
+  body.watta-auth-route .auth-watta-page-grid--phone {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  body.watta-auth-route .auth-watta-form-panel {
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  body.watta-auth-route .auth-watta-form-card.auth-watta-form-card--page {
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.watta-auth-route .auth-watta-form-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.watta-auth-route .auth-watta-verify-card {
+    max-height: min(calc(100dvh - 5rem), calc(100% - 2rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .auth-watta-page-grid {
@@ -20889,6 +21227,130 @@ body.admin-watta-overlay-open .site-footer-watta {
   .auth-watta-page-shell .auth-watta-btn-primary,
   .auth-watta-page-shell .auth-watta-mobile-switch {
     font-family: inherit;
+  }
+
+  /* Збережені акаунти на екрані входу */
+  .auth-watta-saved-accounts {
+    margin-top: clamp(0.65rem, 2.5vw, 0.9rem);
+    margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
+  }
+
+  .auth-watta-saved-accounts__label {
+    margin: 0 0 0.7rem;
+    font-family: inherit;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.45;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6b7280;
+    word-spacing: 0.08em;
+  }
+
+  @media (min-width: 768px) {
+    .auth-watta-saved-accounts__label {
+      font-size: 0.6875rem;
+      margin-bottom: 0.8rem;
+    }
+  }
+
+  .auth-watta-saved-accounts__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem 0.85rem;
+    margin: 0;
+    padding: 0.15rem 0.35rem 0 0;
+    list-style: none;
+  }
+
+  .auth-watta-saved-accounts__item {
+    position: relative;
+    max-width: 100%;
+    padding: 0.2rem 0.45rem 0 0;
+  }
+
+  .auth-watta-saved-accounts__chip {
+    display: block;
+    max-width: min(100%, 20rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid rgba(20, 81, 66, 0.32);
+    border-radius: 999px;
+    background: linear-gradient(165deg, #f0f7f4 0%, #e8f5f0 100%);
+    padding: 0.45rem 1.35rem 0.45rem 0.9rem;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    color: #0f3d32;
+    cursor: pointer;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  @media (min-width: 768px) {
+    .auth-watta-saved-accounts__chip {
+      font-size: 0.78rem;
+      padding: 0.5rem 1.45rem 0.5rem 1rem;
+    }
+  }
+
+  .auth-watta-saved-accounts__chip:hover,
+  .auth-watta-saved-accounts__chip:focus-visible {
+    border-color: rgba(20, 81, 66, 0.48);
+    background: #fff;
+    outline: none;
+    box-shadow: 0 4px 14px rgba(20, 81, 66, 0.1);
+  }
+
+  .auth-watta-saved-accounts__chip--active {
+    border-color: #145142;
+    background: linear-gradient(165deg, #e8f5f0 0%, #dff0ea 100%);
+    box-shadow: 0 0 0 1px rgba(20, 81, 66, 0.12);
+  }
+
+  .auth-watta-saved-accounts__remove {
+    position: absolute;
+    top: -0.2rem;
+    right: -0.15rem;
+    z-index: 2;
+    display: flex;
+    height: 1.125rem;
+    width: 1.125rem;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: #3d4f4a;
+    padding: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      transform 0.15s ease;
+  }
+
+  .auth-watta-saved-accounts__remove span {
+    display: block;
+    margin-top: -0.05em;
+  }
+
+  .auth-watta-saved-accounts__remove:hover,
+  .auth-watta-saved-accounts__remove:focus-visible {
+    background: #b91c1c;
+    outline: none;
+    transform: scale(1.05);
+  }
+
+  .auth-watta-form-intro .auth-watta-saved-accounts + .auth-watta-form-desc {
+    margin-top: 0.35rem;
   }
 
   .auth-watta-page-shell .auth-watta-form-card.auth-watta-form-card--page {
@@ -21523,7 +21985,7 @@ body.admin-watta-overlay-open .site-footer-watta {
   }
 }
 
-@media (max-height: 820px) and (min-width: 768px) {
+@media (max-height: 820px) and (min-width: 1200px) {
   .auth-watta-phone-sim--lg {
     width: min(44vw, 288px);
   }
@@ -21540,6 +22002,16 @@ body.admin-watta-overlay-open .site-footer-watta {
   .auth-watta-phone-duo {
     padding-top: 0.15rem;
     padding-bottom: 0.25rem;
+  }
+}
+
+@media (max-height: 900px) and (min-width: 768px) and (max-width: 1366px) {
+  .auth-watta-phone-sim--lg {
+    width: min(42vw, 312px);
+  }
+
+  .auth-watta-phone-sim--md {
+    width: min(38vw, 282px);
   }
 }
 
@@ -21922,13 +22394,14 @@ body.admin-watta-overlay-open .site-footer-watta {
   }
 }
 
-/* Мобільний /login і /register — компактна картка по контенту, прокрутка сторінки */
+/* Мобільний /login і /register — один екран, без прокрутки сторінки */
 @media (max-width: 767px) {
   .watta-app-main-grow:has(.auth-watta-page-shell) {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
   }
 
   .auth-watta-root.auth-watta-page-shell {
@@ -21938,7 +22411,7 @@ body.admin-watta-overlay-open .site-footer-watta {
     min-height: 0;
     width: 100%;
     overflow-x: clip;
-    overflow-y: visible;
+    overflow-y: hidden;
   }
 
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid,
@@ -21947,36 +22420,41 @@ body.admin-watta-overlay-open .site-footer-watta {
     flex: 1 1 auto !important;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     width: 100%;
     min-height: 0;
-    max-height: none;
-    height: auto !important;
+    max-height: 100%;
+    overflow: hidden;
     padding-top: max(0.05rem, calc(env(safe-area-inset-top, 0px) + 0.05rem));
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
-    gap: 0.25rem;
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    gap: 0.35rem;
   }
 
-  /* Hero + форма — по центру екрана, трохи нижче геометричного центру */
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--phone .auth-watta-mobile-hero {
-    margin-top: auto;
-    padding-top: clamp(0.65rem, 3.25vh, 1.65rem);
+    margin-top: 0;
+    flex: 0 0 auto;
+    min-height: 0;
+    padding-top: 0.1rem;
   }
 
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--phone .auth-watta-form-panel {
-    margin-bottom: auto;
-    padding-bottom: clamp(0.35rem, 1.75vh, 1rem);
+    margin-bottom: 0;
+    flex: 0 0 auto !important;
+    flex-grow: 0 !important;
+    min-height: 0;
+    max-height: none;
+    padding-bottom: 0;
   }
 
-  /* /register — той самий центр, трохи нижче (форма вища за login) */
+  /* /register — без банера: усі поля вміщаються на екран */
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--register.auth-watta-page-grid--phone .auth-watta-mobile-hero {
-    margin-top: auto;
-    padding-top: clamp(1rem, 5.5vh, 2.75rem);
+    display: none !important;
   }
 
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-grid--register.auth-watta-page-grid--phone .auth-watta-form-panel {
-    margin-bottom: auto;
-    padding-bottom: clamp(0.15rem, 0.85vh, 0.55rem);
+    margin-bottom: 0;
+    padding-bottom: 0;
+    flex: 0 0 auto !important;
   }
 
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-top {
@@ -22001,12 +22479,14 @@ body.admin-watta-overlay-open .site-footer-watta {
   .auth-watta-root.auth-watta-page-shell .auth-watta-form-panel {
     display: flex;
     flex: 0 0 auto !important;
+    flex-grow: 0 !important;
     flex-direction: column;
     min-height: 0;
     max-height: none;
     justify-content: flex-start;
     width: 100%;
     max-width: 20.25rem;
+    overflow: visible;
   }
 
   .auth-watta-root.auth-watta-page-shell .auth-watta-form-panel::before {
@@ -22022,11 +22502,22 @@ body.admin-watta-overlay-open .site-footer-watta {
     max-height: none;
     align-self: center;
     width: 100%;
+    overflow: hidden;
   }
 
   .auth-watta-root.auth-watta-page-shell .auth-watta-form-scroll {
     flex: 0 0 auto;
     min-height: 0;
+    overflow: visible;
+  }
+
+  .auth-watta-form-card--login.auth-watta-form-card--page .auth-watta-form-scroll {
+    overflow: visible;
+  }
+
+  .auth-watta-form-card--register.auth-watta-form-card--page .auth-watta-form-scroll {
+    flex: 0 0 auto;
+    max-height: none;
     overflow: visible;
   }
 
@@ -22082,6 +22573,27 @@ body.admin-watta-overlay-open .site-footer-watta {
     border-radius: 0.8rem;
   }
 
+  .auth-watta-form-card--login.auth-watta-form-card--page .auth-watta-form-head {
+    padding: 0.5rem 0.75rem 0 !important;
+  }
+
+  .auth-watta-form-card--login.auth-watta-form-card--page .auth-watta-form-desc {
+    display: none;
+  }
+
+  .auth-watta-form-card--login.auth-watta-form-card--page .auth-watta-tabs {
+    margin-bottom: 0.35rem !important;
+  }
+
+  .auth-watta-form-card--login.auth-watta-form-card--page .auth-watta-form-fields {
+    gap: 0.4rem !important;
+  }
+
+  .auth-watta-form-card--login.auth-watta-form-card--page .auth-watta-mobile-switch {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
   .auth-watta-mobile-switch {
     margin-top: 0;
     padding-top: 0.45rem;
@@ -22104,11 +22616,16 @@ body.admin-watta-overlay-open .site-footer-watta {
   }
 
   .auth-watta-cinema--embedded {
-    height: clamp(8.25rem, 21dvh, 10.25rem);
+    height: clamp(5rem, 14dvh, 6.75rem);
     margin: 0;
     border: none;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .auth-watta-page-grid--register .auth-watta-mobile-hero .auth-watta-cinema--embedded,
+  .auth-watta-form-card--register .auth-watta-cinema--embedded {
+    height: clamp(5.75rem, 16dvh, 7.5rem);
   }
 
   .auth-watta-cinema--embedded .auth-watta-cinema__video {
@@ -22152,20 +22669,42 @@ body.admin-watta-overlay-open .site-footer-watta {
     padding-top: 0.55rem;
   }
 
-  .auth-watta-form-card--register .auth-watta-cinema--embedded {
-    height: clamp(8.25rem, 21dvh, 10.25rem);
-  }
-
   .auth-watta-form-card--register.auth-watta-form-card--mobile-fit > .auth-watta-cinema--embedded + .auth-watta-form-head {
     padding-top: 0.55rem;
+  }
+
+  .auth-watta-form-card--register.auth-watta-form-card--page .auth-watta-form-head {
+    padding: 0.45rem 0.75rem 0 !important;
   }
 
   .auth-watta-form-card--register .auth-watta-form-head {
     padding-bottom: 0 !important;
   }
 
+  .auth-watta-form-card--register .auth-watta-form-intro .auth-watta-form-title {
+    display: none;
+  }
+
+  .auth-watta-form-card--register .auth-watta-form-intro {
+    margin: 0;
+    min-height: 0;
+  }
+
+  .auth-watta-form-card--register #auth-phone-hint {
+    display: none;
+  }
+
+  .auth-watta-form-card--register .auth-watta-register-block {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem 0.45rem !important;
+  }
+
+  .auth-watta-form-card--register .auth-watta-register-block .auth-watta-label {
+    min-width: 0;
+  }
+
   .auth-watta-form-card--register .auth-watta-tabs {
-    margin-bottom: 0.35rem !important;
+    margin-bottom: 0.3rem !important;
   }
 
   .auth-watta-form-card--register .auth-watta-tabs__btn {
@@ -22214,11 +22753,8 @@ body.admin-watta-overlay-open .site-footer-watta {
 
   .auth-watta-page-grid--register {
     gap: 0.25rem;
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
-  }
-
-  .auth-watta-page-grid--register .auth-watta-mobile-hero .auth-watta-cinema--embedded {
-    height: clamp(6.75rem, 17.5dvh, 9.25rem);
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    justify-content: center;
   }
 
   .auth-watta-page-grid--register .auth-watta-form-panel {
@@ -22228,20 +22764,28 @@ body.admin-watta-overlay-open .site-footer-watta {
   @media (max-height: 720px) {
     .auth-watta-cinema--embedded,
     .auth-watta-mobile-hero .auth-watta-cinema--embedded {
-      height: clamp(7rem, 18dvh, 8.75rem);
-    }
-
-    .auth-watta-form-card--register .auth-watta-cinema--embedded {
-      height: clamp(7rem, 18dvh, 8.75rem);
+      height: clamp(4.5rem, 12dvh, 6rem);
     }
 
     .auth-watta-form-card--register .auth-watta-tabs__btn {
-      min-height: 1.65rem !important;
+      min-height: 1.6rem !important;
+      padding-top: 0.3rem !important;
+      padding-bottom: 0.3rem !important;
     }
 
     .auth-watta-form-card--register .auth-watta-input {
-      padding-top: 0.38rem !important;
-      padding-bottom: 0.38rem !important;
+      padding-top: 0.36rem !important;
+      padding-bottom: 0.36rem !important;
+      font-size: 0.8rem !important;
+    }
+
+    .auth-watta-form-card--register .auth-watta-form-fields {
+      gap: 0.28rem !important;
+    }
+
+    .auth-watta-form-card--register .auth-watta-btn-primary {
+      padding-top: 0.48rem !important;
+      padding-bottom: 0.48rem !important;
     }
   }
 
@@ -22569,6 +23113,94 @@ body.admin-watta-overlay-open .site-footer-watta {
     align-self: center;
   }
 
+  /* iPad / планшет (до 13" landscape): трохи нижче, більші телефони й форма */
+  @media (max-width: 1366px) {
+    .auth-watta-page-grid.auth-watta-page-grid--phone {
+      padding-top: clamp(1.35rem, 5.5vh, 2.85rem);
+      padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+      align-content: center;
+      align-items: center;
+    }
+
+    .auth-watta-page-grid.auth-watta-page-grid--phone .auth-watta-cinema--phone {
+      min-height: min(calc(var(--watta-app-height, 100dvh) - 3.25rem), 780px);
+      padding-top: clamp(0.65rem, 2.75vh, 1.35rem);
+      padding-bottom: clamp(0.35rem, 1.5vh, 0.85rem);
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .auth-watta-phone-sim--lg {
+      width: min(44vw, 318px);
+    }
+
+    .auth-watta-phone-sim--md {
+      width: min(40vw, 286px);
+    }
+
+    .auth-watta-phone-duo__back {
+      margin-right: -3.35rem;
+      margin-bottom: 1.05rem;
+    }
+
+    .auth-watta-form-panel {
+      max-width: 27rem;
+      align-self: center;
+      margin-top: clamp(0.35rem, 1.5vh, 1rem);
+    }
+
+    .auth-watta-page-shell .auth-watta-form-card.auth-watta-form-card--page {
+      max-width: 27rem;
+    }
+
+    .auth-watta-page-shell .auth-watta-form-head {
+      padding: 1.15rem 1.15rem 0;
+    }
+
+    .auth-watta-page-shell .auth-watta-form-title {
+      font-size: 1.375rem;
+    }
+
+    .auth-watta-page-shell .auth-watta-form-desc {
+      font-size: 0.8125rem;
+    }
+
+    .auth-watta-page-shell .auth-watta-input {
+      padding-top: 0.6rem;
+      padding-bottom: 0.6rem;
+      font-size: 0.875rem;
+    }
+
+    .auth-watta-page-shell .auth-watta-btn-primary {
+      padding-top: 0.72rem;
+      padding-bottom: 0.72rem;
+      font-size: 0.875rem;
+    }
+
+    .auth-watta-page-shell .auth-watta-tabs__btn {
+      min-height: 2.25rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  @media (max-width: 1366px) and (orientation: landscape) {
+    .auth-watta-page-grid.auth-watta-page-grid--phone {
+      padding-top: clamp(1.65rem, 7vh, 3.35rem);
+    }
+
+    .auth-watta-page-grid.auth-watta-page-grid--phone .auth-watta-cinema--phone {
+      padding-top: clamp(0.85rem, 3.5vh, 1.65rem);
+    }
+
+    .auth-watta-phone-sim--lg {
+      width: min(38vw, 308px);
+    }
+
+    .auth-watta-phone-sim--md {
+      width: min(34vw, 278px);
+    }
+  }
+
   .auth-watta-page-top--centered,
   .auth-watta-root.auth-watta-page-shell .auth-watta-page-top {
     max-width: none;
@@ -22585,6 +23217,16 @@ body.admin-watta-overlay-open .site-footer-watta {
 
   .auth-watta-page-shell {
     --auth-card-radius: 1.625rem;
+  }
+
+  @media (max-width: 1366px) {
+    .auth-watta-form-panel {
+      max-width: 27rem;
+    }
+
+    .auth-watta-page-shell {
+      --auth-card-radius: 1.75rem;
+    }
   }
 
   .auth-watta-page-shell .auth-watta-form-card.auth-watta-form-card--page {
@@ -22605,13 +23247,16 @@ body.admin-watta-overlay-open .site-footer-watta {
 
   .auth-watta-page-shell .auth-watta-form-card--login.auth-watta-form-card--page {
     height: auto;
-    max-height: none;
-    overflow: visible;
+    max-height: 100%;
+    overflow: hidden;
   }
 
   .auth-watta-page-shell .auth-watta-form-card--login .auth-watta-form-scroll {
-    flex: 0 0 auto;
-    overflow: visible;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .auth-watta-page-shell .auth-watta-form-card--login .auth-watta-form-intro {
@@ -22693,25 +23338,8 @@ body.admin-watta-overlay-open .site-footer-watta {
   }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
-  .auth-watta-phone-sim--lg {
-    width: min(36vw, 252px);
-  }
-
-  .auth-watta-phone-sim--md {
-    width: min(32vw, 228px);
-  }
-
-  .auth-watta-form-panel {
-    max-width: 21.5rem;
-  }
-
-  .auth-watta-page-shell .auth-watta-form-card.auth-watta-form-card--page {
-    max-width: 21.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
+/* Широкий десктоп (> iPad landscape): компактніші телефони й форма */
+@media (min-width: 1367px) {
   .auth-watta-page-shell {
     --auth-card-radius: 1.75rem;
   }
@@ -27392,6 +28020,11 @@ body.watta-review-compose-open .floating-contact-buttons-root {
   pointer-events: none;
 }
 
+body.watta-notifications-open .floating-contact-buttons-root {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .watta-review-compose {
   position: relative;
   flex: 0 0 auto;
@@ -27759,19 +28392,21 @@ body.watta-review-compose-open .floating-contact-buttons-root {
 
 @media (max-width: 640px) {
   .watta-review-compose-backdrop {
-    align-items: flex-end;
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    align-items: center;
+    justify-content: center;
+    padding: max(1rem, env(safe-area-inset-top, 0px)) max(0.75rem, env(safe-area-inset-right, 0px))
+      max(1rem, env(safe-area-inset-bottom, 0px)) max(0.75rem, env(safe-area-inset-left, 0px));
   }
 
   .watta-review-compose {
-    max-width: 100%;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    width: 100%;
+    max-width: min(22.5rem, calc(100vw - 1.5rem));
+    margin: auto;
+    border-radius: clamp(1.1rem, 4vw, 1.35rem);
   }
 
   .watta-review-compose--thanks {
-    border-radius: clamp(1rem, 2.6vw, 1.35rem)
-      clamp(1rem, 2.6vw, 1.35rem) 0 0;
+    border-radius: clamp(1.1rem, 4vw, 1.35rem);
   }
 }
 

@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import type { Translations } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import {
+  CHECKOUT_PHONE_INPUT_MAX_LEN,
   isValidCheckoutPhone,
   sanitizeCheckoutPhoneInput,
 } from '@/lib/checkoutPhone'
@@ -14,9 +15,11 @@ export type ProfilePersonalDataFormProps = {
   initialName: string
   initialPhone: string
   email: string
+  isPhoneVerified?: boolean
   cp: Translations['clientProfile']
   invalidPhoneMessage: string
   onSaved: (payload: { name: string; phone: string }) => void
+  onPhoneVerified?: () => void
 }
 
 type PhoneVerifyStep = 'idle' | 'code'
@@ -25,9 +28,11 @@ export default function ProfilePersonalDataForm({
   initialName,
   initialPhone,
   email,
+  isPhoneVerified = true,
   cp,
   invalidPhoneMessage,
   onSaved,
+  onPhoneVerified,
 }: ProfilePersonalDataFormProps) {
   const [name, setName] = useState(initialName)
   const [phone, setPhone] = useState(initialPhone)
@@ -111,20 +116,8 @@ export default function ProfilePersonalDataForm({
       }
 
       if (phoneChanged) {
-        const res = await fetch('/api/auth/profile/phone/send-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...auth },
-          body: JSON.stringify({ phone: phone.trim() }),
-        })
-        const data = await res.json().catch(() => ({}))
-        if (!res.ok) {
-          toast.error((data.message as string) || cp.dataSaveError)
-          return
-        }
-        setPendingPhone(phone.trim())
-        setPhoneVerifyStep('code')
-        setVerificationCode('')
-        toast.success(cp.phoneCodeSent)
+        const sent = await sendPhoneVerificationCode(phone.trim())
+        if (!sent) return
         if (nameChanged) {
           toast.success(cp.dataSaved)
         }
@@ -166,6 +159,7 @@ export default function ProfilePersonalDataForm({
       setVerificationCode('')
       setPendingPhone('')
       onSaved({ name: savedName, phone: savedPhone })
+      onPhoneVerified?.()
       toast.success(cp.phoneChangeSuccess)
     } catch {
       toast.error(cp.dataSaveError)
@@ -175,22 +169,10 @@ export default function ProfilePersonalDataForm({
   }
 
   const handleResendCode = async () => {
-    const auth = getBearerAuthHeaders()
-    if (Object.keys(auth).length === 0) return
     setSaving(true)
     try {
       const target = pendingPhone || phone.trim()
-      const res = await fetch('/api/auth/profile/phone/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...auth },
-        body: JSON.stringify({ phone: target }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        toast.error((data.message as string) || cp.dataSaveError)
-        return
-      }
-      toast.success(cp.phoneCodeSent)
+      await sendPhoneVerificationCode(target)
     } catch {
       toast.error(cp.dataSaveError)
     } finally {
@@ -205,8 +187,64 @@ export default function ProfilePersonalDataForm({
     setPendingPhone('')
   }
 
+  const sendPhoneVerificationCode = async (targetPhone: string) => {
+    const auth = getBearerAuthHeaders()
+    if (Object.keys(auth).length === 0) {
+      toast.error(cp.redirectLogin)
+      return false
+    }
+    const res = await fetch('/api/auth/profile/phone/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth },
+      body: JSON.stringify({ phone: targetPhone }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      toast.error((data.message as string) || cp.dataSaveError)
+      return false
+    }
+    setPendingPhone(targetPhone)
+    setPhoneVerifyStep('code')
+    setVerificationCode('')
+    toast.success(cp.phoneCodeSent)
+    return true
+  }
+
+  const handleConfirmExistingPhone = async () => {
+    if (!isValidCheckoutPhone(phone)) {
+      toast.error(invalidPhoneMessage)
+      return
+    }
+    setSaving(true)
+    try {
+      await sendPhoneVerificationCode(phone.trim())
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="watta-profile-data-form mt-4">
+      {!isPhoneVerified && isValidCheckoutPhone(phone) && phoneVerifyStep === 'idle' ? (
+        <div
+          className="mb-4 rounded-xl border border-amber-200/90 bg-amber-50/95 px-3 py-3 text-sm text-amber-950 sm:px-4"
+          role="status"
+        >
+          <p className="leading-snug">{cp.phoneUnverifiedNotice}</p>
+          <p className="mt-2 flex items-center gap-1.5 font-semibold text-[#0f3d32]">
+            <Phone size={14} aria-hidden />
+            <span>{phone}</span>
+          </p>
+          <button
+            type="button"
+            onClick={handleConfirmExistingPhone}
+            disabled={saving}
+            className="mt-3 inline-flex items-center justify-center rounded-lg bg-[#145142] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0f3d32] disabled:opacity-60 sm:text-sm"
+          >
+            {cp.phoneConfirmSendCode}
+          </button>
+        </div>
+      ) : null}
       <div className="watta-profile-data-grid">
         <div className="watta-profile-data-field">
           <label className="watta-profile-data-field__label" htmlFor="profile-data-name">
@@ -237,6 +275,7 @@ export default function ProfilePersonalDataForm({
             onChange={(e) => setPhone(sanitizeCheckoutPhoneInput(e.target.value))}
             autoComplete="tel"
             inputMode="tel"
+            maxLength={CHECKOUT_PHONE_INPUT_MAX_LEN}
             aria-invalid={phoneInvalid}
             disabled={phoneVerifyStep === 'code'}
           />

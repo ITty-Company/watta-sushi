@@ -33,9 +33,34 @@ export function subNeedsBackendProxy(sub: string, request: NextRequest): boolean
   if (sub.startsWith('reviews')) return true
   if (sub.startsWith('notifications')) return true
   if (sub.startsWith('auth/') && !authUsesNextRouteHandler(sub)) return true
+
   const authHeader = request.headers.get('authorization')?.trim()
   const hasBearer = Boolean(authHeader?.startsWith('Bearer ') && authHeader.length > 'Bearer '.length)
-  if (hasBearer && sub.startsWith('favorites')) return true
+
+  if (hasBearer) {
+    const adminPrefixes = [
+      'crm',
+      'cart-upsell',
+      'banners',
+      'promo',
+      'promotions',
+      'settings',
+      'team',
+      'blog',
+      'products',
+      'ingredients',
+      'cities',
+      'countries',
+      'delivery-zones',
+      'newsletter',
+      'payment',
+    ]
+    if (adminPrefixes.some((p) => sub === p || sub.startsWith(`${p}/`))) {
+      return true
+    }
+    if (sub.startsWith('favorites')) return true
+  }
+
   return false
 }
 

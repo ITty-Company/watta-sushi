@@ -1,19 +1,18 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
 import { useLanguage } from '../context/LanguageContext'
 import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
 import ClientProfileOrders, { type ProfileOrder } from './profile/ClientProfileOrders'
-import ProfilePublicPageLayout from './profile/ProfilePublicPageLayout'
 import ProfileDeliveryAddressCard from './profile/ProfileDeliveryAddressCard'
 import ProfilePersonalDataForm from './profile/ProfilePersonalDataForm'
+import ProfileLeadHero from './profile/ProfileLeadHero'
 import {
   Phone, Bell, Heart, ShoppingBag, User, Menu,
-  MapPin, Clock, Settings, LogOut, Shield, Mail, X, Sparkles
+  MapPin, Clock, Settings, LogOut, Shield, Mail, X, ArrowLeft,
 } from 'lucide-react'
-import LogoBackground from './LogoBackground'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { logoutClientSession } from '@/lib/authSession'
@@ -31,14 +30,12 @@ import { getOrderStatusToastMessage } from '@/lib/orderStatusMessage'
 import { WATTA_NOTIFICATIONS_CHANGED_EVENT } from '@/lib/userNotificationsApi'
 import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
 
-const HERO_BG =
-  'linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%)'
-
 interface UserData {
   name: string
   email: string
   phone: string
   address: string
+  isPhoneVerified?: boolean
 }
 
 // ИСПРАВЛЕННЫЙ ИНТЕРФЕЙС
@@ -181,6 +178,10 @@ export default function ProfileView({
           email: data.user.email ?? prev?.email ?? '',
           phone: data.user.phone ?? prev?.phone ?? '',
           address: data.user.address ?? prev?.address ?? '',
+          isPhoneVerified:
+            typeof data.user.isPhoneVerified === 'boolean'
+              ? data.user.isPhoneVerified
+              : prev?.isPhoneVerified,
         }))
         try {
           const raw = localStorage.getItem('currentUser')
@@ -216,6 +217,27 @@ export default function ProfileView({
     window.dispatchEvent(new Event('userChanged'))
   }, [])
 
+  const handlePhoneVerified = useCallback(() => {
+    setUser((prev) => {
+      const next = {
+        name: prev?.name ?? '',
+        email: prev?.email ?? '',
+        phone: prev?.phone ?? '',
+        address: prev?.address ?? '',
+        isPhoneVerified: true,
+      }
+      try {
+        const raw = localStorage.getItem('currentUser')
+        const parsed = raw ? JSON.parse(raw) : {}
+        localStorage.setItem('currentUser', JSON.stringify({ ...parsed, isPhoneVerified: true }))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+    window.dispatchEvent(new Event('userChanged'))
+  }, [])
+
   const handlePersonalDataSaved = useCallback(({ name, phone }: { name: string; phone: string }) => {
     setUser((prev) => {
       const next = {
@@ -223,6 +245,7 @@ export default function ProfileView({
         email: prev?.email ?? '',
         phone,
         address: prev?.address ?? '',
+        isPhoneVerified: prev?.isPhoneVerified,
       }
       try {
         const raw = localStorage.getItem('currentUser')
@@ -382,6 +405,14 @@ export default function ProfileView({
     }
   }
 
+  const displayName = (user?.name || t.clientProfile.notSpecified).trim() || t.clientProfile.notSpecified
+  const headingName = language === 'en' ? displayName.toLowerCase() : displayName
+
+  const profileHeroTitleLines = useMemo(() => {
+    const words = headingName.trim().split(/\s+/)
+    if (words.length <= 1) return [headingName]
+    return [words[0], words.slice(1).join(' ')]
+  }, [headingName])
 
   if (profileAllowed === null) {
     return (
@@ -397,9 +428,6 @@ export default function ProfileView({
       </div>
     )
   }
-
-  const displayName = (user?.name || t.clientProfile.notSpecified).trim() || t.clientProfile.notSpecified
-  const headingName = language === 'en' ? displayName.toLowerCase() : displayName
 
   const headerIconBtn =
     'flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 hover:text-[#145142] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#145142]/40'
@@ -458,131 +486,99 @@ export default function ProfileView({
 
   const rootPad =
     layout === 'page'
-      ? 'pb-16 pt-2 font-sans sm:pb-20 sm:pt-3'
+      ? 'pb-16 font-sans sm:pb-20'
       : 'pb-16 pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16'
 
-  const embeddedTabs = (
-    [
-      { id: 'history' as const, icon: Clock, label: t.clientProfile.tabHistory },
-      { id: 'address' as const, icon: MapPin, label: t.clientProfile.tabAddress },
-      { id: 'favorites' as const, icon: Heart, label: t.clientProfile.tabFavorites },
-      { id: 'data' as const, icon: Settings, label: t.clientProfile.tabData },
-    ] as const
-  ).map(({ id, icon: Icon, label }) => {
-    const on = activeTab === id
-    return (
-      <button
-        key={id}
-        type="button"
-        onClick={() => setActiveTab(id)}
-        className={`watta-profile-embedded-tab ${on ? 'watta-profile-embedded-tab--on' : 'watta-profile-embedded-tab--off'}`}
-      >
-        <Icon size={16} strokeWidth={2.25} className={id === 'favorites' && on ? 'fill-current' : ''} aria-hidden />
-        {label}
-      </button>
-    )
-  })
+  const quickNavItems = [
+    { id: 'address' as const, icon: MapPin, label: t.clientProfile.tabAddress },
+    { id: 'favorites' as const, icon: Heart, label: t.clientProfile.tabFavorites },
+    { id: 'data' as const, icon: Settings, label: t.clientProfile.tabData },
+  ] as const
 
-  if (layout === 'page') {
-    return (
-      <ProfilePublicPageLayout
-        t={t}
-        language={language}
-        displayName={displayName}
-        headingName={headingName}
-        user={user}
-        bonusBalance={bonusBalance}
-        isAdmin={isAdmin}
+  const goMenu = layout === 'page' ? () => router.push('/menu') : onBack
+
+  const profileLeadIntro = (
+    <div className="delivery-page-intro-web w-full shrink-0 bg-white">
+      <ProfileLeadHero
+        sectionId="profile-inapp-lead-intro"
+        nameLines={profileHeroTitleLines}
+        reserveTopSpace={layout === 'embedded'}
+      >
+        {user?.email ? (
+          <span className="watta-profile-lead__chip">
+            <Mail size={12} aria-hidden />
+            <span className="min-w-0 truncate">{user.email}</span>
+          </span>
+        ) : null}
+        {user?.phone ? (
+          <span className="watta-profile-lead__chip">
+            <Phone size={12} aria-hidden />
+            <span className="min-w-0 truncate">{user.phone}</span>
+          </span>
+        ) : null}
+        <span className="watta-profile-lead__chip watta-profile-lead__chip--bonus">
+          {t.clientProfile.bonuses}:{' '}
+          <strong className="tabular-nums">{bonusBalance.toFixed(2)} €</strong>
+        </span>
+      </ProfileLeadHero>
+    </div>
+  )
+
+  const ordersBlock = (
+    <section className="watta-profile-inapp-orders lg:hidden" aria-labelledby="inapp-profile-orders-title">
+      <div className="watta-profile-inapp-orders__head">
+        <h2 id="inapp-profile-orders-title" className="watta-profile-inapp-orders__title">
+          {t.clientProfile.tabHistory}
+        </h2>
+        <Link href="/reviews" className="watta-profile-inapp-reviews-btn">
+          {t.reviewsPublic.title}
+        </Link>
+      </div>
+      <ClientProfileOrders
         orders={orders}
-        ordersLoading={loading}
-        favoriteItems={favoriteItems}
-        favLoading={favLoading}
-        showBlogNav={showBlogNav}
-        highlightOrderId={highlightOrderId}
-        initialTab={initialTab}
-        onGoMenu={() => router.push('/menu')}
+        loading={loading}
+        loadingLabel={t.clientProfile.loading}
+        lang={language}
+        t={t.clientProfile}
+        emptyMessage={t.clientProfile.emptyOrders}
+        goMenuLabel={t.clientProfile.goMenu}
+        onGoMenu={goMenu}
         onReorder={handleReorder}
         onReviewSubmitted={handleReviewSubmitted}
-        onRemoveFavorite={removeFavorite}
-        onAddFavoriteToCart={addFavoriteToCart}
-        onLogout={handleLogout}
-        onOpenAdmin={onOpenAdmin}
-        onAddressSaved={handleAddressSaved}
-        onPersonalDataSaved={handlePersonalDataSaved}
-        removeFavoriteAria={a.remove}
-        addCartAria={a.cart}
+        highlightOrderId={highlightOrderId}
       />
-    )
-  }
+    </section>
+  )
 
   return (
-    <div className={`menu-page-web relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden watta-page-bg ${rootPad}`}>
-      <LogoBackground />
-      <div className="relative z-10">
+    <div
+      className={`menu-page-web watta-profile-inapp watta-delivery-page-about${layout === 'page' ? ' watta-profile-page' : ''} relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden bg-white ${rootPad}`}
+    >
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         {layout === 'embedded' ? <Header /> : null}
 
-      <div className="mx-auto max-w-[1600px] px-3 pb-2 sm:px-4 sm:pb-3">
-        <section
-          className="relative mt-1 overflow-hidden rounded-2xl text-white shadow-[0_20px_60px_rgba(20,81,66,0.22)] sm:mt-2 sm:rounded-[1.75rem]"
-          style={{ background: HERO_BG }}
-          aria-labelledby="inapp-profile-hero-title"
-        >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.35]"
-            style={{
-              background: `repeating-linear-gradient(
-                -32deg,
-                transparent,
-                transparent 14px,
-                rgba(255, 255, 255, 0.04) 14px,
-                rgba(255, 255, 255, 0.04) 15px
-              )`,
-            }}
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -right-[12%] top-1/2 h-[min(72vw,320px)] w-[min(72vw,320px)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,92,0,0.14)_0%,transparent_68%)]"
-            aria-hidden
-          />
-          <div className="relative z-[1] px-4 py-7 sm:px-7 sm:py-9 lg:px-10 lg:py-10">
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90 backdrop-blur-md sm:text-[11px]">
-              <Sparkles className="h-3.5 w-3.5 text-[#ffb38a]" strokeWidth={2.4} aria-hidden />
-              {t.clientProfile.brandSubtitle}
-            </p>
-            <h1
-              id="inapp-profile-hero-title"
-              className="font-black leading-[0.98] tracking-tight text-white"
-              style={{
-                fontSize: 'clamp(1.85rem, 6.5vw, 3.25rem)',
-                fontFamily: 'var(--font-inter, ui-sans-serif), system-ui, sans-serif',
-              }}
-            >
-              {headingName}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/82 sm:text-base lg:text-lg">
-              {t.clientProfile.publicHeroLead}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2 sm:gap-2.5">
-              {user?.email ? (
-                <span className="inline-flex max-w-full items-center gap-2 truncate rounded-2xl border border-white/20 bg-black/10 px-3 py-2 text-[11px] font-semibold text-white/95 backdrop-blur-md sm:text-sm">
-                  <span className="shrink-0 text-white/60">{t.clientProfile.labelEmail}:</span>
-                  <span className="min-w-0 truncate">{user.email}</span>
+        {profileLeadIntro}
+
+        <nav className="watta-profile-quick-nav max-w-[1600px] mx-auto" aria-label={a.profileNav}>
+          {quickNavItems.map(({ id, icon: Icon, label }) => {
+            const on = activeTab === id
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(on ? 'history' : id)}
+                className={`watta-profile-quick-nav__btn${on ? ' watta-profile-quick-nav__btn--on' : ''}`}
+              >
+                <span className="watta-profile-quick-nav__btn-icon" aria-hidden>
+                  <Icon size={18} strokeWidth={2.1} className={id === 'favorites' && on ? 'fill-current' : ''} />
                 </span>
-              ) : null}
-              {user?.phone ? (
-                <span className="inline-flex max-w-full items-center gap-2 truncate rounded-2xl border border-white/20 bg-black/10 px-3 py-2 text-[11px] font-semibold text-white/95 backdrop-blur-md sm:text-sm">
-                  <span className="shrink-0 text-white/60">{t.clientProfile.labelPhone}:</span>
-                  <span className="min-w-0 truncate">{user.phone}</span>
-                </span>
-              ) : null}
-              <span className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300/35 bg-emerald-950/25 px-3 py-2 text-[11px] font-bold text-emerald-50 backdrop-blur-md sm:text-sm">
-                {t.clientProfile.bonuses}:{' '}
-                <span className="tabular-nums text-white">{bonusBalance.toFixed(2)} €</span>
-              </span>
-            </div>
-          </div>
-        </section>
-      </div>
+                <span>{label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        {activeTab === 'history' ? ordersBlock : null}
 
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 flex flex-col lg:flex-row gap-6 lg:gap-8">
         
@@ -609,9 +605,6 @@ export default function ProfileView({
               <p className="mt-3 inline-flex items-baseline gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-3 py-1 text-sm text-emerald-900">
                 <span className="font-medium text-emerald-800/90">{t.clientProfile.bonuses}</span>
                 <span className="font-bold tabular-nums">{bonusBalance.toFixed(2)} €</span>
-              </p>
-              <p className="mt-4 border-t border-gray-100 pt-4 text-left text-xs leading-relaxed text-gray-500">
-                {t.clientProfile.inAppNavHint}
               </p>
             </div>
 
@@ -669,25 +662,29 @@ export default function ProfileView({
         </div>
 
         {/* ПРАВАЯ КОЛОНКА - КОНТЕНТ */}
-        <div className="flex-1 min-w-0">
-          <nav className="watta-profile-embedded-tabs lg:hidden" aria-label={a.profileNav}>
-            {embeddedTabs}
-          </nav>
+        <div className={`flex-1 min-w-0${activeTab === 'history' ? ' hidden lg:block' : ''}`}>
           <div
-            className={`relative min-h-[420px] rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:min-h-[520px] sm:p-8 ${
-              activeTab === 'favorites' ? 'overflow-visible' : 'overflow-hidden'
+            className={`watta-profile-inapp-content-card${
+              activeTab === 'favorites' ? ' watta-profile-inapp-content-card--favorites' : ''
             }`}
           >
             <div className="relative z-10">
+            {activeTab !== 'history' ? (
+              <button
+                type="button"
+                className="watta-profile-inapp-back-history lg:hidden"
+                onClick={() => setActiveTab('history')}
+              >
+                <ArrowLeft size={16} strokeWidth={2.25} aria-hidden />
+                {t.clientProfile.tabHistory}
+              </button>
+            ) : null}
             {activeTab === 'history' && (
-              <div className="animate-in fade-in">
+              <div className="hidden animate-in fade-in lg:block">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{t.clientProfile.tabHistory}</h2>
+                  <h2 className="watta-profile-inapp-panel-title">{t.clientProfile.tabHistory}</h2>
                   <div className="flex flex-wrap gap-2">
-                    <Link
-                      href="/reviews"
-                      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-[#145142]/30 hover:text-[#145142] sm:text-sm"
-                    >
+                    <Link href="/reviews" className="watta-profile-inapp-reviews-btn">
                       {t.reviewsPublic.title}
                     </Link>
                     {showBlogNav ? (
@@ -708,7 +705,7 @@ export default function ProfileView({
                   t={t.clientProfile}
                   emptyMessage={t.clientProfile.emptyOrders}
                   goMenuLabel={t.clientProfile.goMenu}
-                  onGoMenu={onBack}
+                  onGoMenu={goMenu}
                   onReorder={handleReorder}
                   onReviewSubmitted={handleReviewSubmitted}
                   highlightOrderId={highlightOrderId}
@@ -717,7 +714,7 @@ export default function ProfileView({
             )}
             {activeTab === 'favorites' && (
               <div className="space-y-5">
-                <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{t.clientProfile.favoritesTitle}</h2>
+                <h2 className="watta-profile-inapp-panel-title">{t.clientProfile.favoritesTitle}</h2>
 
                 {favLoading ? (
                   <div className="py-12 text-center text-sm text-gray-500">{t.clientProfile.loading}</div>
@@ -777,7 +774,7 @@ export default function ProfileView({
             {activeTab === 'address' && (
               <div className="animate-in fade-in">
                 <div className="mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{t.clientProfile.addrTitle}</h2>
+                  <h2 className="watta-profile-inapp-panel-title">{t.clientProfile.addrTitle}</h2>
                   <p className="mt-1 flex items-center gap-2 text-sm text-gray-600">
                     <MapPin size={16} className="shrink-0 text-[#145142]" />
                     {t.clientProfile.addrSub}
@@ -795,7 +792,7 @@ export default function ProfileView({
             {activeTab === 'data' && (
               <div className="animate-in fade-in">
                 <div className="mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{t.clientProfile.dataTitle}</h2>
+                  <h2 className="watta-profile-inapp-panel-title">{t.clientProfile.dataTitle}</h2>
                   <p className="mt-1 flex items-center gap-2 text-sm text-gray-600">
                     <Settings size={16} className="shrink-0 text-[#145142]" />
                     {t.clientProfile.dataSub}
@@ -805,9 +802,11 @@ export default function ProfileView({
                   initialName={user?.name ?? ''}
                   initialPhone={user?.phone ?? ''}
                   email={user?.email ?? ''}
+                  isPhoneVerified={user?.isPhoneVerified === true}
                   cp={t.clientProfile}
                   invalidPhoneMessage={t.cartSection.invalidPhone}
                   onSaved={handlePersonalDataSaved}
+                  onPhoneVerified={handlePhoneVerified}
                 />
               </div>
             )}

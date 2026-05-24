@@ -19,7 +19,7 @@ import {
   Star,
   X,
 } from 'lucide-react'
-import AnimatedHeroIntroBlock from '../AnimatedHeroIntroBlock'
+import ProfileLeadHero from './ProfileLeadHero'
 import ClientProfileOrders from './ClientProfileOrders'
 import ProfileDeliveryAddressCard from './ProfileDeliveryAddressCard'
 import ProfilePersonalDataForm from './ProfilePersonalDataForm'
@@ -41,6 +41,7 @@ type UserData = {
   email: string
   phone: string
   address: string
+  isPhoneVerified?: boolean
 }
 
 export type ProfilePublicPageLayoutProps = {
@@ -70,6 +71,7 @@ export type ProfilePublicPageLayoutProps = {
   onOpenAdmin: () => void
   onAddressSaved: (address: string) => void
   onPersonalDataSaved: (payload: { name: string; phone: string }) => void
+  onPhoneVerified?: () => void
   removeFavoriteAria: string
   addCartAria: string
 }
@@ -105,6 +107,7 @@ export default function ProfilePublicPageLayout({
   onOpenAdmin,
   onAddressSaved,
   onPersonalDataSaved,
+  onPhoneVerified,
   removeFavoriteAria,
   addCartAria,
 }: ProfilePublicPageLayoutProps) {
@@ -161,32 +164,23 @@ export default function ProfilePublicPageLayout({
   ]
 
   const leadIntro = (
-    <AnimatedHeroIntroBlock
-      sectionId="profile-page-lead-intro"
-      ariaLabel={t.profilePage.title}
-      titleId="profile-hero-title"
-      titleLines={heroTitleLines}
-      body={cp.publicHeroLead}
-      accentLineIndex={heroTitleLines.length > 1 ? 1 : 0}
-      headingLevel="h1"
-      reserveTopSpace
-      innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
-    >
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-        {user?.email ? (
-          <span className="inline-flex max-w-full items-center gap-1.5 truncate rounded-full border border-[#145142]/15 bg-[#f0f6f3] px-3 py-1.5 text-[11px] font-semibold text-[#145142] sm:text-xs">
-            <Mail size={12} aria-hidden />
-            <span className="min-w-0 truncate">{user.email}</span>
-          </span>
-        ) : null}
-        {user?.phone ? (
-          <span className="inline-flex max-w-full items-center gap-1.5 truncate rounded-full border border-[#145142]/15 bg-[#f0f6f3] px-3 py-1.5 text-[11px] font-semibold text-[#145142] sm:text-xs">
-            <Phone size={12} aria-hidden />
-            <span className="min-w-0 truncate">{user.phone}</span>
-          </span>
-        ) : null}
-      </div>
-    </AnimatedHeroIntroBlock>
+    <ProfileLeadHero sectionId="profile-page-lead-intro" nameLines={heroTitleLines} reserveTopSpace>
+      {user?.email ? (
+        <span className="watta-profile-lead__chip">
+          <Mail size={12} aria-hidden />
+          <span className="min-w-0 truncate">{user.email}</span>
+        </span>
+      ) : null}
+      {user?.phone ? (
+        <span className="watta-profile-lead__chip">
+          <Phone size={12} aria-hidden />
+          <span className="min-w-0 truncate">{user.phone}</span>
+        </span>
+      ) : null}
+      <span className="watta-profile-lead__chip watta-profile-lead__chip--bonus">
+        {cp.bonuses}: <strong className="tabular-nums">{bonusBalance.toFixed(2)} €</strong>
+      </span>
+    </ProfileLeadHero>
   )
 
   return (
@@ -326,9 +320,11 @@ export default function ProfilePublicPageLayout({
               initialName={user?.name ?? ''}
               initialPhone={user?.phone ?? ''}
               email={user?.email ?? ''}
+              isPhoneVerified={user?.isPhoneVerified === true}
               cp={cp}
               invalidPhoneMessage={t.cartSection.invalidPhone}
               onSaved={onPersonalDataSaved}
+              onPhoneVerified={onPhoneVerified}
             />
           </section>
 

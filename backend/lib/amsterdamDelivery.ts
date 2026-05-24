@@ -1,10 +1,11 @@
-/**
- * Точка відправлення за замовчуванням (Helicopterstraat 20, 1059 CG — орієнтовно).
- * У проді координати краще тримати в SiteSetting після геокодування адреси кухні в адмінці.
- */
+/** Точка відправлення доставки (кухня / dispatch). */
+export const WATTA_KITCHEN_ADDRESS =
+  'Helicopterstraat 20, 1059 CG Amsterdam, Netherlands'
+
+/** Координати Helicopterstraat 20 — fallback для NL-тарифу. */
 export const WATTA_KITCHEN_AMSTERDAM = {
-  lat: 52.3389,
-  lng: 4.8512,
+  lat: 52.341081,
+  lng: 4.844551,
 } as const
 
 /** € за 1 км (legacy UA/зони; для NL використовується кроковий тариф з SiteSetting). */

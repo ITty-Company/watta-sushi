@@ -299,6 +299,18 @@ function effectiveMenuHeroVideoUrls(row: {
   return [DEFAULT_MENU_HERO_VIDEO]
 }
 
+const DEFAULT_DELIVERY_KITCHEN_ADDRESS =
+  'Helicopterstraat 20, 1059 CG Amsterdam, Netherlands'
+
+const DEFAULT_RESTAURANT_PICKUP_ADDRESS =
+  'Amstelveenseweg 192, 1075 XR Amsterdam, Netherlands'
+
+function effectiveRestaurantPickupAddress(settings: Record<string, unknown>): string {
+  const pickup = String(settings.restaurantPickupAddress ?? '').trim()
+  if (pickup) return pickup
+  return DEFAULT_RESTAURANT_PICKUP_ADDRESS
+}
+
 function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) {
   const homeHeroVideoUrls = effectiveHomeHeroVideoUrls(settings as {
     homeHeroVideoUrls?: string | null
@@ -340,6 +352,7 @@ function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) 
     authHeroPhone2Copy,
     cardOnlineAvailable: isCardOnlinePaymentAvailable(),
     cardOnlineProvider: cardOnlinePaymentProvider(),
+    restaurantPickupAddress: effectiveRestaurantPickupAddress(settings),
   }
 }
 
@@ -360,12 +373,12 @@ const defaultSettings = {
   telegramUrl: 'https://t.me/wattasushiwork',
   whatsappUrl: '',
   instagramUrl: 'https://www.instagram.com/watta_sushi/',
-  restaurantPickupAddress: '',
+  restaurantPickupAddress: DEFAULT_RESTAURANT_PICKUP_ADDRESS,
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
-  deliveryKitchenAddress: 'Helicopterstraat 20, 1059 CG Amsterdam, Netherlands',
-  deliveryKitchenLat: null,
-  deliveryKitchenLng: null,
+  deliveryKitchenAddress: DEFAULT_DELIVERY_KITCHEN_ADDRESS,
+  deliveryKitchenLat: 52.341081,
+  deliveryKitchenLng: 4.844551,
   deliveryTariffStepKm: 3,
   deliveryTariffStepEur: 1.5,
   bonusCashbackEnabled: true,

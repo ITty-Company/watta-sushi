@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useLanguage } from '@/app/context/LanguageContext'
 import UserNotificationsPanel from '@/app/components/notifications/UserNotificationsPanel'
@@ -14,6 +15,11 @@ export const NotificationsView = ({
 }) => {
   const { t } = useLanguage()
   const n = t.notifications
+  const [portalReady, setPortalReady] = useState(false)
+
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
 
   useEffect(() => {
     if (!isOpen) return
@@ -23,17 +29,19 @@ export const NotificationsView = ({
     window.addEventListener('keydown', onKey)
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    document.body.classList.add('watta-notifications-open')
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = prev
+      document.body.classList.remove('watta-notifications-open')
     }
   }, [isOpen, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || !portalReady) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6"
+      className="watta-notifications-backdrop fixed inset-0 z-[11050] flex items-center justify-center p-4 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="watta-notifications-title"
@@ -60,6 +68,7 @@ export const NotificationsView = ({
         </div>
         <UserNotificationsPanel compact />
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

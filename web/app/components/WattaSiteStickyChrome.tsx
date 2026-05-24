@@ -43,7 +43,11 @@ export default function WattaSiteStickyChrome({
   )
   /** Головна та hero-сторінки: точний резерв під fixed chrome — відео одразу під категоріями. */
   const chromeFlowFudgePx =
-    pathname === '/cart' ? Math.max(flowHeightFudgePx, 16) : isChromeHeroPage ? 12 : flowHeightFudgePx
+    pathname === '/cart'
+      ? Math.max(flowHeightFudgePx, 16)
+      : isChromeHeroPage
+        ? 12
+        : flowHeightFudgePx
   const [homeDeliveryEmbed, setHomeDeliveryEmbed] = useState(false)
 
   useEffect(() => {
