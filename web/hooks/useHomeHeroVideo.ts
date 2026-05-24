@@ -1,33 +1,28 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
+import {
+  applyHomeHeroVideoFromApi,
+  readInitialHomeHeroVideoUrls,
+} from '@/lib/homeHeroVideoClientState'
 import {
   buildHomeHeroPlaylist,
   buildHomeHeroVideoSources,
-  filterReachableHeroUrls,
   getPrimaryHomeHeroVideoSrc,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
 } from '@/lib/wattaHeroVideo'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
-import { readSiteSettingsRecord } from '@/lib/heroSettingsSiteCache'
-
-const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v2'
+import { readSiteSettingsRecord, writeSiteSettingsRecord } from '@/lib/heroSettingsSiteCache'
 
 export function useHomeHeroVideo() {
-  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      const raw = sessionStorage.getItem(HOME_HERO_URLS_CACHE_KEY)
-      if (!raw) return []
-      const parsed = JSON.parse(raw) as unknown
-      return Array.isArray(parsed)
-        ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-        : []
-    } catch {
-      return []
-    }
-  })
+  const homeHeroProbeRef = useRef<AbortController | null>(null)
+  const [homeHeroVideoUrls, setHomeHeroVideoUrls] = useState<string[]>([])
+
+  useLayoutEffect(() => {
+    const cached = readInitialHomeHeroVideoUrls()
+    if (cached.length > 0) setHomeHeroVideoUrls(cached)
+  }, [])
   const [heroVideoFailed, setHeroVideoFailed] = useState(false)
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)
@@ -64,39 +59,19 @@ export function useHomeHeroVideo() {
   }, [heroVideoSrc])
 
   useEffect(() => {
-    let probeAbort: AbortController | null = null
-
     const applySettings = (data: { homeHeroVideoUrl?: string; homeHeroVideoUrls?: string[] }) => {
-      const urls = parseHomeHeroVideoUrlsFromApi(data)
-      setHomeHeroVideoUrls(urls)
-      try {
-        sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(urls))
-      } catch {
-        /* ignore */
-      }
-      if (!urls.some((u) => u.startsWith('/uploads/'))) return
-      probeAbort?.abort()
-      probeAbort = new AbortController()
-      const signal = probeAbort.signal
-      void filterReachableHeroUrls(urls, signal).then((reachable) => {
-        if (signal.aborted || reachable.length === 0) return
-        setHomeHeroVideoUrls((prev) => {
-          const next = buildHomeHeroPlaylist(reachable)
-          if (prev.length === next.length && prev.every((u, i) => u === next[i])) return prev
-          try {
-            sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(reachable))
-          } catch {
-            /* ignore */
-          }
-          return [...next]
-        })
-      })
+      applyHomeHeroVideoFromApi(data, setHomeHeroVideoUrls, homeHeroProbeRef)
     }
 
     const fetchSettings = async (fresh = false) => {
       try {
         const res = await (fresh ? fetchPublicApiFresh : fetchPublicApi)('/api/settings')
-        if (res.ok) applySettings(await res.json())
+        if (!res.ok) return
+        const data = await res.json()
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          writeSiteSettingsRecord(data as Record<string, unknown>)
+        }
+        applySettings(data)
       } catch {
         /* ignore */
       }
@@ -138,7 +113,7 @@ export function useHomeHeroVideo() {
     window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
     window.addEventListener('settingsUpdated', onSettingsUpdated)
     return () => {
-      probeAbort?.abort()
+      homeHeroProbeRef.current?.abort()
       window.removeEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
       window.removeEventListener('settingsUpdated', onSettingsUpdated)
     }
