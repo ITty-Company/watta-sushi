@@ -452,7 +452,11 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
                 className="watta-nav-compact__admin"
                 onClick={() => {
                   onClose()
-                  props.onNavigate?.()
+                  if (props.mode === 'embedded') {
+                    props.onPageOpen('admin')
+                  } else {
+                    props.onNavigate?.()
+                  }
                 }}
               >
                 <Sparkles size={14} strokeWidth={2.2} />
