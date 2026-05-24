@@ -216,13 +216,17 @@ export default function WelcomeHeroSection({
                 if (v) primeHeroVideoElement(v)
                 notifyHeroVideoReady()
               }}
-              onLoadedData={notifyHeroVideoReady}
+              onLoadedData={(e) => {
+                e.currentTarget.setAttribute('data-watta-can-play', '1')
+                notifyHeroVideoReady()
+              }}
               onPlaying={(e) => {
                 e.currentTarget.setAttribute('data-watta-playing', '1')
                 notifyHeroVideoReady()
               }}
               onCanPlay={() => {
                 const v = heroVideoRef.current
+                v?.setAttribute('data-watta-can-play', '1')
                 if (v) primeHeroVideoElement(v)
                 notifyHeroVideoReady()
               }}

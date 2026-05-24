@@ -83,6 +83,15 @@ export function buildHomeHeroPlaylist(adminUrls?: readonly string[] | null): rea
   return out.length > 0 ? out : [...WATTA_HOME_HERO_VIDEO_FALLBACKS]
 }
 
+/** Якщо в адмінці `/uploads/` — спочатку легкий mp4 з public/, потім оригінал. */
+export function findHomeHeroFastStartIndex(playlist: readonly string[]): number {
+  if (playlist.length <= 1) return 0
+  const hasUploads = playlist.some((u) => isAdminUploadHeroPath(u))
+  if (!hasUploads) return 0
+  const fbIndex = playlist.findIndex((u) => u.includes(WATTA_HOME_HERO_VIDEO_PATH))
+  return fbIndex >= 0 ? fbIndex : 0
+}
+
 /** HEAD/GET — чи відповідає mp4 (не HTML 404 від проксі). */
 export async function probeHeroVideoUrl(url: string, signal?: AbortSignal): Promise<boolean> {
   const src = url.trim()

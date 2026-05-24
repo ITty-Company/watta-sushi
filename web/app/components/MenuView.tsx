@@ -56,6 +56,7 @@ import { formatProductWeightSubtitle } from '@/lib/i18n/parseProductSpecsFromDes
 import {
   buildHomeHeroPlaylist,
   buildHomeHeroVideoSources,
+  findHomeHeroFastStartIndex,
   getPrimaryHomeHeroVideoSrc,
   WATTA_HOME_HERO_VIDEO_UPDATED_EVENT,
 } from '@/lib/wattaHeroVideo'
@@ -449,9 +450,9 @@ export default function MenuView() {
   )
 
   useEffect(() => {
-    setHeroVideoSourceIndex(0)
+    setHeroVideoSourceIndex(findHomeHeroFastStartIndex(homeHeroPlaylist))
     setHeroVideoFailed(false)
-  }, [activePage, homeHeroVideoUrls])
+  }, [activePage, homeHeroVideoUrls, homeHeroPlaylist])
 
   useLayoutEffect(() => {
     if (heroVideoFailed) return

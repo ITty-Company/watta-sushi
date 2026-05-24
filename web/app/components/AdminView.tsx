@@ -52,7 +52,7 @@ import { parseAuthHeroVideoUrlsFromApi } from '@/lib/authHeroVideoSettings'
 import { parseAuthHeroPhone2VideoUrlsFromApi } from '@/lib/authHeroPhoneSettings'
 import AuthHeroPhonesAdminSection from './admin/AuthHeroPhonesAdminSection'
 import AdminNavDrawer from './admin/AdminNavDrawer'
-import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
+import AdminHeroVideoPreview from './admin/AdminHeroVideoPreview'
 import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaAuthHeroVideo'
 import { uploadHomeHeroVideoFile } from '@/lib/uploadHomeHeroVideo'
 import { WATTA_HOME_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaHeroVideo'
@@ -413,71 +413,6 @@ function heroVideoSlotsFromUrls(urls: string[]): HeroVideoSlotState[] {
 
 function revokeHeroPreviewUrl(url: string | null) {
   if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
-}
-
-function AdminHeroVideoPreview({
-  previewSrc,
-  savedUrl,
-  reduceMotion,
-}: {
-  previewSrc: string | null | undefined
-  savedUrl?: string
-  reduceMotion: boolean
-}) {
-  const [broken, setBroken] = useState(false)
-
-  useEffect(() => {
-    setBroken(false)
-  }, [previewSrc])
-
-  if (!previewSrc) {
-    return (
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="flex aspect-video w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45"
-      >
-        —
-      </motion.div>
-    )
-  }
-
-  if (broken && !previewSrc.startsWith('blob:')) {
-    return (
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="admin-hero-video-preview-missing"
-      >
-        <span className="font-semibold text-[#145142]/85">Відео на сервері недоступне</span>
-        <span>
-          Файл відсутній (часто після redeploy на Render). Натисніть «Завантажити» і «Зберегти» знову; на
-          проді увімкніть Persistent Disk і UPLOAD_DIR.
-        </span>
-        {savedUrl ? (
-          <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>
-            {savedUrl}
-          </span>
-        ) : null}
-      </motion.div>
-    )
-  }
-
-  const resolvedSrc = resolveUploadMediaUrl(previewSrc) ?? previewSrc
-
-  return (
-    <video
-      key={resolvedSrc}
-      src={resolvedSrc}
-      className="aspect-video w-full bg-black object-cover"
-      controls
-      muted
-      playsInline
-      preload="metadata"
-      onError={() => setBroken(true)}
-    />
-  )
 }
 
 interface SiteSettings {

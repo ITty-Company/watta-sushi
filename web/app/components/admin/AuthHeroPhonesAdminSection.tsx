@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Save, Trash2, Upload } from 'lucide-react'
 import type { Translations } from '@/app/context/LanguageContext'
-import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
+import AdminHeroVideoPreview from '@/app/components/admin/AdminHeroVideoPreview'
 
 export type HeroVideoSlotState = {
   id: string
@@ -31,57 +31,6 @@ type Props = {
   onAddPhone2Slot: () => void
   onRemovePhone1Slot: (slotId: string) => void
   onRemovePhone2Slot: (slotId: string) => void
-}
-
-function AuthPhoneHeroVideoPreview({
-  previewSrc,
-  savedUrl,
-}: {
-  previewSrc: string | null | undefined
-  savedUrl?: string | null
-}) {
-  const [broken, setBroken] = useState(false)
-
-  useEffect(() => {
-    setBroken(false)
-  }, [previewSrc])
-
-  if (!previewSrc) {
-    return (
-      <motion.div className="flex aspect-[9/16] max-h-[280px] w-full items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45">
-        —
-      </motion.div>
-    )
-  }
-
-  if (broken && !previewSrc.startsWith('blob:')) {
-    return (
-      <motion.div className="admin-hero-video-preview-missing !aspect-[9/16] !max-h-[280px]">
-        <span className="font-semibold text-[#145142]/85">Відео на сервері недоступне</span>
-        <span>Завантажте файл знову і збережіть.</span>
-        {savedUrl ? (
-          <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>
-            {savedUrl}
-          </span>
-        ) : null}
-      </motion.div>
-    )
-  }
-
-  const resolvedSrc = resolveUploadMediaUrl(previewSrc) ?? previewSrc
-
-  return (
-    <video
-      key={resolvedSrc}
-      src={resolvedSrc}
-      className="aspect-[9/16] max-h-[280px] w-full bg-black object-cover"
-      controls
-      muted
-      playsInline
-      preload="metadata"
-      onError={() => setBroken(true)}
-    />
-  )
 }
 
 function VideoSlotGrid({
@@ -122,7 +71,12 @@ function VideoSlotGrid({
             >
               <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">{slotLabel}</p>
               <motion.div className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5">
-                <AuthPhoneHeroVideoPreview previewSrc={previewSrc} savedUrl={slot.savedUrl} />
+                <AdminHeroVideoPreview
+                  previewSrc={previewSrc}
+                  savedUrl={slot.savedUrl}
+                  reduceMotion={reduceMotion}
+                  aspectClassName="aspect-[9/16] max-h-[280px] w-full"
+                />
               </motion.div>
               {previewSrc && !slot.pendingFile ? (
                 <p className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55" title={slot.savedUrl ?? ''}>
