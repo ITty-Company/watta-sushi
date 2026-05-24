@@ -1,12 +1,19 @@
-/** Макс. довжина поля (форматування: +, пробіли, дужки). */
-export const CHECKOUT_PHONE_INPUT_MAX_LEN = 28
+/** Макс. довжина поля (цифри, +, пробіли, дужки). */
+export const CHECKOUT_PHONE_INPUT_MAX_LEN = 32
 
-/** Лише цифри для підрахунку (E.164: до 15 цифр). */
+/** Мінімум/максимум цифр — будь-яка країна, без фіксованого коду. */
+export const PHONE_MIN_DIGITS = 7
+export const PHONE_MAX_DIGITS = 15
+
+/** Лише цифри для підрахунку. */
 export function phoneDigitCount(value: string): number {
   return value.replace(/\D/g, '').length
 }
 
-/** Дозволено + на початку, цифри та типові роздільники під час введення. */
+/**
+ * Вільне введення: опційний + на початку, цифри, типові роздільники.
+ * Не підставляємо жоден код країни — людина вводить свій номер як хоче.
+ */
 export function sanitizeCheckoutPhoneInput(value: string): string {
   let result = ''
   for (let i = 0; i < value.length && result.length < CHECKOUT_PHONE_INPUT_MAX_LEN; i++) {
@@ -26,8 +33,8 @@ export function sanitizeCheckoutPhoneInput(value: string): string {
   return result
 }
 
-/** Будь-яка країна: 8–15 цифр (міжнародний формат). */
+/** Будь-який номер: 7–15 цифр, код країни на вибір користувача. */
 export function isValidCheckoutPhone(value: string): boolean {
   const digits = phoneDigitCount(value.trim())
-  return digits >= 8 && digits <= 15
+  return digits >= PHONE_MIN_DIGITS && digits <= PHONE_MAX_DIGITS
 }

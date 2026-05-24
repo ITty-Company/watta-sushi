@@ -186,7 +186,7 @@ export default function AppClient({
     <LanguageProviderWrapper initialLocale={initialLocale}>
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
         {/* Мінімум висоти вікна: футер лишається внизу; фон сторінки — як у шапки контенту */}
-        <div className="watta-app-shell-root watta-page-bg flex min-h-[100dvh] min-h-[100svh] flex-col">
+        <div className="watta-app-shell-root watta-page-bg flex min-h-[var(--watta-screen-min-h,100dvh)] flex-col">
           <WattaHtmlRouteClass />
           {/* flex-1: основний блок забирає вільну висоту до min-h екрана — інакше «повітря» лишалось під футером */}
           <main className="flex min-h-0 w-full max-w-[100vw] flex-1 flex-col">

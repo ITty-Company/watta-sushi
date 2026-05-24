@@ -59,8 +59,19 @@ export async function middleware(request: NextRequest) {
 
   if (subNeedsBackendProxy(sub, request)) {
     try {
-      return await proxyToBackend(request, sub)
+      const proxied = await proxyToBackend(request, sub)
+      if (
+        proxied.status >= 500 &&
+        request.method === 'GET' &&
+        sub === 'contact/inquiries'
+      ) {
+        return NextResponse.json({ items: [], totalCount: 0, unreadCount: 0 })
+      }
+      return proxied
     } catch {
+      if (request.method === 'GET' && sub === 'contact/inquiries') {
+        return NextResponse.json({ items: [], totalCount: 0, unreadCount: 0 })
+      }
       return backendProxyUnavailableResponse()
     }
   }
@@ -241,16 +252,25 @@ export async function middleware(request: NextRequest) {
         totalOrders: 0,
         revenueCompleted: 0,
         paymentPaidCount: 0,
+        todayOrders: 0,
+        todayRevenue: 0,
         byStatus: {
           PENDING: 0,
+          CONFIRMED: 0,
           COOKING: 0,
           DELIVERING: 0,
           COMPLETED: 0,
           CANCELLED: 0,
         },
         rawStatusCounts: {},
+        dailySeries14: [],
       })
     }
+    case 'contact/inquiries':
+      if (!request.headers.get('authorization')) {
+        return NextResponse.json({ message: 'Нет токена авторизации' }, { status: 401 })
+      }
+      return NextResponse.json({ items: [], totalCount: 0, unreadCount: 0 })
     default:
       return NextResponse.json([])
   }

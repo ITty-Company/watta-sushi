@@ -31,6 +31,11 @@ import { readCitiesCacheRaw, writeCitiesCache } from '@/lib/wattaCitiesCache'
 import { readSiteSettingsCache } from '@/lib/publicRouteWarmCache'
 import { ArrowUpRight, MapPin, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import DeliveryUnavailableCityNotice from './delivery/DeliveryUnavailableCityNotice'
+import {
+  fetchDeliveryCheck,
+  isDeliveryCityUnavailable,
+} from '@/lib/deliveryCheckClient'
 
 function DeliveryFlowSection({
   children,
@@ -194,6 +199,7 @@ type DeliveryCheckStatus =
   | 'nl_tariff_ok'
   | 'outside_amsterdam'
   | 'outside_nl'
+  | 'not_in_service_city'
   | 'postcode_format_invalid'
 
 type DeliveryCheckResult = {
@@ -220,10 +226,6 @@ type DeliveryCheckResult = {
 
 function isKitchenTariffCheck(status: DeliveryCheckStatus | undefined): boolean {
   return status === 'nl_tariff_ok' || status === 'amsterdam_ok'
-}
-
-function isOutsideNlArea(status: DeliveryCheckStatus | undefined): boolean {
-  return status === 'outside_nl' || status === 'outside_amsterdam'
 }
 
 function DeliveryKitchenMapBar({
@@ -313,7 +315,7 @@ type DeliveryViewProps = {
 }
 
 export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps) {
-  const { t, getLocalized } = useLanguage()
+  const { t, getLocalized, language } = useLanguage()
   const d = t.deliveryPage
   const lp = t.locationPicker
   const a = t.siteAria
@@ -546,61 +548,8 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
     setPostalChecking(true)
     setPostalResult(null)
     try {
-      const res = await fetch('/api/delivery/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cityId: parseInt(selectedCity.id, 10),
-          locationQuery: query,
-        }),
-      })
-      const data = (await res.json()) as DeliveryCheckResult & {
-        status?: string
-        deliveryTariffStepKm?: number
-        deliveryTariffStepEur?: number
-        routeDurationMinutes?: number | null
-      }
-      if (!res.ok) {
-        setPostalResult({
-          status: (data.status as DeliveryCheckStatus) || 'server_error',
-        })
-        return
-      }
-      setPostalResult({
-        status: data.status as DeliveryCheckStatus,
-        placeLabel: data.placeLabel,
-        lat: data.lat != null && Number.isFinite(Number(data.lat)) ? Number(data.lat) : undefined,
-        lng: data.lng != null && Number.isFinite(Number(data.lng)) ? Number(data.lng) : undefined,
-        zoneName: data.zoneName,
-        zoneId: data.zoneId,
-        zoneIsFreeDelivery: data.zoneIsFreeDelivery,
-        zoneFlatDeliveryFee: data.zoneFlatDeliveryFee,
-        pricePerKm: data.pricePerKm,
-        defaultDeliveryFee: data.defaultDeliveryFee,
-        freeDeliveryThreshold: data.freeDeliveryThreshold,
-        estimatedDeliveryFee:
-          data.estimatedDeliveryFee != null && !Number.isNaN(Number(data.estimatedDeliveryFee))
-            ? Number(data.estimatedDeliveryFee)
-            : null,
-        distanceKm:
-          data.distanceKm != null && !Number.isNaN(Number(data.distanceKm)) ? Number(data.distanceKm) : null,
-        minimumOrderEur:
-          data.minimumOrderEur != null && !Number.isNaN(Number(data.minimumOrderEur))
-            ? Number(data.minimumOrderEur)
-            : null,
-        deliveryTariffStepKm:
-          data.deliveryTariffStepKm != null && !Number.isNaN(Number(data.deliveryTariffStepKm))
-            ? Number(data.deliveryTariffStepKm)
-            : undefined,
-        deliveryTariffStepEur:
-          data.deliveryTariffStepEur != null && !Number.isNaN(Number(data.deliveryTariffStepEur))
-            ? Number(data.deliveryTariffStepEur)
-            : undefined,
-        routeDurationMinutes:
-          data.routeDurationMinutes != null && !Number.isNaN(Number(data.routeDurationMinutes))
-            ? Number(data.routeDurationMinutes)
-            : null,
-      })
+      const data = await fetchDeliveryCheck(parseInt(selectedCity.id, 10), query)
+      setPostalResult(data as DeliveryCheckResult)
     } catch {
       setPostalResult({ status: 'server_error' })
     } finally {
@@ -1000,15 +949,10 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                         </div>
                       </>
                     )}
-                    {isOutsideNlArea(postalResult.status) && (
+                    {isDeliveryCityUnavailable(postalResult.status) && (
                       <>
                         <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
-                        <div>
-                          <p className="delivery-watta-postal-result-title">{d.postalOutsideAmsterdam}</p>
-                          {postalResult.placeLabel && (
-                            <p className="delivery-watta-postal-result-meta">{postalResult.placeLabel}</p>
-                          )}
-                        </div>
+                        <DeliveryUnavailableCityNotice title={d.deliveryUnavailableTitle} />
                       </>
                     )}
                     {postalResult.status === 'postcode_format_invalid' && (
@@ -1414,15 +1358,10 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                         </div>
                       </>
                     )}
-                    {isOutsideNlArea(postalResult.status) && (
+                    {isDeliveryCityUnavailable(postalResult.status) && (
                       <>
                         <AlertCircle className="delivery-watta-postal-result-ico" strokeWidth={2} />
-                        <div>
-                          <p className="delivery-watta-postal-result-title">{d.postalOutsideAmsterdam}</p>
-                          {postalResult.placeLabel && (
-                            <p className="delivery-watta-postal-result-meta">{postalResult.placeLabel}</p>
-                          )}
-                        </div>
+                        <DeliveryUnavailableCityNotice title={d.deliveryUnavailableTitle} />
                       </>
                     )}
                     {postalResult.status === 'postcode_format_invalid' && (

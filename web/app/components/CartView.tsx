@@ -40,6 +40,11 @@ import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { getApiUrl } from '@/lib/utils'
 import { cityIdPreferAmsterdam } from '@/lib/wattaPreferredDefaultCity'
 import {
+  resolveRestaurantPickupAddress,
+  wattaMapsUrlForAddress,
+  WATTA_RESTAURANT,
+} from '@/lib/wattaRestaurantLocation'
+import {
   getExplicitSavedCityId,
   readCityIdForProductApi,
 } from '@/lib/wattaSiteLocalePrefs'
@@ -74,10 +79,19 @@ import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import {
   fetchDeliveryCheck,
+  isDeliveryCityUnavailable,
   isDeliveryFeeAvailable,
   isDeliveryOutsideArea,
   type DeliveryCheckResult,
 } from '@/lib/deliveryCheckClient'
+import {
+  condimentSetsExtraFeeEur,
+  defaultCondimentSetsForParty,
+  extraCondimentSetsCount,
+  EXTRA_CONDIMENT_SET_PRICE_EUR,
+  FREE_CONDIMENT_SETS,
+} from '@/lib/condimentSets'
+import DeliveryUnavailableCityNotice from './delivery/DeliveryUnavailableCityNotice'
 
 const CART_CHECKOUT_FORM_ID = 'watta-cart-checkout-form'
 
@@ -117,7 +131,7 @@ interface CheckoutSiteSettings {
 const defaultCheckoutSettings: CheckoutSiteSettings = {
   freeDeliveryThreshold: 1000,
   deliveryFee: 50,
-  restaurantPickupAddress: '',
+  restaurantPickupAddress: WATTA_RESTAURANT.addressLine,
   cardOnlineAvailable: false,
 }
 
@@ -225,6 +239,7 @@ export default function CartView({
     buildingBlock: '',
     persons: 1,
     sticks: 0,
+    condimentSets: 1,
     noCallbackConfirm: false,
     noDoorbellRing: false,
   })
@@ -265,7 +280,7 @@ export default function CartView({
         setCheckoutSettings({
           freeDeliveryThreshold: Number(data.freeDeliveryThreshold) || defaultCheckoutSettings.freeDeliveryThreshold,
           deliveryFee: Number(data.deliveryFee) || defaultCheckoutSettings.deliveryFee,
-          restaurantPickupAddress: String(data.restaurantPickupAddress ?? '').trim(),
+          restaurantPickupAddress: resolveRestaurantPickupAddress(data.restaurantPickupAddress),
           cardOnlineAvailable,
         })
         if (!cardOnlineAvailable) {
@@ -519,11 +534,15 @@ export default function CartView({
     deliveryCheckResult?.distanceKm != null && !Number.isNaN(deliveryCheckResult.distanceKm)
       ? deliveryCheckResult.distanceKm
       : null
-  const subtotalWithDelivery = finalPrice + deliveryPrice
+  const condimentExtraFee = condimentSetsExtraFeeEur(formData.condimentSets)
+  const extraCondimentCount = extraCondimentSetsCount(formData.condimentSets)
+
+  const subtotalWithDelivery = finalPrice + deliveryPrice + condimentExtraFee
   const appliedBonuses = useBonuses ? Math.min(bonusBalance, subtotalWithDelivery) : 0
   const totalToPay = Math.max(0, subtotalWithDelivery - appliedBonuses)
 
-  const pickupAddressDisplay = restaurantPickupAddress || '—'
+  const pickupAddressDisplay = resolveRestaurantPickupAddress(restaurantPickupAddress)
+  const pickupMapsHref = wattaMapsUrlForAddress(pickupAddressDisplay)
 
   const deliveryFeeReady =
     fulfillment !== 'delivery' ||
@@ -535,6 +554,11 @@ export default function CartView({
     fulfillment === 'delivery' &&
     deliveryCheckResult != null &&
     isDeliveryOutsideArea(deliveryCheckResult.status)
+
+  const deliveryCityUnavailable =
+    fulfillment === 'delivery' &&
+    deliveryCheckResult != null &&
+    isDeliveryCityUnavailable(deliveryCheckResult.status)
 
   useEffect(() => {
     const today = getAmsterdamTodayKey()
@@ -773,7 +797,9 @@ export default function CartView({
         return
       }
       if (deliveryOutsideArea) {
-        toast.error(cs.toastDeliveryOutsideArea)
+        toast.error(
+          deliveryCityUnavailable ? d.deliveryUnavailableTitle : cs.toastDeliveryOutsideArea,
+        )
         return
       }
       if (!deliveryFeeReady) {
@@ -810,8 +836,19 @@ export default function CartView({
         mapZoneSelection.zoneName.trim()
           ? `[${cs.deliveryFromMap.replace('{{zone}}', mapZoneSelection.zoneName)}]`
           : ''
+      const sticksPart = cs.orderCommentSticks
+        .replace('{{sticks}}', String(formData.sticks))
+        .replace('{{persons}}', String(formData.persons))
+      const paidCondimentSets = extraCondimentSetsCount(formData.condimentSets)
+      const freeCondimentSets = Math.min(formData.condimentSets, FREE_CONDIMENT_SETS)
+      const condimentPart = cs.orderCommentCondimentSets
+        .replace('{{total}}', String(formData.condimentSets))
+        .replace('{{free}}', String(freeCondimentSets))
+        .replace('{{paid}}', String(paidCondimentSets))
       const fullComment = [
         zoneNote,
+        sticksPart,
+        condimentPart,
         changePart,
         cbPart,
         dbPart,
@@ -1424,7 +1461,11 @@ export default function CartView({
                            deliveryCheckResult?.status === 'geocode_failed' ||
                            deliveryCheckResult?.status === 'postcode_format_invalid' ? (
                            <span className="watta-cart-fee-pill watta-cart-fee-pill--error">
-                             {deliveryOutsideArea ? cs.toastDeliveryOutsideArea : d.postalGeocodeFail}
+                             {deliveryCityUnavailable
+                               ? d.deliveryUnavailableTitle
+                               : deliveryOutsideArea
+                                 ? cs.toastDeliveryOutsideArea
+                                 : d.postalGeocodeFail}
                            </span>
                          ) : (
                            <span className="watta-cart-fee-pill watta-cart-fee-pill--muted">
@@ -1437,6 +1478,15 @@ export default function CartView({
                            </span>
                          ) : null}
                        </div>
+
+                       {deliveryCityUnavailable ? (
+                         <div className="mb-3">
+                           <DeliveryUnavailableCityNotice
+                             title={d.deliveryUnavailableTitle}
+                             compact
+                           />
+                         </div>
+                       ) : null}
 
                        <div className="mb-2 grid grid-cols-4 gap-1.5">
                         <input
@@ -1535,7 +1585,14 @@ export default function CartView({
                            <MapPin className="h-5 w-5" />
                          </div>
                          <div>
-                           <p className="font-semibold leading-snug text-neutral-900">{pickupAddressDisplay}</p>
+                           <a
+                             href={pickupMapsHref}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="font-semibold leading-snug text-neutral-900 underline decoration-[#145142]/25 underline-offset-2 transition hover:text-[#145142] hover:decoration-[#145142]/50"
+                           >
+                             {pickupAddressDisplay}
+                           </a>
                            <p className="mt-1 text-sm text-neutral-600">{cs.pickupSubtitle}</p>
                          </div>
                        </div>
@@ -1629,7 +1686,11 @@ export default function CartView({
                            onChange={(e) => {
                              const raw = parseInt(e.target.value, 10)
                              const v = Number.isFinite(raw) ? Math.min(99, Math.max(1, raw)) : 1
-                             setFormData({ ...formData, persons: v })
+                             setFormData({
+                               ...formData,
+                               persons: v,
+                               condimentSets: defaultCondimentSetsForParty(v),
+                             })
                            }}
                          />
                       </div>
@@ -1647,6 +1708,39 @@ export default function CartView({
                             ))}
                          </select>
                       </div>
+                   </div>
+                   <div className="mb-2">
+                      <label className={CHECKOUT_FIELD_LABEL_CLASS}>{cs.condimentSetsLabel}</label>
+                      <select
+                        className={`${CHECKOUT_INPUT_CLASS} cursor-pointer font-semibold`}
+                        value={formData.condimentSets}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            condimentSets: Number(e.target.value),
+                          })
+                        }
+                      >
+                        {Array.from({ length: 21 }, (_, i) => (
+                          <option key={i} value={i}>
+                            {i}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-[10px] leading-snug text-neutral-500 md:text-[11px]">
+                        {cs.condimentSetsHint
+                          .replace('{{free}}', String(FREE_CONDIMENT_SETS))
+                          .replace('{{price}}', EXTRA_CONDIMENT_SET_PRICE_EUR.toFixed(2))}
+                        {extraCondimentCount > 0 ? (
+                          <span className="mt-0.5 block font-medium text-[#145142]">
+                            {cs.condimentSetsExtraLine
+                              .replace('{{count}}', String(extraCondimentCount))
+                              .replace('{{price}}', EXTRA_CONDIMENT_SET_PRICE_EUR.toFixed(2))}
+                            {' '}
+                            — +{condimentExtraFee.toFixed(2)} €
+                          </span>
+                        ) : null}
+                      </p>
                    </div>
                    <textarea
                       placeholder={cs.commentPlaceholder}
@@ -1753,6 +1847,16 @@ export default function CartView({
                           {fulfillment === 'pickup' ? '—' : deliveryPrice === 0 ? cs.deliveryFree : `${deliveryPrice} €`}
                         </span>
                       </div>
+                      {condimentExtraFee > 0 ? (
+                        <div className="watta-cart-checkout-total__row">
+                          <span>
+                            {cs.condimentSetsExtraLine
+                              .replace('{{count}}', String(extraCondimentCount))
+                              .replace('{{price}}', EXTRA_CONDIMENT_SET_PRICE_EUR.toFixed(2))}
+                          </span>
+                          <span className="tabular-nums font-medium">+{condimentExtraFee.toFixed(2)} €</span>
+                        </div>
+                      ) : null}
                       {bonusBalance > 0 ? (
                         <label className="mt-2 flex cursor-pointer items-center justify-between gap-2 text-[11px] font-medium text-[#145142]">
                           <span>{cs.bonusAvailableLabel.replace('{{amount}}', bonusBalance.toFixed(2))}</span>

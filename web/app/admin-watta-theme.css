@@ -1,0 +1,369 @@
+/**
+ * Адмін-панель — типографіка, кольори й компоненти як на /contacts та в бічному меню (watta-nav-compact).
+ */
+.admin-shell-watta-web {
+  --admin-ink: #0f241e;
+  --admin-muted: #2d4a42;
+  --admin-muted-soft: rgba(20, 81, 66, 0.55);
+  --admin-brand: #145142;
+  --admin-accent: #ff5c00;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f8fbf9;
+  --admin-border: rgba(20, 81, 66, 0.1);
+  --admin-shadow: 0 6px 24px rgba(20, 81, 66, 0.06);
+  --admin-shadow-hover: 0 10px 32px rgba(20, 81, 66, 0.1);
+
+  font-family:
+    var(--font-inter, 'Inter'),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--admin-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-shell-watta-web .admin-watta-page-title,
+.admin-shell-watta-web .admin-watta-header-title,
+.admin-shell-watta-web .admin-watta-section-title {
+  font-size: clamp(1.25rem, 2.8vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.admin-shell-watta-web .admin-watta-section-title,
+.admin-shell-watta-web .admin-watta-news-toolbar h2,
+.admin-shell-watta-web .admin-watta-dashboard h2,
+.admin-shell-watta-web .admin-watta-dashboard h3 {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-feature-settings: 'liga' 1, 'kern' 1;
+  color: var(--admin-ink);
+  letter-spacing: -0.02em;
+}
+
+.admin-shell-watta-web .admin-watta-header-subtitle,
+.admin-shell-watta-web .admin-watta-section-lead,
+.admin-shell-watta-web .admin-watta-dashboard p,
+.admin-shell-watta-web .admin-watta-drawer-item-desc {
+  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+  color: var(--admin-muted);
+}
+
+/* ——— Шапка (як watta-nav-compact__head) ——— */
+.admin-watta-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  flex-shrink: 0;
+}
+
+.admin-watta-header-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+  min-height: 3.5rem;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.06);
+  background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  box-shadow: 0 1px 0 rgba(20, 81, 66, 0.04);
+}
+
+@media (min-width: 640px) {
+  .admin-watta-header-bar {
+    min-height: 3.75rem;
+    padding: 12px 20px;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-watta-header-bar {
+    min-height: 4rem;
+    padding: 12px 24px;
+  }
+}
+
+.admin-watta-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-watta-header-logo {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-header-logo {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+}
+
+.admin-watta-header-text {
+  min-width: 0;
+}
+
+.admin-watta-header-title {
+  margin: 0;
+  font-size: clamp(1rem, 2.8vw, 1.35rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-watta-header-subtitle {
+  margin: 2px 0 0;
+  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+  line-height: 1.35;
+  color: var(--admin-muted-soft) !important;
+  display: block !important;
+  padding-left: 0 !important;
+}
+
+.admin-watta-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.admin-watta-icon-btn {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  border-radius: 12px;
+  background: rgba(20, 81, 66, 0.05);
+  color: var(--admin-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.admin-watta-icon-btn:hover {
+  background: rgba(20, 81, 66, 0.1);
+  border-color: rgba(20, 81, 66, 0.18);
+  color: #0f3d32;
+}
+
+.admin-watta-icon-btn:active {
+  transform: scale(0.97);
+}
+
+.admin-watta-icon-btn--primary {
+  background: linear-gradient(145deg, #0f3d32 0%, #145142 55%, #155044 100%);
+  border-color: rgba(20, 81, 66, 0.2);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(20, 81, 66, 0.22);
+}
+
+.admin-watta-icon-btn--primary:hover {
+  background: linear-gradient(145deg, #0d3530 0%, #103d34 55%, #145142 100%);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(20, 81, 66, 0.28);
+}
+
+.admin-watta-lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: #fff;
+}
+
+.admin-watta-lang-switch button {
+  padding: 6px 10px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(20, 81, 66, 0.72);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.admin-watta-lang-switch button.is-active {
+  background: var(--admin-brand);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(20, 81, 66, 0.2);
+}
+
+.admin-watta-lang-switch button:not(.is-active):hover {
+  background: rgba(20, 81, 66, 0.08);
+  color: var(--admin-brand);
+}
+
+/* ——— Активний пункт меню адмінки (як contact-watta-topic-chip--active) ——— */
+.admin-watta-nav-tile.watta-nav-compact__nav-tile--active {
+  border-color: rgba(255, 92, 0, 0.35);
+  background: linear-gradient(135deg, #fff7f2 0%, #fff 55%, #fffaf6 100%);
+  color: var(--admin-ink);
+  box-shadow: 0 10px 32px rgba(255, 92, 0, 0.12);
+}
+
+.admin-watta-nav-tile.watta-nav-compact__nav-tile--active .watta-nav-compact__nav-label {
+  font-weight: 700;
+  color: var(--admin-ink);
+}
+
+.admin-watta-nav-tile.watta-nav-compact__nav-tile--active .watta-nav-compact__nav-ico-wrap {
+  background: rgba(255, 92, 0, 0.14) !important;
+  color: var(--admin-accent) !important;
+}
+
+.admin-watta-nav-grid {
+  max-height: none;
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__inner {
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+}
+
+/* ——— Картки, панелі, таблиці ——— */
+.admin-shell-watta-web .admin-watta-hover-lift,
+.admin-shell-watta-web .admin-watta-news-card,
+.admin-shell-watta-web .admin-watta-product-card,
+.admin-shell-watta-web section[class*='rounded-'],
+.admin-shell-watta-web .admin-watta-scroll-hint {
+  border-color: var(--admin-border) !important;
+  box-shadow: var(--admin-shadow) !important;
+}
+
+.admin-shell-watta-web .admin-watta-hover-lift:hover {
+  border-color: rgba(20, 81, 66, 0.18) !important;
+  box-shadow: var(--admin-shadow-hover) !important;
+}
+
+.admin-shell-watta-web .admin-watta-tab-toolbar {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  border: 1px solid rgba(20, 81, 66, 0.08);
+  box-shadow: 0 1px 3px rgba(20, 81, 66, 0.04);
+}
+
+.admin-shell-watta-web .admin-watta-tab-toolbar-menu,
+.admin-shell-watta-web .admin-watta-products-add-btn {
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.admin-shell-watta-web .admin-watta-products-add-btn,
+.admin-shell-watta-web .admin-watta-add-btn,
+.admin-shell-watta-web button[class*='bg-[#145142]'],
+.admin-shell-watta-web button[class*='bg-[#155044]'] {
+  font-family: inherit;
+}
+
+.admin-shell-watta-web .admin-watta-news-toolbar {
+  background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  border: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+.admin-shell-watta-web .admin-watta-news-toolbar .admin-watta-add-btn {
+  background: linear-gradient(145deg, #0f3d32 0%, #145142 48%, #155044 100%);
+}
+
+.admin-shell-watta-web .admin-watta-crm-table th {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--admin-muted-soft);
+}
+
+.admin-shell-watta-web .admin-watta-crm-table td {
+  color: var(--admin-ink);
+}
+
+.admin-shell-watta-web .admin-watta-crm-table tbody tr:hover {
+  background: rgba(20, 81, 66, 0.04);
+}
+
+.admin-shell-watta-web .admin-watta-dashboard .admin-watta-page-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.12;
+}
+
+.admin-shell-watta-web .admin-watta-dashboard .admin-watta-section-lead {
+  font-size: clamp(1rem, 2.2vw, 1.1rem);
+  line-height: 1.55;
+  color: var(--admin-muted);
+}
+
+.admin-shell-watta-web .admin-watta-kicker {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--admin-muted-soft);
+}
+
+.admin-shell-watta-web .admin-watta-modal-panel {
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  box-shadow:
+    0 24px 64px -12px rgba(20, 81, 66, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.admin-shell-watta-web .admin-watta-modal-panel h2,
+.admin-shell-watta-web .admin-watta-modal-panel h3 {
+  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  color: var(--admin-ink);
+}
+
+.admin-shell-watta-web input,
+.admin-shell-watta-web select,
+.admin-shell-watta-web textarea {
+  font-family: inherit;
+  color: var(--admin-ink);
+}
+
+.admin-shell-watta-web input::placeholder,
+.admin-shell-watta-web textarea::placeholder {
+  color: rgba(20, 81, 66, 0.4);
+}
+
+.admin-shell-watta-web label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--admin-muted-soft);
+}
+
+@media (max-width: 639px) {
+  .admin-watta-header-subtitle {
+    display: none !important;
+  }
+
+  .admin-watta-header-title {
+    max-width: min(46vw, 12rem);
+  }
+}

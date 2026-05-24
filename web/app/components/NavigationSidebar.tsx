@@ -4,7 +4,8 @@ import { useEffect } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useNavDrawerCloseSwipeHandlers } from '@/components/NavDrawerSwipeGestures'
 import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
-import WattaNavDrawerPanel, { type NavDrawerCategory } from './WattaNavDrawerPanel'
+import WattaNavDrawerPanel from './WattaNavDrawerPanel'
+import type { NavDrawerCategory } from '@/lib/navDrawerCategories'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
 
 export interface NavigationSidebarProps {
@@ -63,6 +64,7 @@ export default function NavigationSidebar({
         mode="embedded"
         onClose={onClose}
         staggerKey={staggerKey}
+        drawerActive={isOpen}
         categories={categories}
         onCategorySelect={onCategorySelect}
         onCityChange={onCityChange}

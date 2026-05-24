@@ -51,11 +51,15 @@ function writeProductsCache(cityId: number | null, list: unknown[]): void {
   sessionStorage.setItem(`${key}_time`, String(Date.now()))
 }
 
-function writeCategoriesCache(list: Record<string, unknown>[]): void {
+export function persistMenuCategoriesCache(list: Record<string, unknown>[]): void {
   if (typeof sessionStorage === 'undefined' || list.length === 0) return
   const key = menuCategoriesSessionKey()
   sessionStorage.setItem(key, JSON.stringify(list))
   sessionStorage.setItem(`${key}_time`, String(Date.now()))
+}
+
+function writeCategoriesCache(list: Record<string, unknown>[]): void {
+  persistMenuCategoriesCache(list)
 }
 
 const MENU_WARM_TTL_MS = 5 * 60 * 1000
