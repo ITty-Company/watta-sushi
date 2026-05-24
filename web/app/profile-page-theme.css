@@ -6,6 +6,60 @@
   overflow-x: clip;
 }
 
+/* /profile — невеликий зазор під панеллю категорій (не впритул і не велике «повітря») */
+.watta-profile-page.menu-page-web {
+  padding-top: 0 !important;
+}
+
+.watta-profile-page .delivery-page-intro-web {
+  margin-top: 0 !important;
+}
+
+.watta-profile-page > .relative.z-10 {
+  padding-top: clamp(0.45rem, 1.1vh, 0.75rem);
+}
+
+.watta-profile-page .watta-profile-lead__inner {
+  padding-top: clamp(0.65rem, 1.45vh, 1rem);
+  padding-bottom: clamp(0.45rem, 1.2vw, 0.7rem);
+}
+
+.watta-profile-page .watta-profile-quick-nav {
+  margin-top: 0.35rem;
+}
+
+/* Планшет+ — ім’я зверху не показуємо (на lg воно в боковій колонці) */
+@media (min-width: 768px) {
+  .watta-profile-inapp .watta-profile-lead__name,
+  #profile-page-root .watta-profile-lead__name {
+    display: none;
+  }
+
+  .watta-profile-inapp .watta-profile-lead__meta,
+  #profile-page-root .watta-profile-lead__meta {
+    margin-top: 0;
+  }
+
+  .watta-profile-page > .relative.z-10 {
+    padding-top: clamp(0.55rem, 1.25vh, 0.85rem);
+  }
+
+  .watta-profile-page .watta-profile-lead__inner {
+    padding-top: clamp(0.55rem, 1.2vh, 0.85rem);
+  }
+}
+
+/* Ноутбук / десктоп — верхній hero прибираємо (контакти й бонуси вже в sidebar) */
+@media (min-width: 1024px) {
+  .watta-profile-inapp .delivery-page-intro-web:has(.watta-profile-lead) {
+    display: none;
+  }
+
+  .watta-profile-page > .relative.z-10 {
+    padding-top: clamp(0.7rem, 1.5vh, 1rem);
+  }
+}
+
 #profile-page-root.profile-page-web .delivery-page-intro-web--video,
 #profile-page-root.profile-page-web .delivery-page-hero-stack,
 #profile-page-root.profile-page-web .home-after-hero-intro-web {
@@ -13,17 +67,93 @@
   border-top: none;
 }
 
-/* Hero: «Профиль» + ім’я — один рядок */
-#profile-page-root.profile-page-web #profile-page-lead-intro .home-after-hero-intro-title-web {
-  white-space: nowrap;
+/* Профіль — ім’я + чіпи на білому фоні */
+.watta-profile-lead {
+  position: relative;
+  width: 100%;
+  background: #fff;
 }
 
-#profile-page-root.profile-page-web #profile-page-lead-intro .home-after-hero-intro-title-web > span {
-  display: inline !important;
+.watta-profile-lead--headroom {
+  padding-top: clamp(0.35rem, 1.2vh, 0.65rem);
 }
 
-#profile-page-root.profile-page-web #profile-page-lead-intro .home-after-hero-intro-title-web > span + span::before {
-  content: ' ';
+.watta-profile-lead__inner {
+  margin: 0 auto;
+  max-width: 42rem;
+  padding: clamp(0.65rem, 2.5vw, 1rem) clamp(1rem, 4vw, 1.5rem) clamp(0.75rem, 2vw, 1rem);
+  background: #fff;
+}
+
+.watta-profile-lead__card {
+  text-align: center;
+}
+
+.watta-profile-lead__name {
+  margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.28rem, 4.5vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #0f241e;
+}
+
+.watta-profile-lead__name-line {
+  display: block;
+}
+
+.watta-profile-lead__name-line + .watta-profile-lead__name-line {
+  margin-top: 0.06em;
+  color: #145142;
+}
+
+.watta-profile-lead__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  padding-top: 0;
+  border-top: none;
+}
+
+.watta-profile-lead__chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.45rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #145142;
+  box-shadow: 0 2px 10px rgba(20, 81, 66, 0.05);
+}
+
+@media (min-width: 640px) {
+  .watta-profile-lead__chip {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.95rem;
+  }
+}
+
+.watta-profile-lead__chip--bonus {
+  border-color: rgba(255, 92, 0, 0.28);
+  background: linear-gradient(165deg, #fff9f5 0%, #fff 100%);
+  font-weight: 700;
+  color: #c2410c;
+}
+
+.watta-profile-lead__chip--bonus strong {
+  font-weight: 800;
+  color: #145142;
 }
 
 .watta-profile-page__flow {
@@ -542,4 +672,323 @@
 .watta-profile-address-form__save:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* In-app / embedded profile — green hero + quick nav (як у вкладці «Профіль») */
+.watta-profile-inapp {
+  --profile-inapp-accent: #145142;
+  --profile-inapp-orange: #ff5c00;
+}
+
+.watta-profile-inapp-hero {
+  position: relative;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  color: #fff;
+  background: linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%);
+  box-shadow: 0 20px 60px rgba(20, 81, 66, 0.22);
+}
+
+@media (min-width: 640px) {
+  .watta-profile-inapp-hero {
+    border-radius: 1.75rem;
+  }
+}
+
+.watta-profile-inapp-hero__stripe {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background: repeating-linear-gradient(
+    -32deg,
+    transparent,
+    transparent 14px,
+    rgba(255, 255, 255, 0.04) 14px,
+    rgba(255, 255, 255, 0.04) 15px
+  );
+}
+
+.watta-profile-inapp-hero__glow {
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  right: -12%;
+  height: min(72vw, 320px);
+  width: min(72vw, 320px);
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 92, 0, 0.14) 0%, transparent 68%);
+}
+
+.watta-profile-inapp-hero__inner {
+  position: relative;
+  z-index: 1;
+  padding: clamp(1.35rem, 4.5vw, 2.35rem) clamp(1rem, 4vw, 2.5rem);
+}
+
+.watta-profile-inapp-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 640px) {
+  .watta-profile-inapp-hero__badge {
+    font-size: 0.68rem;
+  }
+}
+
+.watta-profile-inapp-hero__title {
+  font-family: var(--font-inter, ui-sans-serif), system-ui, sans-serif;
+  font-size: clamp(2rem, 8.5vw, 3.25rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.watta-profile-inapp-hero__lead {
+  margin-top: 0.75rem;
+  max-width: 36rem;
+  font-size: clamp(0.82rem, 2.6vw, 1rem);
+  font-weight: 500;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.watta-profile-inapp-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+}
+
+.watta-profile-inapp-hero__chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.45rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 640px) {
+  .watta-profile-inapp-hero__chip {
+    font-size: 0.8rem;
+    padding: 0.55rem 0.85rem;
+  }
+}
+
+.watta-profile-inapp-hero__chip-label {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.watta-profile-inapp-hero__chip--bonus {
+  border-color: rgba(110, 231, 183, 0.35);
+  background: rgba(6, 78, 59, 0.28);
+  font-weight: 700;
+  color: #ecfdf5;
+}
+
+.watta-profile-quick-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0.65rem 0 0.85rem;
+  padding: 0 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .watta-profile-quick-nav {
+    display: none;
+  }
+}
+
+.watta-profile-quick-nav__btn {
+  display: flex;
+  min-height: 2.65rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: linear-gradient(165deg, #f0f7f4 0%, #ffffff 100%);
+  padding: 0.45rem 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--profile-inapp-accent);
+  text-align: center;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
+}
+
+.watta-profile-quick-nav__btn:hover,
+.watta-profile-quick-nav__btn:focus-visible {
+  border-color: rgba(20, 81, 66, 0.22);
+  background: #fff;
+  outline: none;
+  box-shadow: 0 6px 18px rgba(20, 81, 66, 0.1);
+}
+
+.watta-profile-quick-nav__btn--on {
+  border-color: rgba(20, 81, 66, 0.28);
+  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(20, 81, 66, 0.22);
+}
+
+.watta-profile-quick-nav__btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watta-profile-inapp-orders {
+  margin-top: 0.15rem;
+  padding: 0 0.75rem 1rem;
+}
+
+@media (min-width: 1024px) {
+  .watta-profile-inapp-orders {
+    padding: 0;
+    margin-top: 0;
+  }
+}
+
+.watta-profile-inapp-orders__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .watta-profile-inapp-orders__head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.watta-profile-inapp-orders__title {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.35rem, 4.5vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #0f241e;
+}
+
+.watta-profile-inapp-reviews-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.watta-profile-inapp-reviews-btn:hover {
+  border-color: rgba(20, 81, 66, 0.28);
+  color: var(--profile-inapp-accent);
+}
+
+.watta-profile-inapp-panel-title {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.2rem, 4vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #0f241e;
+}
+
+.watta-profile-inapp-back-history {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--profile-inapp-accent);
+  cursor: pointer;
+}
+
+.watta-profile-inapp-back-history:hover {
+  text-decoration: underline;
+}
+
+.watta-profile-standalone-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--profile-inapp-accent);
+  text-decoration: none;
+}
+
+.watta-profile-standalone-back:hover {
+  text-decoration: underline;
+}
+
+.watta-profile-inapp-content-card {
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #fff;
+  padding: 1.1rem;
+  box-shadow: 0 12px 40px rgba(20, 81, 66, 0.06);
+}
+
+@media (min-width: 640px) {
+  .watta-profile-inapp-content-card {
+    min-height: 520px;
+    padding: 1.75rem;
+  }
+}
+
+.watta-profile-inapp-content-card--favorites {
+  overflow: visible;
 }

@@ -174,7 +174,7 @@ export default function AdminCartUpsellPanel({ products }: Props) {
       <div className="rounded-2xl border border-[#145142]/15 bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-[#145142] sm:text-xl">
+            <h2 className="admin-watta-section-title flex items-center gap-2 text-lg sm:text-xl">
               <Sparkles className="h-5 w-5 text-[#ff6b35]" />
               Спецпропозиції в кошику
             </h2>

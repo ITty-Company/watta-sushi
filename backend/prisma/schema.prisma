@@ -12,7 +12,7 @@ model User {
   id       Int     @id @default(autoincrement())
   email    String  @unique // Логин
   password String // Пароль
-  phone    String  @unique // Уникальный телефон (защита от абуза)
+  phone    String // До 10 підтверджених акаунтів на один номер (див. auth.routes)
   name     String?
   /// Адреса доставки за замовчуванням (профіль)
   address  String  @default("")
@@ -39,6 +39,8 @@ model User {
   favorites       Favorite[]
   reviews         OrderReview[]
   notifications   UserNotification[]
+
+  @@index([phone])
 }
 
 // --- ТОВАРЫ ---
@@ -488,6 +490,20 @@ enum PaymentStatus {
 }
 
 
+/// Обращения с формы «Контакты» на сайте
+model ContactInquiry {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  name      String
+  email     String
+  phone     String   @default("")
+  message   String
+  isRead    Boolean  @default(false)
+
+  @@index([createdAt])
+  @@index([isRead])
+}
+
 model Ingredient {
   id        Int     @id @default(autoincrement())
   name_ru   String
@@ -495,6 +511,6 @@ model Ingredient {
   name_en   String?
   name_nl   String?
   imageUrl  String  // Ссылка на фото ингредиента (лосось, рис и т.д.)
-  
+
   products  Product[]
 }

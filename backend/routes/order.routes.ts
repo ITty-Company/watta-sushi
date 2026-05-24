@@ -16,6 +16,11 @@ import {
 } from '../lib/paymentProviders.js';
 import { awardOrderCashbackIfEligible } from '../lib/bonusCashback.js';
 import { linkGuestOrdersToUser } from '../lib/linkGuestOrders.js';
+import {
+  buildByStatus,
+  buildDailySeries14,
+  buildTodayMetrics,
+} from '../lib/orderAdminStats.js';
 
 function getStripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY?.trim()
@@ -219,40 +224,55 @@ router.get('/bonus', async (req: Request, res: Response) => {
 // ==========================================
 router.get('/stats', checkAdmin, async (_req: Request, res: Response) => {
   try {
-    const [totalOrders, statusGroups, revenueAgg, paymentPaidCount] = await Promise.all([
-      prisma.order.count(),
-      prisma.order.groupBy({
-        by: ['status'],
-        _count: { _all: true },
-      }),
-      prisma.order.aggregate({
-        where: {
-          status: { in: ['COMPLETED', 'DELIVERED'] },
-        },
-        _sum: { totalPrice: true },
-      }),
-      prisma.order.count({ where: { paymentStatus: 'PAID' } }),
-    ]);
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setUTCDate(fourteenDaysAgo.getUTCDate() - 13);
+    fourteenDaysAgo.setUTCHours(0, 0, 0, 0);
+
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setUTCDate(twoDaysAgo.getUTCDate() - 2);
+    twoDaysAgo.setUTCHours(0, 0, 0, 0);
+
+    const [totalOrders, statusGroups, revenueAgg, paymentPaidCount, recentOrders, todayWindowOrders] =
+      await Promise.all([
+        prisma.order.count(),
+        prisma.order.groupBy({
+          by: ['status'],
+          _count: { _all: true },
+        }),
+        prisma.order.aggregate({
+          where: {
+            status: { in: ['COMPLETED', 'DELIVERED'] },
+          },
+          _sum: { totalPrice: true },
+        }),
+        prisma.order.count({ where: { paymentStatus: 'PAID' } }),
+        prisma.order.findMany({
+          where: { createdAt: { gte: fourteenDaysAgo } },
+          select: { createdAt: true, totalPrice: true, status: true },
+          orderBy: { createdAt: 'asc' },
+        }),
+        prisma.order.findMany({
+          where: { createdAt: { gte: twoDaysAgo } },
+          select: { createdAt: true, totalPrice: true, status: true },
+        }),
+      ]);
 
     const raw: Record<string, number> = {};
     for (const g of statusGroups) {
       raw[g.status] = g._count._all;
     }
-    const n = (s: string) => raw[s] ?? 0;
+
+    const { todayOrders, todayRevenue } = buildTodayMetrics(todayWindowOrders);
 
     res.json({
       totalOrders,
       revenueCompleted: Number(revenueAgg._sum.totalPrice ?? 0),
       paymentPaidCount,
-      byStatus: {
-        PENDING: n('PENDING'),
-        COOKING: n('COOKING'),
-        DELIVERING: n('DELIVERING'),
-        /** COMPLETED + DELIVERED (legacy) — одна колонка «виконані» */
-        COMPLETED: n('COMPLETED') + n('DELIVERED'),
-        CANCELLED: n('CANCELLED'),
-      },
+      todayOrders,
+      todayRevenue,
+      byStatus: buildByStatus(raw),
       rawStatusCounts: raw,
+      dailySeries14: buildDailySeries14(recentOrders),
     });
   } catch (error) {
     console.error('Order stats error:', error);

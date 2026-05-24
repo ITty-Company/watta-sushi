@@ -28,6 +28,18 @@ import { useAuthHeroVideos } from '@/hooks/useAuthHeroVideos'
 import { useLanguage } from '../../context/LanguageContext'
 import toast from 'react-hot-toast'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
+import {
+  CHECKOUT_PHONE_INPUT_MAX_LEN,
+  isValidCheckoutPhone,
+  sanitizeCheckoutPhoneInput,
+} from '@/lib/checkoutPhone'
+import {
+  getLastUsedAuthCredentials,
+  loadSavedAuthAccounts,
+  removeSavedAuthAccount,
+  saveAuthCredentials,
+  type SavedAuthAccount,
+} from '@/lib/authCredentialsStorage'
 
 export type AuthScreenVariant = 'page' | 'modal'
 
@@ -57,6 +69,12 @@ export default function AuthScreen(props: AuthScreenProps) {
       <AuthScreenPageSuspended {...props} />
     </Suspense>
   )
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function isValidAuthEmail(email: string): boolean {
+  return EMAIL_RE.test(email.trim().toLowerCase())
 }
 
 /** Усі запити через /api/* — Next проксує на бекенд (той самий домен, без CORS на проді). */
@@ -92,15 +110,42 @@ function AuthScreenBody({
     phone: '',
   })
 
-  const [isVerifying, setIsVerifying] = useState(false)
-  const [verificationCode, setVerificationCode] = useState('')
+  const [savedAccounts, setSavedAccounts] = useState<SavedAuthAccount[]>([])
 
-  /** 0 — звичайний вхід; 1 — телефон; 2 — код SMS; 3 — новий пароль */
+  /** 0 — звичайний вхід; 1 — email; 2 — код з листа; 3 — новий пароль */
   const [forgotStep, setForgotStep] = useState(0)
-  const [forgotPhone, setForgotPhone] = useState('')
+  const [forgotEmail, setForgotEmail] = useState('')
   const [forgotCode, setForgotCode] = useState('')
   const [forgotNewPassword, setForgotNewPassword] = useState('')
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('')
+
+  const refreshSavedAccounts = useCallback(() => {
+    setSavedAccounts(loadSavedAuthAccounts())
+  }, [])
+
+  const applySavedCredentials = useCallback((email: string, password: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      email,
+      password,
+    }))
+  }, [])
+
+  const rememberAuthCredentials = useCallback(
+    (email: string, password: string) => {
+      saveAuthCredentials(email, password)
+      refreshSavedAccounts()
+    },
+    [refreshSavedAccounts],
+  )
+
+  useEffect(() => {
+    refreshSavedAccounts()
+    const last = getLastUsedAuthCredentials()
+    if (last) {
+      applySavedCredentials(last.email, last.password)
+    }
+  }, [refreshSavedAccounts, applySavedCredentials])
 
   const {
     phone1Urls: authHeroPhone1Urls,
@@ -160,39 +205,17 @@ function AuthScreenBody({
       toast.error(t.auth.passwordMismatch)
       return
     }
+    if (!isValidCheckoutPhone(phone)) {
+      toast.error(t.auth.errors.phoneInvalid)
+      return
+    }
     setIsLoading(true)
     setError(null)
     try {
       const res = await authFetch('/api/auth/register', { email, password, name, phone })
       const data = await res.json()
       if (res.ok) {
-        setIsVerifying(true)
-      } else {
-        toast.error((data.message as string) || t.auth.errors.generic)
-      }
-    } catch {
-      toast.error(t.auth.errors.timeout)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.phone) {
-      toast.error(t.auth.phoneLost)
-      setIsVerifying(false)
-      return
-    }
-    setIsLoading(true)
-    setError(null)
-    try {
-      const res = await authFetch('/api/auth/verify', {
-        phone: formData.phone,
-        code: verificationCode,
-      })
-      const data = await res.json()
-      if (res.ok) {
+        rememberAuthCredentials(email, password)
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', data.token as string)
           localStorage.setItem('currentUser', JSON.stringify(data.user))
@@ -205,12 +228,15 @@ function AuthScreenBody({
         toast.success(t.auth.welcomeAfterVerify)
         goAfterAuth()
       } else {
-        toast.error((data.message as string) || t.auth.wrongVerificationCode)
-        setVerificationCode('')
+        const msg = (data.message as string) || t.auth.errors.generic
+        toast.error(
+          msg.includes('10') && msg.toLowerCase().includes('аккаунт')
+            ? t.auth.phoneAccountsLimit
+            : msg,
+        )
       }
     } catch {
-      toast.error(t.auth.errors.generic)
-      setVerificationCode('')
+      toast.error(t.auth.errors.timeout)
     } finally {
       setIsLoading(false)
     }
@@ -227,6 +253,7 @@ function AuthScreenBody({
       })
       const data = await res.json()
       if (!res.ok) throw new Error((data.message as string) || t.auth.errors.invalidCredentials)
+      rememberAuthCredentials(formData.email, formData.password)
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', data.token as string)
         localStorage.setItem('currentUser', JSON.stringify(data.user))
@@ -251,22 +278,12 @@ function AuthScreenBody({
   }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/\D/g, '')
-    if (val.length > 0 && !val.startsWith('380')) val = '380' + val
-    if (val.length > 12) val = val.slice(0, 12)
-    setFormData({ ...formData, phone: val ? `+${val}` : '' })
-  }
-
-  const handleForgotPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/\D/g, '')
-    if (val.length > 0 && !val.startsWith('380')) val = '380' + val
-    if (val.length > 12) val = val.slice(0, 12)
-    setForgotPhone(val ? `+${val}` : '')
+    setFormData({ ...formData, phone: sanitizeCheckoutPhoneInput(e.target.value) })
   }
 
   const exitForgotFlow = () => {
     setForgotStep(0)
-    setForgotPhone('')
+    setForgotEmail('')
     setForgotCode('')
     setForgotNewPassword('')
     setForgotConfirmPassword('')
@@ -287,14 +304,16 @@ function AuthScreenBody({
 
   const handleForgotSendCode = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!forgotPhone || forgotPhone.replace(/\D/g, '').length < 12) {
-      toast.error(t.auth.errors.phoneInvalid)
+    if (!isValidAuthEmail(forgotEmail)) {
+      toast.error(t.auth.errors.emailInvalid)
       return
     }
     setIsLoading(true)
     setError(null)
     try {
-      const res = await authFetch('/api/auth/forgot-password', { phone: forgotPhone })
+      const res = await authFetch('/api/auth/forgot-password', {
+        email: forgotEmail.trim().toLowerCase(),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
       toast.success(t.auth.forgotCodeSent)
@@ -309,10 +328,12 @@ function AuthScreenBody({
   }
 
   const handleForgotResendCode = async () => {
-    if (!forgotPhone) return
+    if (!forgotEmail) return
     setIsLoading(true)
     try {
-      const res = await authFetch('/api/auth/forgot-password', { phone: forgotPhone })
+      const res = await authFetch('/api/auth/forgot-password', {
+        email: forgotEmail.trim().toLowerCase(),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
       toast.success(t.auth.forgotCodeResent)
@@ -347,13 +368,14 @@ function AuthScreenBody({
     setError(null)
     try {
       const res = await authFetch('/api/auth/reset-password', {
-        phone: forgotPhone,
+        email: forgotEmail.trim().toLowerCase(),
         code: forgotCode,
         password: forgotNewPassword,
       })
       const data = await res.json()
       if (!res.ok) throw new Error((data.message as string) || t.auth.errors.generic)
       await persistAuthSession(data)
+      rememberAuthCredentials(forgotEmail.trim().toLowerCase(), forgotNewPassword)
       toast.success(t.auth.forgotPasswordSuccess)
       exitForgotFlow()
       goAfterAuth()
@@ -368,12 +390,6 @@ function AuthScreenBody({
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const verifyCopy = {
-    title: t.auth.verifyTitle,
-    hint: t.auth.verifyHint,
-    back: t.auth.back,
   }
 
   const cinemaFallbackPrimary = useMemo(
@@ -463,13 +479,13 @@ function AuthScreenBody({
   if (forgotStep > 0) {
     const forgotHint =
       forgotStep === 1
-        ? t.auth.forgotPasswordPhoneHint
+        ? t.auth.forgotPasswordEmailHint
         : forgotStep === 2
           ? t.auth.forgotPasswordCodeHint
           : t.auth.forgotPasswordNewHint
 
     return (
-      <div className="auth-watta-root auth-watta-page-shell flex flex-col relative">
+      <div className="auth-watta-root auth-watta-page-shell flex h-full max-h-full min-h-0 flex-1 flex-col overflow-hidden relative">
         <LogoBackground variant="auth" />
         <div className="auth-watta-page-top auth-watta-page-top--centered relative z-10 shrink-0 px-3 pt-2 sm:px-4">
           {pageBackLink}
@@ -498,16 +514,15 @@ function AuthScreenBody({
             {forgotStep === 1 && (
               <form onSubmit={handleForgotSendCode} className="flex flex-col gap-2.5">
                 <span className="auth-watta-input-wrap">
-                  <Phone className="auth-watta-input-icon" />
+                  <Mail className="auth-watta-input-icon" />
                   <input
-                    type="tel"
+                    type="email"
                     required
-                    maxLength={13}
-                    autoComplete="tel"
-                    value={forgotPhone}
-                    onChange={handleForgotPhoneChange}
+                    autoComplete="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
                     className="auth-watta-input w-full"
-                    placeholder="+380…"
+                    placeholder="email@…"
                     autoFocus
                   />
                 </span>
@@ -600,61 +615,8 @@ function AuthScreenBody({
               onClick={exitForgotFlow}
               className="mt-3 w-full text-center text-xs text-gray-500 transition-colors hover:text-[#145142] sm:text-sm"
             >
-              {verifyCopy.back}
+              {t.auth.back}
             </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (isVerifying) {
-    return (
-      <div className="auth-watta-root auth-watta-page-shell flex flex-col relative">
-        <LogoBackground variant="auth" />
-        <div className="auth-watta-page-top auth-watta-page-top--centered relative z-10 shrink-0 px-3 pt-2 sm:px-4">
-          {pageBackLink}
-        </div>
-        <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-3 py-2 sm:px-4 sm:py-4">
-          <div className="auth-watta-verify-card w-full max-w-md shrink-0 p-4 sm:p-6">
-            <div className="mb-2 flex justify-center text-[#145142]">
-              <ShieldCheck className="h-11 w-11 sm:h-12 sm:w-12" strokeWidth={1.25} />
-            </div>
-            <h2 className="mb-1 text-center text-lg font-bold text-[#0f3d32] sm:text-xl">{verifyCopy.title}</h2>
-            <p className="auth-watta-form-desc mb-4 text-center text-xs leading-snug text-gray-600 sm:mb-5 sm:text-sm">
-              {verifyCopy.hint}
-            </p>
-            <form onSubmit={handleVerify} className="flex flex-col gap-2.5">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="0000"
-                value={verificationCode}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, '')
-                  if (v.length <= 4) setVerificationCode(v)
-                }}
-                className="rounded-xl border-2 border-gray-200 px-3 py-3 text-center text-2xl font-bold tracking-[0.35em] text-[#145142] outline-none transition-all focus:border-[#145142] focus:ring-2 focus:ring-[#145142]/15 sm:text-3xl sm:tracking-[0.4em]"
-                required
-                maxLength={4}
-                autoComplete="one-time-code"
-                autoFocus
-              />
-              <button
-                type="submit"
-                disabled={isLoading || verificationCode.length < 4}
-                className="auth-watta-btn-primary"
-              >
-                {isLoading ? '…' : t.auth.confirmPhone}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsVerifying(false)}
-                className="text-center text-xs text-gray-500 transition-colors hover:text-[#145142] sm:text-sm"
-              >
-                {verifyCopy.back}
-              </button>
-            </form>
           </div>
         </div>
       </div>
@@ -663,7 +625,7 @@ function AuthScreenBody({
 
   const shellClass =
     variant === 'page'
-      ? 'auth-watta-root auth-watta-page-shell flex w-full flex-1 flex-col relative min-h-0 max-md:min-h-[100dvh]'
+      ? 'auth-watta-root auth-watta-page-shell flex h-full max-h-full w-full flex-1 flex-col relative min-h-0 overflow-hidden'
       : 'auth-watta-root min-h-[100dvh] h-[100dvh] flex flex-col relative overflow-hidden'
 
   return (
@@ -676,7 +638,7 @@ function AuthScreenBody({
       <div
         className={
           variant === 'page'
-            ? `auth-watta-page-grid auth-watta-page-grid--phone relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-3 pb-3 max-md:min-h-0 max-md:flex-1 max-md:items-center max-md:gap-0.25 sm:px-4 sm:pb-6 md:h-full md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-start md:gap-4 md:px-5 md:pb-6 lg:max-w-6xl lg:gap-5 lg:px-6 lg:pb-8${isRegister ? ' auth-watta-page-grid--register' : ''}`
+            ? `auth-watta-page-grid auth-watta-page-grid--phone relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-3 pb-3 max-md:min-h-0 max-md:flex-1 max-md:items-center max-md:justify-center max-md:gap-0.35 sm:px-4 sm:pb-4 md:h-full md:max-h-full md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] md:items-stretch md:gap-5 md:overflow-hidden md:px-5 md:pb-6 lg:max-w-6xl lg:gap-5 lg:px-6 lg:pb-8${isRegister ? ' auth-watta-page-grid--register' : ''}`
             : 'relative z-10 mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col justify-center px-2.5 pt-12 sm:px-4 sm:pt-14'
         }
       >
@@ -702,11 +664,11 @@ function AuthScreenBody({
           <div
             className={
               variant === 'page'
-                ? `auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated auth-watta-form-card--mobile-fit auth-watta-form-card--premium-mobile mx-auto flex w-full max-w-[min(100%,20.25rem)] min-h-0 flex-col overflow-hidden max-md:h-auto max-md:flex-none max-md:shrink-0 md:max-w-[22.5rem] md:h-auto md:flex-none lg:max-w-[23.5rem]${isRegister ? ' auth-watta-form-card--register' : ' auth-watta-form-card--login'}`
+                ? `auth-watta-form-card auth-watta-form-card--page auth-watta-form-card--elevated auth-watta-form-card--mobile-fit auth-watta-form-card--premium-mobile mx-auto flex w-full max-w-[min(100%,20.25rem)] min-h-0 flex-col overflow-hidden max-md:h-auto max-md:flex-none max-md:shrink-0 md:h-auto md:max-w-none md:flex-none 2xl:max-w-[23.5rem]${isRegister ? ' auth-watta-form-card--register' : ' auth-watta-form-card--login'}`
                 : 'auth-watta-form-card auth-watta-form-card--elevated mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden sm:max-h-none sm:flex-none sm:p-5'
             }
           >
-            <div className="auth-watta-form-head shrink-0 p-3 pb-0 pt-2.5 max-md:px-3 max-md:pt-2 md:p-4 md:pb-0 md:pt-3.5">
+            <div className="auth-watta-form-head shrink-0 p-3 pb-0 pt-2.5 max-md:px-2.5 max-md:pt-1.5 md:p-4 md:pb-0 md:pt-3.5">
             <div className="auth-watta-tabs relative mb-2 flex rounded-[0.85rem] bg-[#e8f0ec]/95 p-0.5 max-md:mb-2 md:mb-2.5 md:rounded-[0.75rem] md:p-0.5">
               {variant === 'page' && (
                 <span
@@ -753,7 +715,50 @@ function AuthScreenBody({
                   {isRegister ? t.auth.registerTitle : t.auth.loginTitle}
                 </span>
               </h1>
-              <p className={`auth-watta-form-desc mt-1 text-[11px] leading-snug text-gray-600 max-md:line-clamp-1 md:mt-0.5 md:mb-2.5 md:text-xs md:leading-snug lg:mb-3${isRegister ? ' max-md:hidden md:line-clamp-1' : ' md:line-clamp-2'}`}>
+
+              {!isRegister && savedAccounts.length > 0 ? (
+                <div className="auth-watta-saved-accounts">
+                  <p className="auth-watta-saved-accounts__label">{t.auth.savedAccountsLabel}</p>
+                  <ul className="auth-watta-saved-accounts__list">
+                    {savedAccounts.map((account) => {
+                      const active = formData.email.trim().toLowerCase() === account.email
+                      return (
+                        <li key={account.email} className="auth-watta-saved-accounts__item">
+                          <button
+                            type="button"
+                            onClick={() => applySavedCredentials(account.email, account.password)}
+                            className={`auth-watta-saved-accounts__chip${active ? ' auth-watta-saved-accounts__chip--active' : ''}`}
+                            title={account.email}
+                          >
+                            {account.email}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`${t.auth.removeSavedAccount}: ${account.email}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeSavedAuthAccount(account.email)
+                              refreshSavedAccounts()
+                              if (active) {
+                                setFormData((prev) => ({ ...prev, email: '', password: '' }))
+                              }
+                            }}
+                            className="auth-watta-saved-accounts__remove"
+                          >
+                            <span aria-hidden>×</span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ) : null}
+
+              <p
+                className={`auth-watta-form-desc mt-1 text-[11px] leading-snug text-gray-600 max-md:line-clamp-1 md:mt-0.5 md:mb-2.5 md:text-xs md:leading-snug lg:mb-3${isRegister ? ' max-md:hidden md:line-clamp-1' : ' md:line-clamp-2'}${
+                  !isRegister && savedAccounts.length > 0 ? ' max-md:hidden' : ''
+                }`}
+              >
                 {isRegister ? t.auth.registerDescription : t.auth.loginDescription}
               </p>
             </div>
@@ -768,7 +773,7 @@ function AuthScreenBody({
             )}
             </div>
 
-            <div className="auth-watta-form-scroll min-h-0 max-md:flex-none max-md:overflow-visible flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-0 max-md:px-3 md:flex-none md:overflow-visible md:px-4 md:pb-2">
+            <div className="auth-watta-form-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-0 max-md:flex-none max-md:px-2.5 max-md:pb-0 md:px-4 md:pb-2">
             <form onSubmit={handleSubmit} className="auth-watta-form-fields auth-watta-form-fields--stack flex flex-col gap-2 max-md:gap-1.5 md:gap-1.5">
               <div
                 className={`auth-watta-register-block${isRegister ? ' grid grid-cols-1 gap-1.5 md:grid-cols-2 md:gap-1.5' : ' auth-watta-register-block--hidden'}`}
@@ -799,14 +804,24 @@ function AuthScreenBody({
                         type="tel"
                         required={isRegister}
                         tabIndex={isRegister ? 0 : -1}
-                        maxLength={13}
+                        maxLength={CHECKOUT_PHONE_INPUT_MAX_LEN}
                         autoComplete="tel"
+                        inputMode="tel"
                         value={formData.phone}
                         onChange={handlePhoneChange}
                         className="auth-watta-input"
-                        placeholder="+380…"
+                        placeholder={t.cartSection.phonePlaceholder}
+                        aria-describedby={isRegister ? 'auth-phone-hint' : undefined}
                       />
                     </span>
+                    {isRegister ? (
+                      <span
+                        id="auth-phone-hint"
+                        className="mt-0.5 block text-[10px] leading-snug text-gray-500 max-md:hidden"
+                      >
+                        {t.cartSection.phoneHint}
+                      </span>
+                    ) : null}
                   </label>
               </div>
 
@@ -856,7 +871,7 @@ function AuthScreenBody({
                     type="button"
                     onClick={() => {
                       setForgotStep(1)
-                      setForgotPhone(formData.phone)
+                      setForgotEmail(formData.email)
                       setError(null)
                     }}
                     className="text-[11px] font-medium text-[#145142] hover:underline sm:text-xs"
@@ -903,7 +918,7 @@ function AuthScreenBody({
             </div>
 
             {variant === 'page' && (
-              <p className="auth-watta-mobile-switch shrink-0 px-3 pb-2 pt-1.5 text-center text-[10px] leading-snug text-gray-600 md:hidden">
+              <p className="auth-watta-mobile-switch shrink-0 px-2.5 pb-1.5 pt-1 text-center text-[10px] leading-snug text-gray-600 md:hidden">
                 {isRegister ? (
                   <>
                     {t.auth.haveAccount}{' '}

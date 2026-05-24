@@ -1,0 +1,50 @@
+/**
+ * Планшет (iPad): та сама «заморожена» висота, що на телефоні — без білої смуги
+ * при скролі, коли Safari змінює dvh / адресний рядок.
+ */
+@media (min-width: 768px) and (max-width: 1366px) {
+  html.watta-light-chrome {
+    min-height: var(--watta-screen-min-h);
+    background: var(--watta-page-gradient) !important;
+    overscroll-behavior-y: none;
+  }
+
+  html.watta-light-chrome body {
+    min-height: var(--watta-screen-min-h);
+    background: var(--watta-page-gradient);
+  }
+
+  body:not(.watta-route-home) .watta-app-shell-root {
+    min-height: var(--watta-screen-min-h);
+    background: var(--watta-page-gradient);
+  }
+
+  /* /login, /register — фіксований екран, фон не росте зі сторінкою */
+  .auth-watta-root.auth-watta-page-shell {
+    position: relative;
+    height: var(--watta-screen-min-h);
+    max-height: var(--watta-screen-min-h);
+    min-height: 0;
+    overflow: hidden;
+    background: var(--watta-page-gradient);
+  }
+
+  .auth-watta-root .watta-public-page-shell__bg--auth {
+    position: fixed !important;
+    inset: 0;
+    width: 100%;
+    height: var(--watta-screen-min-h) !important;
+    min-height: var(--watta-screen-min-h) !important;
+    max-height: var(--watta-screen-min-h) !important;
+  }
+
+  .auth-watta-page-grid.auth-watta-page-grid--phone .auth-watta-cinema--phone {
+    min-height: min(calc(var(--watta-app-height, 100vh) - 3.25rem), 780px);
+  }
+
+  /* Підвал і низ сторінки — той самий білий, без «щілини» */
+  .watta-app-shell-root > main > .site-footer-watta {
+    margin-bottom: 0;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+}

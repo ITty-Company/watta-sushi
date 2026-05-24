@@ -184,6 +184,19 @@ export interface Translations {
     postalOutsideAmsterdam: string
     /** Адреса поза Нідерландами */
     postalOutsideNetherlands: string
+    /** Доставка недоступна в обраному місті — заголовок */
+    deliveryUnavailableTitle: string
+    /** Доставка недоступна — пояснення + Instagram */
+    deliveryUnavailableBody: string
+    deliveryUnavailableInstagram: string
+    /** Заголовок блоку міст, куди возимо */
+    deliveryNearbyCitiesTitle: string
+    /** Підказка: натисніть місто на карті */
+    deliveryNearbyCitiesHint: string
+    /** Підпис маркера адреси клієнта на карті */
+    deliveryYourAddressPin: string
+    /** aria-label карти міст доставки */
+    deliveryNearbyMapAria: string
     /** Невірний формат NL (1234 AB) */
     postalInvalidNlFormat: string
     /** Вертикальний підпис біля відео в спліт-гері (сторінка /delivery) */
@@ -315,6 +328,13 @@ export interface Translations {
     dayTomorrow: string
     partySizeLabel: string
     chopsticksLabel: string
+    /** Набори соус + wasabi + імбир */
+    condimentSetsLabel: string
+    /** {{free}}, {{price}} */
+    condimentSetsHint: string
+    /** {{count}}, {{fee}} — рядок у підсумку */
+    condimentSetsExtraLine: string
+    orderCommentCondimentSets: string
     commentPlaceholder: string
     payCash: string
     payCard: string
@@ -477,7 +497,7 @@ export interface Translations {
     signedInToast: string
     forgotPassword: string
     forgotPasswordTitle: string
-    forgotPasswordPhoneHint: string
+    forgotPasswordEmailHint: string
     forgotPasswordCodeHint: string
     forgotPasswordNewHint: string
     forgotPasswordSendCode: string
@@ -491,6 +511,10 @@ export interface Translations {
     verifyHint: string
     confirmPhone: string
     confirmPasswordLabel: string
+    /** Збережені на пристрої акаунти (лише email + пароль) */
+    savedAccountsLabel: string
+    removeSavedAccount: string
+    phoneAccountsLimit: string
   }
   /** global-error.tsx (без LanguageProvider) — дублюємо по мовах через cookie */
   errorPage: {
@@ -732,6 +756,8 @@ export interface Translations {
     phoneCodeResend: string
     phoneCodeWrong: string
     phoneChangeSuccess: string
+    phoneUnverifiedNotice: string
+    phoneConfirmSendCode: string
     phoneVerifyCancel: string
     emailReadonlyHint: string
     labelName: string
@@ -1004,9 +1030,10 @@ export interface Translations {
     }
     dashboard: {
       loading: string; revenue: string; orders: string; products: string; cities: string;
-      statusTitle: string; statusPending: string; statusCooking: string;
+      statusTitle: string; statusPending: string; statusConfirmed: string; statusCooking: string;
       statusDelivering: string; statusCompleted: string; statusCancelled: string; promos: string;
       categories: string; users: string; paidOrders: string; statsHint: string;
+      todayRevenue: string; todayOrders: string;
       banners: string; blog: string; ingredients: string; team: string; countries: string;
       contentSection: string;
       statsFallback: string;
@@ -1391,6 +1418,14 @@ const translations: Record<Language, Translations> = {
       postalOutsideAmsterdam: 'Поки що доставка у ваше місто недоступна.',
       postalOutsideNetherlands:
         'Ця адреса поза зоною доставки по Нідерландах. Перевірте адресу або оберіть інше місто.',
+      deliveryUnavailableTitle: 'Доставка у ваше місто наразі недоступна',
+      deliveryUnavailableBody:
+        'Оформити замовлення на сайті поки не вийде. Напишіть менеджеру в Instagram — можливо, ми зможемо допомогти.',
+      deliveryUnavailableInstagram: 'Написати в Instagram',
+      deliveryNearbyCitiesTitle: 'Міста, куди ми доставляємо',
+      deliveryNearbyCitiesHint: 'Оберіть місто на карті або в списку — побачите зони доставки.',
+      deliveryYourAddressPin: 'Ваша адреса',
+      deliveryNearbyMapAria: 'Карта міст з доставкою',
       postalInvalidNlFormat:
         'Формат індексу Нідерландів: чотири цифри та дві літери, наприклад 1075 VV.',
       splitHeroVideoRail: 'З кухні — до вас',
@@ -1430,7 +1465,7 @@ const translations: Record<Language, Translations> = {
         'Точний час готовності повідомимо після підтвердження — нижче можна вказати побажання.',
       deliveryFree: 'Безкоштовно',
       deliveryUnlockHint: 'Безкоштовна доставка від {{amount}} €',
-      invalidPhone: 'Введіть номер у міжнародному форматі (8–15 цифр, можна +)',
+      invalidPhone: 'Введіть номер: 7–15 цифр, будь-який код країни',
       cartMeta: '{{lines}} поз. · {{pieces}} шт',
       perPiece: 'шт.',
       contactDetails: 'Контактні дані',
@@ -1461,8 +1496,8 @@ const translations: Record<Language, Translations> = {
       dataProcessingConsentRequired:
         'Поставте галочку згоди на обробку персональних даних, щоб оформити замовлення.',
       namePlaceholder: 'Наприклад, Олена',
-      phonePlaceholder: '+31 6 12345678',
-      phoneHint: 'Будь-яка країна: +380, +31, +1 тощо (8–15 цифр)',
+      phonePlaceholder: '+ …',
+      phoneHint: 'Ваш номер як завгодно: з кодом країни або без, 7–15 цифр',
       deliveryZoneLabel: 'Зона доставки',
       deliveryFromMap: 'Зона на карті: {{zone}}',
       deliveryZoneStandardHint:
@@ -1502,6 +1537,10 @@ const translations: Record<Language, Translations> = {
       dayTomorrow: 'Завтра',
       partySizeLabel: 'Кількість осіб (1–99)',
       chopsticksLabel: 'Палички',
+      condimentSetsLabel: 'Набори (соус + wasabi + імбир)',
+      condimentSetsHint: 'Безкоштовно до {{free}} наборів. Кожен додатковий — {{price}} €.',
+      condimentSetsExtraLine: 'Додаткові набори ({{count}} × {{price}} €)',
+      orderCommentCondimentSets: '[Набори соус/wasabi/імбир: {{total}} шт ({{free}} безк., +{{paid}} платних)]',
       commentPlaceholder: 'Коментар до замовлення',
       payCash: 'Готівкою',
       payCard: 'Карткою онлайн',
@@ -1624,7 +1663,7 @@ const translations: Record<Language, Translations> = {
         pattern: 'Перевірте правильність введених даних',
         emailInvalid: 'Введіть коректну email адресу',
         passwordMin: 'Пароль повинен містити мінімум 6 символів',
-        phoneInvalid: 'Введіть коректний номер телефону',
+        phoneInvalid: 'Введіть номер: 7–15 цифр, будь-який код країни',
         userExists: 'Користувач з таким email вже існує',
         userNotFound: 'Користувач не знайдений. Перевірте email та пароль',
         invalidCredentials: 'Невірний email або пароль',
@@ -1639,8 +1678,8 @@ const translations: Record<Language, Translations> = {
       signedInToast: 'Ви увійшли',
       forgotPassword: 'Забули пароль?',
       forgotPasswordTitle: 'Відновлення пароля',
-      forgotPasswordPhoneHint: 'Введіть номер телефону з акаунта — надішлемо SMS з кодом.',
-      forgotPasswordCodeHint: 'Введіть 4-значний код з SMS.',
+      forgotPasswordEmailHint: 'Введіть email акаунта — надішлемо код на пошту.',
+      forgotPasswordCodeHint: 'Введіть 4-значний код з листа.',
       forgotPasswordNewHint: 'Придумайте новий пароль (мінімум 6 символів).',
       forgotPasswordSendCode: 'Надіслати код',
       forgotPasswordContinue: 'Далі',
@@ -1653,6 +1692,10 @@ const translations: Record<Language, Translations> = {
       verifyHint: 'Ми надіслали SMS з кодом. У dev режимі код у консолі сервера.',
       confirmPhone: 'Підтвердити',
       confirmPasswordLabel: 'Підтвердження пароля',
+      savedAccountsLabel: 'Збережені акаунти на цьому пристрої',
+      removeSavedAccount: 'Прибрати зі списку',
+      phoneAccountsLimit:
+        'З цим номером уже створено максимум 10 акаунтів. Увійдіть у свій або використайте інший номер.',
     },
     errorPage: {
       title: 'Щось пішло не так',
@@ -1960,6 +2003,9 @@ const translations: Record<Language, Translations> = {
       phoneCodeResend: 'Надіслати код ще раз',
       phoneCodeWrong: 'Невірний код',
       phoneChangeSuccess: 'Номер телефону оновлено',
+      phoneUnverifiedNotice:
+        'Номер у профілі ще не підтверджений. Підтвердіть його кодом з SMS — це можна зробити тут, після входу.',
+      phoneConfirmSendCode: 'Надіслати код підтвердження',
       phoneVerifyCancel: 'Скасувати зміну номера',
       emailReadonlyHint: 'Email змінити не можна',
       labelName: "Ім'я",
@@ -2228,11 +2274,14 @@ const translations: Record<Language, Translations> = {
       dashboard: {
         loading: "Завантаження...",
         revenue: "Виручка (виконані)",
+        todayRevenue: "Виручка сьогодні",
+        todayOrders: "Замовлень сьогодні",
         orders: "Усього замовлень",
         products: "Товарів",
         cities: "Міст",
         statusTitle: "Замовлення за статусами",
         statusPending: "Очікують",
+        statusConfirmed: "Підтверджені",
         statusCooking: "Готуються",
         statusDelivering: "У доставці",
         statusCompleted: "Виконані",
@@ -2487,6 +2536,14 @@ const translations: Record<Language, Translations> = {
       postalOutsideAmsterdam: 'Пока что доставка в ваш город недоступна.',
       postalOutsideNetherlands:
         'Этот адрес вне зоны доставки по Нидерландам. Проверьте адрес или выберите другой город.',
+      deliveryUnavailableTitle: 'Доставка в ваш город пока недоступна',
+      deliveryUnavailableBody:
+        'Оформить заказ на сайте пока не получится. Напишите менеджеру в Instagram — возможно, мы сможем помочь.',
+      deliveryUnavailableInstagram: 'Написать в Instagram',
+      deliveryNearbyCitiesTitle: 'Города, куда мы доставляем',
+      deliveryNearbyCitiesHint: 'Выберите город на карте или в списке — увидите зоны доставки.',
+      deliveryYourAddressPin: 'Ваш адрес',
+      deliveryNearbyMapAria: 'Карта городов с доставкой',
       postalInvalidNlFormat: 'Формат индекса Нидерландов: четыре цифры и две буквы, например 1075 VV.',
       splitHeroVideoRail: 'С кухни — к вам',
     },
@@ -2525,7 +2582,7 @@ const translations: Record<Language, Translations> = {
         'Точное время готовности сообщим после подтверждения заказа — ниже можно указать пожелание.',
       deliveryFree: 'Бесплатно',
       deliveryUnlockHint: 'Бесплатная доставка от {{amount}} €',
-      invalidPhone: 'Введите номер в международном формате (8–15 цифр, можно +)',
+      invalidPhone: 'Введите номер: 7–15 цифр, любой код страны',
       cartMeta: '{{lines}} поз. · {{pieces}} шт',
       perPiece: 'шт.',
       contactDetails: 'Контактные данные',
@@ -2556,8 +2613,8 @@ const translations: Record<Language, Translations> = {
       dataProcessingConsentRequired:
         'Поставьте галочку согласия на обработку персональных данных, чтобы оформить заказ.',
       namePlaceholder: 'Например, Анна',
-      phonePlaceholder: '+31 6 12345678',
-      phoneHint: 'Любая страна: +380, +31, +1 и т.д. (8–15 цифр)',
+      phonePlaceholder: '+ …',
+      phoneHint: 'Ваш номер как удобно: с кодом страны или без, 7–15 цифр',
       deliveryZoneLabel: 'Зона доставки',
       deliveryFromMap: 'Зона на карте: {{zone}}',
       deliveryZoneStandardHint:
@@ -2597,6 +2654,10 @@ const translations: Record<Language, Translations> = {
       dayTomorrow: 'Завтра',
       partySizeLabel: 'Количество персон (1–99)',
       chopsticksLabel: 'Палочки',
+      condimentSetsLabel: 'Наборы (соус + wasabi + имбирь)',
+      condimentSetsHint: 'Бесплатно до {{free}} наборов. Каждый дополнительный — {{price}} €.',
+      condimentSetsExtraLine: 'Дополнительные наборы ({{count}} × {{price}} €)',
+      orderCommentCondimentSets: '[Наборы соус/wasabi/имбирь: {{total}} шт ({{free}} беспл., +{{paid}} платных)]',
       commentPlaceholder: 'Комментарий к заказу',
       payCash: 'Наличными',
       payCard: 'Картой онлайн',
@@ -2719,7 +2780,7 @@ const translations: Record<Language, Translations> = {
         pattern: 'Проверьте правильность введенных данных',
         emailInvalid: 'Введите корректный email адрес',
         passwordMin: 'Пароль должен содержать минимум 6 символов',
-        phoneInvalid: 'Введите корректный номер телефона',
+        phoneInvalid: 'Введите номер: 7–15 цифр, любой код страны',
         userExists: 'Пользователь с таким email уже существует',
         userNotFound: 'Пользователь не найден. Проверьте email и пароль',
         invalidCredentials: 'Неверный email или пароль',
@@ -2734,8 +2795,8 @@ const translations: Record<Language, Translations> = {
       signedInToast: 'Вы вошли',
       forgotPassword: 'Забыли пароль?',
       forgotPasswordTitle: 'Восстановление пароля',
-      forgotPasswordPhoneHint: 'Введите номер телефона из аккаунта — отправим SMS с кодом.',
-      forgotPasswordCodeHint: 'Введите 4-значный код из SMS.',
+      forgotPasswordEmailHint: 'Введите email аккаунта — отправим код на почту.',
+      forgotPasswordCodeHint: 'Введите 4-значный код из письма.',
       forgotPasswordNewHint: 'Придумайте новый пароль (минимум 6 символов).',
       forgotPasswordSendCode: 'Отправить код',
       forgotPasswordContinue: 'Далее',
@@ -2748,6 +2809,10 @@ const translations: Record<Language, Translations> = {
       verifyHint: 'Мы отправили SMS с кодом. В dev код в консоли сервера.',
       confirmPhone: 'Подтвердить',
       confirmPasswordLabel: 'Подтверждение пароля',
+      savedAccountsLabel: 'Сохранённые аккаунты на этом устройстве',
+      removeSavedAccount: 'Убрать из списка',
+      phoneAccountsLimit:
+        'С этим номером уже создано максимум 10 аккаунтов. Войдите в свой или используйте другой номер.',
     },
     errorPage: {
       title: 'Что-то пошло не так',
@@ -3055,6 +3120,9 @@ const translations: Record<Language, Translations> = {
       phoneCodeResend: 'Отправить код ещё раз',
       phoneCodeWrong: 'Неверный код',
       phoneChangeSuccess: 'Номер телефона обновлён',
+      phoneUnverifiedNotice:
+        'Номер в профиле ещё не подтверждён. Подтвердите его кодом из SMS — это можно сделать здесь, после входа.',
+      phoneConfirmSendCode: 'Отправить код подтверждения',
       phoneVerifyCancel: 'Отменить смену номера',
       emailReadonlyHint: 'Email изменить нельзя',
       labelName: 'Имя',
@@ -3323,11 +3391,14 @@ const translations: Record<Language, Translations> = {
       dashboard: {
         loading: "Загрузка...",
         revenue: "Выручка (выполнены)",
+        todayRevenue: "Выручка сегодня",
+        todayOrders: "Заказов сегодня",
         orders: "Всего заказов",
         products: "Товаров",
         cities: "Городов",
         statusTitle: "Заказы по статусам",
         statusPending: "Ожидают",
+        statusConfirmed: "Подтверждены",
         statusCooking: "Готовятся",
         statusDelivering: "В доставке",
         statusCompleted: "Выполнены",
@@ -3582,6 +3653,14 @@ const translations: Record<Language, Translations> = {
       postalOutsideAmsterdam: 'Delivery to your city is not available yet.',
       postalOutsideNetherlands:
         'This address is outside our delivery area in the Netherlands. Check the address or pick another city.',
+      deliveryUnavailableTitle: 'Delivery to your city is not available yet',
+      deliveryUnavailableBody:
+        'You cannot place an order on the site for now. Message our manager on Instagram — we may still be able to help.',
+      deliveryUnavailableInstagram: 'Message on Instagram',
+      deliveryNearbyCitiesTitle: 'Cities we deliver to',
+      deliveryNearbyCitiesHint: 'Pick a city on the map or in the list to see delivery zones.',
+      deliveryYourAddressPin: 'Your address',
+      deliveryNearbyMapAria: 'Map of cities with delivery',
       postalInvalidNlFormat: 'Dutch postcode format: four digits and two letters, e.g. 1075 VV.',
       splitHeroVideoRail: 'From our kitchen to you',
     },
@@ -3620,7 +3699,7 @@ const translations: Record<Language, Translations> = {
         'We will confirm the exact ready time after accepting your order — you can add a preference below.',
       deliveryFree: 'Free',
       deliveryUnlockHint: 'Free delivery on orders over {{amount}} €',
-      invalidPhone: 'Enter an international number (8–15 digits, + optional)',
+      invalidPhone: 'Enter a number with 7–15 digits, any country code',
       cartMeta: '{{lines}} items · {{pieces}} pcs',
       perPiece: 'pc.',
       contactDetails: 'Contact details',
@@ -3651,8 +3730,8 @@ const translations: Record<Language, Translations> = {
       dataProcessingConsentRequired:
         'Please check the consent box to process your personal data before placing the order.',
       namePlaceholder: 'e.g. Anna',
-      phonePlaceholder: '+31 6 12345678',
-      phoneHint: 'Any country: +380, +31, +1, etc. (8–15 digits)',
+      phonePlaceholder: '+ …',
+      phoneHint: 'Your number any way you like: with country code or not, 7–15 digits',
       deliveryZoneLabel: 'Delivery zone',
       deliveryFromMap: 'Map zone: {{zone}}',
       deliveryZoneStandardHint:
@@ -3692,6 +3771,10 @@ const translations: Record<Language, Translations> = {
       dayTomorrow: 'Tomorrow',
       partySizeLabel: 'Party size (1–99)',
       chopsticksLabel: 'Chopsticks',
+      condimentSetsLabel: 'Condiment sets (soy + wasabi + ginger)',
+      condimentSetsHint: 'Up to {{free}} sets free. Each extra set — {{price}} €.',
+      condimentSetsExtraLine: 'Extra condiment sets ({{count}} × {{price}} €)',
+      orderCommentCondimentSets: '[Condiment sets: {{total}} ({{free}} free, +{{paid}} paid)]',
       commentPlaceholder: 'Order notes',
       payCash: 'Cash',
       payCard: 'Card online',
@@ -3814,7 +3897,7 @@ const translations: Record<Language, Translations> = {
         pattern: 'Please check the entered data',
         emailInvalid: 'Enter a valid email address',
         passwordMin: 'Password must contain at least 6 characters',
-        phoneInvalid: 'Enter a valid phone number',
+        phoneInvalid: 'Enter a number with 7–15 digits, any country code',
         userExists: 'User with this email already exists',
         userNotFound: 'User not found. Check your email and password',
         invalidCredentials: 'Invalid email or password',
@@ -3829,8 +3912,8 @@ const translations: Record<Language, Translations> = {
       signedInToast: 'Signed in',
       forgotPassword: 'Forgot password?',
       forgotPasswordTitle: 'Reset password',
-      forgotPasswordPhoneHint: 'Enter the phone number on your account — we will send an SMS code.',
-      forgotPasswordCodeHint: 'Enter the 4-digit code from SMS.',
+      forgotPasswordEmailHint: 'Enter your account email — we will send a code.',
+      forgotPasswordCodeHint: 'Enter the 4-digit code from the email.',
       forgotPasswordNewHint: 'Choose a new password (at least 6 characters).',
       forgotPasswordSendCode: 'Send code',
       forgotPasswordContinue: 'Continue',
@@ -3843,6 +3926,10 @@ const translations: Record<Language, Translations> = {
       verifyHint: 'We sent an SMS code. In dev, check the server console.',
       confirmPhone: 'Confirm',
       confirmPasswordLabel: 'Confirm password',
+      savedAccountsLabel: 'Saved accounts on this device',
+      removeSavedAccount: 'Remove from list',
+      phoneAccountsLimit:
+        'This phone already has 10 accounts. Sign in to yours or use another number.',
     },
     errorPage: {
       title: 'Something went wrong',
@@ -4150,6 +4237,9 @@ const translations: Record<Language, Translations> = {
       phoneCodeResend: 'Resend code',
       phoneCodeWrong: 'Invalid code',
       phoneChangeSuccess: 'Phone number updated',
+      phoneUnverifiedNotice:
+        'Your phone number is not confirmed yet. Confirm it with the SMS code here in your profile.',
+      phoneConfirmSendCode: 'Send confirmation code',
       phoneVerifyCancel: 'Cancel number change',
       emailReadonlyHint: 'Email cannot be changed',
       labelName: 'Name',
@@ -4418,11 +4508,14 @@ const translations: Record<Language, Translations> = {
       dashboard: {
         loading: "Loading...",
         revenue: "Revenue (completed)",
+        todayRevenue: "Revenue today",
+        todayOrders: "Orders today",
         orders: "Total orders",
         products: "Products",
         cities: "Cities",
         statusTitle: "Orders by status",
         statusPending: "Pending",
+        statusConfirmed: "Confirmed",
         statusCooking: "Cooking",
         statusDelivering: "Out for delivery",
         statusCompleted: "Completed",
@@ -4677,6 +4770,14 @@ const translations: Record<Language, Translations> = {
       postalOutsideAmsterdam: 'Bezorging naar uw stad is nog niet beschikbaar.',
       postalOutsideNetherlands:
         'Dit adres valt buiten ons bezorggebied in Nederland. Controleer het adres of kies een andere stad.',
+      deliveryUnavailableTitle: 'Bezorging naar uw stad is nog niet beschikbaar',
+      deliveryUnavailableBody:
+        'U kunt voorlopig geen bestelling op de site plaatsen. Stuur onze manager een bericht op Instagram — misschien kunnen we toch helpen.',
+      deliveryUnavailableInstagram: 'Bericht op Instagram',
+      deliveryNearbyCitiesTitle: 'Steden waar wij bezorgen',
+      deliveryNearbyCitiesHint: 'Kies een stad op de kaart of in de lijst om bezorgzones te zien.',
+      deliveryYourAddressPin: 'Uw adres',
+      deliveryNearbyMapAria: 'Kaart met bezorgsteden',
       postalInvalidNlFormat: 'Nederlands postcodeformaat: vier cijfers en twee letters, bijv. 1075 VV.',
       splitHeroVideoRail: 'Van onze keuken tot bij u',
     },
@@ -4715,7 +4816,7 @@ const translations: Record<Language, Translations> = {
         'De exacte afhaaltijd bevestigen we na acceptatie — hieronder kunt u een voorkeur aangeven.',
       deliveryFree: 'Gratis',
       deliveryUnlockHint: 'Gratis bezorging vanaf {{amount}} €',
-      invalidPhone: 'Voer een internationaal nummer in (8–15 cijfers, + mag)',
+      invalidPhone: 'Voer een nummer in: 7–15 cijfers, elke landcode',
       cartMeta: '{{lines}} pos. · {{pieces}} st.',
       perPiece: 'st.',
       contactDetails: 'Contactgegevens',
@@ -4746,8 +4847,8 @@ const translations: Record<Language, Translations> = {
       dataProcessingConsentRequired:
         'Vink het vakje voor toestemming tot gegevensverwerking aan om te bestellen.',
       namePlaceholder: 'Bijv. Anna',
-      phonePlaceholder: '+31 6 12345678',
-      phoneHint: 'Elk land: +380, +31, +1 enz. (8–15 cijfers)',
+      phonePlaceholder: '+ …',
+      phoneHint: 'Uw nummer zoals u wilt: met of zonder landcode, 7–15 cijfers',
       deliveryZoneLabel: 'Bezorgzone',
       deliveryFromMap: 'Zone op kaart: {{zone}}',
       deliveryZoneStandardHint:
@@ -4787,6 +4888,10 @@ const translations: Record<Language, Translations> = {
       dayTomorrow: 'Morgen',
       partySizeLabel: 'Aantal personen (1–99)',
       chopsticksLabel: 'Eetstokjes',
+      condimentSetsLabel: 'Sets (soja + wasabi + gember)',
+      condimentSetsHint: 'Tot {{free}} sets gratis. Elke extra set — {{price}} €.',
+      condimentSetsExtraLine: 'Extra sets ({{count}} × {{price}} €)',
+      orderCommentCondimentSets: '[Saus/wasabi/gember sets: {{total}} ({{free}} gratis, +{{paid}} betaald)]',
       commentPlaceholder: 'Opmerking bij bestelling',
       payCash: 'Contant',
       payCard: 'Online kaart',
@@ -4909,7 +5014,7 @@ const translations: Record<Language, Translations> = {
         pattern: 'Controleer de ingevoerde gegevens',
         emailInvalid: 'Voer een geldig e-mailadres in',
         passwordMin: 'Wachtwoord moet minimaal 6 tekens bevatten',
-        phoneInvalid: 'Voer een geldig telefoonnummer in',
+        phoneInvalid: 'Voer een nummer in: 7–15 cijfers, elke landcode',
         userExists: 'Gebruiker met dit e-mailadres bestaat al',
         userNotFound: 'Gebruiker niet gevonden. Controleer uw e-mail en wachtwoord',
         invalidCredentials: 'Ongeldig e-mailadres of wachtwoord',
@@ -4924,8 +5029,8 @@ const translations: Record<Language, Translations> = {
       signedInToast: 'U bent ingelogd',
       forgotPassword: 'Wachtwoord vergeten?',
       forgotPasswordTitle: 'Wachtwoord herstellen',
-      forgotPasswordPhoneHint: 'Voer het telefoonnummer van uw account in — we sturen een SMS-code.',
-      forgotPasswordCodeHint: 'Voer de 4-cijferige code uit de SMS in.',
+      forgotPasswordEmailHint: 'Voer het e-mailadres van uw account in — we sturen een code.',
+      forgotPasswordCodeHint: 'Voer de 4-cijferige code uit de e-mail in.',
       forgotPasswordNewHint: 'Kies een nieuw wachtwoord (minimaal 6 tekens).',
       forgotPasswordSendCode: 'Code versturen',
       forgotPasswordContinue: 'Verder',
@@ -4938,6 +5043,10 @@ const translations: Record<Language, Translations> = {
       verifyHint: 'We hebben een sms-code gestuurd. In dev staat de code in de serverconsole.',
       confirmPhone: 'Bevestigen',
       confirmPasswordLabel: 'Wachtwoord bevestigen',
+      savedAccountsLabel: 'Opgeslagen accounts op dit apparaat',
+      removeSavedAccount: 'Verwijderen uit lijst',
+      phoneAccountsLimit:
+        'Met dit nummer zijn al 10 accounts gemaakt. Log in op het uwe of gebruik een ander nummer.',
     },
     errorPage: {
       title: 'Er ging iets mis',
@@ -5245,6 +5354,9 @@ const translations: Record<Language, Translations> = {
       phoneCodeResend: 'Code opnieuw verzenden',
       phoneCodeWrong: 'Ongeldige code',
       phoneChangeSuccess: 'Telefoonnummer bijgewerkt',
+      phoneUnverifiedNotice:
+        'Je telefoonnummer is nog niet bevestigd. Bevestig het met de sms-code hier in je profiel.',
+      phoneConfirmSendCode: 'Bevestigingscode versturen',
       phoneVerifyCancel: 'Nummerwijziging annuleren',
       emailReadonlyHint: 'E-mail kan niet worden gewijzigd',
       labelName: 'Naam',
@@ -5513,11 +5625,14 @@ const translations: Record<Language, Translations> = {
       dashboard: {
         loading: "Laden...",
         revenue: "Omzet (voltooid)",
+        todayRevenue: "Omzet vandaag",
+        todayOrders: "Bestellingen vandaag",
         orders: "Totaal bestellingen",
         products: "Producten",
         cities: "Steden",
         statusTitle: "Bestellingen per status",
         statusPending: "In afwachting",
+        statusConfirmed: "Bevestigd",
         statusCooking: "In bereiding",
         statusDelivering: "Onderweg",
         statusCompleted: "Voltooid",

@@ -56,8 +56,16 @@ export default function AdminContactInquiriesPanel({
       const res = await fetch(`/api/contact/inquiries?filter=${filter}`, { headers })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        toast.error((data.message as string) || 'Не удалось загрузить обращения')
+        if (res.status === 401 || res.status === 403) {
+          toast.error('Вы не авторизованы', { id: 'contact-inquiries-auth' })
+        } else if (res.status >= 500) {
+          toast.error((data.message as string) || 'Не удалось загрузить обращения', {
+            id: 'contact-inquiries-load',
+          })
+        }
         setItems([])
+        setUnreadCount(0)
+        setTotalCount(0)
         return
       }
       const data = (await res.json()) as {
@@ -69,8 +77,10 @@ export default function AdminContactInquiriesPanel({
       setUnreadCount(Number(data.unreadCount ?? 0))
       setTotalCount(Number(data.totalCount ?? 0))
     } catch {
-      toast.error('Ошибка сети')
+      toast.error('Ошибка сети', { id: 'contact-inquiries-network' })
       setItems([])
+      setUnreadCount(0)
+      setTotalCount(0)
     } finally {
       setLoading(false)
     }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, type ReactNode } from 'react'
+import Image from 'next/image'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -25,7 +26,6 @@ import {
   Package,
   ShoppingBag,
   Layers,
-  BarChart2,
   Sparkles,
   Users,
   Settings, 
@@ -49,26 +49,13 @@ import { useLanguage } from '../context/LanguageContext'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
 import { parseAuthHeroVideoUrlsFromApi } from '@/lib/authHeroVideoSettings'
-import {
-  copyFormFromStored,
-  copyFormToStored,
-  emptyAuthHeroCopyForm,
-  parseAuthHeroPhone2VideoUrlsFromApi,
-  parseAuthHeroPhoneCopyFromApi,
-  type AuthHeroPhoneCopyForm,
-} from '@/lib/authHeroPhoneSettings'
-import type { Language } from '../context/LanguageContext'
+import { parseAuthHeroPhone2VideoUrlsFromApi } from '@/lib/authHeroPhoneSettings'
 import AuthHeroPhonesAdminSection from './admin/AuthHeroPhonesAdminSection'
-import { parseDeliveryHeroVideoUrlsFromApi } from '@/lib/deliveryHeroVideoSettings'
-import {
-  parseMenuHeroVideoUrlsFromApi,
-  WATTA_MENU_HERO_VIDEO_UPDATED_EVENT,
-} from '@/lib/menuHeroVideoSettings'
+import AdminNavDrawer from './admin/AdminNavDrawer'
 import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
 import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaAuthHeroVideo'
 import { uploadHomeHeroVideoFile } from '@/lib/uploadHomeHeroVideo'
 import { WATTA_HOME_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaHeroVideo'
-import { WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaDeliveryHeroVideo'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import {
   adminProductCoverSrc,
@@ -86,6 +73,11 @@ import {
 } from '@/lib/wattaIngredientsCatalog'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { isAdminRole } from '@/lib/isAdminRole'
+import {
+  buildDailySeries14,
+  buildStatsFromOrders,
+  type AdminOrderStatsPayload,
+} from '@/lib/orderAdminStats'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
 import AdminReviewsPanel, { type AdminReviewRow } from './admin/AdminReviewsPanel'
 import AdminCartUpsellPanel from './admin/AdminCartUpsellPanel'
@@ -204,19 +196,7 @@ interface OrderItem {
   price: number
 }
 
-interface AdminOrderStats {
-  totalOrders: number
-  revenueCompleted: number
-  paymentPaidCount: number
-  byStatus: {
-    PENDING: number
-    COOKING: number
-    DELIVERING: number
-    COMPLETED: number
-    CANCELLED: number
-  }
-  rawStatusCounts?: Record<string, number>
-}
+interface AdminOrderStats extends AdminOrderStatsPayload {}
 
 interface Order {
   id: number
@@ -638,16 +618,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [heroVideoSaving, setHeroVideoSaving] = useState(false)
   const [heroVideoSlots, setHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [newHeroVideoSlot()])
   const heroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const [deliveryHeroVideoSaving, setDeliveryHeroVideoSaving] = useState(false)
-  const [deliveryHeroVideoSlots, setDeliveryHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [
-    newHeroVideoSlot(),
-  ])
-  const deliveryHeroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const [menuHeroVideoSaving, setMenuHeroVideoSaving] = useState(false)
-  const [menuHeroVideoSlots, setMenuHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [
-    newHeroVideoSlot(),
-  ])
-  const menuHeroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [authHeroVideoSaving, setAuthHeroVideoSaving] = useState(false)
   const [authHeroVideoSlots, setAuthHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [
     newHeroVideoSlot(),
@@ -657,8 +627,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     newHeroVideoSlot(),
   ])
   const authHeroPhone2FileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const [authHeroPhone1CopyForm, setAuthHeroPhone1CopyForm] = useState<AuthHeroPhoneCopyForm>(emptyAuthHeroCopyForm)
-  const [authHeroPhone2CopyForm, setAuthHeroPhone2CopyForm] = useState<AuthHeroPhoneCopyForm>(emptyAuthHeroCopyForm)
 
   useEffect(() => {
     const urls = parseHomeHeroVideoUrlsFromApi(settings)
@@ -667,23 +635,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       return heroVideoSlotsFromUrls(urls)
     })
   }, [settings.homeHeroVideoUrl, settings.homeHeroVideoUrls])
-
-  useEffect(() => {
-    const urls = parseDeliveryHeroVideoUrlsFromApi(settings)
-    setDeliveryHeroVideoSlots((prev) => {
-      prev.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-      return heroVideoSlotsFromUrls(urls)
-    })
-  }, [settings.deliveryHeroVideoUrl, settings.deliveryHeroVideoUrls])
-
-  useEffect(() => {
-    const urls = parseMenuHeroVideoUrlsFromApi(settings)
-    setMenuHeroVideoSlots((prev) => {
-      const next = heroVideoSlotsFromUrls(urls.length > 0 ? urls : [])
-      if (prev.length === next.length && prev.every((s, i) => s.savedUrl === next[i]?.savedUrl)) return prev
-      return next
-    })
-  }, [settings.menuHeroVideoUrl, settings.menuHeroVideoUrls])
 
   useEffect(() => {
     const urls = parseAuthHeroVideoUrlsFromApi(settings)
@@ -700,11 +651,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       return heroVideoSlotsFromUrls(urls.length > 0 ? urls : [])
     })
   }, [settings.authHeroPhone2VideoUrls])
-
-  useEffect(() => {
-    setAuthHeroPhone1CopyForm(copyFormFromStored(parseAuthHeroPhoneCopyFromApi(settings.authHeroPhone1Copy)))
-    setAuthHeroPhone2CopyForm(copyFormFromStored(parseAuthHeroPhoneCopyFromApi(settings.authHeroPhone2Copy)))
-  }, [settings.authHeroPhone1Copy, settings.authHeroPhone2Copy])
 
   // Состояния для модального окна БАННЕРОВ
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false)
@@ -889,7 +835,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [newZoneColor, setNewZoneColor] = useState('#4ade80')
   const [newZoneCoordinates, setNewZoneCoordinates] = useState('')
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false)
-  const drawerTouchStartX = useRef<number | null>(null)
   const toastStyle = { borderRadius: '0.75rem' }
   const notifySuccess = (message: string) =>
     toast.success(message, {
@@ -2237,6 +2182,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           ),
         )
         void refreshTab('dashboard')
+        void refreshTab('orders')
         toast.success(t.adminPage.common.statusUpdated)
         return true
       }
@@ -3929,232 +3875,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
   }
 
-  const handleDeliveryHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    if (!file.type.startsWith('video/')) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    if (file.size > 120 * 1024 * 1024) {
-      toast.error(t.adminPanel.banners.heroVideoTooLarge)
-      return
-    }
-    const previewUrl = URL.createObjectURL(file)
-    setDeliveryHeroVideoSlots((prev) =>
-      prev.map((slot) => {
-        if (slot.id !== slotId) return slot
-        revokeHeroPreviewUrl(slot.pendingPreviewUrl)
-        return { ...slot, pendingFile: file, pendingPreviewUrl: previewUrl }
-      }),
-    )
-  }
-
-  const addDeliveryHeroVideoSlot = () => {
-    setDeliveryHeroVideoSlots((prev) => [...prev, newHeroVideoSlot()])
-  }
-
-  const removeDeliveryHeroVideoSlot = (slotId: string) => {
-    setDeliveryHeroVideoSlots((prev) => {
-      const target = prev.find((s) => s.id === slotId)
-      revokeHeroPreviewUrl(target?.pendingPreviewUrl ?? null)
-      const next = prev.filter((s) => s.id !== slotId)
-      return next.length > 0 ? next : [newHeroVideoSlot()]
-    })
-  }
-
-  const deliveryHeroVideoHasFilledSlot = deliveryHeroVideoSlots.some(
-    (s) => Boolean(s.pendingFile) || Boolean(s.savedUrl?.trim()),
-  )
-
-  const handleSaveDeliveryHeroVideos = async () => {
-    if (!deliveryHeroVideoHasFilledSlot) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    setDeliveryHeroVideoSaving(true)
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        toastHeroVideoSaveError(401)
-        return
-      }
-      const payload: string[] = []
-      for (const slot of deliveryHeroVideoSlots) {
-        if (slot.pendingFile) {
-          const url = await uploadHomeHeroVideoFile(slot.pendingFile, token)
-          payload.push(url)
-        } else if (slot.savedUrl?.trim()) {
-          payload.push(slot.savedUrl.trim())
-        }
-      }
-      if (payload.length === 0) {
-        toast.error(t.adminPanel.banners.heroVideoError)
-        return
-      }
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ deliveryHeroVideoUrls: payload }),
-      })
-      if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as { error?: string; message?: string } | null
-        toastHeroVideoSaveError(res.status, errBody?.error)
-        return
-      }
-      const saved = await res.json()
-      const urls = parseDeliveryHeroVideoUrlsFromApi(saved)
-      const primary = urls[0] ?? settings.deliveryHeroVideoUrl
-      setSettings((prev) => ({
-        ...prev,
-        deliveryHeroVideoUrl: primary,
-        deliveryHeroVideoUrls: urls.length > 0 ? urls : prev.deliveryHeroVideoUrls,
-      }))
-      setDeliveryHeroVideoSlots(() => {
-        deliveryHeroVideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-        return heroVideoSlotsFromUrls(urls)
-      })
-      toast.success(t.adminPanel.banners.heroVideoSaved)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent(WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT, {
-            detail: { urls, url: primary },
-          }),
-        )
-        broadcastWattaCatalogUpdate('settings')
-      }
-    } catch (err) {
-      console.error(err)
-      const code = err instanceof Error ? err.message : ''
-      if (code === 'upload_failed' || code === 'invalid_video_type' || code === 'no_file') {
-        toast.error(t.adminPanel.banners.heroVideoErrorUpload)
-      } else if (code === 'mock_mode_no_backend') {
-        toast.error(t.adminPanel.banners.heroVideoErrorMock)
-      } else {
-        toast.error(t.adminPanel.banners.heroVideoError)
-      }
-    } finally {
-      setDeliveryHeroVideoSaving(false)
-    }
-  }
-
-  const handleMenuHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    if (!file.type.startsWith('video/')) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    if (file.size > 120 * 1024 * 1024) {
-      toast.error(t.adminPanel.banners.heroVideoTooLarge)
-      return
-    }
-    const previewUrl = URL.createObjectURL(file)
-    setMenuHeroVideoSlots((prev) =>
-      prev.map((slot) => {
-        if (slot.id !== slotId) return slot
-        revokeHeroPreviewUrl(slot.pendingPreviewUrl)
-        return { ...slot, pendingFile: file, pendingPreviewUrl: previewUrl }
-      }),
-    )
-  }
-
-  const addMenuHeroVideoSlot = () => {
-    setMenuHeroVideoSlots((prev) => [...prev, newHeroVideoSlot()])
-  }
-
-  const removeMenuHeroVideoSlot = (slotId: string) => {
-    setMenuHeroVideoSlots((prev) => {
-      const target = prev.find((s) => s.id === slotId)
-      revokeHeroPreviewUrl(target?.pendingPreviewUrl ?? null)
-      const next = prev.filter((s) => s.id !== slotId)
-      return next.length > 0 ? next : [newHeroVideoSlot()]
-    })
-  }
-
-  const menuHeroVideoHasFilledSlot = menuHeroVideoSlots.some(
-    (s) => Boolean(s.pendingFile) || Boolean(s.savedUrl?.trim()),
-  )
-
-  const handleSaveMenuHeroVideos = async () => {
-    if (!menuHeroVideoHasFilledSlot) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    setMenuHeroVideoSaving(true)
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        toastHeroVideoSaveError(401)
-        return
-      }
-      const payload: string[] = []
-      for (const slot of menuHeroVideoSlots) {
-        if (slot.pendingFile) {
-          const url = await uploadHomeHeroVideoFile(slot.pendingFile, token)
-          payload.push(url)
-        } else if (slot.savedUrl?.trim()) {
-          payload.push(slot.savedUrl.trim())
-        }
-      }
-      if (payload.length === 0) {
-        toast.error(t.adminPanel.banners.heroVideoError)
-        return
-      }
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ menuHeroVideoUrls: payload }),
-      })
-      if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as { error?: string; message?: string } | null
-        toastHeroVideoSaveError(res.status, errBody?.error)
-        return
-      }
-      const saved = await res.json()
-      const urls = parseMenuHeroVideoUrlsFromApi(saved)
-      const primary = urls[0] ?? settings.menuHeroVideoUrl
-      setSettings((prev) => ({
-        ...prev,
-        menuHeroVideoUrl: primary,
-        menuHeroVideoUrls: urls.length > 0 ? urls : prev.menuHeroVideoUrls,
-      }))
-      setMenuHeroVideoSlots(() => {
-        menuHeroVideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-        return heroVideoSlotsFromUrls(urls)
-      })
-      toast.success(t.adminPanel.banners.heroVideoSaved)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent(WATTA_MENU_HERO_VIDEO_UPDATED_EVENT, {
-            detail: { urls, url: primary },
-          }),
-        )
-        broadcastWattaCatalogUpdate('settings')
-      }
-    } catch (err) {
-      console.error(err)
-      const code = err instanceof Error ? err.message : ''
-      if (code === 'upload_failed' || code === 'invalid_video_type' || code === 'no_file') {
-        toast.error(t.adminPanel.banners.heroVideoErrorUpload)
-      } else if (code === 'mock_mode_no_backend') {
-        toast.error(t.adminPanel.banners.heroVideoErrorMock)
-      } else {
-        toast.error(t.adminPanel.banners.heroVideoError)
-      }
-    } finally {
-      setMenuHeroVideoSaving(false)
-    }
-  }
-
   const handleAuthHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -4260,8 +3980,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         return
       }
       const phone2Urls = await buildHeroVideoPayload(authHeroPhone2VideoSlots, token)
-      const phone1Copy = copyFormToStored(authHeroPhone1CopyForm)
-      const phone2Copy = copyFormToStored(authHeroPhone2CopyForm)
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: {
@@ -4271,8 +3989,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         body: JSON.stringify({
           authHeroVideoUrls: phone1Urls,
           authHeroPhone2VideoUrls: phone2Urls,
-          authHeroPhone1Copy: phone1Copy,
-          authHeroPhone2Copy: phone2Copy,
         }),
       })
       if (!res.ok) {
@@ -4284,15 +4000,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       const urls = parseAuthHeroVideoUrlsFromApi(saved)
       const urls2 = parseAuthHeroPhone2VideoUrlsFromApi(saved)
       const primary = urls[0] ?? settings.authHeroVideoUrl
-      const copy1 = parseAuthHeroPhoneCopyFromApi(saved.authHeroPhone1Copy)
-      const copy2 = parseAuthHeroPhoneCopyFromApi(saved.authHeroPhone2Copy)
       setSettings((prev) => ({
         ...prev,
         authHeroVideoUrl: primary,
         authHeroVideoUrls: urls.length > 0 ? urls : prev.authHeroVideoUrls,
         authHeroPhone2VideoUrls: urls2,
-        authHeroPhone1Copy: copy1,
-        authHeroPhone2Copy: copy2,
       }))
       setAuthHeroVideoSlots(() => {
         authHeroVideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
@@ -4302,11 +4014,17 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         authHeroPhone2VideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
         return heroVideoSlotsFromUrls(urls2)
       })
-      toast.success(t.adminPanel.banners.authHeroPhonesSaved)
+      toast.success(t.adminPanel.banners.heroVideoSaved)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, {
-            detail: { urls, url: primary, phone2Urls: urls2, phone1Copy: copy1, phone2Copy: copy2 },
+            detail: {
+              urls,
+              url: primary,
+              phone2Urls: urls2,
+              phone1Copy: settings.authHeroPhone1Copy,
+              phone2Copy: settings.authHeroPhone2Copy,
+            },
           }),
         )
         broadcastWattaCatalogUpdate('settings')
@@ -4327,253 +4045,144 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   }
 
   const dashboardMetrics = useMemo(() => {
-    const sumCompletedLocal = orders
-      .filter((o) => o.status === 'COMPLETED' || o.status === 'DELIVERED')
-      .reduce((s, o) => s + (Number(o.totalPrice) || 0), 0)
-    const cnt = (s: string) => orders.filter((o) => o.status === s).length
-    const paidLocal = orders.filter((o) => o.paymentStatus === 'PAID').length
-
     if (orderStats) {
+      const byStatus = orderStats.byStatus
       return {
-        revenue: orderStats.revenueCompleted,
-        totalOrders: orderStats.totalOrders,
-        paidOrders: orderStats.paymentPaidCount,
-        pending: orderStats.byStatus.PENDING,
-        cooking: orderStats.byStatus.COOKING,
-        delivering: orderStats.byStatus.DELIVERING,
-        completed: orderStats.byStatus.COMPLETED,
-        cancelled: orderStats.byStatus.CANCELLED,
+        revenue: Number(orderStats.revenueCompleted) || 0,
+        totalOrders: Number(orderStats.totalOrders) || 0,
+        paidOrders: Number(orderStats.paymentPaidCount) || 0,
+        todayOrders: Number(orderStats.todayOrders) || 0,
+        todayRevenue: Number(orderStats.todayRevenue) || 0,
+        pending: byStatus.PENDING ?? 0,
+        confirmed: byStatus.CONFIRMED ?? 0,
+        cooking: byStatus.COOKING ?? 0,
+        delivering: byStatus.DELIVERING ?? 0,
+        completed: byStatus.COMPLETED ?? 0,
+        cancelled: byStatus.CANCELLED ?? 0,
+        dailySeries14:
+          orderStats.dailySeries14 && orderStats.dailySeries14.length > 0
+            ? orderStats.dailySeries14
+            : buildDailySeries14(orders),
         fromDb: true as const,
       }
     }
+
+    const fallback = buildStatsFromOrders(orders)
+    const paidLocal = orders.filter((o) => o.paymentStatus === 'PAID').length
     return {
-      revenue: sumCompletedLocal,
-      totalOrders: orders.length,
+      revenue: fallback.revenueCompleted,
+      totalOrders: fallback.totalOrders,
       paidOrders: paidLocal,
-      pending: cnt('PENDING'),
-      cooking: cnt('COOKING'),
-      delivering: cnt('DELIVERING'),
-      completed: cnt('COMPLETED') + cnt('DELIVERED'),
-      cancelled: cnt('CANCELLED'),
+      todayOrders: fallback.todayOrders,
+      todayRevenue: fallback.todayRevenue,
+      pending: fallback.byStatus.PENDING,
+      confirmed: fallback.byStatus.CONFIRMED,
+      cooking: fallback.byStatus.COOKING,
+      delivering: fallback.byStatus.DELIVERING,
+      completed: fallback.byStatus.COMPLETED,
+      cancelled: fallback.byStatus.CANCELLED,
+      dailySeries14: fallback.dailySeries14 ?? buildDailySeries14(orders),
       fromDb: false as const,
     }
   }, [orderStats, orders])
 
   // --- ХЕДЕР ---
-  const Header = () => {
-    return (
-      <header className="admin-watta-header w-full sticky top-0 z-40">
-        <div className="w-full relative bg-gradient-to-r from-white/95 via-white/90 to-[#145142]/5 backdrop-blur-2xl border-b border-[#145142]/10 shadow-[0_4px_30px_rgba(20,81,66,0.08)]">
-          <div className="absolute inset-0 bg-[linear-gradient(105deg,transparent_0%,rgba(20,81,66,0.03)_50%,transparent_100%)] pointer-events-none" />
-          <div className="admin-watta-header-inner relative w-full max-w-[1920px] mx-auto px-3 sm:px-5 md:px-6 h-14 sm:h-[3.75rem] md:h-16 flex items-center justify-between gap-2 min-w-0">
-            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-5">
-              <button 
-                onClick={onBack}
-                className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-[#145142]/5 hover:bg-[#145142]/15 text-[#145142] transition-all duration-300 hover:scale-105 active:scale-95"
-                aria-label={t.adminPanel.header.backAria}
-              >
-                <ArrowLeft size={22} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
-              </button>
-              {onSiteMenuClick && (
-                <button
-                  type="button"
-                  onClick={onSiteMenuClick}
-                  className="group w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl border-2 border-[#145142]/20 bg-white/90 text-[#145142] shadow-sm transition-all duration-300 hover:border-[#ff6b35]/45 hover:bg-gradient-to-br hover:from-[#fff7ed] hover:to-white hover:shadow-md hover:shadow-[#ff6b35]/15 hover:scale-105 active:scale-95"
-                  title={t.adminPanel.header.siteMenu}
-                  aria-label={t.adminPanel.header.siteMenu}
-                >
-                  <Store
-                    size={20}
-                    className="sm:w-[22px] sm:h-[22px] transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110"
-                    strokeWidth={2.35}
-                  />
-                </button>
-              )}
-              <div className="admin-watta-header-title-wrap flex min-w-0 flex-col gap-0.5">
-                <div className="flex min-w-0 items-center gap-2">
-                  <div className="admin-watta-header-brand-badge w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-br from-[#145142] to-[#1a6b58] flex items-center justify-center shadow-lg shadow-[#145142]/25">
-                    <BarChart2 size={18} className="sm:w-5 sm:h-5 text-white" strokeWidth={2.5} />
-                  </div>
-                  <h1 className="admin-watta-header-title text-lg sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-[#145142] via-[#1a6b58] to-[#0d3d34] bg-clip-text text-transparent tracking-tight">
-                    {t.adminPanel.header.title}
-                  </h1>
-                </div>
-                <p className="admin-watta-header-subtitle hidden text-xs text-[#145142]/60 font-medium pl-11 sm:pl-12 lg:block lg:text-sm max-lg:pl-0">
-                  {t.adminPanel.header.subtitle}
-                </p>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-              <div
-                className="flex items-center rounded-2xl border border-[#145142]/18 bg-white/90 p-1 gap-0.5 shadow-sm shrink-0"
-                title={t.adminPanel.header.adminLangHint}
-                role="group"
-                aria-label={t.adminPanel.header.adminLangHint}
-              >
-                <button
-                  type="button"
-                  onClick={() => setAdminUiLanguage('uk')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold tracking-wide transition-all ${
-                    adminUiLanguage === 'uk'
-                      ? 'bg-[#145142] text-white shadow-md shadow-[#145142]/25'
-                      : 'text-[#145142]/70 hover:bg-[#145142]/10 hover:text-[#145142]'
-                  }`}
-                >
-                  {t.adminPanel.header.adminLangUk}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminUiLanguage('ru')}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold tracking-wide transition-all ${
-                    adminUiLanguage === 'ru'
-                      ? 'bg-[#145142] text-white shadow-md shadow-[#145142]/25'
-                      : 'text-[#145142]/70 hover:bg-[#145142]/10 hover:text-[#145142]'
-                  }`}
-                >
-                  {t.adminPanel.header.adminLangRu}
-                </button>
-              </div>
-              <button 
-                onClick={fetchAll}
-                className="group w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-[#145142]/5 hover:bg-[#145142] text-[#145142] hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#145142]/30 active:scale-95"
-                title={t.adminPanel.header.refreshTitle}
-              >
-                <RefreshCw size={20} className={`sm:w-5 sm:h-5 transition-transform duration-500 ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} />
-              </button>
-              <button 
-                onClick={() => setIsRightPanelOpen(true)}
-                className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#145142] to-[#1a6b58] text-white shadow-lg shadow-[#145142]/25 hover:shadow-xl hover:shadow-[#145142]/35 hover:scale-105 active:scale-95 transition-all duration-300"
-                title={t.adminPanel.header.openMenuTitle}
-              >
-                <Menu size={22} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
-              </button>
-            </div>
+  const Header = () => (
+    <header className="admin-watta-header w-full">
+      <div className="admin-watta-header-bar">
+        <div className="admin-watta-header-brand">
+          <button
+            type="button"
+            onClick={onBack}
+            className="admin-watta-icon-btn"
+            aria-label={t.adminPanel.header.backAria}
+          >
+            <ArrowLeft size={20} strokeWidth={2.2} />
+          </button>
+          {onSiteMenuClick ? (
+            <button
+              type="button"
+              onClick={onSiteMenuClick}
+              className="admin-watta-icon-btn"
+              title={t.adminPanel.header.siteMenu}
+              aria-label={t.adminPanel.header.siteMenu}
+            >
+              <Store size={18} strokeWidth={2.2} />
+            </button>
+          ) : null}
+          <div className="logo-icon-web admin-watta-header-logo">
+            <Image
+              src="/logo.png"
+              alt={t.common.brandName}
+              width={40}
+              height={40}
+              className="logo-image-web"
+            />
+          </div>
+          <div className="admin-watta-header-text min-w-0">
+            <h1 className="admin-watta-header-title">{t.adminPanel.header.title}</h1>
+            <p className="admin-watta-header-subtitle">{t.adminPanel.header.subtitle}</p>
           </div>
         </div>
-      </header>
-    )
-  }
+        <div className="admin-watta-header-actions">
+          <div
+            className="admin-watta-lang-switch"
+            title={t.adminPanel.header.adminLangHint}
+            role="group"
+            aria-label={t.adminPanel.header.adminLangHint}
+          >
+            <button
+              type="button"
+              onClick={() => setAdminUiLanguage('uk')}
+              className={adminUiLanguage === 'uk' ? 'is-active' : undefined}
+            >
+              {t.adminPanel.header.adminLangUk}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdminUiLanguage('ru')}
+              className={adminUiLanguage === 'ru' ? 'is-active' : undefined}
+            >
+              {t.adminPanel.header.adminLangRu}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={fetchAll}
+            className="admin-watta-icon-btn"
+            title={t.adminPanel.header.refreshTitle}
+            aria-label={t.adminPanel.header.refreshTitle}
+          >
+            <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : undefined} strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsRightPanelOpen(true)}
+            className="admin-watta-icon-btn admin-watta-icon-btn--primary"
+            title={t.adminPanel.header.openMenuTitle}
+            aria-label={t.adminPanel.header.openMenuTitle}
+          >
+            <Menu size={20} strokeWidth={2.2} />
+          </button>
+        </div>
+      </div>
+    </header>
+  )
 
   return (
-    <div className="admin-shell-watta-web flex min-h-[100dvh] min-h-[100svh] w-full max-w-[100vw] flex-col font-sans relative overflow-x-clip">
+    <div className="admin-shell-watta-web flex min-h-[100dvh] min-h-[100svh] w-full max-w-[100vw] flex-col relative overflow-x-clip">
       <div className="admin-watta-stack relative z-10 flex min-h-0 flex-1 flex-col">
         <Header />
 
-        {/* Поза admin-watta-page-inner: інакше transform на батькові ламає position:fixed → панель «зрізається» */}
-        {isRightPanelOpen && (
-          <>
-            <div
-              className="admin-watta-overlay-backdrop fixed inset-0 z-[90] bg-[#0a1f1a]/55 backdrop-blur-[10px]"
-              onClick={() => setIsRightPanelOpen(false)}
-              aria-hidden="true"
-            />
-            <aside
-              className="admin-watta-drawer-shell admin-watta-drawer-enter fixed z-[100] flex flex-col overflow-hidden"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="admin-watta-drawer-title"
-              onTouchStart={(e) => {
-                drawerTouchStartX.current = e.touches[0]?.clientX ?? null
-              }}
-              onTouchEnd={(e) => {
-                const start = drawerTouchStartX.current
-                drawerTouchStartX.current = null
-                if (start == null) return
-                const end = e.changedTouches[0]?.clientX
-                if (end == null) return
-                if (end - start > 64) setIsRightPanelOpen(false)
-              }}
-            >
-              <div className="admin-watta-drawer-header shrink-0 bg-gradient-to-r from-[#145142] via-[#176b57] to-[#1a6b58] px-4 py-4 shadow-[0_12px_40px_-12px_rgba(20,81,66,0.45)] sm:px-5 sm:py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/18 ring-1 ring-white/25 shadow-inner">
-                      <Menu size={20} className="text-white" strokeWidth={2.25} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/75">
-                        Watta Admin
-                      </p>
-                      <h2
-                        id="admin-watta-drawer-title"
-                        className="truncate text-lg font-extrabold tracking-tight text-white sm:text-xl"
-                      >
-                        {t.adminPanel.sidebar.selectSection}
-                      </h2>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsRightPanelOpen(false)}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white ring-1 ring-white/25 transition hover:bg-white/25 active:scale-95"
-                    aria-label={t.adminPanel.header.closeDrawerAria}
-                  >
-                    <X size={22} strokeWidth={2.5} />
-                  </button>
-                </div>
-              </div>
-              <nav
-                className="admin-watta-drawer-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4 sm:py-5"
-                aria-label={t.adminPanel.sidebar.selectSection}
-              >
-                {[
-                  { id: 'dashboard' as const, label: t.adminPanel.sidebar.dashboard, desc: t.adminPanel.sidebar.dashboardDesc },
-                  { id: 'orders' as const, label: t.adminPanel.sidebar.orders, desc: t.adminPanel.sidebar.ordersDesc },
-                  { id: 'products' as const, label: t.adminPanel.sidebar.products, desc: t.adminPanel.sidebar.productsDesc },
-                  { id: 'cartUpsell' as const, label: 'Кошик: знижки', desc: 'Пороги суми та товари зі знижкою' },
-                  { id: 'promos' as const, label: t.adminPanel.sidebar.promos, desc: t.adminPanel.sidebar.promosDesc },
-                  { id: 'promotions' as const, label: t.adminPanel.news.title, desc: t.adminPanel.sidebar.promosDesc },
-                  { id: 'blog' as const, label: 'Блог / Рекомендації', desc: 'Статті для замовлень: що спробувати в Watta' },
-                  { id: 'reviews' as const, label: 'Відгуки', desc: 'Модерація відгуків клієнтів' },
-                  { id: 'newsletter' as const, label: t.adminPanel.sidebar.newsletter, desc: 'Email рассылка' },
-                  { id: 'crm' as const, label: 'CRM / База клиентов', desc: 'Клиенты, рассылки и обращения с сайта' },
-                  { id: 'cities' as const, label: t.adminPanel.sidebar.cities, desc: t.adminPanel.sidebar.citiesDesc },
-                  { id: 'banners' as const, label: t.adminPanel.sidebar.banners, desc: t.adminPanel.sidebar.bannersDesc },
-                  { id: 'menuCategories' as const, label: t.adminPanel.sidebar.categories, desc: t.adminPanel.sidebar.categoriesDesc },
-                  { id: 'users' as const, label: t.adminPanel.sidebar.users, desc: t.adminPanel.sidebar.usersDesc },
-                  { id: 'team' as const, label: t.adminPanel.sidebar.team, desc: t.adminPanel.sidebar.teamDesc },
-                  { id: 'settings' as const, label: t.adminPanel.sidebar.settings, desc: t.adminPanel.sidebar.settingsDesc },
-                  { id: 'ingredients' as const, label: t.adminPanel.sidebar.ingredients, desc: '' },
-                ].map(({ id, label, desc }) => (
-                  <motion.button
-                    key={id}
-                    type="button"
-                    layout
-                    onClick={() => {
-                      setActiveTab(id)
-                      setIsRightPanelOpen(false)
-                    }}
-                    whileHover={reduceMotion ? undefined : { x: -2 }}
-                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-                    className={`admin-watta-drawer-item group w-full rounded-2xl border px-4 py-3.5 text-left transition duration-200 sm:py-4 ${
-                      activeTab === id
-                        ? 'border-[#145142]/25 bg-gradient-to-r from-[#145142] to-[#1a6b58] text-white shadow-lg shadow-[#145142]/25 ring-1 ring-white/15'
-                        : 'border-[#145142]/10 bg-white/90 shadow-sm shadow-[#145142]/[0.07] hover:border-[#145142]/22 hover:bg-white hover:shadow-md hover:shadow-[#145142]/12'
-                    }`}
-                  >
-                    <span
-                      className={`block text-[15px] font-bold leading-snug sm:text-base ${
-                        activeTab === id ? 'text-white' : 'text-[#145142]'
-                      }`}
-                    >
-                      {label}
-                    </span>
-                    {desc ? (
-                      <span
-                        className={`mt-0.5 block text-xs leading-relaxed sm:text-[13px] ${
-                          activeTab === id ? 'text-white/85' : 'text-[#145142]/55 group-hover:text-[#145142]/70'
-                        }`}
-                      >
-                        {desc}
-                      </span>
-                    ) : null}
-                  </motion.button>
-                ))}
-              </nav>
-            </aside>
-          </>
-        )}
+        <AdminNavDrawer
+          isOpen={isRightPanelOpen}
+          onClose={() => setIsRightPanelOpen(false)}
+          activeTab={activeTab}
+          onSelectTab={(id) => {
+            setActiveTab(id)
+            setIsRightPanelOpen(false)
+          }}
+        />
 
         {/* ОСНОВНОЙ КОНТЕНТ — дашборд на главній, панель справа з вкладками */}
         <div className="admin-watta-main flex min-h-0 w-full flex-1 flex-col pb-3 sm:pb-4">
@@ -4590,7 +4199,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <AdminDashboardStudio
                 isLoading={isLoading}
                 dashboardMetrics={dashboardMetrics}
-                orders={orders}
                 counts={{
                   products: products.length,
                   cities: cities.length,
@@ -6034,232 +5642,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </div>
               </div>
 
-              <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
-                <h3 className="text-lg font-bold text-[#155044] sm:text-xl">
-                  {t.adminPanel.banners.deliveryHeroVideoTitle}
-                </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#145142]/75">
-                  {t.adminPanel.banners.deliveryHeroVideoSubtitle}
-                </p>
-<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  {deliveryHeroVideoSlots.map((slot, slotIndex) => {
-                    const previewSrc = slot.pendingPreviewUrl ?? slot.savedUrl
-                    const slotLabel = t.adminPanel.banners.heroVideoSlotLabel.replace(
-                      '{{n}}',
-                      String(slotIndex + 1),
-                    )
-                    return (
-                      <motion.div
-                        key={slot.id}
-                        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: slotIndex * 0.05 }}
-                        className="flex flex-col rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/80 p-3"
-                      >
-                        <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">
-                          {slotLabel}
-                        </p>
-                        <motion.div
-                          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                          className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5"
-                        >
-                          <AdminHeroVideoPreview
-                            previewSrc={previewSrc}
-                            savedUrl={slot.savedUrl}
-                            reduceMotion={Boolean(reduceMotion)}
-                          />
-                        </motion.div>
-                        {previewSrc && !slot.pendingFile ? (
-                          <p
-                            className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55"
-                            title={slot.savedUrl}
-                          >
-                            {slot.savedUrl}
-                          </p>
-                        ) : null}
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <input
-                            ref={(el) => {
-                              deliveryHeroVideoFileInputRefs.current[slot.id] = el
-                            }}
-                            type="file"
-                            accept="video/mp4,video/webm,video/quicktime"
-                            className="hidden"
-                            onChange={(e) => handleDeliveryHeroVideoFileChange(slot.id, e)}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => deliveryHeroVideoFileInputRefs.current[slot.id]?.click()}
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-[#145142]/5"
-                          >
-                            <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            {t.adminPanel.banners.heroVideoUpload}
-                          </button>
-                          {previewSrc || deliveryHeroVideoSlots.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => removeDeliveryHeroVideoSlot(slot.id)}
-                              className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-[#145142]/20 bg-white px-3 py-2 text-xs font-semibold text-[#145142]/80 transition hover:bg-red-50 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                              {t.adminPanel.banners.heroVideoRemove}
-                            </button>
-                          ) : null}
-                        </div>
-                      </motion.div>
-                    )
-                  })}
-                </div>
-                                <button
-                  type="button"
-                  onClick={addDeliveryHeroVideoSlot}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-[#145142]/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-[#145142]/10 sm:w-auto"
-                >
-                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                  {t.adminPanel.banners.heroVideoAddBtn}
-                </button>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                  <button
-                    type="button"
-                    disabled={deliveryHeroVideoSaving || !deliveryHeroVideoHasFilledSlot}
-                    onClick={() => void handleSaveDeliveryHeroVideos()}
-                    className="admin-hero-video-save-btn relative z-[5] inline-flex touch-manipulation items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Save className="h-4 w-4 shrink-0" aria-hidden />
-                    {deliveryHeroVideoSaving
-                      ? t.adminPanel.banners.heroVideoSaving
-                      : t.adminPanel.banners.heroVideoSave}
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
-                <h3 className="text-lg font-bold text-[#155044] sm:text-xl">
-                  {t.adminPanel.banners.menuHeroVideoTitle}
-                </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#145142]/75">
-                  {t.adminPanel.banners.menuHeroVideoSubtitle}
-                </p>
-                <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  {menuHeroVideoSlots.map((slot, slotIndex) => {
-                    const previewSrc = slot.pendingPreviewUrl ?? slot.savedUrl
-                    const slotLabel = t.adminPanel.banners.heroVideoSlotLabel.replace(
-                      '{{n}}',
-                      String(slotIndex + 1),
-                    )
-                    return (
-                      <motion.div
-                        key={slot.id}
-                        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: slotIndex * 0.05 }}
-                        className="flex flex-col rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/80 p-3"
-                      >
-                        <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">
-                          {slotLabel}
-                        </p>
-                        <motion.div
-                          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                          className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5"
-                        >
-                          <AdminHeroVideoPreview
-                            previewSrc={previewSrc}
-                            savedUrl={slot.savedUrl}
-                            reduceMotion={Boolean(reduceMotion)}
-                          />
-                        </motion.div>
-                        {previewSrc && !slot.pendingFile ? (
-                          <p
-                            className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55"
-                            title={slot.savedUrl}
-                          >
-                            {slot.savedUrl}
-                          </p>
-                        ) : null}
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <input
-                            ref={(el) => {
-                              menuHeroVideoFileInputRefs.current[slot.id] = el
-                            }}
-                            type="file"
-                            accept="video/mp4,video/webm,video/quicktime"
-                            className="hidden"
-                            onChange={(e) => handleMenuHeroVideoFileChange(slot.id, e)}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => menuHeroVideoFileInputRefs.current[slot.id]?.click()}
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-[#145142]/5"
-                          >
-                            <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            {t.adminPanel.banners.heroVideoUpload}
-                          </button>
-                          {previewSrc || menuHeroVideoSlots.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => removeMenuHeroVideoSlot(slot.id)}
-                              className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-[#145142]/20 bg-white px-3 py-2 text-xs font-semibold text-[#145142]/80 transition hover:bg-red-50 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                              {t.adminPanel.banners.heroVideoRemove}
-                            </button>
-                          ) : null}
-                        </div>
-                      </motion.div>
-                    )
-                  })}
-                </div>
-                <button
-                  type="button"
-                  onClick={addMenuHeroVideoSlot}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-[#145142]/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-[#145142]/10 sm:w-auto"
-                >
-                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                  {t.adminPanel.banners.heroVideoAddBtn}
-                </button>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                  <button
-                    type="button"
-                    disabled={menuHeroVideoSaving || !menuHeroVideoHasFilledSlot}
-                    onClick={() => void handleSaveMenuHeroVideos()}
-                    className="admin-hero-video-save-btn relative z-[5] inline-flex touch-manipulation items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Save className="h-4 w-4 shrink-0" aria-hidden />
-                    {menuHeroVideoSaving
-                      ? t.adminPanel.banners.heroVideoSaving
-                      : t.adminPanel.banners.heroVideoSave}
-                  </button>
-                </div>
-              </div>
-
               <AuthHeroPhonesAdminSection
                 t={t.adminPanel.banners}
                 reduceMotion={Boolean(reduceMotion)}
                 saving={authHeroVideoSaving}
                 canSave={authHeroVideoHasFilledSlot}
                 onSave={() => void handleSaveAuthHeroPhones()}
-                phone1Title={t.adminPanel.banners.authHeroPhone1Title}
-                phone2Title={t.adminPanel.banners.authHeroPhone2Title}
                 phone1Slots={authHeroVideoSlots}
                 phone2Slots={authHeroPhone2VideoSlots}
-                phone1CopyForm={authHeroPhone1CopyForm}
-                phone2CopyForm={authHeroPhone2CopyForm}
-                onPhone1CopyChange={(lang, field, value) =>
-                  setAuthHeroPhone1CopyForm((prev) => ({
-                    ...prev,
-                    [lang]: { ...prev[lang], [field]: value },
-                  }))
-                }
-                onPhone2CopyChange={(lang, field, value) =>
-                  setAuthHeroPhone2CopyForm((prev) => ({
-                    ...prev,
-                    [lang]: { ...prev[lang], [field]: value },
-                  }))
-                }
                 phone1FileInputRefs={authHeroVideoFileInputRefs}
                 phone2FileInputRefs={authHeroPhone2FileInputRefs}
                 onPhone1FileChange={handleAuthHeroVideoFileChange}

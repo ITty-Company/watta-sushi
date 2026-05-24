@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react'
 import Image from 'next/image'
 import WattaLink from './WattaLink'
 import {
@@ -27,9 +27,8 @@ import {
 import { useLanguage } from '../context/LanguageContext'
 import { CountryCitySelector } from './CountryCitySelector'
 import { LanguageSelector } from './LanguageSelector'
-import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
-import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
-import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
+import type { NavDrawerCategory } from '@/lib/navDrawerCategories'
+import { useNavDrawerCategories } from '@/hooks/useNavDrawerCategories'
 import {
   WATTA_PHONE_DISPLAY,
   WATTA_PHONE_E164,
@@ -41,11 +40,7 @@ import { logoutClientSession } from '@/lib/authSession'
 import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
 import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
 
-export type NavDrawerCategory = {
-  key: string
-  name: string
-  emoji: string
-}
+export type { NavDrawerCategory }
 
 type EmbeddedProps = {
   mode: 'embedded'
@@ -68,53 +63,9 @@ export type WattaNavDrawerPanelProps = {
   staggerKey?: number
   categories?: NavDrawerCategory[]
   onCategorySelect?: (key: string) => void
+  /** Відкритий drawer — оновити категорії з API (усі з адмінки). */
+  drawerActive?: boolean
 } & (EmbeddedProps | LinkProps)
-
-function useDrawerCategories(external?: NavDrawerCategory[]): NavDrawerCategory[] {
-  const { language, t } = useLanguage()
-  const [fromCache, setFromCache] = useState<NavDrawerCategory[]>([])
-
-  useEffect(() => {
-    if (external && external.length > 0) return
-    try {
-      const raw = sessionStorage.getItem(menuCategoriesSessionKey())
-      if (!raw) return
-      const parsed = JSON.parse(raw) as Record<string, unknown>[]
-      if (!Array.isArray(parsed)) return
-      setFromCache(
-        parsed
-          .map((c) => {
-            const key = String(c.slug ?? c.key ?? '').trim()
-            if (!key) return null
-            return {
-              key,
-              name:
-                getMenuCategoryDisplayName(c, language, t.categories) ||
-                String(c.name ?? key),
-              emoji: String(c.emoji ?? '🍣'),
-            }
-          })
-          .filter((x): x is NavDrawerCategory => x != null),
-      )
-    } catch {
-      /* ignore */
-    }
-  }, [external, language, t.categories])
-
-  const fallback = useMemo<NavDrawerCategory[]>(
-    () =>
-      MENU_CATEGORY_FALLBACK_SLUGS.map((key) => ({
-        key,
-        name: t.categories[key as keyof typeof t.categories] ?? key,
-        emoji: MENU_CATEGORY_EMOJI[key],
-      })),
-    [t.categories],
-  )
-
-  if (external && external.length > 0) return external
-  if (fromCache.length > 0) return fromCache
-  return fallback
-}
 
 const NAV_ICON_TONE_COUNT = 4
 
@@ -236,7 +187,8 @@ function useDrawerNavPages(t: ReturnType<typeof useLanguage>['t']): DrawerNavPag
 }
 
 export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
-  const { onClose, staggerKey = 0, categories: categoriesProp, onCategorySelect } = props
+  const { onClose, staggerKey = 0, categories: categoriesProp, onCategorySelect, drawerActive = false } =
+    props
   const { t } = useLanguage()
   const nav = t.navigation
   const sf = t.siteFooter
@@ -257,8 +209,10 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
     () => drawerNavPages.find((item) => item.key === 'privacy'),
     [drawerNavPages],
   )
-  const categories = useDrawerCategories(categoriesProp)
-  const displayCategories = categories
+  const displayCategories = useNavDrawerCategories({
+    external: categoriesProp,
+    drawerActive,
+  })
   const isSiteAdmin = useSiteAdmin()
   const isLoggedIn = useIsLoggedIn()
 

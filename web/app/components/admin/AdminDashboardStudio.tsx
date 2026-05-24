@@ -18,6 +18,7 @@ import {
 } from 'recharts'
 import {
   BookOpen,
+  CalendarDays,
   Globe,
   Image as ImageIcon,
   Layers,
@@ -34,23 +35,22 @@ import {
   Users,
 } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
+import type { AdminDailySeriesPoint } from '@/lib/orderAdminStats'
 
 export type DashboardMetricsStudio = {
   revenue: number
   totalOrders: number
   paidOrders: number
+  todayOrders: number
+  todayRevenue: number
   pending: number
+  confirmed: number
   cooking: number
   delivering: number
   completed: number
   cancelled: number
+  dailySeries14: AdminDailySeriesPoint[]
   fromDb: boolean
-}
-
-export type AdminDashboardOrderLite = {
-  createdAt: string
-  totalPrice: number
-  status: string
 }
 
 type ContentCounts = {
@@ -66,44 +66,15 @@ type ContentCounts = {
   team: number
 }
 
-function dayKeyLocal(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function lastNDaysKeys(n: number): string[] {
-  const out: string[] = []
-  const now = new Date()
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(now)
-    d.setDate(d.getDate() - i)
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    out.push(`${y}-${m}-${day}`)
-  }
-  return out
-}
-
-const chartGreen = '#145142'
-const chartMint = '#1a6b58'
-const chartAccent = '#ff6b35'
-
 type Props = {
   isLoading: boolean
   dashboardMetrics: DashboardMetricsStudio
-  orders: AdminDashboardOrderLite[]
   counts: ContentCounts
 }
 
 export default function AdminDashboardStudio({
   isLoading,
   dashboardMetrics,
-  orders,
   counts,
 }: Props) {
   const { t } = useLanguage()
@@ -119,32 +90,20 @@ export default function AdminDashboardStudio({
 
   const stagger = reduceMotion ? 0 : 0.06
 
-  const series14 = useMemo(() => {
-    const keys = lastNDaysKeys(14)
-    const revenueByDay = new Map<string, number>()
-    const ordersByDay = new Map<string, number>()
-    keys.forEach((k) => {
-      revenueByDay.set(k, 0)
-      ordersByDay.set(k, 0)
-    })
-    for (const o of orders) {
-      const k = dayKeyLocal(o.createdAt)
-      if (!k || !ordersByDay.has(k)) continue
-      ordersByDay.set(k, (ordersByDay.get(k) || 0) + 1)
-      if (o.status === 'COMPLETED' || o.status === 'DELIVERED') {
-        revenueByDay.set(k, (revenueByDay.get(k) || 0) + (Number(o.totalPrice) || 0))
-      }
-    }
-    return keys.map((date) => ({
-      date: date.slice(5),
-      revenue: Math.round((revenueByDay.get(date) || 0) * 100) / 100,
-      orders: ordersByDay.get(date) || 0,
-    }))
-  }, [orders])
+  const series14 = useMemo(
+    () =>
+      dashboardMetrics.dailySeries14.map((row) => ({
+        date: row.date.slice(5),
+        revenue: row.revenue,
+        orders: row.orders,
+      })),
+    [dashboardMetrics.dailySeries14],
+  )
 
   const pieData = useMemo(
     () => [
       { name: d.statusPending, value: dashboardMetrics.pending, color: '#f59e0b' },
+      { name: d.statusConfirmed, value: dashboardMetrics.confirmed, color: '#84cc16' },
       { name: d.statusCooking, value: dashboardMetrics.cooking, color: '#fb923c' },
       { name: d.statusDelivering, value: dashboardMetrics.delivering, color: '#38bdf8' },
       { name: d.statusCompleted, value: dashboardMetrics.completed, color: '#10b981' },
@@ -167,6 +126,10 @@ export default function AdminDashboardStudio({
     fontSize: 12,
     fontWeight: 600,
   }
+
+  const chartHeight = 220
+  const pieChartHeight = 180
+  const chartInitialDimension = { width: 480, height: chartHeight }
 
   if (isLoading) {
     return (
@@ -200,14 +163,14 @@ export default function AdminDashboardStudio({
         />
         <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#145142]/15 bg-white/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#145142]/80 shadow-sm">
-              <Sparkles size={12} className="text-[#ff6b35]" strokeWidth={2.5} />
+            <div className="admin-watta-kicker mb-2 inline-flex items-center gap-2 rounded-full border border-[#145142]/12 bg-white px-3 py-1 shadow-sm">
+              <Sparkles size={12} className="text-[#ff5c00]" strokeWidth={2.5} />
               Studio
             </div>
-            <h2 className="text-2xl font-black tracking-tight text-[#0d3d34] sm:text-3xl md:text-4xl">
+            <h2 className="admin-watta-page-title text-2xl font-bold sm:text-3xl md:text-4xl">
               {d.studioHeadline}
             </h2>
-            <p className="mt-1 max-w-xl text-sm font-medium text-[#145142]/65 sm:text-base">{d.studioSub}</p>
+            <p className="admin-watta-section-lead mt-1 max-w-xl">{d.studioSub}</p>
           </div>
           <div className="mt-3 rounded-2xl border border-[#145142]/12 bg-white/70 px-4 py-3 text-xs font-medium text-[#145142]/70 shadow-inner sm:mt-0 sm:max-w-sm sm:text-sm">
             {d.statsHint}
@@ -225,7 +188,7 @@ export default function AdminDashboardStudio({
       </motion.section>
 
       <motion.div
-        className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-7"
+        className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-9"
         initial={reduceMotion ? false : 'hidden'}
         animate="show"
         variants={{
@@ -237,6 +200,20 @@ export default function AdminDashboardStudio({
       >
         {[
           {
+            key: 'today-rev',
+            label: d.todayRevenue,
+            value: `${dashboardMetrics.todayRevenue.toFixed(2)} €`,
+            icon: CalendarDays,
+            gradient: 'from-[#ff6b35] to-[#ea580c]',
+          },
+          {
+            key: 'today-ord',
+            label: d.todayOrders,
+            value: String(dashboardMetrics.todayOrders),
+            icon: Package,
+            gradient: 'from-[#176b57] to-[#1a6b58]',
+          },
+          {
             key: 'rev',
             label: d.revenue,
             value: `${dashboardMetrics.revenue.toFixed(2)} €`,
@@ -247,7 +224,7 @@ export default function AdminDashboardStudio({
             key: 'ord',
             label: d.orders,
             value: String(dashboardMetrics.totalOrders),
-            icon: Package,
+            icon: Receipt,
             gradient: 'from-[#176b57] to-[#145142]',
           },
           {
@@ -262,7 +239,7 @@ export default function AdminDashboardStudio({
             label: d.avgOrderValue,
             value: `${avgTicket.toFixed(2)} €`,
             icon: Sparkles,
-            gradient: 'from-[#ff6b35] to-[#ea580c]',
+            gradient: 'from-[#ff6b35]/90 to-[#ea580c]',
           },
           {
             key: 'prod',
@@ -319,22 +296,27 @@ export default function AdminDashboardStudio({
       <motion.div
         {...fadeUp}
         transition={{ delay: reduceMotion ? 0 : 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3"
+        className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3"
       >
-        <div className="rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5">
-          <h3 className="mb-1 text-xs font-extrabold uppercase tracking-[0.2em] text-[#145142]/55">
+        <motion.div className="min-w-0 rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5">
+          <h3 className="admin-watta-kicker mb-1">
             {d.chartRevenue14d}
           </h3>
           {!hasChartData ? (
             <p className="py-12 text-center text-sm font-medium text-[#145142]/45">{d.chartNoData}</p>
           ) : (
-            <div className="h-[220px] w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full pt-2" style={{ height: chartHeight }}>
+              <ResponsiveContainer
+                width="100%"
+                height={chartHeight}
+                minWidth={0}
+                initialDimension={chartInitialDimension}
+              >
                 <AreaChart data={series14} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                   <defs>
                     <linearGradient id="adminRevFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={chartGreen} stopOpacity={0.35} />
-                      <stop offset="100%" stopColor={chartMint} stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#145142" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#1a6b58" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="4 8" stroke="rgba(20,81,66,0.08)" vertical={false} />
@@ -353,7 +335,7 @@ export default function AdminDashboardStudio({
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke={chartGreen}
+                    stroke="#145142"
                     strokeWidth={2.5}
                     fill="url(#adminRevFill)"
                     animationDuration={reduceMotion ? 0 : 900}
@@ -362,17 +344,22 @@ export default function AdminDashboardStudio({
               </ResponsiveContainer>
             </div>
           )}
-        </div>
+        </motion.div>
 
-        <div className="rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5">
-          <h3 className="mb-1 text-xs font-extrabold uppercase tracking-[0.2em] text-[#145142]/55">
+        <motion.div className="min-w-0 rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5">
+          <h3 className="admin-watta-kicker mb-1">
             {d.chartOrders14d}
           </h3>
           {!hasChartData ? (
             <p className="py-12 text-center text-sm font-medium text-[#145142]/45">{d.chartNoData}</p>
           ) : (
-            <div className="h-[220px] w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full pt-2" style={{ height: chartHeight }}>
+              <ResponsiveContainer
+                width="100%"
+                height={chartHeight}
+                minWidth={0}
+                initialDimension={chartInitialDimension}
+              >
                 <BarChart data={series14} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="4 8" stroke="rgba(20,81,66,0.08)" vertical={false} />
                   <XAxis dataKey="date" tick={{ fill: '#145142', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} />
@@ -386,7 +373,7 @@ export default function AdminDashboardStudio({
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar
                     dataKey="orders"
-                    fill={chartAccent}
+                    fill="#ff6b35"
                     radius={[8, 8, 4, 4]}
                     animationDuration={reduceMotion ? 0 : 800}
                   />
@@ -394,18 +381,23 @@ export default function AdminDashboardStudio({
               </ResponsiveContainer>
             </div>
           )}
-        </div>
+        </motion.div>
 
-        <div className="rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5 lg:col-span-2 xl:col-span-1">
-          <h3 className="mb-1 text-xs font-extrabold uppercase tracking-[0.2em] text-[#145142]/55">
+        <motion.div className="min-w-0 rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5 lg:col-span-2 xl:col-span-1">
+          <h3 className="admin-watta-kicker mb-1">
             {d.chartStatusPie}
           </h3>
           {pieTotal === 0 ? (
             <p className="py-12 text-center text-sm font-medium text-[#145142]/45">{d.chartNoData}</p>
           ) : (
             <div className="flex h-[240px] flex-col items-center justify-center sm:h-[220px] sm:flex-row sm:gap-4">
-              <div className="h-[180px] w-full max-w-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-full max-w-[200px]" style={{ height: pieChartHeight }}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={pieChartHeight}
+                  minWidth={0}
+                  initialDimension={{ width: 200, height: pieChartHeight }}
+                >
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -437,19 +429,20 @@ export default function AdminDashboardStudio({
               </ul>
             </div>
           )}
-        </div>
+        </motion.div>
       </motion.div>
 
       <motion.section
         {...fadeUp}
         transition={{ delay: reduceMotion ? 0 : 0.18, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       >
-        <h3 className="mb-3 text-xs font-extrabold uppercase tracking-[0.22em] text-[#145142]/55">
+        <h3 className="admin-watta-kicker mb-3">
           {d.statusTitle}
         </h3>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
           {[
             { label: d.statusPending, count: dashboardMetrics.pending, accent: 'from-amber-400 to-amber-500' },
+            { label: d.statusConfirmed, count: dashboardMetrics.confirmed, accent: 'from-lime-400 to-lime-600' },
             { label: d.statusCooking, count: dashboardMetrics.cooking, accent: 'from-orange-400 to-orange-500' },
             { label: d.statusDelivering, count: dashboardMetrics.delivering, accent: 'from-sky-400 to-sky-500' },
             { label: d.statusCompleted, count: dashboardMetrics.completed, accent: 'from-emerald-400 to-emerald-600' },
@@ -477,7 +470,7 @@ export default function AdminDashboardStudio({
         {...fadeUp}
         transition={{ delay: reduceMotion ? 0 : 0.22, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       >
-        <h3 className="mb-3 text-xs font-extrabold uppercase tracking-[0.22em] text-[#145142]/55">
+        <h3 className="admin-watta-kicker mb-3">
           {d.contentSection}
         </h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-7">
