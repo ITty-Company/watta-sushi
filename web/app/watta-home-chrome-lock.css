@@ -275,6 +275,16 @@ html.watta-html-home-hero
 }
 
 html.watta-html-home-hero
+  .menu-page-web.watta-site-hero-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web:not(.watta-hero-video--ready)
+  .welcome-hero-media-frame-web
+  > .watta-home-hero-native-video {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+html.watta-html-home-hero
   .delivery-page-hero-stack
   .welcome-hero-media-frame-web
   > .watta-home-hero-native-video,
@@ -355,9 +365,11 @@ body.watta-admin-shell-open .watta-home-hero-entry-shell {
   pointer-events: none !important;
 }
 
-body.watta-route-home:has(.menu-page-web .watta-home-hero-native-video[data-watta-can-play='1'])
+body.watta-route-home:has(
+    .menu-page-web .watta-home-hero-native-video[data-watta-can-play='1']
+  )
   .watta-home-hero-entry-shell,
-body.watta-route-home:has(.menu-page-web .welcome-hero-video-stack-web.watta-hero-video--ready)
+body.watta-route-home:has(.menu-page-web .watta-home-hero-native-video[data-watta-playing='1'])
   .watta-home-hero-entry-shell {
   display: none !important;
   height: 0 !important;

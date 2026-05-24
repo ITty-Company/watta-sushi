@@ -50,22 +50,6 @@ export function useMenuHeroVideo() {
   const heroVideoShouldLoop = menuHeroPlaylist.length <= 1
 
   useEffect(() => {
-    const src = heroVideoSrc
-    if (!src || typeof document === 'undefined') return
-    const id = 'watta-menu-hero-video-preload'
-    let link = document.getElementById(id) as HTMLLinkElement | null
-    if (!link) {
-      link = document.createElement('link')
-      link.id = id
-      link.rel = 'preload'
-      link.as = 'video'
-      ;(link as HTMLLinkElement & { fetchPriority?: string }).fetchPriority = 'high'
-      document.head.appendChild(link)
-    }
-    if (link.href !== src) link.href = src
-  }, [heroVideoSrc])
-
-  useEffect(() => {
     let probeAbort: AbortController | null = null
 
     const applySettings = (data: { menuHeroVideoUrl?: string; menuHeroVideoUrls?: string[] }) => {

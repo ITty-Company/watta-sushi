@@ -396,23 +396,6 @@ export default function MenuView() {
     getPrimaryHomeHeroVideoSrc(homeHeroVideoUrls)
   const heroVideoShouldLoop = homeHeroPlaylist.length <= 1
 
-  /** Preload поточного hero (оригінал з адмінки) — швидший старт без «розмитої» заглушки. */
-  useEffect(() => {
-    const src = heroVideoSrc
-    if (!src || typeof document === 'undefined') return
-    const id = 'watta-hero-video-preload'
-    let link = document.getElementById(id) as HTMLLinkElement | null
-    if (!link) {
-      link = document.createElement('link')
-      link.id = id
-      link.rel = 'preload'
-      link.as = 'video'
-      ;(link as HTMLLinkElement & { fetchPriority?: string }).fetchPriority = 'high'
-      document.head.appendChild(link)
-    }
-    if (link.href !== src) link.href = src
-  }, [heroVideoSrc])
-
   const homeNarrowStripHero = isNarrowViewport && activePage === null
 
   const homeAfterHeroCityDisplay = useMemo(() => {

@@ -25,7 +25,8 @@ export function fetchPublicApi(input: RequestInfo | URL, init?: RequestInit): Pr
     if (inflightGets.get(key) === request) inflightGets.delete(key)
   })
   inflightGets.set(key, request)
-  return request
+  /** Кожен підписник отримує clone — body оригіналу не читається двічі. */
+  return request.then((res) => res.clone())
 }
 
 /** Примусове оновлення (після збереження в адмінці, інвалідація кешу). */
