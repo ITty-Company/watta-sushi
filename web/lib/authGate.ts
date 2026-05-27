@@ -1,19 +1,24 @@
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
-import { isAuthTokenValid, sanitizeAuthStorage } from '@/lib/authSession'
+import {
+  sanitizeAuthStorage,
+  isUserLoggedIn,
+} from '@/lib/authSession'
+
+export { isUserLoggedIn } from '@/lib/authSession'
 
 export type AuthRedirectMode = 'login' | 'register'
 
 /** Чи є валідна сесія (token + currentUser). */
-export function isUserLoggedIn(): boolean {
-  if (typeof window === 'undefined') return false
-  sanitizeAuthStorage()
-  const user = localStorage.getItem('currentUser')
-  if (!user?.trim() || user === 'null') return false
-  const token = localStorage.getItem('token')
-  if (!token?.trim() || !isAuthTokenValid(token)) return false
-  const auth = getBearerAuthHeaders()
-  return Object.keys(auth as Record<string, string>).length > 0
-}
+// export function isUserLoggedIn(): boolean {
+//   if (typeof window === 'undefined') return false
+//   sanitizeAuthStorage()
+//   const user = localStorage.getItem('currentUser')
+//   if (!user?.trim() || user === 'null') return false
+//   const token = localStorage.getItem('token')
+//   if (!token?.trim() || !isUserLoggedIn) return false
+//   const auth = getBearerAuthHeaders()
+//   return Object.keys(auth as Record<string, string>).length > 0
+// }
 
 export function getCurrentReturnPath(): string {
   if (typeof window === 'undefined') return '/'

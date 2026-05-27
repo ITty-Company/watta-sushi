@@ -1,4 +1,4 @@
-import { isAuthTokenValid, purgeAuthStorage } from '@/lib/authSession'
+import { isUserLoggedIn, purgeAuthStorage } from '@/lib/authSession'
 
 /** True if stored/API user payload marks site administrator (case-insensitive). */
 export function isAdminRole(role: unknown): boolean {
@@ -41,7 +41,7 @@ export function readIsAdminFromCurrentUserJson(raw: string | null): boolean {
 export function readIsLoggedInFromStorage(): boolean {
   if (typeof window === 'undefined') return false
   const token = localStorage.getItem('token')
-  if (typeof token !== 'string' || !token.trim() || !isAuthTokenValid(token)) {
+  if (typeof token !== 'string' || !token.trim() || !isUserLoggedIn()) {
     if (token || localStorage.getItem('currentUser')) purgeAuthStorage()
     return false
   }
