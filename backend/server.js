@@ -35,11 +35,12 @@ import cartUpsellRoutes from './routes/cartUpsell.routes.ts';
 import stripeWebhookRouter from './routes/stripe-webhook.routes.ts';
 import { getUploadsDir } from './lib/uploadsDir.js';
 import { getStorageHealthSnapshot } from './lib/storageHealth.js';
-
+import cookieParser from 'cookie-parser'
+;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadsPublicDir = getUploadsDir();
-const cookieParser = require('cookie-parser');
+
 
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
 // Явный путь: при запуске не з каталога backend (../) dotenv знайшов б 0 змін
