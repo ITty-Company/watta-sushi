@@ -338,7 +338,11 @@ router.post('/login', authRateLimiter, async (req: any, res: any) => {
       user: serializeAuthUser(user),
     });
   } catch (e) {
-    res.status(500).json({ message: 'Ошибка входа' });
+    console.error('LOGIN ERROR:', e);
+
+    res.status(500).json({
+      message: 'Ошибка входа'
+    });
   }
 });
 
