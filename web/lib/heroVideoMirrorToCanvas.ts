@@ -159,7 +159,7 @@ export function bindHeroVideoMirrorToCanvas(
    * картинка вже в кеші браузера (тег <video poster> або CSS background) — drawImage синхронний.
    */
   const drawPoster = () => {
-    const posterUrl = video.getAttribute('poster') || '/watta-home-hero-poster.jpg'
+    const posterUrl = video.getAttribute('poster') || '/watta-sushi.jpg'
     const img = new Image()
     img.decoding = 'async'
     img.onload = () => {

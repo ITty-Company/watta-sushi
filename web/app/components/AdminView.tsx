@@ -707,10 +707,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const bannerFocalDragRef = useRef<{
     active: boolean
     pointerId: number
-    startX: number
-    startY: number
-    startFx: number
-    startFy: number
   } | null>(null)
   /** Один раз ініціалізувати адмінку (уникаємо подвійного fetch/toast у React Strict Mode). */
   const adminBootstrapOnceRef = useRef(false)
@@ -2908,47 +2904,58 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   // --- ЛОГИКА БАННЕРОВ ---
   const onBannerFocalPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!bannerFormData.imageUrl || e.button !== 0) return
-      e.preventDefault()
-      e.currentTarget.setPointerCapture(e.pointerId)
+      if (!bannerFormData.imageUrl || e.button !== 0) return;
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      
+      // Включаем флаг активности перетаскивания
       bannerFocalDragRef.current = {
         active: true,
         pointerId: e.pointerId,
-        startX: e.clientX,
-        startY: e.clientY,
-        startFx: bannerFormData.focalX,
-        startFy: bannerFormData.focalY,
-      }
+      };
+
+      // Сразу обновляем позицию при первом клике (чтобы точка прыгнула к курсору)
+      updateFocalPosition(e);
     },
-    [bannerFormData.imageUrl, bannerFormData.focalX, bannerFormData.focalY]
-  )
+    [bannerFormData.imageUrl]
+  );
 
   const onBannerFocalPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const d = bannerFocalDragRef.current
-    if (!d?.active || d.pointerId !== e.pointerId) return
-    const el = bannerFocalPreviewRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const dx = e.clientX - d.startX
-    const dy = e.clientY - d.startY
-    // 1:1 — зміщення на всю ширину/висоту прев’ю ≈ повний діапазон 0–100% (передбачуваний кадр як на сайті)
-    const kx = 100 / Math.max(rect.width, 1)
-    const ky = 100 / Math.max(rect.height, 1)
-    const nx = Math.max(0, Math.min(100, d.startFx - dx * kx))
-    const ny = Math.max(0, Math.min(100, d.startFy - dy * ky))
-    setBannerFormData((prev) => ({ ...prev, focalX: nx, focalY: ny }))
-  }, [])
+    const d = bannerFocalDragRef.current;
+    if (!d?.active || d.pointerId !== e.pointerId) return;
+    
+    // Обновляем позицию при движении
+    updateFocalPosition(e);
+  }, []);
 
   const endBannerFocalDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const d = bannerFocalDragRef.current
-    if (!d || d.pointerId !== e.pointerId) return
-    bannerFocalDragRef.current = null
+    const d = bannerFocalDragRef.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    bannerFocalDragRef.current = null;
     try {
-      e.currentTarget.releasePointerCapture(e.pointerId)
+      e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
       /* ignore */
     }
-  }, [])
+  }, []);
+
+  // Новая вспомогательная функция, которая считает точные проценты
+  const updateFocalPosition = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const el = bannerFocalPreviewRef.current;
+    if (!el) return;
+    
+    const rect = el.getBoundingClientRect();
+    
+    // Позиция курсора внутри блока в пикселях (0 = левый верхний край)
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Переводим в проценты (0 - 100) и не даем выйти за границы
+    const nx = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const ny = Math.max(0, Math.min(100, (y / rect.height) * 100));
+
+    setBannerFormData((prev) => ({ ...prev, focalX: nx, focalY: ny }));
+  }, []);
 
   const openCreateBannerModal = () => {
     setEditingBannerId(null)

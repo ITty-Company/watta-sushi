@@ -34,6 +34,12 @@ export type DeliveryCheckResult = {
   deliveryTariffStepEur?: number
   routeDurationMinutes?: number | null
   nearbyServiceCities?: NearbyServiceCityPin[]
+  /**
+   * HMAC-SHA256 подписанный токен стоимости доставки.
+   * Генерируется сервером в /delivery/check, передаётся при создании заказа.
+   * Предотвращает подмену цены доставки клиентом.
+   */
+  deliveryQuoteToken?: string
 }
 
 export function isDeliveryFeeAvailable(status: DeliveryCheckStatus | undefined): boolean {
@@ -97,7 +103,7 @@ export async function fetchDeliveryCheck(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const data = (await res.json()) as DeliveryCheckResult & { status?: string }
+  const data = (await res.json()) as DeliveryCheckResult & { status?: string; deliveryQuoteToken?: string }
   if (!res.ok) {
     return { status: (data.status as DeliveryCheckStatus) || 'server_error' }
   }
@@ -133,5 +139,7 @@ export async function fetchDeliveryCheck(
     nearbyServiceCities: parseNearbyServiceCities(
       (data as { nearbyServiceCities?: unknown }).nearbyServiceCities,
     ),
+    // Подписанный токен стоимости доставки — передаётся при создании заказа для верификации на сервере
+    deliveryQuoteToken: typeof data.deliveryQuoteToken === 'string' ? data.deliveryQuoteToken : undefined,
   }
 }

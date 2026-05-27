@@ -32,12 +32,14 @@ import crmRoutes from './routes/crm.routes.ts';
 import contactRoutes from './routes/contact.routes.ts';
 import notificationRoutes from './routes/notification.routes.ts';
 import cartUpsellRoutes from './routes/cartUpsell.routes.ts';
+import stripeWebhookRouter from './routes/stripe-webhook.routes.ts';
 import { getUploadsDir } from './lib/uploadsDir.js';
 import { getStorageHealthSnapshot } from './lib/storageHealth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadsPublicDir = getUploadsDir();
+const cookieParser = require('cookie-parser');
 
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
 // Явный путь: при запуске не з каталога backend (../) dotenv знайшов б 0 змін
@@ -178,7 +180,15 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// --- 2. ПАРСИНГ И ЛОГИРОВАНИЕ ---
+// --- 2. STRIPE WEBHOOK (raw body — ОБЯЗАТЕЛЬНО до express.json()) ---
+// Stripe верифицирует HMAC-SHA256 подпись по точным байтам тела запроса.
+// Если express.json() отработает первым — он распарсит и пересоберёт JSON,
+// байты изменятся, и stripe.webhooks.constructEvent() бросит ошибку 400.
+// Поэтому: сначала express.raw() для /webhooks/stripe, потом express.json() для всего остального.
+app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
+app.use('/webhooks', stripeWebhookRouter);
+
+// --- 3. ПАРСИНГ И ЛОГИРОВАНИЕ ---
 // Адмінка може слати в JSON base64-фото (галерея товару) — 10mb часто мало (413 request entity too large).
 // Multer/окремі upload-роуты — для великих файлів; JSON лімит обмежуйте в nginx/Render за потреби.
 const jsonBodyLimit = String(process.env.JSON_BODY_LIMIT || '50mb').trim() || '50mb';
@@ -238,6 +248,7 @@ app.use('/api/crm', crmRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/cart-upsell', cartUpsellRoutes);
+app.use(cookieParser());
 
 // Тестовый маршрут
 app.get('/', (req, res) => {

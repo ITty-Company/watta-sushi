@@ -54,7 +54,12 @@ export async function proxyBackendRequest(
     const outHeaders = new Headers()
     const resCt = response.headers.get('content-type')
     if (resCt) outHeaders.set('content-type', resCt)
-
+    
+    const cookieToken = request.cookies.get('auth_token')?.value;
+    if (cookieToken) {
+      headers.set('authorization', `Bearer ${cookieToken}`);
+    }
+    
     return new NextResponse(text || '{}', {
       status: response.status,
       headers: outHeaders,

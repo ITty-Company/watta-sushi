@@ -253,6 +253,15 @@ export default function CartView({
   const [deliveryCheckResult, setDeliveryCheckResult] = useState<DeliveryCheckResult | null>(null)
   const [isDeliveryChecking, setIsDeliveryChecking] = useState(false)
   const deliveryCheckRequestRef = useRef(0)
+  // Stable UUID for this checkout session — used for server-side order idempotency.
+  // Generated once on component mount, reused on retries (prevents duplicate orders
+  // from double-click, slow network, or frontend retry).
+  // A new UUID is naturally generated if the user navigates away and returns.
+  const clientRequestIdRef = useRef<string>(
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  )
   const [deliveryDateKey, setDeliveryDateKey] = useState('')
   const [deliverySlot, setDeliverySlot] = useState('asap')
   // --- ЛОГИКА ПРОМОКОДОВ ---
@@ -915,14 +924,23 @@ export default function CartView({
         address: orderAddress,
         comment: fullComment,
         paymentMethod: effectivePaymentMethod,
-        totalAmount: totalAmountNumber,
-        merchandiseTotal: merchandiseTotalNumber,
-        deliveryPrice: deliveryPriceNumber,
+        totalAmount: totalAmountNumber,         // sent for server-side audit logging only
+        merchandiseTotal: merchandiseTotalNumber, // sent for server-side audit logging only
+        deliveryPrice: deliveryPriceNumber,       // sent for server-side audit logging only
+        // Server-side delivery fee verification (prevents price manipulation):
+        // 1. deliveryQuoteToken — HMAC-signed token from /delivery/check (primary)
+        // 2. deliveryZoneId — zone ID for DB-lookup path (map zone selection)
+        deliveryQuoteToken: deliveryCheckResult?.deliveryQuoteToken ?? undefined,
+        deliveryZoneId:
+          deliveryCheckResult?.zoneId ?? mapZoneSelection?.zoneId ?? undefined,
         usedBonuses: usedBonusesNumber,
         fulfillmentType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY',
         noCallbackConfirm: formData.noCallbackConfirm,
         noDoorbellRing: formData.noDoorbellRing,
         dataProcessingConsent: true,
+        // Idempotency key: prevents duplicate orders from double-click or network retry.
+        // Stable per component mount — same UUID is reused if the user retries immediately.
+        clientRequestId: clientRequestIdRef.current,
       }
 
       const response = await fetch('/api/orders', {

@@ -34,10 +34,10 @@ import {
   sanitizeCheckoutPhoneInput,
 } from '@/lib/checkoutPhone'
 import {
-  getLastUsedAuthCredentials,
+  getLastUsedEmail,          // Вместо getLastUsedAuthCredentials
   loadSavedAuthAccounts,
-  removeSavedAuthAccount,
-  saveAuthCredentials,
+  clearSavedAuthAccount,     // Вместо removeSavedAuthAccount
+  saveAuthEmail,             // Вместо saveAuthCredentials
   type SavedAuthAccount,
 } from '@/lib/authCredentialsStorage'
 
@@ -133,7 +133,7 @@ function AuthScreenBody({
 
   const rememberAuthCredentials = useCallback(
     (email: string, password: string) => {
-      saveAuthCredentials(email, password)
+      saveAuthEmail(formData.email)
       refreshSavedAccounts()
     },
     [refreshSavedAccounts],
@@ -141,11 +141,11 @@ function AuthScreenBody({
 
   useEffect(() => {
     refreshSavedAccounts()
-    const last = getLastUsedAuthCredentials()
-    if (last) {
-      applySavedCredentials(last.email, last.password)
+    const lastEmail = getLastUsedEmail()
+    if (lastEmail) {
+      setFormData(prev => ({ ...prev, email: lastEmail }))
     }
-  }, [refreshSavedAccounts, applySavedCredentials])
+  }, [refreshSavedAccounts])
 
   const {
     phone1Urls: authHeroPhone1Urls,
@@ -726,7 +726,8 @@ function AuthScreenBody({
                         <li key={account.email} className="auth-watta-saved-accounts__item">
                           <button
                             type="button"
-                            onClick={() => applySavedCredentials(account.email, account.password)}
+                            // Подставляем только email, пароль оставляем пустым, чтобы пользователь его ввёл
+                            onClick={() => setFormData(prev => ({ ...prev, email: account.email, password: '' }))}
                             className={`auth-watta-saved-accounts__chip${active ? ' auth-watta-saved-accounts__chip--active' : ''}`}
                             title={account.email}
                           >
@@ -737,7 +738,7 @@ function AuthScreenBody({
                             aria-label={`${t.auth.removeSavedAccount}: ${account.email}`}
                             onClick={(e) => {
                               e.stopPropagation()
-                              removeSavedAuthAccount(account.email)
+                              clearSavedAuthAccount(account.email) // <--- Новое безопасное имя функции
                               refreshSavedAccounts()
                               if (active) {
                                 setFormData((prev) => ({ ...prev, email: '', password: '' }))

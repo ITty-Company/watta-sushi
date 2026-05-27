@@ -17,7 +17,7 @@ export const checkAdmin = async (req: AuthRequest, res: Response, next: NextFunc
       return res.status(401).json({ message: 'Нет токена авторизации' })
     }
 
-    const token = authHeader.split(' ')[1]
+    const token = req.cookies?.auth_token || req.headers.authorization?.split(' ')[1];
     const decoded = jwt.verify(token, getJwtSecret()) as { userId?: string | number }
     const uid = Number(decoded.userId)
     if (!Number.isFinite(uid)) {
@@ -48,7 +48,7 @@ export const authenticateUser = (req: AuthRequest, res: Response, next: NextFunc
     if (!authHeader) {
       return res.status(401).json({ message: 'Нет токена авторизации' })
     }
-    const token = authHeader.split(' ')[1]
+    const token = req.cookies?.auth_token || req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: 'Нет токена авторизации' })
     }

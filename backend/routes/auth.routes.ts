@@ -7,6 +7,8 @@ import { sendPasswordResetEmail } from '../utils/mailer';
 import { getJwtSecret } from '../lib/jwtSecret';
 import { linkGuestOrdersToUser } from '../lib/linkGuestOrders.js';
 import { authenticateUser, AuthRequest } from '../authMiddleware';
+import { authRateLimiter, sendCodeRateLimiter, verifyCodeRateLimiter } from '../rateLimiter';
+import { randomInt } from 'crypto';
 import {
   PHONE_ACCOUNTS_LIMIT_MESSAGE,
   cleanPhoneInput,
@@ -29,7 +31,7 @@ function isValidEmail(email: string): boolean {
 }
 
 // 1. РЕГИСТРАЦИЯ
-router.post('/register', async (req: any, res: any) => {
+router.post('/register', authRateLimiter, async (req: any, res: any) => {
   const { email, password, name, phone } = req.body;
 
   try {
@@ -107,7 +109,7 @@ router.post('/register', async (req: any, res: any) => {
 });
 
 // 2. ПОДТВЕРЖДЕНИЕ КОДА
-router.post('/verify', async (req: any, res: any) => {
+router.post('/verify', verifyCodeRateLimiter, async (req: any, res: any) => {
   const { phone, code, email } = req.body;
 
   try {
@@ -231,7 +233,7 @@ function issueAuthToken(user: {
 }
 
 // Восстановление пароля: код на email
-router.post('/forgot-password', async (req: any, res: any) => {
+router.post('/forgot-password', sendCodeRateLimiter, async (req: any, res: any) => {
   const { email } = req.body;
 
   try {
@@ -243,59 +245,64 @@ router.post('/forgot-password', async (req: any, res: any) => {
     const normalizedEmail = normalizeEmail(email);
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
+    // Всегда 200, защита от email enumeration
     if (!user) {
-      return res.status(404).json({ message: 'Пользователь с таким email не найден' });
+      return res.status(200).json({ message: 'Если такой пользователь существует, мы отправили код на его email.' });
     }
 
-    const resetCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const resetCode = randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 минут
+
     await prisma.user.update({
       where: { id: user.id },
-      data: { verificationCode: resetCode },
+      data: {
+        verificationCode: resetCode,
+        verificationCodeExpiresAt: expiresAt,
+      },
     });
 
     try {
       await sendPasswordResetEmail(normalizedEmail, resetCode);
-    } catch (mailError) {
-      console.error('Ошибка отправки email:', mailError);
-      console.log('>>> КОД ВОССТАНОВЛЕНИЯ ПАРОЛЯ (email):', resetCode, 'для', normalizedEmail, '<<<');
+      return res.status(200).json({ message: 'Код отправлен на ваш email.' });
+    } catch (err) {
+      console.error('Ошибка отправки:', err);
+      return res.status(500).json({ message: 'Ошибка при отправке письма' });
     }
-
-    res.json({ message: 'Код восстановления отправлен на email' });
   } catch (error) {
     console.error('Ошибка forgot-password:', error);
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 });
 
-// Восстановление пароля: проверка кода, смена пароля и автоматический вход
-router.post('/reset-password', async (req: any, res: any) => {
+// Восстановление пароля: проверка кода, смена пароля
+router.post('/reset-password', verifyCodeRateLimiter, async (req: any, res: any) => {
   const { email, code, password } = req.body;
-
   try {
     if (!email || !code || !password) {
       return res.status(400).json({ message: 'Заполните email, код и новый пароль' });
     }
-    if (String(password).length < 6) {
-      return res.status(400).json({ message: 'Пароль должен содержать минимум 6 символов' });
-    }
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ message: 'Некорректный email' });
-    }
-
+    
     const normalizedEmail = normalizeEmail(email);
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
     if (!user) {
-      return res.status(404).json({ message: 'Пользователь с таким email не найден' });
+      return res.status(404).json({ message: 'Пользователь не найден' });
     }
-    if (!user.verificationCode || user.verificationCode !== String(code)) {
+    
+    // Проверка кода
+    if (user.verificationCode !== String(code)) {
       return res.status(400).json({ message: 'Неверный код' });
+    }
+    
+    // Проверка времени (используем Optional Chaining, так как поле может быть null)
+    if (user.verificationCodeExpiresAt && user.verificationCodeExpiresAt < new Date()) {
+      return res.status(400).json({ message: 'Код истёк. Запросите новый.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword, verificationCode: null },
+      data: { password: hashedPassword, verificationCode: null, verificationCodeExpiresAt: null },
     });
 
     await linkGuestOrdersToUser(prisma, updatedUser.id, updatedUser.phone);
@@ -307,7 +314,7 @@ router.post('/reset-password', async (req: any, res: any) => {
   }
 });
 
-router.post('/login', async (req: any, res: any) => {
+router.post('/login', authRateLimiter, async (req: any, res: any) => {
   const { email, password } = req.body;
 
   try {
@@ -454,7 +461,7 @@ router.patch('/profile', authenticateUser, async (req: AuthRequest, res: any) =>
 });
 
 // Зміна телефону: надіслати SMS на новий номер
-router.post('/profile/phone/send-code', authenticateUser, async (req: AuthRequest, res: any) => {
+router.post('/profile/phone/send-code',sendCodeRateLimiter, authenticateUser, async (req: AuthRequest, res: any) => {
   const { phone } = req.body ?? {};
 
   try {

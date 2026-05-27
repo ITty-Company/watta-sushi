@@ -24,6 +24,7 @@ model User {
   // Статусы верификации
   isPhoneVerified  Boolean @default(false) // Главный флаг подтверждения
   verificationCode String? // Сюда пишем код из SMS
+  verificationCodeExpiresAt DateTime?
   /// Новий номер до підтвердження SMS (зміна телефону в профілі)
   pendingPhone     String?
 
@@ -221,6 +222,11 @@ model Order {
 
   /// Згода на обробку персональних даних при оформленні замовлення
   dataProcessingConsentAt DateTime?
+
+  /// Клієнтський UUID для ідемпотентності (генерується фронтендом, захист від дублів).
+  /// Унікальний індекс: якщо два запити з одним clientRequestId приходять одночасно,
+  /// другий отримує P2002 і повертає 409 замість дублікату замовлення.
+  clientRequestId String? @unique
 
   // Связь с пользователем (опционально, так как заказ может сделать гость)
   userId Int?

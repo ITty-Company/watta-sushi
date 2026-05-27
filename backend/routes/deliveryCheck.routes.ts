@@ -13,6 +13,7 @@ import {
   filterActiveServiceHubCities,
   isNlDrivingDistanceInServiceRange,
 } from '../lib/deliveryServiceArea.js'
+import { signDeliveryQuote } from '../lib/deliveryQuote.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -1053,6 +1054,8 @@ router.post('/check', async (req: Request, res: Response) => {
         distanceKm: distRounded,
         routeDurationMinutes: route.durationMinutes,
         minimumOrderEur: minimumOrderEurFromDistanceKm(distanceKm),
+        // Подписанный токен для верификации fee при создании заказа
+        deliveryQuoteToken: signDeliveryQuote({ fee, cityId, isNlTariff: true }),
       })
     }
 
@@ -1096,6 +1099,13 @@ router.post('/check', async (req: Request, res: Response) => {
           distanceKm: dKm,
           minimumOrderEur:
             est.distanceKm != null ? minimumOrderEurFromDistanceKm(est.distanceKm) : null,
+          // Подписанный токен для верификации fee при создании заказа
+          deliveryQuoteToken: signDeliveryQuote({
+            fee: est.estimatedDeliveryFee,
+            cityId,
+            zoneId: zone.id,
+            isNlTariff: false,
+          }),
         })
       }
     }
