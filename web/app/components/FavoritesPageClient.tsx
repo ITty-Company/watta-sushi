@@ -31,7 +31,7 @@ function FavoritesGridSkeleton() {
 
 export default function FavoritesPageClient() {
   const router = useInstantRouter()
-  const { t, getLocalized, language } = useLanguage()
+  const { t, getLocalized } = useLanguage()
   const cp = t.clientProfile
   const wf = t.productDetail.weightFallback
   const pf = t.productDetail.piecesFallback
@@ -76,13 +76,13 @@ export default function FavoritesPageClient() {
       return
     }
     void load()
-  }, [load, language, router])
+  }, [load, router])
 
   useWattaCatalogSync(() => void load(true), 'products')
 
   useEffect(() => {
     if (!isUserLoggedIn()) return
-    const onFav = () => void load()
+    const onFav = () => {}
     const onUser = () => void load()
     window.addEventListener('favoritesUpdated', onFav)
     window.addEventListener('userChanged', onUser)

@@ -28481,3 +28481,28 @@ body .watta-sticky-chrome-portal .categories-panel-wrapper-web,
 }
 
 @import './watta-hero-home-match-tablet-desktop.css';
+
+/* ── Задача 7: FPS — снижаем нагрузку рендера секций меню ───────────────── */
+.home-menu-cat-block-web {
+  contain: layout style;
+}
+
+/* ── Задача 5: равная высота карточек в сетке (md+) ──────────────────────── */
+@media (min-width: 768px) {
+  /* Выравниваем строки сетки: растягиваем ячейки до высоты самой высокой */
+  .home-menu-cat-band-web > .grid {
+    align-items: stretch !important;
+  }
+  /* Карточка занимает всю высоту ячейки */
+  .home-menu-cat-band-web .home-menu-product-card--grid-web {
+    height: 100%;
+  }
+  /* Тело карточки заполняет оставшееся пространство */
+  .home-menu-cat-band-web .home-menu-product-card--grid-web .home-menu-product-card-body-web {
+    flex: 1 !important;
+  }
+  /* Цена + кнопка прижаты к низу */
+  .home-menu-cat-band-web .home-menu-product-card--grid-web .home-menu-product-card-footer-web {
+    margin-top: auto;
+  }
+}

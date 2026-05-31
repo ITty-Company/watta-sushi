@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
@@ -27,6 +27,7 @@ import { runUntilScrollSuccess } from '@/lib/menuScroll'
 import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import DeliveryHeroCopy from './DeliveryHeroCopy'
+import { UtensilsCrossed, Utensils, Cookie, Coffee, Flame, GlassWater, Fish, Layers, Package } from 'lucide-react'
 
 interface MenuItem {
   id: number
@@ -59,6 +60,21 @@ interface MenuCategoryRow {
 function normMenuSlug(s: string): string {
   const t = s.trim().toLowerCase()
   return t.length > 0 ? t : 'misc'
+}
+
+const FULL_MENU_ICON_MAP: Record<string, React.ReactElement> = {
+  rolls: <Fish size={22} strokeWidth={1.8} aria-hidden />,
+  sushi: <Utensils size={22} strokeWidth={1.8} aria-hidden />,
+  sets: <Package size={22} strokeWidth={1.8} aria-hidden />,
+  soups: <Coffee size={22} strokeWidth={1.8} aria-hidden />,
+  bowls: <Layers size={22} strokeWidth={1.8} aria-hidden />,
+  snacks: <Cookie size={22} strokeWidth={1.8} aria-hidden />,
+  drinks: <GlassWater size={22} strokeWidth={1.8} aria-hidden />,
+  sauces: <Flame size={22} strokeWidth={1.8} aria-hidden />,
+}
+
+function getMenuCategoryIcon(slug: string, emoji: string): React.ReactNode {
+  return FULL_MENU_ICON_MAP[slug] ?? <span aria-hidden>{emoji}</span>
 }
 
 export default function FullMenuPageClient() {
@@ -383,8 +399,8 @@ export default function FullMenuPageClient() {
   }, [items, categories])
 
   const visibleCategories = useMemo(() => {
-    return categories.filter((c) => (itemsBySlug.get(normMenuSlug(c.slug))?.length ?? 0) > 0)
-  }, [categories, itemsBySlug])
+    return categories
+  }, [categories])
 
   /** Зсув для scroll-margin + поріг «Усі» — глобальна фіксована шапка (див. AppClient → WattaPublicSiteChrome) */
   const scrollPadTotal = FULL_MENU_STICKY_RESERVE_PX
@@ -641,8 +657,8 @@ export default function FullMenuPageClient() {
                     >
                       <div className="home-menu-cat-band-web">
                         <div className="home-menu-cat-heading-web">
-                          <span className="home-menu-cat-emoji-bare-web" aria-hidden>
-                            {cat.emoji}
+                          <span className="home-menu-cat-emoji-bare-web">
+                            {getMenuCategoryIcon(cat.slug, cat.emoji)}
                           </span>
                           <div className="home-menu-cat-heading-text-web min-w-0">
                             <h2 className="home-menu-cat-title-web">{cat.name}</h2>
@@ -652,16 +668,20 @@ export default function FullMenuPageClient() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                          {list.map((item) => (
-                            <WattaMenuProductCard
-                              key={item.id}
-                              variant="grid"
-                              product={item}
-                              onAddToCart={addToCartFromCard}
-                            />
-                          ))}
-                        </div>
+                        {list.length === 0 ? (
+                          <p className="py-8 text-sm text-[#145142]/50">{mv.emptyCategoryTitle}</p>
+                        ) : (
+                          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                            {list.map((item) => (
+                              <WattaMenuProductCard
+                                key={item.id}
+                                variant="grid"
+                                product={item}
+                                onAddToCart={addToCartFromCard}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </section>
                   )

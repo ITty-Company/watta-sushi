@@ -141,7 +141,7 @@ function readInitialProductState(
   }
 }
 
-export default function ProductView({ productId, initialProductRow, onBack }: ProductViewProps) {
+export default function ProductView({ productId, initialProductRow, onBack, onCartClick }: ProductViewProps) {
   const router = useInstantRouter()
   const { t, language } = useLanguage()
   const pd = t.productDetail
@@ -174,6 +174,11 @@ export default function ProductView({ productId, initialProductRow, onBack }: Pr
   const getCategoryLabel = (p: Product) => {
     const c = p.category
     if (!c) return ''
+    const slug = c.slug?.trim()
+    if (slug) {
+      const fromCategories = (t.categories as Record<string, string | undefined>)[slug]
+      if (fromCategories) return fromCategories
+    }
     return getLocalizedField(c as unknown as Record<string, unknown>, 'name', lang)
   }
 
@@ -586,11 +591,14 @@ export default function ProductView({ productId, initialProductRow, onBack }: Pr
                 </div>
                 <button
                   type="button"
-                  onClick={addToCart}
-                  className="mt-2 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#145142] px-3 text-sm font-bold text-white transition hover:bg-[#104034] active:scale-[0.99] sm:mt-3 sm:min-h-12 sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-lg"
+                  onClick={justAdded ? (onCartClick ?? addToCart) : addToCart}
+                  className={cn(
+                    'mt-2 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-bold text-white transition active:scale-[0.99] sm:mt-3 sm:min-h-12 sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-lg',
+                    justAdded ? 'bg-[#0d3a2b] hover:bg-[#0a2d22]' : 'bg-[#145142] hover:bg-[#104034]',
+                  )}
                 >
                   <ShoppingBag className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-                  {justAdded ? pd.addedHint : pd.toCart}
+                  {justAdded ? a.cart : pd.toCart}
                 </button>
               </div>
             </div>

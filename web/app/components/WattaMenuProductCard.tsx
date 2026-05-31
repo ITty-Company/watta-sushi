@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { WATTA_CATALOG_REFRESH_EVENT } from '@/lib/wattaCatalogSync'
 import WattaLink from './WattaLink'
-import { Plus } from 'lucide-react'
+import { Minus, Plus, ShoppingBag } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
@@ -11,6 +11,7 @@ import { preloadImageUrls } from '@/lib/preloadImages'
 import { prefetchProductById, primeProductPageCache, warmupProductDetail } from '@/lib/fetchProductById'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
+import { lineQuantity, readCartFromStorage, writeCartToStorage } from '@/lib/cartStorage'
 
 export type WattaMenuProductCardModel = {
   id: number
@@ -71,6 +72,36 @@ export function WattaMenuProductCard({
   const fixedOff = Number(product.cartFixedDiscountEur) || 0
   const emoji = product.emoji ?? '🍣'
   const orderLabel = t.menuView.fullMenuWant
+
+  const getCartQty = useCallback(() => {
+    const line = readCartFromStorage().find((l) => l.id === product.id)
+    return line ? lineQuantity(line) : 0
+  }, [product.id])
+
+  const [cartQty, setCartQty] = useState(0)
+  useEffect(() => {
+    setCartQty(getCartQty())
+    const onCartChange = () => setCartQty(getCartQty())
+    window.addEventListener('cartUpdated', onCartChange)
+    window.addEventListener('storage', onCartChange)
+    return () => {
+      window.removeEventListener('cartUpdated', onCartChange)
+      window.removeEventListener('storage', onCartChange)
+    }
+  }, [getCartQty])
+
+  const changeCartQty = useCallback((delta: number) => {
+    const lines = readCartFromStorage()
+    const idx = lines.findIndex((l) => l.id === product.id)
+    if (idx < 0) return
+    const next = lineQuantity(lines[idx]) + delta
+    if (next <= 0) {
+      lines.splice(idx, 1)
+    } else {
+      lines[idx] = { ...lines[idx], quantity: Math.min(99, next) }
+    }
+    writeCartToStorage(lines)
+  }, [product.id])
   const warmDetail = () => {
     prefetchProductById(product.id)
     void warmupProductDetail(product.id)
@@ -186,19 +217,50 @@ export function WattaMenuProductCard({
             ) : null}
             <span className="home-menu-product-price-web">{eff} €</span>
           </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onAddToCart(product)
-            }}
-            className="home-menu-product-add-web"
-            aria-label={orderLabel}
-          >
-            <Plus className="home-menu-product-add-icon-web" size={16} strokeWidth={2.4} aria-hidden />
-            <span className="home-menu-product-add-text-web">{orderLabel}</span>
-          </button>
+          {cartQty > 0 ? (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeCartQty(-1) }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#145142]/15 bg-[#f6faf8] text-[#145142]"
+                aria-label="-"
+              >
+                <Minus size={12} strokeWidth={2.5} aria-hidden />
+              </button>
+              <span className="min-w-[1.25rem] text-center text-sm font-bold tabular-nums text-[#145142]">
+                {cartQty}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeCartQty(1) }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#145142] text-white"
+                aria-label="+"
+              >
+                <Plus size={12} strokeWidth={2.5} aria-hidden />
+              </button>
+              <WattaLink
+                href="/cart"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#145142]/10 text-[#145142]"
+                aria-label={t.siteAria.cart}
+              >
+                <ShoppingBag size={13} aria-hidden />
+              </WattaLink>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onAddToCart(product)
+              }}
+              className="home-menu-product-add-web"
+              aria-label={orderLabel}
+            >
+              <Plus className="home-menu-product-add-icon-web" size={16} strokeWidth={2.4} aria-hidden />
+              <span className="home-menu-product-add-text-web">{orderLabel}</span>
+            </button>
+          )}
         </div>
       </div>
     </article>

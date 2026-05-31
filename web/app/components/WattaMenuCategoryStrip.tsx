@@ -2,6 +2,7 @@
 
 import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { UtensilsCrossed, Utensils, Cookie, Coffee, Flame, GlassWater, Fish, Layers, Package } from 'lucide-react'
 import { readMenuCategoriesFromSessionCache } from '@/lib/readMenuCategoriesCache'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useLanguage } from '../context/LanguageContext'
@@ -17,6 +18,21 @@ import {
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
 import { getApiUrl } from '@/lib/utils'
 import { fetchPublicApi } from '@/lib/publicApiFetch'
+
+const STRIP_ICON_MAP: Record<string, React.ReactElement> = {
+  rolls: <Fish size={18} strokeWidth={1.8} aria-hidden />,
+  sushi: <Utensils size={18} strokeWidth={1.8} aria-hidden />,
+  sets: <Package size={18} strokeWidth={1.8} aria-hidden />,
+  soups: <Coffee size={18} strokeWidth={1.8} aria-hidden />,
+  bowls: <Layers size={18} strokeWidth={1.8} aria-hidden />,
+  snacks: <Cookie size={18} strokeWidth={1.8} aria-hidden />,
+  drinks: <GlassWater size={18} strokeWidth={1.8} aria-hidden />,
+  sauces: <Flame size={18} strokeWidth={1.8} aria-hidden />,
+}
+
+function getCategoryIcon(key: string, emoji: string): React.ReactNode {
+  return STRIP_ICON_MAP[key] ?? <span aria-hidden>{emoji}</span>
+}
 
 type MenuCategory = {
   id: string
@@ -240,30 +256,30 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
     [checkScrollButtons],
   )
 
-  useEffect(() => {
-    const panel = categoriesPanelRef.current
-    if (!panel) return
-    const savedPosition = scrollPositionRef.current
-    const restorePosition = () => {
-      if (!panel || isUserScrollingRef.current) return
-      if (Date.now() < suppressPanelRestoreUntilRef.current) return
-      const currentScroll = panel.scrollLeft
-      if (savedPosition > 0 && Math.abs(currentScroll - savedPosition) > 5) {
-        panel.scrollLeft = savedPosition
-      }
-    }
-    if (restorePositionTimeoutRef.current) clearTimeout(restorePositionTimeoutRef.current)
-    restorePositionTimeoutRef.current = setTimeout(restorePosition, 50)
-    const t1 = setTimeout(restorePosition, 100)
-    const t2 = setTimeout(restorePosition, 250)
-    const t3 = setTimeout(restorePosition, 500)
-    return () => {
-      if (restorePositionTimeoutRef.current) clearTimeout(restorePositionTimeoutRef.current)
-      clearTimeout(t1)
-      clearTimeout(t2)
-      clearTimeout(t3)
-    }
-  }, [urlHighlight, productHighlight, pathname, menuCategories])
+  // useEffect(() => {
+  //   const panel = categoriesPanelRef.current
+  //   if (!panel) return
+  //   const savedPosition = scrollPositionRef.current
+  //   const restorePosition = () => {
+  //     if (!panel || isUserScrollingRef.current) return
+  //     if (Date.now() < suppressPanelRestoreUntilRef.current) return
+  //     const currentScroll = panel.scrollLeft
+  //     if (savedPosition > 0 && Math.abs(currentScroll - savedPosition) > 5) {
+  //       panel.scrollLeft = savedPosition
+  //     }
+  //   }
+  //   if (restorePositionTimeoutRef.current) clearTimeout(restorePositionTimeoutRef.current)
+  //   restorePositionTimeoutRef.current = setTimeout(restorePosition, 50)
+  //   const t1 = setTimeout(restorePosition, 100)
+  //   const t2 = setTimeout(restorePosition, 250)
+  //   const t3 = setTimeout(restorePosition, 500)
+  //   return () => {
+  //     if (restorePositionTimeoutRef.current) clearTimeout(restorePositionTimeoutRef.current)
+  //     clearTimeout(t1)
+  //     clearTimeout(t2)
+  //     clearTimeout(t3)
+  //   }
+  // }, [urlHighlight, productHighlight, pathname, menuCategories])
 
   useEffect(() => {
     const panel = categoriesPanelRef.current
@@ -466,10 +482,10 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
                 e.currentTarget.blur()
               }}
               tabIndex={-1}
-              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'pan-y' }}
+              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'pan-x pan-y' }}
             >
-              <div className="category-button-icon-web" aria-hidden>
-                🍱
+              <div className="category-button-icon-web">
+                <UtensilsCrossed size={18} strokeWidth={1.8} aria-hidden />
               </div>
               <span className="category-button-label-web">{mv.fullMenuAllTab}</span>
             </button>
@@ -485,9 +501,9 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
                 e.currentTarget.blur()
               }}
               tabIndex={-1}
-              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'pan-y' }}
+              style={{ scrollMargin: 0, scrollPadding: 0, outline: 'none', touchAction: 'pan-x pan-y' }}
             >
-              <div className="category-button-icon-web">{category.emoji}</div>
+              <div className="category-button-icon-web">{getCategoryIcon(category.key, category.emoji)}</div>
               <span className="category-button-label-web">{category.name}</span>
             </button>
           ))}
