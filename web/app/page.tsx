@@ -13,7 +13,7 @@ export default function Home() {
         fetchPriority="high"
       />
       {/* LCP: постер hero. Mp4 — без high priority, щоб не з’їдати смугу під картинку. */}
-      <link rel="preload" as="image" href={WATTA_HOME_HERO_POSTER} fetchPriority="high" />
+      {/* <link rel="preload" as="image" href={WATTA_HOME_HERO_POSTER} fetchPriority="high" /> */}
       <HomeHeroSsrShell />
       <HomeClient />
     </>

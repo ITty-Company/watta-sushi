@@ -1,4 +1,4 @@
-import { WATTA_HOME_HERO_POSTER, WATTA_HERO_OCEAN_GRADIENT } from '@/lib/wattaHeroVideo'
+import {WATTA_HERO_OCEAN_GRADIENT } from '@/lib/wattaHeroVideo'
 
 /** SSR-заглушка hero до гідратації MenuView — постер + висота, без білого поля. */
 export default function HomeHeroSsrShell() {
@@ -17,10 +17,7 @@ export default function HomeHeroSsrShell() {
             <div
               className="welcome-hero-media-frame-web"
               style={{
-                backgroundImage: `url('${WATTA_HOME_HERO_POSTER}')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center var(--watta-home-hero-media-pos-y, 46%)',
-                backgroundRepeat: 'no-repeat',
+                backgroundColor: WATTA_HERO_OCEAN_GRADIENT,
               }}
             />
           </div>
