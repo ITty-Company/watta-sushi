@@ -93,15 +93,21 @@ export async function POST(request: NextRequest) {
   const data = await response.json();
   if (!response.ok) return NextResponse.json(data, { status: response.status });
 
-  // Создаем ответ
-  const res = NextResponse.json({ user: data.user }); // Токен НЕ отдаем в JSON
+  const res = NextResponse.json({ token: data.token, user: data.user });
 
-  // Ставим HttpOnly куку
   res.cookies.set('auth_token', data.token, {
-    httpOnly: true, // Запрещает доступ из JS
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30, // 30 дней
+    maxAge: 60 * 60 * 24 * 30,
+    path: '/',
+  });
+
+  res.cookies.set('is_logged_in', 'true', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 30,
     path: '/',
   });
 
