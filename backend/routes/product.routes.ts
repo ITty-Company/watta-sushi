@@ -14,6 +14,10 @@ import {
   optimizeProductFileOnDisk,
   PRODUCT_UPLOAD_PRESET,
 } from '../lib/compressUploadImage.js';
+import {
+  categorySlugFromNames,
+  resolveUniqueCategorySlug,
+} from '../lib/categorySlug.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -378,21 +382,8 @@ router.post('/categories', checkAdmin, async (req: Request, res: Response) => {
     const normalizedImageUrl = imageUrl !== undefined ? normalizeCategoryImageUrl(imageUrl) : null;
     const normalizedHoverImageUrl = hoverImageUrl !== undefined ? normalizeCategoryImageUrl(hoverImageUrl) : null;
     
-    let categorySlug = slug || name_ru.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    let finalSlug = categorySlug;
-    let counter = 1;
-    const maxAttempts = 100;
-    
-    while (counter <= maxAttempts) {
-      const existing = await prisma.category.findUnique({
-        where: { slug: finalSlug }
-      });
-      if (!existing) break;
-      finalSlug = `${categorySlug}-${counter}`;
-      counter++;
-    }
-    
-    if (counter > maxAttempts) finalSlug = `${categorySlug}-${Date.now()}`;
+    const baseSlug = categorySlugFromNames({ slug, name_ru, name_ua, name_en, name_nl });
+    const finalSlug = await resolveUniqueCategorySlug(prisma, baseSlug);
     
     const category = await prisma.category.create({
       data: {
@@ -420,26 +411,6 @@ router.post('/categories', checkAdmin, async (req: Request, res: Response) => {
   }
 });
 
-/** Слаг для маршрутів /menu; «-» або порожнє ламають фронт. */
-function safeCategorySlug(input: unknown, name_ru: string | undefined): string {
-  const base = (name_ru || 'category')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '') || 'category';
-  if (input == null || String(input).trim() === '') return base;
-  const s = String(input)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-  if (s.length < 2 || s === '-' || s === '—') return base;
-  return s;
-}
-
 // 2.2. Обновить категорию
 router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
@@ -449,8 +420,14 @@ router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) =>
     if (!existing) {
       return res.status(404).json({ error: 'Категория не найдена' });
     }
-    const nameForSlug = name_ru != null && String(name_ru).trim() !== '' ? String(name_ru) : existing.name_ru;
-    const finalSlug = safeCategorySlug(slug, nameForSlug);
+    const baseSlug = categorySlugFromNames({
+      slug,
+      name_ru: name_ru ?? existing.name_ru,
+      name_ua: name_ua ?? existing.name_ua,
+      name_en: name_en ?? existing.name_en,
+      name_nl: name_nl ?? existing.name_nl,
+    });
+    const finalSlug = await resolveUniqueCategorySlug(prisma, baseSlug, id);
 
     const category = await prisma.category.update({
       where: { id },
@@ -463,8 +440,11 @@ router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) =>
     });
     clearCatalogCache();
     res.json(category);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Ошибка обновления категории:', error);
+    if (error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2002') {
+      return res.status(400).json({ error: 'Категория с таким slug уже существует' });
+    }
     res.status(500).json({ error: 'Ошибка обновления категории' });
   }
 });

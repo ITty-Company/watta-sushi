@@ -84,6 +84,7 @@ import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSav
 import { compressProductImageFile } from '@/lib/compressProductImage'
 import { compressIngredientImageFile } from '@/lib/compressIngredientImage'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { suggestCategorySlug } from '@/lib/categorySlug'
 import { parseBlogIdList } from '@/lib/blogLinks'
 import BlogLinksPicker from '@/app/components/admin/BlogLinksPicker'
 import BlogI18nEditor, {
@@ -3565,12 +3566,18 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     // Преобразуем id в число, если это строка
     const categoryId = typeof category.id === 'string' ? parseInt(category.id) : category.id
     setEditingCategoryId(categoryId)
-    setCategoryFormData({
+    const names = {
       name_ru: category.name_ru,
       name_ua: category.name_ua || '',
       name_en: category.name_en || '',
       name_nl: category.name_nl || '',
-      slug: category.slug,
+    }
+    setCategoryFormData({
+      ...names,
+      slug:
+        category.slug && category.slug !== '-' && category.slug.trim().length >= 2
+          ? category.slug
+          : suggestCategorySlug({ ...names, slug: category.slug }),
       emoji: category.emoji || '🍣',
       imageUrl: category.imageUrl || '',
       hoverImageUrl: category.hoverImageUrl || '',
@@ -3591,8 +3598,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       }
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
       
-      // Генерируем slug если не указан
-      const slug = categoryFormData.slug || categoryFormData.name_ru.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      const slug = suggestCategorySlug(categoryFormData)
       
       let res
       if (editingCategoryId) {
