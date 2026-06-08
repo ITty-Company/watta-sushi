@@ -16,14 +16,22 @@ function isElementVerticallyScrollable(el: HTMLElement): boolean {
   return el.scrollHeight > el.clientHeight + 2
 }
 
-/** Куди йде вертикальний скрол: внутрішній `.content-web` або window/body. */
+function isDocumentBodyScrollContainer(): boolean {
+  if (typeof document === 'undefined') return false
+  const body = document.body
+  if (body.classList.contains('watta-route-home')) return true
+  const oy = getComputedStyle(body).overflowY
+  return oy === 'auto' || oy === 'scroll' || oy === 'overlay'
+}
+
+/** Куди йде вертикальний скрол: window/body або внутрішній `.content-web`. */
 export function getVerticalScrollTarget(): VerticalScrollTarget {
   if (typeof window === 'undefined') return window as unknown as VerticalScrollTarget
-  // Усі маршрути, крім головної: скрол document/body (див. globals.css body:not(.watta-route-home)).
-  if (typeof document !== 'undefined' && !document.body.classList.contains('watta-route-home')) {
+  // Головна + публічні маршрути: один скрол document/body (watta-mobile-touch-scroll + globals).
+  if (isDocumentBodyScrollContainer()) {
     return window
   }
-  // Головна на телефоні: лише body (watta-mobile-touch-scroll), без вкладеного .content-web.
+  // Телефон: завжди window — вкладений overflow дає «залипання».
   if (isWattaPhoneViewport()) {
     return window
   }

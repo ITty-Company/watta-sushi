@@ -3,15 +3,23 @@
  */
 :root {
   --watta-chrome-header-measured-h: 76px;
-  --watta-chrome-categories-band-h: 56px;
-  --watta-sticky-chrome-measured-h: 132px;
+  --watta-chrome-categories-band-h: 50px;
+  --watta-sticky-chrome-measured-h: 126px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --watta-chrome-header-measured-h: 86px;
+    --watta-chrome-categories-band-h: 50px;
+    --watta-sticky-chrome-measured-h: 136px;
+  }
 }
 
 @media (min-width: 768px) {
   :root {
     --watta-chrome-header-measured-h: 78px;
     --watta-chrome-categories-band-h: 52px;
-    --watta-sticky-chrome-measured-h: 130px;
+    --watta-sticky-chrome-measured-h: 152px;
   }
 }
 

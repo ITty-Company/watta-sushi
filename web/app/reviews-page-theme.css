@@ -44,6 +44,13 @@ html:has(#reviews-page-container) .site-footer-watta.site-footer-watta--light {
   margin-inline: auto;
 }
 
+@media (min-width: 768px) {
+  .watta-reviews-page .watta-stellar-hero-intro .watta-reviews-hero-empty-hint {
+    font-size: 0.8125rem;
+    line-height: 1.48;
+  }
+}
+
 .watta-reviews-hero-zone {
   position: relative;
   z-index: 1;

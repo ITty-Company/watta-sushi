@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useLiveNotificationCount } from '@/hooks/useLiveNotificationCount'
@@ -14,7 +14,7 @@ import '@/app/watta-checkout-success.css'
 /** Слідкує за новими сповіщеннями — показує тост знизу та оновлює лічильник. */
 export default function WattaNotificationWatcher() {
   const loggedIn = useIsLoggedIn()
-  const { unreadCount, latestUnread } = useLiveNotificationCount(25000)
+  const { unreadCount, latestUnread } = useLiveNotificationCount()
   const { t } = useLanguage()
   const router = useInstantRouter()
   const notificationsDrawer = useOptionalNotificationsDrawer()
@@ -45,23 +45,33 @@ export default function WattaNotificationWatcher() {
 
     toast.custom(
       (toastInstance) => (
-        <button
-          type="button"
-          className={`watta-notification-toast${toastInstance.visible ? '' : ''}`}
-          onClick={() => {
-            toast.dismiss(toastInstance.id)
-            openWattaNotifications(router, notificationsDrawer?.open ?? null)
-          }}
-        >
-          <span className="watta-notification-toast__ico" aria-hidden>
-            <Bell size={18} strokeWidth={2.2} />
-          </span>
-          <span className="watta-notification-toast__body">
-            <span className="watta-notification-toast__label">{t.notifications.newToastLabel}</span>
-            <span className="watta-notification-toast__title">{title}</span>
-            <span className="watta-notification-toast__text">{body}</span>
-          </span>
-        </button>
+        <div className="watta-notification-toast">
+          <button
+            type="button"
+            className="watta-notification-toast__open"
+            onClick={() => {
+              toast.dismiss(toastInstance.id)
+              openWattaNotifications(router, notificationsDrawer?.open ?? null)
+            }}
+          >
+            <span className="watta-notification-toast__ico" aria-hidden>
+              <Bell size={18} strokeWidth={2.2} />
+            </span>
+            <span className="watta-notification-toast__body">
+              <span className="watta-notification-toast__label">{t.notifications.newToastLabel}</span>
+              <span className="watta-notification-toast__title">{title}</span>
+              <span className="watta-notification-toast__text">{body}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className="watta-toast-dismiss watta-toast-dismiss--notification"
+            aria-label={t.common.ariaClose}
+            onClick={() => toast.dismiss(toastInstance.id)}
+          >
+            <X size={14} strokeWidth={2.4} aria-hidden />
+          </button>
+        </div>
       ),
       {
         id: item ? `watta-notify-${item.id}` : 'watta-notify-new',

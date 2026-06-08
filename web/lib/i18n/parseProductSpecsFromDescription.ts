@@ -1,4 +1,6 @@
+import { ingredientDisplayName } from './ingredientLocale'
 import type { WattaLanguage } from './language'
+import { readIngredientsCatalogSync } from '@/lib/wattaIngredientsCatalog'
 
 /** Одиниці для рядків ваги / кількості на картках (узгоджено з `t.productDetail`). */
 const SPEC_UNITS: Record<WattaLanguage, { g: string; ml: string; pcs: string }> = {
@@ -47,4 +49,28 @@ export function productCardIngredientsFromDescription(desc: string): string {
     .replace(/^\s*\d+\s*(г|g|мл|ml|шт\.?|pcs|pieces|stuks|st\.)\b[^,]*,?\s*/i, '')
     .trim()
   return withoutLeadingWeight || d
+}
+
+/**
+ * Повний склад для картки: спочатку застосовані інгредієнти з адмінки (мовою сайту),
+ * інакше — локалізований опис без рядка ваги.
+ */
+export function productCompositionLine(
+  description: string,
+  lang: WattaLanguage,
+  ingredientIds?: number[],
+): string {
+  const ids = (ingredientIds ?? []).filter((id) => Number.isFinite(id) && id > 0)
+  if (ids.length > 0) {
+    const catalog = readIngredientsCatalogSync()
+    if (catalog) {
+      const names = ids
+        .map((id) => catalog.get(id))
+        .filter((ing): ing is NonNullable<typeof ing> => Boolean(ing))
+        .map((ing) => ingredientDisplayName(ing, lang))
+        .filter(Boolean)
+      if (names.length > 0) return names.join(', ')
+    }
+  }
+  return productCardIngredientsFromDescription(description)
 }

@@ -37,7 +37,7 @@ export function useMenuCategoryScrollSpy({
     if (!enabled) return
 
     const touchPerf = isWattaTouchScrollPerfViewport()
-    const scrollSyncMinMs = touchPerf ? 48 : 0
+    const scrollSyncMinMs = touchPerf ? 100 : 32
     const publish = (slug: string) => publishMenuCategoryHighlight(slug, lastHighlightSlugRef)
 
     const sync = () => {

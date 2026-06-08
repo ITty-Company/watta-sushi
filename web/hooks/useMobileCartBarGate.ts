@@ -3,7 +3,8 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import { bindAppVerticalScroll, readAppScrollTop } from '@/lib/menuScroll'
-import { isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
+import { createRafScrollListener } from '@/lib/scrollSync'
+import { isWattaPhoneViewport, isWattaTouchScrollPerfViewport } from '@/lib/wattaTouchViewport'
 import {
   getCartRevision,
   readCartFromStorage,
@@ -85,10 +86,15 @@ function resolveCartBarProgress(hero: HTMLElement | null, scrollTop: number): nu
   return clamp01((scrollTop - SCROLL_SHOW_PX) / Math.max(1, fallbackStart - SCROLL_SHOW_PX))
 }
 
+let lastPublishedCartBarProgress = -1
+
 function setCartBarReveal(progress: number) {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   const p = clamp01(progress)
+
+  if (Math.abs(p - lastPublishedCartBarProgress) < 0.02) return
+  lastPublishedCartBarProgress = p
 
   root.style.setProperty(WATTA_CART_BAR_PROGRESS_VAR, p.toFixed(3))
 
@@ -132,17 +138,15 @@ export function useMobileCartBarGate() {
     const mq = window.matchMedia('(max-width: 767px)')
     let unbindScroll: (() => void) | null = null
     let heroObserver: ResizeObserver | null = null
-    let raf = 0
+    let cancelScrollRaf: (() => void) | null = null
 
     const detach = () => {
       unbindScroll?.()
       unbindScroll = null
+      cancelScrollRaf?.()
+      cancelScrollRaf = null
       heroObserver?.disconnect()
       heroObserver = null
-      if (raf) {
-        cancelAnimationFrame(raf)
-        raf = 0
-      }
     }
 
     const sync = () => {
@@ -162,13 +166,9 @@ export function useMobileCartBarGate() {
       setCartBarReveal(resolveCartBarProgress(hero, readAppScrollTop()))
     }
 
-    const scheduleSync = () => {
-      if (raf) return
-      raf = requestAnimationFrame(() => {
-        raf = 0
-        sync()
-      })
-    }
+    const { onScroll: scheduleSync, cancel: cancelScrollListener } = createRafScrollListener(sync, {
+      minIntervalMs: isWattaTouchScrollPerfViewport() ? 64 : 0,
+    })
 
     const observeHero = () => {
       heroObserver?.disconnect()
@@ -188,9 +188,11 @@ export function useMobileCartBarGate() {
         return
       }
 
+      lastPublishedCartBarProgress = -1
       setCartBarReveal(0)
       observeHero()
       sync()
+      cancelScrollRaf = cancelScrollListener
       unbindScroll = bindAppVerticalScroll(scheduleSync)
     }
 

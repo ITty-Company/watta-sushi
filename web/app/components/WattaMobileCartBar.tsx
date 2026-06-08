@@ -5,7 +5,7 @@ import { ShoppingBag } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useCartBarSnapshot } from '@/hooks/useCartBarSnapshot'
-import { openWattaCart, openWattaCheckout } from '@/lib/openWattaCart'
+import { openWattaCart } from '@/lib/openWattaCart'
 import { useOptionalCartDrawer } from '../context/CartDrawerContext'
 import {
   formatMobileCartBarAria,
@@ -42,10 +42,8 @@ export default function WattaMobileCartBar() {
       type="button"
       className="watta-mobile-cart-bar"
       data-watta-cart-filled={hasItems ? 'true' : undefined}
-      onClick={() =>
-        hasItems ? openWattaCheckout(router) : openWattaCart(router, cartDrawer?.open)
-      }
-      aria-label={`${summaryAria}. ${cs.mobileCheckoutShort}`}
+      onClick={() => openWattaCart(router, cartDrawer?.open)}
+      aria-label={`${summaryAria}. ${t.siteAria.cart}`}
       data-watta-cart-target=""
     >
       <WattaMobileCartBarSummary
@@ -57,7 +55,7 @@ export default function WattaMobileCartBar() {
         amountTemplate={cs.mobileBarSummaryAmount}
       />
       <span className="watta-mobile-cart-bar__cta">
-        {hasItems ? cs.mobileCheckoutShort : t.siteAria.cart}
+        {t.siteAria.cart}
         <ShoppingBag className="watta-mobile-cart-bar__ico" strokeWidth={2.25} aria-hidden />
       </span>
     </button>

@@ -9,6 +9,7 @@ import AuthPhoneField, { buildAuthPhoneE164 } from './AuthPhoneField'
 import AuthGoogleButton from './AuthGoogleButton'
 import { completeAuthSession } from '@/lib/authCompleteSession'
 import { isValidCheckoutPhone } from '@/lib/checkoutPhone'
+import { DEFAULT_PHONE_COUNTRY_ISO, findPhoneCountryByIso } from '@/lib/phoneCountries'
 import toast from 'react-hot-toast'
 import type { AuthScreenProps } from './AuthScreen'
 
@@ -40,6 +41,7 @@ export default function AuthNinjaFlow({
   const [step, setStep] = useState<Step>('form')
   const [isLoading, setIsLoading] = useState(false)
   const [phoneLocal, setPhoneLocal] = useState('')
+  const [phoneCountryIso, setPhoneCountryIso] = useState(DEFAULT_PHONE_COUNTRY_ISO)
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [termsAccepted, setTermsAccepted] = useState(false)
@@ -103,7 +105,8 @@ export default function AuthNinjaFlow({
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault()
-    const phone = buildAuthPhoneE164(phoneLocal)
+    const dial = findPhoneCountryByIso(phoneCountryIso)?.dial ?? '380'
+    const phone = buildAuthPhoneE164(phoneLocal, dial)
     if (!isValidCheckoutPhone(phone)) {
       toast.error(a.errors.phoneInvalid)
       return
@@ -269,6 +272,8 @@ export default function AuthNinjaFlow({
               <AuthPhoneField
                 value={phoneLocal}
                 onChange={setPhoneLocal}
+                countryIso={phoneCountryIso}
+                onCountryIsoChange={setPhoneCountryIso}
                 autoFocus={false}
                 aria-label={a.phone}
               />

@@ -302,16 +302,16 @@
   width: 48%;
 }
 
-/* Фінал — великі суші після відльоту картки (без тарілки) */
+/* Фінал — великі суші по центру сірого еліпса (після відльоту картки) */
 .watta-profile-empty__plate-scene {
   position: absolute;
   left: 50%;
-  top: 28%;
+  top: 64%;
   z-index: 7;
-  width: 82%;
-  max-width: 16.5rem;
-  aspect-ratio: 1.2 / 1;
-  transform: translateX(-50%);
+  width: 90%;
+  max-width: 20rem;
+  aspect-ratio: 1.35 / 1;
+  transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
@@ -324,23 +324,23 @@
   pointer-events: none;
 }
 
-/* 1 — зелений (front) ззаду; 2 — помаранчевий (salmon) спереду */
+/* 1 — зелений (front) ззаду; 2 — помаранчевий (salmon) спереду — по центру кола */
 .watta-profile-empty__plate-sushi--1 {
-  left: 12%;
-  bottom: 44%;
+  left: 50%;
+  top: 50%;
   z-index: 2;
-  width: 50%;
-  max-width: 8.25rem;
-  transform: rotate(-10deg);
+  width: 58%;
+  max-width: 11rem;
+  transform: translate(-72%, -48%) rotate(-10deg);
 }
 
 .watta-profile-empty__plate-sushi--2 {
-  right: 8%;
-  bottom: 34%;
+  left: 50%;
+  top: 50%;
   z-index: 4;
-  width: 48%;
-  max-width: 7.75rem;
-  transform: rotate(7deg);
+  width: 56%;
+  max-width: 10.5rem;
+  transform: translate(-12%, -52%) rotate(7deg);
 }
 
 .watta-profile-empty__timeline--story {
@@ -1307,24 +1307,24 @@
   0%,
   65% {
     opacity: 0;
-    transform: rotate(-10deg) scale(0.45) translateY(12px);
+    transform: translate(-72%, -38%) rotate(-10deg) scale(0.45);
   }
   70% {
     opacity: 1;
-    transform: rotate(-10deg) scale(1.06) translateY(0);
+    transform: translate(-72%, -48%) rotate(-10deg) scale(1.1);
   }
   78%,
   88% {
     opacity: 1;
-    transform: rotate(-10deg) scale(1.02) translateY(0);
+    transform: translate(-72%, -48%) rotate(-10deg) scale(1.06);
   }
   96% {
     opacity: 0;
-    transform: rotate(-10deg) scale(0.6) translateY(6px);
+    transform: translate(-72%, -42%) rotate(-10deg) scale(0.6);
   }
   100% {
     opacity: 0;
-    transform: rotate(-10deg) scale(0.45) translateY(12px);
+    transform: translate(-72%, -38%) rotate(-10deg) scale(0.45);
   }
 }
 
@@ -1332,24 +1332,24 @@
   0%,
   70% {
     opacity: 0;
-    transform: rotate(7deg) scale(0.45) translateY(12px);
+    transform: translate(-12%, -42%) rotate(7deg) scale(0.45);
   }
   75% {
     opacity: 1;
-    transform: rotate(7deg) scale(1.04) translateY(0);
+    transform: translate(-12%, -52%) rotate(7deg) scale(1.08);
   }
   78%,
   88% {
     opacity: 1;
-    transform: rotate(7deg) scale(1) translateY(0);
+    transform: translate(-12%, -52%) rotate(7deg) scale(1.04);
   }
   96% {
     opacity: 0;
-    transform: rotate(7deg) scale(0.6) translateY(6px);
+    transform: translate(-12%, -46%) rotate(7deg) scale(0.6);
   }
   100% {
     opacity: 0;
-    transform: rotate(7deg) scale(0.45) translateY(12px);
+    transform: translate(-12%, -42%) rotate(7deg) scale(0.45);
   }
 }
 
@@ -1383,11 +1383,55 @@
   }
 
   .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--1 {
-    transform: rotate(-10deg) scale(1.02);
+    transform: translate(-72%, -48%) rotate(-10deg) scale(1.06);
   }
 
   .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--2 {
-    transform: rotate(7deg) scale(1);
+    transform: translate(-12%, -52%) rotate(7deg) scale(1.04);
+  }
+}
+
+/* Планшет / ноут / ПК — більші суші по центру кола */
+@media (min-width: 768px) {
+  .watta-profile-empty__stage--orders-story {
+    min-height: 12.75rem;
+    aspect-ratio: 280 / 192;
+  }
+
+  .watta-profile-empty__plate-scene {
+    width: 94%;
+    max-width: 24rem;
+  }
+
+  .watta-profile-empty__plate-sushi--1 {
+    width: 62%;
+    max-width: 13.5rem;
+  }
+
+  .watta-profile-empty__plate-sushi--2 {
+    width: 60%;
+    max-width: 12.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-profile-empty__stage--orders-story {
+    min-height: 14.25rem;
+    aspect-ratio: 280 / 200;
+  }
+
+  .watta-profile-empty__plate-scene {
+    max-width: 28rem;
+  }
+
+  .watta-profile-empty__plate-sushi--1 {
+    width: 64%;
+    max-width: 15.5rem;
+  }
+
+  .watta-profile-empty__plate-sushi--2 {
+    width: 62%;
+    max-width: 14.5rem;
   }
 }
 

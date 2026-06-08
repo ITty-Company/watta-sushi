@@ -347,6 +347,80 @@ const STYLES = `
   }
 }
 
+/* Телефон: заголовок «Наши хиты» — вертикальный стек, построчная анимация (без посимвольного stagger). */
+@media (max-width: 767px) {
+  .footer-ready-head--mobile {
+    padding: 0 0 clamp(0.15rem, 0.5vh, 0.3rem);
+  }
+
+  .footer-ready-head--mobile .footer-ready-title-stack {
+    gap: clamp(0.35rem, 1.4vh, 0.55rem);
+    width: 100%;
+    max-width: min(100%, 22rem);
+    margin-inline: auto;
+  }
+
+  .footer-ready-head--mobile .footer-ready-quote {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: center;
+    text-align: left;
+    max-width: min(100%, 20rem);
+    margin-inline: auto;
+  }
+
+  .footer-ready-head--mobile .footer-ready-quote::before {
+    align-self: flex-start;
+    margin-top: 0.08em;
+    margin-bottom: 0;
+  }
+
+  .footer-ready-head--mobile .footer-ready-display {
+    display: block;
+    width: 100%;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  .footer-ready-head--mobile .footer-ready-lede {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    text-align: left;
+    text-wrap: balance;
+  }
+
+  .footer-ready-head--mobile .footer-ready-eyebrow {
+    margin-top: clamp(0.25rem, 0.8vh, 0.4rem);
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.25rem;
+  }
+
+  .footer-ready-mobile-reveal-line {
+    opacity: 0;
+    transform: translateY(0.42em);
+    animation: footer-ready-char-in 0.52s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+    will-change: opacity, transform;
+  }
+
+  .footer-ready-head--mobile .footer-ready-reveal-line {
+    opacity: 0;
+    transform: scaleX(0.35);
+    animation: footer-ready-line-in 0.48s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+    animation-delay: 0.22s;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .footer-ready-mobile-reveal-line,
+  .footer-ready-head--mobile .footer-ready-reveal-line {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+
 .footer-promo-carousel-wrap {
   position: relative;
   width: 100%;

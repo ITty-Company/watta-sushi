@@ -418,7 +418,8 @@
 
 /* Головна: текст → 1-й ряд товарів → 2-й ряд (DOM-порядок у split-marquee) */
 .watta-home-photo-first-screen .watta-roll-marquee-mask--split {
-  --watta-home-split-stack-lift: 0;
+  --watta-home-roll-content-push: clamp(32px, 5vh, 56px);
+  --watta-home-split-stack-lift: var(--watta-home-roll-content-push);
   --watta-home-split-front-pull: 0;
   --watta-home-split-rows-nudge: clamp(7px, 0.85vh, 9px);
   display: grid;
@@ -792,7 +793,8 @@
 
   /* Головна: split-marquee — текст → 1-й ряд → 2-й ряд */
   .watta-home-photo-first-screen {
-    --watta-home-split-stack-lift: 0;
+    --watta-home-roll-content-push: clamp(32px, 5vh, 56px);
+    --watta-home-split-stack-lift: var(--watta-home-roll-content-push);
     --watta-home-split-rows-nudge: clamp(7px, 0.85vh, 9px);
     --watta-home-split-back-lift: clamp(17px, 1.75vh, 20px);
     --watta-home-split-front-lift: calc(clamp(-44px, -6.4vh, -30px) + var(--watta-home-split-rows-nudge));

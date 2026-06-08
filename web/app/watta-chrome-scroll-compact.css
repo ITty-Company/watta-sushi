@@ -14,7 +14,7 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
 }
 
 .watta-sticky-chrome-portal {
-  contain: layout style;
+  contain: layout style paint;
   will-change: auto;
 }
 

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { useOptionalNotificationsDrawer } from '../context/NotificationsDrawerContext'
 import {
   useOptionalRightNavDrawerActions,
   useRightNavDrawerOpen,
@@ -19,6 +20,12 @@ export default function WattaRightNavDrawer() {
     cityChangeHandlerRef: { current: null },
   }
   const isOpen = useRightNavDrawerOpen()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
+
+  useEffect(() => {
+    if (!isOpen) return
+    notificationsDrawer?.close()
+  }, [isOpen, notificationsDrawer])
 
   useEffect(() => {
     close()

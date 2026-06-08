@@ -13,7 +13,9 @@ import { prefetchHref } from '@/lib/instantNav'
 import { primeProductPageChrome } from '@/lib/wattaProductChrome'
 import { warmProductRouteData } from '@/lib/fetchProductById'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
-import { productCardIngredientsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
+import { productCompositionLine } from '@/lib/i18n/parseProductSpecsFromDescription'
+import type { WattaLanguage } from '@/lib/i18n/language'
+import { ensureIngredientsCatalog, readIngredientsCatalogSync } from '@/lib/wattaIngredientsCatalog'
 import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
 import { runCartAddFeedback } from '@/lib/cartAddFeedback'
 import type { MenuAddToCartResult } from '@/hooks/useMenuAddToCart'
@@ -38,6 +40,8 @@ export type WattaMenuProductCardModel = {
   compareAtPrice?: number
   /** Бейдж фіксованої знижки € */
   cartFixedDiscountEur?: number
+  /** Застосований склад з адмінки (GET /api/products → ingredientIds). */
+  ingredientIds?: number[]
 }
 
 type Props = {
@@ -69,7 +73,8 @@ export function WattaMenuProductCardInner({
   onBeforeNavigateToProduct,
   imagePriority = false,
 }: Props) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const lang = language as WattaLanguage
   const router = useRouter()
   const mediaRef = useRef<HTMLDivElement>(null)
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
@@ -89,9 +94,20 @@ export function WattaMenuProductCardInner({
   const orderLabel = t.menuView.fullMenuWant
 
   const cartQty = useCartLineQuantity(product.id)
+  const [ingredientsCatalogReady, setIngredientsCatalogReady] = useState(
+    () => (readIngredientsCatalogSync()?.size ?? 0) > 0,
+  )
+
+  useEffect(() => {
+    if (ingredientsCatalogReady) return
+    void ensureIngredientsCatalog().then((map) => {
+      if (map && map.size > 0) setIngredientsCatalogReady(true)
+    })
+  }, [ingredientsCatalogReady])
+
   const ingredientsLine = useMemo(
-    () => productCardIngredientsFromDescription(product.description),
-    [product.description],
+    () => productCompositionLine(product.description, lang, product.ingredientIds),
+    [product.description, product.ingredientIds, lang, ingredientsCatalogReady],
   )
 
   const changeCartQty = useCallback(
@@ -232,7 +248,7 @@ export function WattaMenuProductCardInner({
                     )}
                     sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
                     priority={imagePriority}
-                    onLoadingComplete={markImageLoaded}
+                    onLoad={markImageLoaded}
                     onError={() => setImageError(true)}
                   />
                 ) : (
@@ -379,6 +395,7 @@ function menuCardPropsEqual(prev: Props, next: Props): boolean {
     a.id === b.id &&
     a.name === b.name &&
     a.description === b.description &&
+    JSON.stringify(a.ingredientIds ?? []) === JSON.stringify(b.ingredientIds ?? []) &&
     a.price === b.price &&
     a.emoji === b.emoji &&
     a.imageUrl === b.imageUrl &&

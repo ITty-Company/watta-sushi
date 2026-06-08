@@ -449,18 +449,18 @@
   }
 
   .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title--stage {
-    font-size: clamp(2.28rem, 2.85vw, 3.2rem) !important;
+    font-size: clamp(1.85rem, 2.3vw, 2.55rem) !important;
     line-height: 1.06 !important;
   }
 
   .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home--stage .delivery-hero-copy-home__script {
-    font-size: clamp(1.58rem, 2.28vw, 2.2rem) !important;
+    font-size: clamp(1.2rem, 1.8vw, 1.65rem) !important;
   }
 
   .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__body--stage {
     max-width: 48rem;
-    font-size: 1.125rem !important;
-    line-height: 1.78 !important;
+    font-size: 0.9375rem !important;
+    line-height: 1.72 !important;
   }
 }
 
@@ -503,7 +503,7 @@
   .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title--stage {
     max-width: none;
     margin-bottom: clamp(0.65rem, 1.2vh, 1rem);
-    font-size: clamp(2.125rem, 3.85vw, 3rem) !important;
+    font-size: clamp(1.75rem, 3.1vw, 2.45rem) !important;
     line-height: 1.08 !important;
     letter-spacing: -0.032em !important;
   }
@@ -517,7 +517,7 @@
   }
 
   .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home--stage .delivery-hero-copy-home__script {
-    font-size: clamp(1.42rem, 2.9vw, 2.05rem) !important;
+    font-size: clamp(1.1rem, 2.35vw, 1.6rem) !important;
     line-height: 1.1 !important;
     font-weight: 400;
   }
@@ -530,8 +530,8 @@
   .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__body--stage {
     margin-top: clamp(0.55rem, 1.1vh, 0.85rem);
     max-width: 46rem;
-    font-size: clamp(1.0625rem, 1.55vw, 1.1875rem) !important;
-    line-height: 1.72 !important;
+    font-size: clamp(0.875rem, 1.25vw, 1rem) !important;
+    line-height: 1.68 !important;
   }
 }
 
@@ -1025,13 +1025,15 @@ html:not([data-watta-home-past-hero='1'])
 @media (max-width: 767px) {
   .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
     overflow: visible !important;
+    /* Телефон: hero по висоті контенту — без великої білої смуги до «Наши хиты». */
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     /*
      * Hero підтягується під sticky chrome (негативний margin-top).
      * Додаємо overlap до висоти — інакше внизу екрана видно початок наступної секції.
      */
-    --watta-home-hero-viewport-h: calc(
-      100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
-    );
+    --watta-home-hero-viewport-h: auto;
     --watta-home-hero-top-white-fade-extra: clamp(92px, 17vh, 156px);
     --watta-home-hero-bottom-white-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(22px, 3.8vh, 36px));
     --menu-stellar-top-fade-h: calc(
@@ -1048,6 +1050,10 @@ html:not([data-watta-home-past-hero='1'])
   .menu-page-web.watta-site-hero-page-web
     .watta-home-photo-first-screen
     .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+    position: relative !important;
+    inset: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
     justify-content: flex-start;
     align-items: stretch;
     padding-bottom: 0;
@@ -1077,9 +1083,8 @@ html:not([data-watta-home-past-hero='1'])
   }
 
   .menu-page-web.watta-site-hero-page-web .delivery-page-intro-web--video:has(.watta-home-photo-first-screen) {
-    min-height: calc(
-      100svh + var(--watta-home-hero-chrome-overlap, var(--watta-sticky-chrome-measured-h, 132px)) - 64px
-    );
+    min-height: 0 !important;
+    height: auto !important;
     overflow: visible;
   }
 
@@ -1161,8 +1166,8 @@ html:not([data-watta-home-past-hero='1'])
   .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
     .delivery-page-home-flow:has(.watta-home-photo-first-screen)
     > #menu-cinematic-block {
-    margin-top: clamp(-16px, -2.4vh, -8px) !important;
-    padding-top: clamp(8px, 1.2vh, 14px) !important;
+    margin-top: clamp(0px, 0.4vh, 4px) !important;
+    padding-top: clamp(4px, 0.6vh, 8px) !important;
     min-height: 0 !important;
   }
 }
@@ -1681,6 +1686,26 @@ html:not([data-watta-home-past-hero='1'])
  * /menu — photo-first hero 1:1 з головною (cover, fade, типографіка, анімації),
  * лише без бігучої смуги ролів. Позиція тексту — спільні .watta-home-photo-first-screen правила.
  */
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-home-photo-first-screen
+  .watta-menu-photo-hero--no-marquee
+  .watta-sushi-roll-hero__mobile-intro,
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-home-photo-first-screen
+  .watta-menu-photo-hero--no-marquee
+  .watta-sushi-roll-hero__mobile-intro-title,
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-home-photo-first-screen
+  .watta-menu-photo-hero--no-marquee
+  .watta-sushi-roll-hero__mobile-intro-line,
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-home-photo-first-screen
+  .watta-menu-photo-hero--no-marquee
+  .watta-sushi-roll-hero__mobile-intro-body {
+  text-align: center;
+  margin-inline: auto;
+}
+
 .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page) .watta-menu-photo-hero--no-marquee {
   display: flex;
   flex-direction: column;
@@ -1692,15 +1717,103 @@ html:not([data-watta-home-past-hero='1'])
 }
 
 @media (max-width: 767px) {
+  /*
+   * /menu (телефон): текст + «Watta-настрій» — по центру hero-зображення.
+   */
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen {
+    aspect-ratio: 777 / 1024;
+    min-height: clamp(260px, calc(100vw * 1024 / 777), 520px) !important;
+    max-height: min(58svh, 520px) !important;
+    width: 100vw;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+    position: absolute !important;
+    inset: 0 !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-home-roll-hero-slot-web {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
     .watta-home-photo-first-screen
     .watta-menu-photo-hero--no-marquee {
     position: static;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     min-height: 100%;
-    padding-top: clamp(6px, 1.4vh, 14px);
-    padding-bottom: clamp(6px, 1.2vh, 12px);
+    height: 100%;
+    width: 100%;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-menu-photo-hero__intro-stack {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    width: min(22rem, 92vw) !important;
+    max-width: min(22rem, 92vw) !important;
+    margin-inline: auto !important;
+    padding: 0 clamp(12px, 3.5vw, 20px) !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro,
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro-title,
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro-line,
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro-body {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+    text-align: center !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-menu-photo-hero__intro-stack
+    .watta-sushi-roll-hero__title-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+    text-align: center !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-menu-balloons-trigger-wrap--under-copy {
+    margin-top: clamp(14px, 2.4vh, 22px) !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
   }
 }
 

@@ -24,8 +24,8 @@ export function CategoryStripIcon({
       <img
         src={defaultSrc}
         alt=""
-        width={18}
-        height={18}
+        width={20}
+        height={20}
         className="category-strip-icon-img category-strip-icon-img--default"
         loading="lazy"
         decoding="async"
@@ -36,8 +36,8 @@ export function CategoryStripIcon({
         <img
           src={hoverSrc}
           alt=""
-          width={18}
-          height={18}
+          width={20}
+          height={20}
           className="category-strip-icon-img category-strip-icon-img--hover"
           loading="lazy"
           decoding="async"

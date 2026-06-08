@@ -63,13 +63,13 @@ export async function middleware(request: NextRequest) {
       if (
         proxied.status >= 500 &&
         request.method === 'GET' &&
-        sub === 'contact/inquiries'
+        (sub === 'contact/inquiries' || sub === 'notifications/my')
       ) {
         return NextResponse.json({ items: [], totalCount: 0, unreadCount: 0 })
       }
       return proxied
     } catch {
-      if (request.method === 'GET' && sub === 'contact/inquiries') {
+      if (request.method === 'GET' && (sub === 'contact/inquiries' || sub === 'notifications/my')) {
         return NextResponse.json({ items: [], totalCount: 0, unreadCount: 0 })
       }
       return backendProxyUnavailableResponse()

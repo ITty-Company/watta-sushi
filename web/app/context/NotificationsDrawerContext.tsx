@@ -9,9 +9,6 @@ import React, {
   useState,
 } from 'react'
 import { usePathname } from 'next/navigation'
-import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
-
 export type NotificationsDrawerContextValue = {
   open: () => void
   close: () => void
@@ -29,10 +26,9 @@ export function NotificationsDrawerProvider({
   children: React.ReactNode
 }) {
   const pathname = usePathname() || '/'
-  const router = useInstantRouter()
   const [manualOpen, setManualOpen] = useState(false)
   const isNotificationsRoute = pathname === '/notifications'
-  const isOpen = enabled && (isNotificationsRoute || manualOpen)
+  const isOpen = enabled && manualOpen
 
   const open = useCallback(() => {
     if (enabled) setManualOpen(true)
@@ -40,14 +36,7 @@ export function NotificationsDrawerProvider({
 
   const close = useCallback(() => {
     setManualOpen(false)
-    if (isNotificationsRoute) {
-      if (typeof window !== 'undefined' && window.history.length > 1) {
-        router.back()
-      } else {
-        router.push('/')
-      }
-    }
-  }, [isNotificationsRoute, router])
+  }, [])
 
   useEffect(() => {
     if (!enabled) setManualOpen(false)
@@ -57,8 +46,6 @@ export function NotificationsDrawerProvider({
     if (isNotificationsRoute) return
     setManualOpen(false)
   }, [pathname, isNotificationsRoute])
-
-  useWattaNavDrawerOpenSync(isOpen)
 
   useEffect(() => {
     if (typeof document === 'undefined') return

@@ -18,6 +18,7 @@ import { useLiveCartCount } from '@/hooks/useLiveCartCount'
 import { useLiveFavoritesCount } from '@/hooks/useLiveFavoritesCount'
 import { useLiveNotificationCount } from '@/hooks/useLiveNotificationCount'
 import { useLanguage } from '../context/LanguageContext'
+import { useOptionalNotificationsDrawer } from '../context/NotificationsDrawerContext'
 import { useOptionalRightNavDrawerActions } from '../context/RightNavDrawerContext'
 import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
 import { CountryCitySelector } from './CountryCitySelector'
@@ -95,7 +96,12 @@ export default function WattaGlobalSiteHeader({
   const router = useInstantRouter()
   const prefetchRouter = useRouter()
   const rightNavDrawer = useOptionalRightNavDrawerActions()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
   const pathname = usePathname()
+
+  const closeNotifications = useCallback(() => {
+    notificationsDrawer?.close()
+  }, [notificationsDrawer])
 
   const cartCount = useLiveCartCount()
   const favoritesCount = useLiveFavoritesCount()
@@ -131,6 +137,7 @@ export default function WattaGlobalSiteHeader({
   const deliveryNavActive = pathname === '/delivery' || deliveryEmbeddedActive
 
   const handleMenuButtonClick = () => {
+    closeNotifications()
     // Головна: MenuView керує NavigationSidebar (вбудовані сторінки), не глобальним drawer
     if (pathname === '/') {
       rightNavDrawer?.close()
@@ -145,6 +152,7 @@ export default function WattaGlobalSiteHeader({
   }
 
   const handleLogoClick = useCallback(() => {
+    closeNotifications()
     onLogoClick?.()
     if (pathname !== '/') {
       router.push('/')
@@ -153,7 +161,13 @@ export default function WattaGlobalSiteHeader({
       return
     }
     scrollEntireAppToTop({ force: true })
-  }, [onLogoClick, pathname, router])
+  }, [closeNotifications, onLogoClick, pathname, router])
+
+  const handleCartButtonClick = useCallback(() => {
+    closeNotifications()
+    rightNavDrawer?.close()
+    onCartClick()
+  }, [closeNotifications, onCartClick, rightNavDrawer])
 
   const a = t.siteAria
 
@@ -348,10 +362,7 @@ export default function WattaGlobalSiteHeader({
               onPointerDown={() => {
                 prefetchHref(prefetchRouter, '/cart')
               }}
-              onClick={() => {
-                rightNavDrawer?.close()
-                onCartClick()
-              }}
+              onClick={handleCartButtonClick}
               style={headerSquircleStyle({
                 overflow: 'visible',
                 zIndex: 2,

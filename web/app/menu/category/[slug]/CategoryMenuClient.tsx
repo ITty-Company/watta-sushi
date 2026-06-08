@@ -33,6 +33,7 @@ interface MenuItem {
   recommendOrder?: number
   allowRecommendations?: boolean
   promoDiscountPercent?: number
+  ingredientIds?: number[]
 }
 
 interface MenuCategoryRow {
@@ -77,6 +78,9 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
             id,
             name: getLocalized(p, 'name'),
             description: getLocalized(p, 'description') || '',
+            ingredientIds: Array.isArray(p.ingredientIds)
+              ? p.ingredientIds.map((x: unknown) => Number(x)).filter((n: number) => Number.isFinite(n) && n > 0)
+              : [],
             price: p.price,
             category: p.category
               ? getMenuCategoryDisplayName(p.category as Record<string, unknown>, language, t.categories)

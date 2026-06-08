@@ -10,6 +10,7 @@ import {
   prefetchPriorityPublicRoutes,
   prefetchPublicRoutes,
 } from '@/lib/instantNav'
+import { bindWattaScrollTapGuard } from '@/lib/wattaScrollTapGuard'
 import { warmMenuCatalogCache } from '@/lib/menuCatalogSessionCache'
 import {
   prefetchPriorityRouteChunks,
@@ -155,6 +156,7 @@ export function useInstantNavBoot(): void {
   }, [router, deferForHomeHero])
 
   useEffect(() => {
+    const removeTapGuard = bindWattaScrollTapGuard()
     const removeIntent = installInstantNavIntent(router)
     const removePointerDown = installInstantNavPointerDown(router)
     const removeClick = installInstantNavClick(router)
@@ -166,6 +168,7 @@ export function useInstantNavBoot(): void {
     document.addEventListener('visibilitychange', onVisible)
 
     return () => {
+      removeTapGuard()
       removeIntent()
       removePointerDown()
       removeClick()

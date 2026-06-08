@@ -7,12 +7,16 @@ import { ArrowRight, Minus, Plus, ShoppingBag, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
 import { useCartDrawer } from '../context/CartDrawerContext'
+import { useOptionalNotificationsDrawer } from '../context/NotificationsDrawerContext'
 import { useOptionalRightNavDrawerActions } from '../context/RightNavDrawerContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { openWattaCheckout } from '@/lib/openWattaCart'
 import type { WattaLanguage } from '@/lib/i18n/language'
-import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
+import {
+  parseProductSpecsFromDescription,
+  productCompositionLine,
+} from '@/lib/i18n/parseProductSpecsFromDescription'
 import { cartLineChargeUnitPrice } from '@/lib/cartUpsell'
 import { effectiveUnitPrice, clampPromoPercent } from '@/lib/productPricing'
 import {
@@ -47,6 +51,7 @@ export default function WattaCartDrawer() {
   const router = useInstantRouter()
   const { isOpen, close, enabled } = useCartDrawer()
   const rightNavDrawer = useOptionalRightNavDrawerActions()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
   const { t, language } = useLanguage()
   const cs = t.cartSection
   const pd = t.productDetail
@@ -66,7 +71,8 @@ export default function WattaCartDrawer() {
   useEffect(() => {
     if (!isOpen) return
     rightNavDrawer?.close()
-  }, [isOpen, rightNavDrawer])
+    notificationsDrawer?.close()
+  }, [isOpen, notificationsDrawer, rightNavDrawer])
 
   useEffect(() => {
     if (!enabled || !isOpen) return
@@ -209,6 +215,10 @@ export default function WattaCartDrawer() {
                   pd.piecesFallback,
                   language as WattaLanguage,
                 ).weightLine
+                const compositionLine = productCompositionLine(
+                  item.description ?? '',
+                  language as WattaLanguage,
+                )
 
                 return (
                   <li key={item.cartLineId ?? `${item.id}-line`} className="watta-cart-drawer-item">
@@ -249,6 +259,9 @@ export default function WattaCartDrawer() {
                       </WattaLink>
                       {weightLine ? (
                         <p className="watta-cart-drawer-item__weight">{weightLine}</p>
+                      ) : null}
+                      {compositionLine ? (
+                        <p className="watta-cart-drawer-item__composition">{compositionLine}</p>
                       ) : null}
                     </div>
 

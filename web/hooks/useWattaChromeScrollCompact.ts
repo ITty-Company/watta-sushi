@@ -5,7 +5,10 @@ import { usePathname } from 'next/navigation'
 import { bindAppVerticalScroll, readAppScrollTop } from '@/lib/menuScroll'
 import { consumeRestoreChromeCompact, isWattaChromeCompactLocked } from '@/lib/wattaChromeScroll'
 import { createRafScrollListener } from '@/lib/scrollSync'
-import { isWattaPhoneViewport, isWattaTouchScrollPerfViewport } from '@/lib/wattaTouchViewport'
+import {
+  isWattaPhoneViewport,
+  isWattaTouchScrollPerfViewport,
+} from '@/lib/wattaTouchViewport'
 import { isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
 import {
   applyWattaProductChromeEntry,
@@ -18,12 +21,14 @@ import {
 /** Біля верху сторінки — завжди повна шапка, без compact (не на /product). */
 const TOP_ALWAYS_EXPAND_PX = 64
 /** Мінімальний крок вниз, щоб сховати шапку. */
-const SCROLL_DOWN_THRESHOLD_PX = 14
+const SCROLL_DOWN_THRESHOLD_PX = 18
 /** Мінімальний крок вгору, щоб показати шапку (гістерезис проти смикання). */
-const SCROLL_UP_THRESHOLD_PX = 18
+const SCROLL_UP_THRESHOLD_PX = 22
 /** Телефон: накопичений зсув (iOS дає дрібні scroll-події). */
-const PHONE_SCROLL_DOWN_THRESHOLD_PX = 12
-const PHONE_SCROLL_UP_THRESHOLD_PX = 10
+const PHONE_SCROLL_DOWN_THRESHOLD_PX = 16
+const PHONE_SCROLL_UP_THRESHOLD_PX = 14
+/** Тач: рідше вимірюємо scrollTop — менше layout під час свайпу. */
+const TOUCH_SCROLL_EVAL_MIN_MS = 56
 /** /product (телефон): швидше розгортання шапки після скролу вгору. */
 const PRODUCT_PHONE_SCROLL_UP_THRESHOLD_PX = 6
 /** /product (десктоп): поріг жесту вгору. */
@@ -232,7 +237,10 @@ export function useWattaChromeScrollCompact(enabled = true) {
       applyScrollDelta(delta, downThreshold, upThreshold)
     }
 
-    const { onScroll, cancel: cancelRaf } = createRafScrollListener(evaluateScroll)
+    const touchPerf = isWattaTouchScrollPerfViewport()
+    const { onScroll, cancel: cancelRaf } = createRafScrollListener(evaluateScroll, {
+      minIntervalMs: touchPerf ? TOUCH_SCROLL_EVAL_MIN_MS : 0,
+    })
 
     const syncInitial = () => {
       lastY = readAppScrollTop()

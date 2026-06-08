@@ -33,10 +33,10 @@ html.watta-html-home-hero body .watta-sticky-chrome-portal.watta-full-menu-stick
 
 @media (max-width: 767px) {
   html.watta-html-home-hero {
-    --watta-cat-chip-size: 66px;
-    --watta-chrome-categories-band-h: 72px;
-    --watta-sticky-chrome-measured-h: 160px;
-    --watta-chrome-header-cat-gap: clamp(10px, 1.45vh, 16px);
+    --watta-cat-peek: 5;
+    --watta-chrome-categories-band-h: 64px;
+    --watta-sticky-chrome-measured-h: 158px;
+    --watta-chrome-header-cat-gap: clamp(12px, 1.65vh, 18px);
     --watta-home-mobile-below-cats-gap: clamp(24px, 3.2vh, 36px);
     --watta-home-categories-phone-side-gap: clamp(14px, 3.8vw, 22px);
     --watta-home-hero-media-pos-y: 66%;
@@ -59,7 +59,7 @@ html.watta-html-home-hero body .watta-sticky-chrome-portal.watta-full-menu-stick
     width: calc(100vw - 2 * var(--watta-home-categories-phone-side-gap, clamp(26px, 6.5vw, 34px))) !important;
     max-width: min(
       calc(100vw - 2 * var(--watta-home-categories-phone-side-gap, clamp(26px, 6.5vw, 34px))),
-      27.5rem
+      24.5rem
     ) !important;
     margin-inline: auto !important;
   }
@@ -1378,7 +1378,7 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     ) !important;
     max-width: min(
       calc(100vw - 2 * var(--watta-home-categories-phone-side-gap, clamp(26px, 6.5vw, 34px))),
-      27.5rem
+      24.5rem
     ) !important;
     margin-inline: auto !important;
   }
@@ -1430,7 +1430,7 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
  */
 @media (max-width: 767px) {
   :root {
-    --watta-cat-chip-size: 66px;
+    --watta-cat-peek: 5;
     --watta-chrome-header-cat-gap: clamp(18px, 2.6vh, 30px);
     --watta-home-chrome-flow-anchor-cap: calc(
       var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)) +
@@ -1450,23 +1450,23 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 
   html.watta-html-home-hero .watta-home-photo-first-screen {
-    --watta-home-hero-viewport-h: calc(
-      100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
-    );
-    height: var(--watta-home-hero-viewport-h) !important;
-    min-height: var(--watta-home-hero-viewport-h) !important;
-    max-height: var(--watta-home-hero-viewport-h) !important;
+    --watta-home-roll-content-push: clamp(16px, 2.5vh, 28px);
+    --watta-home-split-stack-lift: var(--watta-home-roll-content-push);
+    --watta-home-hero-viewport-h: auto;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
   }
 
   html.watta-html-home-hero .watta-home-photo-first-screen .watta-home-hero-overlay-stack {
-    position: absolute !important;
-    inset: 0 !important;
+    position: relative !important;
+    inset: auto !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
     align-items: stretch !important;
     min-height: 0 !important;
-    height: 100% !important;
+    height: auto !important;
     overflow: visible !important;
   }
 
@@ -1477,24 +1477,33 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web {
-    padding: 5px var(--cat-edge, 6px) !important;
+    padding: 2px var(--cat-edge, 4px) !important;
     align-items: center !important;
   }
 
-  /* Перебиває calc((100% - gap) / peek) з chrome-transparent */
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web {
-    flex: 0 0 var(--watta-cat-chip-size, 66px) !important;
-    width: var(--watta-cat-chip-size, 66px) !important;
-    min-width: var(--watta-cat-chip-size, 66px) !important;
-    max-width: var(--watta-cat-chip-size, 66px) !important;
-    height: var(--watta-cat-chip-size, 66px) !important;
-    min-height: var(--watta-cat-chip-size, 66px) !important;
+    flex: 0 0
+      calc(
+        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+      ) !important;
+    width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    min-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    max-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web {
-    font-size: 1rem !important;
-    max-height: 1.05em !important;
+    font-size: 1.32rem !important;
+    max-height: 1.35em !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web {
@@ -1503,12 +1512,12 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     -webkit-line-clamp: 2 !important;
     text-align: center !important;
     font-size: 10px !important;
-    line-height: 1.14 !important;
+    line-height: 1.12 !important;
     font-weight: 700 !important;
     color: #3d3d3d !important;
     opacity: 1 !important;
     visibility: visible !important;
-    max-height: 2.4em !important;
+    max-height: 2.3em !important;
   }
 
   html.watta-html-home-hero
@@ -1718,8 +1727,8 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page):has(#home-after-hero-intro)
     .delivery-page-home-flow:has(.watta-home-photo-first-screen)
     > #menu-cinematic-block {
-    margin-top: clamp(-16px, -2.4vh, -8px) !important;
-    padding-top: clamp(8px, 1.2vh, 14px) !important;
+    margin-top: clamp(0px, 0.4vh, 4px) !important;
+    padding-top: clamp(4px, 0.6vh, 8px) !important;
     min-height: 0 !important;
   }
 
@@ -1821,6 +1830,15 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     background-position: center var(--watta-home-hero-media-pos-y, 50%) !important;
   }
 
+  html.watta-html-home-hero .watta-home-photo-first-screen {
+    --watta-home-roll-content-push: clamp(32px, 5vh, 56px);
+    --watta-home-split-stack-lift: var(--watta-home-roll-content-push);
+  }
+
+  html.watta-html-home-hero .watta-home-photo-first-screen .watta-roll-marquee-mask--split {
+    transform: translateY(var(--watta-home-split-stack-lift, 0)) !important;
+  }
+
   /* Головна планшет / ноут / ПК: split-marquee — текст → 1-й ряд → 2-й ряд */
   html.watta-html-home-hero .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__title-wrap {
     position: relative !important;
@@ -1856,7 +1874,7 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 
   html.watta-html-home-hero .watta-home-photo-first-screen .watta-home-roll-hero-slot-web {
-    transform: translateY(clamp(-20px, -2.8vh, -12px)) !important;
+    transform: none !important;
   }
 
   /* Без дубля тексту під hero — одразу «Наші хіти» / каталог */

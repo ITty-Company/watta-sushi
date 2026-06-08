@@ -54,6 +54,11 @@ export default function FavoritesPageClient() {
       id: Number(p.id),
       name: getLocalized(p as never, 'name'),
       description: getLocalized(p as never, 'description') || '',
+      ingredientIds: Array.isArray(p.ingredientIds)
+        ? (p.ingredientIds as unknown[])
+            .map((x) => Number(x))
+            .filter((n) => Number.isFinite(n) && n > 0)
+        : [],
       price: Number(p.price),
       emoji: '🍣',
       imageUrl: productGalleryFromApi(p)[0] || (typeof p.imageUrl === 'string' ? p.imageUrl : undefined),
@@ -125,6 +130,7 @@ export default function FavoritesPageClient() {
     imageUrl: item.imageUrl,
     isTop: item.isTop,
     promoDiscountPercent: item.promoDiscountPercent,
+    ingredientIds: item.ingredientIds,
   }))
 
   const isEmpty = !loading && items.length === 0

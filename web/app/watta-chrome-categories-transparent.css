@@ -10,8 +10,8 @@
 
 html.watta-html-home-hero {
   --watta-chrome-header-measured-h: 76px;
-  --watta-chrome-categories-band-h: 56px;
-  --watta-sticky-chrome-measured-h: 132px;
+  --watta-chrome-categories-band-h: 50px;
+  --watta-sticky-chrome-measured-h: 126px;
   --delivery-hero-video-offset: clamp(24px, 2.8vh, 40px);
   --watta-home-mobile-below-cats-gap: clamp(8px, 1.1vh, 14px);
 }
@@ -545,24 +545,24 @@ body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-pa
   .watta-public-sticky-chrome .watta-chrome-categories-row-web .categories-panel-web,
   .watta-full-menu-sticky-chrome .categories-panel-web,
   .watta-public-sticky-chrome .categories-panel-web {
-    padding: 2px 5px !important;
-    max-width: min(calc(100vw - 48px), 27.5rem) !important;
+    padding: 1px 4px !important;
+    max-width: min(calc(100vw - 48px), 24.5rem) !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web {
-    --cat-gap: 2px;
-    --cat-edge: 5px;
-    --watta-cat-peek: 6.25;
+    --cat-gap: 3px;
+    --cat-edge: 4px;
+    --watta-cat-peek: 5;
     display: flex !important;
     flex: 1 1 auto !important;
     flex-grow: 1 !important;
     align-self: center !important;
     width: 100% !important;
     min-width: 0 !important;
-    max-width: min(calc(100vw - 48px), 27.5rem) !important;
+    max-width: min(calc(100vw - 48px), 24.5rem) !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    padding: 2px var(--cat-edge) !important;
+    padding: 1px var(--cat-edge) !important;
     gap: var(--cat-gap) !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -580,11 +580,11 @@ body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-pa
 
   body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-panel-web,
   body .watta-sticky-chrome-portal .categories-panel-web {
-    --cat-gap: 2px;
-    --cat-edge: 5px;
-    --watta-cat-peek: 6.25;
+    --cat-gap: 3px;
+    --cat-edge: 4px;
+    --watta-cat-peek: 5;
     width: 100% !important;
-    max-width: min(calc(100vw - 48px), 27.5rem) !important;
+    max-width: min(calc(100vw - 48px), 24.5rem) !important;
     flex: 1 1 auto !important;
     gap: var(--cat-gap) !important;
     overflow-x: auto !important;
@@ -625,34 +625,45 @@ body .watta-sticky-chrome-portal .categories-panel-web {
   z-index: 1;
 }
 
-/* Телефон: ~5 чіпів + половинка 6-го, решта — свайп */
+/* Телефон: рівно 5 чіпів у видимій зоні, решта — свайп */
 @media (max-width: 767px) {
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-web {
     scroll-snap-align: start;
-    flex: 0 0 calc((100% - 2 * var(--cat-gap, 2px)) / var(--watta-cat-peek, 6.25)) !important;
+    flex: 0 0
+      calc(
+        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+      ) !important;
+    width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    min-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    max-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
     flex-shrink: 0 !important;
-    max-width: none !important;
-    padding: 2px 1px !important;
-    gap: 3px !important;
-    aspect-ratio: 1 / 1 !important;
+    padding: 3px 2px !important;
+    gap: 2px !important;
+    aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web {
-    font-size: 1.34rem !important;
-    max-height: 1.42em !important;
+    font-size: 1.32rem !important;
+    max-height: 1.35em !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
-    font-size: 9.5px !important;
-    line-height: 1.1 !important;
+    font-size: 10px !important;
+    line-height: 1.12 !important;
     font-weight: 700 !important;
-    max-height: 2.4em !important;
+    max-height: 2.3em !important;
   }
 }
 
@@ -974,45 +985,7 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   .watta-full-menu-sticky-chrome .categories-panel-web,
   .watta-public-sticky-chrome .categories-panel-web,
   body .watta-sticky-chrome-portal .categories-panel-web {
-    --cat-gap: 3px !important;
-    --cat-edge: 5px !important;
-    --watta-cat-peek: 9.75 !important;
-    padding: 2px var(--cat-edge) !important;
     max-width: min(calc(100vw - 32px), 42rem) !important;
-  }
-
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web {
-    flex: 0 0 var(--watta-cat-chip-size, 52px) !important;
-    width: var(--watta-cat-chip-size, 52px) !important;
-    min-width: var(--watta-cat-chip-size, 52px) !important;
-    max-width: var(--watta-cat-chip-size, 52px) !important;
-    min-height: var(--watta-cat-chip-size, 52px) !important;
-    height: var(--watta-cat-chip-size, 52px) !important;
-    padding: 5px 4px !important;
-    gap: 2px !important;
-    aspect-ratio: 1 !important;
-    border-radius: 50% !important;
-    border: none !important;
-    justify-content: center !important;
-    overflow: hidden !important;
-    box-shadow: none !important;
-  }
-
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web {
-    font-size: 1.4rem !important;
-    max-height: 1.42em !important;
-  }
-
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-label-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web {
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    max-height: 2.35em !important;
   }
 }
 
@@ -1055,33 +1028,7 @@ html:has(.watta-about-page.watta-site-hero-page-web) .watta-sticky-chrome-flow-a
   .watta-full-menu-sticky-chrome .categories-panel-web,
   .watta-public-sticky-chrome .categories-panel-web,
   body .watta-sticky-chrome-portal .categories-panel-web {
-    --cat-gap: 4px !important;
-    --cat-edge: 6px !important;
-    --watta-cat-peek: 10.25 !important;
     max-width: min(calc(100vw - 40px), 44rem) !important;
-    padding: 2px var(--cat-edge) !important;
-  }
-
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web {
-    padding: 3px 2px !important;
-    gap: 4px !important;
-  }
-
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web {
-    font-size: 1.46rem !important;
-    max-height: 1.44em !important;
-  }
-
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-label-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web {
-    font-size: 12px !important;
-    line-height: 1.1 !important;
-    max-height: 2.4em !important;
   }
 }
 
@@ -1253,16 +1200,16 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     body:not(.watta-route-home)
     .watta-sticky-chrome-portal
     .categories-panel-web {
-    --cat-gap: 2px !important;
-    --cat-edge: 5px !important;
-    --watta-cat-peek: 6.25 !important;
+    --cat-gap: 4px !important;
+    --cat-edge: 6px !important;
+    --watta-cat-peek: 5 !important;
     display: flex !important;
     flex: 1 1 auto !important;
     flex-grow: 1 !important;
     align-self: center !important;
-    width: 100% !important;
+    width: min(calc(100vw - 48px), 100%) !important;
     min-width: 0 !important;
-    max-width: min(calc(100vw - 48px), 27.5rem) !important;
+    max-width: min(calc(100vw - 48px), 100%) !important;
     margin-left: auto !important;
     margin-right: auto !important;
     padding: 2px var(--cat-edge) !important;
@@ -1290,16 +1237,25 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     .categories-panel-web
     .category-button-web {
     scroll-snap-align: center;
-    flex: 0 0 var(--watta-cat-chip-size, 52px) !important;
+    flex: 0 0
+      calc(
+        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+      ) !important;
     flex-shrink: 0 !important;
-    width: var(--watta-cat-chip-size, 52px) !important;
-    min-width: var(--watta-cat-chip-size, 52px) !important;
-    max-width: var(--watta-cat-chip-size, 52px) !important;
-    min-height: var(--watta-cat-chip-size, 52px) !important;
-    height: var(--watta-cat-chip-size, 52px) !important;
-    padding: 5px 4px !important;
-    gap: 2px !important;
-    aspect-ratio: 1 !important;
+    width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    min-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    max-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 2px 2px !important;
+    gap: 1px !important;
+    aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
     border-radius: 50% !important;
     border: none !important;
     box-shadow: none !important;
@@ -1310,7 +1266,7 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     .watta-sticky-chrome-portal
     .categories-panel-web
     .category-button-active-web {
-    aspect-ratio: 1 !important;
+    aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
     border-radius: 50% !important;
     background: #ffffff !important;
     background-color: #ffffff !important;
@@ -1324,8 +1280,8 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     .watta-sticky-chrome-portal
     .categories-panel-web
     .category-button-icon-web {
-    font-size: 1.34rem !important;
-    max-height: 1.42em !important;
+    font-size: 1.32rem !important;
+    max-height: 1.35em !important;
   }
 
   html:not(.watta-html-home-hero)
@@ -1333,10 +1289,10 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     .watta-sticky-chrome-portal
     .categories-panel-web
     .category-button-label-web {
-    font-size: 9.5px !important;
-    line-height: 1.1 !important;
+    font-size: 10px !important;
+    line-height: 1.12 !important;
     font-weight: 700 !important;
-    max-height: 2.4em !important;
+    max-height: 2.3em !important;
   }
 
   /* Зазор «панель → контент» (як padding-top __content на /favorites) */
@@ -1434,7 +1390,9 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
  */
 @media (max-width: 767px) {
   :root {
-    --watta-cat-chip-size: 52px;
+    --watta-cat-peek: 5;
+    --cat-gap: 4px;
+    --cat-edge: 6px;
   }
 
   .categories-panel-web,
@@ -1446,12 +1404,9 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     body:not(.watta-route-home)
     .watta-sticky-chrome-portal
     .categories-panel-web {
-    --watta-cat-viewport-w: calc(
-      var(--watta-cat-chip-size) * var(--watta-cat-peek, 6.25) + 8 * var(--cat-gap, 2px) +
-        2 * var(--cat-edge, 5px)
-    );
-    width: min(calc(100vw - 48px), var(--watta-cat-viewport-w)) !important;
-    max-width: min(calc(100vw - 48px), var(--watta-cat-viewport-w)) !important;
+    --watta-cat-peek: 5;
+    width: min(calc(100vw - 48px), 100%) !important;
+    max-width: min(calc(100vw - 48px), 100%) !important;
     flex: 0 0 auto !important;
     flex-grow: 0 !important;
     flex-shrink: 0 !important;
@@ -1483,13 +1438,23 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     .watta-sticky-chrome-portal
     .categories-panel-web
     .category-button-web {
-    flex: 0 0 var(--watta-cat-chip-size) !important;
+    flex: 0 0
+      calc(
+        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+      ) !important;
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
-    width: var(--watta-cat-chip-size) !important;
-    min-width: var(--watta-cat-chip-size) !important;
-    max-width: var(--watta-cat-chip-size) !important;
-    min-height: var(--watta-cat-chip-size) !important;
+    width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    min-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    max-width: calc(
+      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+    ) !important;
+    min-height: 0 !important;
+    aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
   }
 
   html[data-watta-chrome-compact='true']
@@ -1555,5 +1520,111 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
     box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
     transform: none !important;
+  }
+}
+
+/* Телефон: більша шапка, кнопки дій і чіпи категорій */
+@media (max-width: 767px) {
+  :root {
+    --watta-chrome-header-measured-h: 86px;
+    --watta-chrome-categories-band-h: 50px;
+    --watta-sticky-chrome-measured-h: 136px;
+    --watta-cat-sticky-top: calc(env(safe-area-inset-top, 0px) + 76px);
+    --watta-chrome-header-cat-gap: clamp(12px, 1.65vh, 18px);
+  }
+
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .menu-fixed-header-shell-web .app-header-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .menu-fixed-header-shell-web .app-header-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .menu-fixed-header-shell-web .app-header-web {
+    padding: 10px max(14px, env(safe-area-inset-left, 0px)) 10px max(14px, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .logo-text-images-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .logo-text-images-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .logo-text-images-web {
+    height: 40px !important;
+  }
+
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .logo-text-image-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .logo-text-image-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .logo-text-image-web {
+    max-width: 132px !important;
+  }
+
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-profile-btn-web,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-favorites-btn-web,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-menu-btn-web,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-cart-btn-text-web,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-lang-btn-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-profile-btn-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-favorites-btn-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-menu-btn-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-cart-btn-text-web,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-lang-btn-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-profile-btn-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-favorites-btn-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-menu-btn-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-cart-btn-text-web,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-lang-btn-web {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    border-radius: 11px !important;
+  }
+
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-profile-btn-web svg,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-favorites-btn-web svg,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-menu-btn-web svg,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-cart-btn-text-web svg,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-profile-btn-web svg,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-favorites-btn-web svg,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-menu-btn-web svg,
+  .watta-full-menu-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-cart-btn-text-web svg,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-profile-btn-web svg,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-favorites-btn-web svg,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-menu-btn-web svg,
+  .watta-public-sticky-chrome .watta-chrome-top-band-web .header-actions-web .header-cart-btn-text-web svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-cart-icon-web,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-menu-icon-web,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-favorites-icon-web,
+  body .watta-sticky-chrome-portal .watta-chrome-top-band-web .header-actions-web .header-profile-icon-web {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web,
+  body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-panel-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web,
+  .watta-public-sticky-chrome .categories-panel-web {
+    padding: 2px 4px !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web {
+    padding: 3px 2px !important;
+    gap: 2px !important;
+    aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web {
+    font-size: 1.32rem !important;
+    max-height: 1.35em !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
+    font-size: 10px !important;
+    line-height: 1.12 !important;
+    max-height: 2.3em !important;
   }
 }

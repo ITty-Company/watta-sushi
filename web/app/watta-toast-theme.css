@@ -22,17 +22,24 @@
   pointer-events: none !important;
 }
 
+/* Рядок тоста на всю ширину — не перехоплює кліки по шапці / категоріях */
 .watta-toast-host > * {
-  pointer-events: auto;
+  pointer-events: none !important;
+}
+
+.watta-toast-host > * > *,
+.watta-toast-host .watta-notification-toast {
+  pointer-events: auto !important;
 }
 
 .watta-toast {
+  position: relative !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.55rem !important;
   max-width: min(22rem, calc(100vw - 1.5rem)) !important;
   margin: 0 auto !important;
-  padding: 0.55rem 1rem 0.55rem 0.65rem !important;
+  padding: 0.55rem 2.15rem 0.55rem 0.65rem !important;
   border-radius: 9999px !important;
   background: #ffffff !important;
   border: 1px solid var(--watta-toast-mint-border) !important;
@@ -86,6 +93,35 @@
 
 .watta-toast--loading {
   border-color: var(--watta-toast-mint-border) !important;
+}
+
+.watta-toast-dismiss {
+  position: absolute;
+  top: 50%;
+  right: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--watta-toast-ink-muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+  flex-shrink: 0;
+}
+
+.watta-toast-dismiss:hover {
+  background: rgba(26, 46, 40, 0.06);
+  color: var(--watta-toast-ink);
+}
+
+.watta-toast-dismiss:focus-visible {
+  outline: 2px solid var(--watta-toast-mint);
+  outline-offset: 2px;
 }
 
 .watta-toast-host [role='status'][data-visible='false'] {

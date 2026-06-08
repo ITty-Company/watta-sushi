@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { Package } from 'lucide-react'
@@ -8,47 +8,31 @@ import { Bell } from 'lucide-react'
 import NotificationsEmptyCallScene from '@/app/components/notifications/NotificationsEmptyCallScene'
 import NotificationsGuestPrompt from '@/app/components/notifications/NotificationsGuestPrompt'
 import {
-  fetchMyNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   type UserNotificationItem,
   WATTA_NOTIFICATIONS_CHANGED_EVENT,
 } from '@/lib/userNotificationsApi'
+import {
+  getLiveNotificationsSnapshot,
+  refreshLiveNotifications,
+  subscribeLiveNotifications,
+} from '@/lib/liveNotificationsStore'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { cn } from '@/lib/utils'
 import '@/app/watta-notifications-empty.css'
 
-const POLL_MS = 20000
+export function useUnreadNotificationCount() {
+  const snapshot = useSyncExternalStore(
+    subscribeLiveNotifications,
+    getLiveNotificationsSnapshot,
+    () => getLiveNotificationsSnapshot(),
+  )
 
-export function useUnreadNotificationCount(pollMs = 45000) {
-  const [unread, setUnread] = useState(0)
-
-  const refresh = useCallback(async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    if (!token) {
-      setUnread(0)
-      return
-    }
-    try {
-      const data = await fetchMyNotifications(token)
-      setUnread(data.unreadCount)
-    } catch {
-      /* ignore */
-    }
-  }, [])
-
-  useEffect(() => {
-    void refresh()
-    const onChange = () => void refresh()
-    window.addEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
-    const id = window.setInterval(() => void refresh(), pollMs)
-    return () => {
-      window.removeEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
-      window.clearInterval(id)
-    }
-  }, [refresh, pollMs])
-
-  return { unread, refresh }
+  return {
+    unread: snapshot.unreadCount,
+    refresh: refreshLiveNotifications,
+  }
 }
 
 function orderStatusFromItem(item: UserNotificationItem): string | null {
@@ -103,77 +87,29 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
   const { t, language } = useLanguage()
   const n = t.notifications
   const reduceMotion = useReducedMotion()
+  const snapshot = useSyncExternalStore(
+    subscribeLiveNotifications,
+    getLiveNotificationsSnapshot,
+    () => getLiveNotificationsSnapshot(),
+  )
   const [guestMode, setGuestMode] = useState(() =>
     typeof window === 'undefined' ? false : !hasAuthToken(),
   )
-  const [items, setItems] = useState<UserNotificationItem[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(() =>
-    typeof window === 'undefined' ? true : hasAuthToken(),
-  )
-  const [syncing, setSyncing] = useState(false)
-
-  const load = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!hasAuthToken()) {
-      setGuestMode(true)
-      setItems([])
-      setUnreadCount(0)
-      setLoading(false)
-      return
-    }
-    setGuestMode(false)
-    const token = localStorage.getItem('token')
-    if (!token) {
-      setGuestMode(true)
-      setItems([])
-      setUnreadCount(0)
-      setLoading(false)
-      return
-    }
-    if (!opts?.silent) setLoading(true)
-    else setSyncing(true)
-    try {
-      const data = await fetchMyNotifications(token)
-      setItems(data.items)
-      setUnreadCount(data.unreadCount)
-    } catch {
-      setItems([])
-      setUnreadCount(0)
-    } finally {
-      setLoading(false)
-      setSyncing(false)
+  useEffect(() => {
+    const syncGuest = () => setGuestMode(!hasAuthToken())
+    syncGuest()
+    window.addEventListener('userChanged', syncGuest)
+    window.addEventListener('storage', syncGuest)
+    return () => {
+      window.removeEventListener('userChanged', syncGuest)
+      window.removeEventListener('storage', syncGuest)
     }
   }, [])
-
-  useEffect(() => {
-    void load()
-    const onChange = () => void load({ silent: true })
-    const onAuthChange = () => void load()
-    window.addEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
-    window.addEventListener('userChanged', onAuthChange)
-    window.addEventListener('storage', onAuthChange)
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') void load({ silent: true })
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    const id = window.setInterval(() => {
-      if (document.visibilityState !== 'visible') return
-      void load({ silent: true })
-    }, POLL_MS)
-    return () => {
-      window.removeEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
-      window.removeEventListener('userChanged', onAuthChange)
-      window.removeEventListener('storage', onAuthChange)
-      document.removeEventListener('visibilitychange', onVisible)
-      window.clearInterval(id)
-    }
-  }, [load])
 
   const onRead = async (item: UserNotificationItem) => {
     const token = localStorage.getItem('token')
     if (!token || item.isRead) return
     await markNotificationRead(token, item.id)
-    setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, isRead: true } : x)))
     window.dispatchEvent(new Event(WATTA_NOTIFICATIONS_CHANGED_EVENT))
   }
 
@@ -181,8 +117,15 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
     const token = localStorage.getItem('token')
     if (!token) return
     await markAllNotificationsRead(token)
-    setItems((prev) => prev.map((x) => ({ ...x, isRead: true })))
     window.dispatchEvent(new Event(WATTA_NOTIFICATIONS_CHANGED_EVENT))
+  }
+
+  const items = snapshot.items
+  const unreadCount = snapshot.unreadCount
+  const loading = hasAuthToken() && snapshot.status === 'loading'
+
+  if (!hasAuthToken() || guestMode) {
+    return <NotificationsGuestPrompt compact={compact} />
   }
 
   if (loading) {
@@ -196,10 +139,6 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
     )
   }
 
-  if (guestMode) {
-    return <NotificationsGuestPrompt compact={compact} />
-  }
-
   if (items.length === 0) {
     return (
       <NotificationsEmptyCallScene subtitle={n.emptySubtext} compact={compact} />
@@ -209,12 +148,7 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
   return (
     <div className={cn('notifications-page-list-wrap', compact && 'notifications-page-list-wrap--compact')}>
       <div className="notifications-page-list-toolbar">
-        {syncing ? (
-          <span className="notifications-page-list-sync" role="status">
-            <span className="notifications-page-list-sync__dot" aria-hidden />
-            {n.liveActive}
-          </span>
-        ) : unreadCount > 0 ? (
+        {unreadCount > 0 ? (
           <span className="notifications-page-list-count" aria-live="polite">
             {unreadCount}
           </span>

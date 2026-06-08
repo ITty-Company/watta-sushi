@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
+import React, { useEffect, useLayoutEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { useLanguage } from '@/app/context/LanguageContext'
 import UserNotificationsPanel from '@/app/components/notifications/UserNotificationsPanel'
+import WattaNavDrawerShell from './WattaNavDrawerShell'
+import '@/app/watta-notifications-drawer.css'
 
 export const NotificationsView = ({
   isOpen,
@@ -15,10 +16,10 @@ export const NotificationsView = ({
 }) => {
   const { t } = useLanguage()
   const n = t.notifications
-  const [portalReady, setPortalReady] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setPortalReady(true)
+  useLayoutEffect(() => {
+    setMounted(true)
   }, [])
 
   useEffect(() => {
@@ -27,48 +28,45 @@ export const NotificationsView = ({
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    document.body.classList.add('watta-notifications-open')
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
-      document.body.classList.remove('watta-notifications-open')
-    }
+    return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
 
-  if (!isOpen || !portalReady) return null
+  useEffect(() => {
+    if (!isOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [isOpen])
 
-  return createPortal(
-    <div
-      className="watta-notifications-backdrop fixed inset-0 z-[11050] flex items-center justify-center p-4 sm:p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="watta-notifications-title"
+  if (!mounted) return null
+
+  return (
+    <WattaNavDrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      id="watta-notifications-drawer"
+      ariaLabel={t.locationPicker.ariaClose}
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/45 backdrop-blur-[2px] transition-opacity"
-        onClick={onClose}
-        aria-label={t.locationPicker.ariaClose}
-      />
-      <div className="relative flex max-h-[min(90dvh,640px)] w-full max-w-[480px] flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <h2 id="watta-notifications-title" className="text-xl font-black tracking-tight text-gray-900 sm:text-2xl">
+      <div className="watta-notifications-drawer-panel" role="dialog" aria-labelledby="watta-notifications-title">
+        <header className="watta-notifications-drawer-head">
+          <h2 id="watta-notifications-title" className="watta-notifications-drawer-head__title">
             {n.title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100"
+            className="watta-notifications-drawer-close"
             aria-label={t.locationPicker.ariaClose}
           >
-            <X size={22} strokeWidth={2.25} />
+            <X size={22} strokeWidth={2.25} aria-hidden />
           </button>
+        </header>
+        <div className="watta-notifications-drawer-scroll">
+          <UserNotificationsPanel compact />
         </div>
-        <UserNotificationsPanel compact />
       </div>
-    </div>,
-    document.body,
+    </WattaNavDrawerShell>
   )
 }

@@ -30,7 +30,7 @@
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
-    overscroll-behavior-y: auto;
+    overscroll-behavior-y: contain;
     scroll-padding-top: calc(118px + env(safe-area-inset-top, 0px));
     scroll-padding-bottom: var(
       --watta-floating-fab-clearance,
@@ -77,6 +77,28 @@
 }
 
 /**
+ * Планшет / десктоп: головна — теж лише body scroll (без вкладеного .content-web).
+ */
+@media (min-width: 768px) {
+  body.watta-route-home .app-web,
+  body.watta-route-home .content-web,
+  body.watta-route-home .content-web--watta-craft {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    flex: 0 0 auto !important;
+    min-height: auto !important;
+  }
+
+  body.watta-route-home {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/**
  * Телефон: один вертикальний скрол (window/body) на всіх публічних сторінках.
  * Вкладений overflow на .app-web / .content-web ловить свайп і дає «залипання».
  */
@@ -86,7 +108,7 @@
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
-    overscroll-behavior-y: auto;
+    overscroll-behavior-y: contain;
   }
 
   body .watta-app-shell-root,

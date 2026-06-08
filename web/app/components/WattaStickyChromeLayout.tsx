@@ -224,7 +224,11 @@ export default function WattaStickyChromeLayout({
     }
     lastChromeWidthRef.current = typeof window !== 'undefined' ? window.innerWidth : null
     const onLayoutSync = () => measure()
-    const onCompactChange = () => measure()
+    const onCompactChange = () => {
+      // Compact без стискання flow-anchor — висота в потоці не змінюється, вимір зайвий.
+      if (preserveExpandedChromeHeightInCompact()) return
+      measure()
+    }
     window.addEventListener('resize', onResize)
     window.addEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
     window.addEventListener('wattaChromeCompactChange', onCompactChange)

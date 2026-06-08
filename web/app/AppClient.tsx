@@ -13,6 +13,7 @@ import WattaRightNavDrawer from './components/WattaRightNavDrawer'
 import WattaCartDrawer from './components/WattaCartDrawer'
 import WattaNotificationsPanel from './components/WattaNotificationsPanel'
 import WattaNotificationWatcher from './components/WattaNotificationWatcher'
+import WattaToaster from './components/WattaToaster'
 import WattaPublicSiteChrome from './components/WattaPublicSiteChrome'
 import WattaHtmlRouteClass from './components/WattaHtmlRouteClass'
 import { RightNavDrawerProvider } from './context/RightNavDrawerContext'
@@ -302,6 +303,7 @@ export default function AppClient({
   return (
     <LazyMotion features={loadFramerFeatures}>
     <LanguageProviderWrapper initialLocale={initialLocale}>
+      <WattaToaster />
       <AuthModalProvider>
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
         <NotificationsDrawerProvider enabled={showPublicNavChrome}>

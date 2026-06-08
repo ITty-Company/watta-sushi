@@ -6,9 +6,6 @@ export function openWattaNotifications(
   router: RouterPush,
   openDrawer?: OpenNotificationsDrawer | null,
 ): void {
-  const onNotificationsPage =
-    typeof window !== 'undefined' && window.location.pathname === '/notifications'
-  if (onNotificationsPage) return
   if (openDrawer) {
     openDrawer()
     return

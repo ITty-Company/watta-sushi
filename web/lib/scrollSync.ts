@@ -9,20 +9,34 @@ type RafScrollListenerOptions = {
 export function createRafScrollListener(fn: () => void, options?: RafScrollListenerOptions) {
   let raf = 0
   let lastRun = 0
+  let pending = false
   const minIntervalMs = options?.minIntervalMs ?? 0
-  const onScroll = () => {
-    if (raf) return
-    raf = requestAnimationFrame(() => {
-      raf = 0
-      if (minIntervalMs > 0) {
-        const now = performance.now()
-        if (now - lastRun < minIntervalMs) return
-        lastRun = now
+
+  const run = () => {
+    raf = 0
+    if (minIntervalMs > 0) {
+      const now = performance.now()
+      if (now - lastRun < minIntervalMs) {
+        pending = true
+        raf = requestAnimationFrame(run)
+        return
       }
-      fn()
-    })
+      lastRun = now
+    }
+    pending = false
+    fn()
   }
+
+  const onScroll = () => {
+    if (raf) {
+      pending = true
+      return
+    }
+    raf = requestAnimationFrame(run)
+  }
+
   const cancel = () => {
+    pending = false
     if (raf) {
       cancelAnimationFrame(raf)
       raf = 0

@@ -16,7 +16,7 @@ export type MenuCategoryStickerProps = {
 }
 
 const ICON_SIZE = {
-  strip: 18,
+  strip: 20,
   heading: 22,
   drawer: 20,
 } as const

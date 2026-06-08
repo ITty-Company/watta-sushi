@@ -6,14 +6,18 @@
 import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { isWattaHomeHeroPathname } from '@/lib/wattaHtmlRouteClass'
 import { retireHomeHeroEntryShell } from '@/lib/wattaHeroVideo'
+import { markScrollGesture } from '@/lib/wattaScrollTapGuard'
 
-const SCROLL_IDLE_MS = 140
-const LAYOUT_SYNC_THROTTLE_MS = 1200
+const SCROLL_IDLE_MS = 160
+const LAYOUT_SYNC_THROTTLE_MS = 1600
+const PREROLL_DISMISS_MIN_MS = 400
 
 let userScrolling = false
 let scrollIdleTimer = 0
 let bound = false
 let lastLayoutSyncAt = 0
+let prerollDismissAttempted = false
+let lastPrerollDismissAt = 0
 
 export function isUserVerticallyScrolling(): boolean {
   return userScrolling
@@ -102,11 +106,19 @@ function dismissHomePrerollOnScroll(): void {
 }
 
 function onScrollStart(): void {
-  dismissHomePrerollOnScroll()
+  const now = Date.now()
+  if (!prerollDismissAttempted || now - lastPrerollDismissAt >= PREROLL_DISMISS_MIN_MS) {
+    lastPrerollDismissAt = now
+    dismissHomePrerollOnScroll()
+    if (document.documentElement.getAttribute('data-watta-preroll-retired') === '1') {
+      prerollDismissAttempted = true
+    }
+  }
   if (!userScrolling) {
     userScrolling = true
     setScrollingAttr(true)
   }
+  markScrollGesture()
   window.clearTimeout(scrollIdleTimer)
   scrollIdleTimer = window.setTimeout(onScrollIdle, SCROLL_IDLE_MS)
 }
@@ -142,6 +154,8 @@ export function bindHeroScrollPerf(): () => void {
     window.clearTimeout(scrollIdleTimer)
     delete document.documentElement.dataset.wattaScrolling
     userScrolling = false
+    prerollDismissAttempted = false
+    lastPrerollDismissAt = 0
   }
 }
 

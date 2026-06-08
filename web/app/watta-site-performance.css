@@ -291,3 +291,32 @@ html[data-watta-scrolling='true'] [data-watta-in-view-fade] {
     will-change: auto;
   }
 }
+
+/* Під час вертикального скролу — картки товарів не перехоплюють тап (захист від ghost-click). */
+html[data-watta-scrolling] .home-menu-product-card-nav-hit-web {
+  pointer-events: none !important;
+}
+
+/*
+ * Активний вертикальний скрол: без transition/transform-анімацій на важких блоках —
+ * менше repaint і «смикання» при русі вгору/вниз.
+ */
+html[data-watta-scrolling='true'] .home-menu-product-card-web,
+html[data-watta-scrolling='true'] .watta-menu-product-card,
+html[data-watta-scrolling='true'] .home-menu-category-rail-web,
+html[data-watta-scrolling='true'] .watta-full-menu-page .watta-menu-category-section,
+html[data-watta-scrolling='true'] .site-footer-watta,
+html[data-watta-scrolling='true'] .watta-roll-marquee-track {
+  transition: none !important;
+}
+
+html[data-watta-scrolling='true'] .watta-sticky-chrome-portal {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+html:not([data-watta-scrolling='true']) .watta-sticky-chrome-portal {
+  will-change: auto;
+  transform: none;
+}

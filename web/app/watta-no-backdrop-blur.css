@@ -8,7 +8,8 @@ html * {
   backdrop-filter: none !important;
 }
 
-/* Капсула + чіпи категорій у fixed chrome — суцільний білий фон (не напівпрозоре «скло» над відео) */
+/* Капсула категорій у fixed chrome — суцільний білий фон (не напівпрозоре «скло» над відео).
+ * Неактивні чіпи — прозорі; біле коло лише у .category-button-active-web. */
 html.watta-html-home-hero body .watta-sticky-chrome-portal .categories-panel-web,
 body .watta-sticky-chrome-portal .categories-panel-web,
 .watta-full-menu-sticky-chrome .categories-panel-web,
@@ -21,9 +22,11 @@ body .watta-sticky-chrome-portal .categories-panel-web,
 
 body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
 .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
-.watta-public-sticky-chrome .categories-panel-web .category-button-web {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+.watta-public-sticky-chrome .categories-panel-web .category-button-web,
+.categories-panel-web .category-button-web {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
 }
 
 body .watta-sticky-chrome-portal .categories-panel-web .category-button-web::before,
@@ -36,15 +39,22 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-web::bef
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web:hover,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web:hover,
   .watta-public-sticky-chrome .categories-panel-web .category-button-web:hover,
-  .categories-panel-web .category-button-web:hover,
+  .categories-panel-web .category-button-web:hover {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web:hover,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web:hover,
   .watta-public-sticky-chrome .categories-panel-web .category-button-active-web:hover,
   .categories-panel-web .category-button-active-web:hover {
     background: #ffffff !important;
     background-color: #ffffff !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-    box-shadow: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
     transform: none !important;
   }
 
@@ -75,12 +85,13 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-web::bef
 
 body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web,
 .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web,
-.watta-public-sticky-chrome .categories-panel-web .category-button-active-web {
+.watta-public-sticky-chrome .categories-panel-web .category-button-active-web,
+.categories-panel-web .category-button-active-web {
   background: #ffffff !important;
   background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.1) !important;
-  border-width: 1px !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+  -webkit-box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
 }
 
 body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web .category-button-icon-web,
@@ -105,12 +116,12 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
   color: #145142 !important;
 }
 
-/* Дефолт: сіра рамка + сірий текст/іконка; зелений лише при hover */
+/* Дефолт: без рамки на неактивних чіпах; сірий текст/іконка; зелений лише при hover/active */
 body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
 .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
 .watta-public-sticky-chrome .categories-panel-web .category-button-web,
 .categories-panel-web .category-button-web {
-  border-color: rgba(0, 0, 0, 0.1) !important;
+  border: none !important;
   box-shadow: none !important;
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease !important;
 }

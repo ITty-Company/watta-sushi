@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { Toaster } from 'react-hot-toast'
 import AppClient from './AppClient'
 import DevNoiseCleanup from './components/DevNoiseCleanup'
 import './fonts.local'
@@ -26,6 +25,7 @@ import './watta-cart-checkout-page.css'
 import './watta-cart-mobile.css'
 import './watta-boot-splash.css'
 import './watta-site-performance.css'
+import './watta-notifications-drawer.css'
 import './watta-scroll-reveal.css'
 import './watta-full-menu-section-transition.css'
 import './menu-stellar-hero-background.css'
@@ -43,8 +43,10 @@ import {
   isWattaAuthPathname,
   isWattaHomeHeroPathname,
   isWattaHomeHeroVideoPathname,
+  isWattaNotificationsPathname,
   WATTA_HOME_HERO_CRITICAL_CSS,
   WATTA_HTML_ROUTE_BOOT_SCRIPT,
+  WATTA_ROUTE_NOTIFICATIONS_CLASS,
   wattaHtmlRouteClassNames,
 } from '@/lib/wattaHtmlRouteClass'
 import { WATTA_HERO_PRIMARY_MP4 } from '@/lib/wattaHeroVideo'
@@ -93,7 +95,12 @@ export default async function RootLayout({
   const jsonLdDescription = getJsonLdDescription(lang)
   /** Клас hero-маршруту на SSR — boot script + WattaHtmlRouteClass дублюють на клієнті. */
   const pathname = headers().get('x-watta-pathname') || '/'
-  const htmlClassName = wattaHtmlRouteClassNames(pathname)
+  const htmlClassName = [
+    wattaHtmlRouteClassNames(pathname),
+    isWattaNotificationsPathname(pathname) ? WATTA_ROUTE_NOTIFICATIONS_CLASS : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
   const isHeroVideoRoute = isWattaHomeHeroVideoPathname(pathname)
   const isHomeRoute = isWattaHomeHeroPathname(pathname)
   const isHomeRollHeroRoute = isHomeRoute
@@ -135,9 +142,6 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: WATTA_HTML_ROUTE_BOOT_SCRIPT }} />
         <style dangerouslySetInnerHTML={{ __html: WATTA_BOOT_SPLASH_CRITICAL_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: WATTA_HOME_HERO_CRITICAL_CSS }} />
-        {!isHeroVideoRoute ? (
-          <link rel="preload" href="/logo-splash-1x.webp" as="image" type="image/webp" fetchPriority="high" />
-        ) : null}
         {isHomeRollHeroRoute
           ? WATTA_HERO_ROLL_IMAGE_URLS.slice(0, WATTA_HERO_ROLL_HEAD_PRELOAD_COUNT).map((url, index) => (
               <link
@@ -188,36 +192,6 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        <Toaster
-          position="top-center"
-          reverseOrder={false}
-          containerClassName="watta-toast-host"
-          containerStyle={{ zIndex: 99999 }}
-          toastOptions={{
-            className: 'watta-toast',
-            duration: 3600,
-            style: {
-              background: '#ffffff',
-              color: 'var(--watta-toast-ink, #1a2e28)',
-              boxShadow: '0 10px 28px rgba(26, 46, 40, 0.1), 0 2px 8px rgba(26, 46, 40, 0.06)',
-              borderRadius: '9999px',
-              padding: '0.55rem 1rem 0.55rem 0.65rem',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-            },
-            success: {
-              className: 'watta-toast watta-toast--success',
-              iconTheme: { primary: '#5c9010', secondary: '#ffffff' },
-            },
-            error: {
-              className: 'watta-toast watta-toast--error',
-              iconTheme: { primary: '#dc4c4c', secondary: '#ffffff' },
-            },
-            loading: {
-              className: 'watta-toast watta-toast--loading',
-            },
-          }}
         />
         <AppClient initialLocale={lang}>{children}</AppClient>
       </body>

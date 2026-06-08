@@ -13,13 +13,13 @@ import {
 import {
   isInstantNavPath,
   isProductNavPath,
-  markRecentPointerNav,
   navigateInstant,
   normalizeInternalHref,
   prefetchHref,
   wasRecentPointerNav,
 } from '@/lib/instantNav'
 import { primeProductPageChrome } from '@/lib/wattaProductChrome'
+import { consumePointerScrollGesture } from '@/lib/wattaScrollTapGuard'
 
 type WattaLinkProps = ComponentProps<typeof Link>
 
@@ -46,11 +46,6 @@ const WattaLink = forwardRef<HTMLAnchorElement, WattaLinkProps>(function WattaLi
   const router = useRouter()
   const pressedNavRef = useRef<string | null>(null)
 
-  const currentLocation = useCallback(() => {
-    if (typeof window === 'undefined') return '/'
-    return `${window.location.pathname}${window.location.search}`
-  }, [])
-
   const warm = useCallback(() => {
     const target = hrefToPrefetchString(href)
     if (target) prefetchHref(router, target)
@@ -69,20 +64,19 @@ const WattaLink = forwardRef<HTMLAnchorElement, WattaLinkProps>(function WattaLi
       if (isProductNavPath(target)) {
         primeProductPageChrome()
       }
-      if (!isInstantNavPath(target)) return
-      const normalized = normalizeInternalHref(target)
-      if (!normalized || normalized === currentLocation()) return
-      pressedNavRef.current = target
-      markRecentPointerNav(normalized)
-      navigateInstant(router, normalized, { scroll: scroll !== false, immediate: true })
     },
-    [href, onPointerDown, currentLocation, router, scroll, warm],
+    [href, onPointerDown, warm],
   )
 
   const handleClick = useCallback(
     (e: MouseEvent<HTMLAnchorElement>) => {
       onClick?.(e)
       if (e.defaultPrevented || isModifiedClick(e)) return
+      if (consumePointerScrollGesture()) {
+        e.preventDefault()
+        pressedNavRef.current = null
+        return
+      }
       const target = hrefToPrefetchString(href)
       if (!target) return
       const normalized = normalizeInternalHref(target)

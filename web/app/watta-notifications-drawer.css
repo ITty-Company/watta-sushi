@@ -1,0 +1,330 @@
+/* Панель сповіщень — мобільний bottom sheet + blur; сторінка /notifications — без chrome */
+
+.watta-notifications-drawer-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: #ffffff;
+}
+
+.watta-notifications-drawer-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  padding:
+    max(0.85rem, env(safe-area-inset-top, 0px))
+    1.1rem
+    0.85rem
+    1.25rem;
+}
+
+.watta-notifications-drawer-head__title {
+  margin: 0;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.watta-notifications-drawer-close {
+  display: flex;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.watta-notifications-drawer-close:hover {
+  background: #f3f4f6;
+}
+
+.watta-notifications-drawer-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.35rem 0.85rem max(1rem, env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+}
+
+.watta-notifications-drawer-scroll .notifications-page-state__actions,
+.watta-notifications-drawer-scroll .notifications-page-list-mark-all,
+.watta-notifications-drawer-scroll .notifications-page-card {
+  pointer-events: auto;
+}
+
+.watta-notifications-drawer-scroll .notifications-page-list-wrap {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.watta-notifications-drawer-scroll .notifications-page-list {
+  max-height: none;
+  flex: 1 1 auto;
+}
+
+/* Планшет / десктоп — права бічна панель */
+#watta-notifications-drawer.watta-nav-sidebar-drawer--sheet {
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  left: auto;
+  width: min(420px, calc(100vw - 24px));
+  max-width: min(420px, calc(100vw - 24px));
+  height: auto;
+  max-height: calc(100dvh - 24px);
+  min-height: 0;
+  border-radius: 22px;
+  box-shadow:
+    -16px 0 48px rgba(20, 81, 66, 0.14),
+    0 20px 48px rgba(20, 81, 66, 0.1);
+}
+
+#watta-notifications-drawer-root .watta-nav-sidebar-overlay.is-open {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(12, 28, 24, 0.42) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.05) !important;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+}
+
+#watta-notifications-drawer-root .watta-nav-sidebar-overlay {
+  transition:
+    opacity 0.24s ease,
+    visibility 0.24s ease;
+}
+
+#watta-notifications-drawer.watta-nav-sidebar-drawer--sheet {
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.22s ease,
+    visibility 0.22s ease,
+    box-shadow 0.28s ease;
+}
+
+/* Відкрита панель — ховаємо chrome і плаваючі кнопки під оверлеєм */
+html[data-watta-notifications-open] .watta-sticky-chrome-portal,
+html[data-watta-notifications-open] .floating-contact-buttons-root,
+html[data-watta-notifications-open] .watta-floating-cart-fab,
+html[data-watta-notifications-open]
+  .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 767px) {
+  #watta-notifications-drawer-root .watta-nav-sidebar-overlay.is-open {
+    top: 0 !important;
+    inset: 0 !important;
+    min-height: 100dvh;
+    background: rgba(12, 28, 24, 0.48) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(1.08) !important;
+    backdrop-filter: blur(12px) saturate(1.08) !important;
+  }
+
+  #watta-notifications-drawer.watta-nav-sidebar-drawer--sheet {
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px))) !important;
+    min-height: min(68dvh, 480px) !important;
+    border: none !important;
+    border-radius: 22px 22px 0 0 !important;
+    box-shadow:
+      0 -10px 44px rgba(20, 81, 66, 0.16),
+      0 -2px 12px rgba(0, 0, 0, 0.06) !important;
+    transform: translate3d(0, 100%, 0) !important;
+    opacity: 1 !important;
+    overflow: hidden;
+  }
+
+  #watta-notifications-drawer.watta-nav-sidebar-drawer--sheet:not(.is-open) {
+    transform: translate3d(0, 100%, 0) !important;
+  }
+
+  #watta-notifications-drawer.watta-nav-sidebar-drawer--sheet.is-open {
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  #watta-notifications-drawer.watta-nav-sidebar-drawer--sheet.is-open::after {
+    display: none !important;
+  }
+
+  .watta-notifications-drawer-head {
+    position: relative;
+    padding-top: 0.95rem;
+  }
+
+  .watta-notifications-drawer-head::before {
+    content: '';
+    position: absolute;
+    top: 0.42rem;
+    left: 50%;
+    width: 2.5rem;
+    height: 0.28rem;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: rgba(20, 81, 66, 0.14);
+    pointer-events: none;
+  }
+
+  .watta-notifications-drawer-scroll .notifications-page-card {
+    padding: 0.95rem 1rem;
+    border-radius: 18px;
+  }
+
+  .watta-notifications-drawer-scroll .notifications-page-card__title {
+    font-size: 0.9375rem;
+  }
+
+  .watta-notifications-drawer-scroll .notifications-page-card__text {
+    font-size: 0.8125rem;
+  }
+}
+
+/* ——— Сторінка /notifications: без глобальної шапки й категорій ——— */
+html.watta-route-notifications .watta-sticky-chrome-portal {
+  display: none !important;
+}
+
+html.watta-route-notifications .watta-sticky-chrome-flow-anchor {
+  min-height: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+html.watta-route-notifications .floating-contact-buttons-root,
+html.watta-route-notifications .watta-floating-cart-fab {
+  display: none !important;
+}
+
+html.watta-route-notifications .watta-app-main-grow > .notifications-page-web {
+  padding-top: 0 !important;
+}
+
+html.watta-route-notifications .notifications-page-web {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, #145142 6%, transparent), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 20%, color-mix(in srgb, #ff5c00 5%, transparent), transparent),
+    #fff;
+}
+
+html.watta-route-notifications .notifications-page-shell {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding:
+    max(0.5rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1.25rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+}
+
+html.watta-route-notifications .notifications-page-mobile-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+html.watta-route-notifications .notifications-page-mobile-back {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 2.65rem;
+  height: 2.65rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.15rem;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  border-radius: 999px;
+  background: #fff;
+  color: #145142;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(20, 81, 66, 0.08);
+}
+
+html.watta-route-notifications .notifications-page-mobile-head__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+html.watta-route-notifications .notifications-page-intro {
+  margin-bottom: 0;
+}
+
+html.watta-route-notifications .notifications-page-intro__title {
+  font-size: clamp(1.55rem, 5.5vw, 2rem);
+}
+
+html.watta-route-notifications .notifications-page-panel {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+html.watta-route-notifications .notifications-page-list-wrap {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+html.watta-route-notifications .notifications-page-list {
+  max-height: none;
+  flex: 1 1 auto;
+}
+
+html.watta-route-notifications .notifications-page-card {
+  padding: 1rem;
+  border-radius: 18px;
+}
+
+html.watta-route-notifications .notifications-page-card__title {
+  font-size: 0.9375rem;
+}
+
+html.watta-route-notifications .notifications-page-card__text {
+  font-size: 0.8125rem;
+}
+
+@media (min-width: 768px) {
+  html.watta-route-notifications .notifications-page-shell {
+    max-width: 32rem;
+    margin-inline: auto;
+  }
+}

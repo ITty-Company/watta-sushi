@@ -608,7 +608,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
               tabIndex={-1}
             >
               <div className="category-button-icon-web">
-                <MenuUtensilsCrossedIcon size={18} strokeWidth={1.8} aria-hidden />
+                <MenuUtensilsCrossedIcon size={20} strokeWidth={1.8} aria-hidden />
               </div>
               <span className="category-button-label-web">{mv.fullMenuAllTab}</span>
             </button>

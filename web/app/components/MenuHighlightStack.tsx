@@ -19,6 +19,7 @@ export type MenuHighlightStackItem = {
   isHomeHit?: boolean
   isMenuNew?: boolean
   promoDiscountPercent?: number
+  ingredientIds?: number[]
 }
 
 type Props = {
@@ -107,6 +108,7 @@ export function MenuHighlightStack({
                       isHomeHit: item.isHomeHit,
                       isMenuNew: item.isMenuNew,
                       promoDiscountPercent: item.promoDiscountPercent,
+                      ingredientIds: item.ingredientIds,
                     }}
                     subtitleLine={subtitleLine}
                     onAddToCart={() => onAddToCart(item)}
@@ -157,6 +159,7 @@ export function MenuHighlightStack({
                   isHomeHit: item.isHomeHit,
                   isMenuNew: item.isMenuNew,
                   promoDiscountPercent: item.promoDiscountPercent,
+                  ingredientIds: item.ingredientIds,
                 }}
                 subtitleLine={subtitleLine}
                 onAddToCart={() => onAddToCart(item)}

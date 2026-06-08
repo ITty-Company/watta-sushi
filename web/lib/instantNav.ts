@@ -9,6 +9,7 @@ import {
 import { normalizeInternalHref, normalizeInternalPath } from '@/lib/internalHref'
 import { prefetchRouteChunk } from '@/lib/prefetchRouteChunks'
 import { parseProductIdFromHref, warmProductRouteData } from '@/lib/fetchProductById'
+import { consumePointerScrollGesture } from '@/lib/wattaScrollTapGuard'
 
 /** Публічні маршрути — префетч при старті, щоб тап відчувався миттєво. */
 export const WATTA_PUBLIC_PREFETCH_ROUTES = [
@@ -233,7 +234,7 @@ function isModifiedPointerNav(e: PointerEvent): boolean {
   return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
 }
 
-/** pointerdown: prefetch + push раніше за click (кнопки з data-href, звичайні <a>). */
+/** pointerdown: prefetch раніше за click (кнопки з data-href, звичайні <a>). Навігація — лише на click. */
 export function installInstantNavPointerDown(router: AppRouterInstance): () => void {
   if (typeof document === 'undefined') return () => {}
 
@@ -253,15 +254,7 @@ export function installInstantNavPointerDown(router: AppRouterInstance): () => v
       return
     }
 
-    const href = resolveClickNavHref(el)
-    const target = href ? normalizeInternalHref(href) : null
-    if (!target || !isInstantNavPath(target)) {
-      prefetchFromIntentTarget(router, el)
-      return
-    }
-    if (target === currentPathWithSearch()) return
-
-    navigateInstant(router, target, { immediate: true })
+    prefetchFromIntentTarget(router, el)
   }
 
   const opts = { capture: true, passive: true } as const
@@ -304,6 +297,7 @@ export function installInstantNavClick(router: AppRouterInstance): () => void {
 
   const onClick = (e: MouseEvent) => {
     if (e.defaultPrevented || isModifiedNavClick(e)) return
+    if (consumePointerScrollGesture()) return
     const el = e.target as Element | null
     if (shouldSkipInstantNav(el)) return
 

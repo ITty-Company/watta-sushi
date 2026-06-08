@@ -4,7 +4,8 @@ import { ShoppingBag } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useCartBarSnapshot } from '@/hooks/useCartBarSnapshot'
-import { openWattaCheckout } from '@/lib/openWattaCart'
+import { openWattaCart } from '@/lib/openWattaCart'
+import { useOptionalCartDrawer } from '../context/CartDrawerContext'
 import {
   formatMobileCartBarAria,
   WattaMobileCartBarSummary,
@@ -39,11 +40,11 @@ export function HomeMenuProductCartMediaOverlay({ visible }: Props) {
       className="home-menu-product-cart-media-overlay-web watta-mobile-cart-bar watta-mobile-cart-bar--card-overlay"
       data-watta-cart-filled="true"
       data-watta-skip-instant-nav=""
-      aria-label={`${summaryAria}. ${cs.mobileCheckoutShort}`}
+      aria-label={`${summaryAria}. ${t.siteAria.cart}`}
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
-        openWattaCheckout(router)
+        openWattaCart(router, cartDrawer?.open)
       }}
     >
       <WattaMobileCartBarSummary
@@ -55,7 +56,7 @@ export function HomeMenuProductCartMediaOverlay({ visible }: Props) {
         amountTemplate={cs.mobileBarSummaryAmount}
       />
       <span className="watta-mobile-cart-bar__cta">
-        {cs.mobileCheckoutShort}
+        {t.siteAria.cart}
         <ShoppingBag className="watta-mobile-cart-bar__ico" strokeWidth={2.25} aria-hidden />
       </span>
     </button>

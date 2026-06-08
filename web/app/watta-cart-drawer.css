@@ -491,6 +491,16 @@ html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web.watta-cart
   color: #e85a24;
 }
 
+.watta-cart-drawer-item__composition {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #757575;
+  overflow-wrap: anywhere;
+}
+
 .watta-cart-drawer-item__price-old {
   margin-right: 6px;
   color: rgba(20, 81, 66, 0.38);
