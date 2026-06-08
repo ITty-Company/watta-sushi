@@ -17,6 +17,7 @@ import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
+import { applyPermanentMenuCategoryImages } from '@/lib/menuCategoryDefaultImages'
 import {
   coerceProductsArray,
   readRawMenuCategoriesFromSession,
@@ -152,17 +153,20 @@ export default function FullMenuPageClient() {
         .filter((cat) => (cat as { isActive?: boolean }).isActive !== false)
         .map((cat) => {
           const name = getMenuCategoryDisplayName(cat, language, t.categories) || String(cat.name_ru ?? '')
+          const slug = normMenuSlug(String(cat.slug ?? ''))
+          const { imageUrl, hoverImageUrl } = applyPermanentMenuCategoryImages(
+            slug,
+            typeof cat.imageUrl === 'string' ? cat.imageUrl : null,
+            typeof cat.hoverImageUrl === 'string' ? cat.hoverImageUrl : null,
+          )
           return {
             id: Number(cat.id) || 0,
-            slug: normMenuSlug(String(cat.slug ?? '')),
+            slug,
             name,
             emoji: typeof cat.emoji === 'string' && cat.emoji ? String(cat.emoji) : '🍣',
             order: typeof cat.order === 'number' ? cat.order : 0,
-            imageUrl: typeof cat.imageUrl === 'string' && cat.imageUrl.trim() ? cat.imageUrl.trim() : null,
-            hoverImageUrl:
-              typeof cat.hoverImageUrl === 'string' && cat.hoverImageUrl.trim()
-                ? cat.hoverImageUrl.trim()
-                : null,
+            imageUrl,
+            hoverImageUrl,
           }
         })
         .filter((c) => c.slug.length > 0)

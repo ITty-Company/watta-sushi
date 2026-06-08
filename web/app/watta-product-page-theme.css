@@ -844,13 +844,13 @@
     overflow: visible;
   }
 
-  /* Біла картка з фото + чорна підложка знизу (як Ninja Sushi) */
+  /* Біла картка з фото — без чорної смуги знизу */
   .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div {
     border: none !important;
     border-radius: 1.25rem !important;
-    background: #111111 !important;
+    background: #ffffff !important;
     overflow: hidden;
-    padding-bottom: 1.125rem;
+    padding-bottom: 0;
     box-shadow: 0 10px 36px -14px rgba(0, 0, 0, 0.14);
   }
 
@@ -878,14 +878,11 @@
     object-position: center !important;
   }
 
-  /* Точки пагінації — по центру чорної смуги */
+  /* Точки пагінації — під білою карткою */
   .watta-product-page__gallery.watta-product-gallery--overlay > div[role='group'] {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0.28rem;
-    margin-top: 0 !important;
-    z-index: 3;
+    position: static;
+    margin-top: 0.5rem !important;
+    z-index: auto;
   }
 
   .watta-product-page__rec-head-simple {

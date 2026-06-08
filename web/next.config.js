@@ -191,6 +191,7 @@ const nextConfig = {
       { source: '/apple-touch-icon-precomposed.png', headers: longImmutable },
       { source: '/watta-page-texture.png', headers: longImmutable },
       { source: '/location-picker-mascot.png', headers: longImmutable },
+      { source: '/category-icons/:path*', headers: longImmutable },
       {
         source: '/uploads/:path*',
         headers: [

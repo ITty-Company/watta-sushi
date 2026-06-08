@@ -499,7 +499,7 @@ export function ProductImageGallery({
           images={images}
           labels={labels}
           onGoTo={goTo}
-          className="mt-2 hidden sm:flex"
+          className="mt-2 flex"
         />
       ) : null}
 
