@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+const BUNDLED_CATEGORY_ICON_RE = /\/category-icons\//
 
 type CategoryStripIconProps = {
   imageUrl?: string | null
@@ -19,8 +20,17 @@ export function CategoryStripIcon({
     return <>{fallback}</>
   }
 
+  const isBundledIcon = BUNDLED_CATEGORY_ICON_RE.test(defaultSrc)
+
   return (
-    <span className="category-strip-icon-stack" aria-hidden>
+    <span
+      className={
+        isBundledIcon
+          ? 'category-strip-icon-stack category-strip-icon-stack--bundled'
+          : 'category-strip-icon-stack'
+      }
+      aria-hidden
+    >
       <img
         src={defaultSrc}
         alt=""

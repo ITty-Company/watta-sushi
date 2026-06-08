@@ -801,6 +801,13 @@ body .watta-sticky-chrome-portal .categories-panel-web {
     width: 1.58rem !important;
     height: 1.58rem !important;
   }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack--bundled,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled,
+  .watta-public-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled {
+    width: 26px !important;
+    height: 26px !important;
+  }
 }
 
 @media (min-width: 1025px) {
@@ -856,6 +863,13 @@ body .watta-sticky-chrome-portal .categories-panel-web {
   .watta-public-sticky-chrome .categories-panel-web .category-strip-icon-stack {
     width: 1.62rem !important;
     height: 1.62rem !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack--bundled,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled,
+  .watta-public-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled {
+    width: 27px !important;
+    height: 27px !important;
   }
 }
 

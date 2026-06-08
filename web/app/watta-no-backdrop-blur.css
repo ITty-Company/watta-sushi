@@ -170,6 +170,18 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web
   user-select: none;
 }
 
+/* Постійні PNG з public/category-icons — без зайвих полів, як Lucide */
+.category-strip-icon-stack--bundled {
+  width: 1.66rem;
+  height: 1.66rem;
+}
+
+.category-strip-icon-stack--bundled .category-strip-icon-img {
+  object-fit: contain;
+  transform: scale(1.08);
+  transform-origin: center;
+}
+
 .category-strip-icon-img--hover {
   position: absolute;
   inset: 0;
@@ -191,6 +203,11 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web
   .category-strip-icon-stack {
     width: 1.42rem;
     height: 1.42rem;
+  }
+
+  .category-strip-icon-stack--bundled {
+    width: 15px;
+    height: 15px;
   }
 }
 

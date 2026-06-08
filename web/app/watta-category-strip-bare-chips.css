@@ -107,6 +107,13 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     height: 1.1rem !important;
   }
 
+  body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack--bundled,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled,
+  .watta-public-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-label-web,
