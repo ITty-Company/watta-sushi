@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext'
 import {
   WATTA_BOOT_SPLASH_ENDED_EVENT,
   WATTA_HERO_VIDEO_READY_EVENT,
-  // WATTA_HOME_HERO_POSTER,
+  WATTA_HOME_HERO_POSTER,
   WATTA_HERO_OCEAN_GRADIENT,
   isHeroVideoFrameReady,
   markHeroVideoAtStartSec,
@@ -57,7 +57,7 @@ export type WelcomeHeroSectionProps = {
   ariaLabel?: string
   sectionClassName?: string
   /** Постер до першого кадру (на /delivery — окремий від головної). */
-  // posterUrl?: string
+  posterUrl?: string
 }
 
 /** Картка з ocean hero — та сама на головній та на /menu */
@@ -73,7 +73,7 @@ export default function WelcomeHeroSection({
   children,
   ariaLabel,
   sectionClassName = '',
-  // posterUrl = WATTA_HOME_HERO_POSTER,
+  posterUrl = WATTA_HOME_HERO_POSTER,
 }: WelcomeHeroSectionProps) {
   const heroVideoLoop = playlistLength <= 1
   const isHomeHeroCard =
@@ -490,18 +490,13 @@ export default function WelcomeHeroSection({
             >
               <div
                 className="welcome-hero-media-frame-web"
-                style={{
-                  // backgroundImage: `url('${posterUrl}')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center var(--watta-home-hero-media-pos-y, 46%)',
-                  backgroundRepeat: 'no-repeat',
-                }}
+                style={heroPosterLayerStyle(posterUrl)}
               >
                 <div
                   className="welcome-video-native-web welcome-hero-fallback-image-web"
                   role="img"
                   aria-hidden
-                  // style={{ backgroundImage: `url('${posterUrl}')` }}
+                  style={{ backgroundImage: `url('${posterUrl}')` }}
                 />
               </div>
               {children}
