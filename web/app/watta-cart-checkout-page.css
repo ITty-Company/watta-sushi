@@ -1748,6 +1748,22 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
   border-radius: 0.75rem;
 }
 
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-media-web--grid-natural {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-img-web--grid-natural {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 .watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-body-web {
   flex: 1 1 auto;
   min-width: 0;

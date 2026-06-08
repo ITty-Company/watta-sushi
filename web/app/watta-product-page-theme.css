@@ -687,55 +687,44 @@
   }
 }
 
-/* Галерея — м’яка «картка» (лише десктоп; телефон/планшет — плоско, без тіні) */
-@media (min-width: 1024px) {
-  .watta-product-page__gallery.watta-product-gallery--overlay {
-    border-radius: clamp(1rem, 3vw, 1.35rem);
-    overflow: hidden;
-    box-shadow:
-      0 20px 50px -32px rgba(15, 36, 30, 0.28),
-      0 0 0 1px color-mix(in srgb, var(--watta-product-accent) 10%, transparent);
-  }
+/* Галерея — плоско на всіх екранах: без рамки, тіні й «світіння» */
+.watta-product-page__gallery.watta-product-gallery--overlay {
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  border: none;
+  background: transparent;
 }
 
-/* Телефон і планшет: фото на чистому білому — без рамки, тіні й «світіння» */
-@media (max-width: 1023px) {
-  .watta-product-page__gallery.watta-product-gallery--overlay {
-    border-radius: 0;
-    overflow: visible;
-    box-shadow: none;
-    border: none;
-    background: transparent;
-  }
+.watta-product-page__gallery.watta-product-gallery--overlay > div:first-child {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
 
-  .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child {
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
+.watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-bottom: 0 !important;
+}
 
-  .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div {
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    padding-bottom: 0 !important;
-  }
+.watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div > div {
+  background: transparent;
+}
 
-  .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div > div {
-    background: transparent;
-  }
+.watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame {
+  background: transparent;
+  border-radius: 0;
+}
 
-  .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame {
-    background: transparent;
-    border-radius: 0;
-  }
-
-  .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame img {
-    padding: 0 !important;
-    background: transparent;
-  }
+.watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame img {
+  padding: 0 !important;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
 }
 
 @media (min-width: 640px) {
@@ -965,26 +954,6 @@
 
   .watta-product-page__recs {
     margin-top: clamp(2rem, 4vw, 3rem);
-  }
-}
-
-@media (min-width: 1024px) {
-  .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div {
-    border-radius: 1.25rem !important;
-    background: #ffffff !important;
-    box-shadow: 0 10px 36px -14px rgba(0, 0, 0, 0.14);
-  }
-
-  .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div > div {
-    background: #ffffff;
-  }
-
-  .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame {
-    background: #ffffff;
-  }
-
-  .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame img {
-    padding: clamp(0.65rem, 2.2vw, 1.35rem) !important;
   }
 }
 

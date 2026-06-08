@@ -1198,7 +1198,7 @@ html:not([data-watta-home-past-hero='1'])
     --watta-home-hero-top-fade-push: clamp(6px, 1vh, 12px);
     --watta-home-hero-bottom-fade-push: 0;
     --watta-home-hero-overlay-pad-top: calc(
-      var(--watta-home-hero-chrome-overlap) + clamp(-6px, -0.4vh, 2px)
+      var(--watta-home-hero-chrome-overlap) + clamp(-14px, -1.2vh, -2px)
     );
     --watta-home-hero-overlay-pad-bottom: 0;
   }
@@ -1344,7 +1344,7 @@ html:not([data-watta-home-past-hero='1'])
 @media (min-width: 768px) and (max-width: 1024px) {
   .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
     --watta-home-hero-overlay-pad-top: calc(
-      var(--watta-home-hero-chrome-overlap) + clamp(6px, 1vh, 14px)
+      var(--watta-home-hero-chrome-overlap) + clamp(-12px, -1.1vh, 0px)
     );
   }
 
@@ -1360,7 +1360,7 @@ html:not([data-watta-home-past-hero='1'])
 @media (min-width: 1025px) {
   .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
     --watta-home-hero-overlay-pad-top: calc(
-      var(--watta-home-hero-chrome-overlap) + clamp(8px, 1.2vh, 18px)
+      var(--watta-home-hero-chrome-overlap) + clamp(-10px, -0.9vh, 2px)
     );
   }
 
@@ -1375,7 +1375,7 @@ html:not([data-watta-home-past-hero='1'])
 @media (min-width: 1280px) {
   .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
     --watta-home-hero-overlay-pad-top: calc(
-      var(--watta-home-hero-chrome-overlap) + clamp(10px, 1.4vh, 20px)
+      var(--watta-home-hero-chrome-overlap) + clamp(-8px, -0.7vh, 4px)
     );
   }
 }

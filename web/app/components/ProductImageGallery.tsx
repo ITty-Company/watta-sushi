@@ -383,8 +383,10 @@ export function ProductImageGallery({
 
         <div
           className={cn(
-            'min-w-0 flex-1 overflow-hidden rounded-2xl border border-[#145142]/12 bg-white max-lg:border-0 max-lg:bg-transparent max-lg:rounded-none sm:rounded-[30px] sm:max-lg:rounded-none',
-            overlayNav && 'relative',
+            'min-w-0 flex-1 overflow-hidden',
+            overlayNav
+              ? 'relative border-0 bg-transparent rounded-none'
+              : 'rounded-2xl border border-[#145142]/12 bg-white sm:rounded-[30px]',
           )}
         >
           <div

@@ -1870,7 +1870,7 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   html.watta-html-home-hero .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row--front {
     margin-top: 0 !important;
     transform: rotate(var(--watta-roll-marquee-tilt, -4deg))
-      translateY(var(--watta-home-wide-roll-front-nudge, clamp(-45px, calc(-1.2vh - 35px), -39px))) !important;
+      translateY(var(--watta-home-wide-roll-front-nudge, clamp(-86px, calc(-2vh - 72px), -74px))) !important;
   }
 
   html.watta-html-home-hero .watta-home-photo-first-screen .watta-home-roll-hero-slot-web {

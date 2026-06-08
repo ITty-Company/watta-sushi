@@ -220,23 +220,45 @@ export function WattaMenuProductCardInner({
       <div className="home-menu-product-card-inner-web">
         <div className="home-menu-product-card-media-frame-web" ref={mediaRef}>
           {pills}
-          <div className="home-menu-product-card-media-web" aria-hidden>
+          <div
+            className={cn(
+              'home-menu-product-card-media-web',
+              variant === 'grid' && 'home-menu-product-card-media-web--grid-natural',
+            )}
+            aria-hidden
+          >
             {showPhoto ? (
               useNextImage ? (
-                <Image
-                  src={photoSrc!}
-                  alt=""
-                  fill
-                  className="home-menu-product-card-img-web"
-                  sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
-                  priority
-                  onError={() => setImageError(true)}
-                />
+                variant === 'grid' ? (
+                  <Image
+                    src={photoSrc!}
+                    alt=""
+                    width={600}
+                    height={720}
+                    className="home-menu-product-card-img-web home-menu-product-card-img-web--grid-natural"
+                    sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
+                    priority={imagePriority}
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <Image
+                    src={photoSrc!}
+                    alt=""
+                    fill
+                    className="home-menu-product-card-img-web"
+                    sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
+                    priority={imagePriority}
+                    onError={() => setImageError(true)}
+                  />
+                )
               ) : (
                 <img
                   src={photoSrc ?? undefined}
                   alt=""
-                  className="home-menu-product-card-img-web"
+                  className={cn(
+                    'home-menu-product-card-img-web',
+                    variant === 'grid' && 'home-menu-product-card-img-web--grid-natural',
+                  )}
                   decoding="async"
                   loading="eager"
                   fetchPriority={imagePriority ? 'high' : 'auto'}
