@@ -10,6 +10,7 @@ import {
   shouldRunBootSplashOnHome,
 } from '@/lib/menuBrowseRestore'
 import { warmHeroVideoCache } from '@/lib/warmHeroVideoCache'
+import { isWattaBootSplashEnabled } from '@/lib/wattaBootSplashEnabled'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
 /** Один React-оверлей на навігацію (Strict Mode remount). */
@@ -51,7 +52,7 @@ function shouldShowBootSplashNow(): boolean {
   try {
     if (typeof window === 'undefined') return false
     // Вмикаємо сплеш лише явно (щоб не перекривав контент/кнопки у звичайному режимі).
-    if (process.env.NEXT_PUBLIC_WATTA_BOOT_SPLASH !== '1') return false
+    if (!isWattaBootSplashEnabled()) return false
     if (!isHomePathname()) return false
     if (document.documentElement.getAttribute('data-watta-skip-splash') === '1') return false
     // Лише reload (F5) на головній — не SPA-перехід і не перший navigate.

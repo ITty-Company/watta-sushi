@@ -6,6 +6,7 @@ import {
 import { WATTA_HERO_ROLL_BOOT_PRELOAD_SNIPPET } from '@/lib/wattaHeroRollPreload'
 import { usesHomeHeroSingleVideoLayer } from '@/lib/wattaTouchViewport'
 import { syncWattaProductChromeForPathname } from '@/lib/wattaProductChrome'
+import { WATTA_BOOT_SPLASH_BOOT_FLAG } from '@/lib/wattaBootSplashEnabled'
 
 /** Класи на <html> для hero-CSS без :has(.menu-page-web) — працюють одразу після Reload. */
 export const WATTA_HTML_ROUTE_CLASSES = {
@@ -18,9 +19,6 @@ export const WATTA_HTML_ROUTE_CLASSES = {
 const ALL_ROUTE_CLASSES = Object.values(WATTA_HTML_ROUTE_CLASSES)
 
 const BASE_HTML_CLASS = 'watta-light-chrome'
-
-// Splash перекриває контент (опис/кнопки) на повільному CSS/JS, тож за замовчуванням вимкнений.
-const WATTA_BOOT_SPLASH_BOOT_FLAG = process.env.NEXT_PUBLIC_WATTA_BOOT_SPLASH === '1' ? '1' : '0'
 
 function heroRouteClassForPathname(pathname: string): string | null {
   const p = pathname || '/'
