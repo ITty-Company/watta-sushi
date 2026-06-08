@@ -139,11 +139,9 @@ export function WattaMenuProductCardInner({
     onBeforeNavigateToProduct?.()
   }, [product.id, onBeforeNavigateToProduct])
   const [imageError, setImageError] = useState(false)
-  const [imageLoaded, setImageLoaded] = useState(false)
   const photoSrc = useMemo(() => resolveCatalogMediaUrl(product.imageUrl), [product.imageUrl])
   useEffect(() => {
     setImageError(false)
-    setImageLoaded(false)
   }, [product.id, product.imageUrl])
   useEffect(() => {
     if (!imagePriority || !photoSrc) return
@@ -151,13 +149,6 @@ export function WattaMenuProductCardInner({
   }, [photoSrc, imagePriority])
   const showPhoto = Boolean(photoSrc) && !imageError
   const useNextImage = showPhoto && isNextImageOptimizableCatalogUrl(photoSrc)
-  const markImageLoaded = useCallback(() => setImageLoaded(true), [])
-  const bindCatalogImageRef = useCallback(
-    (node: HTMLImageElement | null) => {
-      if (node?.complete && node.naturalWidth > 0) markImageLoaded()
-    },
-    [markImageLoaded],
-  )
 
   const warmDetail = useCallback(() => {
     warmProductRouteData(product.id)
@@ -231,43 +222,27 @@ export function WattaMenuProductCardInner({
           {pills}
           <div className="home-menu-product-card-media-web" aria-hidden>
             {showPhoto ? (
-              <>
-                {!imageLoaded ? (
-                  <div className="home-menu-product-card-placeholder-web home-menu-product-card-placeholder-web--loading">
-                    {emoji}
-                  </div>
-                ) : null}
-                {useNextImage ? (
-                  <Image
-                    src={photoSrc!}
-                    alt=""
-                    fill
-                    className={cn(
-                      'home-menu-product-card-img-web',
-                      !imageLoaded && 'home-menu-product-card-img-web--pending',
-                    )}
-                    sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
-                    priority={imagePriority}
-                    onLoad={markImageLoaded}
-                    onError={() => setImageError(true)}
-                  />
-                ) : (
-                  <img
-                    ref={bindCatalogImageRef}
-                    src={photoSrc ?? undefined}
-                    alt=""
-                    className={cn(
-                      'home-menu-product-card-img-web',
-                      !imageLoaded && 'home-menu-product-card-img-web--pending',
-                    )}
-                    decoding="async"
-                    loading={imagePriority ? 'eager' : 'lazy'}
-                    fetchPriority={imagePriority ? 'high' : undefined}
-                    onLoad={markImageLoaded}
-                    onError={() => setImageError(true)}
-                  />
-                )}
-              </>
+              useNextImage ? (
+                <Image
+                  src={photoSrc!}
+                  alt=""
+                  fill
+                  className="home-menu-product-card-img-web"
+                  sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
+                  priority
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <img
+                  src={photoSrc ?? undefined}
+                  alt=""
+                  className="home-menu-product-card-img-web"
+                  decoding="async"
+                  loading="eager"
+                  fetchPriority={imagePriority ? 'high' : 'auto'}
+                  onError={() => setImageError(true)}
+                />
+              )
             ) : (
               <div className="home-menu-product-card-placeholder-web">{emoji}</div>
             )}
@@ -297,7 +272,7 @@ export function WattaMenuProductCardInner({
 
           <div
             className={cn(
-              'home-menu-product-card-footer-web pointer-events-auto',
+              'home-menu-product-card-footer-web',
               cartQty > 0 && 'home-menu-product-card-footer-web--in-cart',
             )}
             data-watta-skip-instant-nav=""

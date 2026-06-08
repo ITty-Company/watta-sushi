@@ -383,7 +383,7 @@ export function ProductImageGallery({
 
         <div
           className={cn(
-            'min-w-0 flex-1 overflow-hidden rounded-2xl border border-[#145142]/12 bg-white sm:rounded-[30px]',
+            'min-w-0 flex-1 overflow-hidden rounded-2xl border border-[#145142]/12 bg-white max-lg:border-0 max-lg:bg-transparent max-lg:rounded-none sm:rounded-[30px] sm:max-lg:rounded-none',
             overlayNav && 'relative',
           )}
         >
@@ -406,8 +406,8 @@ export function ProductImageGallery({
                   className={cn(
                     'watta-product-gallery__frame relative block w-full cursor-zoom-in overflow-hidden',
                     overlayNav
-                      ? 'aspect-[4/3] max-h-none sm:aspect-square'
-                      : 'aspect-[5/4] max-h-[min(52vw,14.5rem)] sm:aspect-square sm:max-h-none',
+                      ? 'aspect-[5/6] max-h-none sm:aspect-[5/6]'
+                      : 'aspect-[5/6] max-h-[min(78vw,22rem)] sm:aspect-[5/6] sm:max-h-none',
                   )}
                   onClick={openLightbox}
                   aria-label={labels.open}
@@ -416,10 +416,10 @@ export function ProductImageGallery({
                   <img
                     src={src}
                     alt={i === 0 ? alt : `${alt} · ${i + 1}`}
-                    className="h-full w-full object-cover object-center"
+                    className="h-full w-full object-contain object-center"
                     decoding="async"
-                    loading={i === 0 ? 'eager' : undefined}
-                    fetchPriority={i === 0 ? 'high' : undefined}
+                    loading="eager"
+                    fetchPriority={i === 0 ? 'high' : 'auto'}
                     draggable={false}
                   />
                 </button>

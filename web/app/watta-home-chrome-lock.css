@@ -1831,7 +1831,7 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 
   html.watta-html-home-hero .watta-home-photo-first-screen {
-    --watta-home-roll-content-push: clamp(32px, 5vh, 56px);
+    --watta-home-roll-content-push: clamp(14px, 2vh, 24px);
     --watta-home-split-stack-lift: var(--watta-home-roll-content-push);
   }
 
@@ -1848,7 +1848,7 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     transform: none !important;
     width: min(40rem, 88vw) !important;
     max-width: min(40rem, 88vw) !important;
-    margin: clamp(26px, 3vh, 32px) auto clamp(12px, 1.8vh, 20px) !important;
+    margin: clamp(12px, 1.4vh, 18px) auto clamp(10px, 1.4vh, 16px) !important;
     text-align: center !important;
     animation: none !important;
   }

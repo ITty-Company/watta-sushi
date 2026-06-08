@@ -1198,7 +1198,7 @@ html:not([data-watta-home-past-hero='1'])
     --watta-home-hero-top-fade-push: clamp(6px, 1vh, 12px);
     --watta-home-hero-bottom-fade-push: 0;
     --watta-home-hero-overlay-pad-top: calc(
-      var(--watta-home-hero-chrome-overlap) + clamp(4px, 0.8vh, 12px)
+      var(--watta-home-hero-chrome-overlap) + clamp(-6px, -0.4vh, 2px)
     );
     --watta-home-hero-overlay-pad-bottom: 0;
   }

@@ -7059,6 +7059,8 @@ html.watta-light-chrome body {
   gap: 0.75rem;
   min-height: 0;
   padding: clamp(0.75rem, 2.5vw, 1rem);
+  /* Кліки проходять до nav-hit; кнопки кошика/улюблених — pointer-events-auto нижче */
+  pointer-events: none;
 }
 
 /* Повна картка — перехід на /product/:id (кнопки кошика з pointer-events-auto поверх). */
@@ -7136,9 +7138,9 @@ html.watta-light-chrome body {
   min-width: 0;
 }
 
-/* Фото в горизонтальній стрічці — ближче до квадрата (загальне 4:3 лишається для сітки) */
+/* Фото в горизонтальній стрічці — трохи вище за ширину, не квадрат */
 .home-menu-product-card--rail-web .home-menu-product-card-media-frame-web {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
 }
 
 /* Планшет 768–1023: 2 повні + половина третьої (gap 1rem у rail) */
@@ -7149,7 +7151,7 @@ html.watta-light-chrome body {
   }
 
   #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-media-frame-web {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
     max-height: none;
   }
 
@@ -7200,9 +7202,9 @@ html.watta-light-chrome body {
     padding-bottom: 0.75rem;
   }
 
-  /* Квадратне прев’ю; компактний текст і футер */
+  /* Прев’ю трохи вище за ширину; компактний текст і футер */
   #home-menu-catalog .home-menu-product-card--rail-web .home-menu-product-card-media-frame-web {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
     max-height: none;
   }
 
@@ -7252,7 +7254,7 @@ html.watta-light-chrome body {
 .home-menu-product-card-media-frame-web {
   position: relative;
   flex-shrink: 0;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
   overflow: hidden;
   border-radius: 1rem;
   background: #f2f2f2;
@@ -7329,7 +7331,7 @@ html.watta-light-chrome body {
 .home-menu-product-card-img-web {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   transform: none;
 }
@@ -7350,12 +7352,26 @@ html.watta-light-chrome body {
   z-index: 1;
 }
 
-.home-menu-product-card-img-web--pending {
-  opacity: 0;
-}
+/* Телефон і планшет: фото без сірої підкладки та «світіння» — чистий білий фон картки */
+@media (max-width: 1023px) {
+  .home-menu-product-card-web {
+    box-shadow: none;
+  }
 
-.home-menu-product-card-img-web:not(.home-menu-product-card-img-web--pending) {
-  transition: opacity 0.12s ease;
+  .home-menu-product-card-inner-web {
+    padding-top: 0;
+  }
+
+  .home-menu-product-card-media-frame-web {
+    background: #ffffff;
+    box-shadow: none;
+    border-radius: 1.25rem 1.25rem 0.85rem 0.85rem;
+  }
+
+  .home-menu-product-card-media-web,
+  .home-menu-product-card-placeholder-web {
+    background: #ffffff;
+  }
 }
 
 .home-menu-product-pill-web {
@@ -7478,7 +7494,7 @@ html.watta-light-chrome body {
   }
 
   .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
-    aspect-ratio: 16 / 11;
+    aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
   }
 
   .home-menu-product-card--grid-web .home-menu-product-card-title-web {
@@ -7510,7 +7526,7 @@ html.watta-light-chrome body {
 }
 
 .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
-  aspect-ratio: 2 / 1;
+  aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
 }
 
 .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-inner-web {
@@ -7563,8 +7579,8 @@ html.watta-light-chrome body {
 }
 
 .menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-media-frame-web {
-  aspect-ratio: 1 / 1;
-  max-height: 7.25rem;
+  aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
+  max-height: none;
 }
 
 .menu-highlight-stack-web .home-menu-product-card--rail-web .home-menu-product-card-inner-web {
@@ -7709,6 +7725,7 @@ html.watta-light-chrome body {
   gap: 0.45rem;
   min-width: 5.45rem;
   min-height: 2.5rem;
+  pointer-events: auto;
 }
 
 .home-menu-product-card-price-col-web {
@@ -7966,6 +7983,7 @@ html.watta-light-chrome body {
   min-width: 5.45rem;
   min-height: 2.5rem;
   justify-content: flex-end;
+  pointer-events: auto;
 }
 
 .home-menu-product-cart-controls-web--active {
@@ -25017,7 +25035,7 @@ body.admin-watta-overlay-open .site-footer-watta {
   }
 
   .watta-favorites-page .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
-    aspect-ratio: 5 / 4;
+    aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
     max-height: none;
   }
 
@@ -25340,9 +25358,18 @@ html.watta-light-chrome:has(.watta-cart-page) body {
     width: 100%;
   }
 
-  .watta-product-page__gallery .watta-product-gallery--overlay .aspect-\[4\/3\] {
-    aspect-ratio: 1 / 1;
-    max-height: min(72vw, 18.5rem);
+  .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame {
+    aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
+    max-height: min(78vw, 22rem);
+    background: transparent;
+  }
+
+  .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame img {
+    object-fit: contain !important;
+    object-position: center;
+    padding: 0;
+    box-sizing: border-box;
+    background: transparent;
   }
 
   .watta-product-page__composition-scroll {
