@@ -83,7 +83,8 @@ export default function ProductPageClient({
     router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
   const handleNotifications = () => openWattaNotifications(router, notificationsDrawer?.open)
   const handleMenu = () => router.push('/menu')
-  const handleCart = () => openWattaCart(router, cartDrawer?.open)
+  const handleCart = () =>
+    openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false)
   const handlePhone = () => {
     window.location.href = 'tel:+31649326549'
   }

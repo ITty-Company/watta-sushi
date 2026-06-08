@@ -13,6 +13,7 @@ import clsx from 'clsx'
 import { useWattaChromeScrollCompact } from '@/hooks/useWattaChromeScrollCompact'
 import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { isWattaChromeCompact } from '@/lib/wattaChromeScroll'
+import { isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR, WATTA_ROUTE_PRODUCT_CLASS } from '@/lib/wattaProductChrome'
 
 type WattaStickyChromeLayoutProps = {
@@ -74,6 +75,7 @@ export default function WattaStickyChromeLayout({
     if (typeof document === 'undefined') return false
     const root = document.documentElement
     return (
+      isWattaPhoneViewport() &&
       root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS) &&
       root.dataset[WATTA_PRODUCT_HEADER_EXPANDED_ATTR] !== 'true'
     )

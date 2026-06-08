@@ -148,10 +148,10 @@
   }
 
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet.is-open {
-    transform: translate3d(0, 0, 0);
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+    transform: translate3d(0, 0, 0) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines] {

@@ -22,12 +22,13 @@ export default function WattaChromeCompactCart() {
     <button
       type="button"
       className="watta-chrome-compact-cart-web watta-cart-trigger-press"
+      data-watta-skip-instant-nav=""
       data-watta-cart-filled={cartCount > 0 ? 'true' : undefined}
       data-watta-cart-target=""
       aria-label={t.siteAria.cart}
       aria-expanded={cartDrawerOpen}
       onPointerDown={() => prefetchHref(prefetchRouter, '/cart')}
-      onClick={() => openWattaCart(router, cartDrawer?.open)}
+      onClick={() => openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false)}
     >
       <ShoppingBag size={20} className="watta-chrome-compact-cart-ico" strokeWidth={2.25} aria-hidden />
       <span className="watta-chrome-compact-cart-label">{t.cart}</span>

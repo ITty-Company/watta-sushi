@@ -395,7 +395,7 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
       }
 
       if (item.key === 'cart') {
-        openWattaCart(router, cartDrawer?.open ?? null)
+        openWattaCart(router, cartDrawer?.open ?? null, cartDrawer?.enabled !== false)
         finishDrawerNav()
         return
       }

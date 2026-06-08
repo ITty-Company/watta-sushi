@@ -42,7 +42,7 @@ export default function WattaMobileCartBar() {
       type="button"
       className="watta-mobile-cart-bar"
       data-watta-cart-filled={hasItems ? 'true' : undefined}
-      onClick={() => openWattaCart(router, cartDrawer?.open)}
+      onClick={() => openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false)}
       aria-label={`${summaryAria}. ${t.siteAria.cart}`}
       data-watta-cart-target=""
     >

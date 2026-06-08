@@ -23,7 +23,7 @@ export default function WattaFloatingCartFab() {
       data-watta-cart-target=""
       aria-label={t.siteAria.cart}
       aria-expanded={cartDrawerOpen}
-      onClick={() => openWattaCart(router, cartDrawer?.open)}
+      onClick={() => openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false)}
     >
       <ShoppingBag className="watta-floating-cart-fab__ico" strokeWidth={2.25} aria-hidden />
       {cartCount > 0 ? (

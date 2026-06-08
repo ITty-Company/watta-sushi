@@ -1163,7 +1163,8 @@ export default function MenuView() {
     return () => window.removeEventListener('productsUpdated', handleProductsUpdate)
   }, [loadMenuItems])
 
-  const openCart = () => openWattaCart(router, cartDrawer?.open)
+  const openCart = () =>
+    openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false)
   const openNotifications = () => openWattaNotifications(router, notificationsDrawer?.open)
 
   // --- ПОЛЬЗОВАТЕЛЬ И АДМИН ---
@@ -1532,7 +1533,7 @@ export default function MenuView() {
       return
     }
     if (page === 'cartPublic') {
-      openWattaCart(router, cartDrawer?.open)
+      openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false)
       return
     }
     if (page === 'favoritesPublic') {

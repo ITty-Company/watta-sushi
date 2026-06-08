@@ -828,18 +828,34 @@
   }
 
   .watta-product-page__gallery.watta-product-gallery--overlay {
+    position: relative;
     border-radius: 1.25rem;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: none;
     border: none;
-    background: #0a0a0a;
+    background: transparent;
   }
 
   .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child {
+    width: 100%;
     border: none;
-    border-radius: 1.25rem;
-    background: #0a0a0a;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  /* Біла картка з фото + чорна підложка знизу (як Ninja Sushi) */
+  .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div {
+    border: none !important;
+    border-radius: 1.25rem !important;
+    background: #111111 !important;
     overflow: hidden;
+    padding-bottom: 1.125rem;
+    box-shadow: 0 10px 36px -14px rgba(0, 0, 0, 0.14);
+  }
+
+  .watta-product-page__gallery.watta-product-gallery--overlay > div:first-child > div > div {
+    background: #ffffff;
   }
 
   .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame {
@@ -848,17 +864,28 @@
     max-height: none;
     padding: 0;
     margin: 0;
-    background: #0a0a0a;
-    border-radius: inherit;
+    background: #ffffff;
+    border-radius: 0;
   }
 
   .watta-product-page__gallery.watta-product-gallery--overlay .watta-product-gallery__frame img {
     display: block;
     width: 100%;
     height: 100%;
-    padding: 0 !important;
-    object-fit: cover !important;
+    padding: clamp(0.65rem, 2.2vw, 1.35rem) !important;
+    box-sizing: border-box;
+    object-fit: contain !important;
     object-position: center !important;
+  }
+
+  /* Точки пагінації — по центру чорної смуги */
+  .watta-product-page__gallery.watta-product-gallery--overlay > div[role='group'] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.28rem;
+    margin-top: 0 !important;
+    z-index: 3;
   }
 
   .watta-product-page__rec-head-simple {

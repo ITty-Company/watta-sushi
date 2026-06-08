@@ -24,11 +24,12 @@ export function openWattaCheckout(router: RouterPush): void {
 export function openWattaCart(
   router: RouterPush,
   openDrawer?: OpenCartDrawer | null,
+  drawerEnabled = true,
 ): void {
   const onCartPage =
     typeof window !== 'undefined' && window.location.pathname === '/cart'
   if (onCartPage) return
-  if (openDrawer) {
+  if (openDrawer && drawerEnabled) {
     openDrawer()
     return
   }

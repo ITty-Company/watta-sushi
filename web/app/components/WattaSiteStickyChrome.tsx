@@ -78,7 +78,7 @@ export default function WattaSiteStickyChrome({
   }, [isHome, router])
 
   const onCartClick = useCallback(
-    () => openWattaCart(router, cartDrawer?.open),
+    () => openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false),
     [router, cartDrawer],
   )
 

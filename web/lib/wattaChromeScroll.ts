@@ -1,4 +1,4 @@
-import { isWattaCompactChromeViewport } from '@/lib/wattaTouchViewport'
+import { isWattaCompactChromeViewport, isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR, WATTA_ROUTE_PRODUCT_CLASS } from '@/lib/wattaProductChrome'
 
 /** Навігація по стрічці категорій — не скидати scroll/compact на наступному маршруті. */
@@ -11,6 +11,7 @@ let compactLockTimer = 0
 
 export function isWattaChromeCompact(): boolean {
   if (typeof document === 'undefined') return false
+  if (!isWattaPhoneViewport()) return false
   const root = document.documentElement
   if (root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS)) {
     return root.dataset[WATTA_PRODUCT_HEADER_EXPANDED_ATTR] !== 'true'

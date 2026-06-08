@@ -45,7 +45,7 @@ export function HomeMenuProductCartMediaOverlay({ visible }: Props) {
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
-        openWattaCart(router, cartDrawer?.open)
+        openWattaCart(router, cartDrawer?.open, cartDrawer?.enabled !== false)
       }}
     >
       <WattaMobileCartBarSummary

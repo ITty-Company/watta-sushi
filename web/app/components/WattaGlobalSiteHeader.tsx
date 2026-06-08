@@ -356,6 +356,7 @@ export default function WattaGlobalSiteHeader({
             <button
               type="button"
               className="header-cart-btn-text-web watta-cart-trigger-press"
+              data-watta-skip-instant-nav=""
               data-watta-cart-filled={visibleCartCount > 0 ? 'true' : undefined}
               data-watta-cart-target=""
               aria-label={a.cart}

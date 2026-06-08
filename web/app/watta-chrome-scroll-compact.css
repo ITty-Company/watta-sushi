@@ -28,56 +28,78 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
   transition: none;
 }
 
-/* Compact — ховаємо шапку, лишаємо панель категорій (усі viewport). */
-html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal .watta-chrome-top-band-web {
-  max-height: 0 !important;
-  min-height: 0 !important;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(calc(-100% - 4px));
-  pointer-events: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
+/* Compact — ховаємо шапку, лишаємо панель категорій (лише телефон). */
+@media (max-width: 767px) {
+  html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal .watta-chrome-top-band-web {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(calc(-100% - 4px));
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
 }
 
-/* /product — одразу лише категорії (навіть до data-watta-chrome-compact з JS) */
-html.watta-route-product .watta-sticky-chrome-portal .watta-chrome-top-band-web {
-  max-height: 0 !important;
-  min-height: 0 !important;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(calc(-100% - 4px));
-  pointer-events: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
+/* Планшет/ПК: шапка завжди видима — без стрибків при скролі */
+@media (min-width: 768px) {
+  html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal .watta-chrome-top-band-web {
+    max-height: 140px !important;
+    min-height: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+    margin: revert !important;
+    padding: revert !important;
+    border: revert !important;
+  }
+
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web,
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web {
+    display: none !important;
+  }
 }
 
-/* /product — повна шапка лише з data-watta-product-header-expanded */
-html.watta-route-product[data-watta-product-header-expanded='true']
-  .watta-sticky-chrome-portal
-  .watta-chrome-top-band-web {
-  max-height: 140px !important;
-  min-height: auto !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: translateY(0) !important;
-  pointer-events: auto !important;
-  margin: revert !important;
-  padding: revert !important;
-  border: revert !important;
-}
+/* /product (телефон): одразу лише категорії — на планшеті/ПК шапка з кошиком лишається */
+@media (max-width: 767px) {
+  html.watta-route-product .watta-sticky-chrome-portal .watta-chrome-top-band-web {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(calc(-100% - 4px));
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
 
-/* /product — резерв у потоці лише під смугу категорій + зазор до контенту */
-html.watta-route-product:not([data-watta-product-header-expanded='true'])
-  .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
-  min-height: calc(
-    var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
-  ) !important;
-  height: calc(
-    var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
-  ) !important;
+  html.watta-route-product[data-watta-product-header-expanded='true']
+    .watta-sticky-chrome-portal
+    .watta-chrome-top-band-web {
+    max-height: 140px !important;
+    min-height: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+    margin: revert !important;
+    padding: revert !important;
+    border: revert !important;
+  }
+
+  html.watta-route-product:not([data-watta-product-header-expanded='true'])
+    .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+    min-height: calc(
+      var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
+    ) !important;
+    height: calc(
+      var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
+    ) !important;
+  }
 }
 
 html[data-watta-chrome-compact='true'] {
