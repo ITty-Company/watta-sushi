@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# JSON API — не для індексації й не для crawlers (зменшує зайвий egress).
+Disallow: /api/
+
+# Адмінка — закрита від пошукових ботів.
+Disallow: /admin/

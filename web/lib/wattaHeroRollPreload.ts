@@ -1,4 +1,4 @@
-import { WATTA_HERO_ROLL_IMAGES } from '@/lib/wattaSushiRolls'
+import { WATTA_HERO_ROLL_IMAGES, WATTA_HERO_ROLL_TOP_ROW_COUNT } from '@/lib/wattaSushiRolls'
 import { preloadImageUrls } from '@/lib/preloadImages'
 
 /** Усі URL hero-ролів для `<link rel="preload">` і раннього прогріву кешу. */
@@ -14,10 +14,12 @@ let rollPreloadStarted = false
 export function preloadHeroRollImageUrls(): void {
   if (rollPreloadStarted) return
   rollPreloadStarted = true
-  // Перші 6 ролів уже йдуть `<link rel="preload">` (high) з <head> — тут не дублюємо high-пріоритет,
-  // інакше 16 fetchPriority=high картинок конкурують з LCP головної. Решту 54 гріємо на low,
-  // щоб після F5 вони лишались у кеші, але не блокували перший рендер.
-  preloadImageUrls(WATTA_HERO_ROLL_IMAGE_URLS, { limit: 54, highPriorityCount: 6 })
+  // Перші 6 ролів уже йдуть `<link rel="preload">` (high) з <head>. Решту верхнього ряду (до 16)
+  // гріємо на low — нижній ряд підвантажиться при скролі/анімації, без ~4 MB зайвого egress.
+  preloadImageUrls(WATTA_HERO_ROLL_IMAGE_URLS, {
+    limit: WATTA_HERO_ROLL_TOP_ROW_COUNT,
+    highPriorityCount: 6,
+  })
 }
 
 /** JSON для inline boot script (до React / до гідратації). */
