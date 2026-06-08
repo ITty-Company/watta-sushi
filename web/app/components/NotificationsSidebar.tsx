@@ -52,7 +52,7 @@ const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ isOpen, onC
               Повідомлень немає
             </h3>
             <p className="text-gray-500 max-w-[250px]">
-              Ми повідомимо, коли з'явиться щось цікаве
+              Ми повідомимо, коли з&apos;явиться щось цікаве
             </p>
           </div>
 

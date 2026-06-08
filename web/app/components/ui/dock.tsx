@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  motion,
+  m,
   MotionValue,
   useMotionValue,
   useSpring,
@@ -98,14 +98,14 @@ function Dock({
   const height = useSpring(heightRow, spring);
 
   return (
-    <motion.div
+    <m.div
       style={{
         height: height,
         scrollbarWidth: 'none',
       }}
       className='mx-2 flex max-w-full items-end overflow-x-hidden overflow-y-visible'
     >
-      <motion.div
+      <m.div
         onMouseMove={({ pageX }) => {
           isHovered.set(1);
           mouseX.set(pageX);
@@ -128,8 +128,8 @@ function Dock({
         <DockProvider value={{ mouseX, spring, distance, magnification }}>
           {children}
         </DockProvider>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }
 
@@ -163,7 +163,7 @@ function DockItem({ children, className, onClick }: DockItemProps) {
   }
 
   return (
-    <motion.button
+    <m.button
       ref={ref}
       type="button"
       style={{ width }}
@@ -183,7 +183,7 @@ function DockItem({ children, className, onClick }: DockItemProps) {
       {Children.map(children, (child) =>
         cloneElement(child as React.ReactElement, { width, isHovered } as any)
       )}
-    </motion.button>
+    </m.button>
   );
 }
 
@@ -203,7 +203,7 @@ function DockLabel({ children, className, ...rest }: DockLabelProps) {
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: -10 }}
           exit={{ opacity: 0, y: 0 }}
@@ -216,7 +216,7 @@ function DockLabel({ children, className, ...rest }: DockLabelProps) {
           style={{ x: '-50%' }}
         >
           {children}
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );
@@ -229,12 +229,12 @@ function DockIcon({ children, className, ...rest }: DockIconProps) {
   const widthTransform = useTransform(width, (val) => val / 2);
 
   return (
-    <motion.div
+    <m.div
       style={{ width: widthTransform }}
       className={cn('flex items-center justify-center', className)}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 

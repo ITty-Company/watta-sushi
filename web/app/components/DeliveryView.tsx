@@ -4,9 +4,12 @@ import dynamic from 'next/dynamic'
 import type { ReactNode } from 'react'
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react'
 import { DeliveryExperienceBlocks } from './DeliveryExperienceBlocks'
-import DeliveryPageStats from './DeliveryPageStats'
 import { DeliveryTrustStrip } from './DeliveryTrustStrip'
+import { WattaInViewFadeDiv, WattaInViewFadeSection } from './WattaInViewFade'
+import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
+import DeliveryHeroCopy from './DeliveryHeroCopy'
+import WattaStellarHeroSection from './WattaStellarHeroSection'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import {
@@ -36,6 +39,7 @@ import {
   fetchDeliveryCheck,
   isDeliveryCityUnavailable,
 } from '@/lib/deliveryCheckClient'
+import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 
 function DeliveryFlowSection({
   children,
@@ -49,7 +53,7 @@ function DeliveryFlowSection({
   ariaLabelledBy?: string
 }) {
   return (
-    <section
+    <WattaInViewFadeSection
       className={cn(
         'delivery-flow-section bg-white py-14 sm:py-18',
         className,
@@ -58,7 +62,7 @@ function DeliveryFlowSection({
       aria-labelledby={ariaLabelledBy}
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">{children}</div>
-    </section>
+    </WattaInViewFadeSection>
   )
 }
 
@@ -323,6 +327,7 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
   const [cities, setCities] = useState<City[]>([])
   const [showAllCities, setShowAllCities] = useState(true)
+  /** Завжди true до mount — кеш міст лише в useLayoutEffect (hydration-safe). */
   const [loading, setLoading] = useState(true)
   const [deliveryAddressQuery, setDeliveryAddressQuery] = useState('')
   const [postalChecking, setPostalChecking] = useState(false)
@@ -640,6 +645,21 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
 
   const mapsLinkHref = useMemo(() => wattaRestaurantExternalMapsUrl(), [])
 
+  useEffect(() => {
+    if (embedInMenu) return
+    const signalReady = () => {
+      try {
+        document.documentElement.setAttribute('data-watta-hero-content-ready', '1')
+      } catch {
+        /* ignore */
+      }
+      window.dispatchEvent(new CustomEvent(WATTA_HERO_VIDEO_READY_EVENT))
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(signalReady)
+    })
+  }, [embedInMenu])
+
   const deliveryIntroSection = (
     <AnimatedHeroIntroBlock
       sectionId="delivery-before-hero-intro"
@@ -662,26 +682,27 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
     </AnimatedHeroIntroBlock>
   )
 
-  const deliveryEmbedHeroStack = deliveryIntroSection
-
-  const deliveryPageLeadIntro = (
-    <AnimatedHeroIntroBlock
-      sectionId="delivery-page-lead-intro"
-      ariaLabel={d.headlineLead}
-      titleLines={[d.headlineLead, d.headlineMark]}
-      body={d.sub}
-      accentLineIndex={1}
-      headingLevel="h1"
-      reserveTopSpace
-      innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
-    />
+  const deliveryEmbedHeroStack = (
+    <WattaInViewFadeDiv className="w-full shrink-0">{deliveryIntroSection}</WattaInViewFadeDiv>
   )
 
   const deliveryStandaloneHeroStack = (
-    <div className="delivery-page-hero-stack delivery-page-hero-stack--intro-only w-full shrink-0 bg-transparent">
-      {deliveryPageLeadIntro}
-      <DeliveryPageStats labels={d} />
-    </div>
+    <WattaStellarHeroSection
+      introId="delivery-page-lead-intro"
+      ariaLabelledBy="delivery-page-lead-title"
+    >
+      <DeliveryHeroCopy
+        titleId="delivery-page-lead-title"
+        kickerScript={d.kickerScript}
+        headlineLead={d.headlineLead}
+        headlineMark={d.headlineMark}
+        sub={d.sub}
+        statFresh={d.statFresh}
+        statFast={d.statFast}
+        statCity={d.statCity}
+        showStats={false}
+      />
+    </WattaStellarHeroSection>
   )
 
   const standaloneShowcase = !embedInMenu
@@ -702,7 +723,10 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                     className="delivery-flow-section--city"
                     ariaLabel={d.citiesLabel}
                   >
-                    <h2 className="contact-watta-section-title mb-2">{d.citiesLabel}</h2>
+                    <WattaStaggerSectionTitle
+                      className="contact-watta-section-title mb-2"
+                      text={d.citiesLabel}
+                    />
                     <div className="flex flex-wrap gap-2.5" role="group" aria-label={d.citiesLabel}>
                       {cities.map((city) => (
                         <button
@@ -728,9 +752,11 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                   className="delivery-flow-section--calc"
                   ariaLabelledBy="postal-heading"
                 >
-                <h2 id="postal-heading" className="contact-watta-section-title mb-2">
-                  {d.postalTitle}
-                </h2>
+                <WattaStaggerSectionTitle
+                  id="postal-heading"
+                  className="contact-watta-section-title mb-2"
+                  text={d.postalTitle}
+                />
                 <p className="delivery-page-section-lead mb-8 max-w-2xl">{d.postalDesc}</p>
                 <div className="delivery-designer-hub__calc">
                   <div className="delivery-designer-hub__calc-head" aria-hidden>
@@ -979,9 +1005,10 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                 </DeliveryFlowSection>
 
                 <DeliveryFlowSection className="delivery-flow-section--map" ariaLabel={a.map}>
-                <h2 className="contact-watta-section-title mb-2">
-                  {showInteractiveZonesMap ? d.zonesMapHeroTitle : d.mapAll}
-                </h2>
+                <WattaStaggerSectionTitle
+                  className="contact-watta-section-title mb-2"
+                  text={showInteractiveZonesMap ? d.zonesMapHeroTitle : d.mapAll}
+                />
                 {showInteractiveZonesMap ? (
                   <p className="delivery-page-section-lead mb-8 max-w-2xl">{d.mapZonesHint}</p>
                 ) : null}
@@ -1061,10 +1088,17 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                     className="delivery-flow-section--zones"
                     ariaLabelledBy="zones-heading"
                   >
-                    <h2 id="zones-heading" className="contact-watta-section-title mb-2">
-                      {d.zonesTitle}{' '}
-                      <span className="text-[#111827]">{cityLabel(selectedCity)}</span>
-                    </h2>
+                    <WattaStaggerSectionTitle
+                      id="zones-heading"
+                      className="contact-watta-section-title mb-2"
+                      text={d.zonesTitle}
+                      after={
+                        <>
+                          {' '}
+                          <span className="text-[#111827]">{cityLabel(selectedCity)}</span>
+                        </>
+                      }
+                    />
                     <div className="delivery-designer-hub__zones">
                       <h2 className="delivery-designer-hub__zones-title" aria-hidden>
                         {d.zonesTitle} · <em>{cityLabel(selectedCity)}</em>
@@ -1111,9 +1145,9 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                 {lp.noActiveCities} {lp.activateInAdmin}
               </p>
             ) : cities.length > 1 ? (
-              <section
-                className="delivery-watta-section delivery-flow-section delivery-flow-section--city"
-                aria-label={d.citiesLabel}
+              <DeliveryFlowSection
+                className="delivery-watta-section delivery-flow-section--city"
+                ariaLabel={d.citiesLabel}
               >
                 <div className="delivery-watta-city-row">
                   {cities.map((city) => (
@@ -1130,12 +1164,12 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                     </button>
                   ))}
                 </div>
-              </section>
+              </DeliveryFlowSection>
             ) : null}
 
-            <section
-              className="delivery-watta-postal delivery-flow-section delivery-flow-section--calc"
-              aria-labelledby="postal-heading"
+            <DeliveryFlowSection
+              className="delivery-watta-postal delivery-flow-section--calc"
+              ariaLabelledBy="postal-heading"
             >
               <div className="delivery-watta-postal-inner">
                 <div className="delivery-watta-postal-grid">
@@ -1385,9 +1419,9 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                   </div>
                 )}
               </div>
-            </section>
+            </DeliveryFlowSection>
 
-            <section className="delivery-watta-map-section" aria-label={a.map}>
+            <DeliveryFlowSection className="delivery-watta-map-section" ariaLabel={a.map}>
               {showInteractiveZonesMap && (
                 <>
                   <h2 className="delivery-watta-zones-map-hero-title">{d.zonesMapHeroTitle}</h2>
@@ -1456,10 +1490,10 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                   variant="legacy"
                 />
               </div>
-            </section>
+            </DeliveryFlowSection>
 
             {selectedCity && selectedCity.deliveryZones && selectedCity.deliveryZones.length > 0 && (
-              <section className="delivery-watta-zones" aria-labelledby="zones-heading">
+              <DeliveryFlowSection className="delivery-watta-zones" ariaLabelledBy="zones-heading">
                 <h2 id="zones-heading" className="delivery-watta-zones-heading">
                   {d.zonesTitle} · <em>{cityLabel(selectedCity)}</em>
                 </h2>
@@ -1482,12 +1516,16 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
                     </article>
                   ))}
                 </div>
-              </section>
+              </DeliveryFlowSection>
             )}
               </>
             )}
 
-            {!standaloneShowcase && <DeliveryExperienceBlocks d={d} variant="default" />}
+            {!standaloneShowcase ? (
+              <WattaInViewFadeDiv className="w-full shrink-0">
+                <DeliveryExperienceBlocks d={d} variant="default" />
+              </WattaInViewFadeDiv>
+            ) : null}
           </>
         )}
       </div>
@@ -1506,12 +1544,10 @@ export default function DeliveryView({ embedInMenu = false }: DeliveryViewProps)
   return (
     <div
       id="delivery-page-container"
-      className="menu-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
+      className="menu-page-web watta-site-hero-page-web watta-page-bg delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
     >
-      <div className="delivery-page-home-flow w-full">
-        <div className="delivery-page-intro-web w-full shrink-0">
-          {deliveryStandaloneHeroStack}
-        </div>
+      <div className="delivery-page-home-flow w-full">{deliveryStandaloneHeroStack}</div>
+      <div className="watta-delivery-page-flow flex min-h-0 w-full min-w-0 flex-1 flex-col">
         <div className="delivery-page-tools-flow">{deliveryPageBody}</div>
       </div>
     </div>

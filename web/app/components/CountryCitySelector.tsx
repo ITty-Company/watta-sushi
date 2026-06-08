@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, MapPin, X } from 'lucide-react'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import { useLanguage } from '../context/LanguageContext'
-import { LocationPickerMascot } from './LocationPickerMascot'
 import { cn } from '@/lib/utils'
 import {
   ensureCountriesCatalog,
@@ -22,6 +22,13 @@ import {
 import { preloadLocationPickerMascot } from '@/lib/locationPickerMascot'
 
 const COUNTRIES_CATALOG_EVENT = 'countriesCatalogUpdated'
+
+const LANGUAGE_OPTIONS = [
+  { code: 'uk' as const, name: 'Українська' },
+  { code: 'ru' as const, name: 'Русский' },
+  { code: 'en' as const, name: 'English' },
+  { code: 'nl' as const, name: 'Nederlands' },
+] as const
 
 interface Country {
   id: number
@@ -88,7 +95,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   onCityChange,
   appearance = 'default',
 }) => {
-  const { t, getLocalized } = useLanguage()
+  const { t, getLocalized, language, setLanguage } = useLanguage()
   const lp = t.locationPicker
   const labelCountry = useCallback(
     (c: Country) => getLocalized(c, 'name') || c.name,
@@ -108,8 +115,10 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   const [catalogRefreshing, setCatalogRefreshing] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [chipPopKey, setChipPopKey] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
+  const chipPopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onCityChangeRef = useRef(onCityChange)
   onCityChangeRef.current = onCityChange
   const selectedCityRef = useRef<City | null>(null)
@@ -118,6 +127,18 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   useLayoutEffect(() => {
     setMounted(true)
     preloadLocationPickerMascot()
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (chipPopTimerRef.current) clearTimeout(chipPopTimerRef.current)
+    }
+  }, [])
+
+  const flashChip = useCallback((key: string) => {
+    setChipPopKey(key)
+    if (chipPopTimerRef.current) clearTimeout(chipPopTimerRef.current)
+    chipPopTimerRef.current = setTimeout(() => setChipPopKey(null), 320)
   }, [])
 
   const warmupCatalog = useCallback(() => {
@@ -299,6 +320,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   }, [isOpen])
 
   const handleCountrySelect = (country: Country) => {
+    flashChip(`country-${country.id}`)
     setSelectedCountry(country)
     if (selectedCity && selectedCity.countryId !== country.id) {
       setSelectedCity(null)
@@ -309,6 +331,7 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
   const filteredCities = selectedCountry?.cities?.filter((city) => city.isActive) || []
 
   const handleCitySelect = (city: City) => {
+    flashChip(`city-${city.id}`)
     setSelectedCity(city)
     setIsOpen(false)
 
@@ -323,6 +346,11 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
 
   const handleClose = () => {
     setIsOpen(false)
+  }
+
+  const pickLanguage = (code: WattaLanguage) => {
+    flashChip(`lang-${code}`)
+    setLanguage(code)
   }
 
   /** Каталог ще не підвантажився — у модалці скелетон, не порожній екран */
@@ -393,49 +421,24 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
           >
             <div
               ref={modalRef}
-              className="location-picker-modal location-picker-modal--glass location-picker-modal--mobile-compact relative mx-auto my-auto flex w-full max-h-[min(90vh,880px)] max-w-[min(calc(100vw-1.25rem),26rem)] flex-col overflow-visible rounded-[18px] max-sm:max-h-[min(76dvh,28rem)] sm:max-w-[min(720px,100%)] sm:rounded-[clamp(20px,4vw,32px)]"
+              className="location-picker-modal location-picker-modal--compact relative mx-auto my-auto flex w-full max-h-[min(90vh,640px)] max-w-[min(calc(100vw-1.5rem),26rem)] flex-col overflow-hidden rounded-[20px] max-sm:max-h-[min(82dvh,32rem)]"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
-              aria-labelledby="location-picker-title"
+              aria-label={lp.title}
             >
-              <div className="location-picker-modal__ambient" aria-hidden />
-              <div className="location-picker-modal__header relative flex items-end justify-between gap-2 overflow-visible rounded-t-[18px] px-3 pb-0.5 pt-2.5 sm:gap-4 sm:rounded-t-[clamp(20px,4vw,32px)] sm:px-8 sm:pb-2 sm:pt-5">
-                <div className="location-picker-modal__header-shine pointer-events-none absolute inset-0" aria-hidden />
-                <div className="relative z-[1] flex min-w-0 flex-1 items-end gap-2 sm:gap-4">
-                  <div
-                    className="location-picker-modal__mascot relative z-[1] -mt-7 mb-0 flex h-[84px] w-[72px] shrink-0 translate-y-1 items-end justify-center sm:-mt-14 sm:h-[168px] sm:w-[148px] sm:translate-y-2"
-                    aria-hidden
-                  >
-                    <span
-                      className="location-picker-modal__logo-glow location-picker-modal__logo-glow--mascot pointer-events-none absolute bottom-0 left-1/2 z-0 h-[85%] w-[130%] -translate-x-1/2 opacity-80"
-                      aria-hidden
-                    />
-                    <LocationPickerMascot className="relative z-[2] h-full w-full max-w-full" />
-                  </div>
-                  <div className="min-w-0 pb-0.5">
-                    <p className="location-picker-modal__kicker m-0 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#145142]/75 sm:text-[11px]">
-                      Watta Sushi
-                    </p>
-                    <h2 id="location-picker-title" className="location-picker-modal__title m-0 mt-0.5 sm:mt-1">
-                      {lp.title}
-                    </h2>
-                    <p className="location-picker-modal__subtitle m-0 mt-1 max-w-[42ch] sm:mt-2">{lp.subtitle}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="location-picker-close relative z-[1] h-9 w-9 shrink-0 sm:h-11 sm:w-11"
-                  onClick={handleClose}
-                  aria-label={lp.ariaClose}
-                >
-                  <X size={18} strokeWidth={2.25} />
-                </button>
-              </div>
+              <button
+                type="button"
+                className="location-picker-close"
+                onClick={handleClose}
+                aria-label={lp.ariaClose}
+              >
+                <X size={20} strokeWidth={2} />
+              </button>
 
-              <div className="location-picker-modal__body min-h-[120px] flex-1 overflow-y-auto overflow-x-hidden rounded-b-[18px] px-3 pb-3 pt-0.5 sm:min-h-[200px] sm:rounded-b-[clamp(20px,4vw,32px)] sm:px-8 sm:pb-7 sm:pt-2">
+              <div className="location-picker-modal__body min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5 sm:px-6 sm:pb-6">
                 {catalogRefreshing && (
-                  <div className="location-picker-modal__refresh mb-4 flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-semibold">
+                  <div className="location-picker-modal__refresh mb-4 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold">
                     <span
                       className="inline-block h-3.5 w-3.5 rounded-full border-2 border-[#145142]/25 border-t-[#145142]"
                       style={{ animation: 'countryCityModalSpin 0.75s linear infinite' }}
@@ -444,48 +447,44 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
                   </div>
                 )}
 
-                <section className="location-picker-section">
-                  <div className="location-picker-section__head">
-                    <span className="location-picker-section__icon" aria-hidden>
-                      <MapPin size={17} strokeWidth={2.25} />
-                    </span>
-                    <span className="location-picker-section__label">{lp.country}</span>
-                  </div>
+                <section className="location-picker-field location-picker-field--stagger-0">
+                  <p className="location-picker-field__label">{lp.country}</p>
                   {catalogPending ? (
-                    <div className="location-picker-grid location-picker-grid--countries grid gap-2 sm:gap-3" aria-busy>
+                    <div className="location-picker-options" aria-busy>
                       {[0, 1].map((i) => (
                         <div
                           key={i}
-                          className="location-picker-chip location-picker-chip--skeleton h-11 animate-pulse rounded-2xl border border-[#145142]/10 bg-[#145142]/8 sm:h-12"
+                          className="location-picker-chip location-picker-chip--skeleton h-10 w-28 animate-pulse rounded-[10px]"
                           aria-hidden
                         />
                       ))}
                     </div>
                   ) : !filteredCountries || filteredCountries.length === 0 ? (
-                    <div className="location-picker-empty flex flex-col items-center gap-3 px-4 py-10 text-center">
-                      <div className="text-5xl">🌍</div>
+                    <div className="location-picker-empty">
                       <div className="location-picker-empty__title">{lp.noCountries}</div>
-                      <div className="location-picker-empty__text max-w-md">
+                      <div className="location-picker-empty__text">
                         {loadError ? lp.noCountriesDevHint : lp.noCountriesAdminHint}
                       </div>
                     </div>
                   ) : (
-                    <div className="location-picker-grid location-picker-grid--countries grid gap-2 sm:gap-3">
-                      {filteredCountries.map((country, i) => {
+                    <div className="location-picker-options">
+                      {filteredCountries.map((country) => {
                         const isSelected = selectedCountry?.id === country.id
                         return (
                           <button
                             key={country.id}
                             type="button"
                             className={cn(
-                              'location-picker-chip',
-                              isSelected && 'location-picker-chip--selected'
+                              'location-picker-chip location-picker-chip--country',
+                              isSelected && 'location-picker-chip--selected',
+                              chipPopKey === `country-${country.id}` && 'location-picker-chip--just-selected'
                             )}
-                            style={{ '--stagger': i } as React.CSSProperties}
                             onClick={() => handleCountrySelect(country)}
                           >
-                            <span className="text-base leading-none">{country.flag || '🌍'}</span>
-                            <span className="min-w-0 flex-1 truncate">{labelCountry(country)}</span>
+                            <span className="location-picker-chip__flag" aria-hidden>
+                              {country.flag || '🌍'}
+                            </span>
+                            <span className="truncate">{labelCountry(country)}</span>
                           </button>
                         )
                       })}
@@ -494,39 +493,35 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
                 </section>
 
                 {(selectedCountry || catalogPending) && (
-                  <section className="location-picker-section location-picker-section--city">
-                    <div className="location-picker-section__head">
-                      <span className="location-picker-section__icon" aria-hidden>
-                        <MapPin size={17} strokeWidth={2.25} />
-                      </span>
-                      <span className="location-picker-section__label">{lp.city}</span>
-                    </div>
+                  <section
+                    key={selectedCountry?.id ?? 'catalog-pending'}
+                    className="location-picker-field location-picker-field--stagger-1"
+                  >
+                    <p className="location-picker-field__label">{lp.city}</p>
                     {catalogPending ? (
-                      <div className="location-picker-grid location-picker-grid--cities grid gap-2 sm:gap-3" aria-busy>
+                      <div className="location-picker-options" aria-busy>
                         <div
-                          className="location-picker-chip location-picker-chip--skeleton h-11 animate-pulse rounded-2xl border border-[#145142]/10 bg-[#145142]/8 sm:h-12"
+                          className="location-picker-chip location-picker-chip--skeleton h-10 w-24 animate-pulse rounded-[10px]"
                           aria-hidden
                         />
                       </div>
                     ) : filteredCities.length === 0 ? (
-                      <div className="location-picker-empty flex flex-col items-center gap-3 px-4 py-10 text-center">
+                      <div className="location-picker-empty">
                         {!selectedCountry?.cities || selectedCountry.cities.length === 0 ? (
                           <>
-                            <div className="text-5xl">🏙️</div>
                             <div className="location-picker-empty__title">{lp.noCitiesInCountry}</div>
-                            <div className="location-picker-empty__text max-w-md">{lp.addCitiesAdmin}</div>
+                            <div className="location-picker-empty__text">{lp.addCitiesAdmin}</div>
                           </>
                         ) : (
                           <>
-                            <div className="text-3xl">⚠️</div>
-                            <div className="location-picker-empty__title text-base">{lp.noActiveCities}</div>
-                            <div className="location-picker-empty__text text-sm">{lp.activateInAdmin}</div>
+                            <div className="location-picker-empty__title">{lp.noActiveCities}</div>
+                            <div className="location-picker-empty__text">{lp.activateInAdmin}</div>
                           </>
                         )}
                       </div>
                     ) : (
-                      <div className="location-picker-grid location-picker-grid--cities grid gap-2 sm:gap-3">
-                        {filteredCities.map((city, i) => {
+                      <div className="location-picker-options">
+                        {filteredCities.map((city) => {
                           const isSelected = selectedCity?.id === city.id
                           return (
                             <button
@@ -534,12 +529,12 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
                               type="button"
                               className={cn(
                                 'location-picker-chip',
-                                isSelected && 'location-picker-chip--selected'
+                                isSelected && 'location-picker-chip--selected',
+                                chipPopKey === `city-${city.id}` && 'location-picker-chip--just-selected'
                               )}
-                              style={{ '--stagger': i } as React.CSSProperties}
                               onClick={() => handleCitySelect(city)}
                             >
-                              <span className="min-w-0 flex-1 truncate">{labelCity(city)}</span>
+                              <span className="truncate">{labelCity(city)}</span>
                             </button>
                           )
                         })}
@@ -547,6 +542,29 @@ export const CountryCitySelector: React.FC<CountryCitySelectorProps> = ({
                     )}
                   </section>
                 )}
+
+                <section className="location-picker-field location-picker-field--stagger-2 location-picker-field--language">
+                  <p className="location-picker-field__label">{lp.language}</p>
+                  <div className="location-picker-options">
+                    {LANGUAGE_OPTIONS.map((lang) => {
+                      const isSelected = language === lang.code
+                      return (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          className={cn(
+                            'location-picker-chip',
+                            isSelected && 'location-picker-chip--selected',
+                            chipPopKey === `lang-${lang.code}` && 'location-picker-chip--just-selected'
+                          )}
+                          onClick={() => pickLanguage(lang.code)}
+                        >
+                          <span className="truncate">{lang.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
               </div>
             </div>
           </div>,

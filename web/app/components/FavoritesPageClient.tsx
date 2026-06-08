@@ -1,23 +1,26 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import Link from 'next/link'
-import { Heart, UtensilsCrossed } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { useLanguage } from '../context/LanguageContext'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
-import { loadFavoriteProducts, syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
+import {
+  loadFavoriteProducts,
+  readFavoriteIds,
+  syncFavoritesAfterAuth,
+} from '@/lib/favoritesStorage'
+import { preloadFavoritesEmptyImages } from '@/lib/preloadFavoritesEmptyImages'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import { MenuHighlightStack, type MenuHighlightStackItem } from './MenuHighlightStack'
+import FavoritesEmptyState from './FavoritesEmptyState'
 import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
 
 function FavoritesGridSkeleton() {
   return (
     <div className="px-6 pb-4 sm:px-8 sm:pb-5" aria-hidden>
-      <div className="menu-highlight-stack-products favorites-page-products-grid mx-auto grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 sm:gap-2.5">
+      <div className="menu-highlight-stack-products favorites-page-products-grid mx-auto grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-2.5">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
@@ -36,7 +39,15 @@ export default function FavoritesPageClient() {
   const wf = t.productDetail.weightFallback
   const pf = t.productDetail.piecesFallback
   const [items, setItems] = useState<WattaMenuProductCardModel[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => {
+    if (typeof window === 'undefined') return true
+    if (!isUserLoggedIn()) return true
+    return readFavoriteIds().length > 0
+  })
+
+  useLayoutEffect(() => {
+    preloadFavoritesEmptyImages()
+  }, [])
 
   const mapRawToCard = useCallback(
     (p: Record<string, unknown>): WattaMenuProductCardModel => ({
@@ -56,15 +67,18 @@ export default function FavoritesPageClient() {
   )
 
   const load = useCallback(async (fresh = false) => {
-    setLoading(true)
+    const expectItems = readFavoriteIds().length > 0
+    if (expectItems) setLoading(true)
     try {
       if (isUserLoggedIn()) {
         await syncFavoritesAfterAuth()
       }
       const list = await loadFavoriteProducts((p) => mapRawToCard(p), { fresh })
       setItems(list)
+      return list
     } catch {
       setItems([])
+      return [] as WattaMenuProductCardModel[]
     } finally {
       setLoading(false)
     }
@@ -75,6 +89,11 @@ export default function FavoritesPageClient() {
       router.replace(getAuthUrl('/favorites'))
       return
     }
+    if (readFavoriteIds().length === 0) {
+      setLoading(false)
+      void load(true)
+      return
+    }
     void load()
   }, [load, router])
 
@@ -82,12 +101,15 @@ export default function FavoritesPageClient() {
 
   useEffect(() => {
     if (!isUserLoggedIn()) return
-    const onFav = () => {}
+    const syncListFromStorage = () => {
+      const favoriteIds = new Set(readFavoriteIds())
+      setItems((prev) => prev.filter((item) => favoriteIds.has(item.id)))
+    }
     const onUser = () => void load()
-    window.addEventListener('favoritesUpdated', onFav)
+    window.addEventListener('favoritesUpdated', syncListFromStorage)
     window.addEventListener('userChanged', onUser)
     return () => {
-      window.removeEventListener('favoritesUpdated', onFav)
+      window.removeEventListener('favoritesUpdated', syncListFromStorage)
       window.removeEventListener('userChanged', onUser)
     }
   }, [load])
@@ -105,31 +127,23 @@ export default function FavoritesPageClient() {
     promoDiscountPercent: item.promoDiscountPercent,
   }))
 
+  const isEmpty = !loading && items.length === 0
+
   return (
-    <div className="menu-page-web watta-favorites-page relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden watta-page-bg">
-      <div className="watta-favorites-page__content relative z-[1] w-full min-w-0">
+    <div
+      className={`menu-page-web watta-favorites-page relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col watta-page-bg${isEmpty ? ' watta-favorites-page--empty' : ' overflow-x-hidden'}`}
+    >
+      <div
+        className={`watta-favorites-page__content relative z-[1] w-full min-w-0${isEmpty ? ' watta-favorites-page__content--empty' : ''}`}
+      >
         {loading ? (
           <FavoritesGridSkeleton />
         ) : items.length === 0 ? (
-          <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-6 py-16 text-center sm:py-24">
-            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-rose-50 to-[#145142]/[0.06] text-rose-400/70">
-              <Heart className="h-9 w-9" strokeWidth={1.5} />
-            </div>
-            <h1 className="home-after-hero-intro-title-web text-[clamp(1.5rem,4vw,2.25rem)] font-semibold leading-[1.12] tracking-[-0.02em] text-[#0f2a22]">
-              {cp.favoritesTitle}
-            </h1>
-            <p className="home-after-hero-intro-body-web mt-3 text-sm leading-relaxed text-[#145142]/88 sm:text-base">
-              {cp.favEmpty}
-            </p>
-            <p className="mt-2 max-w-sm text-sm text-[#145142]/60">{cp.favEmptyHint}</p>
-            <Link
-              href="/menu"
-              className="mt-8 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#145142] px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#145142]/20 transition hover:bg-[#0f3d32]"
-            >
-              <UtensilsCrossed className="h-4 w-4" strokeWidth={2.2} aria-hidden />
-              {cp.favToMenu}
-            </Link>
-          </div>
+          <FavoritesEmptyState
+            title={cp.favEmpty}
+            subtitle={cp.favEmptyHint}
+            ctaLabel={cp.favToMenu}
+          />
         ) : (
           <MenuHighlightStack
             title={cp.favoritesTitle}

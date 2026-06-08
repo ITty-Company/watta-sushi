@@ -1,4 +1,5 @@
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
+import { openWattaAuth } from '@/lib/openWattaAuth'
 import {
   sanitizeAuthStorage,
   isUserLoggedIn,
@@ -43,6 +44,7 @@ export function redirectToAuth(
   mode: AuthRedirectMode = 'login',
 ): void {
   const dest = returnPath ?? getCurrentReturnPath()
+  if (openWattaAuth({ returnUrl: dest, register: mode === 'register' })) return
   router.push(getAuthUrl(dest, mode))
 }
 

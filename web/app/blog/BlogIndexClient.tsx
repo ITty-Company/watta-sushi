@@ -2,8 +2,13 @@
 
 import Link from 'next/link'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { motion } from 'framer-motion'
 import { ArrowLeft, BookOpen } from 'lucide-react'
+import {
+  WattaInViewFadeArticle,
+  WattaInViewFadeDiv,
+  WattaInViewFadeHeader,
+} from '../components/WattaInViewFade'
+import WattaPageHeroStagger from '../components/WattaPageHeroStagger'
 import { useMemo } from 'react'
 import { useLanguage } from '@/app/context/LanguageContext'
 
@@ -65,29 +70,25 @@ export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] })
   const rows = useMemo((): BlogCardRow[] => posts, [posts])
 
   return (
-    <motion.div
-      className="watta-blog-page watta-blog-page--route relative w-full min-w-0"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
+    <div className="watta-blog-page watta-blog-page--route relative w-full min-w-0">
       <div className="watta-blog-page__toolbar">
         <BlogBackButton label={t.auth.back} onBack={() => router.push('/')} />
       </div>
 
-      <motion.div
-        className="watta-blog-page__inner"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <header className="watta-blog-page__header">
-          <p className="watta-blog-page__kicker">
-            <BookOpen className="watta-blog-page__kicker-ico" strokeWidth={2.25} aria-hidden />
-            {b.heroKicker}
-          </p>
-          <h1 className="watta-blog-page__title home-after-hero-intro-title-web">{b.title}</h1>
-          <p className="watta-blog-page__subtitle home-after-hero-intro-body-web">{b.subtitle}</p>
-        </header>
+      <WattaInViewFadeDiv className="watta-blog-page__inner">
+        <WattaInViewFadeHeader className="watta-blog-page__header" data-watta-cart-bar-gate="">
+          <WattaPageHeroStagger
+            kickerPrefix={
+              <BookOpen className="watta-blog-page__kicker-ico" strokeWidth={2.25} aria-hidden />
+            }
+            kickerText={b.heroKicker}
+            kickerClassName="watta-blog-page__kicker"
+            title={b.title}
+            titleClassName="watta-blog-page__title home-after-hero-intro-title-web"
+            subtitle={b.subtitle}
+            subtitleClassName="watta-blog-page__subtitle home-after-hero-intro-body-web"
+          />
+        </WattaInViewFadeHeader>
 
         <div className="watta-blog-grid" role="list">
           {rows.map((post, i) => {
@@ -97,13 +98,11 @@ export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] })
             const featured = i === 0
 
             return (
-              <motion.article
+              <WattaInViewFadeArticle
                 key={`${post.id}-${post.slug}`}
                 role="listitem"
                 className={`watta-blog-card${featured ? ' watta-blog-card--featured' : ''}`}
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, type: 'spring', damping: 26 }}
+                transition={{ delay: Math.min(i * 0.04, 0.24) }}
               >
                 <Link
                   href={`/blog/${post.slug}`}
@@ -139,11 +138,11 @@ export default function BlogIndexClient({ posts }: { posts: BlogPostPreview[] })
                     </span>
                   </div>
                 </Link>
-              </motion.article>
+              </WattaInViewFadeArticle>
             )
           })}
         </div>
-      </motion.div>
-    </motion.div>
+      </WattaInViewFadeDiv>
+    </div>
   )
 }

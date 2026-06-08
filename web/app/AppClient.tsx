@@ -2,33 +2,64 @@
 
 import { ReactNode, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
+import { LazyMotion } from 'framer-motion'
+import { loadFramerFeatures } from '@/lib/framerLazyFeatures'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import LanguageProviderWrapper from './components/LanguageProviderWrapper'
 import FloatingContactButtons from './components/FloatingContactButtons'
+import ServiceWorkerRegister from './components/ServiceWorkerRegister'
 import Footer from './components/Footer'
 import WattaRightNavDrawer from './components/WattaRightNavDrawer'
+import WattaCartDrawer from './components/WattaCartDrawer'
+import WattaNotificationsPanel from './components/WattaNotificationsPanel'
+import WattaNotificationWatcher from './components/WattaNotificationWatcher'
 import WattaPublicSiteChrome from './components/WattaPublicSiteChrome'
 import WattaHtmlRouteClass from './components/WattaHtmlRouteClass'
 import { RightNavDrawerProvider } from './context/RightNavDrawerContext'
+import { AuthModalProvider } from './context/AuthModalContext'
+import { CartDrawerProvider } from './context/CartDrawerContext'
+import { NotificationsDrawerProvider } from './context/NotificationsDrawerContext'
 import { sanitizeAuthStorage } from '@/lib/authSession'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { ensureDocumentScrollUnlocked } from '@/lib/ensureDocumentScroll'
 import { bindMobileViewportHeightLock, lockMobileViewportHeight } from '@/lib/lockMobileViewportHeight'
-import { scrollEntireAppToTop } from '@/lib/menuScroll'
+import { scrollEntireAppToTop, disableBrowserScrollRestoration } from '@/lib/menuScroll'
+import {
+  bindWattaScrollMemory,
+  consumePopNavigation,
+  restoreScrollForCurrentLocation,
+} from '@/lib/wattaScrollMemory'
+import {
+  consumeSkipScrollReset,
+  applyRestoreChromeCompactIfNeeded,
+  shouldPreserveMenuCategoryScroll,
+} from '@/lib/wattaChromeScroll'
 import { subscribeWattaCatalogCrossTab } from '@/lib/wattaCatalogSync'
 import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
 import {
   ensureIngredientsCatalog,
   readIngredientsCatalogSync,
 } from '@/lib/wattaIngredientsCatalog'
+import { isBrokenUploadUrl } from '@/lib/brokenUploadUrlCache'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { preloadImageUrls } from '@/lib/preloadImages'
+import { preloadHeroRollImageUrls } from '@/lib/wattaHeroRollPreload'
 import { preloadLocationPickerMascot } from '@/lib/locationPickerMascot'
 import { useInstantNavBoot } from '@/hooks/useInstantNavBoot'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { isBrowserReloadOnHome } from '@/lib/menuBrowseRestore'
-import { resetHomepageLikeLogoClick } from '@/lib/wattaChromeGoHome'
-
+import { useScrollReveal } from '@/hooks/useScrollReveal'
+import { isDocumentReloadNavigation } from '@/lib/menuBrowseRestore'
+import { markInternalNavBackAvailable, resetInternalNavBack } from '@/lib/wattaInternalNavBack'
+import { resetHomepageLikeLogoClick, WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
+import { bindHeroScrollPerf } from '@/lib/heroScrollPerf'
+import { bindHeroVideoKeepAlive } from '@/lib/heroVideoKeepAlive'
+import { warmHeroVideoCache } from '@/lib/warmHeroVideoCache'
+import { isWattaHomeHeroPathname, isWattaHomeHeroVideoPathname, isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
+import { applyWattaProductChromeEntry } from '@/lib/wattaProductChrome'
+import {
+  navigateToFullMenuCategory,
+  WATTA_CATEGORY_STRIP_SELECT,
+} from '@/lib/fullMenuCategoryNav'
 export default function AppClient({
   children,
   initialLocale,
@@ -39,9 +70,14 @@ export default function AppClient({
   const pathname = usePathname()
   const router = useInstantRouter()
   useInstantNavBoot()
+  useScrollReveal(pathname)
   const prevPathnameForScrollRef = useRef<string | null>(null)
   const isHomeRoute = pathname === '/'
+  const isHomeRollHero = isWattaHomeHeroPathname(pathname ?? '/')
+  const isHeroVideoRoute = isWattaHomeHeroVideoPathname(pathname ?? '/') && !isHomeRollHero
   const isAuthRoute = pathname === '/login' || pathname === '/register'
+  const isNotificationsRoute = pathname === '/notifications'
+  const isCartCheckoutRoute = pathname === '/cart'
   const isAdminShellRoute = pathname === '/admin' || pathname?.startsWith('/admin/')
   const hidePublicSiteChromeExtras = useSyncExternalStore(
     (onStoreChange) => {
@@ -60,16 +96,51 @@ export default function AppClient({
     },
     () => false,
   )
-  const showPublicNavChrome = !isAuthRoute
-  /** Єдина fixed шапка + категорії (як на головній) на всіх публічних маршрутах; не в адмінці. */
+  const showPublicNavChrome = !isAdminShellRoute
+  /** Єдина fixed шапка + категорії; на /login та /register модалка поверх сайту. */
   const showGlobalSiteChrome =
-    !isAuthRoute && !isAdminShellRoute && !hidePublicSiteChromeExtras
+    !isAdminShellRoute && !hidePublicSiteChromeExtras
   /**
    * Скрол наверх лише при зміні pathname; raніше тригерилось і на кожну зміну `searchParams`
    * (фільтри / cat= / lang=), що зайво ганяло layout на швидких переходах.
    */
   useLayoutEffect(() => {
     preloadLocationPickerMascot()
+    disableBrowserScrollRestoration()
+  }, [])
+
+  /** Прогрів roll webp — одразу на головній, щоб після F5 картинки були в кеші. */
+  useLayoutEffect(() => {
+    if (!isHomeRoute) return
+    preloadHeroRollImageUrls()
+  }, [isHomeRoute])
+
+  /** На /login та /register — повна шапка, без compact-режиму з попередньої сторінки. */
+  useLayoutEffect(() => {
+    if (!isAuthRoute || typeof document === 'undefined') return
+    delete document.documentElement.dataset.wattaChromeCompact
+    window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
+  }, [isAuthRoute])
+
+  /** Клік по чіпу категорії — перехід на /menu?cat= і скрол до секції. */
+  useEffect(() => {
+    const lastRef = { slug: '', at: 0 }
+    const onSelect = (ev: Event) => {
+      const slug = (ev as CustomEvent<{ slug?: string }>).detail?.slug?.trim()
+      if (!slug) return
+      const now = Date.now()
+      if (slug === lastRef.slug && now - lastRef.at < 120) return
+      lastRef.slug = slug
+      lastRef.at = now
+      navigateToFullMenuCategory(router, pathname ?? '/', slug)
+    }
+    window.addEventListener(WATTA_CATEGORY_STRIP_SELECT, onSelect)
+    return () => window.removeEventListener(WATTA_CATEGORY_STRIP_SELECT, onSelect)
+  }, [router, pathname])
+
+  /** Після reload / прямого заходу — «Назад» не показуємо, доки не буде SPA-переходу. */
+  useLayoutEffect(() => {
+    resetInternalNavBack()
   }, [])
 
   useLayoutEffect(() => {
@@ -77,14 +148,34 @@ export default function AppClient({
     const prev = prevPathnameForScrollRef.current
     prevPathnameForScrollRef.current = path
     ensureDocumentScrollUnlocked()
+    // Завжди споживаємо прапорець back/forward на кожну зміну pathname — інакше він «протікає»
+    // на наступну (push) навігацію і та помилково відновлює скрол замість scroll-to-top.
+    const wasPopNavigation = consumePopNavigation()
+    if (prev !== null && prev !== path) {
+      markInternalNavBackAvailable()
+    }
     if (prev === path) return
     if (path === '/menu' && prev === '/menu') return
-    scrollEntireAppToTop()
-  }, [pathname])
+    if (consumeSkipScrollReset() || shouldPreserveMenuCategoryScroll()) {
+      applyRestoreChromeCompactIfNeeded()
+      return
+    }
+    if (isWattaProductPathname(path)) {
+      applyWattaProductChromeEntry()
+    }
+    // Back/forward: повертаємо збережену позицію (як на звичайних сайтах). Головну не чіпаємо —
+    // там окрема hero-логіка (reset на верх). Якщо збереженої позиції нема — звичайний scroll-to-top.
+    if (wasPopNavigation && !isHomeRoute && restoreScrollForCurrentLocation()) {
+      return
+    }
+    scrollEntireAppToTop({ force: true })
+  }, [pathname, isHomeRoute])
 
-  /** F5 на головній — одразу той самий reset, що клік по логотипу (до HomeClient). */
+  /** F5 на головній (або reload з іншої публічної → /) — reset як клік по логотипу. */
   useLayoutEffect(() => {
-    if (!isBrowserReloadOnHome()) return
+    if (!isDocumentReloadNavigation()) return
+    const p = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'
+    if (p !== '/' && p !== '') return
     resetHomepageLikeLogoClick(router, { skipRefresh: true })
   }, [router])
 
@@ -148,6 +239,36 @@ export default function AppClient({
   /** Телефон: «заморожена» висота вікна — не стискається від клавіатури. */
   useEffect(() => bindMobileViewportHeightLock(), [])
 
+  /** Hero mp4: /menu, /delivery — на головній roll hero без відео. */
+  useEffect(() => {
+    if (!isHeroVideoRoute) return
+    warmHeroVideoCache()
+    return bindHeroVideoKeepAlive()
+  }, [isHeroVideoRoute])
+
+  /** Пауза декоративних анімацій під час скролу на всіх сторінках (менше jank). */
+  useEffect(() => bindHeroScrollPerf(), [])
+
+  /** Памʼять скролу для back/forward — «Назад» повертає позицію, а не стрибає наверх. */
+  useEffect(() => bindWattaScrollMemory(), [])
+
+  /** motion-footer — idle, не в layout phase. */
+  useEffect(() => {
+    if (!isHomeRoute) return
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+    }
+    const w = window as IdleWindow
+    const run = () => {
+      void import('@/components/ui/motion-footer')
+    }
+    if (typeof w.requestIdleCallback === 'function') {
+      w.requestIdleCallback(run, { timeout: 4000 })
+    } else {
+      window.setTimeout(run, 1500)
+    }
+  }, [isHomeRoute])
+
   useEffect(() => subscribeWattaCatalogCrossTab(() => {}), [])
 
   useEffect(() => {
@@ -155,21 +276,20 @@ export default function AppClient({
       requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
     }
     const w = window as IdleWindow
+    const ingredientPreloadUrls = (map: Map<number, { imageUrl: string }>) =>
+      Array.from(map.values())
+        .map((ing) => resolveCatalogMediaUrl(ing.imageUrl))
+        .filter((u): u is string => Boolean(u?.trim()) && !isBrokenUploadUrl(u))
+
     const runDeferred = () => {
       void ensureCountriesCatalog()
       const cachedIng = readIngredientsCatalogSync()
       if (cachedIng?.size) {
-        preloadImageUrls(
-          Array.from(cachedIng.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
-          { limit: 12, highPriorityCount: 8 },
-        )
+        preloadImageUrls(ingredientPreloadUrls(cachedIng), { limit: 12, highPriorityCount: 8 })
       }
       void ensureIngredientsCatalog().then((map) => {
         if (!map?.size) return
-        preloadImageUrls(
-          Array.from(map.values()).map((ing) => resolveCatalogMediaUrl(ing.imageUrl)),
-          { limit: 12, highPriorityCount: 8 },
-        )
+        preloadImageUrls(ingredientPreloadUrls(map), { limit: 12, highPriorityCount: 8 })
       })
     }
     if (typeof w.requestIdleCallback === 'function') {
@@ -180,10 +300,15 @@ export default function AppClient({
   }, [])
 
   return (
+    <LazyMotion features={loadFramerFeatures}>
     <LanguageProviderWrapper initialLocale={initialLocale}>
+      <AuthModalProvider>
       <RightNavDrawerProvider enabled={showPublicNavChrome}>
+        <NotificationsDrawerProvider enabled={showPublicNavChrome}>
+        <CartDrawerProvider enabled={showPublicNavChrome}>
         {/* Мінімум висоти вікна: футер лишається внизу; фон сторінки — як у шапки контенту */}
         <div className="watta-app-shell-root watta-page-bg flex min-h-[var(--watta-screen-min-h,100dvh)] flex-col">
+          <ServiceWorkerRegister />
           <WattaHtmlRouteClass />
           {/* flex-1: основний блок забирає вільну висоту до min-h екрана — інакше «повітря» лишалось під футером */}
           <main className="flex min-h-0 w-full max-w-[100vw] flex-1 flex-col">
@@ -192,17 +317,28 @@ export default function AppClient({
               {children}
             </div>
             {/* mt-auto: коротка сторінка — підвал внизу вікна; довга — після контенту при скролі body */}
-            {!isHomeRoute && !isAuthRoute && !isAdminShellRoute ? (
+            {!isHomeRoute &&
+            !isAuthRoute &&
+            !isAdminShellRoute &&
+            !isNotificationsRoute &&
+            !isCartCheckoutRoute ? (
               <Footer className="mt-auto" />
             ) : null}
           </main>
 
           {showPublicNavChrome && <WattaRightNavDrawer />}
+          {showPublicNavChrome && <WattaCartDrawer />}
+          {showPublicNavChrome && <WattaNotificationsPanel />}
+          {showPublicNavChrome && <WattaNotificationWatcher />}
           {!isAuthRoute && !isAdminShellRoute && !hidePublicSiteChromeExtras && (
             <FloatingContactButtons />
           )}
         </div>
+        </CartDrawerProvider>
+        </NotificationsDrawerProvider>
       </RightNavDrawerProvider>
+      </AuthModalProvider>
     </LanguageProviderWrapper>
+    </LazyMotion>
   )
 }

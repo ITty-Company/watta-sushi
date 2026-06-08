@@ -1,0 +1,281 @@
+/**
+ * Скрол compact: ховаємо шапку (лого, нав, профіль), лишаємо панель категорій; кошик — FAB знизу (телефон).
+ * Атрибут: html[data-watta-chrome-compact="true"]
+ */
+
+/* Під час скролу — без transition на chrome (менше repaint). */
+html[data-watta-scrolling='true'] .watta-sticky-chrome-portal .watta-chrome-top-band-web {
+  transition: none !important;
+}
+
+html[data-watta-scrolling='true'] .watta-sticky-chrome-portal,
+html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
+  transition-duration: 0s !important;
+}
+
+.watta-sticky-chrome-portal {
+  contain: layout style;
+  will-change: auto;
+}
+
+.watta-sticky-chrome-portal .watta-chrome-top-band-web {
+  max-height: 140px;
+  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  /* Без анімації — інакше контент «стрибає» при compact (fixed overlay). */
+  transition: none;
+}
+
+/* Compact — ховаємо шапку, лишаємо панель категорій (усі viewport). */
+html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal .watta-chrome-top-band-web {
+  max-height: 0 !important;
+  min-height: 0 !important;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(calc(-100% - 4px));
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* /product — одразу лише категорії (навіть до data-watta-chrome-compact з JS) */
+html.watta-route-product .watta-sticky-chrome-portal .watta-chrome-top-band-web {
+  max-height: 0 !important;
+  min-height: 0 !important;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(calc(-100% - 4px));
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* /product — повна шапка лише з data-watta-product-header-expanded */
+html.watta-route-product[data-watta-product-header-expanded='true']
+  .watta-sticky-chrome-portal
+  .watta-chrome-top-band-web {
+  max-height: 140px !important;
+  min-height: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+  margin: revert !important;
+  padding: revert !important;
+  border: revert !important;
+}
+
+/* /product — резерв у потоці лише під смугу категорій + зазор до контенту */
+html.watta-route-product:not([data-watta-product-header-expanded='true'])
+  .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+  min-height: calc(
+    var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
+  ) !important;
+  height: calc(
+    var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
+  ) !important;
+}
+
+html[data-watta-chrome-compact='true'] {
+  --watta-cat-sticky-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  --watta-chrome-compact-edge: 24px;
+  --watta-chrome-compact-btn-size: 48px;
+  --watta-chrome-compact-btn-min-w: 132px;
+  /* За замовчуванням — лише іконки; більше місця для стрічки категорій */
+  --watta-chrome-compact-flank-w: calc(
+    (var(--watta-chrome-compact-edge) * 2) + (var(--watta-chrome-compact-btn-size) * 2)
+  );
+  --watta-chrome-compact-flank-w-single: calc(
+    (var(--watta-chrome-compact-edge) * 2) + var(--watta-chrome-compact-btn-size)
+  );
+}
+
+html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal {
+  padding-top: env(safe-area-inset-top, 0px);
+  pointer-events: none;
+}
+
+/*
+ * Compact: без повноширинної білої підложки — лише капсула категорій і кнопки
+ * «Назад» / «Кошик» (як у watta-chrome-categories-transparent.css).
+ */
+html[data-watta-chrome-compact='true'].watta-html-home-hero body .watta-sticky-chrome-portal,
+html[data-watta-chrome-compact='true'].watta-html-home-hero body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome,
+html[data-watta-chrome-compact='true'] body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome,
+html[data-watta-chrome-compact='true'] body .watta-sticky-chrome-portal.watta-public-sticky-chrome,
+html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal .watta-chrome-categories-row-web {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal .watta-chrome-categories-row-web {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 !important;
+  padding: 8px max(var(--watta-chrome-compact-edge), env(safe-area-inset-right, 0px)) 10px
+    max(var(--watta-chrome-compact-edge), env(safe-area-inset-left, 0px)) !important;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+html[data-watta-chrome-compact='true']
+  .watta-sticky-chrome-portal
+  .watta-chrome-categories-row-web
+  .categories-panel-wrapper-web {
+  margin-top: 0 !important;
+  max-width: min(calc(100vw - var(--watta-chrome-compact-flank-w)), 54rem) !important;
+}
+
+html[data-watta-chrome-compact='true']
+  .watta-sticky-chrome-portal
+  .watta-chrome-categories-row-web:not(:has(.watta-chrome-compact-back-web))
+  .categories-panel-wrapper-web {
+  max-width: min(calc(100vw - var(--watta-chrome-compact-flank-w-single)), 54rem) !important;
+}
+
+.watta-chrome-compact-cart-web,
+.watta-chrome-compact-back-web {
+  display: none;
+}
+
+html[data-watta-chrome-compact='true']
+  .watta-sticky-chrome-portal
+  .watta-chrome-categories-row-web
+  .categories-panel-wrapper-web {
+  pointer-events: auto;
+}
+
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web,
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  pointer-events: auto;
+  color: #333333;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  width: var(--watta-chrome-compact-btn-size);
+  min-width: var(--watta-chrome-compact-btn-size);
+  max-width: var(--watta-chrome-compact-btn-size);
+  height: var(--watta-chrome-compact-btn-size);
+  min-height: var(--watta-chrome-compact-btn-size);
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-label,
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-label {
+  display: none;
+}
+
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web {
+  right: max(var(--watta-chrome-compact-edge), env(safe-area-inset-right, 0px));
+  left: auto;
+  top: 50%;
+  text-decoration: none;
+  overflow: visible;
+}
+
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web {
+  left: max(var(--watta-chrome-compact-edge), env(safe-area-inset-left, 0px));
+  right: auto;
+  cursor: pointer;
+}
+
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-ico,
+html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-ico {
+  color: #555555;
+  flex-shrink: 0;
+  transition: color 0.18s ease;
+}
+
+@media (hover: hover) {
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web:hover {
+    border-color: rgba(0, 0, 0, 0.13);
+    color: #333333;
+    background: #ffffff;
+  }
+
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web:hover .watta-chrome-compact-back-ico {
+    color: #145142;
+  }
+}
+
+/* Широкий екран — підписи «Назад» / «Корзина», якщо вистачає місця */
+@media (min-width: 1200px) {
+  html[data-watta-chrome-compact='true'] {
+    --watta-chrome-compact-flank-w: calc(
+      (var(--watta-chrome-compact-edge) * 2) + (var(--watta-chrome-compact-btn-min-w) * 2)
+    );
+    --watta-chrome-compact-flank-w-single: calc(
+      (var(--watta-chrome-compact-edge) * 2) + var(--watta-chrome-compact-btn-min-w)
+    );
+  }
+
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-label,
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-label {
+    display: inline;
+  }
+
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web,
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web {
+    width: var(--watta-chrome-compact-btn-min-w);
+    min-width: var(--watta-chrome-compact-btn-min-w);
+    max-width: var(--watta-chrome-compact-btn-min-w);
+    height: auto;
+    min-height: var(--watta-chrome-compact-btn-size);
+    padding: 0 16px;
+    gap: 8px;
+  }
+}
+
+/* Телефон: при скролі вниз — лише панель категорій; кошик і «назад» знизу / у шапці */
+@media (max-width: 767px) {
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web,
+  html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  html[data-watta-chrome-compact='true']
+    .watta-sticky-chrome-portal
+    .watta-chrome-categories-row-web
+    .categories-panel-wrapper-web {
+    max-width: min(calc(100vw - var(--watta-chrome-compact-edge) * 2), 54rem) !important;
+  }
+
+  html[data-watta-chrome-compact='true']
+    .watta-sticky-chrome-portal
+    .watta-chrome-categories-row-web {
+    padding-left: max(var(--watta-chrome-compact-edge), env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(var(--watta-chrome-compact-edge), env(safe-area-inset-right, 0px)) !important;
+  }
+}

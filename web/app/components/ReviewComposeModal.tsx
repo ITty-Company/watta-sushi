@@ -223,7 +223,7 @@ export default function ReviewComposeModal({
             className="watta-review-compose__close"
             aria-label={t.auth.back}
           >
-            <X className="h-4 w-4" strokeWidth={2.5} />
+            <X className="h-[1.05rem] w-[1.05rem]" strokeWidth={2.25} />
           </button>
         </div>
 
@@ -254,7 +254,7 @@ export default function ReviewComposeModal({
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
           placeholder={cp.reviewText}
-          rows={4}
+          rows={3}
           maxLength={4000}
           className="watta-review-compose__textarea"
         />

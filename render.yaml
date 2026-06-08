@@ -52,6 +52,22 @@ services:
         sync: false
       - key: GOOGLE_SHEET_ID
         sync: false
+      # LiqPay (рекомендовано для UA/EU) або Stripe — без ключів у кошику лише готівка
+      - key: LIQPAY_PUBLIC_KEY
+        sync: false
+      - key: LIQPAY_PRIVATE_KEY
+        sync: false
+      # Публічний URL API для LiqPay callback (Render задає RENDER_EXTERNAL_URL автоматично)
+      - key: PUBLIC_API_URL
+        sync: false
+      # Stripe Checkout — альтернатива LiqPay
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Google OAuth (вхід через Google) — Client ID з Google Cloud Console
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
 
   - type: web
     name: watta-sushi-web
@@ -63,6 +79,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Сплеш «Завантаження» (лого) на головній при перезавантаженні (F5),
+      # далі одразу hero-відео без миготіння. Вшивається в білд (NEXT_PUBLIC_*).
+      - key: NEXT_PUBLIC_WATTA_BOOT_SPLASH
+        value: "1"
       # Публічна адреса API — підставляється з бекенд-сервісу під час білду.
       - key: NEXT_PUBLIC_API_URL
         fromService:
@@ -75,3 +95,6 @@ services:
           name: watta-sushi-backend
           type: web
           envVarKey: RENDER_EXTERNAL_URL
+      # Той самий Client ID, що GOOGLE_OAUTH_CLIENT_ID на бекенді (вшивається в білд)
+      - key: NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
+        sync: false

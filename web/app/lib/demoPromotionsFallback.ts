@@ -326,6 +326,8 @@ export function getMiddlewareMockPromotions() {
       isHit: row.isHit,
       createdAt: '2026-04-07T12:00:00.000Z',
       updatedAt: '2026-04-07T12:00:00.000Z',
+      categoryLabel: L.category,
+      displayDate: L.dateDisplay,
     }
   })
 }

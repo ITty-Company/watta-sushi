@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils'
 import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { useLanguage } from '../context/LanguageContext'
-import { usePhoneMenuOneColumn } from '@/hooks/usePhoneMenuOneColumn'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
+import { WattaInViewFadeSection } from './WattaInViewFade'
 
 export type MenuHighlightStackItem = {
   id: number
@@ -57,8 +57,7 @@ export function MenuHighlightStack({
 }: Props) {
   const { language } = useLanguage()
   const lang = language as WattaLanguage
-  const phoneOneCol = usePhoneMenuOneColumn()
-  const effectiveLayout = phoneOneCol ? 'stack' : layout
+  const effectiveLayout = layout
 
   if (items.length === 0) return null
 
@@ -77,14 +76,14 @@ export function MenuHighlightStack({
 
   if (effectiveLayout === 'rail') {
     return (
-      <section
+      <WattaInViewFadeSection
         className="menu-highlight-stack-web w-full max-w-[100vw] shrink-0 border-b border-[#145142]/10 bg-transparent px-0 py-4 sm:py-5"
         aria-label={ariaLabel}
       >
         <div className="px-6 pb-3 pt-0.5 sm:px-8 sm:pb-4">{headingBlock}</div>
         <div className="home-menu-category-rail-outer-web">
-          <div className="home-menu-category-rail-web" role="list">
-            {items.map((item) => {
+          <div className="home-menu-category-rail-web watta-product-peek-rail-scroll" role="list">
+            {items.map((item, index) => {
               const subtitleLine = parseProductSpecsFromDescription(
                 item.description,
                 weightFallback,
@@ -92,47 +91,49 @@ export function MenuHighlightStack({
                 lang,
               ).weightLine
               return (
-                <WattaMenuProductCard
-                  key={item.id}
-                  variant="rail"
-                  className="home-menu-product-card--rail-web shadow-sm"
-                  product={{
-                    id: item.id,
-                    name: item.name,
-                    description: item.description,
-                    price: item.price,
-                    emoji: item.emoji,
-                    imageUrl: item.imageUrl,
-                    isTop: item.isTop,
-                    isHomeHit: item.isHomeHit,
-                    isMenuNew: item.isMenuNew,
-                    promoDiscountPercent: item.promoDiscountPercent,
-                  }}
-                  subtitleLine={subtitleLine}
-                  onAddToCart={() => onAddToCart(item)}
-                  onBeforeNavigateToProduct={onBeforeNavigateToProduct}
-                />
+                <div key={item.id}>
+                  <WattaMenuProductCard
+                    variant="rail"
+                    imagePriority={index < 2}
+                    className="home-menu-product-card--rail-web shadow-sm"
+                    product={{
+                      id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      price: item.price,
+                      emoji: item.emoji,
+                      imageUrl: item.imageUrl,
+                      isTop: item.isTop,
+                      isHomeHit: item.isHomeHit,
+                      isMenuNew: item.isMenuNew,
+                      promoDiscountPercent: item.promoDiscountPercent,
+                    }}
+                    subtitleLine={subtitleLine}
+                    onAddToCart={() => onAddToCart(item)}
+                    onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                  />
+                </div>
               )
             })}
           </div>
         </div>
-      </section>
+      </WattaInViewFadeSection>
     )
   }
 
   return (
-    <section
+    <WattaInViewFadeSection
       className="menu-highlight-stack-web w-full max-w-[100vw] shrink-0 border-b border-[#145142]/10 bg-transparent px-7 py-4 sm:px-8 sm:py-5"
       aria-label={ariaLabel}
     >
       {suppressHeading ? null : <div className="mb-3 sm:mb-4">{headingBlock}</div>}
       <div
         className={cn(
-          'menu-highlight-stack-products mx-auto grid w-full max-w-lg grid-cols-1 items-start gap-3 md:max-w-xl md:grid-cols-2 md:gap-2.5',
+          'menu-highlight-stack-products mx-auto grid w-full max-w-lg grid-cols-1 items-stretch gap-3 md:max-w-xl md:grid-cols-2 md:gap-2.5',
           productsGridClassName,
         )}
       >
-        {items.map((item) => {
+        {items.map((item, index) => {
           const subtitleLine = parseProductSpecsFromDescription(
             item.description,
             weightFallback,
@@ -140,29 +141,31 @@ export function MenuHighlightStack({
             lang,
           ).weightLine
           return (
-            <WattaMenuProductCard
-              key={item.id}
-              variant="grid"
-              className="min-w-0 w-full shadow-sm"
-              product={{
-                id: item.id,
-                name: item.name,
-                description: item.description,
-                price: item.price,
-                emoji: item.emoji,
-                imageUrl: item.imageUrl,
-                isTop: item.isTop,
-                isHomeHit: item.isHomeHit,
-                isMenuNew: item.isMenuNew,
-                promoDiscountPercent: item.promoDiscountPercent,
-              }}
-              subtitleLine={subtitleLine}
-              onAddToCart={() => onAddToCart(item)}
-              onBeforeNavigateToProduct={onBeforeNavigateToProduct}
-            />
+            <div key={item.id}>
+              <WattaMenuProductCard
+                variant="grid"
+                imagePriority={index < 4}
+                className="min-w-0 w-full shadow-sm"
+                product={{
+                  id: item.id,
+                  name: item.name,
+                  description: item.description,
+                  price: item.price,
+                  emoji: item.emoji,
+                  imageUrl: item.imageUrl,
+                  isTop: item.isTop,
+                  isHomeHit: item.isHomeHit,
+                  isMenuNew: item.isMenuNew,
+                  promoDiscountPercent: item.promoDiscountPercent,
+                }}
+                subtitleLine={subtitleLine}
+                onAddToCart={() => onAddToCart(item)}
+                onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+              />
+            </div>
           )
         })}
       </div>
-    </section>
+    </WattaInViewFadeSection>
   )
 }

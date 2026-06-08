@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import {
+  isChunkLoadError,
+  tryRecoverFromChunkLoadError,
+} from '@/lib/dynamicImportWithRetry'
+import {
   WATTA_DEFAULT_SITE_LANGUAGE,
   resolveWattaSiteLanguageFromDocumentCookie,
   wattaToHtmlLang,
@@ -25,6 +29,11 @@ export default function GlobalError({
   useEffect(() => {
     setLang(readLangFromCookie())
   }, [])
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return
+    if (!isChunkLoadError(error)) return
+    tryRecoverFromChunkLoadError('ChunkLoadError у global-error')
+  }, [error])
   const e = getErrorPageForLanguage(lang)
   void error
   return (

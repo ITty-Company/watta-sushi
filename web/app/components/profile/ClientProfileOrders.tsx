@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
+import { m, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
   Package,
@@ -29,6 +30,8 @@ import {
   shouldShowOrderReadyAt,
 } from '@/lib/formatOrderReadyAt'
 import type { WattaLanguage } from '@/lib/i18n/language'
+import { resolveCatalogMediaUrl, isNextImageOptimizableCatalogUrl } from '@/lib/catalogMediaUrl'
+import ProfileOrdersEmptyScene from './empty/ProfileOrdersEmptyScene'
 
 export interface ProfileOrderItem {
   id: number
@@ -75,13 +78,13 @@ export interface ProfileOrder {
 function orderPipelineRank(status: string): number {
   if (status === 'CANCELLED') return -1
   if (status === 'DELIVERED' || status === 'COMPLETED') return 4
-  const m: Record<string, number> = {
+  const rank: Record<string, number> = {
     PENDING: 0,
     CONFIRMED: 1,
     COOKING: 2,
     DELIVERING: 3,
   }
-  return m[status] ?? 0
+  return rank[status] ?? 0
 }
 
 function productLineName(
@@ -104,6 +107,28 @@ function productLineName(
 }
 
 const stepIcons = [Clock, Check, ChefHat, Truck, Package]
+
+function OrderItemThumb({ item }: { item: ProfileOrderItem }) {
+  const imageUrl = resolveCatalogMediaUrl(item.product?.imageUrl)
+  if (imageUrl && isNextImageOptimizableCatalogUrl(imageUrl)) {
+    return (
+      <div className="watta-profile-order-items__thumb">
+        <Image src={imageUrl} alt="" width={88} height={88} sizes="2.75rem" />
+      </div>
+    )
+  }
+  if (imageUrl) {
+    return (
+      <div className="watta-profile-order-items__thumb">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt="" loading="lazy" decoding="async" />
+      </div>
+    )
+  }
+  return (
+    <div className="watta-profile-order-items__thumb watta-profile-order-items__thumb--emoji">🍣</div>
+  )
+}
 
 interface TProfile {
   journeyHint: string
@@ -167,6 +192,10 @@ interface Props {
   lang: Language
   t: TProfile
   emptyMessage: string
+  /** Підзаголовок порожнього стану (публічний профіль). */
+  emptyHint?: string
+  /** Ілюстрований empty замість простої іконки. */
+  richEmpty?: boolean
   goMenuLabel: string
   onGoMenu: () => void
   onReorder: (order: ProfileOrder) => void
@@ -181,6 +210,8 @@ export default function ClientProfileOrders({
   lang,
   t,
   emptyMessage,
+  emptyHint,
+  richEmpty = false,
   goMenuLabel,
   onGoMenu,
   onReorder,
@@ -308,27 +339,39 @@ export default function ClientProfileOrders({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <motion.div
-          className="h-14 w-14 rounded-2xl border-2 border-[#145142]/30 border-t-[#145142]"
+        <m.div
+          className="h-14 w-14 rounded-2xl border-2 border-watta-action/30 border-t-watta-action"
           animate={{ rotate: 360 }}
           transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
         />
-        <p className="text-[#145142]/70 font-medium">{loadingLabel}</p>
+        <p className="text-watta-action/70 font-medium">{loadingLabel}</p>
       </div>
     )
   }
 
   if (orders.length === 0) {
+    if (richEmpty) {
+      return (
+        <div className="watta-profile-stage__orders-empty">
+          <ProfileOrdersEmptyScene
+            title={emptyMessage}
+            subtitle={emptyHint ?? emptyMessage}
+            ctaLabel={goMenuLabel}
+            onCta={onGoMenu}
+          />
+        </div>
+      )
+    }
     return (
       <div className="px-4 py-14 text-center sm:py-20">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-[#145142]/35">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-watta-action/35">
           <Package className="h-10 w-10" />
         </div>
         <p className="mb-6 text-base font-medium text-gray-600 sm:text-lg">{emptyMessage}</p>
         <button
           type="button"
           onClick={onGoMenu}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#145142] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+          className="inline-flex items-center gap-2 rounded-xl bg-watta-action px-6 py-3 text-sm font-semibold text-white transition hover:bg-watta-action-hover"
         >
           <Sparkles className="h-4 w-4" />
           {goMenuLabel}
@@ -369,7 +412,7 @@ export default function ClientProfileOrders({
 
       {activeOrders.length > 0 ? (
         <section className="space-y-4">
-          <h3 className="text-base font-bold text-[#145142] sm:text-lg">
+          <h3 className="text-base font-bold text-watta-action sm:text-lg">
             {t.activeOrderTitle ?? 'Активне замовлення'}
           </h3>
           {renderOrderList(activeOrders, 0)}
@@ -380,14 +423,14 @@ export default function ClientProfileOrders({
 
       <AnimatePresence>
         {reviewOrder ? (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           >
-            <motion.div
+            <m.div
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
@@ -432,11 +475,11 @@ export default function ClientProfileOrders({
                   onChange={(e) => setReviewText(e.target.value)}
                   placeholder={t.reviewText}
                   rows={4}
-                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-gray-800 focus:ring-2 focus:ring-[#145142]/30 focus:border-[#145142] outline-none resize-none"
+                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-gray-800 focus:ring-2 focus:ring-watta-action/30 focus:border-watta-action outline-none resize-none"
                 />
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">{t.reviewPhotos}</p>
-                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#145142]/10 text-[#145142] font-semibold cursor-pointer hover:bg-[#145142]/15">
+                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-watta-action/10 text-watta-action font-semibold cursor-pointer hover:bg-watta-action/15">
                     <input type="file" accept="image/*" multiple className="hidden" onChange={onPickFiles} />
                     {t.pickPhotos}
                   </label>
@@ -462,13 +505,13 @@ export default function ClientProfileOrders({
                   type="button"
                   disabled={submitting}
                   onClick={submitReview}
-                  className="w-full py-3.5 rounded-2xl bg-[#145142] text-white font-bold hover:bg-[#0f3d32] disabled:opacity-60 transition"
+                  className="w-full py-3.5 rounded-2xl bg-watta-action text-white font-bold hover:bg-watta-action-hover disabled:opacity-60 transition"
                 >
                   {submitting ? '…' : t.reviewSend}
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
     </div>
@@ -519,22 +562,22 @@ function OrderCard({
   const readyAtParts = readyAtTemplate.split('{{time}}')
 
   return (
-    <motion.article
+    <m.article
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.25 }}
-      className="relative"
+      className="watta-profile-order-card relative"
     >
       <div
-        className={`rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:rounded-2xl sm:p-6 ${
+        className={`watta-profile-order-card__surface rounded-2xl border p-5 shadow-sm transition-shadow hover:shadow-md sm:rounded-2xl sm:p-6 ${
           isActive
-            ? 'border-[#ff6b35]/40 ring-2 ring-[#ff6b35]/15 shadow-[0_8px_30px_rgba(255,107,53,0.12)]'
+            ? 'watta-profile-order-card__surface--active border-[#ff6b35]/40 ring-2 ring-[#ff6b35]/15 shadow-[0_8px_30px_rgba(255,107,53,0.12)]'
             : 'border-gray-200'
         }`}
       >
         <div className="relative mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#145142] text-white sm:h-14 sm:w-14">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-watta-action text-white sm:h-14 sm:w-14">
               <Package className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
             <div>
@@ -542,7 +585,7 @@ function OrderCard({
                 {t.orderLabel} #{order.id}
               </h3>
               <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#145142]" />
+                <Clock className="w-4 h-4 text-watta-action" />
                 {new Date(order.createdAt).toLocaleString(
                   lang === 'uk' ? 'uk-UA' : lang === 'nl' ? 'nl-NL' : lang === 'en' ? 'en-GB' : 'ru-RU'
                 )}
@@ -550,9 +593,7 @@ function OrderCard({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-full">
-              {t.liveUpdating}
-            </span>
+            <span className="watta-profile-order-card__live-badge">{t.liveUpdating}</span>
             {cancelled ? (
               <span className="text-xs font-bold text-red-700 bg-red-50 px-3 py-1.5 rounded-full border border-red-100">
                 {t.orderCancelled}
@@ -561,7 +602,7 @@ function OrderCard({
             <button
               type="button"
               onClick={onToggleExpand}
-              className="inline-flex items-center gap-1 rounded-full border border-[#145142]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#145142] transition hover:bg-[#145142]/5"
+              className="inline-flex items-center gap-1 rounded-full border border-watta-action/20 bg-white px-3 py-1.5 text-xs font-bold text-watta-action transition hover:bg-watta-action/5"
             >
               {showDetailsLabel}
               <ChevronDown
@@ -573,16 +614,16 @@ function OrderCard({
 
         {showReadyAt ? (
           <div
-            className="mb-5 flex items-start gap-3 rounded-xl border border-[#145142]/20 bg-gradient-to-r from-[#f4faf7] to-white px-4 py-3.5 sm:px-5"
+            className="mb-5 flex items-start gap-3 rounded-xl border border-watta-action/20 bg-gradient-to-r from-[#f4faf7] to-white px-4 py-3.5 sm:px-5"
             role="status"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#145142] text-white">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-watta-action text-white">
               <Clock className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-snug text-gray-800 sm:text-base">
                 {readyAtParts[0]}
-                <span className="font-bold text-[#145142]">{readyAtFormatted}</span>
+                <span className="font-bold text-watta-action">{readyAtFormatted}</span>
                 {readyAtParts[1] ?? ''}
               </p>
             </div>
@@ -591,14 +632,14 @@ function OrderCard({
 
         <AnimatePresence initial={false}>
           {expanded ? (
-            <motion.div
+            <m.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="mb-5 overflow-hidden"
             >
-              <div className="rounded-xl border border-[#145142]/12 bg-[#f4faf7] p-4 sm:p-5">
-                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#145142]/70">
+              <div className="rounded-xl border border-watta-action/12 bg-[#f4faf7] p-4 sm:p-5">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-watta-action/70">
                   {timelineTitle}
                 </p>
                 <ol className="space-y-3">
@@ -611,7 +652,7 @@ function OrderCard({
                         <div
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 ${
                             done
-                              ? 'border-[#145142] bg-[#145142] text-white'
+                              ? 'border-watta-action bg-watta-action text-white'
                               : current
                                 ? 'border-[#ff6b35] bg-white text-[#ff6b35] ring-2 ring-[#ff6b35]/25'
                                 : 'border-gray-200 bg-white text-gray-300'
@@ -622,7 +663,7 @@ function OrderCard({
                         <div className="min-w-0 pt-0.5">
                           <p
                             className={`text-sm font-bold ${
-                              done || current ? 'text-[#145142]' : 'text-gray-400'
+                              done || current ? 'text-watta-action' : 'text-gray-400'
                             }`}
                           >
                             {label}
@@ -637,10 +678,10 @@ function OrderCard({
                     )
                   })}
                 </ol>
-                <div className="mt-4 grid gap-2 border-t border-[#145142]/10 pt-4 text-sm sm:grid-cols-2">
+                <div className="mt-4 grid gap-2 border-t border-watta-action/10 pt-4 text-sm sm:grid-cols-2">
                   {order.address ? (
                     <p className="flex gap-2 text-gray-700">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#145142]" />
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-watta-action" />
                       <span>
                         <span className="font-semibold text-gray-900">
                           {t.labelAddress}:{' '}
@@ -656,7 +697,7 @@ function OrderCard({
                     </p>
                   ) : null}
                   <p className="flex gap-2 text-gray-700">
-                    <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-[#145142]" />
+                    <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-watta-action" />
                     <span>
                       <span className="font-semibold text-gray-900">
                         {t.labelPayment}:{' '}
@@ -683,7 +724,7 @@ function OrderCard({
                   ) : null}
                 </div>
                 {showReviewStep ? (
-                  <div className="mt-4 flex flex-col gap-3 border-t border-[#145142]/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mt-4 flex flex-col gap-3 border-t border-watta-action/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-xl ${
@@ -693,7 +734,7 @@ function OrderCard({
                         <Star className={`h-5 w-5 ${hasReview ? 'fill-white' : ''}`} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-[#145142]">
+                        <p className="text-sm font-bold text-watta-action">
                           {hasReview ? t.stepReviewDone : t.stepReview}
                         </p>
                         {hasReview && order.review ? (
@@ -704,99 +745,90 @@ function OrderCard({
                     <button
                       type="button"
                       onClick={onOpenReview}
-                      className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+                      className="shrink-0 rounded-lg bg-watta-action px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-watta-action-hover"
                     >
                       {t.reviewOpen}
                     </button>
                   </div>
                 ) : null}
               </div>
-            </motion.div>
+            </m.div>
           ) : null}
         </AnimatePresence>
 
         {!cancelled && !expanded ? (
-          <div
-            className="relative mb-6 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50/80 p-4 sm:p-5"
-            role="group"
-            aria-label={timelineTitle}
-          >
-            <div className="min-w-[min(100%,520px)] sm:min-w-0">
-              <ol className="relative grid grid-cols-5">
-                {stepLabels.map((label, si) => {
-                  const Icon = stepIcons[si]
-                  const done = rank > si
-                  const current = rank === si
-                  const trackY = 'top-5 sm:top-[22px]'
-                  return (
-                    <li key={label} className="relative flex justify-center">
-                      {si > 0 ? (
-                        <span
-                          className={`pointer-events-none absolute right-1/2 ${trackY} z-0 h-0.5 w-1/2 -translate-y-1/2 rounded-full ${
-                            rank > si - 1 ? 'bg-[#145142]' : 'bg-gray-200'
-                          }`}
-                          aria-hidden
-                        />
-                      ) : null}
-                      {si < stepLabels.length - 1 ? (
-                        <span
-                          className={`pointer-events-none absolute left-1/2 ${trackY} z-0 h-0.5 w-1/2 -translate-y-1/2 rounded-full ${
-                            rank > si ? 'bg-[#145142]' : 'bg-gray-200'
-                          }`}
-                          aria-hidden
-                        />
-                      ) : null}
-                      <div
-                        className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all sm:h-11 sm:w-11 ${
-                          done
-                            ? 'border-[#145142] bg-[#145142] text-white shadow-[0_4px_14px_rgba(20,81,66,0.4)]'
-                            : current
-                              ? 'border-[#145142] bg-[#e8f5f0] text-[#145142] ring-2 ring-[#145142]/35 shadow-[0_2px_10px_rgba(20,81,66,0.18)]'
-                              : 'border-gray-200 bg-white text-gray-400'
+          <div className="watta-profile-order-timeline" role="group" aria-label={timelineTitle}>
+            <ol className="watta-profile-order-timeline__track">
+              {stepLabels.map((label, si) => {
+                const Icon = stepIcons[si]
+                const done = rank > si
+                const current = rank === si
+                return (
+                  <li key={label} className="watta-profile-order-timeline__step">
+                    {si > 0 ? (
+                      <span
+                        className={`watta-profile-order-timeline__rail watta-profile-order-timeline__rail--left ${
+                          rank > si - 1
+                            ? 'watta-profile-order-timeline__rail--done'
+                            : 'watta-profile-order-timeline__rail--pending'
                         }`}
-                      >
-                        <Icon
-                          className={`h-4 w-4 shrink-0 sm:h-5 sm:w-5 ${
-                            done
-                              ? 'text-white'
-                              : current
-                                ? 'text-[#145142]'
-                                : 'text-gray-400'
-                          }`}
-                          strokeWidth={done || current ? 2.5 : 2}
-                          aria-hidden
-                        />
-                        <span className="sr-only">{label}</span>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ol>
-              <ol className="mt-2 grid grid-cols-5 gap-0" aria-hidden>
-                {stepLabels.map((label, si) => {
-                  const done = rank > si
-                  const current = rank === si
-                  return (
-                    <li
-                      key={`${label}-caption`}
-                      className="flex min-h-[2.75rem] items-start justify-center px-0.5 sm:min-h-[2.5rem]"
+                        aria-hidden
+                      />
+                    ) : null}
+                    {si < stepLabels.length - 1 ? (
+                      <span
+                        className={`watta-profile-order-timeline__rail watta-profile-order-timeline__rail--right ${
+                          rank > si
+                            ? 'watta-profile-order-timeline__rail--done'
+                            : 'watta-profile-order-timeline__rail--pending'
+                        }`}
+                        aria-hidden
+                      />
+                    ) : null}
+                    <div
+                      className={`watta-profile-order-timeline__node ${
+                        done
+                          ? 'watta-profile-order-timeline__node--done'
+                          : current
+                            ? 'watta-profile-order-timeline__node--current'
+                            : ''
+                      }`}
                     >
-                      <p
-                        className={`text-center text-[10px] font-bold leading-snug sm:text-xs ${
-                          done
-                            ? 'text-[#145142]'
-                            : current
-                              ? 'text-[#145142]'
-                              : 'text-gray-400'
-                        }`}
-                      >
-                        {label}
-                      </p>
-                    </li>
-                  )
-                })}
-              </ol>
-            </div>
+                      <Icon strokeWidth={done || current ? 2.5 : 2} aria-hidden />
+                      <span className="sr-only">{label}</span>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+
+            <p className="watta-profile-order-timeline__current" aria-live="polite">
+              <span className="watta-profile-order-timeline__current-label">
+                {stepLabels[Math.max(0, Math.min(rank, stepLabels.length - 1))]}
+              </span>
+              <span className="watta-profile-order-timeline__current-badge">{t.stepCurrentBadge}</span>
+            </p>
+
+            <ol className="watta-profile-order-timeline__labels" aria-hidden>
+              {stepLabels.map((label, si) => {
+                const done = rank > si
+                const current = rank === si
+                return (
+                  <li
+                    key={`${label}-caption`}
+                    className={`watta-profile-order-timeline__label ${
+                      done
+                        ? 'watta-profile-order-timeline__label--done'
+                        : current
+                          ? 'watta-profile-order-timeline__label--current'
+                          : ''
+                    }`}
+                  >
+                    {label}
+                  </li>
+                )
+              })}
+            </ol>
 
             {showReviewStep ? (
               <div className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -809,7 +841,7 @@ function OrderCard({
                     <Star className={`w-5 h-5 ${hasReview ? 'fill-white' : ''}`} />
                   </div>
                   <div>
-                    <p className="font-bold text-[#145142] text-sm">
+                    <p className="font-bold text-watta-action text-sm">
                       {hasReview ? t.stepReviewDone : t.stepReview}
                     </p>
                     {hasReview && order.review ? (
@@ -820,7 +852,7 @@ function OrderCard({
                 <button
                   type="button"
                   onClick={onOpenReview}
-                  className="shrink-0 rounded-lg bg-[#145142] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+                  className="shrink-0 rounded-lg bg-watta-action px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-watta-action-hover"
                 >
                   {t.reviewOpen}
                 </button>
@@ -829,20 +861,16 @@ function OrderCard({
           </div>
         ) : null}
 
-        <div className="mb-5 space-y-0 rounded-xl border border-gray-100 bg-white p-3 sm:p-4">
+        <div className="watta-profile-order-items">
           {order.items.map((item, ii) => (
-            <div
-              key={ii}
-              className="flex justify-between items-center gap-3 py-2 border-b border-gray-100 last:border-0"
-            >
-              <span className="text-gray-800 font-semibold text-sm sm:text-base">
-                {productLineName(item.product, lang, item.productNameSnapshot)}
-              </span>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-gray-500 text-xs font-medium bg-gray-100 px-2 py-0.5 rounded-md">
-                  ×{item.quantity}
+            <div key={ii} className="watta-profile-order-items__row">
+              <OrderItemThumb item={item} />
+              <div className="watta-profile-order-items__body">
+                <span className="watta-profile-order-items__name">
+                  {productLineName(item.product, lang, item.productNameSnapshot)}
+                  <span className="watta-profile-order-items__qty">×{item.quantity}</span>
                 </span>
-                <span className="text-[#145142] font-bold">
+                <span className="watta-profile-order-items__price">
                   {(item.price * item.quantity).toFixed(2)} €
                 </span>
               </div>
@@ -858,7 +886,7 @@ function OrderCard({
             {canShowOrderReceipt(order.paymentStatus, order.paymentMethod) ? (
               <Link
                 href={`/profile/order/${order.id}/receipt`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#145142]/25 bg-white px-5 py-2.5 text-sm font-semibold text-[#145142] transition hover:bg-[#145142]/5"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-watta-action/25 bg-white px-5 py-2.5 text-sm font-semibold text-watta-action transition hover:bg-watta-action/5"
               >
                 <Receipt className="h-4 w-4" aria-hidden />
                 {t.viewReceipt ?? 'Чек'}
@@ -867,13 +895,13 @@ function OrderCard({
             <button
               type="button"
               onClick={onReorder}
-              className="rounded-xl bg-[#145142] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3d32]"
+              className="watta-profile-order-card__reorder-btn"
             >
               {t.reorder}
             </button>
           </div>
         </div>
       </div>
-    </motion.article>
+    </m.article>
   )
 }

@@ -78,24 +78,7 @@ export default function Footer({ className }: FooterProps) {
 
   const phones = [{ label: sf.phone1, href: `tel:${WATTA_PHONE_E164}` }]
 
-  const pillLinks = useMemo(() => {
-    const links = [
-      { href: '/menu', label: nav.menu },
-      { href: '/promotions', label: nav.promotions },
-      { href: '/delivery', label: nav.delivery },
-      { href: '/blog', label: sf.blog },
-      { href: '/reviews', label: sf.reviews },
-      { href: '/about', label: nav.about },
-      { href: '/contacts', label: nav.contacts },
-    ]
-    return links.filter((l) => {
-      if (l.href === '/promotions' && !showPromotionsNav) return false
-      if (l.href === '/blog' && !showBlogNav) return false
-      return true
-    })
-  }, [nav, sf, showPromotionsNav, showBlogNav])
-
-  /** Колонка «Навігація» — ті самі основні сторінки, що й у drawer / pills, плюс кошик, профіль, сповіщення, вхід. */
+  /** Колонка «Навігація» — основні сторінки, кошик, профіль, сповіщення, вхід. */
   const navLinks = useMemo(() => {
     const links = [
       { href: '/', label: nav.home },
@@ -162,28 +145,22 @@ export default function Footer({ className }: FooterProps) {
       <div className="site-footer-watta__inner">
         <div className="site-footer-watta__hero-row">
           <div className="site-footer-watta__brand-block">
-            <div className="site-footer-watta__logo-ring">
+            <WattaLink href="/" className="site-footer-watta__logo-link" aria-label={t.common.brandName}>
               <Image
                 src="/logo.png"
                 alt=""
-                width={36}
-                height={36}
+                width={96}
+                height={96}
                 className="site-footer-watta__logo-img object-contain"
               />
-            </div>
+            </WattaLink>
             <div className="site-footer-watta__brand-text">
-              <h2 className="site-footer-watta__title">Watta Sushi</h2>
+              <WattaLink href="/" className="site-footer-watta__title-link">
+                <h2 className="site-footer-watta__title">{t.common.brandName}</h2>
+              </WattaLink>
               <p className="site-footer-watta__tagline">{nav.drawerBrandLine}</p>
             </div>
           </div>
-
-          <nav className="site-footer-watta__pills" aria-label={sf.navAria}>
-            {pillLinks.map(({ href, label }) => (
-              <WattaLink key={href + label} href={href} className="site-footer-watta__pill">
-                {label}
-              </WattaLink>
-            ))}
-          </nav>
         </div>
 
         <div
@@ -192,18 +169,24 @@ export default function Footer({ className }: FooterProps) {
           <div className="site-footer-watta__order-loc-wrap">
             {/* Колонка «Оформити замовлення»: телефон + час роботи */}
             <div className="site-footer-watta__col site-footer-watta__col--order">
-              <h3 className="site-footer-watta__col-title">{sf.colOrder}</h3>
-              <ul className="site-footer-watta__list">
-                {phones.map((p) => (
-                  <li key={p.href}>
-                    <a href={p.href} className="site-footer-watta__text-link site-footer-watta__text-link--phone">
-                      {p.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              <h3 className="site-footer-watta__col-title site-footer-watta__col-title--stacked">{sf.colHours}</h3>
-              <p className="site-footer-watta__body-strong">{sf.hoursLine}</p>
+              <div className="site-footer-watta__contact-row">
+                <div className="site-footer-watta__contact-cell site-footer-watta__contact-cell--hours">
+                  <h3 className="site-footer-watta__col-title">{sf.colHours}</h3>
+                  <p className="site-footer-watta__body-strong">{sf.hoursLine}</p>
+                </div>
+                <div className="site-footer-watta__contact-cell site-footer-watta__contact-cell--order">
+                  <h3 className="site-footer-watta__col-title">{sf.colOrder}</h3>
+                  <ul className="site-footer-watta__list">
+                    {phones.map((p) => (
+                      <li key={p.href}>
+                        <a href={p.href} className="site-footer-watta__text-link site-footer-watta__text-link--phone">
+                          {p.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
 
             {locationLines.length > 0 ? (
@@ -301,6 +284,12 @@ export default function Footer({ className }: FooterProps) {
             </span>
             <WattaLink href="/privacy" className="site-footer-watta__nav-colophon-link">
               {sf.privacy}
+            </WattaLink>
+            <span className="site-footer-watta__nav-colophon-sep" aria-hidden>
+              ·
+            </span>
+            <WattaLink href="/offer" className="site-footer-watta__nav-colophon-link">
+              {sf.publicOffer}
             </WattaLink>
           </div>
         </div>

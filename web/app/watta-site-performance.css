@@ -1,0 +1,293 @@
+/**
+ * Site-wide rendering performance: skip off-screen paint work, lighter motion.
+ * Imported after feature CSS so these rules win on catalog / long pages.
+ */
+
+/* Текст і секції — одразу видимі на всіх viewport (без scroll-reveal / char-stagger). */
+[data-watta-in-view-fade] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  will-change: auto !important;
+  transition: none !important;
+}
+
+.home-after-hero-intro-reveal-char,
+.home-full-menu-catalog-reveal-char,
+.watta-stagger-reveal-word-block,
+.watta-sushi-roll-hero__char,
+.watta-sushi-roll-hero__tagline-char {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  will-change: auto !important;
+}
+
+/*
+ * Safety net (phone / touch only): reveal must never leave sections invisible.
+ * Tablet + desktop: те саме — scroll-reveal вимкнено site-wide.
+ */
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  [data-watta-in-view-fade] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+}
+
+@supports (content-visibility: auto) {
+  /* Головна: без content-visibility на стрічці — contain-intrinsic-size 360px давав
+     велику «порожню» смугу між картками й кнопкою «Усе меню». */
+  #home-menu-catalog [id^='home-menu-cat-'],
+  #home-menu-catalog .home-menu-category-rail-web,
+  #home-menu-catalog .home-menu-category-rail-outer-web {
+    content-visibility: visible;
+    contain-intrinsic-size: auto;
+  }
+
+  /* content-visibility:auto на довгих сторінках давав «білі дірки» при швидкому скролі — вимкнено. */
+  .watta-full-menu-page .watta-menu-category-section,
+  .watta-full-menu-page .watta-full-menu-section,
+  .menu-page-web .menu-section-web {
+    content-visibility: visible;
+    contain-intrinsic-size: auto;
+  }
+}
+
+/* Карточки: без transition на фото (менше paint при скролі каталогу). */
+@media (hover: hover) and (pointer: fine) {
+  .home-menu-product-card-img-web {
+    transition: none;
+  }
+}
+
+/* =========================================================================
+ * GPU-промоушн + will-change для безперервно анімованих елементів.
+ *
+ * Чому саме ці селектори: усі вони мають `animation: ... infinite` (лоадери,
+ * шиммери, дрейф фону, плаваючі бейджі, ken-burns відео). will-change тут
+ * безпечний — елемент і так анімується, тож композитний шар вже потрібен;
+ * хінт лише прибирає джанк на першому кадрі і виносить роботу на GPU
+ * (окремий шар → анімація transform/opacity не змушує перемальовувати сусідів).
+ *
+ * НЕ робимо GPU-промоушн для всієї сторінки: глобальний translateZ(0) /
+ * will-change на body — антипатерн (роздуває VRAM, на слабких пристроях
+ * навпаки гальмує). Промоутимо точково — лише те, що реально рухається.
+ * ========================================================================= */
+
+/* --- Рух (transform): лоадери, спінери, дрейф, плавання, marquee --------- */
+.animate-spin-slow,
+.delivery-watta-postal-btn-ico--spin,
+.notifications-page-state__spinner,
+.profile-avatar-ring-web,
+.profile-shape-web,
+.spoke,
+.spoke-enhanced,
+.hamster,
+.hamster-enhanced,
+.hamster-running-enhanced,
+.hamster__body,
+.hamster__body-enhanced,
+.hamster__head,
+.hamster__head-enhanced,
+.hamster__limb--bl,
+.hamster__limb--br,
+.hamster__limb--fl,
+.hamster__limb--fr,
+.hamster__tail,
+.hamster-running__body-enhanced,
+.hamster-running__head-enhanced,
+.hamster-running__limb--bl,
+.hamster-running__limb--br,
+.hamster-running__limb--fl,
+.hamster-running__limb--fr,
+.hamster-running__tail-enhanced,
+.loading-dot,
+.marker-pin-web,
+.profile-admin-crown-web,
+.watta-hero-marquee-track,
+.welcome-hero-badge-web,
+.welcome-hero-badge-chevron-web,
+.auth-watta-cinema__plate,
+.auth-watta-cinema__orbit-chip--1,
+.auth-watta-cinema__orbit-chip--2,
+.auth-watta-cinema__orbit-chip--3,
+.delivery-page-hero-wave__svg--front,
+.delivery-page-hero-wave__svg--back,
+.delivery-watta-hours-sparkle-dot {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* --- Рух + прозорість: бейджі/іскри/хвилі, що й рухаються, й мерехтять ---- */
+.spark-1,
+.spark-2,
+.spark-3,
+.spark-4,
+.spark-5,
+.spark-6,
+.cart-badge-web,
+.profile-avatar-web,
+.auth-watta-cinema__live,
+.auth-watta-cinema__video,
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-brand-sub,
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-logo-ring,
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-qbtn--bell::after,
+.delivery-page-hero-hours-card__live,
+.delivery-page-hero-showcase-sushi,
+.notifications-page-list-sync__dot {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* --- Світіння / мерехтіння / sheen: змінюється переважно opacity ---------- */
+.animate-pulse-slow,
+.wheel-glow-1,
+.wheel-glow-2,
+.wheel-glow-3,
+.wheel-and-hamster-enhanced,
+.profile-admin-badge-web,
+.profile-hero-background-web,
+.welcome-hero-shimmer-web,
+.watta-promo-skeleton-line,
+.watta-promo-detail-card__gallery-skeleton,
+.watta-nav-sidebar-drawer.is-open .watta-nav-sidebar-bg-shine,
+.auth-watta-cinema__sheen,
+.auth-watta-cinema__glow--warm,
+.delivery-watta-noise,
+.delivery-watta-how--experience::after,
+.delivery-watta-how-card--experience::before,
+.delivery-watta-conditions--experience::before,
+.delivery-watta-hours--experience::after {
+  will-change: opacity;
+}
+
+/*
+ * Під час активного скролу — пауза декоративних infinite-анімацій (усі viewport).
+ */
+html[data-watta-scrolling='true'] .welcome-hero-shimmer-web,
+html[data-watta-scrolling='true'] .delivery-watta-noise,
+html[data-watta-scrolling='true'] .welcome-hero-badge-web,
+html[data-watta-scrolling='true'] .watta-hero-marquee-track,
+html[data-watta-scrolling='true'] .auth-watta-cinema__sheen,
+html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--1,
+html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--2,
+html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--3,
+html[data-watta-scrolling='true'] .delivery-page-hero-wave__svg--front,
+html[data-watta-scrolling='true'] .delivery-page-hero-wave__svg--back {
+  animation-play-state: paused !important;
+}
+
+html[data-watta-scrolling='true'] [data-watta-in-view-fade] {
+  transition: none !important;
+}
+
+/*
+ * Знижена анімація / економія батареї: знімаємо will-change, щоб не тримати
+ * композитні шари в пам'яті дарма (анімації все одно вимикає reduce-motion).
+ */
+/* Телефон / тач: менше роботи під час активного вертикального скролу. */
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  @supports (content-visibility: auto) {
+    .watta-full-menu-page .watta-menu-category-section,
+    .watta-full-menu-page .watta-full-menu-section,
+    .menu-page-web .menu-section-web {
+      content-visibility: visible;
+      contain-intrinsic-size: auto;
+    }
+  }
+
+  .welcome-hero-shimmer-web,
+  .welcome-hero-badge-web,
+  .welcome-hero-badge-chevron-web,
+  .watta-hero-marquee-track {
+    animation: none !important;
+  }
+
+  .welcome-video-native-web,
+  .watta-home-hero-native-video {
+    will-change: auto;
+    transform: none;
+    backface-visibility: visible;
+  }
+
+  html[data-watta-scrolling='true'] .welcome-hero-shimmer-web,
+  html[data-watta-scrolling='true'] .delivery-watta-noise,
+  html[data-watta-scrolling='true'] .welcome-hero-badge-web,
+  html[data-watta-scrolling='true'] .watta-hero-marquee-track,
+  html[data-watta-scrolling='true'] .auth-watta-cinema__sheen,
+  html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--1,
+  html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--2,
+  html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--3 {
+    animation-play-state: paused !important;
+  }
+
+  html[data-watta-scrolling='true'] [data-watta-in-view-fade] {
+    transition: none !important;
+  }
+
+  /*
+   * IMPORTANT:
+   * We use framer-motion for `WattaInViewFade*` wrappers.
+   * A previous CSS-only reveal implementation relied on toggling `.watta-reveal-in`,
+   * but if that toggle doesn't run (hydration/routing/IO edge case) it can leave
+   * whole sections stuck on opacity:0 → looks like a blank white page.
+   *
+   * Keep `[data-watta-in-view-fade]` always visible on mobile/touch.
+   */
+  [data-watta-in-view-fade] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+
+  /* Stagger a few items inside common stacks/rails when parent is revealed. */
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(1),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(1),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(1) { transition-delay: 20ms; }
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(2),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(2),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(2) { transition-delay: 60ms; }
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(3),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(3),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(3) { transition-delay: 100ms; }
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(4),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(4),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(4) { transition-delay: 140ms; }
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(5),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(5),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(5) { transition-delay: 180ms; }
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(6),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(6),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(6) { transition-delay: 220ms; }
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(7),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(7),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(7) { transition-delay: 260ms; }
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-rail-web > :nth-child(8),
+  [data-watta-in-view-fade].watta-reveal-in .home-menu-category-grid-tablet-inner-web > :nth-child(8),
+  [data-watta-in-view-fade].watta-reveal-in .footer-promo-carousel--stack > :nth-child(8) { transition-delay: 300ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin-slow,
+  .delivery-watta-postal-btn-ico--spin,
+  .notifications-page-state__spinner,
+  .profile-avatar-ring-web,
+  .profile-shape-web,
+  .spoke,
+  .spoke-enhanced,
+  .hamster,
+  .hamster-enhanced,
+  .watta-hero-marquee-track,
+  .welcome-hero-badge-web,
+  .welcome-video-native-web,
+  .auth-watta-cinema__video,
+  .profile-hero-background-web,
+  .welcome-hero-shimmer-web,
+  .delivery-watta-noise {
+    will-change: auto;
+  }
+}

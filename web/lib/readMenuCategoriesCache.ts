@@ -2,6 +2,7 @@ import { buildMenuCategoriesFromApi, parseCategoriesCacheJson } from '@/lib/buil
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { menuCategoriesSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
+import { readRawMenuCategoriesFromSession } from '@/lib/menuCatalogSessionCache'
 
 const CACHE_TTL_MS = 5 * 60 * 1000
 
@@ -11,6 +12,8 @@ export type CachedMenuCategory = {
   slug?: string
   name: string
   emoji: string
+  imageUrl?: string | null
+  hoverImageUrl?: string | null
   subcategories: { id: string; name: string; items: unknown[] }[]
 }
 
@@ -26,6 +29,18 @@ export function readMenuCategoriesFromSessionCache(
   if (!cached || !cacheTime) return null
   if (Date.now() - parseInt(cacheTime, 10) >= CACHE_TTL_MS) return null
   const raw = parseCategoriesCacheJson(cached)
+  if (!raw) return null
+  return filterNonAggregateMenuCategories(
+    buildMenuCategoriesFromApi(raw, language, categoryLabels),
+  ) as CachedMenuCategory[]
+}
+
+/** Миттєве перемикання мови — без TTL і без мережі. */
+export function remapMenuCategoriesFromSessionCache(
+  language: WattaLanguage,
+  categoryLabels: Record<string, string>,
+): CachedMenuCategory[] | null {
+  const raw = readRawMenuCategoriesFromSession()
   if (!raw) return null
   return filterNonAggregateMenuCategories(
     buildMenuCategoriesFromApi(raw, language, categoryLabels),

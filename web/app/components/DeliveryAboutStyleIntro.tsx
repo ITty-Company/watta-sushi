@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useMemo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
   MapPin,
@@ -10,6 +10,11 @@ import {
   Truck,
   UtensilsCrossed,
 } from 'lucide-react'
+import {
+  WATTA_IN_VIEW_FADE_VIEWPORT,
+  useWattaDisableScrollReveal,
+  wattaInViewFadeViewport,
+} from './WattaInViewFade'
 
 const ACCENT = '#FF5C00'
 const HERO_BG =
@@ -44,15 +49,15 @@ function FeatureCard({
   title: string
   body: string
   fade:
-    | { initial: false }
+    | { initial: false; animate: { opacity: number; y: number } }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
 }) {
   return (
-    <motion.article
+    <m.article
       className="flex flex-col rounded-[22px] border border-gray-200/80 bg-white p-4 shadow-[0_8px_40px_rgba(0,0,0,0.06)] transition hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)] sm:p-6"
       {...fade}
-      viewport={{ once: true, margin: '-40px' }}
+      viewport={wattaInViewFadeViewport('-40px')}
       transition={{ duration: 0.45, delay }}
     >
       <div className="relative mb-5 flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center">
@@ -67,7 +72,7 @@ function FeatureCard({
       </div>
       <h3 className="text-lg font-black leading-tight text-gray-900 sm:text-xl">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-[#7a7a7a] sm:text-[15px]">{body}</p>
-    </motion.article>
+    </m.article>
   )
 }
 
@@ -83,16 +88,16 @@ function StatPill({
   value: string
   label: string
   fade:
-    | { initial: false }
+    | { initial: false; animate: { opacity: number; y: number } }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
   accent?: boolean
 }) {
   return (
-    <motion.div
+    <m.div
       className="about-page-stat-pill flex flex-col items-center justify-center rounded-2xl bg-white/10 px-2 py-3.5 text-center backdrop-blur-sm sm:rounded-[18px] sm:px-3 sm:py-4"
       {...fade}
-      viewport={{ once: true, margin: '-30px' }}
+      viewport={wattaInViewFadeViewport('-30px')}
       transition={{ duration: 0.4, delay }}
     >
       <Icon
@@ -107,7 +112,7 @@ function StatPill({
         {value}
       </div>
       <div className="mt-1.5 text-[10px] font-semibold leading-snug text-white/75 sm:text-xs">{label}</div>
-    </motion.div>
+    </m.div>
   )
 }
 
@@ -124,10 +129,10 @@ function DeliveryAboutStyleIntro({
   /** Заголовок «Доставка · …» уже над відео. */
   skipHeading?: boolean
 }) {
-  const reduce = useReducedMotion()
+  const reduce = useWattaDisableScrollReveal()
 
   const fade = reduce
-    ? ({ initial: false as const } satisfies { initial: false })
+    ? ({ initial: false as const, animate: { opacity: 1, y: 0 } })
     : ({
         initial: { opacity: 0, y: 26 },
         whileInView: { opacity: 1, y: 0 },
@@ -210,10 +215,10 @@ function DeliveryAboutStyleIntro({
       >
         <div className="mx-auto max-w-6xl">
           {!skipHeading && (
-            <motion.div
+            <m.div
               className="about-page-philosophy-heading-wrap mb-8 flex justify-center sm:mb-12 md:mb-16"
               {...fade}
-              viewport={{ once: true }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
               transition={{ duration: 0.5 }}
             >
               <h2
@@ -231,7 +236,7 @@ function DeliveryAboutStyleIntro({
                   </span>
                 </span>
               </h2>
-            </motion.div>
+            </m.div>
           )}
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
@@ -253,10 +258,10 @@ function DeliveryAboutStyleIntro({
       <div className="about-page-lower-flow relative z-10 watta-page-bg">
         <section className="about-page-inside-web relative px-4 pt-1 pb-6 sm:px-6 sm:pt-2 sm:pb-8">
           <div className="about-page-inside-shell mx-auto max-w-6xl rounded-[28px] bg-gradient-to-b from-[#f6f9f7] via-[#f6f9f7] to-white px-3 py-6 sm:rounded-[32px] sm:px-5 sm:py-8 md:py-10">
-            <motion.div
+            <m.div
               className="mb-6 text-center sm:mb-8"
               {...fade}
-              viewport={{ once: true }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
               transition={{ duration: 0.45 }}
             >
               <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#145142]/70 sm:text-xs">
@@ -270,7 +275,7 @@ function DeliveryAboutStyleIntro({
                 style={{ background: `linear-gradient(90deg, ${ACCENT}, #145142)` }}
                 aria-hidden
               />
-            </motion.div>
+            </m.div>
 
             <div className="grid gap-4 sm:grid-cols-3 sm:gap-5">
               {highlights.map((item, i) => (

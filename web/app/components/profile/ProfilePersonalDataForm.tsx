@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Mail, Phone, ShieldCheck, User } from 'lucide-react'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 import type { Translations } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import {
@@ -231,7 +231,7 @@ export default function ProfilePersonalDataForm({
           role="status"
         >
           <p className="leading-snug">{cp.phoneUnverifiedNotice}</p>
-          <p className="mt-2 flex items-center gap-1.5 font-semibold text-[#0f3d32]">
+          <p className="mt-2 flex items-center gap-1.5 font-semibold text-watta-action">
             <Phone size={14} aria-hidden />
             <span>{phone}</span>
           </p>
@@ -239,7 +239,7 @@ export default function ProfilePersonalDataForm({
             type="button"
             onClick={handleConfirmExistingPhone}
             disabled={saving}
-            className="mt-3 inline-flex items-center justify-center rounded-lg bg-[#145142] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0f3d32] disabled:opacity-60 sm:text-sm"
+            className="mt-3 inline-flex items-center justify-center rounded-lg bg-watta-action px-3 py-2 text-xs font-bold text-white transition hover:bg-watta-action-hover disabled:opacity-60 sm:text-sm"
           >
             {cp.phoneConfirmSendCode}
           </button>
@@ -296,8 +296,8 @@ export default function ProfilePersonalDataForm({
       </div>
 
       {phoneVerifyStep === 'code' ? (
-        <div className="mt-4 rounded-xl border border-[#145142]/15 bg-[#f4faf7] p-4">
-          <div className="mb-2 flex justify-center text-[#145142]">
+        <div className="mt-4 rounded-xl border border-watta-action/15 bg-[#f4faf7] p-4">
+          <div className="mb-2 flex justify-center text-watta-action">
             <ShieldCheck className="h-9 w-9" strokeWidth={1.25} aria-hidden />
           </div>
           <p className="mb-3 text-center text-sm text-gray-700">{cp.phoneCodeHint}</p>
@@ -311,7 +311,7 @@ export default function ProfilePersonalDataForm({
               const v = e.target.value.replace(/\D/g, '')
               if (v.length <= 4) setVerificationCode(v)
             }}
-            className="mb-3 w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 text-center text-2xl font-bold tracking-[0.35em] text-[#145142] outline-none focus:border-[#145142] focus:ring-2 focus:ring-[#145142]/15"
+            className="mb-3 w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 text-center text-2xl font-bold tracking-[0.35em] text-watta-action outline-none focus:border-watta-action focus:ring-2 focus:ring-watta-action/15"
             maxLength={4}
             aria-label={cp.phoneCodeLabel}
           />
@@ -326,14 +326,14 @@ export default function ProfilePersonalDataForm({
           <button
             type="button"
             disabled={saving}
-            className="mt-2 w-full text-center text-xs text-[#145142] hover:underline sm:text-sm"
+            className="mt-2 w-full text-center text-xs text-watta-action hover:underline sm:text-sm"
             onClick={() => void handleResendCode()}
           >
             {cp.phoneCodeResend}
           </button>
           <button
             type="button"
-            className="mt-2 w-full text-center text-xs text-gray-500 hover:text-[#145142] sm:text-sm"
+            className="mt-2 w-full text-center text-xs text-gray-500 hover:text-watta-action sm:text-sm"
             onClick={cancelPhoneVerify}
           >
             {cp.phoneVerifyCancel}

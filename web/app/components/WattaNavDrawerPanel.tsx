@@ -1,11 +1,26 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+import { navigateInstant, normalizeInternalHref, prefetchHref } from '@/lib/instantNav'
+import { markNavDrawerInstantClose } from '@/lib/navDrawerInstantClose'
+import { getAuthUrl } from '@/lib/authGate'
+import { openWattaCart } from '@/lib/openWattaCart'
+import { openWattaNotifications } from '@/lib/openWattaNotifications'
+import { useOptionalCartDrawer } from '../context/CartDrawerContext'
+import { useOptionalNotificationsDrawer } from '../context/NotificationsDrawerContext'
+import { useLiveNotificationCount } from '@/hooks/useLiveNotificationCount'
 import Image from 'next/image'
-import WattaLink from './WattaLink'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
+import {
+  buildMenuCategoryHref,
+  navigateFromNavDrawerToCategory,
+  prefetchFullMenuCategory,
+} from '@/lib/fullMenuCategoryNav'
 import {
   Bell,
   BookOpen,
+  FileText,
   Heart,
   Home,
   Info,
@@ -24,6 +39,8 @@ import {
   UserPlus,
   X,
 } from 'lucide-react'
+import WattaBrandWordmark from './WattaBrandWordmark'
+import { MenuCategorySticker } from './MenuCategorySticker'
 import { useLanguage } from '../context/LanguageContext'
 import { CountryCitySelector } from './CountryCitySelector'
 import { LanguageSelector } from './LanguageSelector'
@@ -39,6 +56,7 @@ import { useIsLoggedIn } from '@/hooks/useIsLoggedIn'
 import { logoutClientSession } from '@/lib/authSession'
 import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
 import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
+import { runWhenIdle } from '@/lib/prefetchWhenIdle'
 
 export type { NavDrawerCategory }
 
@@ -67,21 +85,8 @@ export type WattaNavDrawerPanelProps = {
   drawerActive?: boolean
 } & (EmbeddedProps | LinkProps)
 
-const NAV_ICON_TONE_COUNT = 4
-
-function navIconToneForIndex(index: number): number {
-  const row = Math.floor(index / 2)
-  const col = index % 2
-  return (row + col) % NAV_ICON_TONE_COUNT
-}
-
-function NavIconWrap({ index, children }: { index: number; children: ReactNode }) {
-  const tone = navIconToneForIndex(index)
-  return (
-    <span className={`watta-nav-compact__nav-ico-wrap watta-nav-compact__nav-ico-wrap--tone-${tone}`}>
-      {children}
-    </span>
-  )
+function NavIconWrap({ children }: { children: ReactNode }) {
+  return <span className="watta-nav-compact__nav-ico-wrap watta-nav-compact__nav-ico-wrap--brand">{children}</span>
 }
 
 type DrawerNavPage = {
@@ -181,6 +186,13 @@ function useDrawerNavPages(t: ReturnType<typeof useLanguage>['t']): DrawerNavPag
         href: '/privacy',
         embedded: { type: 'page', page: 'privacy' },
       },
+      {
+        key: 'offer',
+        label: sf.publicOffer,
+        Icon: FileText,
+        href: '/offer',
+        embedded: { type: 'page', page: 'offer' },
+      },
     ],
     [nav, sf, t.auth.login, t.auth.register, t.cart, t.notifications.title, t.profile],
   )
@@ -200,6 +212,7 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
       drawerNavPages.filter(
         (item) =>
           item.key !== 'privacy' &&
+          item.key !== 'offer' &&
           (item.key !== 'promotions' || showPromotionsNav) &&
           (item.key !== 'blog' || showBlogNav),
       ),
@@ -209,12 +222,96 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
     () => drawerNavPages.find((item) => item.key === 'privacy'),
     [drawerNavPages],
   )
+  const offerNavPage = useMemo(
+    () => drawerNavPages.find((item) => item.key === 'offer'),
+    [drawerNavPages],
+  )
   const displayCategories = useNavDrawerCategories({
     external: categoriesProp,
     drawerActive,
   })
+  const prefetchRouter = useRouter()
+  const router = useInstantRouter()
+  const cartDrawer = useOptionalCartDrawer()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
+  const { unreadCount: notificationUnreadCount } = useLiveNotificationCount()
   const isSiteAdmin = useSiteAdmin()
   const isLoggedIn = useIsLoggedIn()
+  const visibleNotificationUnread = isLoggedIn ? notificationUnreadCount : 0
+
+  const drawerNavHref = useCallback(
+    (item: DrawerNavPage): string => {
+      if (item.key === 'favorites') {
+        return isLoggedIn ? '/favorites' : getAuthUrl('/favorites')
+      }
+      if (item.key === 'profile') {
+        return isLoggedIn ? '/profile' : getAuthUrl('/profile')
+      }
+      return item.href
+    },
+    [isLoggedIn],
+  )
+
+  const isDrawerNavCurrent = useCallback((href: string): boolean => {
+    if (typeof window === 'undefined') return false
+    const target = normalizeInternalHref(href)
+    if (!target) return false
+    const loc = `${window.location.pathname}${window.location.search}`
+    return loc === target
+  }, [])
+
+  useEffect(() => {
+    if (!drawerActive) return
+    const priorityHrefs = [
+      '/',
+      '/menu',
+      '/delivery',
+      '/about',
+      '/contacts',
+      '/reviews',
+      '/favorites',
+      '/profile',
+      '/notifications',
+      '/privacy',
+      '/offer',
+      '/blog',
+      '/promotions',
+    ]
+    // Префетч НЕ під час кадру відкриття drawer — інакше ~30 router.prefetch підряд
+    // з'їдають кадр і open відчувається з ривком. Конкретну ціль усе одно префетчить
+    // pointerdown самої кнопки, тож відкладення в idle не сповільнює тап.
+    const cancelPriority = runWhenIdle(() => {
+      for (const href of priorityHrefs) {
+        prefetchHref(prefetchRouter, href)
+      }
+      for (const item of drawerNavPages) {
+        prefetchHref(prefetchRouter, drawerNavHref(item))
+      }
+    }, 200)
+    const cancelRest = runWhenIdle(() => {
+      for (const item of drawerNavPages) {
+        prefetchHref(prefetchRouter, drawerNavHref(item))
+      }
+      if (privacyNavPage) prefetchHref(prefetchRouter, privacyNavPage.href)
+      if (offerNavPage) prefetchHref(prefetchRouter, offerNavPage.href)
+      prefetchHref(prefetchRouter, '/admin')
+      for (const cat of displayCategories) {
+        prefetchFullMenuCategory(prefetchRouter, cat.key)
+      }
+    })
+    return () => {
+      cancelPriority()
+      cancelRest()
+    }
+  }, [
+    drawerActive,
+    drawerNavHref,
+    drawerNavPages,
+    displayCategories,
+    offerNavPage,
+    prefetchRouter,
+    privacyNavPage,
+  ])
 
   const visibleNavPages = useMemo(
     () =>
@@ -237,58 +334,107 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
     }
   }, [onClose, props])
 
-  const handleCategory = useCallback(
-    (key: string, e?: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleCategoryClick = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault()
+  }, [])
+
+  const handleCategoryPointerDown = useCallback(
+    (key: string) => {
+      prefetchFullMenuCategory(router, key)
+      markNavDrawerInstantClose()
       if (props.mode === 'link') {
+        const href = buildMenuCategoryHref(key)
+        if (typeof window !== 'undefined') {
+          const loc = `${window.location.pathname}${window.location.search}`
+          if (loc === href) return
+        }
+        navigateFromNavDrawerToCategory(router, props.pathname, key)
         onClose()
         props.onNavigate?.()
         return
       }
-      e?.preventDefault()
-      onClose()
       onCategorySelect?.(key)
+      onClose()
     },
-    [onClose, onCategorySelect, props],
+    [onCategorySelect, onClose, props, router],
   )
 
   const cityHandler = props.onCityChange
 
-  const handleNavClick = useCallback(
-    (item: DrawerNavPage, e: React.MouseEvent<HTMLAnchorElement>) => {
-      if (props.mode === 'link') {
-        onClose()
-        props.onNavigate?.()
+  const finishDrawerNav = useCallback(() => {
+    onClose()
+    if (props.mode === 'link') props.onNavigate?.()
+  }, [onClose, props])
+
+  const runNavDrawerPage = useCallback(
+    (item: DrawerNavPage) => {
+      markNavDrawerInstantClose()
+
+      if (item.key === 'home') {
+        if (props.mode === 'embedded') {
+          props.onGoHome()
+          onClose()
+          return
+        }
+        if (!isDrawerNavCurrent('/')) {
+          navigateInstant(router, '/', { immediate: true })
+        }
+        finishDrawerNav()
         return
       }
-      e.preventDefault()
-      onClose()
-      const { embedded } = item
-      if (embedded.type === 'home') {
-        props.onGoHome()
+
+      if (item.key === 'notifications') {
+        if (props.mode === 'embedded') {
+          props.onOpenNotifications()
+          onClose()
+          return
+        }
+        openWattaNotifications(router, notificationsDrawer?.open ?? null)
+        finishDrawerNav()
         return
       }
-      if (embedded.type === 'notifications') {
-        props.onOpenNotifications()
+
+      if (item.key === 'cart') {
+        openWattaCart(router, cartDrawer?.open ?? null)
+        finishDrawerNav()
         return
       }
-      if (item.key === 'favorites') {
-        props.onOpenProfileTab('favorites')
-        return
+
+      const href = drawerNavHref(item)
+      if (!isDrawerNavCurrent(href)) {
+        navigateInstant(router, href, { immediate: true })
       }
-      if (item.key === 'profile') {
-        props.onOpenProfileTab('history')
-        return
-      }
-      props.onPageOpen(embedded.page)
+      finishDrawerNav()
     },
-    [onClose, props],
+    [
+      cartDrawer?.open,
+      notificationsDrawer?.open,
+      drawerNavHref,
+      finishDrawerNav,
+      isDrawerNavCurrent,
+      onClose,
+      props,
+      router,
+    ],
   )
+
+  const handleNavPointerDown = useCallback(
+    (item: DrawerNavPage) => {
+      prefetchHref(prefetchRouter, drawerNavHref(item))
+      runNavDrawerPage(item)
+    },
+    [drawerNavHref, prefetchRouter, runNavDrawerPage],
+  )
+
+  const handleNavClick = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault()
+  }, [])
 
   const legal = nav.footerLegal.replace('{{year}}', String(new Date().getFullYear()))
 
   return (
     <div
-      className="watta-nav-compact flex h-full min-h-0 flex-col"
+      className="watta-nav-compact watta-nav-compact--drawer flex h-full min-h-0 flex-col"
       {...(props.mode === 'embedded' ? { 'data-watta-embedded-nav': '1' } : {})}
     >
 
@@ -306,13 +452,10 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
           </div>
           <div className="watta-nav-compact__head-text">
             <div className="logo-text-images-web watta-nav-compact__logo-wordmark">
-              <Image
-                src="/1.jpg"
-                alt={t.common.brandName}
-                width={140}
-                height={40}
-                className="logo-text-image-web"
-                priority
+              <WattaBrandWordmark
+                active={drawerActive}
+                mdUpOnly={false}
+                deferUntilSplashEnd={false}
               />
             </div>
             <p className="watta-nav-compact__tagline">{nav.drawerBrandLine}</p>
@@ -344,27 +487,19 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
                 {displayCategories.map((cat, i) => {
                   const content = (
                     <>
-                      <span className="watta-nav-compact__cat-emoji" aria-hidden>
-                        {cat.emoji}
+                      <span className="watta-nav-compact__cat-icon" aria-hidden>
+                        <MenuCategorySticker
+                          variant="strip"
+                          slug={cat.key}
+                          emoji={cat.emoji}
+                          imageUrl={cat.imageUrl}
+                          hoverImageUrl={cat.hoverImageUrl}
+                        />
                       </span>
                       <span className="watta-nav-compact__cat-label">{cat.name}</span>
                     </>
                   )
                   const animStyle = { animationDelay: `${70 + i * 32}ms` }
-                  if (props.mode === 'link') {
-                    return (
-                      <WattaLink
-                        key={cat.key}
-                        href={`/menu?cat=${encodeURIComponent(cat.key)}`}
-                        className="watta-nav-compact__cat watta-nav-compact__pop"
-                        style={animStyle}
-                        role="listitem"
-                        onClick={(e) => handleCategory(cat.key, e)}
-                      >
-                        {content}
-                      </WattaLink>
-                    )
-                  }
                   return (
                     <button
                       key={cat.key}
@@ -372,7 +507,8 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
                       className="watta-nav-compact__cat watta-nav-compact__pop"
                       style={animStyle}
                       role="listitem"
-                      onClick={() => handleCategory(cat.key)}
+                      onPointerDown={() => handleCategoryPointerDown(cat.key)}
+                      onClick={handleCategoryClick}
                     >
                       {content}
                     </button>
@@ -383,31 +519,52 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
 
           <nav className="watta-nav-compact__nav-grid" aria-label={nav.bottomNavAria}>
             {visibleNavPages.map((item, i) => (
-              <WattaLink
+              <button
                 key={item.key}
-                href={item.href}
+                type="button"
                 className="watta-nav-compact__nav-tile watta-nav-compact__pop"
                 style={{ animationDelay: `${220 + i * 28}ms` }}
-                onClick={(e) => handleNavClick(item, e)}
+                onPointerDown={() => handleNavPointerDown(item)}
+                onClick={handleNavClick}
               >
-                <NavIconWrap index={i}>
+                <NavIconWrap>
                   <item.Icon size={14} strokeWidth={2} className="watta-nav-compact__nav-ico" />
                 </NavIconWrap>
+                {item.key === 'notifications' && visibleNotificationUnread > 0 ? (
+                  <span className="watta-nav-compact__nav-badge" aria-hidden>
+                    {visibleNotificationUnread > 99 ? '99+' : visibleNotificationUnread}
+                  </span>
+                ) : null}
                 <span className="watta-nav-compact__nav-label">{item.label}</span>
-              </WattaLink>
+              </button>
             ))}
           </nav>
 
-          {privacyNavPage ? (
-            <WattaLink
-              href={privacyNavPage.href}
-              className="watta-nav-compact__nav-privacy watta-nav-compact__pop"
-              style={{ animationDelay: `${220 + visibleNavPages.length * 28}ms` }}
-              onClick={(e) => handleNavClick(privacyNavPage, e)}
-            >
-              <Shield size={14} strokeWidth={2} aria-hidden />
-              <span>{privacyNavPage.label}</span>
-            </WattaLink>
+          {privacyNavPage || offerNavPage ? (
+            <div className="watta-nav-compact__legal-links watta-nav-compact__pop">
+              {privacyNavPage ? (
+                <button
+                  type="button"
+                  className="watta-nav-compact__nav-privacy"
+                  onPointerDown={() => handleNavPointerDown(privacyNavPage)}
+                  onClick={handleNavClick}
+                >
+                  <Shield size={13} strokeWidth={2} aria-hidden />
+                  <span>{privacyNavPage.label}</span>
+                </button>
+              ) : null}
+              {offerNavPage ? (
+                <button
+                  type="button"
+                  className="watta-nav-compact__nav-privacy"
+                  onPointerDown={() => handleNavPointerDown(offerNavPage)}
+                  onClick={handleNavClick}
+                >
+                  <FileText size={13} strokeWidth={2} aria-hidden />
+                  <span>{offerNavPage.label}</span>
+                </button>
+              ) : null}
+            </div>
           ) : null}
 
           <div
@@ -447,21 +604,22 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
             ) : null}
 
             {isSiteAdmin ? (
-              <WattaLink
-                href="/admin"
+              <button
+                type="button"
                 className="watta-nav-compact__admin"
-                onClick={() => {
-                  onClose()
-                  if (props.mode === 'embedded') {
-                    props.onPageOpen('admin')
-                  } else {
-                    props.onNavigate?.()
+                onPointerDown={() => {
+                  prefetchHref(prefetchRouter, '/admin')
+                  markNavDrawerInstantClose()
+                  if (!isDrawerNavCurrent('/admin')) {
+                    navigateInstant(router, '/admin', { immediate: true })
                   }
+                  finishDrawerNav()
                 }}
+                onClick={handleNavClick}
               >
                 <Sparkles size={14} strokeWidth={2.2} />
                 <span>{t.admin}</span>
-              </WattaLink>
+              </button>
             ) : null}
 
             <p className="watta-nav-compact__legal" suppressHydrationWarning>

@@ -1,0 +1,13 @@
+/* Hero + delivery flow — лише маршрути з відео-hero (/ , /menu, /delivery, /about, /contacts, /profile). */
+@import '../watta-unified-site-hero.css';
+@import '../delivery-about-tools.css';
+@import '../delivery-designer-hub.css';
+@import '../delivery-page-flow.css';
+@import '../delivery-page-theme.css';
+@import '../delivery-page-web.css';
+@import '../delivery-page-typography.css';
+@import '../delivery-how-channels.css';
+@import '../delivery-how-channels-list.css';
+@import '../watta-unified-hero-video.css';
+@import '../watta-hero-home-match-tablet-desktop.css';
+@import './watta-sushi-roll-hero.css';

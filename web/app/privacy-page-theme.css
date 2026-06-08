@@ -1,6 +1,7 @@
 /* /privacy — типографіка як /delivery (home-after-hero-intro + delivery-flow) */
 
-#privacy-page-container.privacy-page-web {
+#privacy-page-container.privacy-page-web,
+#offer-page-container.offer-page-web {
   --privacy-ink: #0f241e;
   --privacy-muted: #6b7280;
   overflow-x: clip;
@@ -10,22 +11,15 @@
   margin-left: auto;
   margin-right: auto;
   text-align: center;
+  white-space: nowrap;
 }
 
 .watta-delivery-page-about
   #privacy-page-container
   .delivery-page-intro-inner-web--standalone
   .home-after-hero-intro-title-web
-  > span:nth-child(1) {
+  > span {
   color: #111827 !important;
-}
-
-.watta-delivery-page-about
-  #privacy-page-container
-  .delivery-page-intro-inner-web--standalone
-  .home-after-hero-intro-title-web
-  > span:nth-child(2) {
-  color: var(--delivery-orange, #ff5c00) !important;
 }
 
 .watta-delivery-page-about #privacy-page-container .delivery-page-intro-inner-web--standalone .home-after-hero-intro-body-web {
@@ -168,4 +162,27 @@
   .privacy-page-hero-web__intro {
     font-size: 0.8125rem;
   }
+}
+
+.offer-page-legal-credit {
+  letter-spacing: 0.01em;
+}
+
+#offer-page-container .offer-page-terms-web {
+  scroll-margin-top: calc(var(--watta-sticky-chrome-height, 120px) + 1.25rem);
+}
+
+.watta-delivery-page-about #offer-page-container .delivery-page-intro-inner-web--standalone .home-after-hero-intro-title-web {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.watta-delivery-page-about
+  #offer-page-container
+  .delivery-page-intro-inner-web--standalone
+  .home-after-hero-intro-title-web
+  > span {
+  color: #111827 !important;
 }

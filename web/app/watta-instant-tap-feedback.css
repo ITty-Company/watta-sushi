@@ -1,0 +1,84 @@
+/**
+ * Site-wide instant tap feedback.
+ *
+ * Goal: every interactive control (buttons, links, role=button, category chips,
+ * nav tiles) reacts visually the *instant* it is pressed — before navigation or
+ * re-render finishes — so nothing ever feels "dead" or laggy on a tap.
+ *
+ * Why this is safe / fast:
+ *  - Only `opacity` and `transform` are animated → compositor-only, no layout,
+ *    no repaint of neighbours, runs on the GPU.
+ *  - Transitions are very short (≤120ms) so the press reads as immediate.
+ *  - Selectors use low specificity (element/single-class + :active), so any
+ *    component that already defines its own tuned `:active` state keeps winning.
+ *
+ * Imported last in layout.tsx so the category-chip rules win over the
+ * `transform: none !important` lock in watta-chrome-categories-transparent.css.
+ */
+
+/* Без 300ms tap-delay на iOS; горизонтальний свайп панелі категорій лишається (pan-x на .categories-panel-web). */
+.header-actions-web button,
+.header-center-nav-inner-web a,
+.header-center-nav-inner-web button,
+.watta-chrome-compact-cart-web,
+.watta-chrome-compact-back-web,
+.categories-panel-web .category-button-web,
+.watta-cart-drawer-qty__btn,
+.watta-cart-drawer-close,
+.watta-cart-drawer-checkout,
+.watta-cart-drawer-empty__cta,
+.watta-cart-drawer-item__remove {
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* ---------------------------------------------------------------------------
+   * Universal press: a quick, subtle dim on any interactive element the moment
+   * the pointer/finger goes down. `opacity` never fights existing transforms.
+   * ------------------------------------------------------------------------- */
+  button:active,
+  a[href]:active,
+  [role='button']:active,
+  label[for]:active,
+  summary:active {
+    opacity: 0.7;
+    transition: opacity 0.05s ease-out;
+  }
+
+  /* Restore on release should feel natural, not snappy-back. */
+  button,
+  a[href],
+  [role='button'] {
+    transition: opacity 0.12s ease-out;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * Category strip chips (top panel the user calls out): the chip box itself is
+   * intentionally locked to `transform: none`, so we press the inner icon+label.
+   * Gives a tactile "push" without re-laying-out the horizontal strip.
+   * ------------------------------------------------------------------------- */
+  .categories-panel-web .category-button-web .category-button-icon-web,
+  .categories-panel-web .category-button-web .category-button-label-web {
+    transition: transform 0.12s cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  .categories-panel-web .category-button-web:active .category-button-icon-web,
+  .categories-panel-web .category-button-web:active .category-button-label-web {
+    transform: scale(0.9);
+  }
+
+  /* Side scroll arrows on the category panel. */
+  .categories-scroll-btn-web:active {
+    transform: scale(0.88);
+    transition: transform 0.06s ease-out;
+  }
+}
+
+/* For users who prefer reduced motion: still give *some* feedback, opacity only. */
+@media (prefers-reduced-motion: reduce) {
+  button:active,
+  a[href]:active,
+  [role='button']:active {
+    opacity: 0.7;
+  }
+}

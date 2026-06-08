@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Mail, MessageSquare, Phone, RefreshCw, Trash2, User, X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../context/LanguageContext'
 
 export type ContactInquiryRow = {
   id: number
@@ -20,23 +21,29 @@ type AdminContactInquiriesPanelProps = {
   getAuthHeaders: () => Record<string, string> | null
 }
 
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return iso
-  }
-}
-
 export default function AdminContactInquiriesPanel({
   getAuthHeaders,
 }: AdminContactInquiriesPanelProps) {
+  const { t, adminUiLanguage } = useLanguage()
+  const c = t.adminPanel.contactInquiries
+  const auth = t.adminPage.auth
+  const common = t.adminPage.common
+  const locale = adminUiLanguage === 'ru' ? 'ru-RU' : 'uk-UA'
+
+  const formatDate = (iso: string): string => {
+    try {
+      return new Date(iso).toLocaleString(locale, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    } catch {
+      return iso
+    }
+  }
+
   const [filter, setFilter] = useState<Filter>('all')
   const [items, setItems] = useState<ContactInquiryRow[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -48,7 +55,7 @@ export default function AdminContactInquiriesPanel({
   const load = useCallback(async () => {
     const headers = getAuthHeaders()
     if (!headers) {
-      toast.error('Вы не авторизованы')
+      toast.error(auth.notAuthorized)
       return
     }
     setLoading(true)
@@ -57,9 +64,9 @@ export default function AdminContactInquiriesPanel({
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         if (res.status === 401 || res.status === 403) {
-          toast.error('Вы не авторизованы', { id: 'contact-inquiries-auth' })
+          toast.error(auth.notAuthorized, { id: 'contact-inquiries-auth' })
         } else if (res.status >= 500) {
-          toast.error((data.message as string) || 'Не удалось загрузить обращения', {
+          toast.error((data.message as string) || c.loadError, {
             id: 'contact-inquiries-load',
           })
         }
@@ -77,14 +84,14 @@ export default function AdminContactInquiriesPanel({
       setUnreadCount(Number(data.unreadCount ?? 0))
       setTotalCount(Number(data.totalCount ?? 0))
     } catch {
-      toast.error('Ошибка сети', { id: 'contact-inquiries-network' })
+      toast.error(common.networkError, { id: 'contact-inquiries-network' })
       setItems([])
       setUnreadCount(0)
       setTotalCount(0)
     } finally {
       setLoading(false)
     }
-  }, [filter, getAuthHeaders])
+  }, [auth.notAuthorized, c.loadError, common.networkError, filter, getAuthHeaders])
 
   useEffect(() => {
     void load()
@@ -106,7 +113,7 @@ export default function AdminContactInquiriesPanel({
         prev.map((it) => (it.id === row.id ? { ...it, isRead: true } : it)),
       )
       setSelected({ ...row, isRead: true })
-      setUnreadCount((c) => Math.max(0, c - 1))
+      setUnreadCount((n) => Math.max(0, n - 1))
     } catch {
       /* ignore */
     }
@@ -115,7 +122,7 @@ export default function AdminContactInquiriesPanel({
   const markAllRead = async () => {
     const headers = getAuthHeaders()
     if (!headers) {
-      toast.error('Вы не авторизованы')
+      toast.error(auth.notAuthorized)
       return
     }
     try {
@@ -124,22 +131,22 @@ export default function AdminContactInquiriesPanel({
         headers,
       })
       if (!res.ok) {
-        toast.error('Не удалось отметить прочитанными')
+        toast.error(c.markReadError)
         return
       }
-      toast.success('Все обращения отмечены прочитанными')
+      toast.success(c.markAllReadSuccess)
       await load()
       if (selected) setSelected({ ...selected, isRead: true })
     } catch {
-      toast.error('Ошибка сети')
+      toast.error(common.networkError)
     }
   }
 
   const deleteInquiry = async (id: number) => {
-    if (!window.confirm('Удалить это обращение из базы?')) return
+    if (!window.confirm(c.deleteConfirm)) return
     const headers = getAuthHeaders()
     if (!headers) {
-      toast.error('Вы не авторизованы')
+      toast.error(auth.notAuthorized)
       return
     }
     setDeletingId(id)
@@ -149,33 +156,36 @@ export default function AdminContactInquiriesPanel({
         headers,
       })
       if (!res.ok) {
-        toast.error('Не удалось удалить')
+        toast.error(c.deleteError)
         return
       }
-      toast.success('Удалено')
+      toast.success(c.deleted)
       if (selected?.id === id) setSelected(null)
       await load()
     } catch {
-      toast.error('Ошибка сети')
+      toast.error(common.networkError)
     } finally {
       setDeletingId(null)
     }
   }
+
+  const filterLabel = (f: Filter) =>
+    f === 'all' ? c.filterAll : f === 'unread' ? c.filterUnread : c.filterRead
 
   return (
     <>
       <section className="admin-watta-scroll-x admin-watta-scroll-hint rounded-[24px] border-2 border-white/70 bg-white/80 p-4 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl sm:p-6 md:p-8">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h3 className="flex items-center gap-2 text-xl font-bold text-[#145142]">
+            <h3 className="admin-watta-section-title flex items-center gap-2 text-xl font-bold text-[#145142]">
               <MessageSquare className="h-5 w-5" aria-hidden />
-              Обращения с сайта
+              {c.title}
             </h3>
             <p className="mt-1 text-sm text-[#145142]/70">
-              Вопросы из формы «Контакты». Всего: {totalCount}
+              {c.totalLabel} {totalCount}
               {unreadCount > 0 ? (
                 <span className="ml-2 font-semibold text-amber-700">
-                  · новых: {unreadCount}
+                  {c.unreadLabel} {unreadCount}
                 </span>
               ) : null}
             </p>
@@ -188,28 +198,28 @@ export default function AdminContactInquiriesPanel({
                 onClick={() => setFilter(f)}
                 className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
                   filter === f
-                    ? 'bg-[#145142] text-white'
-                    : 'bg-[#145142]/10 text-[#145142] hover:bg-[#145142]/15'
+                    ? 'bg-watta-action text-white'
+                    : 'bg-watta-action/10 text-[#145142] hover:bg-watta-action/15'
                 }`}
               >
-                {f === 'all' ? 'Все' : f === 'unread' ? 'Новые' : 'Прочитанные'}
+                {filterLabel(f)}
               </button>
             ))}
             <button
               type="button"
               onClick={() => void load()}
-              className="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#145142]/20 px-3 py-2 text-sm font-semibold text-[#145142] hover:bg-[#145142]/5"
+              className="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#145142]/20 px-3 py-2 text-sm font-semibold text-[#145142] hover:bg-watta-action/5"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
-              Обновить
+              {c.refreshBtn}
             </button>
             {unreadCount > 0 ? (
               <button
                 type="button"
                 onClick={() => void markAllRead()}
-                className="rounded-xl bg-[#145142]/10 px-3 py-2 text-sm font-semibold text-[#145142] hover:bg-[#145142]/15"
+                className="rounded-xl bg-watta-action/10 px-3 py-2 text-sm font-semibold text-[#145142] hover:bg-watta-action/15"
               >
-                Прочитать все
+                {c.markAllReadBtn}
               </button>
             ) : null}
           </div>
@@ -218,10 +228,10 @@ export default function AdminContactInquiriesPanel({
         <table className="admin-watta-crm-table min-w-full text-sm">
           <thead>
             <tr className="border-b border-[#145142]/15 text-left text-[#145142]/80">
-              <th className="py-3 pr-3">Дата</th>
-              <th className="py-3 pr-3">Имя</th>
-              <th className="py-3 pr-3">Контакты</th>
-              <th className="py-3 pr-3">Сообщение</th>
+              <th className="py-3 pr-3">{c.colDate}</th>
+              <th className="py-3 pr-3">{c.colName}</th>
+              <th className="py-3 pr-3">{c.colContacts}</th>
+              <th className="py-3 pr-3">{c.colMessage}</th>
               <th className="py-3 pr-3 w-20" />
             </tr>
           </thead>
@@ -229,8 +239,8 @@ export default function AdminContactInquiriesPanel({
             {items.map((row) => (
               <tr
                 key={row.id}
-                className={`cursor-pointer border-b border-[#145142]/10 transition hover:bg-[#145142]/5 ${
-                  !row.isRead ? 'bg-amber-50/80 font-medium' : 'text-gray-700'
+                className={`cursor-pointer border-b border-[#145142]/10 transition hover:bg-watta-action/5 ${
+                  !row.isRead ? 'bg-amber-50/80 font-medium' : 'text-[#0f241e]/80'
                 }`}
                 onClick={() => void openDetail(row)}
               >
@@ -252,7 +262,7 @@ export default function AdminContactInquiriesPanel({
                   <button
                     type="button"
                     className="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
-                    aria-label="Удалить"
+                    aria-label={c.deleteAria}
                     onClick={(e) => {
                       e.stopPropagation()
                       void deleteInquiry(row.id)
@@ -266,24 +276,21 @@ export default function AdminContactInquiriesPanel({
             ))}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-gray-400">
-                  Обращений пока нет
+                <td colSpan={5} className="py-10 text-center text-[#145142]/45">
+                  {c.empty}
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
                 <td colSpan={5} className="py-10 text-center text-[#145142]/60">
-                  Загрузка…
+                  {c.loading}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-[#145142]/60">
-          Нажмите на строку, чтобы открыть полный текст. Дубликаты также уходят в Telegram и на email
-          (если настроены).
-        </p>
+        <p className="mt-3 text-xs text-[#145142]/60">{c.footerHint}</p>
       </section>
 
       {selected && (
@@ -293,16 +300,16 @@ export default function AdminContactInquiriesPanel({
           aria-modal="true"
           aria-labelledby="contact-inquiry-detail-title"
         >
-          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">
+          <div className="admin-watta-modal-panel flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">
             <div className="flex items-center justify-between border-b border-[#145142]/10 px-4 py-3 sm:px-6">
               <h4 id="contact-inquiry-detail-title" className="text-lg font-bold text-[#145142]">
-                Обращение #{selected.id}
+                {c.detailTitle.replace('{{id}}', String(selected.id))}
               </h4>
               <button
                 type="button"
                 onClick={() => setSelected(null)}
-                className="rounded-lg p-2 text-[#145142] hover:bg-[#145142]/10"
-                aria-label="Закрыть"
+                className="rounded-lg p-2 text-[#145142] hover:bg-watta-action/10"
+                aria-label={c.closeAria}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -329,11 +336,11 @@ export default function AdminContactInquiriesPanel({
                   </p>
                 ) : null}
               </div>
-              <div className="rounded-xl border border-[#145142]/15 bg-[#145142]/5 p-4">
+              <div className="rounded-xl border border-[#145142]/15 bg-watta-action/5 p-4">
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#145142]/70">
-                  Сообщение
+                  {c.messageLabel}
                 </p>
-                <p className="whitespace-pre-wrap text-sm text-gray-800">{selected.message}</p>
+                <p className="whitespace-pre-wrap text-sm text-[#0f241e]/85">{selected.message}</p>
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t border-[#145142]/10 px-4 py-3 sm:px-6">
@@ -343,14 +350,14 @@ export default function AdminContactInquiriesPanel({
                 className="rounded-xl px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
                 disabled={deletingId === selected.id}
               >
-                Удалить
+                {c.deleteBtn}
               </button>
               <button
                 type="button"
                 onClick={() => setSelected(null)}
-                className="rounded-xl bg-[#145142] px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-watta-action px-4 py-2 text-sm font-semibold text-white"
               >
-                Закрыть
+                {c.closeBtn}
               </button>
             </div>
           </div>

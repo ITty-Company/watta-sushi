@@ -29,6 +29,9 @@ module.exports = {
         'watta-shimmer': 'watta-shimmer 8s ease infinite',
       },
       colors: {
+        'watta-action': 'var(--watta-brand-action)',
+        'watta-action-hover': 'var(--watta-brand-action-hover)',
+        'watta-action-active': 'var(--watta-brand-action-active)',
         border: 'hsl(var(--border) / <alpha-value>)',
         input: 'hsl(var(--input) / <alpha-value>)',
         ring: 'hsl(var(--ring) / <alpha-value>)',

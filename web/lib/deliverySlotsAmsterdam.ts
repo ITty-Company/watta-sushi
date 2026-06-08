@@ -1,10 +1,16 @@
 /** ISO date YYYY-MM-DD in Europe/Amsterdam */
 export type DeliveryDateKey = string
 
-export const DELIVERY_BOOKING_DAYS_AHEAD = 13
+/** Скільки днів показувати в горизонтальній стрічці (не ліміт бронювання). */
+export const DELIVERY_DATE_RAIL_DAYS = 6
 
-const OPEN_MIN = 11 * 60
-const CLOSE_MIN = 22 * 60
+/** @deprecated використовуйте DELIVERY_DATE_RAIL_DAYS; залишено для сумісності */
+export const DELIVERY_BOOKING_DAYS_AHEAD = DELIVERY_DATE_RAIL_DAYS
+
+export const KITCHEN_OPEN_MIN = 14 * 60
+export const KITCHEN_CLOSE_MIN = 21 * 60
+const OPEN_MIN = KITCHEN_OPEN_MIN
+const CLOSE_MIN = KITCHEN_CLOSE_MIN
 const STEP_MIN = 30
 /** Minimum lead time from now (Amsterdam) before a slot is bookable */
 const BUFFER_MIN = 45
@@ -41,42 +47,52 @@ export function addDaysToDateKey(key: DeliveryDateKey, days: number): DeliveryDa
 }
 
 export function getMaxDeliveryDateKey(
-  daysAhead = DELIVERY_BOOKING_DAYS_AHEAD,
+  daysAhead = DELIVERY_DATE_RAIL_DAYS,
   reference = new Date(),
 ): DeliveryDateKey {
   return addDaysToDateKey(getAmsterdamTodayKey(reference), daysAhead)
 }
 
-export function buildDeliveryDateOptions(
+export function formatDeliveryDateLabel(
+  dateKey: DeliveryDateKey,
   locale: string,
   relative: { today: string; tomorrow: string },
-  daysAhead = DELIVERY_BOOKING_DAYS_AHEAD,
-  reference = new Date(),
-): { value: DeliveryDateKey; label: string }[] {
-  const today = getAmsterdamTodayKey(reference)
+): string {
+  const today = getAmsterdamTodayKey()
   const tomorrow = addDaysToDateKey(today, 1)
-  const dateFmt = new Intl.DateTimeFormat(locale, {
+  if (dateKey === today) return relative.today
+  if (dateKey === tomorrow) return relative.tomorrow
+  const [y, mo, d] = dateKey.split('-').map(Number)
+  return new Intl.DateTimeFormat(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'long',
     timeZone: 'Europe/Amsterdam',
-  })
+  }).format(new Date(Date.UTC(y, mo - 1, d, 12, 0, 0)))
+}
+
+export function isDeliveryDateKeyAllowed(
+  dateKey: DeliveryDateKey,
+  reference = new Date(),
+): boolean {
+  return dateKey >= getAmsterdamTodayKey(reference)
+}
+
+export function buildDeliveryDateOptions(
+  locale: string,
+  relative: { today: string; tomorrow: string },
+  railDays = DELIVERY_DATE_RAIL_DAYS,
+  reference = new Date(),
+): { value: DeliveryDateKey; label: string }[] {
+  const today = getAmsterdamTodayKey(reference)
+  const tomorrow = addDaysToDateKey(today, 1)
 
   const options: { value: DeliveryDateKey; label: string }[] = []
-  for (let i = 0; i <= daysAhead; i++) {
+  for (let i = 0; i <= railDays; i++) {
     const value = addDaysToDateKey(today, i)
-    if (value === today) {
-      options.push({ value, label: relative.today })
-      continue
-    }
-    if (value === tomorrow) {
-      options.push({ value, label: relative.tomorrow })
-      continue
-    }
-    const [y, mo, d] = value.split('-').map(Number)
     options.push({
       value,
-      label: dateFmt.format(new Date(Date.UTC(y, mo - 1, d, 12, 0, 0))),
+      label: formatDeliveryDateLabel(value, locale, relative),
     })
   }
   return options
@@ -111,6 +127,55 @@ export function hasBookableSlotsToday(reference = new Date()): boolean {
     if (t >= nowMin + BUFFER_MIN) return true
   }
   return false
+}
+
+/** Кухня приймає замовлення «зараз» (Europe/Amsterdam, 14:00–21:00). */
+export function isKitchenOpenNow(reference = new Date()): boolean {
+  const nowMin = getAmsterdamMinutesFromMidnight(reference)
+  return nowMin >= OPEN_MIN && nowMin < CLOSE_MIN
+}
+
+export function formatKitchenHoursRange(): string {
+  const sh = Math.floor(OPEN_MIN / 60)
+  const sm = OPEN_MIN % 60
+  const eh = Math.floor(CLOSE_MIN / 60)
+  const em = CLOSE_MIN % 60
+  return `${pad2(sh)}:${pad2(sm)} – ${pad2(eh)}:${pad2(em)}`
+}
+
+/** Найближча дата передзамовлення, коли сьогодні вже немає слотів. */
+export function getDefaultPreorderDateKey(reference = new Date()): DeliveryDateKey {
+  const today = getAmsterdamTodayKey(reference)
+  if (isKitchenOpenNow(reference) && hasBookableSlotsToday(reference)) return today
+  return addDaysToDateKey(today, 1)
+}
+
+export function pickPreorderSlotValue(
+  dateKey: DeliveryDateKey,
+  asapLabel: string,
+  reference = new Date(),
+): string {
+  const slots = buildAmsterdamSlots(dateKey, asapLabel, reference)
+  if (!isKitchenOpenNow(reference) || dateKey !== getAmsterdamTodayKey(reference)) {
+    return slots.find((s) => s.value !== 'asap')?.value ?? slots[0]?.value ?? 'asap'
+  }
+  return slots[0]?.value ?? 'asap'
+}
+
+export function assertScheduledDeliveryAllowed(
+  dateKey: DeliveryDateKey,
+  slot: string,
+  reference = new Date(),
+): { ok: true } | { ok: false; message: string } {
+  const today = getAmsterdamTodayKey(reference)
+  if (dateKey < today) {
+    return { ok: false, message: 'Дата доставки не може бути в минулому' }
+  }
+  const allowed = buildAmsterdamSlots(dateKey, 'asap', reference).map((s) => s.value)
+  if (!allowed.includes(slot)) {
+    return { ok: false, message: 'Обраний час доставки недоступний' }
+  }
+  return { ok: true }
 }
 
 /** @deprecated use DeliveryDateKey */

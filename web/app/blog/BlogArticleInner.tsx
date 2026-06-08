@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import type { Language } from '@/app/context/LanguageContext'
 import { useLanguage } from '@/app/context/LanguageContext'
+import WattaPageHeroStagger from '@/app/components/WattaPageHeroStagger'
 
 export type BlogArticleInnerPost = {
   title: string
@@ -38,7 +39,10 @@ export default function BlogArticleInner({
   return (
     <>
       <p className="watta-blog-article__meta">{metaLine}</p>
-      <h1 className="watta-blog-article__title">{post.title}</h1>
+      <WattaPageHeroStagger
+        title={post.title}
+        titleClassName="watta-blog-article__title"
+      />
       {videoEmbedUrl ? (
         <div className="watta-blog-article__video">
           <iframe

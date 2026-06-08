@@ -1,6 +1,9 @@
 'use client'
 
-import { motion, useReducedMotion } from 'framer-motion'
+import { m } from 'framer-motion'
+import { WATTA_IN_VIEW_FADE_VIEWPORT, useWattaDisableScrollReveal } from './WattaInViewFade'
+import { WattaStaggerRevealText } from './WattaStaggerRevealText'
+import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 import { ArrowUpRight, Clock, MapPin, ShieldCheck } from 'lucide-react'
 
 export type DeliveryTrustStripLabels = {
@@ -12,7 +15,7 @@ export type DeliveryTrustStripLabels = {
   deliveryPromiseFoot: string
 }
 
-const viewport = { once: true, amount: 0.22, margin: '0px 0px -6% 0px' } as const
+const viewport = { ...WATTA_IN_VIEW_FADE_VIEWPORT, amount: 0.22 } as const
 
 export function DeliveryTrustStrip({
   d,
@@ -26,15 +29,16 @@ export function DeliveryTrustStrip({
   /** На /delivery кухня вже під картою — лишаємо лише обіцянку пунктуальності */
   variant?: 'full' | 'promise-only' | 'corporate'
 }) {
-  const reduceMotion = useReducedMotion() ?? false
+  const reduceMotion = useWattaDisableScrollReveal()
   const promiseOnly = variant === 'promise-only'
   const corporate = variant === 'corporate'
 
   if (corporate) {
     return (
-      <motion.div
+      <m.div
         className="delivery-promise-flat"
         initial={reduceMotion ? undefined : { opacity: 0, y: 12 }}
+        animate={reduceMotion ? { opacity: 1, y: 0 } : undefined}
         whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
         viewport={viewport}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -43,20 +47,24 @@ export function DeliveryTrustStrip({
         <p className="delivery-promise-flat__kicker" id="delivery-promise-heading">
           {d.deliveryPromiseKicker}
         </p>
-        <h2 className="contact-watta-section-title mb-2">{d.deliveryPromiseTitle}</h2>
+        <WattaStaggerSectionTitle
+          className="contact-watta-section-title mb-2"
+          text={d.deliveryPromiseTitle}
+        />
         <p className="delivery-page-section-lead mb-0 max-w-2xl">{d.deliveryPromiseText}</p>
         <p className="delivery-promise-flat__note">
           <ShieldCheck size={18} strokeWidth={2.25} aria-hidden />
           <span>{d.deliveryPromiseFoot}</span>
         </p>
-      </motion.div>
+      </m.div>
     )
   }
 
   return (
-    <motion.section
+    <m.section
       className={`delivery-watta-trust-strip${promiseOnly ? ' delivery-watta-trust-strip--promise-only' : ''}`}
       initial={reduceMotion ? undefined : { opacity: 0, y: 16 }}
+      animate={reduceMotion ? { opacity: 1, y: 0 } : undefined}
       whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={viewport}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -104,7 +112,15 @@ export function DeliveryTrustStrip({
               {d.deliveryPromiseKicker}
             </span>
           </header>
-          <h3 className="delivery-watta-trust-strip__title">{d.deliveryPromiseTitle}</h3>
+          <WattaStaggerRevealText
+            as="h3"
+            className="delivery-watta-trust-strip__title"
+            text={d.deliveryPromiseTitle}
+            variant="title"
+            inView
+            replay={false}
+            staggerStyle="catalog"
+          />
           <p className="delivery-watta-trust-strip__text">{d.deliveryPromiseText}</p>
           <p className="delivery-watta-trust-strip__note">
             <ShieldCheck className="delivery-watta-trust-strip__note-ico" size={16} strokeWidth={2.25} aria-hidden />
@@ -112,6 +128,6 @@ export function DeliveryTrustStrip({
           </p>
         </article>
       </div>
-    </motion.section>
+    </m.section>
   )
 }

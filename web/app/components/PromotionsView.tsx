@@ -1,10 +1,12 @@
 'use client'
 
+import '../promotions-page-theme.css'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowLeft, ShoppingBag } from 'lucide-react'
+import { WattaInViewFadeArticle, WattaInViewFadeDiv } from './WattaInViewFade'
+import { ArrowLeft, ArrowRight, Megaphone, ShoppingBag } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { LocationPickerMascot } from './LocationPickerMascot'
+import WattaPageHeroStagger from './WattaPageHeroStagger'
 import { cn } from '@/lib/utils'
 import { catalogSyncEventNames } from '@/lib/wattaCatalogSync'
 import {
@@ -113,33 +115,92 @@ function PromoCard({
     typeof promo.displayDate === 'string' && promo.displayDate
       ? promo.displayDate
       : formatListDate(promo.createdAt, language)
+  const indexLabel = String(index + 1).padStart(2, '0')
+
+  if (featured) {
+    return (
+      <WattaInViewFadeArticle
+        role="listitem"
+        className="watta-promo-card watta-promo-card--featured"
+        transition={{ delay: 0 }}
+      >
+        <button
+          type="button"
+          className="watta-promo-card__hit-area watta-promo-card__hit-area--featured"
+          onClick={() => onOpenDetail(promo.id)}
+          aria-label={`${p.readCta}: ${promo.title}`}
+        >
+          <div className="watta-promo-card__featured-split">
+            <div className="watta-promo-card__media watta-promo-card__media--featured">
+              {cover ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={cover} alt="" className="watta-promo-card__img" loading="eager" decoding="async" />
+              ) : (
+                <div className="watta-promo-card__no-photo" aria-hidden>
+                  <span className="watta-promo-card__no-photo-mark">W</span>
+                </div>
+              )}
+              <div className="watta-promo-card__media-shade watta-promo-card__media-shade--featured" aria-hidden />
+              <span className="watta-promo-card__featured-index" aria-hidden>
+                {indexLabel}
+              </span>
+              {promo.isHit ? (
+                <span className="watta-promo-card__hit watta-promo-card__hit--featured">{p.hitBadge}</span>
+              ) : null}
+            </div>
+
+            <div className="watta-promo-card__featured-panel">
+              <span className="watta-promo-card__badge-featured">{p.featuredBadge}</span>
+              <h2 className="watta-promo-card__title watta-promo-card__title--featured">{promo.title}</h2>
+              {promo.description ? (
+                <p className="watta-promo-card__desc watta-promo-card__desc--featured">{promo.description}</p>
+              ) : null}
+              <div className="watta-promo-card__meta watta-promo-card__meta--featured">
+                <span className="watta-promo-card__category">{category}</span>
+                {dateStr ? <time className="watta-promo-card__date">{dateStr}</time> : null}
+              </div>
+              <span className="watta-promo-card__cta-pill">
+                {p.readCta}
+                <ArrowRight className="watta-promo-card__cta-icon" strokeWidth={2.5} aria-hidden />
+              </span>
+            </div>
+          </div>
+        </button>
+      </WattaInViewFadeArticle>
+    )
+  }
 
   return (
-    <motion.article
+    <WattaInViewFadeArticle
       role="listitem"
-      className={cn('watta-promo-card', featured && 'watta-promo-card--featured')}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
+      className="watta-promo-card"
+      transition={{ delay: Math.min(index * 0.03, 0.24) }}
     >
       <button
         type="button"
-        className="watta-promo-card__hit-area"
+        className="watta-promo-card__hit-area watta-promo-card__hit-area--stack"
         onClick={() => onOpenDetail(promo.id)}
         aria-label={`${p.readCta}: ${promo.title}`}
       >
-        <div className="watta-promo-card__media">
-          {featured ? (
-            <span className="watta-promo-card__badge-featured">{p.featuredBadge}</span>
-          ) : null}
+        <div className="watta-promo-card__media watta-promo-card__media--stack">
           {cover ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={cover} alt="" className="watta-promo-card__img" loading="lazy" decoding="async" />
+            <img
+              src={cover}
+              alt=""
+              className="watta-promo-card__img"
+              loading={index < 4 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
           ) : (
             <div className="watta-promo-card__no-photo" aria-hidden>
               <span className="watta-promo-card__no-photo-mark">W</span>
             </div>
           )}
+          <div className="watta-promo-card__media-shade watta-promo-card__media-shade--stack" aria-hidden />
+          <span className="watta-promo-card__index" aria-hidden>
+            {indexLabel}
+          </span>
           {galleryCount > 1 ? (
             <span className="watta-promo-card__badge watta-promo-card__badge--photos">
               {promoTpl(p.morePhotosBadge, { count: galleryCount - 1 })}
@@ -150,22 +211,23 @@ function PromoCard({
               {promoTpl(p.offersBadge, { count: offers })}
             </span>
           ) : null}
-          {promo.isHit && !featured ? (
-            <span className="watta-promo-card__hit">{p.hitBadge}</span>
-          ) : null}
+          {promo.isHit ? <span className="watta-promo-card__hit">{p.hitBadge}</span> : null}
         </div>
 
-        <div className="watta-promo-card__body">
+        <div className="watta-promo-card__body watta-promo-card__body--stack">
           <div className="watta-promo-card__meta">
             <span className="watta-promo-card__category">{category}</span>
             {dateStr ? <time className="watta-promo-card__date">{dateStr}</time> : null}
           </div>
           <h2 className="watta-promo-card__title">{promo.title}</h2>
           {promo.description ? <p className="watta-promo-card__desc">{promo.description}</p> : null}
-          <span className="watta-promo-card__cta">{p.readCta}</span>
+          <span className="watta-promo-card__cta-pill watta-promo-card__cta-pill--stack">
+            {p.readCta}
+            <ArrowRight className="watta-promo-card__cta-icon" strokeWidth={2.5} aria-hidden />
+          </span>
         </div>
       </button>
-    </motion.article>
+    </WattaInViewFadeArticle>
   )
 }
 
@@ -231,27 +293,41 @@ export default function PromotionsView({
       id={embedded ? undefined : 'promotions-page-container'}
       className={pageClass}
     >
-      <div className="watta-promotions-hero-zone">
+      <WattaInViewFadeDiv className="watta-promotions-hero-zone" data-watta-cart-bar-gate="">
         <div className="watta-promotions-page__toolbar">
           <PromoBackButton label={t.auth.back} onBack={onBack} inline />
         </div>
 
         <header className="watta-promotions-hero-static" aria-labelledby="promotions-hero-title">
+          <div className="watta-promotions-hero-static__glow" aria-hidden />
           <div className="watta-promotions-hero-static__inner mx-auto max-w-6xl px-4 sm:px-6">
             <div className="watta-promotions-hero-static__mascot-wrap" aria-hidden>
+              <div className="watta-promotions-hero-static__mascot-ring" aria-hidden />
               <LocationPickerMascot className="watta-promotions-hero-static__mascot" />
             </div>
             <div className="watta-promotions-hero-static__copy">
-              <h1 id="promotions-hero-title" className="watta-promotions-hero-static__title">
-                {titleParts.lead}
-                {titleParts.accent ? (
+              <WattaPageHeroStagger
+                kickerPrefix={
                   <>
-                    {' '}
-                    <span className="watta-promotions-hero-static__title-accent">{titleParts.accent}</span>
+                    <Megaphone className="watta-promotions-hero-static__kicker-ico" strokeWidth={2.25} aria-hidden />
                   </>
-                ) : null}
-              </h1>
-              <p className="watta-promotions-hero-static__subtitle">{p.description}</p>
+                }
+                kickerText={`Watta · ${p.title}`}
+                kickerClassName="watta-promotions-hero-static__kicker"
+                title={titleParts.lead}
+                titleAccent={titleParts.accent || undefined}
+                titleAccentClassName="watta-promotions-hero-static__title-accent"
+                titleId="promotions-hero-title"
+                titleClassName="watta-promotions-hero-static__title"
+                subtitle={p.description}
+                subtitleClassName="watta-promotions-hero-static__subtitle"
+              />
+              {hasPosts && promotions ? (
+                <p className="watta-promotions-hero-static__stat" aria-live="polite">
+                  <span className="watta-promotions-hero-static__stat-num">{promotions.length}</span>
+                  {p.feedTitle}
+                </p>
+              ) : null}
               {showEmptyHint ? (
                 <p className="watta-promotions-hero-empty-hint" role="status">
                   {p.emptyList} {p.emptyInvite}
@@ -270,7 +346,7 @@ export default function PromotionsView({
             </div>
           </div>
         </header>
-      </div>
+      </WattaInViewFadeDiv>
 
       {promotions === null ? (
         <div className="watta-promotions-page__loading mx-auto px-4 py-8" aria-busy="true">
@@ -282,7 +358,10 @@ export default function PromotionsView({
       ) : hasPosts ? (
         <section className="watta-promotions-page__flow" aria-label={p.feedTitle}>
           <div className="watta-promotions-page__inner">
-            <p className="watta-promotions-page__feed-label">{p.feedTitle}</p>
+            <header className="watta-promotions-page__feed-head">
+              <p className="watta-promotions-page__feed-label">{p.feedTitle}</p>
+              <span className="watta-promotions-page__feed-count">{promotions.length}</span>
+            </header>
             <div className="watta-promotions-grid" role="list">
               {featured ? (
                 <PromoCard

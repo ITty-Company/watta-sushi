@@ -39,6 +39,26 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(data, { status: response.status })
       }
 
+      const token = typeof data.token === 'string' ? data.token : null
+      if (token) {
+        const res = NextResponse.json(data)
+        res.cookies.set('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30,
+          path: '/',
+        })
+        res.cookies.set('is_logged_in', 'true', {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30,
+          path: '/',
+        })
+        return res
+      }
+
       return NextResponse.json(data)
     } catch (fetchError: unknown) {
       clearTimeout(timeoutId)

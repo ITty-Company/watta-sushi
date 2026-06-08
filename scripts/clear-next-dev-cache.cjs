@@ -44,3 +44,7 @@ for (const p of pathsToRemove) {
     /* ignore */
   }
 }
+
+console.log(
+  '[watta] Очищено web/.next — після старту dev зробіть Cmd+Shift+R у браузері (інакше 404 на /_next/static/…).',
+)

@@ -1,4 +1,4 @@
-import { scrollEntireAppToTop } from '@/lib/menuScroll'
+import { scrollEntireAppToTopPersistent } from '@/lib/menuScroll'
 import { MENU_BROWSE_RETURN_KEY } from '@/lib/menuBrowseRestore'
 import { applyWattaHomeChromeGlass, syncWattaHtmlRouteClass } from '@/lib/wattaHtmlRouteClass'
 
@@ -41,7 +41,7 @@ export function resetHomepageLikeLogoClick(
   window.dispatchEvent(new CustomEvent(WATTA_CHROME_GO_HOME_EVENT))
   window.dispatchEvent(new CustomEvent(WATTA_CHROME_LAYOUT_SYNC_EVENT))
 
-  scrollEntireAppToTop()
+  scrollEntireAppToTopPersistent({ force: true })
 
   if (!options?.skipRefresh) {
     try {

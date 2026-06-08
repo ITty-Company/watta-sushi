@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { Star, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../context/LanguageContext'
 
 export type AdminReviewRow = {
   id: number
@@ -24,11 +25,16 @@ type AdminReviewsPanelProps = {
 }
 
 export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }: AdminReviewsPanelProps) {
+  const { t, adminUiLanguage } = useLanguage()
+  const r = t.adminPanel.reviews
+  const auth = t.adminPage.auth
   const [editingId, setEditingId] = useState<number | null>(null)
   const [rating, setRating] = useState(5)
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
   const [publishingId, setPublishingId] = useState<number | null>(null)
+
+  const locale = adminUiLanguage === 'ru' ? 'ru-RU' : 'uk-UA'
 
   const startEdit = (row: AdminReviewRow) => {
     setEditingId(row.id)
@@ -46,12 +52,12 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
     if (editingId == null) return
     const headers = getAuthHeaders()
     if (!headers) {
-      toast.error('Вы не авторизованы')
+      toast.error(auth.notAuthorized)
       return
     }
     const txt = text.trim()
     if (txt.length < 3) {
-      toast.error('Текст слишком короткий')
+      toast.error(r.textTooShort)
       return
     }
     setSaving(true)
@@ -63,10 +69,10 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error((data.message as string) || 'Не удалось сохранить')
+        toast.error((data.message as string) || r.saveError)
         return
       }
-      toast.success('Отзыв обновлён')
+      toast.success(r.saved)
       cancelEdit()
       await onReload()
       window.dispatchEvent(new CustomEvent('reviewsUpdated'))
@@ -79,7 +85,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
     async (id: number, published: boolean) => {
       const headers = getAuthHeaders()
       if (!headers) {
-        toast.error('Вы не авторизованы')
+        toast.error(auth.notAuthorized)
         return
       }
       setPublishingId(id)
@@ -91,25 +97,25 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) {
-          toast.error((data.message as string) || 'Не удалось обновить')
+          toast.error((data.message as string) || r.updateError)
           return
         }
-        toast.success(published ? 'Отзыв опубликован на сайте' : 'Отзыв снят с публикации')
+        toast.success(published ? r.published : r.unpublished)
         await onReload()
         window.dispatchEvent(new CustomEvent('reviewsUpdated'))
       } finally {
         setPublishingId(null)
       }
     },
-    [getAuthHeaders, onReload],
+    [auth.notAuthorized, getAuthHeaders, onReload, r.published, r.unpublished, r.updateError],
   )
 
   const deleteReview = useCallback(
     async (id: number) => {
-      if (!confirm('Удалить этот отзыв?')) return
+      if (!confirm(r.deleteConfirm)) return
       const headers = getAuthHeaders()
       if (!headers) {
-        toast.error('Вы не авторизованы')
+        toast.error(auth.notAuthorized)
         return
       }
       const res = await fetch(`/api/reviews/${id}`, {
@@ -118,21 +124,21 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error((data.message as string) || 'Не удалось удалить')
+        toast.error((data.message as string) || r.deleteError)
         return
       }
-      toast.success('Отзыв удалён')
+      toast.success(r.deleted)
       if (editingId === id) cancelEdit()
       await onReload()
       window.dispatchEvent(new CustomEvent('reviewsUpdated'))
     },
-    [editingId, getAuthHeaders, onReload],
+    [auth.notAuthorized, editingId, getAuthHeaders, onReload, r.deleteConfirm, r.deleteError, r.deleted],
   )
 
   if (reviews.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-gray-200 bg-white/80 p-8 text-center text-gray-500">
-        Пока нет отзывов от клиентов.
+      <p className="admin-watta-empty-state rounded-xl border border-dashed border-[#145142]/20 bg-white/80 p-8 text-center text-[#145142]/60">
+        {r.empty}
       </p>
     )
   }
@@ -143,28 +149,30 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
     <div className="space-y-4">
       {pendingCount > 0 ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-          На модерации: {pendingCount}. Опубликуйте отзыв — он появится на странице /reviews.
+          {r.pendingBanner.replace('{{count}}', String(pendingCount))}
         </p>
       ) : null}
       {reviews.map((row) => (
         <article
           key={row.id}
-          className={`rounded-xl border bg-white p-4 shadow-sm sm:p-5 ${
-            row.published ? 'border-gray-200' : 'border-amber-300 ring-1 ring-amber-100'
+          className={`admin-watta-hover-lift rounded-xl border bg-white p-4 shadow-sm sm:p-5 ${
+            row.published ? 'border-[#145142]/12' : 'border-amber-300 ring-1 ring-amber-100'
           }`}
         >
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="font-semibold text-gray-900">
+              <p className="font-semibold text-[#0f241e]">
                 {row.authorName}
                 {row.orderId != null ? (
-                  <span className="ml-2 text-sm font-normal text-gray-500">#{row.orderId}</span>
+                  <span className="ml-2 text-sm font-normal text-[#145142]/55">#{row.orderId}</span>
                 ) : (
-                  <span className="ml-2 text-sm font-normal text-gray-500">без заказа</span>
+                  <span className="ml-2 text-sm font-normal text-[#145142]/55">{r.noOrder}</span>
                 )}
               </p>
-              <p className="text-xs text-gray-500">{row.authorEmail}</p>
-              <p className="text-xs text-gray-400">{new Date(row.createdAt).toLocaleString()}</p>
+              <p className="text-xs text-[#145142]/55">{row.authorEmail}</p>
+              <p className="text-xs text-[#145142]/45">
+                {new Date(row.createdAt).toLocaleString(locale)}
+              </p>
               <span
                 className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                   row.published
@@ -172,7 +180,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
                     : 'bg-amber-100 text-amber-900'
                 }`}
               >
-                {row.published ? 'На сайте' : 'Модерация'}
+                {row.published ? r.statusPublished : r.statusModeration}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -189,25 +197,25 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
                   type="button"
                   disabled={publishingId === row.id}
                   onClick={() => void setPublished(row.id, true)}
-                  className="rounded-lg bg-[#145142] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0f3d32] disabled:opacity-60"
+                  className="rounded-lg bg-watta-action px-3 py-1.5 text-xs font-semibold text-white hover:bg-watta-action-hover disabled:opacity-60"
                 >
-                  {publishingId === row.id ? '…' : 'Опубликовать'}
+                  {publishingId === row.id ? '…' : r.publishBtn}
                 </button>
               ) : (
                 <button
                   type="button"
                   disabled={publishingId === row.id}
                   onClick={() => void setPublished(row.id, false)}
-                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                  className="rounded-lg border border-[#145142]/15 px-3 py-1.5 text-xs font-semibold text-[#145142] hover:bg-watta-action/5 disabled:opacity-60"
                 >
-                  Снять
+                  {r.unpublishBtn}
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => void deleteReview(row.id)}
                 className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                aria-label="Удалить"
+                aria-label={r.deleteAria}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -215,7 +223,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
           </div>
 
           {editingId === row.id ? (
-            <div className="space-y-3 border-t border-gray-100 pt-3">
+            <div className="space-y-3 border-t border-[#145142]/10 pt-3">
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} type="button" onClick={() => setRating(n)} className="p-0.5">
@@ -229,33 +237,33 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={4}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[#145142]/15 px-3 py-2 text-sm"
               />
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   disabled={saving}
                   onClick={() => void saveEdit()}
-                  className="rounded-lg bg-[#145142] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0f3d32] disabled:opacity-60"
+                  className="rounded-lg bg-watta-action px-4 py-2 text-sm font-semibold text-white hover:bg-watta-action-hover disabled:opacity-60"
                 >
-                  {saving ? '…' : 'Сохранить'}
+                  {saving ? '…' : r.saveBtn}
                 </button>
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700"
+                  className="rounded-lg border border-[#145142]/15 px-4 py-2 text-sm font-semibold text-[#145142]"
                 >
-                  Отмена
+                  {r.cancelBtn}
                 </button>
               </div>
             </div>
           ) : (
             <>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{row.text}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#0f241e]/85">{row.text}</p>
               {row.images?.length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {row.images.map((src, i) => (
-                    <div key={i} className="h-16 w-16 overflow-hidden rounded-lg border border-gray-100">
+                    <div key={i} className="h-16 w-16 overflow-hidden rounded-lg border border-[#145142]/10">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={src} alt="" className="h-full w-full object-cover" />
                     </div>
@@ -267,7 +275,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
                 onClick={() => startEdit(row)}
                 className="mt-3 text-sm font-semibold text-[#145142] hover:underline"
               >
-                Редактировать
+                {r.editBtn}
               </button>
             </>
           )}

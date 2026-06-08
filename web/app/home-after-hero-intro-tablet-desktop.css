@@ -1,6 +1,6 @@
 /**
- * Головна: вступ «Доставка суші — …» після hero-відео на планшеті / ноуті / ПК (≥768).
- * Телефон (intro над відео) — globals.css + Tailwind у AnimatedHeroIntroBlock.
+ * Головна: вступ «Доставка суші — …» під hero-відео на планшеті / ноуті / ПК (≥768).
+ * Телефон — globals.css + Tailwind у AnimatedHeroIntroBlock.
  */
 
 @media (min-width: 768px) {
@@ -82,15 +82,11 @@
     white-space: pre-line !important;
   }
 
-  /* Відео → текст: легкий зазор під карткою hero */
+  /* Відео → текст: легкий зазор між hero-карткою і вступом */
   .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
     .delivery-page-hero-stack--video-first
-    > .delivery-page-hero-standalone-web.watta-home-hero-as-card-web
-    + #home-after-hero-intro,
-  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page)
-    .delivery-page-hero-stack--video-first
-    > .welcome-hero-section-web
-    + #home-after-hero-intro {
+    .watta-home-hero-video-slot-web
+    + #home-after-hero-intro.home-after-hero-intro-web {
     margin-top: clamp(0.25rem, 0.65vh, 0.5rem);
   }
 
@@ -139,17 +135,19 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page):has(#home-after-hero-intro)
-    .delivery-page-home-flow
+    .delivery-page-home-flow:not(:has(.watta-home-photo-first-screen))
     > #menu-cinematic-block {
     margin-top: clamp(48px, 5.8vh, 84px) !important;
   }
 }
 
-/* Телефон: вступ → відео → «Вибір гостей» */
-.menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page):has(#home-after-hero-intro)
-  .delivery-page-home-flow
-  > #menu-cinematic-block {
-  margin-top: clamp(28px, 4vh, 48px) !important;
+/* Телефон: вступ → відео → «Вибір гостей» (не для photo-first hero — там текст у центрі картинки) */
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web:not(.watta-delivery-page):has(#home-after-hero-intro)
+    .delivery-page-home-flow:not(:has(.watta-home-photo-first-screen))
+    > #menu-cinematic-block {
+    margin-top: clamp(28px, 4vh, 48px) !important;
+  }
 }
 
 /* Планшет: заголовок в один ритмічний ряд (як на /delivery) */
@@ -178,21 +176,21 @@
  */
 @media (min-width: 768px) {
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro.home-after-hero-intro-web {
     margin-top: clamp(1.25rem, 2.6vh, 2rem);
     margin-bottom: clamp(1.5rem, 3.2vh, 2.5rem);
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home--stage {
     max-width: 54rem;
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__title--stage {
     max-width: none;
@@ -203,14 +201,14 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__title-line {
     display: inline;
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__title-line
     + .delivery-hero-copy-home__title-line::before {
@@ -218,7 +216,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home--stage
     .delivery-hero-copy-home__script {
@@ -231,7 +229,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__kicker--script-after-title {
     margin-top: clamp(0.35rem, 0.8vh, 0.65rem);
@@ -239,7 +237,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__body--stage {
     margin-top: clamp(0.85rem, 1.8vh, 1.25rem);
@@ -251,7 +249,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home--stage
     .delivery-hero-copy-home__stats {
@@ -260,7 +258,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home--stage
     .delivery-hero-copy-home__stats
@@ -272,7 +270,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__stat-ico {
     width: 14px;
@@ -282,14 +280,14 @@
 
 @media (min-width: 1025px) {
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro.home-after-hero-intro-web {
     margin-top: clamp(1.5rem, 2.8vh, 2.35rem);
     margin-bottom: clamp(2rem, 3.8vh, 3rem);
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .home-after-hero-intro-inner-web--home-menu {
     max-width: 56rem !important;
@@ -300,7 +298,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__title--stage {
     font-size: clamp(2.15rem, 2.65vw, 3rem) !important;
@@ -308,7 +306,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home--stage
     .delivery-hero-copy-home__script {
@@ -316,7 +314,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__body--stage {
     max-width: 48rem;
@@ -326,7 +324,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home--stage
     .delivery-hero-copy-home__stats
@@ -336,7 +334,7 @@
   }
 
   .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
-    .delivery-page-hero-stack--video-first
+    .delivery-page-hero-stack--intro-first
     #menu-page-after-hero-intro
     .delivery-hero-copy-home__stat-ico {
     width: 15px;

@@ -9,7 +9,7 @@ html:has(#promotions-page-container) body {
 }
 
 #promotions-page-container.watta-promotions-page {
-  --watta-promo-accent: #145142;
+  --watta-promo-accent: var(--watta-brand-action, #3a7d3f);
   --watta-promo-read: #27ae60;
   --watta-promo-orange: #ff5c00;
   position: relative;
@@ -171,9 +171,10 @@ html:has(#promotions-page-container) .watta-sticky-chrome-flow-anchor {
 
 .watta-promotions-hero-static__subtitle {
   margin: 0.65rem 0 0;
-  font-size: clamp(0.875rem, 2.8vw, 1rem);
+  font-size: clamp(0.925rem, 2.8vw, 1.05rem);
+  font-weight: 600;
   line-height: 1.55;
-  color: color-mix(in srgb, var(--watta-promo-accent) 78%, #334);
+  color: #2a453c;
 }
 
 .watta-promotions-page--empty .watta-promotions-hero-empty-hint {
@@ -222,7 +223,7 @@ html:has(#promotions-page-container) .watta-sticky-chrome-flow-anchor {
 }
 
 .watta-promotions-hero-actions__btn--primary:hover {
-  background: color-mix(in srgb, var(--watta-promo-accent) 88%, #000);
+  background: var(--watta-brand-action-hover);
 }
 
 @media (min-width: 640px) {
@@ -270,27 +271,371 @@ html:has(#promotions-page-container) .watta-sticky-chrome-flow-anchor {
   grid-column: 1 / -1;
 }
 
-@media (min-width: 768px) {
-  .watta-promotions-grid .watta-promo-card--featured {
-    grid-column: span 2;
+.watta-promotions-page .watta-promo-card__hit-area--compact,
+.watta-promotions-page .watta-promo-card__hit-area--stack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100%;
+  height: 100%;
+}
+
+.watta-promotions-page .watta-promo-card__hit-area--featured {
+  display: block;
+  flex-direction: unset;
+}
+
+#promotions-page-container .watta-promotions-grid {
+  grid-template-columns: 1fr !important;
+  gap: clamp(1rem, 2.5vw, 1.35rem) !important;
+}
+
+@media (min-width: 720px) {
+  #promotions-page-container .watta-promotions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
-.watta-promo-card--featured .watta-promo-card__media {
-  aspect-ratio: 16 / 9;
-}
-
-@media (min-width: 640px) {
-  .watta-promo-card--featured .watta-promo-card__title {
-    font-size: clamp(1.2rem, 2.8vw, 1.45rem);
+@media (min-width: 1280px) {
+  #promotions-page-container .watta-promotions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
-.watta-promo-card--featured .watta-promo-card__badge-featured {
+#promotions-page-container .watta-promotions-grid .watta-promo-card--featured {
+  grid-column: 1 / -1 !important;
+}
+
+.watta-promo-card__cta {
+  color: var(--watta-promo-read, #27ae60);
+}
+
+.watta-promotions-page--embedded .watta-promotions-hero-static__inner {
+  padding-bottom: 0.5rem;
+}
+
+/* ——— Premium editorial layout ——— */
+
+#promotions-page-container.watta-promotions-page {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 92, 0, 0.05), transparent 55%),
+    #ffffff;
+}
+
+#promotions-page-container.watta-promotions-page::before {
+  content: '';
   position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
+  inset: 0 0 auto;
+  height: clamp(22rem, 48vw, 34rem);
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 85% 65% at 8% -5%, rgba(255, 92, 0, 0.1), transparent 58%),
+    radial-gradient(ellipse 75% 60% at 92% 0%, rgba(20, 81, 66, 0.12), transparent 54%),
+    radial-gradient(ellipse 100% 45% at 50% 100%, rgba(20, 81, 66, 0.05), transparent 72%);
+}
+
+.watta-promotions-hero-zone::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: min(10rem, 32vw);
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--watta-promo-orange, #ff5c00) 30%,
+    var(--watta-promo-accent, #145142) 70%,
+    transparent
+  );
+  opacity: 0.7;
+}
+
+.watta-promotions-hero-static__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.85), transparent 68%);
+}
+
+.watta-promotions-hero-static__mascot-wrap {
+  position: relative;
+}
+
+.watta-promotions-hero-static__mascot-ring {
+  position: absolute;
+  inset: -12%;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 14%, transparent);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 92, 0, 0.08), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgba(20, 81, 66, 0.1), transparent 50%);
+  animation: wattaPromoRingPulse 5s ease-in-out infinite;
+}
+
+@keyframes wattaPromoRingPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+.watta-promotions-hero-static__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.55rem;
+  padding: 0.34rem 0.78rem 0.34rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 14%, transparent);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 250, 0.92));
+  box-shadow: 0 8px 24px -16px rgba(20, 81, 66, 0.35);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--watta-promo-accent) 72%, #0f241e);
+}
+
+.watta-promotions-hero-static__kicker-ico {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--watta-promo-orange, #ff5c00);
+}
+
+.watta-promotions-hero-static__kicker-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--watta-promo-orange, #ff5c00);
+  opacity: 0.85;
+}
+
+.watta-promotions-hero-static__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0;
+  padding: 0.28rem 0.65rem 0.28rem 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--watta-promo-accent) 8%, #fff);
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 12%, transparent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--watta-promo-accent) 62%, #64748b);
+}
+
+.watta-promotions-hero-static__stat-num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.65rem;
+  height: 1.65rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--watta-promo-accent, #145142);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.watta-promotions-hero-actions__btn--primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #145142 0%, #1a6b55 100%);
+}
+
+.watta-promotions-hero-actions__btn--primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.14) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+}
+
+.watta-promotions-hero-actions__btn--primary:hover::after {
+  transform: translateX(120%);
+}
+
+.watta-promotions-page__flow::before {
+  background: linear-gradient(180deg, rgba(245, 251, 248, 0.9) 0%, #ffffff 14rem);
+}
+
+.watta-promotions-page__feed-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: clamp(1.1rem, 2.8vw, 1.5rem);
+  padding: 0.65rem 0.85rem;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, rgba(20, 81, 66, 0.07), rgba(255, 92, 0, 0.04));
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 14%, transparent);
+}
+
+.watta-promotions-page__feed-label {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #0f2a22;
+}
+
+.watta-promotions-page__feed-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: var(--watta-promo-accent, #145142);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px -10px rgba(20, 81, 66, 0.55);
+}
+
+.watta-promotions-page__feed-head::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--watta-promo-accent) 24%, transparent), transparent);
+}
+
+.watta-promotions-grid {
+  gap: clamp(0.85rem, 2vw, 1.1rem);
+}
+
+/* Featured split card */
+.watta-promo-card--featured {
+  border: none;
+  border-radius: clamp(1.25rem, 3vw, 1.75rem);
+  background: #0f2a22;
+  box-shadow:
+    0 32px 72px -32px rgba(8, 28, 22, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  overflow: hidden;
+}
+
+.watta-promo-card--featured:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 40px 80px -28px rgba(8, 28, 22, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.watta-promo-card__hit-area--featured {
+  display: block;
+}
+
+.watta-promo-card__featured-split {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .watta-promo-card__featured-split {
+    flex-direction: row;
+    min-height: clamp(16rem, 32vw, 22rem);
+  }
+}
+
+.watta-promo-card__media--featured {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  flex: 1 1 auto;
+  min-height: clamp(14rem, 42vw, 20rem) !important;
+  background: linear-gradient(145deg, #dceee6 0%, #145142 100%);
+}
+
+.watta-promo-card__media--featured .watta-promo-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+  object-position: center;
+}
+
+@media (min-width: 768px) {
+  .watta-promo-card__media--featured {
+    aspect-ratio: auto;
+    flex: 1 1 58%;
+    min-height: clamp(16rem, 32vw, 22rem) !important;
+  }
+}
+
+.watta-promo-card__media-shade--featured {
+  opacity: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 28, 22, 0.05) 0%,
+    rgba(8, 28, 22, 0.15) 100%
+  );
+}
+
+@media (min-width: 768px) {
+  .watta-promo-card__media-shade--featured {
+    background: linear-gradient(
+      90deg,
+      rgba(8, 28, 22, 0.02) 0%,
+      rgba(8, 28, 22, 0.45) 100%
+    );
+  }
+}
+
+.watta-promo-card__featured-index {
+  position: absolute;
+  top: clamp(0.75rem, 2vw, 1.1rem);
+  left: clamp(0.75rem, 2vw, 1.1rem);
   z-index: 2;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(2.5rem, 7vw, 4rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
+.watta-promo-card__hit--featured {
+  top: clamp(0.75rem, 2vw, 1.1rem);
+  right: clamp(0.75rem, 2vw, 1.1rem);
+  background: var(--watta-promo-orange, #ff5c00);
+  box-shadow: 0 8px 22px rgba(255, 92, 0, 0.35);
+}
+
+.watta-promo-card__featured-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: clamp(1.1rem, 2.8vw, 1.65rem) clamp(1rem, 2.5vw, 1.75rem) clamp(1.15rem, 2.8vw, 1.75rem);
+  background:
+    linear-gradient(165deg, #0f2a22 0%, #145142 52%, #176b55 100%);
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .watta-promo-card__featured-panel {
+    flex: 0 0 42%;
+    justify-content: center;
+    padding: clamp(1.35rem, 3vw, 2rem);
+  }
+}
+
+.watta-promo-card--featured .watta-promo-card__badge-featured,
+.watta-promo-card__badge-featured {
   padding: 0.32rem 0.7rem;
   border-radius: 999px;
   background: var(--watta-promo-orange, #ff5c00);
@@ -302,10 +647,465 @@ html:has(#promotions-page-container) .watta-sticky-chrome-flow-anchor {
   box-shadow: 0 6px 16px rgba(255, 92, 0, 0.28);
 }
 
+.watta-promo-card--featured .watta-promo-card__badge-featured {
+  position: relative;
+  top: auto;
+  left: auto;
+  margin: 0;
+  background: var(--watta-promo-orange, #ff5c00);
+  box-shadow: 0 8px 22px rgba(255, 92, 0, 0.32);
+}
+
+.watta-promo-card__title--featured {
+  margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.35rem, 3.8vw, 2rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.watta-promo-card__desc--featured {
+  margin: 0;
+  font-size: clamp(0.84rem, 2.1vw, 0.95rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.watta-promo-card__meta--featured .watta-promo-card__category {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.watta-promo-card__meta--featured .watta-promo-card__date {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.watta-promo-card__cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  padding: 0.58rem 1.1rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--watta-promo-accent, #145142);
+  font-size: 0.84rem;
+  font-weight: 800;
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease;
+}
+
+.watta-promo-card--featured:hover .watta-promo-card__cta-pill {
+  transform: translateX(2px);
+  box-shadow: 0 14px 32px -10px rgba(0, 0, 0, 0.4);
+}
+
+.watta-promo-card--featured .watta-promo-card__cta-icon {
+  color: var(--watta-promo-orange, #ff5c00);
+}
+
+/* Stack cards — large visible photos */
+.watta-promo-card:not(.watta-promo-card--featured) {
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 16%, #d8e8e2);
+  background: #fff;
+  box-shadow:
+    0 14px 40px -22px rgba(20, 81, 66, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+}
+
+.watta-promo-card:not(.watta-promo-card--featured):hover {
+  border-color: color-mix(in srgb, var(--watta-promo-accent) 28%, #d8e8e2);
+  box-shadow:
+    0 22px 48px -20px rgba(20, 81, 66, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+}
+
+.watta-promo-card__media--stack {
+  position: relative;
+  width: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+  min-height: clamp(11rem, 34vw, 15.5rem) !important;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #dceee6 0%, #eef6f2 100%);
+  overflow: hidden;
+}
+
+.watta-promo-card__media--stack .watta-promo-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+  object-position: center;
+}
+
+.watta-promo-card__media-shade--stack {
+  opacity: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 28, 22, 0) 55%,
+    rgba(8, 28, 22, 0.35) 100%
+  );
+}
+
+.watta-promo-card__index {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.65rem;
+  left: auto;
+  top: auto;
+  z-index: 3;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.1rem, 2.8vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--watta-promo-accent, #145142);
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.watta-promo-card__body--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: clamp(1rem, 2.4vw, 1.2rem) clamp(1rem, 2.4vw, 1.25rem) clamp(1.1rem, 2.4vw, 1.25rem);
+}
+
+#promotions-page-container .watta-promo-card__title {
+  font-size: clamp(1.08rem, 2.6vw, 1.28rem);
+  font-weight: 800;
+  line-height: 1.28;
+  color: #0a1f1a;
+}
+
+#promotions-page-container .watta-promo-card__desc {
+  font-size: clamp(0.88rem, 2.1vw, 0.95rem);
+  line-height: 1.52;
+  color: #3a4f48;
+  -webkit-line-clamp: 3;
+}
+
+#promotions-page-container .watta-promo-card__date {
+  color: #4a5f58;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+#promotions-page-container .watta-promo-card__category {
+  background: color-mix(in srgb, var(--watta-promo-accent) 12%, #fff);
+  color: #0f2a22;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 18%, transparent);
+  font-size: 0.72rem;
+}
+
+.watta-promo-card__cta-pill--stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  margin-top: 0.35rem;
+  padding: 0.52rem 1rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--watta-promo-read, #27ae60) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--watta-promo-read, #27ae60) 35%, transparent);
+  color: #0d7a3e;
+  font-size: 0.84rem;
+  font-weight: 800;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.watta-promo-card:hover .watta-promo-card__cta-pill--stack {
+  background: var(--watta-promo-read, #27ae60);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.watta-promo-card:hover .watta-promo-card__cta-pill--stack .watta-promo-card__cta-icon {
+  transform: translateX(2px);
+}
+
+.watta-promo-card__media-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(8, 28, 22, 0) 50%, rgba(8, 28, 22, 0.12) 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.watta-promo-card:hover .watta-promo-card__media-shade {
+  opacity: 1;
+}
+
 .watta-promo-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--watta-promo-read, #27ae60);
 }
 
-.watta-promotions-page--embedded .watta-promotions-hero-static__inner {
-  padding-bottom: 0.5rem;
+.watta-promo-card__cta-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.watta-promo-card:hover .watta-promo-card__cta-icon {
+  transform: translateX(3px);
+}
+
+.watta-promo-card__no-photo {
+  background:
+    radial-gradient(circle at 22% 28%, rgba(255, 92, 0, 0.14), transparent 42%),
+    radial-gradient(circle at 78% 72%, rgba(20, 81, 66, 0.18), transparent 48%),
+    linear-gradient(145deg, #e8f3ee 0%, #f4f9f7 48%, #eef6f2 100%);
+}
+
+.watta-promo-card__no-photo-mark {
+  width: clamp(2.5rem, 6vw, 3.25rem);
+  height: clamp(2.5rem, 6vw, 3.25rem);
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 16%, transparent);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 28px -12px rgba(20, 81, 66, 0.35);
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+}
+
+/* Detail — cinematic hero */
+.watta-promotions-page--detail {
+  --watta-promo-accent: var(--watta-brand-action, #3a7d3f);
+  --watta-promo-orange: #ff5c00;
+  background:
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(20, 81, 66, 0.06), transparent 60%),
+    #ffffff;
+}
+
+.watta-promotions-page__inner--detail {
+  max-width: min(54rem, 100%) !important;
+  padding-top: 0.35rem;
+}
+
+.watta-promo-detail-card {
+  border: none;
+  border-radius: clamp(1.35rem, 3.5vw, 2rem);
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.watta-promo-detail-card__hero {
+  position: relative;
+}
+
+.watta-promo-detail-card__hero-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: clamp(1.25rem, 3vw, 1.75rem);
+  min-height: clamp(16rem, 52vw, 26rem);
+  box-shadow:
+    0 32px 72px -32px rgba(8, 28, 22, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--watta-promo-accent) 10%, transparent);
+}
+
+.watta-promo-detail-card__hero-img {
+  width: 100%;
+  height: 100%;
+  min-height: clamp(16rem, 52vw, 26rem);
+  object-fit: cover;
+}
+
+.watta-promo-detail-card__hero-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 28, 22, 0.08) 0%,
+    rgba(8, 28, 22, 0.02) 35%,
+    rgba(8, 28, 22, 0.82) 100%
+  );
+}
+
+.watta-promo-detail-card__hero-hit {
+  top: clamp(0.85rem, 2vw, 1.25rem);
+  right: clamp(0.85rem, 2vw, 1.25rem);
+  background: var(--watta-promo-orange, #ff5c00);
+}
+
+.watta-promo-detail-card__hero-caption {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  padding: clamp(1.25rem, 4vw, 2.25rem) clamp(1.15rem, 3.5vw, 2rem);
+}
+
+.watta-promo-detail-card__meta--hero .watta-promo-detail-card__category {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.watta-promo-detail-card__meta--hero .watta-promo-detail-card__date {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.watta-promo-detail-card__title--hero {
+  margin: 0.55rem 0 0;
+  max-width: min(36rem, 96%);
+  color: #fff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
+.watta-promo-detail-card__gallery-strip {
+  margin-top: 0.75rem;
+}
+
+.watta-promo-detail-card__slide--thumb {
+  flex: 0 0 clamp(7rem, 28vw, 9.5rem);
+  max-width: clamp(7rem, 28vw, 9.5rem);
+  height: clamp(4.5rem, 16vw, 6rem);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--watta-promo-accent) 12%, transparent);
+}
+
+.watta-promo-detail-card__content--overlap {
+  position: relative;
+  z-index: 3;
+  margin-top: clamp(-2.5rem, -6vw, -1.75rem);
+  margin-inline: clamp(0.65rem, 2.5vw, 1.25rem);
+  padding: clamp(1.25rem, 3.5vw, 2rem) clamp(1.15rem, 3.5vw, 2rem) clamp(1.5rem, 3.5vw, 2.25rem);
+  border-radius: clamp(1.1rem, 2.8vw, 1.5rem);
+  background: #fff;
+  box-shadow:
+    0 24px 56px -28px rgba(20, 81, 66, 0.38),
+    0 0 0 1px color-mix(in srgb, var(--watta-promo-accent) 8%, transparent);
+}
+
+.watta-promo-detail-card__title-accent--inset {
+  margin-top: 0;
+}
+
+.watta-promo-detail-card__lead {
+  margin: 0 0 clamp(1rem, 2.5vw, 1.35rem);
+  padding: clamp(0.85rem, 2.2vw, 1.15rem) clamp(1rem, 2.5vw, 1.35rem);
+  border-left: 4px solid var(--watta-promo-orange, #ff5c00);
+  border-radius: 0 0.85rem 0.85rem 0;
+  background: linear-gradient(90deg, rgba(255, 92, 0, 0.07), rgba(255, 92, 0, 0.02));
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.05rem, 2.6vw, 1.28rem);
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.55;
+  color: #0f2a22;
+}
+
+.watta-promo-detail-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  margin-bottom: clamp(0.65rem, 1.8vw, 0.95rem);
+}
+
+.watta-promo-detail-card__category {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--watta-promo-orange, #ff5c00) 12%, #fff);
+  color: color-mix(in srgb, var(--watta-promo-orange, #ff5c00) 78%, #0f241e);
+  border: 1px solid color-mix(in srgb, var(--watta-promo-orange, #ff5c00) 22%, transparent);
+}
+
+.watta-promo-detail-card__date {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8a9a94;
+}
+
+.watta-promo-detail-card__title-accent {
+  width: clamp(2.5rem, 8vw, 3.75rem);
+  height: 3px;
+  margin: 0 0 clamp(0.85rem, 2vw, 1.15rem);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--watta-promo-orange, #ff5c00), var(--watta-promo-accent, #145142));
+}
+
+.watta-promo-detail-card__prose {
+  max-width: 42rem;
+  margin: 0;
+}
+
+.watta-promo-detail-card__menu-cta-wrap {
+  margin-top: clamp(1.35rem, 3vw, 1.85rem);
+  padding-top: clamp(1.1rem, 2.5vw, 1.35rem);
+  border-top: 1px solid color-mix(in srgb, var(--watta-promo-accent) 10%, transparent);
+}
+
+.watta-promo-detail-card__menu-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.85rem;
+  padding: 0.6rem 1.35rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #145142 0%, #1a6b55 100%);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 800;
+  box-shadow: 0 12px 28px -12px rgba(20, 81, 66, 0.55);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.watta-promo-detail-card__menu-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px -12px rgba(20, 81, 66, 0.62);
+}
+
+.watta-promo-detail-card__offers-title {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-promotions-hero-static__mascot-ring {
+    animation: none;
+  }
+
+  .watta-promo-card__cta-icon,
+  .watta-promo-card__media-shade,
+  .watta-promotions-hero-actions__btn--primary::after {
+    transition: none;
+  }
+
+  .watta-promo-card:hover .watta-promo-card__cta-icon,
+  .watta-promo-card--featured:hover .watta-promo-card__cta-pill {
+    transform: none;
+  }
 }

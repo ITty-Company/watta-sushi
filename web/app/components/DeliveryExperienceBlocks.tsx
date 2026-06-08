@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { motion, useReducedMotion, type Variants } from 'framer-motion'
+import { m, type Variants } from 'framer-motion'
 import { ArrowUpRight, Instagram, Phone, Smartphone, type LucideIcon } from 'lucide-react'
 import { WATTA_INSTAGRAM_URL, WATTA_PHONE_E164 } from '@/lib/wattaSiteDefaults'
 import { cn } from '@/lib/utils'
+import { WATTA_IN_VIEW_FADE_VIEWPORT, useWattaDisableScrollReveal } from './WattaInViewFade'
+import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 import DeliveryHowChannelVisual, {
   formatPhoneDisplay,
   instagramHandleFromUrl,
@@ -80,7 +82,7 @@ const howSteps: {
   },
 ]
 
-const viewport = { once: true, amount: 0.15, margin: '0px 0px -6% 0px' } as const
+const viewport = { ...WATTA_IN_VIEW_FADE_VIEWPORT, amount: 0.15 } as const
 
 function DeliveryHowChannelsList({
   d,
@@ -96,22 +98,18 @@ function DeliveryHowChannelsList({
   return (
     <div className="delivery-flow-how">
       <div className="delivery-flow-how__lead">
-        <motion.h2
+        <WattaStaggerSectionTitle
           id="how-heading"
           className="contact-watta-section-title"
-          initial={reduceMotion ? undefined : { opacity: 0, y: 12 }}
-          whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-          viewport={viewport}
-          transition={{ duration: 0.45, ease: easeOut }}
-        >
-          {d.howTitle}
-        </motion.h2>
+          text={d.howTitle}
+        />
       </div>
 
-      <motion.ul
+      <m.ul
         className="delivery-how-channels"
         variants={reduceMotion ? undefined : stagger}
         initial={reduceMotion ? undefined : 'hidden'}
+        animate={reduceMotion ? 'visible' : undefined}
         whileInView={reduceMotion ? undefined : 'visible'}
         viewport={viewport}
       >
@@ -171,7 +169,7 @@ function DeliveryHowChannelsList({
           )
 
           return (
-            <motion.li key={step.id} variants={reduceMotion ? undefined : fadeUp}>
+            <m.li key={step.id} variants={reduceMotion ? undefined : fadeUp} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined}>
               {step.external ? (
                 <a
                   href={href}
@@ -186,10 +184,10 @@ function DeliveryHowChannelsList({
                   {content}
                 </Link>
               )}
-            </motion.li>
+            </m.li>
           )
         })}
-      </motion.ul>
+      </m.ul>
     </div>
   )
 }
@@ -288,7 +286,7 @@ function DeliveryHowStep({
 
   if (external) {
     return (
-      <motion.li variants={reduceMotion ? undefined : fadeUp}>
+      <m.li variants={reduceMotion ? undefined : fadeUp} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined}>
         <a
           href={href}
           className={className}
@@ -297,16 +295,16 @@ function DeliveryHowStep({
         >
           {content}
         </a>
-      </motion.li>
+      </m.li>
     )
   }
 
   return (
-    <motion.li variants={reduceMotion ? undefined : fadeUp}>
+    <m.li variants={reduceMotion ? undefined : fadeUp} animate={reduceMotion ? { opacity: 1, y: 0 } : undefined}>
       <Link href={href} className={className}>
         {content}
       </Link>
-    </motion.li>
+    </m.li>
   )
 }
 
@@ -317,7 +315,7 @@ export function DeliveryExperienceBlocks({
   d: DeliveryExperienceLabels
   variant?: 'default' | 'about' | 'compact' | 'flow'
 }) {
-  const reduceMotion = useReducedMotion() ?? false
+  const reduceMotion = useWattaDisableScrollReveal()
   const [instagramUrl, setInstagramUrl] = useState(WATTA_INSTAGRAM_URL)
   const isCompact = variant === 'compact'
   const isAbout = variant === 'about'
@@ -391,21 +389,23 @@ export function DeliveryExperienceBlocks({
 
   return (
     <div className={`delivery-watta-how${isAbout ? ' delivery-about-panel delivery-about-panel--how' : ''}`}>
-      <motion.h2
+      <m.h2
         id="how-heading"
         className="delivery-watta-how__title"
         initial={reduceMotion ? undefined : { opacity: 0, y: 12 }}
+        animate={reduceMotion ? { opacity: 1, y: 0 } : undefined}
         whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
         viewport={viewport}
         transition={{ duration: 0.45, ease: easeOut }}
       >
         {d.howTitle}
-      </motion.h2>
+      </m.h2>
 
-      <motion.ul
+      <m.ul
         className={isAbout ? 'delivery-about-how-grid' : 'delivery-watta-how__list'}
         variants={reduceMotion ? undefined : stagger}
         initial={reduceMotion ? undefined : 'hidden'}
+        animate={reduceMotion ? 'visible' : undefined}
         whileInView={reduceMotion ? undefined : 'visible'}
         viewport={viewport}
       >
@@ -432,7 +432,7 @@ export function DeliveryExperienceBlocks({
             />
           )
         })}
-      </motion.ul>
+      </m.ul>
     </div>
   )
 }

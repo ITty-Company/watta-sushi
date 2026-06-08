@@ -1,16 +1,29 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
 import { readSiteSettingsRecord } from '@/lib/heroSettingsSiteCache'
+import { normalizeSameOriginMediaPath } from '@/lib/resolveUploadMediaUrl'
 import { filterReachableHeroUrls } from '@/lib/wattaHeroVideo'
 
 export const HOME_HERO_URLS_CACHE_KEY = 'watta_home_hero_urls_v2'
 
 export type HomeHeroProbeRef = { current: AbortController | null }
 
+let lastHomeHeroProbeKey = ''
+
+function homeHeroProbeKey(urls: readonly string[]): string {
+  return urls.map((u) => normalizeSameOriginMediaPath(u.trim())).join('\0')
+}
+
+function sameUrlList(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false
+  return a.every((u, i) => u === b[i])
+}
+
 function persistHomeHeroUrlsCache(urls: string[]): void {
   if (typeof sessionStorage === 'undefined') return
   try {
-    sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(urls))
+    const normalized = urls.map((u) => normalizeSameOriginMediaPath(u))
+    sessionStorage.setItem(HOME_HERO_URLS_CACHE_KEY, JSON.stringify(normalized))
   } catch {
     /* ignore */
   }
@@ -25,7 +38,11 @@ export function readInitialHomeHeroVideoUrls(): string[] {
     const fromSettings = parseHomeHeroVideoUrlsFromApi(
       settings as { homeHeroVideoUrl?: unknown; homeHeroVideoUrls?: unknown },
     )
-    if (fromSettings.length > 0) return fromSettings
+    // `/uploads/*` з налаштувань ще не перевірені на доступність (на проді без диска часто 404).
+    // Синхронно не робимо їх джерелом — інакше мертвий upload морозить hero на постері.
+    // Probe (applyHomeHeroVideoFromApi) додасть їх, щойно підтвердить доступність.
+    const verified = fromSettings.filter((u) => !u.startsWith('/uploads/'))
+    if (verified.length > 0) return verified
   }
 
   try {
@@ -33,7 +50,9 @@ export function readInitialHomeHeroVideoUrls(): string[] {
     if (!raw) return []
     const parsed = JSON.parse(raw) as unknown
     return Array.isArray(parsed)
-      ? parsed.filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+      ? parsed
+          .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+          .map((u) => normalizeSameOriginMediaPath(u))
       : []
   } catch {
     return []
@@ -50,10 +69,24 @@ export function applyHomeHeroVideoFromApi(
   probeRef?: HomeHeroProbeRef,
 ): void {
   const urls = parseHomeHeroVideoUrlsFromApi(data)
-  setHomeHeroVideoUrls(urls)
-  persistHomeHeroUrlsCache(urls)
 
-  if (!urls.some((u) => u.startsWith('/uploads/'))) return
+  // Публічні / абсолютні URL доступні одразу — застосовуємо без probe.
+  if (!urls.some((u) => u.startsWith('/uploads/'))) {
+    setHomeHeroVideoUrls((prev) => {
+      if (sameUrlList(prev, urls)) return prev
+      persistHomeHeroUrlsCache(urls)
+      return urls
+    })
+    lastHomeHeroProbeKey = ''
+    return
+  }
+
+  // Є `/uploads/*` — НЕ робимо їх активним джерелом (і не кешуємо), поки probe не підтвердить
+  // доступність. Мертвий upload інакше морозить hero на постері (readyState 0), а кеш отруює
+  // SSR-preroll на наступному завантаженні. До підтвердження грає публічний запасний mp4
+  // (buildHomeHeroPlaylist дає його при порожньому списку).
+  const probeKey = homeHeroProbeKey(urls)
+  if (probeKey === lastHomeHeroProbeKey) return
 
   probeRef?.current?.abort()
   const ac = new AbortController()
@@ -61,18 +94,9 @@ export function applyHomeHeroVideoFromApi(
 
   void filterReachableHeroUrls(urls, ac.signal).then((reachable) => {
     if (ac.signal.aborted) return
-    if (reachable.length === 0) {
-      setHomeHeroVideoUrls((prev) => {
-        if (prev.length === 0) return prev
-        persistHomeHeroUrlsCache([])
-        return []
-      })
-      return
-    }
+    lastHomeHeroProbeKey = probeKey
     setHomeHeroVideoUrls((prev) => {
-      if (prev.length === reachable.length && prev.every((u, i) => u === reachable[i])) {
-        return prev
-      }
+      if (sameUrlList(prev, reachable)) return prev
       persistHomeHeroUrlsCache(reachable)
       return [...reachable]
     })

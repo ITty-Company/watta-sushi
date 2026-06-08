@@ -13,6 +13,7 @@ import {
   MapPin,
   Package,
   Settings,
+  Shield,
   ShoppingBag,
   Sparkles,
   Star,
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import WattaNavDrawerShell from '../WattaNavDrawerShell'
+import WattaBrandWordmark from '../WattaBrandWordmark'
 import { useNavDrawerCloseSwipeHandlers } from '@/components/NavDrawerSwipeGestures'
 import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
 
@@ -40,6 +42,7 @@ export type AdminNavTabId =
   | 'banners'
   | 'menuCategories'
   | 'users'
+  | 'adminPhones'
   | 'team'
   | 'settings'
   | 'newsletter'
@@ -87,17 +90,18 @@ export default function AdminNavDrawer({ isOpen, onClose, activeTab, onSelectTab
       { id: 'dashboard', label: t.adminPanel.sidebar.dashboard, Icon: BarChart2 },
       { id: 'orders', label: t.adminPanel.sidebar.orders, Icon: ListOrdered },
       { id: 'products', label: t.adminPanel.sidebar.products, Icon: Package },
-      { id: 'cartUpsell', label: 'Кошик: знижки', Icon: ShoppingBag },
+      { id: 'cartUpsell', label: t.adminPanel.sidebar.cartUpsell, Icon: ShoppingBag },
       { id: 'promos', label: t.adminPanel.sidebar.promos, Icon: Tag },
       { id: 'promotions', label: t.adminPanel.news.title, Icon: Sparkles },
-      { id: 'blog', label: 'Блог / Рекомендації', Icon: BookOpen },
-      { id: 'reviews', label: 'Відгуки', Icon: Star },
+      { id: 'blog', label: t.adminPanel.sidebar.blog, Icon: BookOpen },
+      { id: 'reviews', label: t.adminPanel.sidebar.reviews, Icon: Star },
       { id: 'newsletter', label: t.adminPanel.sidebar.newsletter, Icon: Mail },
-      { id: 'crm', label: 'CRM / База клієнтів', Icon: Users },
+      { id: 'crm', label: t.adminPanel.sidebar.crm, Icon: Users },
       { id: 'cities', label: t.adminPanel.sidebar.cities, Icon: MapPin },
       { id: 'banners', label: t.adminPanel.sidebar.banners, Icon: ImageIcon },
       { id: 'menuCategories', label: t.adminPanel.sidebar.categories, Icon: Layers },
       { id: 'users', label: t.adminPanel.sidebar.users, Icon: User },
+      { id: 'adminPhones', label: t.adminPanel.sidebar.adminPhones, Icon: Shield },
       { id: 'team', label: t.adminPanel.sidebar.team, Icon: Users },
       { id: 'settings', label: t.adminPanel.sidebar.settings, Icon: Settings },
       { id: 'ingredients', label: t.adminPanel.sidebar.ingredients, Icon: ChefHat },
@@ -127,12 +131,10 @@ export default function AdminNavDrawer({ isOpen, onClose, activeTab, onSelectTab
             </div>
             <div className="watta-nav-compact__head-text">
               <div className="logo-text-images-web watta-nav-compact__logo-wordmark">
-                <Image
-                  src="/1.jpg"
-                  alt={t.common.brandName}
-                  width={140}
-                  height={40}
-                  className="logo-text-image-web"
+                <WattaBrandWordmark
+                  active={isOpen}
+                  mdUpOnly={false}
+                  deferUntilSplashEnd={false}
                 />
               </div>
               <p className="watta-nav-compact__tagline">{nav.drawerBrandLine}</p>

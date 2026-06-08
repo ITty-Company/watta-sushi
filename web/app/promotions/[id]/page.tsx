@@ -4,8 +4,12 @@ import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import PromotionsDetailView from '../../components/PromotionsDetailView'
+import { openWattaNotifications } from '@/lib/openWattaNotifications'
+import { useOptionalNotificationsDrawer } from '../../context/NotificationsDrawerContext'
+
 export default function PromotionDetailRoutePage() {
   const router = useInstantRouter()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
   const params = useParams()
   const raw = params?.id
   const id = typeof raw === 'string' ? parseInt(raw, 10) : NaN
@@ -28,7 +32,7 @@ export default function PromotionDetailRoutePage() {
         onOpenPhone={() => {
           window.location.href = 'tel:+31649326549'
         }}
-        onOpenNotifications={() => router.push('/notifications')}
+        onOpenNotifications={() => openWattaNotifications(router, notificationsDrawer?.open)}
         onOpenFavorites={() => router.push('/favorites')}
         onOpenProfile={() => router.push('/profile')}
       />

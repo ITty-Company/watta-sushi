@@ -12,6 +12,7 @@ type PageKey =
   | 'contacts'
   | 'delivery'
   | 'privacy'
+  | 'offer'
   | 'blog'
   | 'reviews'
   | 'promotions'
@@ -58,6 +59,10 @@ const SEO: Record<
     privacy: {
       title: 'Політика конфіденційності',
       description: 'Як ми збираємо, використовуємо та захищаємо ваші персональні дані.',
+    },
+    offer: {
+      title: 'Публічний договір',
+      description: 'Умови замовлення, оплати, доставки та користування сайтом Watta Sushi.',
     },
     blog: {
       title: 'Блог і рецепти шефа',
@@ -122,6 +127,10 @@ const SEO: Record<
       title: 'Политика конфиденциальности',
       description: 'Как мы собираем, используем и защищаем ваши персональные данные.',
     },
+    offer: {
+      title: 'Публичный договор',
+      description: 'Условия заказа, оплаты, доставки и использования сайта Watta Sushi.',
+    },
     blog: {
       title: 'Блог и рецепты шефа',
       description: 'Полезные статьи о суши, заметки с кухни и советы от Watta Sushi.',
@@ -185,6 +194,10 @@ const SEO: Record<
       title: 'Privacy policy',
       description: 'How we collect, use, and protect your personal data.',
     },
+    offer: {
+      title: 'Public agreement',
+      description: 'Terms for ordering, payment, delivery, and using the Watta Sushi website.',
+    },
     blog: {
       title: "Chef's blog & recipes",
       description: 'Sushi tips, kitchen notes, and ideas from the Watta Sushi team.',
@@ -247,6 +260,10 @@ const SEO: Record<
     privacy: {
       title: 'Privacybeleid',
       description: 'Hoe wij persoonsgegevens verzamelen, gebruiken en beschermen.',
+    },
+    offer: {
+      title: 'Publieke offerte',
+      description: 'Voorwaarden voor bestellen, betalen, bezorgen en gebruik van de Watta Sushi-site.',
     },
     blog: {
       title: "Blog en chef's recepten",

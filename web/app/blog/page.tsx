@@ -20,10 +20,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildSubpageMetadata(lang, 'blog')
 }
 
+export const revalidate = 120
+
 async function getPosts(lang: string): Promise<BlogPost[]> {
   try {
     const res = await fetch(`${serverApiBaseUrl()}/api/blog?lang=${encodeURIComponent(lang)}`, {
-      cache: 'no-store',
+      next: { revalidate: 120 },
     })
     if (!res.ok) return []
     const data: unknown = await res.json()

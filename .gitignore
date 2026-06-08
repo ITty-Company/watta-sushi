@@ -15,8 +15,8 @@ build/
 dist/
 build/
 
-# Misc
-.DS_Store
+backend/.bin/
+
 *.pem
 *.log
 

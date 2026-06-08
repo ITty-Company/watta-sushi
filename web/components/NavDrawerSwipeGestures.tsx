@@ -8,7 +8,7 @@ function isDominantHorizontal(dx: number, dy: number): boolean {
   return Math.abs(dx) > Math.abs(dy) * 1.15 && Math.abs(dx) > 12
 }
 
-/** Свайп зліва направо — закрити drawer (на aside, події з дочірніх елементів). */
+/** Свайп справа наліво — закрити drawer (панель з правого краю). */
 export function useNavDrawerCloseSwipeHandlers(active: boolean, onClose: () => void) {
   const startRef = useRef<{ x: number; y: number } | null>(null)
   const onCloseRef = useRef(onClose)
@@ -20,7 +20,7 @@ export function useNavDrawerCloseSwipeHandlers(active: boolean, onClose: () => v
 
   const tryClose = (dx: number, dy: number) => {
     if (typeof window !== 'undefined' && !window.matchMedia('(max-width: 767px)').matches) return
-    if (!isDominantHorizontal(dx, dy) || dx < CLOSE_SWIPE_PX) return
+    if (!isDominantHorizontal(dx, dy) || dx > -CLOSE_SWIPE_PX) return
     onCloseRef.current()
     reset()
   }

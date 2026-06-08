@@ -4,12 +4,12 @@ import type { Ref } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { bindHeroVideoAutoplay } from '@/lib/bindHeroVideoAutoplay'
-import { primeHeroVideoElement } from '@/lib/kickWelcomeHeroVideo'
+import { primeHeroVideoElement, resumeHeroVideoPlayback } from '@/lib/kickWelcomeHeroVideo'
 import {
   WATTA_DELIVERY_HERO_POSTER,
   WATTA_HERO_OCEAN_GRADIENT,
 } from '@/lib/wattaDeliveryHeroVideo'
-import { appendHeroVideoStartSec } from '@/lib/wattaHeroVideo'
+import { resolveHeroVideoPlaybackUrl } from '@/lib/wattaHeroVideo'
 
 type DeliveryWelcomeHeroSectionProps = {
   sectionRef?: Ref<HTMLElement>
@@ -50,7 +50,7 @@ export default function DeliveryWelcomeHeroSection({
   const attachHeroVideoRef = useCallback(
     (el: HTMLVideoElement | null) => {
       heroVideoRef.current = el
-      if (el) primeHeroVideoElement(el)
+      if (el) primeHeroVideoElement(el, { loop: heroVideoLoop, urgent: true })
     },
     [heroVideoRef],
   )
@@ -60,16 +60,10 @@ export default function DeliveryWelcomeHeroSection({
     if (!video || heroVideoFailed) return
     const offAutoplay = bindHeroVideoAutoplay(video, {
       extendedRetries: true,
+      loop: heroVideoLoop,
     })
     return offAutoplay
-  }, [heroVideoSrc, heroVideoFailed, heroVideoRef])
-
-  useEffect(() => {
-    const video = heroVideoRef.current
-    if (video) primeHeroVideoElement(video)
-  }, [heroVideoSrc, heroVideoRef])
-
-  const heroVideoSrcWithStart = appendHeroVideoStartSec(heroVideoSrc)
+  }, [heroVideoSrc, heroVideoFailed, heroVideoRef, heroVideoLoop])
 
   return (
     <section
@@ -106,12 +100,12 @@ export default function DeliveryWelcomeHeroSection({
             }}
           >
             <video
-              key={heroVideoSrcWithStart}
+              key={heroVideoSrc}
               ref={attachHeroVideoRef}
               className="welcome-video-native-web watta-home-hero-native-video"
               width={1920}
               height={1080}
-              src={heroVideoSrcWithStart}
+              src={resolveHeroVideoPlaybackUrl(heroVideoSrc)}
               poster={heroFrameReady ? undefined : WATTA_DELIVERY_HERO_POSTER}
               autoPlay
               muted
@@ -122,24 +116,15 @@ export default function DeliveryWelcomeHeroSection({
               disablePictureInPicture
               disableRemotePlayback
               preload="auto"
-              // @ts-expect-error fetchPriority для Chromium
-              fetchPriority="high"
               tabIndex={-1}
               aria-hidden
               onContextMenu={(e) => e.preventDefault()}
               onLoadedData={() => setHeroFrameReady(true)}
               onPlaying={() => setHeroFrameReady(true)}
-              onCanPlay={() => {
-                const v = heroVideoRef.current
-                if (v) primeHeroVideoElement(v)
-                setHeroFrameReady(true)
-              }}
+              onCanPlay={() => setHeroFrameReady(true)}
               onError={() => {
-                setHeroVideoSourceIndex((prev) => {
-                  if (prev < videoSources.length - 1) return prev + 1
-                  setHeroVideoFailed(true)
-                  return prev
-                })
+                if (playlistLength <= 0) return
+                setHeroVideoSourceIndex((prev) => (prev + 1) % playlistLength)
               }}
               onEnded={() => {
                 if (playlistLength <= 1) return

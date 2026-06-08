@@ -25,14 +25,14 @@ export function bindMobileViewportHeightLock(): () => void {
   window.addEventListener('resize', debouncedLock, { passive: true })
   const vv = window.visualViewport
   vv?.addEventListener('resize', debouncedLock)
-  vv?.addEventListener('scroll', debouncedLock)
+  // Не слухати visualViewport.scroll — при звичайному скролі сторінки це перераховує
+  // --watta-app-height і дає стрибок/«дёргание» вгору (особливо Safari на телефоні).
   return () => {
     window.removeEventListener('orientationchange', debouncedLock)
     window.removeEventListener('resize', debouncedLock)
     vv?.removeEventListener('resize', debouncedLock)
-    vv?.removeEventListener('scroll', debouncedLock)
   }
 }
 
 /** Синхронно до React — стабільний viewport з першого кадру. */
-export const WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT = `(function(){try{var M=${VIEWPORT_LOCK_MAX_PX};function lock(){var w=window.innerWidth||0,r=document.documentElement;if(w>M){r.style.removeProperty('--watta-vh-locked');r.style.removeProperty('--watta-app-height');return;}var vv=window.visualViewport;var ih=Math.round((vv&&vv.height)||window.innerHeight||0);r.style.setProperty('--watta-vh-locked',(ih*0.01)+'px');r.style.setProperty('--watta-app-height',ih+'px');}lock();window.addEventListener('orientationchange',function(){setTimeout(lock,120);});window.addEventListener('resize',function(){setTimeout(lock,80);});var vv=window.visualViewport;if(vv){vv.addEventListener('resize',function(){setTimeout(lock,80);});vv.addEventListener('scroll',function(){setTimeout(lock,80);});}}catch(e){}})();`
+export const WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT = `(function(){try{var M=${VIEWPORT_LOCK_MAX_PX};function lock(){var w=window.innerWidth||0,r=document.documentElement;if(w>M){r.style.removeProperty('--watta-vh-locked');r.style.removeProperty('--watta-app-height');return;}var vv=window.visualViewport;var ih=Math.round((vv&&vv.height)||window.innerHeight||0);r.style.setProperty('--watta-vh-locked',(ih*0.01)+'px');r.style.setProperty('--watta-app-height',ih+'px');}lock();window.addEventListener('orientationchange',function(){setTimeout(lock,120);});window.addEventListener('resize',function(){setTimeout(lock,80);});var vv=window.visualViewport;if(vv){vv.addEventListener('resize',function(){setTimeout(lock,80);});}}catch(e){}})();`

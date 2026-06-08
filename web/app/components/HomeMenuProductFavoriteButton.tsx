@@ -1,9 +1,11 @@
 'use client'
 
 import { Heart } from 'lucide-react'
+import { useRef } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useProductFavorite } from '@/hooks/useProductFavorite'
 import { cn } from '@/lib/utils'
+import { runFavoritesAddFeedback } from '@/lib/favoritesAddFeedback'
 
 type HomeMenuProductFavoriteButtonProps = {
   productId: number
@@ -17,17 +19,24 @@ export function HomeMenuProductFavoriteButton({
 }: HomeMenuProductFavoriteButtonProps) {
   const { t } = useLanguage()
   const { liked, toggle } = useProductFavorite(productId, 0, { skipStandaloneFetch: true })
+  const btnRef = useRef<HTMLButtonElement>(null)
 
   if (!Number.isFinite(productId) || productId <= 0) return null
 
   return (
     <button
       type="button"
-      className={cn('home-menu-product-favorite-btn-web', className)}
+      className={cn('home-menu-product-favorite-btn-web pointer-events-auto', className)}
+      ref={btnRef}
+      data-watta-skip-instant-nav=""
       aria-pressed={liked}
       aria-label={t.siteAria.favorites}
       onClick={(e) => {
+        const was = liked
         void toggle(e)
+        if (!was) {
+          runFavoritesAddFeedback({ sourceEl: btnRef.current, emoji: '❤️' })
+        }
       }}
     >
       <Heart

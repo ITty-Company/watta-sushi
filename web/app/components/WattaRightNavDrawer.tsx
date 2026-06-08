@@ -1,16 +1,25 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { useRightNavDrawer } from '../context/RightNavDrawerContext'
+import {
+  useOptionalRightNavDrawerActions,
+  useRightNavDrawerOpen,
+} from '../context/RightNavDrawerContext'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { useNavDrawerCloseSwipeHandlers } from '@/components/NavDrawerSwipeGestures'
-import WattaNavDrawerPanel from './WattaNavDrawerPanel'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
+import WattaNavDrawerPanel from './WattaNavDrawerPanel'
 
 export default function WattaRightNavDrawer() {
   const pathname = usePathname() || '/'
-  const { isOpen, close, enabled, cityChangeHandlerRef } = useRightNavDrawer()
+  const { close, enabled, cityChangeHandlerRef } = useOptionalRightNavDrawerActions() ?? {
+    close: () => {},
+    enabled: false,
+    cityChangeHandlerRef: { current: null },
+  }
+  const isOpen = useRightNavDrawerOpen()
+
   useEffect(() => {
     close()
   }, [pathname, close])
@@ -46,14 +55,16 @@ export default function WattaRightNavDrawer() {
       id="watta-right-nav-drawer"
       closeSwipeHandlers={closeSwipe}
     >
-      <WattaNavDrawerPanel
-        mode="link"
-        pathname={pathname}
-        onClose={close}
-        onNavigate={close}
-        drawerActive={isOpen}
-        onCityChange={(cityId) => cityChangeHandlerRef.current?.(cityId)}
-      />
+      {isOpen ? (
+        <WattaNavDrawerPanel
+          mode="link"
+          pathname={pathname}
+          onClose={close}
+          onNavigate={close}
+          drawerActive
+          onCityChange={(cityId) => cityChangeHandlerRef.current?.(cityId)}
+        />
+      ) : null}
     </WattaNavDrawerShell>
   )
 }

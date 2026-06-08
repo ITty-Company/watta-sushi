@@ -14,10 +14,7 @@
 import { Router, Request, Response } from 'express'
 import Stripe from 'stripe'
 import { PrismaClient } from '@prisma/client'
-import { sendOrderReceipt } from '../services/email.service.js'
-import { sendTelegramNotification } from '../services/telegram.service.js'
-import { addOrderToSheet } from '../services/sheets.service.js'
-import { awardOrderCashbackIfEligible } from '../lib/bonusCashback.js'
+import { fulfillStripeCheckoutSession, requireStripeClient } from '../lib/stripeOrderPayment.js'
 import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service.js'
 
 const router = Router()
@@ -26,13 +23,6 @@ const prisma = new PrismaClient()
 // ---------------------------------------------------------------------------
 // Вспомогательные функции
 // ---------------------------------------------------------------------------
-
-/** Создаём Stripe-клиент или бросаем ошибку, если ключ не задан. */
-function requireStripeClient(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY?.trim()
-  if (!key) throw new Error('STRIPE_SECRET_KEY не задан')
-  return new Stripe(key)
-}
 
 /** Получаем секрет подписи webhook или бросаем ошибку. */
 function requireWebhookSecret(): string {
@@ -50,99 +40,12 @@ function requireWebhookSecret(): string {
  * Переводим заказ в PAID + CONFIRMED, рассылаем уведомления.
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  // 1. Извлекаем orderId из metadata (мы сами туда его положили при создании сессии)
-  const orderId = Number(session.metadata?.orderId)
-  if (!Number.isFinite(orderId) || orderId <= 0) {
-    console.error('[Stripe Webhook] checkout.session.completed: невалидный orderId в metadata:', session.metadata)
-    return
+  const result = await fulfillStripeCheckoutSession(session)
+  if (result.ok) {
+    console.log(`[Stripe Webhook] ✅ Заказ #${result.orderId} → PAID (сессия ${session.id})`)
+  } else {
+    console.error('[Stripe Webhook] checkout.session.completed failed:', result)
   }
-
-  // 2. Загружаем заказ из БД
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      items: { include: { product: true } },
-      user: { select: { id: true, email: true } },
-    },
-  })
-
-  if (!order) {
-    console.error(`[Stripe Webhook] Заказ #${orderId} не найден в БД`)
-    return
-  }
-
-  // 3. Идемпотентность: если уже PAID — пропускаем (Stripe retries безопасны)
-  if (order.paymentStatus === 'PAID') {
-    console.log(`[Stripe Webhook] Заказ #${orderId} уже помечен PAID — пропускаем дубль`)
-    return
-  }
-
-  // 4. Дополнительная защита: проверяем, что сессия действительно оплачена
-  //    (на случай, если Stripe ошибочно пришлёт событие с payment_status != 'paid')
-  if (session.payment_status !== 'paid') {
-    console.warn(`[Stripe Webhook] Сессия ${session.id} имеет payment_status=${session.payment_status}, пропускаем`)
-    return
-  }
-
-  // 5. Сверяем stripeCheckoutSessionId (defense in depth — защита от подмены orderId)
-  if (order.stripeCheckoutSessionId && order.stripeCheckoutSessionId !== session.id) {
-    console.error(
-      `[Stripe Webhook] Заказ #${orderId}: сессия в БД (${order.stripeCheckoutSessionId}) ` +
-      `не совпадает с сессией в событии (${session.id}). Возможная подмена — отклоняем.`
-    )
-    return
-  }
-
-  // 6. Атомарно обновляем статус заказа
-  const previousStatus = order.status
-  const updatedOrder = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      paymentStatus: 'PAID',
-      paidAt: new Date(),
-      status: 'CONFIRMED',
-    },
-    include: {
-      items: { include: { product: true } },
-      user: { select: { id: true, email: true } },
-    },
-  })
-
-  console.log(`[Stripe Webhook] ✅ Заказ #${orderId} → PAID + CONFIRMED (сессия ${session.id})`)
-
-  // 7. Уведомляем пользователя об изменении статуса (in-app уведомление)
-  if (updatedOrder.userId) {
-    await notifyUserOrderStatusChange(
-      prisma,
-      updatedOrder.userId,
-      updatedOrder.id,
-      'CONFIRMED',
-      previousStatus,
-      { fulfillmentType: updatedOrder.fulfillmentType },
-    ).catch((e) => console.error('[Stripe Webhook] notifyUserOrderStatusChange failed:', e))
-  }
-
-  // 8. Начисляем кешбэк (если условия выполнены)
-  if (updatedOrder.userId) {
-    await awardOrderCashbackIfEligible(prisma, orderId, updatedOrder.userId)
-      .catch((e) => console.error('[Stripe Webhook] awardOrderCashbackIfEligible failed:', e))
-  }
-
-  // 9. Отправляем чек на email
-  const userEmail = updatedOrder.user?.email
-  if (userEmail) {
-    await sendOrderReceipt(updatedOrder as any, userEmail)
-      .catch((e) => console.error('[Stripe Webhook] sendOrderReceipt failed:', e))
-  }
-
-  // 10. Уведомляем кухню/менеджера (Telegram + Google Sheets)
-  //     Promise.allSettled — падение одного не мешает другому
-  await Promise.allSettled([
-    sendTelegramNotification(updatedOrder, updatedOrder.items)
-      .catch((e) => console.error('[Stripe Webhook] sendTelegramNotification failed:', e)),
-    addOrderToSheet(updatedOrder, updatedOrder.items)
-      .catch((e) => console.error('[Stripe Webhook] addOrderToSheet failed:', e)),
-  ])
 }
 
 /**

@@ -10,8 +10,10 @@ export type CatalogIngredient = {
   imageUrl: string
 }
 
-const CACHE_KEY = 'watta_ingredients_catalog_v1'
-const LS_CACHE_KEY = 'watta_ingredients_catalog_v1'
+/** v2 — скидає застарілі imageUrl з session/localStorage (напр. видалені /uploads/*). */
+const CACHE_KEY = 'watta_ingredients_catalog_v2'
+const LS_CACHE_KEY = 'watta_ingredients_catalog_v2'
+const LEGACY_CACHE_KEYS = ['watta_ingredients_catalog_v1'] as const
 const memoryById = new Map<number, CatalogIngredient>()
 let inflight: Promise<Map<number, CatalogIngredient> | null> | null = null
 
@@ -27,8 +29,22 @@ function hydrateMemory(list: CatalogIngredient[]): Map<number, CatalogIngredient
   return memoryById
 }
 
+function dropLegacyIngredientCaches(): void {
+  if (typeof window === 'undefined') return
+  for (const store of [sessionStorage, localStorage] as const) {
+    for (const key of LEGACY_CACHE_KEYS) {
+      try {
+        store.removeItem(key)
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
 function readStoredCatalog(): CatalogIngredient[] | null {
   if (typeof window === 'undefined') return null
+  dropLegacyIngredientCaches()
   for (const store of [sessionStorage, localStorage] as const) {
     try {
       const raw = store.getItem(CACHE_KEY) ?? (store === localStorage ? store.getItem(LS_CACHE_KEY) : null)

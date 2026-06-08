@@ -8,7 +8,7 @@ import { getJwtSecret } from '../lib/jwtSecret';
 import { linkGuestOrdersToUser } from '../lib/linkGuestOrders.js';
 import { authenticateUser, AuthRequest } from '../authMiddleware';
 import { authRateLimiter, sendCodeRateLimiter, verifyCodeRateLimiter } from '../rateLimiter';
-import { randomInt } from 'crypto';
+import { randomInt, randomBytes } from 'crypto';
 import {
   PHONE_ACCOUNTS_LIMIT_MESSAGE,
   cleanPhoneInput,
@@ -16,6 +16,13 @@ import {
   isPhoneVerifiedSlotsFull,
   isValidInternationalPhone,
 } from '../lib/phoneAccountLimits.js';
+import { syncUserAdminRole } from '../lib/adminPhones.js';
+import {
+  saveUserAddressIfNew,
+  serializeUserAddress,
+  syncUserPrimaryAddress,
+} from '../lib/userAddressBook.js';
+import { verifyGoogleIdToken } from '../lib/googleOAuth.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -101,7 +108,7 @@ router.post('/register', authRateLimiter, async (req: any, res: any) => {
 
     await linkGuestOrdersToUser(prisma, savedUser.id, savedUser.phone);
 
-    res.status(201).json(issueAuthToken(savedUser));
+    res.status(201).json(await issueAuthToken(savedUser));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Ошибка сервера при регистрации' });
@@ -146,15 +153,7 @@ router.post('/verify', verifyCodeRateLimiter, async (req: any, res: any) => {
 
     if (user.isPhoneVerified) {
       await linkGuestOrdersToUser(prisma, user.id, user.phone);
-      const token = jwt.sign(
-        { userId: user.id, email: user.email, role: user.role },
-        getJwtSecret(),
-        { expiresIn: '30d' },
-      );
-      return res.json({
-        token,
-        user: { id: user.id, email: user.email, name: user.name, role: user.role },
-      });
+      return res.json(await issueAuthToken(user));
     }
 
     if (user.verificationCode !== codeStr) {
@@ -173,22 +172,7 @@ router.post('/verify', verifyCodeRateLimiter, async (req: any, res: any) => {
 
     await linkGuestOrdersToUser(prisma, updatedUser.id, updatedUser.phone);
 
-    const token = jwt.sign(
-      { userId: updatedUser.id, email: updatedUser.email, role: updatedUser.role },
-      getJwtSecret(),
-      { expiresIn: '30d' },
-    );
-
-    res.json({
-      token,
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        phone: updatedUser.phone,
-        role: updatedUser.role,
-      },
-    });
+    res.json(await issueAuthToken(updatedUser));
   } catch (error) {
     console.error('Ошибка верификации:', error);
     res.status(500).json({ message: 'Ошибка сервера при подтверждении' });
@@ -213,7 +197,7 @@ function serializeAuthUser(user: {
   };
 }
 
-function issueAuthToken(user: {
+async function issueAuthToken(user: {
   id: number;
   email: string;
   name: string | null;
@@ -221,16 +205,140 @@ function issueAuthToken(user: {
   role: string;
   isPhoneVerified: boolean;
 }) {
+  const role = await syncUserAdminRole(prisma, user.id);
+  const syncedUser = { ...user, role };
   const token = jwt.sign(
-    { userId: user.id, email: user.email, role: user.role },
+    { userId: syncedUser.id, email: syncedUser.email, role: syncedUser.role },
     getJwtSecret(),
     { expiresIn: '30d' },
   );
   return {
     token,
-    user: serializeAuthUser(user),
+    user: serializeAuthUser(syncedUser),
   };
 }
+
+function phonePlaceholderEmail(cleanPhone: string): string {
+  return `p${cleanPhone}@phone.wattasushi.local`;
+}
+
+async function sendAuthVerificationSms(cleanPhone: string, code: string) {
+  const smsPhone = formatPhoneOut(cleanPhone);
+  try {
+    await sendSms(smsPhone, `Код подтверждения Watta Sushi: ${code}`);
+  } catch (smsError) {
+    console.error('Ошибка отправки СМС:', smsError);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('>>> AUTH SMS CODE:', code, 'для', smsPhone, '<<<');
+      return;
+    }
+    throw smsError;
+  }
+}
+
+/** Вхід: SMS-код на підтверджений номер */
+router.post('/login/send-code', sendCodeRateLimiter, async (req: any, res: any) => {
+  const { phone } = req.body ?? {};
+  try {
+    if (!isValidInternationalPhone(phone)) {
+      return res.status(400).json({ message: 'Некорректный номер телефона (7–15 цифр)' });
+    }
+    const cleanPhone = cleanPhoneInput(phone);
+    const user = await prisma.user.findFirst({
+      where: { phone: cleanPhone, isPhoneVerified: true },
+    });
+    if (!user) {
+      return res.status(404).json({
+        message: 'Користувача з таким номером не знайдено. Зареєструйтесь або перевірте номер.',
+      });
+    }
+    const code = String(randomInt(1000, 10000));
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { verificationCode: code },
+    });
+    await sendAuthVerificationSms(cleanPhone, code);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('login/send-code:', error);
+    res.status(500).json({ message: 'Не вдалося надіслати код' });
+  }
+});
+
+/** Реєстрація: чернетка + SMS-код */
+router.post('/register/send-code', sendCodeRateLimiter, async (req: any, res: any) => {
+  const { name, phone } = req.body ?? {};
+  try {
+    const trimmedName = String(name ?? '').trim();
+    if (!trimmedName) {
+      return res.status(400).json({ message: 'Вкажіть ім\'я' });
+    }
+    if (!isValidInternationalPhone(phone)) {
+      return res.status(400).json({ message: 'Некорректный номер телефона (7–15 цифр)' });
+    }
+    const cleanPhone = cleanPhoneInput(phone);
+    const placeholderEmail = phonePlaceholderEmail(cleanPhone);
+
+    const verifiedOnPhone = await countVerifiedUsersByPhone(prisma, cleanPhone);
+    if (isPhoneVerifiedSlotsFull(verifiedOnPhone)) {
+      return res.status(400).json({ message: PHONE_ACCOUNTS_LIMIT_MESSAGE });
+    }
+
+    const verifiedExisting = await prisma.user.findFirst({
+      where: { phone: cleanPhone, isPhoneVerified: true },
+    });
+    if (verifiedExisting) {
+      return res.status(400).json({
+        message: 'Цей номер уже зареєстровано. Увійдіть за номером телефону.',
+      });
+    }
+
+    const code = String(randomInt(1000, 10000));
+    const hashedPassword = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
+
+    let draft =
+      (await prisma.user.findFirst({
+        where: { phone: cleanPhone, isPhoneVerified: false },
+      })) ??
+      (await prisma.user.findUnique({ where: { email: placeholderEmail } }));
+
+    if (draft?.isPhoneVerified) {
+      return res.status(400).json({ message: 'Цей номер уже зареєстровано.' });
+    }
+
+    if (draft) {
+      draft = await prisma.user.update({
+        where: { id: draft.id },
+        data: {
+          name: trimmedName,
+          phone: cleanPhone,
+          email: placeholderEmail,
+          password: hashedPassword,
+          verificationCode: code,
+          isPhoneVerified: false,
+          pendingPhone: null,
+        },
+      });
+    } else {
+      draft = await prisma.user.create({
+        data: {
+          email: placeholderEmail,
+          password: hashedPassword,
+          name: trimmedName,
+          phone: cleanPhone,
+          isPhoneVerified: false,
+          verificationCode: code,
+        },
+      });
+    }
+
+    await sendAuthVerificationSms(cleanPhone, code);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('register/send-code:', error);
+    res.status(500).json({ message: 'Не вдалося надіслати код' });
+  }
+});
 
 // Восстановление пароля: код на email
 router.post('/forgot-password', sendCodeRateLimiter, async (req: any, res: any) => {
@@ -307,7 +415,7 @@ router.post('/reset-password', verifyCodeRateLimiter, async (req: any, res: any)
 
     await linkGuestOrdersToUser(prisma, updatedUser.id, updatedUser.phone);
 
-    res.json(issueAuthToken(updatedUser));
+    res.json(await issueAuthToken(updatedUser));
   } catch (error) {
     console.error('Ошибка reset-password:', error);
     res.status(500).json({ message: 'Ошибка сервера' });
@@ -327,22 +435,77 @@ router.post('/login', authRateLimiter, async (req: any, res: any) => {
 
     await linkGuestOrdersToUser(prisma, user.id, user.phone);
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      getJwtSecret(),
-      { expiresIn: '30d' },
-    );
-
-    res.json({
-      token,
-      user: serializeAuthUser(user),
-    });
+    res.json(await issueAuthToken(user));
   } catch (e) {
     console.error('LOGIN ERROR:', e);
 
     res.status(500).json({
       message: 'Ошибка входа'
     });
+  }
+});
+
+/** Вхід / реєстрація через Google (ID token з GIS) */
+router.post('/google', authRateLimiter, async (req: any, res: any) => {
+  const { idToken } = req.body ?? {};
+  if (!idToken || typeof idToken !== 'string') {
+    return res.status(400).json({ message: 'Не вдалося увійти через Google' });
+  }
+
+  try {
+    const profile = await verifyGoogleIdToken(idToken);
+
+    let isNewUser = false;
+
+    let user =
+      (await prisma.user.findUnique({ where: { googleId: profile.googleId } })) ??
+      (await prisma.user.findUnique({ where: { email: profile.email } }));
+
+    if (user) {
+      if (user.googleId && user.googleId !== profile.googleId) {
+        return res.status(400).json({
+          message: 'Цей email уже прив\'язаний до іншого Google-акаунта',
+        });
+      }
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: profile.googleId,
+            name: user.name?.trim() ? user.name : profile.name,
+          },
+        });
+      }
+    } else {
+      isNewUser = true;
+      const hashedPassword = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
+      user = await prisma.user.create({
+        data: {
+          email: profile.email,
+          password: hashedPassword,
+          name: profile.name,
+          phone: '',
+          googleId: profile.googleId,
+          isPhoneVerified: false,
+        },
+      });
+    }
+
+    if (user.isPhoneVerified && user.phone) {
+      await linkGuestOrdersToUser(prisma, user.id, user.phone);
+    }
+
+    res.json({ ...(await issueAuthToken(user)), isNewUser });
+  } catch (error: unknown) {
+    const code = error instanceof Error ? error.message : '';
+    if (code === 'GOOGLE_OAUTH_NOT_CONFIGURED') {
+      return res.status(503).json({ message: 'Вхід через Google тимчасово недоступний' });
+    }
+    if (code === 'GOOGLE_EMAIL_NOT_VERIFIED') {
+      return res.status(400).json({ message: 'Підтвердіть email у Google і спробуйте знову' });
+    }
+    console.error('auth/google:', error);
+    return res.status(401).json({ message: 'Не вдалося увійти через Google' });
   }
 });
 
@@ -408,7 +571,8 @@ router.get('/me', authenticateUser, async (req: AuthRequest, res: any) => {
     if (!user) {
       return res.status(404).json({ message: 'Пользователь не найден' });
     }
-    res.json({ user: serializeProfileUser(user) });
+    const role = await syncUserAdminRole(prisma, user.id);
+    res.json({ user: serializeProfileUser({ ...user, role }) });
   } catch (error) {
     console.error('Ошибка GET /auth/me:', error);
     res.status(500).json({ message: 'Ошибка сервера' });
@@ -451,11 +615,26 @@ router.patch('/profile', authenticateUser, async (req: AuthRequest, res: any) =>
       return res.status(400).json({ message: 'Нет данных для сохранения' });
     }
 
+    const userId = req.user!.id;
     const updated = await prisma.user.update({
-      where: { id: req.user!.id },
+      where: { id: userId },
       data,
       select: profileUserSelect,
     });
+
+    if (address !== undefined) {
+      const trimmed = String(address).trim();
+      if (trimmed) {
+        const existing = await prisma.userAddress.findFirst({
+          where: { userId, address: trimmed },
+        });
+        if (!existing) {
+          await prisma.userAddress.create({
+            data: { userId, address: trimmed },
+          });
+        }
+      }
+    }
 
     res.json({ user: serializeProfileUser(updated) });
   } catch (error) {
@@ -556,9 +735,84 @@ router.post('/profile/phone/verify', authenticateUser, async (req: AuthRequest, 
 
     await linkGuestOrdersToUser(prisma, updated.id, updated.phone);
 
-    res.json({ user: serializeProfileUser(updated), message: 'Номер телефона обновлён' });
+    const role = await syncUserAdminRole(prisma, updated.id);
+    res.json({ user: serializeProfileUser({ ...updated, role }), message: 'Номер телефона обновлён' });
   } catch (error) {
     console.error('Ошибка profile/phone/verify:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Збережені адреси доставки
+router.get('/addresses', authenticateUser, async (req: AuthRequest, res: any) => {
+  try {
+    const rows = await prisma.userAddress.findMany({
+      where: { userId: req.user!.id },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, address: true, createdAt: true },
+    });
+    res.json({ addresses: rows.map(serializeUserAddress) });
+  } catch (error) {
+    console.error('Ошибка GET /auth/addresses:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+router.post('/addresses', authenticateUser, async (req: AuthRequest, res: any) => {
+  const { address } = req.body ?? {};
+  const trimmed = String(address ?? '').trim();
+
+  if (trimmed.length < 3) {
+    return res.status(400).json({ message: 'Укажите адрес доставки' });
+  }
+  if (trimmed.length > 500) {
+    return res.status(400).json({ message: 'Адрес слишком длинный' });
+  }
+
+  try {
+    const userId = req.user!.id;
+    const duplicate = await prisma.userAddress.findFirst({
+      where: { userId, address: trimmed },
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: 'Этот адрес уже сохранён' });
+    }
+
+    const created = await prisma.userAddress.create({
+      data: { userId, address: trimmed },
+      select: { id: true, address: true, createdAt: true },
+    });
+    const primary = await syncUserPrimaryAddress(prisma, userId);
+    res.status(201).json({
+      address: serializeUserAddress(created),
+      primaryAddress: primary,
+    });
+  } catch (error) {
+    console.error('Ошибка POST /auth/addresses:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+router.delete('/addresses/:id', authenticateUser, async (req: AuthRequest, res: any) => {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ message: 'Некорректный адрес' });
+  }
+
+  try {
+    const userId = req.user!.id;
+    const row = await prisma.userAddress.findFirst({
+      where: { id, userId },
+    });
+    if (!row) {
+      return res.status(404).json({ message: 'Адрес не найден' });
+    }
+
+    await prisma.userAddress.delete({ where: { id } });
+    const primary = await syncUserPrimaryAddress(prisma, userId);
+    res.json({ primaryAddress: primary });
+  } catch (error) {
+    console.error('Ошибка DELETE /auth/addresses/:id:', error);
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 });

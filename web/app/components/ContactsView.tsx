@@ -3,8 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { m } from 'framer-motion'
 import toast from 'react-hot-toast'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -30,12 +30,104 @@ import {
   wattaRestaurantExternalMapsUrl,
 } from '@/lib/wattaRestaurantLocation'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
+import { readSiteSettingsCache } from '@/lib/publicRouteWarmCache'
 import { cn } from '@/lib/utils'
-import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
-import ContactPageStats from './ContactPageStats'
+import DeliveryHeroCopy from './DeliveryHeroCopy'
+import WattaStellarHeroSection from './WattaStellarHeroSection'
+import {
+  WATTA_IN_VIEW_FADE_VIEWPORT,
+  WattaInViewFadeDiv,
+  WattaInViewFadeSection,
+  useWattaDisableScrollReveal,
+  wattaInViewFadeViewport,
+} from './WattaInViewFade'
+import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 
 type SiteLinks = { telegramUrl: string; whatsappUrl: string; instagramUrl: string }
 type FormTopic = 'menu' | 'delivery' | 'corporate' | 'other'
+
+const FAQ_TONE_CYCLE = ['green', 'lime', 'orange'] as const
+
+type FormTopicTone = (typeof FAQ_TONE_CYCLE)[number]
+
+function FormFieldReveal({
+  children,
+  delay = 0,
+  reduce,
+}: {
+  children: ReactNode
+  delay?: number
+  reduce: boolean
+}) {
+  return (
+    <m.div
+      initial={reduce ? false : { opacity: 0, y: 14 }}
+      animate={reduce ? { opacity: 1, y: 0 } : undefined}
+      whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+      viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
+      transition={{ duration: 0.42, delay }}
+    >
+      {children}
+    </m.div>
+  )
+}
+
+function FormTopicPicker({
+  label,
+  value,
+  onChange,
+  options,
+  reduce,
+}: {
+  label: string
+  value: FormTopic
+  onChange: (topic: FormTopic) => void
+  options: { value: FormTopic; icon: LucideIcon; tone: FormTopicTone; label: string }[]
+  reduce: boolean
+}) {
+  return (
+    <fieldset className="contact-watta-form-topic-field">
+      <legend className="contact-watta-form-label">{label}</legend>
+      <div className="contact-watta-form-topic-grid" role="radiogroup" aria-label={label}>
+        {options.map((opt, i) => {
+          const active = value === opt.value
+          return (
+            <m.button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              className={cn(
+                'contact-watta-form-topic',
+                `contact-watta-form-topic--${opt.tone}`,
+                active && 'contact-watta-form-topic--active',
+              )}
+              onClick={() => onChange(opt.value)}
+              initial={reduce ? false : { opacity: 0, scale: 0.94 }}
+              animate={reduce ? { opacity: 1, scale: 1 } : undefined}
+              whileInView={reduce ? undefined : { opacity: 1, scale: 1 }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
+              transition={{ delay: i * 0.05, duration: 0.35 }}
+              whileTap={reduce ? undefined : { scale: 0.97 }}
+            >
+              {active ? (
+                <m.span
+                  layoutId="contact-form-topic-highlight"
+                  className="contact-watta-form-topic__highlight"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                />
+              ) : null}
+              <span className="contact-watta-form-topic__ico" aria-hidden>
+                <opt.icon size={18} strokeWidth={2.1} />
+              </span>
+              <span className="contact-watta-form-topic__label">{opt.label}</span>
+            </m.button>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
 
 export type ContactsViewProps = {
   embedded?: boolean
@@ -104,13 +196,13 @@ function ContactFlowSection({
   ariaLabelledBy?: string
 }) {
   return (
-    <section
+    <WattaInViewFadeSection
       className={cn('delivery-flow-section bg-white py-14 sm:py-18', className)}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">{children}</div>
-    </section>
+    </WattaInViewFadeSection>
   )
 }
 
@@ -125,15 +217,15 @@ function FlowStep({
   title: string
   body: string
   fade:
-    | { initial: false }
+    | { initial: false; animate: { opacity: number; y: number } }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
 }) {
   return (
-    <motion.article
+    <m.article
       className="contact-watta-flow-step"
       {...fade}
-      viewport={{ once: true, margin: '-40px' }}
+      viewport={wattaInViewFadeViewport('-40px')}
       transition={{ duration: 0.45, delay }}
     >
       <span className="contact-watta-flow-step__num" aria-hidden>
@@ -141,14 +233,14 @@ function FlowStep({
       </span>
       <h3 className="contact-watta-flow-step__title">{title}</h3>
       <p className="contact-watta-flow-step__body">{body}</p>
-    </motion.article>
+    </m.article>
   )
 }
 
 export default function ContactsView({ embedded = false, onBack }: ContactsViewProps) {
   const { t } = useLanguage()
   const c = t.contactPage
-  const reduce = useReducedMotion()
+  const reduce = useWattaDisableScrollReveal()
 
   const [links, setLinks] = useState<SiteLinks>({ telegramUrl: '', whatsappUrl: '', instagramUrl: '' })
   const [pickupAddress, setPickupAddress] = useState('')
@@ -158,6 +250,17 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })
   const [honeypot, setHoneypot] = useState('')
   const [sending, setSending] = useState(false)
+
+  useLayoutEffect(() => {
+    const cached = readSiteSettingsCache()
+    if (!cached) return
+    setLinks({
+      telegramUrl: String(cached.telegramUrl || '').trim(),
+      whatsappUrl: String(cached.whatsappUrl || '').trim(),
+      instagramUrl: String(cached.instagramUrl || '').trim() || WATTA_INSTAGRAM_URL,
+    })
+    setPickupAddress(String(cached.restaurantPickupAddress || '').trim())
+  }, [])
 
   useEffect(() => {
     fetch('/api/settings')
@@ -272,8 +375,24 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
 
   const faqs = buildFaqList(c)
 
+  const formTopicOptions = useMemo(
+    () =>
+      [
+        { value: 'menu' as const, icon: UtensilsCrossed, tone: 'green' as const, label: c.formTopicMenu },
+        { value: 'delivery' as const, icon: Truck, tone: 'lime' as const, label: c.formTopicDelivery },
+        { value: 'corporate' as const, icon: Building2, tone: 'orange' as const, label: c.formTopicCorporate },
+        { value: 'other' as const, icon: Star, tone: 'green' as const, label: c.formTopicOther },
+      ] satisfies {
+        value: FormTopic
+        icon: LucideIcon
+        tone: FormTopicTone
+        label: string
+      }[],
+    [c],
+  )
+
   const fadeUp = reduce
-    ? ({ initial: false as const } satisfies { initial: false })
+    ? ({ initial: false as const, animate: { opacity: 1, y: 0 } })
     : ({
         initial: { opacity: 0, y: 28 },
         whileInView: { opacity: 1, y: 0 },
@@ -332,57 +451,58 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
     aria: string
   }[]
 
-  const contactPageLeadIntro = (
-    <AnimatedHeroIntroBlock
-      sectionId="contact-page-lead-intro"
-      ariaLabel={c.heroTitle}
-      titleLines={[c.heroTitleLead, c.heroTitleMark]}
-      body={c.heroSubtitle}
-      accentLineIndex={1}
-      headingLevel="h1"
-      reserveTopSpace
-      innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
-    >
-      <div className="contact-page-hero-cta-row mt-6 flex flex-wrap justify-center gap-3">
-        <button
-          type="button"
-          onClick={scrollToForm}
-          className="rounded-2xl bg-[#145142] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-[#1a6b58]"
-        >
-          {c.ctaForm}
-        </button>
-        <Link
-          href="/delivery"
-          className="rounded-2xl border-2 border-[#145142]/25 bg-white px-5 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/45"
-        >
-          {c.ctaDelivery}
-        </Link>
-      </div>
-    </AnimatedHeroIntroBlock>
-  )
-
-  const contactStandaloneHeroStack = (
-    <div className="delivery-page-hero-stack delivery-page-hero-stack--intro-first w-full shrink-0 bg-transparent">
-      {contactPageLeadIntro}
-      <ContactPageStats labels={c} />
+  const contactHeroCtaRow = (
+    <div className="contact-page-hero-cta-row contact-page-hero-cta-row--below-intro flex flex-wrap justify-center gap-3">
+      <button
+        type="button"
+        onClick={scrollToForm}
+        className="rounded-2xl bg-watta-action px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-watta-action"
+      >
+        {c.ctaForm}
+      </button>
+      <Link
+        href="/delivery"
+        className="rounded-2xl border-2 border-[#145142]/25 bg-white px-5 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/45"
+      >
+        {c.ctaDelivery}
+      </Link>
     </div>
   )
 
+  const contactStandaloneHeroStack = (
+    <WattaStellarHeroSection
+      introId="contact-page-lead-intro"
+      ariaLabelledBy="contact-page-lead-title"
+    >
+      <DeliveryHeroCopy
+        titleId="contact-page-lead-title"
+        kickerScript={c.heroKicker}
+        headlineLead={c.heroTitleLead}
+        headlineMark={c.heroTitleMark}
+        sub={c.heroSubtitle}
+        statFresh=""
+        statFast=""
+        statCity=""
+        showStats={false}
+      />
+    </WattaStellarHeroSection>
+  )
+
   return (
-    <motion.div
+    <m.div
       id="contacts-page-container"
-      className="menu-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about watta-contacts-page relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
+      className="menu-page-web watta-site-hero-page-web delivery-page-web contact-page-web watta-delivery-page watta-delivery-page-about watta-contacts-page relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
     >
       {embedded && onBack ? (
-        <motion.div
+        <m.div
           className="border-b border-gray-100 bg-white px-4 py-4 sm:px-6"
           initial={reduce ? false : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <motion.div
+          <m.div
             className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4"
             initial={reduce ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -396,7 +516,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               <ArrowLeft size={20} strokeWidth={2.25} />
               {t.auth.back}
             </button>
-            <motion.div
+            <m.div
               className="flex flex-wrap gap-2"
               initial={reduce ? false : { opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -405,7 +525,7 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               <button
                 type="button"
                 onClick={scrollToForm}
-                className="rounded-2xl bg-[#145142] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-[#1a6b58]"
+                className="rounded-2xl bg-watta-action px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#145142]/25 transition hover:bg-watta-action"
               >
                 {c.ctaForm}
               </button>
@@ -415,46 +535,51 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               >
                 {c.ctaDelivery}
               </Link>
-            </motion.div>
-          </motion.div>
-        </motion.div>
+            </m.div>
+          </m.div>
+        </m.div>
       ) : null}
 
       <div className="delivery-page-home-flow w-full">
-        <div className="delivery-page-intro-web w-full shrink-0">
-          {contactStandaloneHeroStack}
-        </div>
+        {contactStandaloneHeroStack}
 
         <div className="delivery-page-tools-flow">
+          <div className="contact-page-intro-cta-wrap mx-auto max-w-6xl px-4 pt-2 sm:px-6">
+            {contactHeroCtaRow}
+          </div>
           <div className="delivery-page-flow delivery-page-web relative">
       {/* Теми звернень */}
       <ContactFlowSection ariaLabelledBy="contact-topics-heading">
-        <motion.div
+        <m.div
           {...fadeUp}
-          viewport={{ once: true, margin: '-50px' }}
+          viewport={wattaInViewFadeViewport('-50px')}
           transition={{ duration: 0.55 }}
         >
           <div className="mb-8 text-center sm:mb-10">
-            <h2 id="contact-topics-heading" className="contact-watta-section-title mb-2">
-              {c.topicsTitle}
-            </h2>
+            <WattaStaggerSectionTitle
+              id="contact-topics-heading"
+              className="contact-watta-section-title mb-2"
+              text={c.topicsTitle}
+            />
             <p className="contact-watta-topics-sub delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
               {c.topicsSub}
             </p>
           </div>
-          <motion.div
+          <m.div
             className="flex flex-wrap justify-center gap-2.5"
             initial={reduce ? false : { opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            animate={reduce ? { opacity: 1 } : undefined}
+            whileInView={reduce ? undefined : { opacity: 1 }}
+            viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
             transition={{ staggerChildren: 0.05 }}
           >
             {topicChips.map((chip, i) => (
-              <motion.div
+              <m.div
                 key={chip.label}
                 initial={reduce ? false : { opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                animate={reduce ? { opacity: 1, y: 0 } : undefined}
+                whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+                viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
                 transition={{ delay: i * 0.04 }}
               >
                 <TopicChip
@@ -466,22 +591,24 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                     scrollToFormWithTopic(chip.topic)
                   }}
                 />
-              </motion.div>
+              </m.div>
             ))}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       </ContactFlowSection>
 
       {/* Як відповідаємо */}
       <ContactFlowSection ariaLabelledBy="contact-flow-heading">
-          <motion.div className="mb-10 text-center sm:mb-12" {...fadeUp} viewport={{ once: true }}>
-            <h2 id="contact-flow-heading" className="contact-watta-section-title">
-              {c.flowTitle}
-            </h2>
+          <m.div className="mb-10 text-center sm:mb-12" {...fadeUp} viewport={WATTA_IN_VIEW_FADE_VIEWPORT}>
+            <WattaStaggerSectionTitle
+              id="contact-flow-heading"
+              className="contact-watta-section-title"
+              text={c.flowTitle}
+            />
             <p className="contact-watta-flow-sub delivery-page-section-lead contact-watta-section-sub mx-auto text-center">
               {c.flowSub}
             </p>
-          </motion.div>
+          </m.div>
           <div className="contact-watta-flow-grid">
             {flowSteps.map((step, i) => (
               <FlowStep
@@ -498,31 +625,33 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
 
       {/* Канали */}
       <ContactFlowSection ariaLabelledBy="contact-channels-heading">
-        <motion.div
+        <m.div
           {...fadeUp}
-          viewport={{ once: true, margin: '-60px' }}
+          viewport={wattaInViewFadeViewport('-60px')}
           transition={{ duration: 0.55 }}
         >
           <div className="mb-10 text-center sm:mb-12">
-            <h2 id="contact-channels-heading" className="contact-watta-section-title mb-2">
-              {c.channelsTitle}
-            </h2>
+            <WattaStaggerSectionTitle
+              id="contact-channels-heading"
+              className="contact-watta-section-title mb-2"
+              text={c.channelsTitle}
+            />
             <p className="contact-watta-channels-sub delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
               {c.channelsSub}
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-            <motion.a
+            <m.a
               href={`tel:${c.phoneTel.replace(/\s/g, '')}`}
               className="contact-watta-channel-card group"
               whileHover={reduce ? undefined : { y: -3 }}
             >
-              <motion.div
+              <m.div
                 className="contact-watta-channel-card__ico"
                 whileHover={reduce ? undefined : { scale: 1.06, rotate: -4 }}
               >
                 <Phone size={18} strokeWidth={2.1} />
-              </motion.div>
+              </m.div>
               <span className="contact-watta-channel-card__label">{c.cardCall}</span>
               <div className="contact-watta-channel-card__value-row">
                 <span className="contact-watta-channel-card__value">{c.phoneDisplay}</span>
@@ -533,15 +662,15 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   aria-hidden
                 />
               </div>
-            </motion.a>
-            <motion.a
+            </m.a>
+            <m.a
               href={`mailto:${c.emailMailto}`}
               className="contact-watta-channel-card group"
               whileHover={reduce ? undefined : { y: -3 }}
             >
-              <motion.div className="contact-watta-channel-card__ico contact-watta-channel-card__ico--grad" whileHover={reduce ? undefined : { scale: 1.06 }}>
+              <m.div className="contact-watta-channel-card__ico contact-watta-channel-card__ico--grad" whileHover={reduce ? undefined : { scale: 1.06 }}>
                 <Mail size={18} strokeWidth={2.1} />
-              </motion.div>
+              </m.div>
               <span className="contact-watta-channel-card__label">{c.cardEmail}</span>
               <div className="contact-watta-channel-card__value-row">
                 <span className="contact-watta-channel-card__value break-all">{c.emailDisplay}</span>
@@ -552,11 +681,11 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   aria-hidden
                 />
               </div>
-            </motion.a>
-            <motion.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -3 }}>
-              <motion.div className="contact-watta-channel-card__ico" whileHover={reduce ? undefined : { scale: 1.06 }}>
+            </m.a>
+            <m.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -3 }}>
+              <m.div className="contact-watta-channel-card__ico" whileHover={reduce ? undefined : { scale: 1.06 }}>
                 <MapPin size={18} strokeWidth={2.1} />
-              </motion.div>
+              </m.div>
               <span className="contact-watta-channel-card__label">{c.cardAddress}</span>
               <p className="contact-watta-channel-card__value leading-snug">{addressLine}</p>
               <a
@@ -568,40 +697,44 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                 {c.openMaps}
                 <ArrowRight size={14} strokeWidth={2.25} />
               </a>
-            </motion.div>
-            <motion.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -3 }}>
-              <motion.div className="contact-watta-channel-card__ico" whileHover={reduce ? undefined : { scale: 1.06 }}>
+            </m.div>
+            <m.div className="contact-watta-channel-card" whileHover={reduce ? undefined : { y: -3 }}>
+              <m.div className="contact-watta-channel-card__ico" whileHover={reduce ? undefined : { scale: 1.06 }}>
                 <Clock size={18} strokeWidth={2.1} />
-              </motion.div>
+              </m.div>
               <span className="contact-watta-channel-card__label">{c.cardHours}</span>
               <p className="contact-watta-channel-card__value">{c.hoursDetail}</p>
-            </motion.div>
+            </m.div>
           </div>
-        </motion.div>
+        </m.div>
       </ContactFlowSection>
 
       {/* Месенджери */}
       {messengerCards.length > 0 ? (
         <ContactFlowSection>
-          <motion.div
+          <m.div
             {...fadeUp}
-            viewport={{ once: true }}
+            viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
             transition={{ duration: 0.5 }}
           >
             <div className="mb-8 text-center sm:mb-10">
-              <h2 className="contact-watta-section-title mb-2">{c.socialTitle}</h2>
+              <WattaStaggerSectionTitle
+                className="contact-watta-section-title mb-2"
+                text={c.socialTitle}
+              />
               <p className="delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
                 {c.messengerSub}
               </p>
             </div>
-            <motion.div
+            <m.div
               className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
               initial={reduce ? false : { opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
+              animate={reduce ? { opacity: 1 } : undefined}
+              whileInView={reduce ? undefined : { opacity: 1 }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
             >
               {messengerCards.map((card, i) => (
-                <motion.a
+                <m.a
                   key={card.title}
                   href={card.href}
                   target="_blank"
@@ -609,8 +742,9 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   aria-label={card.aria}
                   className={cn('contact-watta-messenger', card.className)}
                   initial={reduce ? false : { opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  animate={reduce ? { opacity: 1, y: 0 } : undefined}
+                  whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+                  viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
                   transition={{ delay: i * 0.07 }}
                   whileHover={reduce ? undefined : { y: -4, scale: 1.01 }}
                 >
@@ -618,29 +752,33 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   <span className="contact-watta-messenger__title">{card.title}</span>
                   <span className="contact-watta-messenger__sub">{card.sub}</span>
                   <ArrowRight size={20} className="contact-watta-messenger__arrow" />
-                </motion.a>
+                </m.a>
               ))}
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         </ContactFlowSection>
       ) : null}
 
       {/* Корпоративи */}
       <ContactFlowSection className="py-10 sm:py-14">
-        <motion.div
+        <m.div
           {...fadeUp}
-          viewport={{ once: true }}
+          viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
           transition={{ duration: 0.5 }}
         >
           <div className="contact-watta-corporate">
-            <motion.div
+            <m.div
               className="relative z-[1] max-w-xl"
               initial={reduce ? false : { opacity: 0, x: -16 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              animate={reduce ? { opacity: 1, x: 0 } : undefined}
+              whileInView={reduce ? undefined : { opacity: 1, x: 0 }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
             >
               <span className="contact-watta-corporate__kicker">{c.topicCorporate}</span>
-              <h2 className="contact-watta-corporate__title">{c.corporateTitle}</h2>
+              <WattaStaggerSectionTitle
+                className="contact-watta-corporate__title"
+                text={c.corporateTitle}
+              />
               <p className="contact-watta-corporate__sub">{c.corporateSub}</p>
               <button
                 type="button"
@@ -650,33 +788,36 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                 {c.corporateCta}
                 <ArrowRight size={18} aria-hidden />
               </button>
-            </motion.div>
+            </m.div>
             <Building2 className="contact-watta-corporate__deco sm:h-40 sm:w-40" strokeWidth={1} aria-hidden />
           </div>
-        </motion.div>
+        </m.div>
       </ContactFlowSection>
 
       {/* Швидкі посилання */}
       <ContactFlowSection className="py-10">
           <p className="delivery-flow-kicker mb-4 text-center">{c.quickLinksTitle}</p>
-          <motion.div className="flex flex-wrap justify-center gap-2">
+          <m.div className="flex flex-wrap justify-center gap-2">
             {quickLinks.map((link) => (
               <Link key={link.href} href={link.href} className="contact-watta-quick-link">
                 {link.label}
               </Link>
             ))}
-          </motion.div>
+          </m.div>
       </ContactFlowSection>
 
       {/* Карта */}
       <ContactFlowSection>
-        <motion.div
+        <m.div
           {...fadeUp}
-          viewport={{ once: true }}
+          viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
           transition={{ duration: 0.55 }}
         >
           <div className="mb-8 text-center sm:mb-10">
-            <h2 className="contact-watta-section-title mb-2">{c.mapTitle}</h2>
+            <WattaStaggerSectionTitle
+              className="contact-watta-section-title mb-2"
+              text={c.mapTitle}
+            />
             <p className="contact-watta-map-sub delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
               {c.mapSub}
             </p>
@@ -693,18 +834,21 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
               />
             </div>
           </div>
-        </motion.div>
+        </m.div>
       </ContactFlowSection>
 
       {/* FAQ */}
       <ContactFlowSection>
-        <motion.div
+        <m.div
           {...fadeUp}
-          viewport={{ once: true }}
+          viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
           transition={{ duration: 0.55 }}
         >
           <div className="mb-8 text-center sm:mb-10">
-            <h2 className="contact-watta-section-title mb-2">{c.faqTitle}</h2>
+            <WattaStaggerSectionTitle
+              className="contact-watta-section-title mb-2"
+              text={c.faqTitle}
+            />
             <p className="delivery-page-section-lead contact-watta-section-sub mx-auto max-w-lg text-center">
               {c.faqSub}
             </p>
@@ -712,42 +856,49 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
           <div className="grid gap-3 lg:grid-cols-2">
             {faqs.map((item, i) => {
               const open = faqOpen === i
+              const tone = FAQ_TONE_CYCLE[i % FAQ_TONE_CYCLE.length]
               return (
-                <motion.div
+                <m.div
                   key={i}
-                  className={cn('contact-watta-faq-item', open && 'contact-watta-faq-item--open')}
+                  className={cn(
+                    'contact-watta-faq-item',
+                    `contact-watta-faq-item--${tone}`,
+                    open && 'contact-watta-faq-item--open',
+                  )}
                   layout={!reduce}
                   initial={reduce ? false : { opacity: 0, y: 8 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  animate={reduce ? { opacity: 1, y: 0 } : undefined}
+                  whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+                  viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
                   transition={{ delay: (i % 3) * 0.04 }}
                 >
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                    className="contact-watta-faq-item__trigger"
                     onClick={() => setFaqOpen(open ? null : i)}
                     aria-expanded={open}
                   >
-                    <span className="font-bold text-gray-900">{item.q}</span>
+                    <span className="contact-watta-faq-item__q">{item.q}</span>
                     <ChevronDown
                       size={22}
-                      className={cn('shrink-0 text-[#145142] transition-transform', open && 'rotate-180')}
+                      className={cn('contact-watta-faq-item__chevron shrink-0', open && 'rotate-180')}
+                      aria-hidden
                     />
                   </button>
                   {open ? (
-                    <motion.div
-                      className="border-t border-gray-100 px-5 py-4 text-sm leading-relaxed text-gray-600"
+                    <m.div
+                      className="contact-watta-faq-item__a"
                       initial={reduce ? false : { opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                     >
                       {item.a}
-                    </motion.div>
+                    </m.div>
                   ) : null}
-                </motion.div>
+                </m.div>
               )
             })}
           </div>
-        </motion.div>
+        </m.div>
       </ContactFlowSection>
 
       {/* Форма */}
@@ -755,22 +906,32 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
         className="scroll-mt-[calc(5rem+env(safe-area-inset-top))]"
         ariaLabelledBy="contact-form-heading"
       >
-        <motion.div
+        <m.div
           id="watta-contact-form"
           {...fadeUp}
-          viewport={{ once: true }}
+          viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
           transition={{ duration: 0.55 }}
         >
-          <motion.div
+          <m.div
             className="grid gap-8 lg:grid-cols-[1fr_0.42fr] lg:gap-10"
             initial={reduce ? false : { opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={reduce ? { opacity: 1, y: 0 } : undefined}
+            whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+            viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
           >
-            <div className="overflow-hidden rounded-[28px] border border-gray-200/90 bg-white p-6 shadow-[0_20px_70px_rgba(15,36,30,0.06)] sm:p-10">
-              <h2 id="contact-form-heading" className="contact-watta-section-title mb-2">
-                {c.formTitle}
-              </h2>
+            <m.div
+              className="contact-watta-form-panel"
+              initial={reduce ? false : { opacity: 0, y: 24, scale: 0.98 }}
+              animate={reduce ? { opacity: 1, y: 0, scale: 1 } : undefined}
+              whileInView={reduce ? undefined : { opacity: 1, y: 0, scale: 1 }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <WattaStaggerSectionTitle
+                id="contact-form-heading"
+                className="contact-watta-section-title mb-2"
+                text={c.formTitle}
+              />
               <p className="delivery-page-section-lead contact-watta-section-sub mb-8">{c.formSub}</p>
               <form onSubmit={submitForm} className="grid gap-5">
                 <label className="sr-only" htmlFor="contact-honey">
@@ -786,27 +947,22 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                   aria-hidden
                   autoComplete="off"
                 />
-                <motion.div
-                  initial={reduce ? false : { opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                >
-                  <label className="contact-watta-form-label">{c.formTopicLabel}</label>
-                  <select
+                <FormFieldReveal delay={0.04} reduce={reduce}>
+                  <FormTopicPicker
+                    label={c.formTopicLabel}
                     value={formTopic}
-                    onChange={(e) => setFormTopic(e.target.value as FormTopic)}
-                    className="contact-watta-form-input"
-                  >
-                    <option value="menu">{c.formTopicMenu}</option>
-                    <option value="delivery">{c.formTopicDelivery}</option>
-                    <option value="corporate">{c.formTopicCorporate}</option>
-                    <option value="other">{c.formTopicOther}</option>
-                  </select>
-                </motion.div>
+                    onChange={setFormTopic}
+                    options={formTopicOptions}
+                    reduce={reduce}
+                  />
+                </FormFieldReveal>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label className="contact-watta-form-label">{c.phName}</label>
+                  <FormFieldReveal delay={0.1} reduce={reduce}>
+                    <label className="contact-watta-form-label" htmlFor="contact-form-name">
+                      {c.phName}
+                    </label>
                     <input
+                      id="contact-form-name"
                       required
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -814,15 +970,13 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                       placeholder={c.phName}
                       maxLength={120}
                     />
-                  </div>
-                  <motion.div
-                    initial={reduce ? false : { opacity: 0, x: 8 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.05 }}
-                  >
-                    <label className="contact-watta-form-label">{c.phEmail}</label>
+                  </FormFieldReveal>
+                  <FormFieldReveal delay={0.14} reduce={reduce}>
+                    <label className="contact-watta-form-label" htmlFor="contact-form-email">
+                      {c.phEmail}
+                    </label>
                     <input
+                      id="contact-form-email"
                       required
                       type="email"
                       value={form.email}
@@ -831,21 +985,27 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                       placeholder={c.phEmail}
                       maxLength={120}
                     />
-                  </motion.div>
+                  </FormFieldReveal>
                 </div>
-                <div>
-                  <label className="contact-watta-form-label">{c.phPhone}</label>
+                <FormFieldReveal delay={0.18} reduce={reduce}>
+                  <label className="contact-watta-form-label" htmlFor="contact-form-phone">
+                    {c.phPhone}
+                  </label>
                   <input
+                    id="contact-form-phone"
                     value={form.phone}
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                     className="contact-watta-form-input"
                     placeholder={c.phPhone}
                     maxLength={48}
                   />
-                </div>
-                <div>
-                  <label className="contact-watta-form-label">{c.phMessage}</label>
+                </FormFieldReveal>
+                <FormFieldReveal delay={0.22} reduce={reduce}>
+                  <label className="contact-watta-form-label" htmlFor="contact-form-message">
+                    {c.phMessage}
+                  </label>
                   <textarea
+                    id="contact-form-message"
                     required
                     value={form.message}
                     onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
@@ -854,53 +1014,64 @@ export default function ContactsView({ embedded = false, onBack }: ContactsViewP
                     placeholder={c.phMessage}
                     maxLength={4000}
                   />
-                </div>
-                <motion.button
-                  type="submit"
-                  disabled={sending}
-                  className="contact-watta-form-submit"
-                  whileTap={reduce ? undefined : { scale: 0.98 }}
-                >
-                  <Send size={20} />
-                  {sending ? c.formSending : c.formSubmit}
-                </motion.button>
+                </FormFieldReveal>
+                <FormFieldReveal delay={0.28} reduce={reduce}>
+                  <m.button
+                    type="submit"
+                    disabled={sending}
+                    className="contact-watta-form-submit"
+                    whileHover={reduce ? undefined : { scale: 1.02 }}
+                    whileTap={reduce ? undefined : { scale: 0.98 }}
+                  >
+                    <Send size={20} className={sending ? 'animate-pulse' : undefined} />
+                    {sending ? c.formSending : c.formSubmit}
+                  </m.button>
+                </FormFieldReveal>
               </form>
-            </div>
+            </m.div>
 
-            <aside className="contact-watta-form-aside">
+            <m.aside
+              className="contact-watta-form-aside"
+              initial={reduce ? false : { opacity: 0, x: 20 }}
+              animate={reduce ? { opacity: 1, x: 0 } : undefined}
+              whileInView={reduce ? undefined : { opacity: 1, x: 0 }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
+              transition={{ duration: 0.5, delay: 0.12 }}
+            >
               <h3 className="contact-watta-form-aside__title">{c.formAsideTitle}</h3>
               <ul className="mt-5 space-y-4">
                 {[c.formAside1, c.formAside2, c.formAside3].map((line, i) => (
-                  <motion.li
+                  <m.li
                     key={i}
                     className="flex gap-3 text-sm leading-relaxed text-[#4a5c54]"
                     initial={reduce ? false : { opacity: 0, x: 8 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
+                    animate={reduce ? { opacity: 1, x: 0 } : undefined}
+                    whileInView={reduce ? undefined : { opacity: 1, x: 0 }}
+                    viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
                     transition={{ delay: 0.1 + i * 0.08 }}
                   >
                     <BadgeCheck size={20} className="mt-0.5 shrink-0 text-[#145142]" strokeWidth={2.2} />
                     {line}
-                  </motion.li>
+                  </m.li>
                 ))}
               </ul>
-              <motion.div
+              <m.div
                 className="mt-8 overflow-hidden rounded-2xl border border-[#145142]/12 bg-white p-4 shadow-sm"
                 whileHover={reduce ? undefined : { scale: 1.01 }}
               >
                 <Image src="/logo.png" alt="" width={72} height={72} className="mx-auto object-contain" />
                 <p className="mt-3 text-center text-sm font-bold text-[#145142]">Watta Sushi</p>
                 <p className="mt-1 text-center text-xs text-gray-500">{c.channelsSub}</p>
-              </motion.div>
-            </aside>
-          </motion.div>
-        </motion.div>
+              </m.div>
+            </m.aside>
+          </m.div>
+        </m.div>
       </ContactFlowSection>
 
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   )
 }
 

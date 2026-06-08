@@ -1,26 +1,33 @@
 'use client'
 
 import { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useLanguage } from '../context/LanguageContext'
 import WattaLoadScreen from './WattaLoadScreen'
 import { WATTA_BOOT_SPLASH_ENDED_EVENT, WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
+import { kickWelcomeHeroVideoPlayBurst } from '@/lib/kickWelcomeHeroVideo'
+import { bootSplashLoadingLabel } from '@/lib/wattaBootSplashLabel'
 import {
-  kickWelcomeHeroVideoPlayBurst,
-  kickWelcomeHeroVideoPlayOnce,
-} from '@/lib/kickWelcomeHeroVideo'
-import { isBrowserReloadOnHome } from '@/lib/menuBrowseRestore'
+  clearBootSplashReloadFlag,
+  shouldRunBootSplashOnHome,
+} from '@/lib/menuBrowseRestore'
+import { warmHeroVideoCache } from '@/lib/warmHeroVideoCache'
 
 const BOOT_SPLASH_DONE_KEY = 'watta_boot_splash_done'
-/** Швидке заповнення зеленої смуги — не затримуємо hero довше за decode */
-export const BOOT_SPLASH_FILL_MS = 220
-const BOOT_SPLASH_HOLD_FULL_MS = 40
-const BOOT_SPLASH_FAILSAFE_MS = 480
-const BOOT_SPLASH_MIN_MS = 0
+/** Один React-оверлей на навігацію (Strict Mode remount). */
+let reactBootSplashCommitted = false
+/** Тривалість заповнення смуги (CSS) + короткий холд перед fade-out. */
+export const BOOT_SPLASH_FILL_MS = 850
+const BOOT_SPLASH_MIN_MS = 250
+const BOOT_SPLASH_HOLD_MS = 80
+const BOOT_SPLASH_FADE_MS = 200
+const BOOT_SPLASH_HARD_FAILSAFE_MS = 2400
+const BOOT_LOGO_WAIT_CAP_MS = 400
 
 type WattaBootSplashGateProps = {
   children: ReactNode
   onEnded?: () => void
 }
+
+type SplashPhase = 'hidden' | 'show' | 'leaving'
 
 function markBootSplashDone(): void {
   try {
@@ -30,56 +37,142 @@ function markBootSplashDone(): void {
   }
 }
 
-function shouldSkipBootSplash(): boolean {
-  try {
-    /** За замовчуванням — миттєва головна; сплеш лише якщо явно увімкнено в .env */
-    if (process.env.NEXT_PUBLIC_WATTA_BOOT_SPLASH !== '1') {
-      return true
-    }
-    if (typeof document !== 'undefined') {
-      if (document.documentElement.getAttribute('data-watta-skip-splash') === '1') {
-        return true
-      }
-    }
-    if (isBrowserReloadOnHome()) return true
-    return sessionStorage.getItem(BOOT_SPLASH_DONE_KEY) === '1'
-  } catch {
-    return true
-  }
+function isHomePathname(): boolean {
+  const p = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'
+  return p === '/' || p === ''
+}
+
+function isStaticBootSplashActive(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.documentElement.getAttribute('data-watta-boot-splash-pending') === '1'
 }
 
 function shouldShowBootSplashNow(): boolean {
-  return !shouldSkipBootSplash()
+  try {
+    if (typeof window === 'undefined') return false
+    // Вмикаємо сплеш лише явно (щоб не перекривав контент/кнопки у звичайному режимі).
+    if (process.env.NEXT_PUBLIC_WATTA_BOOT_SPLASH !== '1') return false
+    if (!isHomePathname()) return false
+    if (document.documentElement.getAttribute('data-watta-skip-splash') === '1') return false
+    // Лише reload (F5) на головній — не SPA-перехід і не перший navigate.
+    if (shouldRunBootSplashOnHome()) return true
+    // До hydration React: static splash від boot script.
+    if (isStaticBootSplashActive()) return true
+    return false
+  } catch {
+    return false
+  }
+}
+
+function clearBootSplashPendingAttr(): void {
+  try {
+    document.documentElement.removeAttribute('data-watta-boot-splash-pending')
+  } catch {
+    /* ignore */
+  }
+}
+
+function waitMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+function waitBootLogo(img: HTMLImageElement | null): Promise<void> {
+  if (!img || img.complete) return Promise.resolve()
+  return new Promise((resolve) => {
+    const done = () => resolve()
+    img.addEventListener('load', done, { once: true })
+    img.addEventListener('error', done, { once: true })
+    window.setTimeout(done, BOOT_LOGO_WAIT_CAP_MS)
+  })
 }
 
 export default function WattaBootSplashGate({ children, onEnded }: WattaBootSplashGateProps) {
-  const { t } = useLanguage()
-  const [bootProgress, setBootProgress] = useState(0)
-  /** SSR без білого оверлею; на клієнті вмикаємо сплеш лише для першого візиту. */
-  const [showBootSplash, setShowBootSplash] = useState(false)
+  const [phase, setPhase] = useState<SplashPhase>('hidden')
   const dismissedRef = useRef(false)
-  const splashRunRef = useRef(0)
+  const splashDecisionRef = useRef<'pending' | 'show' | 'skip'>('pending')
   const onEndedRef = useRef(onEnded)
   onEndedRef.current = onEnded
 
-  useLayoutEffect(() => {
-    if (!shouldShowBootSplashNow()) {
-      dismissedRef.current = true
-      setBootProgress(100)
-      setShowBootSplash(false)
-      return
-    }
-    dismissedRef.current = false
-    setShowBootSplash(true)
+  const [loadingLabel] = useState(() => {
+    if (typeof document === 'undefined') return 'Loading'
+    return bootSplashLoadingLabel(document.documentElement.lang || 'en')
+  })
+
+  const showBootSplash = phase === 'show' || phase === 'leaving'
+
+  const signalSplashEnded = useCallback(() => {
+    warmHeroVideoCache()
+    kickWelcomeHeroVideoPlayBurst()
+    window.dispatchEvent(new CustomEvent(WATTA_BOOT_SPLASH_ENDED_EVENT))
+    onEndedRef.current?.()
   }, [])
+
+  const finishDismiss = useCallback(() => {
+    markBootSplashDone()
+    clearBootSplashReloadFlag()
+    setPhase('hidden')
+    clearBootSplashPendingAttr()
+    if (typeof document !== 'undefined') {
+      document.documentElement.removeAttribute('data-watta-boot-splash')
+      document.body.style.overflow = ''
+    }
+    signalSplashEnded()
+  }, [signalSplashEnded])
 
   const dismissSplash = useCallback(() => {
     if (dismissedRef.current) return
     dismissedRef.current = true
-    markBootSplashDone()
-    setBootProgress(100)
-    setShowBootSplash(false)
+    setPhase('leaving')
+    window.setTimeout(finishDismiss, BOOT_SPLASH_FADE_MS)
+  }, [finishDismiss])
+
+  useLayoutEffect(() => {
+    if (!shouldShowBootSplashNow()) {
+      splashDecisionRef.current = 'skip'
+      dismissedRef.current = true
+      setPhase('hidden')
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-watta-skip-splash', '1')
+        document.documentElement.removeAttribute('data-watta-boot-splash')
+        document.documentElement.removeAttribute('data-watta-boot-splash-pending')
+        document.body.style.overflow = ''
+        warmHeroVideoCache()
+        signalSplashEnded()
+      }
+      return
+    }
+    if (reactBootSplashCommitted) {
+      splashDecisionRef.current = 'skip'
+      dismissedRef.current = true
+      setPhase('hidden')
+      return
+    }
+    reactBootSplashCommitted = true
+    splashDecisionRef.current = 'show'
+    dismissedRef.current = false
+    clearBootSplashReloadFlag()
+    setPhase('show')
+    if (typeof document !== 'undefined') {
+      document.documentElement.removeAttribute('data-watta-skip-splash')
+      document.documentElement.setAttribute('data-watta-boot-splash', '1')
+      document.documentElement.style.setProperty(
+        '--watta-boot-splash-fill-ms',
+        `${BOOT_SPLASH_FILL_MS}ms`,
+      )
+      warmHeroVideoCache()
+    }
   }, [])
+
+  /** React-оверлей накриває static — знімаємо pending лише після paint (без стрибка). */
+  useLayoutEffect(() => {
+    if (phase !== 'show') return
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => clearBootSplashPendingAttr())
+    })
+    return () => cancelAnimationFrame(id)
+  }, [phase])
 
   useLayoutEffect(() => {
     if (typeof document === 'undefined') return
@@ -89,75 +182,69 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     } else {
       root.removeAttribute('data-watta-boot-splash')
     }
-    return () => root.removeAttribute('data-watta-boot-splash')
+    return () => {
+      if (!dismissedRef.current) root.removeAttribute('data-watta-boot-splash')
+    }
   }, [showBootSplash])
 
-  /** Смуга 0→100%; як тільки hero ready — одразу головна (не чекаємо повної смуги). */
+  /** Під сплешем <video> уже в DOM — прогріваємо autoplay до зняття оверлею. */
+  useLayoutEffect(() => {
+    if (phase !== 'show') return
+    kickWelcomeHeroVideoPlayBurst()
+  }, [phase])
+
   useEffect(() => {
-    if (!showBootSplash) return
+    if (phase !== 'show') return
 
-    const gen = ++splashRunRef.current
-    setBootProgress(0)
+    let cancelled = false
+    const startedAt = performance.now()
+    let heroReady = false
 
-    const t0 = performance.now()
-    let holdId = 0
-    let failId = 0
-    let videoKickId = 0
-    let tickId = 0
-    let finished = false
-
-    const kickHero = () => kickWelcomeHeroVideoPlayOnce()
-
-    const finishAfterFullBar = () => {
-      if (gen !== splashRunRef.current || finished) return
-      finished = true
-      setBootProgress(100)
-      const elapsed = performance.now() - t0
-      const wait = Math.max(0, BOOT_SPLASH_MIN_MS - elapsed)
-      holdId = window.setTimeout(() => {
-        if (gen !== splashRunRef.current) return
-        dismissSplash()
-      }, wait + BOOT_SPLASH_HOLD_FULL_MS)
+    const tryDismissEarly = () => {
+      if (cancelled || dismissedRef.current) return
+      heroReady = true
+      if (performance.now() - startedAt >= BOOT_SPLASH_MIN_MS) dismissSplash()
     }
 
-    tickId = window.setInterval(() => {
-      if (gen !== splashRunRef.current) return
-      const elapsed = performance.now() - t0
-      const pct = Math.min(100, (elapsed / BOOT_SPLASH_FILL_MS) * 100)
-      setBootProgress(pct)
+    const hardId = window.setTimeout(() => {
+      if (!cancelled) dismissSplash()
+    }, BOOT_SPLASH_HARD_FAILSAFE_MS)
 
-      if (pct >= 100) {
-        window.clearInterval(tickId)
-        finishAfterFullBar()
+    window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, tryDismissEarly)
+
+    const run = async () => {
+      const img = document.querySelector(
+        '.watta-boot-splash-viewport--react .watta-load-screen-logo',
+      ) as HTMLImageElement | null
+      await Promise.all([waitMs(BOOT_SPLASH_FILL_MS), waitBootLogo(img)])
+      if (cancelled || dismissedRef.current) return
+
+      if (!heroReady) {
+        await Promise.race([
+          new Promise<void>((resolve) => {
+            const onReady = () => {
+              window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onReady)
+              resolve()
+            }
+            window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onReady)
+          }),
+          waitMs(900),
+        ])
       }
-    }, 16)
 
-    kickHero()
-    queueMicrotask(kickHero)
-    videoKickId = window.setInterval(kickHero, 400)
-
-    const onHeroReady = () => {
-      kickHero()
-      kickWelcomeHeroVideoPlayBurst()
-      window.clearInterval(tickId)
-      finishAfterFullBar()
+      if (cancelled || dismissedRef.current) return
+      await waitMs(BOOT_SPLASH_HOLD_MS)
+      if (!cancelled && !dismissedRef.current) dismissSplash()
     }
-    window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
 
-    failId = window.setTimeout(() => {
-      if (gen !== splashRunRef.current) return
-      window.clearInterval(tickId)
-      finishAfterFullBar()
-    }, BOOT_SPLASH_FAILSAFE_MS)
+    void run()
 
     return () => {
-      window.clearInterval(tickId)
-      window.clearInterval(videoKickId)
-      window.clearTimeout(holdId)
-      window.clearTimeout(failId)
-      window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
+      cancelled = true
+      window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, tryDismissEarly)
+      window.clearTimeout(hardId)
     }
-  }, [showBootSplash, dismissSplash])
+  }, [phase, dismissSplash])
 
   useLayoutEffect(() => {
     if (!showBootSplash) return
@@ -168,40 +255,47 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
     }
   }, [showBootSplash])
 
+  /** SPA / navigate на головну — без сплешу, одразу hero. */
   useEffect(() => {
-    if (showBootSplash) return
-    kickWelcomeHeroVideoPlayBurst()
-    window.dispatchEvent(new CustomEvent(WATTA_BOOT_SPLASH_ENDED_EVENT))
-    onEndedRef.current?.()
-  }, [showBootSplash])
+    if (showBootSplash || splashDecisionRef.current === 'pending') return
+    if (splashDecisionRef.current !== 'skip') return
 
-  const loadingLabel = t?.siteAria?.loading ?? 'Loading'
+    const id = requestAnimationFrame(() => {
+      signalSplashEnded()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [showBootSplash, signalSplashEnded])
 
   return (
     <>
-      {children}
+      <div
+        className={showBootSplash ? 'watta-boot-splash-page-hidden' : undefined}
+        aria-hidden={showBootSplash || undefined}
+      >
+        {children}
+      </div>
       {showBootSplash ? (
         <div
-          className="watta-boot-splash-overlay fixed inset-0 z-[10050] flex w-full flex-col bg-white"
+          className={`watta-boot-splash-viewport watta-boot-splash-viewport--react watta-boot-splash-overlay${
+            phase === 'leaving' ? ' watta-boot-splash-viewport--leaving' : ''
+          }`}
           suppressHydrationWarning
+          role="presentation"
           aria-hidden
         >
-          <div className="app-web flex min-h-[100dvh] flex-1 watta-page-bg">
-            <div className="content-web content-web--watta-craft min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden">
-              <WattaLoadScreen
-                className="min-h-[100dvh] watta-load-screen-root--boot-splash"
-                progress={bootProgress}
-                label={
-                  <>
-                    {loadingLabel}
-                    <span className="watta-dot">.</span>
-                    <span className="watta-dot">.</span>
-                    <span className="watta-dot">.</span>
-                  </>
-                }
-              />
-            </div>
-          </div>
+          <WattaLoadScreen
+            className="watta-load-screen-root--boot-splash"
+            cssProgress
+            progress={100}
+            label={
+              <>
+                {loadingLabel}
+                <span className="watta-dot">.</span>
+                <span className="watta-dot">.</span>
+                <span className="watta-dot">.</span>
+              </>
+            }
+          />
         </div>
       ) : null}
     </>

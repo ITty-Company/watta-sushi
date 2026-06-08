@@ -1,426 +1,12 @@
-/* /profile — delivery/reviews typography + glass sections */
+/* Shared profile forms + embedded in-app. Public /profile → watta-profile-page.css */
 
-#profile-page-root.profile-page-web {
-  --profile-accent: #145142;
+#profile-page-root {
+  --profile-accent: var(--watta-brand-mint, #5c9010);
+  --profile-accent-hover: var(--watta-brand-mint-hover, #50800c);
+  --profile-accent-active: var(--watta-brand-mint-active, #466e0a);
   --profile-orange: #ff5c00;
-  overflow-x: clip;
 }
 
-/* /profile — невеликий зазор під панеллю категорій (не впритул і не велике «повітря») */
-.watta-profile-page.menu-page-web {
-  padding-top: 0 !important;
-}
-
-.watta-profile-page .delivery-page-intro-web {
-  margin-top: 0 !important;
-}
-
-.watta-profile-page > .relative.z-10 {
-  padding-top: clamp(0.45rem, 1.1vh, 0.75rem);
-}
-
-.watta-profile-page .watta-profile-lead__inner {
-  padding-top: clamp(0.65rem, 1.45vh, 1rem);
-  padding-bottom: clamp(0.45rem, 1.2vw, 0.7rem);
-}
-
-.watta-profile-page .watta-profile-quick-nav {
-  margin-top: 0.35rem;
-}
-
-/* Планшет+ — ім’я зверху не показуємо (на lg воно в боковій колонці) */
-@media (min-width: 768px) {
-  .watta-profile-inapp .watta-profile-lead__name,
-  #profile-page-root .watta-profile-lead__name {
-    display: none;
-  }
-
-  .watta-profile-inapp .watta-profile-lead__meta,
-  #profile-page-root .watta-profile-lead__meta {
-    margin-top: 0;
-  }
-
-  .watta-profile-page > .relative.z-10 {
-    padding-top: clamp(0.55rem, 1.25vh, 0.85rem);
-  }
-
-  .watta-profile-page .watta-profile-lead__inner {
-    padding-top: clamp(0.55rem, 1.2vh, 0.85rem);
-  }
-}
-
-/* Ноутбук / десктоп — верхній hero прибираємо (контакти й бонуси вже в sidebar) */
-@media (min-width: 1024px) {
-  .watta-profile-inapp .delivery-page-intro-web:has(.watta-profile-lead) {
-    display: none;
-  }
-
-  .watta-profile-page > .relative.z-10 {
-    padding-top: clamp(0.7rem, 1.5vh, 1rem);
-  }
-}
-
-#profile-page-root.profile-page-web .delivery-page-intro-web--video,
-#profile-page-root.profile-page-web .delivery-page-hero-stack,
-#profile-page-root.profile-page-web .home-after-hero-intro-web {
-  background: #fff !important;
-  border-top: none;
-}
-
-/* Профіль — ім’я + чіпи на білому фоні */
-.watta-profile-lead {
-  position: relative;
-  width: 100%;
-  background: #fff;
-}
-
-.watta-profile-lead--headroom {
-  padding-top: clamp(0.35rem, 1.2vh, 0.65rem);
-}
-
-.watta-profile-lead__inner {
-  margin: 0 auto;
-  max-width: 42rem;
-  padding: clamp(0.65rem, 2.5vw, 1rem) clamp(1rem, 4vw, 1.5rem) clamp(0.75rem, 2vw, 1rem);
-  background: #fff;
-}
-
-.watta-profile-lead__card {
-  text-align: center;
-}
-
-.watta-profile-lead__name {
-  margin: 0;
-  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
-  font-size: clamp(1.28rem, 4.5vw, 1.55rem);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: #0f241e;
-}
-
-.watta-profile-lead__name-line {
-  display: block;
-}
-
-.watta-profile-lead__name-line + .watta-profile-lead__name-line {
-  margin-top: 0.06em;
-  color: #145142;
-}
-
-.watta-profile-lead__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.55rem;
-  padding-top: 0;
-  border-top: none;
-}
-
-.watta-profile-lead__chip {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 0.4rem;
-  overflow: hidden;
-  border-radius: 999px;
-  border: 1px solid rgba(20, 81, 66, 0.14);
-  background: rgba(255, 255, 255, 0.9);
-  padding: 0.45rem 0.85rem;
-  font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #145142;
-  box-shadow: 0 2px 10px rgba(20, 81, 66, 0.05);
-}
-
-@media (min-width: 640px) {
-  .watta-profile-lead__chip {
-    font-size: 0.78rem;
-    padding: 0.5rem 0.95rem;
-  }
-}
-
-.watta-profile-lead__chip--bonus {
-  border-color: rgba(255, 92, 0, 0.28);
-  background: linear-gradient(165deg, #fff9f5 0%, #fff 100%);
-  font-weight: 700;
-  color: #c2410c;
-}
-
-.watta-profile-lead__chip--bonus strong {
-  font-weight: 800;
-  color: #145142;
-}
-
-.watta-profile-page__flow {
-  position: relative;
-  z-index: 4;
-  flex: 1 1 auto;
-  width: 100%;
-  background: var(--watta-page-fill, #ffffff);
-  border-top: 1px solid rgba(20, 81, 66, 0.08);
-}
-
-.watta-profile-page__inner {
-  padding-top: clamp(0.75rem, 2vw, 1.25rem);
-  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
-}
-
-.watta-profile-page__section-title {
-  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
-  font-size: clamp(1.2rem, 4vw, 1.65rem);
-  font-weight: 700;
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-  color: #0f241e;
-}
-
-.watta-profile-page__section-title-accent {
-  color: var(--profile-orange, #ff5c00);
-}
-
-.watta-profile-page__section-sub {
-  margin-top: 0.35rem;
-  font-size: 0.88rem;
-  font-weight: 500;
-  line-height: 1.5;
-  color: color-mix(in srgb, var(--profile-accent) 45%, #64748b);
-}
-
-.watta-profile-stat-pill {
-  border-radius: 1.15rem;
-  padding: 0.85rem 0.65rem;
-  min-height: 5.5rem;
-}
-
-.watta-profile-hub {
-  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
-  border-radius: 1.25rem;
-  overflow: hidden;
-  border: 1px solid rgba(20, 81, 66, 0.1);
-  background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
-  box-shadow: 0 8px 28px rgba(20, 81, 66, 0.06);
-}
-
-.watta-profile-hub__sections {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  background: rgba(20, 81, 66, 0.08);
-}
-
-@media (min-width: 640px) {
-  .watta-profile-hub__sections {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.watta-profile-hub__section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  min-height: 5.25rem;
-  padding: 0.85rem 0.5rem;
-  text-align: center;
-  color: var(--profile-accent);
-  background: #fff;
-  border: none;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
-}
-
-.watta-profile-hub__section:hover,
-.watta-profile-hub__section:focus-visible {
-  background: #f0f6f3;
-  outline: none;
-}
-
-.watta-profile-hub__section:focus-visible {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--profile-orange) 45%, var(--profile-accent));
-}
-
-.watta-profile-hub__section-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.85rem;
-  background: linear-gradient(155deg, #f0f7f4 0%, #ffffff 100%);
-  border: 1px solid rgba(20, 81, 66, 0.1);
-  color: var(--profile-accent);
-}
-
-.watta-profile-hub__section-label {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  max-width: 100%;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: 0.01em;
-}
-
-@media (min-width: 640px) {
-  .watta-profile-hub__section {
-    min-height: 5.75rem;
-    padding: 1rem 0.65rem;
-  }
-
-  .watta-profile-hub__section-label {
-    font-size: 0.78rem;
-  }
-}
-
-.watta-profile-hub__aside {
-  padding: clamp(0.85rem, 2.5vw, 1.1rem);
-  border-top: 1px solid rgba(20, 81, 66, 0.08);
-  background: #fff;
-}
-
-.watta-profile-hub__aside-title {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.65rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--profile-accent) 50%, #64748b);
-}
-
-.watta-profile-hub__menu-cta {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  padding: 0.7rem 1rem;
-  border: none;
-  border-radius: 0.9rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
-  box-shadow: 0 6px 20px rgba(20, 81, 66, 0.22);
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.watta-profile-hub__menu-cta:hover {
-  transform: translateY(-1px);
-}
-
-.watta-profile-hub__links {
-  margin: 0.65rem 0 0;
-  padding: 0;
-  list-style: none;
-  border-radius: 0.85rem;
-  overflow: hidden;
-  border: 1px solid rgba(20, 81, 66, 0.1);
-}
-
-.watta-profile-hub__links li + li {
-  border-top: 1px solid rgba(20, 81, 66, 0.08);
-}
-
-.watta-profile-hub__link-row {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 3rem;
-  padding: 0.65rem 0.85rem;
-  text-align: left;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #0f241e;
-  background: #fff;
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.watta-profile-hub__link-row:hover,
-.watta-profile-hub__link-row:focus-visible {
-  background: #f8fbf9;
-  outline: none;
-}
-
-.watta-profile-hub__link-icon {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.55rem;
-  color: var(--profile-accent);
-  background: #f0f6f3;
-}
-
-.watta-profile-hub__link-label {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.watta-profile-hub__link-chevron {
-  flex-shrink: 0;
-  color: rgba(20, 81, 66, 0.35);
-}
-
-.watta-profile-hub__logout {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  margin-top: 0.65rem;
-  min-height: 2.65rem;
-  padding: 0.65rem 1rem;
-  border-radius: 0.85rem;
-  border: 1px solid rgba(185, 28, 28, 0.18);
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #b91c1c;
-  background: #fef2f2;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.watta-profile-hub__logout:hover {
-  background: #fee2e2;
-}
-
-.watta-profile-section-card {
-  margin-bottom: clamp(1rem, 2.5vw, 1.35rem);
-  padding: clamp(1rem, 3vw, 1.35rem);
-  border-radius: 1.25rem;
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(255, 255, 255, 0.82) 100%
-  );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  box-shadow:
-    0 12px 40px rgba(20, 81, 66, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.95) inset;
-  scroll-margin-top: calc(var(--watta-sticky-chrome-height, 7.5rem) + 0.75rem);
-}
 
 .watta-profile-data-grid {
   display: grid;
@@ -437,7 +23,7 @@
   padding: 0.85rem 1rem;
   border-radius: 0.9rem;
   background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
-  border: 1px solid rgba(20, 81, 66, 0.1);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 10%, transparent);
 }
 
 .watta-profile-data-field__label {
@@ -463,14 +49,14 @@
 .watta-profile-data-field__value--readonly {
   padding: 0.65rem 0.85rem;
   border-radius: 0.75rem;
-  background: rgba(20, 81, 66, 0.04);
-  border: 1px dashed rgba(20, 81, 66, 0.18);
+  background: color-mix(in srgb, var(--profile-accent) 4%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--profile-accent) 18%, transparent);
 }
 
 .watta-profile-data-field__input {
   width: 100%;
   border-radius: 0.75rem;
-  border: 1px solid rgba(20, 81, 66, 0.15);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 15%, transparent);
   background: #fff;
   padding: 0.65rem 0.85rem;
   font-size: 0.95rem;
@@ -482,8 +68,8 @@
 }
 
 .watta-profile-data-field__input:focus {
-  border-color: rgba(20, 81, 66, 0.45);
-  box-shadow: 0 0 0 3px rgba(20, 81, 66, 0.12);
+  border-color: color-mix(in srgb, var(--profile-accent) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--profile-accent) 12%, transparent);
 }
 
 .watta-profile-data-field__input--invalid {
@@ -500,7 +86,7 @@
   margin-top: 0.35rem;
   font-size: 0.72rem;
   line-height: 1.35;
-  color: rgba(20, 81, 66, 0.72);
+  color: color-mix(in srgb, var(--profile-accent) 72%, transparent);
 }
 
 .watta-profile-data-field__readonly-hint {
@@ -516,7 +102,153 @@
   padding: 1rem 1.1rem;
   border-radius: 1rem;
   background: linear-gradient(155deg, #f0f7f4 0%, #ffffff 100%);
-  border: 1px solid rgba(20, 81, 66, 0.12);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 12%, transparent);
+}
+
+.watta-profile-address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.watta-profile-address-card__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.watta-profile-address-card__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.65rem;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 10%, transparent);
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.watta-profile-address-card__delete:hover:not(:disabled) {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: rgba(185, 28, 28, 0.2);
+}
+
+.watta-profile-address-card__delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.watta-profile-address-flow__add {
+  margin-top: 0.25rem;
+}
+
+.watta-profile-address-flow__saved {
+  margin-bottom: 0.35rem;
+}
+
+.watta-profile-address-flow__saved-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.watta-profile-address-flow__saved-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--profile-accent) 55%, #64748b);
+}
+
+.watta-profile-address-flow__saved-count {
+  display: inline-flex;
+  min-width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--profile-accent);
+  background: color-mix(in srgb, var(--profile-accent) 10%, transparent);
+}
+
+.watta-profile-address-flow__add-toggle {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: 1px dashed color-mix(in srgb, var(--profile-accent) 22%, transparent);
+  background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--profile-accent);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.watta-profile-address-flow__add-toggle:hover {
+  border-color: color-mix(in srgb, var(--profile-accent) 35%, transparent);
+  background: #f0f7f4;
+}
+
+.watta-profile-address-form__draft {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 14%, transparent);
+  background: linear-gradient(165deg, #f0f7f4 0%, #ffffff 100%);
+}
+
+.watta-profile-address-form__draft-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--profile-accent) 50%, #64748b);
+}
+
+.watta-profile-address-form__draft-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #0f241e;
+  word-break: break-word;
+}
+
+.watta-profile-address-form__draft-geocode {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.watta-profile-address-flow__add-label {
+  margin: 0 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--profile-accent) 55%, #64748b);
 }
 
 .watta-profile-address-card__icon {
@@ -527,8 +259,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.85rem;
-  background: linear-gradient(145deg, #145142, #1a6b58);
-  color: #fff;
+  background: var(--profile-accent);
+  color: var(--watta-brand-mint-ink, #fff);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--profile-accent) 32%, transparent);
 }
 
 .watta-profile-fav-card {
@@ -538,21 +271,20 @@
   padding: 0.75rem;
   border-radius: 1rem;
   background: #fff;
-  border: 1px solid rgba(20, 81, 66, 0.1);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 10%, transparent);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .watta-profile-fav-card:hover {
-  border-color: color-mix(in srgb, var(--profile-orange) 25%, rgba(20, 81, 66, 0.15));
-  box-shadow: 0 8px 24px rgba(20, 81, 66, 0.08);
+  border-color: color-mix(in srgb, var(--profile-orange) 25%, color-mix(in srgb, var(--profile-accent) 15%, transparent));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--profile-accent) 8%, transparent);
 }
 
 .watta-profile-empty {
   padding: 2.5rem 1.25rem;
   text-align: center;
-  border-radius: 1rem;
-  background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
-  border: 1px dashed rgba(20, 81, 66, 0.18);
+  border-radius: 1.15rem;
+  border: 1px dashed color-mix(in srgb, var(--profile-accent) 18%, transparent);
 }
 
 .watta-profile-embedded-tabs {
@@ -583,13 +315,13 @@
 }
 
 .watta-profile-embedded-tab--on {
-  background: #145142;
+  background: var(--watta-brand-action);
   color: #fff;
 }
 
 .watta-profile-embedded-tab--off {
   background: #f0f6f3;
-  color: #145142;
+  color: var(--profile-accent);
 }
 
 .watta-profile-address-form__label {
@@ -609,7 +341,7 @@
   resize: vertical;
   min-height: 5.5rem;
   border-radius: 1rem;
-  border: 1px solid rgba(20, 81, 66, 0.15);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 15%, transparent);
   background: #fff;
   padding: 0.85rem 1rem;
   font-size: 0.95rem;
@@ -620,8 +352,8 @@
 }
 
 .watta-profile-address-form__input:focus {
-  border-color: rgba(20, 81, 66, 0.45);
-  box-shadow: 0 0 0 3px rgba(20, 81, 66, 0.12);
+  border-color: color-mix(in srgb, var(--profile-accent) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--profile-accent) 12%, transparent);
 }
 
 .watta-profile-address-form__hint {
@@ -635,12 +367,12 @@
   margin-top: 0.85rem;
   padding: 0.85rem 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(20, 81, 66, 0.12);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 12%, transparent);
   background: linear-gradient(165deg, #f8fbf9 0%, #ffffff 100%);
 }
 
 .watta-profile-address-form__result--ok {
-  border-color: rgba(20, 81, 66, 0.22);
+  border-color: color-mix(in srgb, var(--profile-accent) 22%, transparent);
   background: linear-gradient(165deg, #f0faf4 0%, #ffffff 100%);
 }
 
@@ -654,19 +386,32 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  gap: 0.4rem;
+  border: 1px solid var(--watta-brand-mint-border, rgba(0, 0, 0, 0.08));
   border-radius: 1rem;
-  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--watta-brand-mint, #5c9010) 78%, #ffffff) 0%,
+    var(--watta-brand-mint, #5c9010) 100%
+  );
   padding: 0.75rem 1.25rem;
   font-size: 0.88rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--watta-brand-mint-ink, #ffffff);
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.15s ease;
+  box-shadow:
+    0 4px 14px rgba(15, 48, 28, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+  transition:
+    background 0.18s ease,
+    transform 0.12s ease,
+    box-shadow 0.18s ease,
+    opacity 0.2s ease;
 }
 
 .watta-profile-address-form__save:hover:not(:disabled) {
-  opacity: 0.95;
+  background: var(--watta-brand-mint-hover, #50800c);
+  opacity: 1;
 }
 
 .watta-profile-address-form__save:disabled {
@@ -676,7 +421,10 @@
 
 /* In-app / embedded profile — green hero + quick nav (як у вкладці «Профіль») */
 .watta-profile-inapp {
-  --profile-inapp-accent: #145142;
+  --profile-accent: var(--watta-brand-mint, #5c9010);
+  --profile-accent-hover: var(--watta-brand-mint-hover, #50800c);
+  --profile-accent-active: var(--watta-brand-mint-active, #466e0a);
+  --profile-inapp-accent: var(--profile-accent);
   --profile-inapp-orange: #ff5c00;
 }
 
@@ -686,8 +434,13 @@
   overflow: hidden;
   border-radius: 1.35rem;
   color: #fff;
-  background: linear-gradient(165deg, #0c3028 0%, #145142 38%, #1a6b58 72%, #145142 100%);
-  box-shadow: 0 20px 60px rgba(20, 81, 66, 0.22);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--profile-accent) 72%, #1a2e28) 0%,
+    var(--profile-accent) 42%,
+    var(--profile-accent-hover) 100%
+  );
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--profile-accent) 22%, transparent);
 }
 
 @media (min-width: 640px) {
@@ -833,7 +586,7 @@
   justify-content: center;
   gap: 0.2rem;
   border-radius: 0.9rem;
-  border: 1px solid rgba(20, 81, 66, 0.12);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 12%, transparent);
   background: linear-gradient(165deg, #f0f7f4 0%, #ffffff 100%);
   padding: 0.45rem 0.35rem;
   font-size: 0.62rem;
@@ -850,17 +603,17 @@
 
 .watta-profile-quick-nav__btn:hover,
 .watta-profile-quick-nav__btn:focus-visible {
-  border-color: rgba(20, 81, 66, 0.22);
+  border-color: color-mix(in srgb, var(--profile-accent) 22%, transparent);
   background: #fff;
   outline: none;
-  box-shadow: 0 6px 18px rgba(20, 81, 66, 0.1);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--profile-accent) 10%, transparent);
 }
 
 .watta-profile-quick-nav__btn--on {
-  border-color: rgba(20, 81, 66, 0.28);
-  background: linear-gradient(135deg, #145142 0%, #1a6b58 100%);
+  border-color: color-mix(in srgb, var(--profile-accent) 28%, transparent);
+  background: linear-gradient(135deg, var(--profile-accent) 0%, var(--profile-accent-hover) 100%);
   color: #fff;
-  box-shadow: 0 8px 22px rgba(20, 81, 66, 0.22);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--profile-accent) 22%, transparent);
 }
 
 .watta-profile-quick-nav__btn-icon {
@@ -913,7 +666,7 @@
   min-height: 2.35rem;
   padding: 0.45rem 0.9rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(20, 81, 66, 0.14);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 14%, transparent);
   background: #fff;
   font-size: 0.78rem;
   font-weight: 700;
@@ -925,7 +678,7 @@
 }
 
 .watta-profile-inapp-reviews-btn:hover {
-  border-color: rgba(20, 81, 66, 0.28);
+  border-color: color-mix(in srgb, var(--profile-accent) 28%, transparent);
   color: var(--profile-inapp-accent);
 }
 
@@ -976,10 +729,10 @@
   min-height: 420px;
   overflow: hidden;
   border-radius: 1.25rem;
-  border: 1px solid rgba(20, 81, 66, 0.1);
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 10%, transparent);
   background: #fff;
   padding: 1.1rem;
-  box-shadow: 0 12px 40px rgba(20, 81, 66, 0.06);
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--profile-accent) 6%, transparent);
 }
 
 @media (min-width: 640px) {

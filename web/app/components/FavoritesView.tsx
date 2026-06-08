@@ -8,6 +8,7 @@ import LogoBackground from './LogoBackground'
 import toast from 'react-hot-toast'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { appendCartLines } from '@/lib/cartStorage'
+import WattaBrandWordmark from './WattaBrandWordmark'
 
 interface FavoritesViewProps {
   onBack: () => void
@@ -80,7 +81,10 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
         
         <div className="flex items-center gap-2 select-none">
           <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
-          <img src="/1.jpg" alt={t.common.brandName} className="h-6 w-auto object-contain hidden md:block" />
+          <WattaBrandWordmark
+            className="h-6 w-auto object-contain logo-text-image-web"
+            deferUntilSplashEnd={false}
+          />
         </div>
       </div>
 
@@ -109,7 +113,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
             <h2 className="text-3xl font-bold text-black mb-2">{cp.favEmpty}</h2>
             <button 
               onClick={onBack}
-              className="bg-[#145142] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#0f3d32] transition shadow-lg"
+              className="bg-watta-action text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-watta-action-hover transition shadow-lg"
             >
               {cp.goMenu}
             </button>
@@ -154,7 +158,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
                     <span className="text-2xl font-bold text-black">{item.price} €</span>
                     <button 
                       onClick={() => addToCart(item)}
-                      className="bg-[#145142] text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-[#0f3d32] transition shadow-lg shadow-green-900/20 active:scale-95"
+                      className="bg-watta-action text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-watta-action-hover transition shadow-lg shadow-green-900/20 active:scale-95"
                     >
                       <Plus size={24} />
                     </button>

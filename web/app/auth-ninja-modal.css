@@ -1,0 +1,581 @@
+/**
+ * Модальний вхід / реєстрація — чистий Ninja-style, кольори Watta.
+ */
+
+.auth-ninja-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9985;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.auth-ninja-overlay__backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.38);
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.auth-ninja-modal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 400px);
+  max-height: min(
+    calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px),
+    640px
+  );
+  margin:
+    max(16px, env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  pointer-events: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 24px 24px 20px;
+  box-shadow:
+    0 20px 50px rgba(17, 24, 39, 0.14),
+    0 4px 14px rgba(17, 24, 39, 0.06);
+  box-sizing: border-box;
+}
+
+.auth-ninja-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.auth-ninja-modal__close:hover {
+  background: rgba(17, 24, 39, 0.06);
+  color: #374151;
+}
+
+.auth-ninja-modal__title {
+  margin: 0 0 6px;
+  padding-right: 32px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: #111827;
+  text-align: left;
+}
+
+.auth-ninja-modal__subtitle {
+  margin: 0 0 22px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #9ca3af;
+  text-align: left;
+}
+
+.auth-ninja-modal__error {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.auth-ninja-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-ninja-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-ninja-field--phone {
+  gap: 0;
+}
+
+.auth-ninja-field__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-ninja-field__input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: #111827;
+  background: #f3f4f6;
+  outline: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-ninja-field__input::placeholder {
+  color: #9ca3af;
+}
+
+.auth-ninja-field__input:focus {
+  background: #eef0f3;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--watta-mobile-cart-bar-green, #5c9010) 42%, transparent);
+}
+
+.auth-ninja-phone {
+  display: flex;
+  align-items: stretch;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-ninja-phone:focus-within {
+  background: #eef0f3;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--watta-mobile-cart-bar-green, #5c9010) 42%, transparent);
+}
+
+.auth-ninja-phone__prefix {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 0 14px;
+  color: #374151;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.auth-ninja-phone__flag {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.auth-ninja-phone__chevron {
+  flex-shrink: 0;
+  color: #9ca3af;
+  margin-right: 2px;
+}
+
+.auth-ninja-phone__code {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.auth-ninja-phone__sep {
+  margin-left: 6px;
+  color: #d1d5db;
+  font-weight: 400;
+}
+
+.auth-ninja-phone__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  padding: 14px 14px 14px 4px;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: #111827;
+  background: transparent;
+  outline: none;
+}
+
+.auth-ninja-phone__input::placeholder {
+  color: #9ca3af;
+}
+
+.auth-ninja-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.auth-ninja-terms__check {
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--watta-mobile-cart-bar-green, #5c9010);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.auth-ninja-terms__text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #6b7280;
+}
+
+.auth-ninja-terms__affirm {
+  cursor: pointer;
+}
+
+.auth-ninja-terms__link {
+  position: relative;
+  z-index: 1;
+  font-weight: 600;
+  color: #145142;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  touch-action: manipulation;
+}
+
+.auth-ninja-terms__link:hover {
+  color: #0f3d34;
+}
+
+.auth-ninja-btn-primary {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--watta-mobile-cart-bar-ink, #ffffff);
+  background: var(--watta-mobile-cart-bar-green, #5c9010);
+  box-shadow: 0 2px 10px rgba(86, 194, 67, 0.28);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.auth-ninja-btn-primary:hover:not(:disabled) {
+  background: var(--watta-brand-mint-hover);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--watta-brand-mint-hover) 32%, transparent);
+}
+
+.auth-ninja-btn-primary:active:not(:disabled) {
+  background: var(--watta-brand-mint-active);
+  transform: scale(0.99);
+}
+
+.auth-ninja-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-ninja-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 2px 0;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.auth-ninja-divider::before,
+.auth-ninja-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e5e7eb 18%, #e5e7eb 82%, transparent);
+}
+
+.auth-ninja-google-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 50px;
+}
+
+.auth-ninja-google-wrap--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.auth-ninja-google-btn {
+  display: grid;
+  grid-template-columns: 22px 1fr 22px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  border: none;
+  border-radius: 12px;
+  padding: 13px 16px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #111827;
+  background: #f3f4f6;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.auth-ninja-google-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.08);
+}
+
+.auth-ninja-google-btn__label {
+  grid-column: 2;
+  text-align: center;
+}
+
+.auth-ninja-google-btn:hover:not(:disabled) {
+  background: #eef0f3;
+  box-shadow:
+    inset 0 0 0 1px #d1d5db,
+    0 2px 8px rgba(17, 24, 39, 0.04);
+}
+
+.auth-ninja-google-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.auth-ninja-google-btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Невидимий шар Google поверх нашої кнопки — клікабельний, але не видно */
+.auth-ninja-google-gis {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 12px;
+  opacity: 0.0001;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.auth-ninja-google-wrap--gis-ready .auth-ninja-google-gis {
+  pointer-events: auto;
+}
+
+.auth-ninja-google-wrap--gis-ready .auth-ninja-google-btn {
+  pointer-events: none;
+}
+
+.auth-ninja-google-gis > div {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
+.auth-ninja-google-gis iframe {
+  width: 100% !important;
+  height: 50px !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+.auth-ninja-btn-secondary {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #374151;
+  background: #f3f4f6;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.auth-ninja-btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.auth-ninja-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-ninja-code-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-align: center;
+  color: #111827;
+  background: #f3f4f6;
+  outline: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-ninja-code-input:focus {
+  background: #eef0f3;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--watta-mobile-cart-bar-green, #5c9010) 42%, transparent);
+}
+
+.auth-ninja-link-back {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  text-align: center;
+}
+
+.auth-ninja-link-back:hover {
+  color: #374151;
+}
+
+.auth-ninja-modal__switch {
+  margin: 20px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.auth-ninja-modal__switch-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: #145142;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.auth-ninja-modal__switch-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+html[data-watta-auth-modal-open] .auth-ninja-overlay,
+body.watta-auth-route .auth-ninja-overlay {
+  position: fixed;
+}
+
+html[data-watta-auth-modal-open] .auth-ninja-overlay__backdrop,
+body.watta-auth-modal-open .auth-ninja-overlay__backdrop,
+body.watta-auth-route .auth-ninja-overlay__backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+html[data-watta-auth-modal-open],
+body.watta-auth-modal-open,
+body.watta-auth-route {
+  background-color: rgba(15, 23, 42, 0.22);
+}
+
+body.watta-auth-route .watta-app-main-grow {
+  min-height: 0;
+  background: transparent !important;
+}
+
+body.watta-auth-route .watta-app-shell-root {
+  background: transparent !important;
+}
+
+/* Шапка + категорії як на головній; compact-back/cart приховані */
+body.watta-auth-route .watta-chrome-compact-cart-web,
+body.watta-auth-route .watta-chrome-compact-back-web {
+  display: none !important;
+}
+
+html[data-watta-auth-modal-open] .auth-ninja-overlay__backdrop,
+body.watta-auth-modal-open .auth-ninja-overlay__backdrop,
+body.watta-auth-route .auth-ninja-overlay__backdrop {
+  background: rgba(0, 0, 0, 0.42);
+  -webkit-backdrop-filter: blur(14px) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+@keyframes auth-ninja-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+body.watta-auth-route .auth-ninja-modal {
+  width: min(100%, 400px);
+  border-radius: 16px;
+  padding: 24px 24px 20px;
+  box-shadow:
+    0 24px 56px rgba(17, 24, 39, 0.16),
+    0 6px 16px rgba(17, 24, 39, 0.06);
+  animation: auth-ninja-modal-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.watta-auth-route .auth-ninja-modal {
+    animation: none;
+  }
+}

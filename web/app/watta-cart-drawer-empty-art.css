@@ -1,0 +1,615 @@
+/* Порожній drawer корзини — сцена як /favorites, суші випадають із сумки */
+
+.watta-cart-drawer-empty {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 16px 20px;
+  overflow: visible;
+}
+
+.watta-cart-drawer-empty__art {
+  width: min(100%, 20rem);
+  margin: 0 auto 10px;
+  padding: 0.15rem 0;
+  overflow: visible;
+}
+
+.watta-cart-drawer-empty__scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 248 / 228;
+  overflow: visible;
+}
+
+.watta-cart-drawer-empty__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.watta-cart-drawer-empty__blob {
+  fill: color-mix(in srgb, #145142 6%, #f4f7f5);
+}
+
+.watta-cart-drawer-empty__brand {
+  position: absolute;
+  left: 50%;
+  top: 11%;
+  z-index: 5;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.watta-cart-drawer-empty__brand-wordmark {
+  display: block;
+  width: auto;
+  height: clamp(1.55rem, 10vw, 2.35rem);
+  max-width: min(90vw, 11rem);
+  object-fit: contain;
+  opacity: 0;
+}
+
+.watta-cart-drawer-empty__bag {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 9;
+  width: clamp(3.25rem, 20vw, 4.5rem);
+  height: clamp(3.25rem, 20vw, 4.5rem);
+  color: #145142;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center center;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.watta-cart-drawer-empty__bag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.watta-cart-drawer-empty__roll-slot {
+  position: absolute;
+  pointer-events: none;
+}
+
+.watta-cart-drawer-empty__roll-drop {
+  width: 100%;
+  height: 100%;
+}
+
+.watta-cart-drawer-empty__roll {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 10px color-mix(in srgb, #145142 10%, transparent));
+}
+
+/* Фінальні позиції (як на /favorites) */
+.watta-cart-drawer-empty__roll-slot--nigiri {
+  right: 5%;
+  top: 36%;
+  z-index: 2;
+  width: 42%;
+  max-width: 6.5rem;
+}
+
+.watta-cart-drawer-empty__roll-slot--left {
+  left: 0;
+  top: 30%;
+  z-index: 0;
+  width: 52%;
+  max-width: 8.1rem;
+}
+
+.watta-cart-drawer-empty__roll-slot--rear {
+  left: 50%;
+  top: 30%;
+  z-index: 2;
+  width: 56%;
+  max-width: 9rem;
+  transform: translateX(-50%);
+}
+
+.watta-cart-drawer-empty__roll-slot--back {
+  left: 50%;
+  top: 38%;
+  z-index: 2;
+  width: 50%;
+  max-width: 8rem;
+  transform: translateX(-50%);
+}
+
+.watta-cart-drawer-empty__roll-slot--front {
+  left: 4%;
+  top: 42%;
+  z-index: 3;
+  width: 58%;
+  max-width: 9.25rem;
+}
+
+.watta-cart-drawer-empty__roll-slot--bottom {
+  left: 18%;
+  top: 56%;
+  z-index: 4;
+  width: 58%;
+  max-width: 9.25rem;
+}
+
+.watta-cart-drawer-empty__roll-slot--mussel {
+  left: 40%;
+  top: 38%;
+  z-index: 3;
+  width: 74%;
+  max-width: 11.25rem;
+}
+
+/* Нижній ряд (як раніше по місцю): запечений 5 → халапеньо 6 → ікра 7 */
+.watta-cart-drawer-empty__roll-slot--gunkan-baked {
+  right: 14%;
+  top: 69%;
+  z-index: 5;
+  width: 28%;
+  max-width: 4.35rem;
+}
+
+.watta-cart-drawer-empty__roll-slot--accent {
+  left: 66%;
+  top: 71%;
+  z-index: 6;
+  width: 28%;
+  max-width: 4.25rem;
+  transform: translateX(-50%);
+}
+
+.watta-cart-drawer-empty__roll-slot--gunkan-ikura {
+  left: 44%;
+  top: 76%;
+  z-index: 7;
+  width: 30%;
+  max-width: 4.5rem;
+}
+
+/*
+ * Телефон (≤767px): канонічна розкладка порожнього кошика — не змінювати.
+ * Планшет / ноут / ПК — піднімаємо внутрішні ролли й три гункани (див. 768px+).
+ */
+@media (max-width: 767px) {
+  .watta-cart-drawer-empty__roll-slot--nigiri {
+    top: 36%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--left {
+    top: 30%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--rear {
+    top: 30%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--back {
+    top: 38%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--front {
+    top: 42%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--bottom {
+    top: 56%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--mussel {
+    top: 38%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-baked {
+    right: 14%;
+    top: 69%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--accent {
+    left: 66%;
+    top: 71%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-ikura {
+    left: 44%;
+    top: 76%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * 1. велика сумка по центру → 2. перший ролл — сумка зникає → решта роллів → лого
+   */
+  .watta-cart-drawer-empty__scene--play {
+    --cart-empty-roll-start: 0.58s;
+  }
+
+  .watta-cart-drawer-empty__scene--play .watta-cart-drawer-empty__brand-wordmark {
+    animation: wattaCartEmptyBrandIn 0.52s ease-out 1.5s both;
+  }
+
+  .watta-cart-drawer-empty__scene--play .watta-cart-drawer-empty__bag {
+    animation:
+      wattaCartEmptyBagIn 0.34s ease-out both,
+      wattaCartEmptyBagVanish 0.3s ease-in var(--cart-empty-roll-start) forwards;
+  }
+
+  .watta-cart-drawer-empty__scene--play .watta-cart-drawer-empty__roll-drop {
+    opacity: 0;
+    animation: wattaCartEmptyRollDrop 0.66s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--cart-empty-roll-start) + var(--drop-i, 0) * 0.082s);
+  }
+}
+
+@keyframes wattaCartEmptyBrandIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wattaCartEmptyBagIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes wattaCartEmptyBagVanish {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+}
+
+@keyframes wattaCartEmptyRollDrop {
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--drop-tx, 0), -5.75rem, 0) scale(0.14) rotate(-12deg);
+  }
+  38% {
+    opacity: 1;
+  }
+  72% {
+    transform: translate3d(calc(var(--drop-tx, 0) * 0.1), 0.32rem, 0) scale(1.04) rotate(2.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-cart-drawer-empty__scene--play .watta-cart-drawer-empty__roll-drop {
+    opacity: 1;
+    animation: none;
+    transform: none;
+  }
+
+  .watta-cart-drawer-empty__scene--play .watta-cart-drawer-empty__brand-wordmark {
+    opacity: 1;
+    animation: none;
+    transform: none;
+  }
+
+  .watta-cart-drawer-empty__scene--play .watta-cart-drawer-empty__bag {
+    animation: none;
+    opacity: 0;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* Текст під ілюстрацією — як на /favorites, без окремої панелі */
+.watta-cart-drawer-empty__copy {
+  width: min(100%, 20rem);
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.watta-cart-drawer-empty__kicker {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #145142 72%, #64748b);
+  line-height: 1.3;
+}
+
+.watta-cart-drawer-empty__title {
+  margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.5rem, 4.2vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #0f241e;
+}
+
+.watta-cart-drawer-empty__hint {
+  margin: 0.75rem 0 0;
+  max-width: 20rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: color-mix(in srgb, #145142 62%, #ffffff);
+}
+
+.watta-cart-drawer-empty__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  padding: 0.25rem 0;
+  background: transparent;
+  border: none;
+  color: #145142;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: color 0.15s ease, gap 0.15s ease;
+}
+
+.watta-cart-drawer-empty__cta-arrow {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+@media (hover: hover) {
+  .watta-cart-drawer-empty__cta:hover {
+    color: #0f3d32;
+    gap: 0.55rem;
+  }
+}
+
+.watta-cart-drawer-empty__cta:active {
+  color: #0a2e25;
+}
+
+/* Сторінка /cart — та сама сцена, трохи ширша */
+.watta-cart-page-empty.watta-cart-drawer-empty {
+  padding: 8px 12px 20px;
+}
+
+.watta-cart-page-empty .watta-cart-drawer-empty__copy {
+  width: min(100%, 22rem);
+}
+
+.watta-cart-page-empty .watta-cart-drawer-empty__art {
+  width: min(100%, 22rem);
+  margin-bottom: 12px;
+}
+
+@media (min-width: 640px) {
+  .watta-cart-page-empty .watta-cart-drawer-empty__art {
+    width: min(100%, 26rem);
+    margin: 0.35rem auto 16px;
+  }
+
+  .watta-cart-page-empty .watta-cart-drawer-empty__brand {
+    top: 19%;
+  }
+
+  .watta-cart-page-empty .watta-cart-drawer-empty__brand-wordmark {
+    height: clamp(1.75rem, 4vw, 2.65rem);
+    max-width: 13rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-page-empty .watta-cart-drawer-empty__brand {
+    top: 20%;
+  }
+}
+
+#watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty) {
+  overflow: visible;
+}
+
+#watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+  overflow-x: visible;
+  overflow-y: auto;
+}
+
+/* Планшет / ноут / ПК — крупніша ілюстрація порожнього кошика */
+@media (min-width: 768px) {
+  .watta-cart-drawer-empty {
+    padding: 6px 20px 22px;
+  }
+
+  .watta-cart-drawer-empty__art {
+    width: min(100%, 26rem);
+    margin: 0.35rem auto 14px;
+  }
+
+  .watta-cart-drawer-empty__brand {
+    top: 19%;
+  }
+
+  .watta-cart-drawer-empty__brand-wordmark {
+    height: clamp(1.85rem, 3.5vw, 2.65rem);
+    max-width: 13rem;
+  }
+
+  .watta-cart-drawer-empty__bag {
+    width: clamp(3.75rem, 6.5vw, 5rem);
+    height: clamp(3.75rem, 6.5vw, 5rem);
+  }
+
+  /* Трохи вище на планшеті+ — телефон лишається як у блоці max-width 767px */
+  .watta-cart-drawer-empty__roll-slot--nigiri {
+    top: 33%;
+    max-width: 8.125rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--left {
+    top: 27%;
+    max-width: 10.125rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--rear {
+    top: 27%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--back {
+    top: 35%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--front {
+    top: 39%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--bottom {
+    top: 53%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--mussel {
+    top: 35%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-baked {
+    top: 66%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--accent {
+    top: 68%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-ikura {
+    top: 73%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--rear {
+    max-width: 11.25rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--back {
+    max-width: 10rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--front,
+  .watta-cart-drawer-empty__roll-slot--bottom {
+    max-width: 11.5rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--mussel {
+    max-width: 14rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--accent {
+    max-width: 5.3rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-ikura {
+    max-width: 5.625rem;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-baked {
+    max-width: 5.4rem;
+  }
+
+  .watta-cart-drawer-empty__copy {
+    width: min(100%, 26rem);
+  }
+
+  .watta-cart-drawer-empty__title {
+    font-size: clamp(1.875rem, 3.2vw, 2.375rem);
+  }
+
+  .watta-cart-drawer-empty__hint {
+    max-width: 26rem;
+    font-size: 1.0625rem;
+  }
+
+  .watta-cart-drawer-empty__cta {
+    margin-top: 1.75rem;
+    font-size: 1.0625rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-drawer-empty__brand {
+    top: 20%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--nigiri {
+    top: 32%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--left {
+    top: 26%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--rear {
+    top: 26%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--back {
+    top: 34%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--front {
+    top: 38%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--bottom {
+    top: 52%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--mussel {
+    top: 34%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-baked {
+    top: 65%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--accent {
+    top: 67%;
+  }
+
+  .watta-cart-drawer-empty__roll-slot--gunkan-ikura {
+    top: 72%;
+  }
+
+  .watta-cart-drawer-empty__art {
+    width: min(100%, 28rem);
+  }
+
+  .watta-cart-drawer-empty__title {
+    font-size: 1.65rem;
+  }
+
+  .watta-cart-drawer-empty__hint {
+    font-size: 15px;
+  }
+}

@@ -1,0 +1,17 @@
+/**
+ * /menu — секції каталогу: без роздільників і бокових акцентів;
+ * поява — через framer-motion у FullMenuCategorySection.
+ */
+
+.watta-full-menu-page .watta-full-menu-section {
+  position: relative;
+}
+
+/* Телефон: без GPU-шарів на кожній секції — менше VRAM, плавніший скрол каталогу */
+@media (max-width: 767px) {
+  [data-watta-in-view-fade] {
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+    transform: none;
+  }
+}

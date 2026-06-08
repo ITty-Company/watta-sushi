@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Bell, Package } from 'lucide-react'
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
+import { Package } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import NotificationsEmptyCallScene from '@/app/components/notifications/NotificationsEmptyCallScene'
+import NotificationsGuestPrompt from '@/app/components/notifications/NotificationsGuestPrompt'
 import {
   fetchMyNotifications,
   markAllNotificationsRead,
@@ -13,6 +16,7 @@ import {
 } from '@/lib/userNotificationsApi'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { cn } from '@/lib/utils'
+import '@/app/watta-notifications-empty.css'
 
 const POLL_MS = 20000
 
@@ -90,18 +94,37 @@ function formatWhen(iso: string, lang: string): string {
   })
 }
 
+function hasAuthToken(): boolean {
+  if (typeof window === 'undefined') return false
+  return Boolean(localStorage.getItem('token')?.trim())
+}
+
 export default function UserNotificationsPanel({ compact }: { compact?: boolean }) {
   const { t, language } = useLanguage()
   const n = t.notifications
   const reduceMotion = useReducedMotion()
+  const [guestMode, setGuestMode] = useState(() =>
+    typeof window === 'undefined' ? false : !hasAuthToken(),
+  )
   const [items, setItems] = useState<UserNotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() =>
+    typeof window === 'undefined' ? true : hasAuthToken(),
+  )
   const [syncing, setSyncing] = useState(false)
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!hasAuthToken()) {
+      setGuestMode(true)
+      setItems([])
+      setUnreadCount(0)
+      setLoading(false)
+      return
+    }
+    setGuestMode(false)
     const token = localStorage.getItem('token')
     if (!token) {
+      setGuestMode(true)
       setItems([])
       setUnreadCount(0)
       setLoading(false)
@@ -125,7 +148,10 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
   useEffect(() => {
     void load()
     const onChange = () => void load({ silent: true })
+    const onAuthChange = () => void load()
     window.addEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
+    window.addEventListener('userChanged', onAuthChange)
+    window.addEventListener('storage', onAuthChange)
     const onVisible = () => {
       if (document.visibilityState === 'visible') void load({ silent: true })
     }
@@ -136,6 +162,8 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
     }, POLL_MS)
     return () => {
       window.removeEventListener(WATTA_NOTIFICATIONS_CHANGED_EVENT, onChange)
+      window.removeEventListener('userChanged', onAuthChange)
+      window.removeEventListener('storage', onAuthChange)
       document.removeEventListener('visibilitychange', onVisible)
       window.clearInterval(id)
     }
@@ -159,22 +187,22 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
 
   if (loading) {
     return (
-      <div className={cn('notifications-page-state', compact && 'notifications-page-state--compact')}>
-        <div className="notifications-page-state__spinner" aria-hidden />
-        <p>{t.clientProfile.loading}</p>
+      <div className={cn('notifications-page-loading-call', compact && 'notifications-page-state--compact')}>
+        <div className="notifications-page-loading-call__bell" aria-hidden>
+          <Bell size={22} strokeWidth={2} />
+        </div>
+        <p role="status">{t.clientProfile.loading}</p>
       </div>
     )
   }
 
+  if (guestMode) {
+    return <NotificationsGuestPrompt compact={compact} />
+  }
+
   if (items.length === 0) {
     return (
-      <div className={cn('notifications-page-state', compact && 'notifications-page-state--compact')}>
-        <div className="notifications-page-state__icon-wrap">
-          <Bell className="notifications-page-state__icon" strokeWidth={1.5} aria-hidden />
-        </div>
-        <h3 className="notifications-page-state__title">{n.empty}</h3>
-        <p className="notifications-page-state__sub">{n.emptySubtext}</p>
-      </div>
+      <NotificationsEmptyCallScene subtitle={n.emptySubtext} compact={compact} />
     )
   }
 
@@ -205,7 +233,7 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
             const status = orderStatusFromItem(item)
             const statusClass = status ? STATUS_STYLES[status] : 'notifications-page-status--default'
             return (
-              <motion.li
+              <m.li
                 key={item.id}
                 layout={!reduceMotion}
                 initial={reduceMotion ? false : { opacity: 0, y: 8 }}
@@ -244,7 +272,7 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
                     <span className="notifications-page-card__dot" aria-hidden />
                   ) : null}
                 </Link>
-              </motion.li>
+              </m.li>
             )
           })}
         </AnimatePresence>

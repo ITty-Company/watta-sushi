@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node ../scripts/clear-next-dev-cache.cjs && NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
+    "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
+    "dev:fresh": "node ../scripts/clear-next-dev-cache.cjs && NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "dev:fast": "node ../scripts/kill-port.cjs 3000 && NODE_OPTIONS='--max-old-space-size=8192' next dev --turbo -H 0.0.0.0 -p 3000",
     "dev:cached": "node ../scripts/kill-port.cjs 3000 && NEXT_WEBPACK_FS_CACHE=1 NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
-    "dev:webpack": "node ../scripts/clear-next-dev-cache.cjs && NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
+    "dev:webpack": "NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "dev:poll": "node ../scripts/kill-port.cjs 3000 && WATCHPACK_POLLING=true NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "dev:turbo": "node ../scripts/kill-port.cjs 3000 && NODE_OPTIONS='--max-old-space-size=8192' next dev --turbo -H 0.0.0.0 -p 3000",
     "dev:https": "NODE_OPTIONS='--max-old-space-size=8192' next dev --experimental-https -H 0.0.0.0 -p 3000",
@@ -19,9 +20,11 @@
     "dev:reset": "rm -rf .next node_modules/.cache && NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "dev:mock": "node ../scripts/kill-port.cjs 3000 && USE_LOCAL_MOCK=1 NEXT_PUBLIC_API_URL= NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "local:all": "cd .. && npm run local:all",
-    "build": "next build",
+    "build": "node scripts/inject-sw-cache-version.cjs && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "compress:hero": "bash scripts/compress-hero-video.sh",
+    "compress:menu-hero": "bash scripts/compress-menu-hero-video.sh"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.11",
@@ -30,6 +33,7 @@
     "@fontsource/playfair-display": "^5.2.8",
     "@types/node": "^20.0.0",
     "autoprefixer": "^10.4.22",
+    "balloons-js": "^0.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.25",
     "gsap": "^3.14.2",
@@ -42,8 +46,6 @@
     "react-hot-toast": "^2.6.0",
     "recharts": "^3.7.0",
     "sharp": "0.33.5",
-    "sonner": "^2.0.7",
-    "stripe": "^21.0.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^3.4.18",
     "typescript": "^5.0.0"

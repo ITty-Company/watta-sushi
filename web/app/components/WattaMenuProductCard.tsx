@@ -1,17 +1,24 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { WATTA_CATALOG_REFRESH_EVENT } from '@/lib/wattaCatalogSync'
+import Image from 'next/image'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import WattaLink from './WattaLink'
-import { Minus, Plus, ShoppingBag } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
-import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { isNextImageOptimizableCatalogUrl, resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { preloadImageUrls } from '@/lib/preloadImages'
-import { prefetchProductById, primeProductPageCache, warmupProductDetail } from '@/lib/fetchProductById'
+import { prefetchHref } from '@/lib/instantNav'
+import { primeProductPageChrome } from '@/lib/wattaProductChrome'
+import { warmProductRouteData } from '@/lib/fetchProductById'
 import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
+import { productCardIngredientsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
 import { HomeMenuProductFavoriteButton } from './HomeMenuProductFavoriteButton'
-import { lineQuantity, readCartFromStorage, writeCartToStorage } from '@/lib/cartStorage'
+import { runCartAddFeedback } from '@/lib/cartAddFeedback'
+import type { MenuAddToCartResult } from '@/hooks/useMenuAddToCart'
+import { decrementCartProduct, incrementCartProduct } from '@/lib/cartLineMutations'
+import { useCartLineQuantity } from '@/hooks/useCartLineQuantity'
 
 export type WattaMenuProductCardModel = {
   id: number
@@ -35,28 +42,36 @@ export type WattaMenuProductCardModel = {
 
 type Props = {
   product: WattaMenuProductCardModel
-  onAddToCart: (product: WattaMenuProductCardModel) => void
+  onAddToCart: (product: WattaMenuProductCardModel) => MenuAddToCartResult | void
   variant: 'rail' | 'grid'
   /** Рядок під назвою (вага / шт.) */
   subtitleLine?: string
+  /** Знижку € показати біля ціни, а не на фото (компактні картки в кошику). */
+  discountNearPrice?: boolean
   className?: string
   /** Перед переходом на картку товару (зберегти скрол/категорію для повернення). */
   onBeforeNavigateToProduct?: () => void
+  /** Перші картки в зоні видимості — eager; решта lazy (швидше LCP / менше мережі). */
+  imagePriority?: boolean
 }
 
 /**
  * Єдина візуальна картка товару на сайті: стрічка на головній і сітка в меню/кошику
  * використовують ті самі `home-menu-product-*` стилі; `variant` лише вмикає ширину в горизонтальному ряді.
  */
-export function WattaMenuProductCard({
+export function WattaMenuProductCardInner({
   product,
   onAddToCart,
   variant,
   subtitleLine,
+  discountNearPrice = false,
   className,
   onBeforeNavigateToProduct,
+  imagePriority = false,
 }: Props) {
   const { t } = useLanguage()
+  const router = useRouter()
+  const mediaRef = useRef<HTMLDivElement>(null)
   const promoPct = clampPromoPercent(product.promoDiscountPercent)
   const catalogEff = effectiveUnitPrice(product.price, promoPct)
   const eff =
@@ -73,112 +88,101 @@ export function WattaMenuProductCard({
   const emoji = product.emoji ?? '🍣'
   const orderLabel = t.menuView.fullMenuWant
 
-  const getCartQty = useCallback(() => {
-    const line = readCartFromStorage().find((l) => l.id === product.id)
-    return line ? lineQuantity(line) : 0
-  }, [product.id])
-
-  const [cartQty, setCartQty] = useState(0)
-  useEffect(() => {
-    setCartQty(getCartQty())
-    const onCartChange = () => setCartQty(getCartQty())
-    window.addEventListener('cartUpdated', onCartChange)
-    window.addEventListener('storage', onCartChange)
-    return () => {
-      window.removeEventListener('cartUpdated', onCartChange)
-      window.removeEventListener('storage', onCartChange)
-    }
-  }, [getCartQty])
-
-  const changeCartQty = useCallback((delta: number) => {
-    const lines = readCartFromStorage()
-    const idx = lines.findIndex((l) => l.id === product.id)
-    if (idx < 0) return
-    const next = lineQuantity(lines[idx]) + delta
-    if (next <= 0) {
-      lines.splice(idx, 1)
-    } else {
-      lines[idx] = { ...lines[idx], quantity: Math.min(99, next) }
-    }
-    writeCartToStorage(lines)
-  }, [product.id])
-  const warmDetail = () => {
-    prefetchProductById(product.id)
-    void warmupProductDetail(product.id)
-    if (photoSrc) preloadImageUrls([photoSrc], { limit: 1, highPriorityCount: 1 })
-  }
-  const [imageError, setImageError] = useState(false)
-  const [mediaEpoch, setMediaEpoch] = useState(0)
-  useEffect(() => {
-    const bump = () => setMediaEpoch((n) => n + 1)
-    window.addEventListener('productsUpdated', bump)
-    window.addEventListener(WATTA_CATALOG_REFRESH_EVENT, bump)
-    return () => {
-      window.removeEventListener('productsUpdated', bump)
-      window.removeEventListener(WATTA_CATALOG_REFRESH_EVENT, bump)
-    }
-  }, [])
-  const photoSrc = useMemo(
-    () => resolveCatalogMediaUrl(product.imageUrl),
-    [product.imageUrl, mediaEpoch],
+  const cartQty = useCartLineQuantity(product.id)
+  const ingredientsLine = useMemo(
+    () => productCardIngredientsFromDescription(product.description),
+    [product.description],
   )
+
+  const changeCartQty = useCallback(
+    (delta: number) => {
+      if (delta > 0) {
+        const result = incrementCartProduct({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          category: '',
+          emoji: product.emoji,
+          imageUrl: product.imageUrl,
+          promoDiscountPercent: product.promoDiscountPercent,
+        })
+        return result !== 'max'
+      }
+
+      decrementCartProduct(product.id)
+      return true
+    },
+    [product],
+  )
+
+  const productHref = `/product/${product.id}`
+
+  const primeBeforeProductNav = useCallback(() => {
+    warmProductRouteData(product.id)
+    onBeforeNavigateToProduct?.()
+  }, [product.id, onBeforeNavigateToProduct])
+  const [imageError, setImageError] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const photoSrc = useMemo(() => resolveCatalogMediaUrl(product.imageUrl), [product.imageUrl])
   useEffect(() => {
     setImageError(false)
-  }, [product.id, product.imageUrl, mediaEpoch])
+    setImageLoaded(false)
+  }, [product.id, product.imageUrl])
   useEffect(() => {
-    if (photoSrc) preloadImageUrls([photoSrc], { limit: 1, highPriorityCount: 1 })
-  }, [photoSrc])
+    if (!imagePriority || !photoSrc) return
+    preloadImageUrls([photoSrc], { limit: 1, highPriorityCount: 1 })
+  }, [photoSrc, imagePriority])
   const showPhoto = Boolean(photoSrc) && !imageError
+  const useNextImage = showPhoto && isNextImageOptimizableCatalogUrl(photoSrc)
+  const markImageLoaded = useCallback(() => setImageLoaded(true), [])
+  const bindCatalogImageRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      if (node?.complete && node.naturalWidth > 0) markImageLoaded()
+    },
+    [markImageLoaded],
+  )
 
-  const pillNew =
-    'rounded-lg bg-[#e8f6f0] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
-  const pillHit =
-    'rounded-lg bg-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#145142] ring-1 ring-[#145142]/25'
-  const pillPromo =
-    'rounded-lg bg-[#fff3e8] px-2 py-0.5 text-[10px] font-extrabold text-[#c45a12] ring-1 ring-[#f5c4a8]'
+  const warmDetail = useCallback(() => {
+    warmProductRouteData(product.id)
+    prefetchHref(router, productHref)
+    if (photoSrc) preloadImageUrls([photoSrc], { limit: 1, highPriorityCount: 1 })
+  }, [product.id, productHref, photoSrc, router])
+
+  const showCartAddedFeedback = useCallback(() => {
+    runCartAddFeedback({
+      sourceEl: mediaRef.current,
+      imageUrl: photoSrc,
+      emoji,
+    })
+  }, [photoSrc, emoji])
+
+  const handleAddToCart = useCallback(() => {
+    const result = onAddToCart(product)
+    if (result === 'max' || result === 'auth_redirect') return
+    showCartAddedFeedback()
+  }, [onAddToCart, product, showCartAddedFeedback])
 
   const pills = (
-    <div className="pointer-events-none absolute left-2 top-2 z-[2] flex max-w-[calc(100%-1rem)] flex-wrap gap-1">
-      {product.isMenuNew ? <span className={pillNew}>{t.productDetail.badgeNew}</span> : null}
-      {product.isTop ? <span className={pillHit}>{t.popular}</span> : null}
-      {fixedOff > 0 ? <span className={pillPromo}>−{fixedOff} €</span> : null}
-      {fixedOff <= 0 && promoPct > 0 ? <span className={pillPromo}>−{promoPct}%</span> : null}
+    <div className="home-menu-product-card-badges-web pointer-events-none">
+      {product.isMenuNew ? (
+        <span className="home-menu-product-badge-web home-menu-product-badge-web--new">
+          {t.productDetail.badgeNew}
+        </span>
+      ) : null}
+      {product.isTop ? (
+        <span className="home-menu-product-badge-web home-menu-product-badge-web--hit">{t.popular}</span>
+      ) : null}
+      {fixedOff > 0 && !discountNearPrice ? (
+        <span className="home-menu-product-badge-web home-menu-product-badge-web--promo">−{fixedOff} €</span>
+      ) : null}
+      {fixedOff <= 0 && promoPct > 0 ? (
+        <span className="home-menu-product-badge-web home-menu-product-badge-web--promo">−{promoPct}%</span>
+      ) : null}
     </div>
   )
 
-  const media = (
-    <div className="relative">
-      {pills}
-      <HomeMenuProductFavoriteButton productId={product.id} />
-      <WattaLink
-        href={`/product/${product.id}`}
-        className="home-menu-product-card-media-web group/media block"
-        prefetch
-        onMouseEnter={warmDetail}
-        onFocus={warmDetail}
-        onTouchStart={warmDetail}
-        onClick={() => {
-          primeProductPageCache(product)
-          void warmupProductDetail(product.id)
-          onBeforeNavigateToProduct?.()
-        }}
-      >
-        {showPhoto ? (
-          <img
-            src={photoSrc ?? undefined}
-            alt=""
-            className="home-menu-product-card-img-web h-full w-full object-cover"
-            decoding="async"
-            loading="eager"
-            fetchPriority="high"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="home-menu-product-card-placeholder-web">{emoji}</div>
-        )}
-      </WattaLink>
-    </div>
-  )
+  const priceLabel = `${oldPrice != null ? `${oldPrice} €, ` : ''}${eff} €`
 
   return (
     <article
@@ -189,80 +193,202 @@ export function WattaMenuProductCard({
         variant === 'grid' && 'home-menu-product-card--grid-web',
         className,
       )}
+      onPointerEnter={warmDetail}
+      onFocus={warmDetail}
+      onTouchStart={warmDetail}
     >
-      {media}
-      <div className="home-menu-product-card-body-web">
-        <WattaLink
-          href={`/product/${product.id}`}
-          className="home-menu-product-card-title-link-web"
-          prefetch
-          onMouseEnter={warmDetail}
-          onFocus={warmDetail}
-          onTouchStart={warmDetail}
-          onClick={() => {
-            primeProductPageCache(product)
-            void warmupProductDetail(product.id)
-            onBeforeNavigateToProduct?.()
-          }}
-        >
-          <h2 className="home-menu-product-card-title-web">{product.name}</h2>
-        </WattaLink>
-        {subtitleLine ? <p className="home-menu-product-card-subline-web">{subtitleLine}</p> : null}
-        {product.description ? <p className="home-menu-product-card-desc-web">{product.description}</p> : null}
-
-        <div className="home-menu-product-card-footer-web">
-          <div className="home-menu-product-price-stack-web">
-            {oldPrice != null ? (
-              <span className="home-menu-product-price-old-web">{oldPrice} €</span>
-            ) : null}
-            <span className="home-menu-product-price-web">{eff} €</span>
+      <WattaLink
+        href={productHref}
+        prefetch
+        className="home-menu-product-card-nav-hit-web"
+        aria-label={product.name}
+        onPointerDown={(e) => {
+          if (e.defaultPrevented || e.button !== 0) return
+          primeProductPageChrome()
+          warmDetail()
+          primeBeforeProductNav()
+        }}
+        onClick={primeBeforeProductNav}
+      />
+      <div className="home-menu-product-card-inner-web">
+        <div className="home-menu-product-card-media-frame-web" ref={mediaRef}>
+          {pills}
+          <div className="home-menu-product-card-media-web" aria-hidden>
+            {showPhoto ? (
+              <>
+                {!imageLoaded ? (
+                  <div className="home-menu-product-card-placeholder-web home-menu-product-card-placeholder-web--loading">
+                    {emoji}
+                  </div>
+                ) : null}
+                {useNextImage ? (
+                  <Image
+                    src={photoSrc!}
+                    alt=""
+                    fill
+                    className={cn(
+                      'home-menu-product-card-img-web',
+                      !imageLoaded && 'home-menu-product-card-img-web--pending',
+                    )}
+                    sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
+                    priority={imagePriority}
+                    onLoadingComplete={markImageLoaded}
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <img
+                    ref={bindCatalogImageRef}
+                    src={photoSrc ?? undefined}
+                    alt=""
+                    className={cn(
+                      'home-menu-product-card-img-web',
+                      !imageLoaded && 'home-menu-product-card-img-web--pending',
+                    )}
+                    decoding="async"
+                    loading={imagePriority ? 'eager' : 'lazy'}
+                    fetchPriority={imagePriority ? 'high' : undefined}
+                    onLoad={markImageLoaded}
+                    onError={() => setImageError(true)}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="home-menu-product-card-placeholder-web">{emoji}</div>
+            )}
           </div>
-          {cartQty > 0 ? (
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeCartQty(-1) }}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#145142]/15 bg-[#f6faf8] text-[#145142]"
-                aria-label="-"
-              >
-                <Minus size={12} strokeWidth={2.5} aria-hidden />
-              </button>
-              <span className="min-w-[1.25rem] text-center text-sm font-bold tabular-nums text-[#145142]">
-                {cartQty}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); changeCartQty(1) }}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#145142] text-white"
-                aria-label="+"
-              >
-                <Plus size={12} strokeWidth={2.5} aria-hidden />
-              </button>
-              <WattaLink
-                href="/cart"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#145142]/10 text-[#145142]"
-                aria-label={t.siteAria.cart}
-              >
-                <ShoppingBag size={13} aria-hidden />
-              </WattaLink>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onAddToCart(product)
-              }}
-              className="home-menu-product-add-web"
-              aria-label={orderLabel}
+        </div>
+
+        <div className="home-menu-product-card-body-web">
+          <div className="home-menu-product-card-head-web">
+            <h2 className="home-menu-product-card-title-web">{product.name}</h2>
+            <p
+              className={cn(
+                'home-menu-product-spec-weight-web',
+                !subtitleLine && 'home-menu-product-card-subline-web--placeholder',
+              )}
             >
-              <Plus className="home-menu-product-add-icon-web" size={16} strokeWidth={2.4} aria-hidden />
-              <span className="home-menu-product-add-text-web">{orderLabel}</span>
-            </button>
-          )}
+              {subtitleLine || '\u00a0'}
+            </p>
+            <p
+              className={cn(
+                'home-menu-product-card-desc-web',
+                !ingredientsLine && 'home-menu-product-card-subline-web--placeholder',
+              )}
+            >
+              {ingredientsLine || '\u00a0'}
+            </p>
+          </div>
+
+          <div
+            className={cn(
+              'home-menu-product-card-footer-web pointer-events-auto',
+              cartQty > 0 && 'home-menu-product-card-footer-web--in-cart',
+            )}
+            data-watta-skip-instant-nav=""
+          >
+            <div
+              className="home-menu-product-card-price-col-web"
+              aria-label={`${subtitleLine ? `${subtitleLine}, ` : ''}${priceLabel}`}
+            >
+              <div className="home-menu-product-price-row-web">
+                <p className="home-menu-product-price-web">
+                  <span className="home-menu-product-price-value-web">{eff}</span>
+                  <span className="home-menu-product-price-currency-web"> €</span>
+                </p>
+                {oldPrice != null ? (
+                  <span className="home-menu-product-price-old-web">{oldPrice} €</span>
+                ) : null}
+                {fixedOff > 0 && discountNearPrice ? (
+                  <span className="home-menu-product-price-discount-tag-web">−{fixedOff} €</span>
+                ) : null}
+              </div>
+            </div>
+
+            {cartQty > 0 ? (
+              <div
+                className="home-menu-product-cart-controls-web home-menu-product-cart-controls-web--active"
+                role="group"
+                aria-label={orderLabel}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    changeCartQty(-1)
+                  }}
+                  className="home-menu-product-cart-btn-web home-menu-product-cart-btn-web--minus"
+                  aria-label="-"
+                >
+                  <Minus size={14} strokeWidth={2.5} aria-hidden />
+                </button>
+                <span className="home-menu-product-cart-qty-web" aria-live="polite">
+                  {cartQty}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (changeCartQty(1)) showCartAddedFeedback()
+                  }}
+                  className="home-menu-product-cart-btn-web home-menu-product-cart-btn-web--plus"
+                  aria-label="+"
+                >
+                  <Plus size={14} strokeWidth={2.5} aria-hidden />
+                </button>
+              </div>
+            ) : (
+              <div className="home-menu-product-card-actions-web">
+                <HomeMenuProductFavoriteButton
+                  productId={product.id}
+                  className="home-menu-product-favorite-btn-web--footer"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleAddToCart()
+                  }}
+                  className="home-menu-product-add-web home-menu-product-add-web--icon"
+                  aria-label={orderLabel}
+                >
+                  <Plus className="home-menu-product-add-icon-web" size={18} strokeWidth={2.4} aria-hidden />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </article>
   )
 }
+
+function menuCardPropsEqual(prev: Props, next: Props): boolean {
+  const a = prev.product
+  const b = next.product
+  return (
+    prev.variant === next.variant &&
+    prev.imagePriority === next.imagePriority &&
+    prev.subtitleLine === next.subtitleLine &&
+    prev.discountNearPrice === next.discountNearPrice &&
+    prev.className === next.className &&
+    prev.onAddToCart === next.onAddToCart &&
+    prev.onBeforeNavigateToProduct === next.onBeforeNavigateToProduct &&
+    a.id === b.id &&
+    a.name === b.name &&
+    a.description === b.description &&
+    a.price === b.price &&
+    a.emoji === b.emoji &&
+    a.imageUrl === b.imageUrl &&
+    a.isTop === b.isTop &&
+    a.isMenuNew === b.isMenuNew &&
+    a.promoDiscountPercent === b.promoDiscountPercent &&
+    a.saleUnitPrice === b.saleUnitPrice &&
+    a.compareAtPrice === b.compareAtPrice &&
+    a.cartFixedDiscountEur === b.cartFixedDiscountEur
+  )
+}
+
+export const WattaMenuProductCard = memo(WattaMenuProductCardInner, menuCardPropsEqual)

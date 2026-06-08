@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useState, type HTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
@@ -10,6 +10,8 @@ type Props = {
   id?: string
   ariaLabel?: string
   closeSwipeHandlers?: Record<string, unknown>
+  /** Атрибути / стилі на <aside> (напр. data-cart-lines для висоти кошика) */
+  drawerProps?: HTMLAttributes<HTMLElement> & Record<`data-${string}`, string>
   children: ReactNode
 }
 
@@ -23,11 +25,12 @@ export default function WattaNavDrawerShell({
   id = 'watta-nav-drawer',
   ariaLabel,
   closeSwipeHandlers,
+  drawerProps,
   children,
 }: Props) {
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setMounted(true)
   }, [])
 
@@ -51,6 +54,7 @@ export default function WattaNavDrawerShell({
           'watta-nav-sidebar-drawer watta-nav-sidebar-drawer--sheet',
           isOpen && 'is-open',
         )}
+        {...drawerProps}
         {...closeSwipeHandlers}
       >
         {children}

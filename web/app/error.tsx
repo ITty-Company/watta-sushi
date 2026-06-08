@@ -39,13 +39,13 @@ export default function Error({
         <button
           type="button"
           onClick={() => reset()}
-          className="rounded-xl bg-[#145142] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f3d32] active:scale-[0.98]"
+          className="rounded-xl bg-watta-action px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-watta-action-hover active:scale-[0.98]"
         >
           Спробувати знову
         </button>
         <Link
           href="/"
-          className="rounded-xl border border-[#145142]/30 bg-white px-5 py-2.5 text-sm font-semibold text-[#145142] transition hover:bg-[#145142]/5"
+          className="rounded-xl border border-[#145142]/30 bg-white px-5 py-2.5 text-sm font-semibold text-[#145142] transition hover:bg-watta-action/5"
         >
           На головну
         </Link>

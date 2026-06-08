@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
+import { optimizeIngredientFileOnDisk } from '../lib/compressUploadImage.js';
 import {
   normalizeIngredientImageUrl,
   persistDataUrlIngredientImage,
@@ -35,7 +36,7 @@ function scheduleIngredientImageRepair(
   void (async () => {
     for (const row of pending) {
       try {
-        const saved = persistDataUrlIngredientImage(row.imageUrl);
+        const saved = await persistDataUrlIngredientImage(row.imageUrl);
         if (!saved) continue;
         await prisma.ingredient.update({
           where: { id: row.id },
@@ -48,10 +49,37 @@ function scheduleIngredientImageRepair(
   })();
 }
 
+/** Великі PNG/JPEG у /uploads/ — перекодувати у легкий JPEG (фон). */
+function scheduleIngredientImageOptimize(
+  rows: { id: number; imageUrl: string }[],
+): void {
+  const candidates = rows.filter((r) => {
+    const u = String(r.imageUrl).trim();
+    return u.startsWith('/uploads/ingredient-');
+  });
+  if (candidates.length === 0) return;
+
+  void (async () => {
+    for (const row of candidates) {
+      try {
+        const optimized = await optimizeIngredientFileOnDisk(row.imageUrl);
+        if (!optimized || optimized === row.imageUrl) continue;
+        await prisma.ingredient.update({
+          where: { id: row.id },
+          data: { imageUrl: optimized },
+        });
+      } catch (e) {
+        console.error(`Ingredient image optimize failed id=${row.id}:`, e);
+      }
+    }
+  })();
+}
+
 router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (_req: Request, res: Response) => {
   try {
     const list = await prisma.ingredient.findMany({ orderBy: { id: 'asc' } });
     scheduleIngredientImageRepair(list);
+    scheduleIngredientImageOptimize(list);
     res.json(list.map((row) => sanitizeIngredientForApi(row)));
   } catch (error) {
     console.error(error);
@@ -62,7 +90,7 @@ router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (_req: Request, 
 router.post('/', checkAdmin, async (req: Request, res: Response) => {
   try {
     const names = normalizeIngredientNames(req.body as Record<string, unknown>);
-    const imageUrl = normalizeIngredientImageUrl(
+    const imageUrl = await normalizeIngredientImageUrl(
       (req.body as { imageUrl?: unknown }).imageUrl,
     );
     if (!names) {
@@ -95,8 +123,8 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
     const imageUrlRaw = (req.body as { imageUrl?: unknown }).imageUrl;
     const imageUrl =
       imageUrlRaw !== undefined && imageUrlRaw !== null
-        ? normalizeIngredientImageUrl(imageUrlRaw)
-        : normalizeIngredientImageUrl(existing.imageUrl);
+        ? await normalizeIngredientImageUrl(imageUrlRaw)
+        : String(existing.imageUrl ?? '').trim();
     if (!names) {
       return res.status(400).json({ message: 'Укажите название (RU) и переводы' });
     }

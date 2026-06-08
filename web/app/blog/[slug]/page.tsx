@@ -4,6 +4,7 @@ import { serverApiBaseUrl } from '@/lib/serverApiBaseUrl'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { getBlogNotFoundTitle } from '@/lib/i18n/seo'
 import BlogBackToIndex from '../BlogBackToIndex'
+import { BlogArticleBodyFade, BlogArticleHeroFade } from '../BlogArticleFade'
 import BlogArticleInner from '../BlogArticleInner'
 import BlogArticleLinks from '../BlogArticleLinks'
 import type { BlogPostLinks } from '@/lib/blogLinks'
@@ -28,11 +29,13 @@ function normalizeVideoUrl(url?: string | null): string | null {
   return value
 }
 
+export const revalidate = 120
+
 async function getPost(slug: string, lang: string): Promise<BlogPost | null> {
   try {
     const res = await fetch(
       `${serverApiBaseUrl()}/api/blog/${slug}?lang=${encodeURIComponent(lang)}`,
-      { cache: 'no-store' },
+      { next: { revalidate: 120 } },
     )
     if (!res.ok) return null
     return res.json()
@@ -69,12 +72,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         </div>
         <article className="watta-blog-article">
           {post.imageUrl ? (
-            <div className="watta-blog-article__hero-media">
+            <BlogArticleHeroFade>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={post.imageUrl} alt="" className="watta-blog-article__hero-img" />
-            </div>
+            </BlogArticleHeroFade>
           ) : null}
-          <div className="watta-blog-article__body">
+          <BlogArticleBodyFade>
             <BlogArticleInner
               post={{
                 title: post.title,
@@ -85,7 +88,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               videoEmbedUrl={videoEmbedUrl}
             />
             {post.links ? <BlogArticleLinks links={post.links} /> : null}
-          </div>
+          </BlogArticleBodyFade>
         </article>
       </div>
     </div>

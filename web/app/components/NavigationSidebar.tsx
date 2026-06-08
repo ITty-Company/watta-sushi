@@ -4,9 +4,9 @@ import { useEffect } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useNavDrawerCloseSwipeHandlers } from '@/components/NavDrawerSwipeGestures'
 import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
-import WattaNavDrawerPanel from './WattaNavDrawerPanel'
 import type { NavDrawerCategory } from '@/lib/navDrawerCategories'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
+import WattaNavDrawerPanel from './WattaNavDrawerPanel'
 
 export interface NavigationSidebarProps {
   isOpen: boolean
@@ -60,19 +60,21 @@ export default function NavigationSidebar({
       ariaLabel={t.menu}
       closeSwipeHandlers={closeSwipe}
     >
-      <WattaNavDrawerPanel
-        mode="embedded"
-        onClose={onClose}
-        staggerKey={staggerKey}
-        drawerActive={isOpen}
-        categories={categories}
-        onCategorySelect={onCategorySelect}
-        onCityChange={onCityChange}
-        onPageOpen={onPageOpen}
-        onGoHome={onGoHome}
-        onOpenProfileTab={onOpenProfileTab}
-        onOpenNotifications={onOpenNotifications}
-      />
+      {isOpen ? (
+        <WattaNavDrawerPanel
+          mode="embedded"
+          onClose={onClose}
+          staggerKey={staggerKey}
+          drawerActive
+          categories={categories}
+          onCategorySelect={onCategorySelect}
+          onCityChange={onCityChange}
+          onPageOpen={onPageOpen}
+          onGoHome={onGoHome}
+          onOpenProfileTab={onOpenProfileTab}
+          onOpenNotifications={onOpenNotifications}
+        />
+      ) : null}
     </WattaNavDrawerShell>
   )
 }

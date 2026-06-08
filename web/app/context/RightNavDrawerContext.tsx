@@ -12,11 +12,11 @@ import React, {
 } from 'react'
 import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
 
-export type RightNavDrawerContextValue = {
+/** Стабільний контекст — шапка / кошик не ре-рендеряться при isOpen. */
+export type RightNavDrawerActionsValue = {
   open: () => void
   close: () => void
   toggle: () => void
-  isOpen: boolean
   /** Drawer is available (non-auth public shell). */
   enabled: boolean
   /**
@@ -25,7 +25,12 @@ export type RightNavDrawerContextValue = {
   cityChangeHandlerRef: MutableRefObject<((cityId: number) => void) | null>
 }
 
-const RightNavDrawerContext = createContext<RightNavDrawerContextValue | null>(null)
+export type RightNavDrawerContextValue = RightNavDrawerActionsValue & {
+  isOpen: boolean
+}
+
+const RightNavDrawerActionsContext = createContext<RightNavDrawerActionsValue | null>(null)
+const RightNavDrawerOpenContext = createContext(false)
 
 export function RightNavDrawerProvider({
   enabled,
@@ -54,30 +59,56 @@ export function RightNavDrawerProvider({
 
   useWattaNavDrawerOpenSync(enabled && isOpen)
 
-  const value = useMemo<RightNavDrawerContextValue>(
+  const actionsValue = useMemo<RightNavDrawerActionsValue>(
     () => ({
       open,
       close,
       toggle,
-      isOpen: enabled && isOpen,
       enabled,
       cityChangeHandlerRef,
     }),
-    [enabled, isOpen, open, close, toggle]
+    [enabled, open, close, toggle],
   )
 
-  return <RightNavDrawerContext.Provider value={value}>{children}</RightNavDrawerContext.Provider>
+  const drawerOpen = enabled && isOpen
+
+  return (
+    <RightNavDrawerActionsContext.Provider value={actionsValue}>
+      <RightNavDrawerOpenContext.Provider value={drawerOpen}>
+        {children}
+      </RightNavDrawerOpenContext.Provider>
+    </RightNavDrawerActionsContext.Provider>
+  )
 }
 
-export function useRightNavDrawer(): RightNavDrawerContextValue {
-  const ctx = useContext(RightNavDrawerContext)
+export function useRightNavDrawerActions(): RightNavDrawerActionsValue {
+  const ctx = useContext(RightNavDrawerActionsContext)
   if (!ctx) {
-    throw new Error('useRightNavDrawer must be used within RightNavDrawerProvider')
+    throw new Error('useRightNavDrawerActions must be used within RightNavDrawerProvider')
   }
   return ctx
 }
 
-/** For headers that may render outside the provider (tests / storybook). */
+export function useOptionalRightNavDrawerActions(): RightNavDrawerActionsValue | null {
+  return useContext(RightNavDrawerActionsContext)
+}
+
+export function useRightNavDrawerOpen(): boolean {
+  return useContext(RightNavDrawerOpenContext)
+}
+
+export function useRightNavDrawer(): RightNavDrawerContextValue {
+  const actions = useRightNavDrawerActions()
+  const isOpen = useRightNavDrawerOpen()
+  return useMemo(() => ({ ...actions, isOpen }), [actions, isOpen])
+}
+
+/** @deprecated Prefer useOptionalRightNavDrawerActions in chrome (avoids isOpen re-renders). */
 export function useOptionalRightNavDrawer(): RightNavDrawerContextValue | null {
-  return useContext(RightNavDrawerContext)
+  const actions = useOptionalRightNavDrawerActions()
+  const isOpen = useContext(RightNavDrawerOpenContext)
+  return useMemo(
+    () => (actions ? { ...actions, isOpen } : null),
+    [actions, isOpen],
+  )
 }

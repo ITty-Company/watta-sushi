@@ -1,21 +1,42 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, Receipt, CheckCircle2, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
+import { m } from 'framer-motion'
+import {
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  MapPin,
+  Package,
+  Phone,
+  Truck,
+} from 'lucide-react'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import type { WattaLanguage } from '@/lib/i18n/language'
-import LogoBackground from '../LogoBackground'
+import { resolveCatalogMediaUrl, isNextImageOptimizableCatalogUrl } from '@/lib/catalogMediaUrl'
+import { HERO_COPY_EASE } from '../heroCopyMotion'
+import WattaLink from '../WattaLink'
+import { WattaInViewFadeArticle } from '../WattaInViewFade'
+import OrderReceiptIllustration from './OrderReceiptIllustration'
 import type { ProfileOrder, ProfileOrderItem } from './ClientProfileOrders'
 
-function productLineName(p: ProfileOrderItem['product'], lang: WattaLanguage): string {
-  if (!p) return '—'
-  return (
-    getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang) ||
-    p.name_ru ||
-    '—'
-  )
+function productLineName(
+  p: ProfileOrderItem['product'],
+  lang: WattaLanguage,
+  snapshot?: string,
+): string {
+  if (p) {
+    const localized = getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang)
+    if (localized) return localized
+    if (p.name_ru) return p.name_ru
+  }
+  const snap = String(snapshot || '').trim()
+  if (snap) return snap
+  return '—'
 }
 
 function paymentStatusLabel(
@@ -28,8 +49,39 @@ function paymentStatusLabel(
 ): string {
   const s = String(status || '').toUpperCase()
   if (s === 'PAID') return t.paymentStatusPaid
-  if (s === 'FAILED') return t.paymentStatusError
+  if (s === 'FAILED' || s === 'ERROR') return t.paymentStatusError
   return t.paymentStatusWaiting
+}
+
+function paymentVisual(status: string | undefined): 'paid' | 'waiting' | 'failed' {
+  const s = String(status || '').toUpperCase()
+  if (s === 'PAID') return 'paid'
+  if (s === 'FAILED' || s === 'ERROR') return 'failed'
+  return 'waiting'
+}
+
+function ReceiptItemThumb({ item }: { item: ProfileOrderItem }) {
+  const imageUrl = resolveCatalogMediaUrl(item.product?.imageUrl)
+  if (imageUrl && isNextImageOptimizableCatalogUrl(imageUrl)) {
+    return (
+      <div className="watta-order-receipt-page__item-thumb">
+        <Image src={imageUrl} alt="" width={88} height={88} sizes="2.75rem" />
+      </div>
+    )
+  }
+  if (imageUrl) {
+    return (
+      <div className="watta-order-receipt-page__item-thumb">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt="" loading="lazy" decoding="async" />
+      </div>
+    )
+  }
+  return (
+    <div className="watta-order-receipt-page__item-thumb watta-order-receipt-page__item-thumb--emoji">
+      🍣
+    </div>
+  )
 }
 
 export default function OrderReceiptPageClient({ orderId }: { orderId: number }) {
@@ -57,11 +109,7 @@ export default function OrderReceiptPageClient({ orderId }: { orderId: number })
         setError(cp.receiptUnauthorized)
         return
       }
-      if (res.status === 404) {
-        setError(cp.receiptNotFound)
-        return
-      }
-      if (!res.ok) {
+      if (res.status === 404 || !res.ok) {
         setError(cp.receiptNotFound)
         return
       }
@@ -81,125 +129,190 @@ export default function OrderReceiptPageClient({ orderId }: { orderId: number })
   const locale =
     language === 'uk' ? 'uk-UA' : language === 'nl' ? 'nl-NL' : language === 'en' ? 'en-GB' : 'ru-RU'
 
-  const paid = String(order?.paymentStatus || '').toUpperCase() === 'PAID'
+  const visual = paymentVisual(order?.paymentStatus)
+  const paid = visual === 'paid'
   const itemsSubtotal =
     order?.items?.reduce((sum, i) => sum + Number(i.price) * Number(i.quantity), 0) ?? 0
   const deliveryFee = Number(order?.deliveryFee ?? 0)
-  const usedBonuses = Number((order as ProfileOrder & { usedBonuses?: number })?.usedBonuses ?? 0)
+  const usedBonuses = Number(order?.usedBonuses ?? 0)
+  const isPickup = String(order?.fulfillmentType || '').toUpperCase() === 'PICKUP'
 
   return (
-    <div className="watta-public-page-shell watta-page-bg relative flex min-h-screen flex-1 flex-col font-sans">
-      <LogoBackground />
-      <div className="relative z-10 mx-auto w-full max-w-lg px-4 py-8 sm:px-6 sm:py-12">
-        <Link
+    <div className="watta-order-receipt-page watta-public-page-shell relative flex min-h-screen flex-1 flex-col font-sans">
+      <div className="watta-order-receipt-page__content">
+        <WattaLink
           href={`/profile?tab=history&order=${orderId}`}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#145142] hover:text-[#0f3d32]"
+          className="watta-order-receipt-page__back"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" aria-hidden />
           {cp.receiptBackProfile}
-        </Link>
+        </WattaLink>
 
         {loading ? (
-          <p className="text-center text-gray-600 py-16">{cp.loading}</p>
+          <div className="watta-order-receipt-page__skeleton" aria-busy="true" aria-label={cp.loading}>
+            <div className="watta-order-receipt-page__skeleton-block watta-order-receipt-page__skeleton-block--hero" />
+            <div className="watta-order-receipt-page__skeleton-block watta-order-receipt-page__skeleton-block--card" />
+          </div>
         ) : error ? (
-          <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-8 text-center text-red-800">
-            <AlertCircle className="mx-auto mb-3 h-10 w-10" />
+          <div className="watta-order-receipt-page__error" role="alert">
+            <AlertCircle aria-hidden />
             <p>{error}</p>
+            <WattaLink
+              href="/profile?tab=history"
+              className="watta-order-receipt-page__btn watta-order-receipt-page__btn--ghost"
+            >
+              {cp.receiptBackProfile}
+            </WattaLink>
           </div>
         ) : order ? (
-          <article className="rounded-[28px] border border-[#145142]/10 bg-white/95 shadow-[0_20px_60px_rgba(20,81,66,0.12)] backdrop-blur-md">
-            <header className="border-b border-gray-100 px-6 py-6 sm:px-8">
-              <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#145142] text-white">
-                  <Receipt className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-black text-[#145142] sm:text-2xl">{cp.receiptTitle}</h1>
-                  <p className="text-sm text-gray-500">
-                    {cp.orderLabel} #{order.id}
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600">
-                {new Date(order.createdAt).toLocaleString(locale)}
+          <>
+            <header className="watta-order-receipt-page__hero">
+              <OrderReceiptIllustration paymentVisual={visual} />
+              <h1 className="watta-order-receipt-page__hero-title">{cp.receiptTitle}</h1>
+              <p className="watta-order-receipt-page__hero-order">
+                {cp.orderLabel} <span>#{order.id}</span>
               </p>
-              <div
-                className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
-                  paid
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-amber-50 text-amber-800 border border-amber-200'
-                }`}
-              >
-                {paid ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                {paymentStatusLabel(order.paymentStatus, cp)}
-              </div>
-              {paid && order.paidAt ? (
-                <p className="mt-2 text-sm text-gray-600">
-                  {cp.receiptPaidAt}{' '}
-                  <span className="font-semibold text-gray-900">
-                    {new Date(order.paidAt).toLocaleString(locale)}
-                  </span>
-                </p>
-              ) : !paid ? (
-                <p className="mt-2 text-sm text-amber-800/90">{cp.receiptAwaitingPayment}</p>
-              ) : null}
             </header>
 
-            <div className="px-6 py-5 sm:px-8">
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#145142]/70">
-                {cp.receiptItemsTitle}
-              </h2>
-              <ul className="divide-y divide-gray-100">
-                {order.items.map((item) => (
-                  <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
-                    <span className="font-medium text-gray-900">
-                      {productLineName(item.product, language as WattaLanguage)}
-                      <span className="ml-1 text-gray-500">×{item.quantity}</span>
-                    </span>
-                    <span className="shrink-0 font-bold text-[#145142]">
-                      {(item.price * item.quantity).toFixed(2)} €
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <dl className="mt-4 space-y-2 border-t border-gray-100 pt-4 text-sm">
-                <div className="flex justify-between text-gray-600">
-                  <dt>{cp.receiptMerchandise}</dt>
-                  <dd className="font-medium text-gray-900">{itemsSubtotal.toFixed(2)} €</dd>
-                </div>
-                {deliveryFee > 0 ? (
-                  <div className="flex justify-between text-gray-600">
-                    <dt>{cp.receiptDeliveryFee}</dt>
-                    <dd className="font-medium text-gray-900">{deliveryFee.toFixed(2)} €</dd>
-                  </div>
-                ) : null}
-                {usedBonuses > 0 ? (
-                  <div className="flex justify-between text-gray-600">
-                    <dt>{cp.receiptBonusesUsed}</dt>
-                    <dd className="font-medium text-emerald-700">−{usedBonuses.toFixed(2)} €</dd>
-                  </div>
-                ) : null}
-                <div className="flex justify-between border-t border-gray-100 pt-3 text-base font-bold text-gray-900">
-                  <dt>{cp.total}</dt>
-                  <dd className="text-[#145142]">{Number(order.totalPrice).toFixed(2)} €</dd>
-                </div>
-              </dl>
-
-              <div className="mt-5 rounded-xl bg-[#f4faf7] px-4 py-3 text-sm text-gray-700">
-                <p>
-                  <span className="font-semibold text-gray-900">{cp.labelPayment}: </span>
-                  {order.paymentMethod === 'CARD' ? cp.paymentCard : cp.paymentCash}
-                </p>
-                {order.address ? (
-                  <p className="mt-1">
-                    <span className="font-semibold text-gray-900">{cp.labelAddress}: </span>
-                    {order.address}
+            <WattaInViewFadeArticle className="watta-order-receipt-page__card">
+              <m.div
+                className="watta-order-receipt-page__status-band"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.34, ease: HERO_COPY_EASE }}
+              >
+                <span
+                  className={`watta-order-receipt-page__status-pill watta-order-receipt-page__status-pill--${visual}`}
+                >
+                  {paid ? (
+                    <CheckCircle2 aria-hidden />
+                  ) : visual === 'failed' ? (
+                    <AlertCircle aria-hidden />
+                  ) : (
+                    <Clock aria-hidden />
+                  )}
+                  {paymentStatusLabel(order.paymentStatus, cp)}
+                </span>
+                {paid && order.paidAt ? (
+                  <p className="watta-order-receipt-page__status-hint">
+                    {cp.receiptPaidAt}{' '}
+                    <strong>{new Date(order.paidAt).toLocaleString(locale)}</strong>
+                  </p>
+                ) : !paid ? (
+                  <p
+                    className={`watta-order-receipt-page__status-hint${visual === 'waiting' ? ' watta-order-receipt-page__status-hint--waiting' : ''}`}
+                  >
+                    {cp.receiptAwaitingPayment}
                   </p>
                 ) : null}
+              </m.div>
+
+              <div className="watta-order-receipt-page__meta-row">
+                <span className="watta-order-receipt-page__meta-chip">
+                  <Clock aria-hidden />
+                  {new Date(order.createdAt).toLocaleString(locale)}
+                </span>
+                <span className="watta-order-receipt-page__meta-chip">
+                  {isPickup ? <Package aria-hidden /> : <Truck aria-hidden />}
+                  {isPickup ? cp.fulfillmentPickup : cp.fulfillmentDelivery}
+                </span>
               </div>
-            </div>
-          </article>
+
+              <section className="watta-order-receipt-page__section" aria-labelledby="receipt-items-title">
+                <h2 id="receipt-items-title" className="watta-order-receipt-page__section-title">
+                  {cp.receiptItemsTitle}
+                </h2>
+                <ul className="watta-order-receipt-page__items">
+                  {order.items.map((item) => (
+                    <li key={item.id} className="watta-order-receipt-page__item">
+                      <ReceiptItemThumb item={item} />
+                      <div className="watta-order-receipt-page__item-body">
+                        <span className="watta-order-receipt-page__item-name">
+                          {productLineName(
+                            item.product,
+                            language as WattaLanguage,
+                            item.productNameSnapshot,
+                          )}
+                          <span className="watta-order-receipt-page__item-qty">×{item.quantity}</span>
+                        </span>
+                        <span className="watta-order-receipt-page__item-price">
+                          {(item.price * item.quantity).toFixed(2)} €
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                <dl className="watta-order-receipt-page__totals">
+                  <div className="watta-order-receipt-page__totals-row">
+                    <dt>{cp.receiptMerchandise}</dt>
+                    <dd>{itemsSubtotal.toFixed(2)} €</dd>
+                  </div>
+                  {deliveryFee > 0 ? (
+                    <div className="watta-order-receipt-page__totals-row">
+                      <dt>{cp.receiptDeliveryFee}</dt>
+                      <dd>{deliveryFee.toFixed(2)} €</dd>
+                    </div>
+                  ) : null}
+                  {usedBonuses > 0 ? (
+                    <div className="watta-order-receipt-page__totals-row watta-order-receipt-page__totals-row--bonus">
+                      <dt>{cp.receiptBonusesUsed}</dt>
+                      <dd>−{usedBonuses.toFixed(2)} €</dd>
+                    </div>
+                  ) : null}
+                  <div className="watta-order-receipt-page__totals-grand">
+                    <dt>{cp.total}</dt>
+                    <dd>{Number(order.totalPrice).toFixed(2)} €</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <div className="watta-order-receipt-page__details">
+                <div className="watta-order-receipt-page__detail">
+                  <span className="watta-order-receipt-page__detail-ico">
+                    <CreditCard aria-hidden />
+                  </span>
+                  <div>
+                    <span className="watta-order-receipt-page__detail-label">{cp.labelPayment}</span>
+                    <span className="watta-order-receipt-page__detail-value">
+                      {order.paymentMethod === 'CARD' ? cp.paymentCard : cp.paymentCash}
+                    </span>
+                  </div>
+                </div>
+                {order.address ? (
+                  <div className="watta-order-receipt-page__detail">
+                    <span className="watta-order-receipt-page__detail-ico">
+                      <MapPin aria-hidden />
+                    </span>
+                    <div>
+                      <span className="watta-order-receipt-page__detail-label">{cp.labelAddress}</span>
+                      <span className="watta-order-receipt-page__detail-value">{order.address}</span>
+                    </div>
+                  </div>
+                ) : null}
+                {order.phone ? (
+                  <div className="watta-order-receipt-page__detail">
+                    <span className="watta-order-receipt-page__detail-ico">
+                      <Phone aria-hidden />
+                    </span>
+                    <div>
+                      <span className="watta-order-receipt-page__detail-label">{cp.labelPhoneShort}</span>
+                      <span className="watta-order-receipt-page__detail-value">{order.phone}</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="watta-order-receipt-page__actions">
+                <WattaLink
+                  href={`/profile?tab=history&order=${orderId}`}
+                  className="watta-order-receipt-page__btn watta-order-receipt-page__btn--primary"
+                >
+                  {cp.receiptBackProfile}
+                </WattaLink>
+              </div>
+            </WattaInViewFadeArticle>
+          </>
         ) : null}
       </div>
     </div>

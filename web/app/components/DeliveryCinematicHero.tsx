@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m, useReducedMotion } from 'framer-motion'
 import { MapPin, Navigation, type LucideIcon } from 'lucide-react'
 import { HERO_COPY_EASE } from './heroCopyMotion'
 
@@ -21,8 +21,8 @@ const lineReveal = (reduceMotion: boolean, delay: number) =>
   reduceMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 20, filter: 'blur(10px)' },
-        animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
         transition: { duration: 0.55, ease: HERO_COPY_EASE, delay },
       }
 
@@ -40,7 +40,7 @@ function HeroGlassChip({
   delay: number
 }) {
   return (
-    <motion.div
+    <m.div
       className="delivery-page-hero-chip flex min-w-0 flex-1 flex-col gap-2 rounded-[20px] border border-white/20 bg-white/[0.09] px-4 py-3.5 text-left shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-md sm:rounded-[22px] sm:px-5 sm:py-4"
       {...lineReveal(reduceMotion, delay)}
     >
@@ -55,7 +55,7 @@ function HeroGlassChip({
       <p className="text-[clamp(1.05rem,4.2vw,1.35rem)] font-black leading-snug tracking-tight text-white">
         {value}
       </p>
-    </motion.div>
+    </m.div>
   )
 }
 
@@ -76,7 +76,7 @@ function DeliveryCinematicHero({ labels: d }: { labels: DeliveryCinematicHeroLab
       <div className="delivery-page-hero-orb delivery-page-hero-orb--mint pointer-events-none absolute" aria-hidden />
 
       <div className="delivery-page-hero-showcase-inner relative z-[4] mx-auto flex w-full max-w-3xl flex-col items-center px-4 pb-[calc(var(--watta-delivery-hero-wave-h,44px)+1.5rem)] pt-[clamp(2.5rem,7vh,4rem)] text-center max-[380px]:px-3 sm:px-6 sm:pb-[calc(var(--watta-delivery-hero-wave-h,48px)+2rem)] sm:pt-[clamp(2.75rem,7.5vh,4.5rem)]">
-        <motion.p
+        <m.p
           className="delivery-page-hero-showcase-kicker mb-5 inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-white/15 bg-white/[0.08] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80 backdrop-blur-sm sm:mb-6 sm:text-xs"
           {...lineReveal(reduceMotion, 0)}
         >
@@ -85,9 +85,9 @@ function DeliveryCinematicHero({ labels: d }: { labels: DeliveryCinematicHeroLab
             ·
           </span>
           <span className="font-medium normal-case tracking-normal text-white/70">{d.kickerScript}</span>
-        </motion.p>
+        </m.p>
 
-        <motion.h1
+        <m.h1
           id="delivery-cinematic-hero-title"
           className="delivery-page-hero-showcase-title w-full"
           {...lineReveal(reduceMotion, 0.08)}
@@ -106,14 +106,14 @@ function DeliveryCinematicHero({ labels: d }: { labels: DeliveryCinematicHeroLab
           >
             sushi
           </span>
-        </motion.h1>
+        </m.h1>
 
-        <motion.p
+        <m.p
           className="delivery-page-hero-sub mt-4 max-w-md text-balance text-[15px] font-medium leading-relaxed text-white/72 sm:mt-5 sm:max-w-lg sm:text-base md:text-lg"
           {...lineReveal(reduceMotion, 0.16)}
         >
           {d.subtitle}
-        </motion.p>
+        </m.p>
 
         <div className="delivery-page-hero-chip-row mt-6 flex w-full max-w-xl flex-col gap-3 sm:mt-8 sm:flex-row sm:gap-4">
           <HeroGlassChip

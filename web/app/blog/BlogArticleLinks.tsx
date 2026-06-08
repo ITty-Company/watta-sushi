@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useLanguage } from '@/app/context/LanguageContext'
 import type { BlogPostLinks } from '@/lib/blogLinks'
+import { WattaStaggerSectionTitle } from '@/app/components/WattaStaggerSectionTitle'
 
 type Props = {
   links: BlogPostLinks
@@ -26,9 +27,11 @@ export default function BlogArticleLinks({ links }: Props) {
 
   return (
     <section className="watta-blog-links" aria-labelledby="watta-blog-links-title">
-      <h2 id="watta-blog-links-title" className="watta-blog-links__title">
-        {b.linksTitle}
-      </h2>
+      <WattaStaggerSectionTitle
+        id="watta-blog-links-title"
+        className="watta-blog-links__title"
+        text={b.linksTitle}
+      />
 
       {products.length > 0 ? (
         <div className="watta-blog-links__group">
@@ -60,7 +63,7 @@ export default function BlogArticleLinks({ links }: Props) {
           <ul className="watta-blog-links__chips" role="list">
             {categories.map((c) => (
               <li key={`c-${c.id}`}>
-                <Link href={`/menu/category/${c.slug}`} className="watta-blog-links__chip">
+                <Link href={`/menu?cat=${encodeURIComponent(c.slug)}`} className="watta-blog-links__chip">
                   {c.emoji ? <span aria-hidden>{c.emoji}</span> : null}
                   {localizedName(c, getLocalized)}
                 </Link>

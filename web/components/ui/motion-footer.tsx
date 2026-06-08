@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 import { getMenuScrollParent } from '@/lib/menuScroll'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { WattaMenuProductCard } from '@/app/components/WattaMenuProductCard'
+import { WattaInViewFadeDiv } from '@/app/components/WattaInViewFade'
+import { FooterReadyAnimatedHead } from '@/app/components/FooterReadyAnimatedHead'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
@@ -140,8 +142,13 @@ const STYLES = `
   .footer-heading-flow,
   .footer-cta-solid::after,
   .footer-ready-display,
-  .footer-ready-quote::before {
+  .footer-ready-quote::before,
+  .footer-ready-reveal-char,
+  .footer-ready-reveal-line {
     animation: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
@@ -171,31 +178,17 @@ const STYLES = `
   align-items: center;
   justify-content: center;
   gap: clamp(0.5rem, 2.2vw, 0.85rem);
-  margin: 0 0 clamp(0.35rem, 1.2vw, 0.55rem);
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: clamp(0.58rem, 1.35vw, 0.68rem);
-  font-weight: 800;
-  letter-spacing: 0.24em;
+  margin: clamp(0.45rem, 1.4vw, 0.65rem) 0 0;
+  font-family: var(--font-brand-inter), Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: clamp(0.6rem, 1.2vw, 0.7rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   text-wrap: balance;
 }
 
 .footer-ready-eyebrow-label {
-  background: linear-gradient(105deg, #c44f1a 0%, #ff6b35 42%, #ff8c4d 72%, #e85a24 100%);
-  background-size: 160% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 1px 8px rgba(255, 107, 53, 0.22));
-}
-
-@supports not (background-clip: text) {
-  .footer-ready-eyebrow-label {
-    color: #ff6b35;
-    background: none;
-    -webkit-text-fill-color: #ff6b35;
-    filter: none;
-  }
+  color: #e85a24;
 }
 
 .footer-ready-eyebrow-line {
@@ -204,11 +197,11 @@ const STYLES = `
   height: 1px;
   flex-shrink: 0;
   border-radius: 9999px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 107, 53, 0.15) 35%, rgba(255, 107, 53, 0.65) 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(20, 81, 66, 0.1) 38%, rgba(20, 81, 66, 0.38) 100%);
 }
 
 .footer-ready-eyebrow-line--end {
-  background: linear-gradient(270deg, transparent 0%, rgba(255, 107, 53, 0.15) 35%, rgba(255, 107, 53, 0.65) 100%);
+  background: linear-gradient(270deg, transparent 0%, rgba(20, 81, 66, 0.1) 38%, rgba(20, 81, 66, 0.38) 100%);
 }
 
 .footer-ready-heading {
@@ -246,56 +239,88 @@ const STYLES = `
 .footer-ready-quote::before {
   content: '“';
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.65rem, 4.8vw, 2.35rem);
-  font-weight: 700;
+  font-size: clamp(1.5rem, 4.2vw, 2.1rem);
+  font-weight: 600;
   line-height: 1;
-  color: #ff6b35;
+  color: rgba(196, 90, 40, 0.55);
   flex-shrink: 0;
   align-self: flex-start;
-  margin-top: 0.06em;
+  margin-top: 0.08em;
   pointer-events: none;
   user-select: none;
-  text-shadow: 0 1px 10px rgba(255, 107, 53, 0.28);
 }
 
 .footer-ready-display {
   font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
   font-feature-settings: 'liga' 1, 'kern' 1;
-  font-size: clamp(1.45rem, 4.8vw, 2.55rem);
-  font-weight: 700;
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  font-size: clamp(1.68rem, 4.8vw, 2.55rem);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.032em;
   text-wrap: balance;
-  background: linear-gradient(118deg, #0a2a22 0%, #145142 32%, #1f8f6e 55%, #145142 78%, #0c3229 100%);
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: footer-heading-flow 8s ease-in-out infinite;
-  filter: drop-shadow(0 2px 12px rgba(20, 81, 66, 0.12));
-}
-
-@supports not (background-clip: text) {
-  .footer-ready-display {
-    color: #145142;
-    background: none;
-    -webkit-text-fill-color: #145142;
-    filter: none;
-  }
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .footer-ready-lede {
   margin: 0;
   padding: 0;
-  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(1.05rem, 2.35vw, 1.28rem);
-  font-style: italic;
-  font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: 0.015em;
+  font-family: var(--font-brand-inter), Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: clamp(0.98rem, 2.1vw, 1.15rem);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
   color: #0f3d32;
   text-wrap: balance;
   -webkit-font-smoothing: antialiased;
+}
+
+.footer-ready-reveal-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.45em);
+  animation: footer-ready-char-in 0.55s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+}
+
+.footer-ready-reveal-char--lede {
+  transform: translateY(0.35em) scale(0.96);
+  animation-name: footer-ready-lede-char-in;
+  animation-duration: 0.62s;
+}
+
+.footer-ready-reveal-char--eyebrow {
+  transform: translateY(0.4em);
+  animation-duration: 0.5s;
+}
+
+.footer-ready-reveal-line {
+  opacity: 0;
+  transform: scaleX(0.35);
+  transform-origin: center;
+  animation: footer-ready-line-in 0.55s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+}
+
+@keyframes footer-ready-char-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes footer-ready-lede-char-in {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes footer-ready-line-in {
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
 }
 
 @media (max-width: 400px) {
@@ -303,8 +328,8 @@ const STYLES = `
     padding-bottom: 0.25rem;
   }
   .footer-ready-display {
-    font-size: clamp(1.28rem, 5.8vw, 1.72rem);
-    letter-spacing: -0.028em;
+    font-size: clamp(1.32rem, 5.4vw, 1.78rem);
+    letter-spacing: -0.025em;
   }
   .footer-ready-lede {
     font-size: clamp(0.95rem, 3.8vw, 1.08rem);
@@ -317,8 +342,8 @@ const STYLES = `
     font-size: clamp(1.45rem, 5.5vw, 1.85rem);
   }
   .footer-ready-eyebrow {
-    letter-spacing: 0.2em;
-    font-size: 0.55rem;
+    letter-spacing: 0.16em;
+    font-size: 0.56rem;
   }
 }
 
@@ -913,17 +938,16 @@ const STYLES = `
 }
 
 .cinematic-footer-wrap--compact .footer-ready-display {
-  font-size: clamp(1.28rem, 3.8vw, 1.95rem);
+  font-size: clamp(1.42rem, 3.9vw, 2rem);
 }
 
 .cinematic-footer-wrap--compact .footer-ready-lede {
-  font-size: clamp(0.92rem, 1.85vw, 1.05rem);
+  font-size: clamp(0.9rem, 1.75vw, 1.02rem);
   color: #0f3d32;
 }
 
 .cinematic-footer-wrap--compact .footer-ready-quote::before {
-  font-size: clamp(1.35rem, 3.8vw, 1.75rem);
-  color: #ff6b35;
+  font-size: clamp(1.28rem, 3.4vw, 1.6rem);
 }
 
 
@@ -1098,12 +1122,9 @@ const STYLES = `
 }
 
 /* «Хіти»: зона фото ≈ квадрат, зображення на всю ширину/висоту блоку (cover) */
-.footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-web {
-  display: block !important;
+.footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-frame-web {
   aspect-ratio: 1 / 1;
   max-height: none;
-  padding: 0 !important;
-  line-height: 0;
 }
 
 .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-img-web {
@@ -1143,26 +1164,27 @@ const STYLES = `
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-  /* Планшет: 4 повні + половина п’ятої; 4 зазори (gap 0.95rem) */
+  /* Планшет: 2 повні + половина третьої — ширші картки, текст вміщається */
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
-    flex: 0 0 calc((100% - (0.95rem * 4)) / 4.5);
-    max-width: calc((100% - (0.95rem * 4)) / 4.5);
+    flex: 0 0 calc((100% - 2rem) / 2.5);
+    max-width: calc((100% - 2rem) / 2.5);
     scroll-snap-align: start;
   }
 
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
-    gap: 0.95rem;
+    gap: 1rem;
     scroll-padding-inline: max(0.28rem, env(safe-area-inset-left, 0px));
     padding-bottom: 0.5rem;
   }
 
-  .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-web {
+  .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-frame-web {
     aspect-ratio: 1 / 1;
     max-height: none;
   }
 
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-desc-web {
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     line-height: 1.35;
   }
 
@@ -1173,55 +1195,73 @@ const STYLES = `
     padding-top: 0.45rem;
   }
 
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-stack-web {
-    min-width: 0;
-    flex-shrink: 1;
-  }
-
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-web {
-    flex-shrink: 0;
-    min-height: 1.95rem;
-    padding: 0.26rem 0.5rem 0.26rem 0.42rem;
-    font-size: 0.6rem;
-  }
-
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-text-web {
-    max-width: 3.75rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-web--icon,
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-favorite-btn-web {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
-    font-size: 0.88rem;
-    line-height: 1.22;
+    font-size: 0.98rem;
+    line-height: 1.26;
     -webkit-line-clamp: 2;
   }
 
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-web {
-    font-size: 0.95rem;
+    font-size: 1.02rem;
   }
 
-  .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
-    padding: 0.62rem 0.68rem 0.72rem;
-    gap: 0.28rem;
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-inner-web {
+    padding: 0.72rem 0.82rem 0.82rem;
+    gap: 0.5rem;
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (max-width: 1279px) {
+  /* iPad landscape / вузький ноут: 3 картки + peek — не 4 вузьких */
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+    gap: 0.95rem;
+    padding-bottom: 0.55rem;
+    scroll-padding-inline: max(0.32rem, env(safe-area-inset-left, 0px));
+  }
+
+  .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+    flex: 0 0 calc((100% - (0.95rem * 2)) / 3);
+    max-width: calc((100% - (0.95rem * 2)) / 3);
+    scroll-snap-align: start;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-desc-web {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    line-height: 1.35;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
+    font-size: 1rem;
+    line-height: 1.28;
+  }
+
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-inner-web {
+    padding: 0.72rem 0.82rem 0.82rem;
+    gap: 0.48rem;
+  }
+}
+
+@media (min-width: 1280px) {
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
     gap: 0.75rem;
     padding-bottom: 0.65rem;
     scroll-padding-inline: max(0.32rem, env(safe-area-inset-left, 0px));
   }
 
-  /* Ноутбук / десктоп: 4 повні + половина п’ятої; 4 зазори по 0.75rem */
+  /* Широкий десктоп: 4 повні + половина п’ятої */
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
     flex: 0 0 calc((100% - (0.75rem * 4)) / 4.5);
     max-width: calc((100% - (0.75rem * 4)) / 4.5);
   }
 
-  .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-web {
+  .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-frame-web {
     aspect-ratio: 1 / 1;
     max-height: none;
   }
@@ -1238,23 +1278,10 @@ const STYLES = `
     padding-top: 0.5rem;
   }
 
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-price-stack-web {
-    min-width: 0;
-    flex-shrink: 1;
-  }
-
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-web {
-    flex-shrink: 0;
-    min-height: 2rem;
-    padding: 0.28rem 0.55rem 0.28rem 0.45rem;
-    font-size: 0.62rem;
-  }
-
-  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-text-web {
-    max-width: 5.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-add-web--icon,
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-favorite-btn-web {
+    width: 2.35rem;
+    height: 2.35rem;
   }
 
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
@@ -1266,17 +1293,17 @@ const STYLES = `
     font-size: 1.12rem;
   }
 
-  .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-inner-web {
     padding: 0.75rem 0.85rem 0.85rem;
-    gap: 0.35rem;
+    gap: 0.5rem;
   }
 }
 
 /* Трохи крупніше типографія й відступи в картці — лише вузький планшет 640–767 (на 768–1023 «хіти» компактніші) */
 @media (min-width: 640px) and (max-width: 767px) {
-  .footer-cinematic-rail--recommended article.group.footer-rec-watta-card > div:last-child {
+  .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-inner-web {
     padding: 1.05rem 1.2rem 1.25rem;
-    gap: 0.4rem;
+    gap: 0.55rem;
   }
   .footer-cinematic-rail--recommended article.footer-rec-watta-card .home-menu-product-card-title-web {
     font-size: 1.05rem;
@@ -1314,7 +1341,7 @@ const STYLES = `
   box-shadow: 0 8px 24px rgba(20, 81, 66, 0.35);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail {
     width: 1.82rem;
     height: 1.82rem;
@@ -1360,21 +1387,75 @@ const STYLES = `
 
 /* Прев’ю хітів (stack): нижча зона фото на вузькому телефоні + трохи щільніший текстовий блок */
 @media (max-width: 479.98px) {
-  .cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-rec-watta-card .home-menu-product-card-media-web {
+  .cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-rec-watta-card .home-menu-product-card-media-frame-web {
     aspect-ratio: 16 / 9 !important;
-    border-radius: 1.08rem 1.08rem 0 0 !important;
   }
 
-  .cinematic-footer-wrap--compact .footer-promo-carousel--stack article.group.footer-rec-watta-card > div:last-child {
+  .cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-rec-watta-card .home-menu-product-card-inner-web {
     padding: 0.5rem 0.62rem 0.62rem !important;
-    gap: 0.2rem !important;
+    gap: 0.42rem !important;
   }
 }
 
 @media (min-width: 480px) {
-  .cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-rec-watta-card .home-menu-product-card-media-web {
+  .cinematic-footer-wrap--compact .footer-promo-carousel--stack .footer-rec-watta-card .home-menu-product-card-media-frame-web {
     aspect-ratio: 3 / 2 !important;
-    border-radius: 1.12rem 1.12rem 0 0 !important;
+  }
+}
+
+/* Головна «Наші хіти»: телефон — один товар у ряд (без свайпу), з першого кадру SSR */
+@media (max-width: 767.98px) {
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-rail {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-nav--rail {
+    display: none !important;
+  }
+
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-rail__track {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    scroll-snap-type: none !important;
+    gap: 0.75rem !important;
+    padding: 0.35rem 0 0.45rem !important;
+  }
+
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-card {
+    flex: unset !important;
+    max-width: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    scroll-snap-align: none !important;
+  }
+
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-frame-web {
+    aspect-ratio: 16 / 9 !important;
+  }
+
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-inner-web {
+    padding: 0.5rem 0.62rem 0.62rem !important;
+    gap: 0.42rem !important;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767.98px) {
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-promo-carousel {
+    gap: 0.85rem !important;
+  }
+
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .footer-rec-watta-card .home-menu-product-card-media-frame-web {
+    aspect-ratio: 3 / 2 !important;
   }
 }
 
@@ -1492,7 +1573,7 @@ function AdminProductStrip({
       ? 'footer-promo-card footer-promo-card--watta-grid w-full max-w-lg text-left'
       : 'footer-promo-card footer-promo-card--watta-grid text-left'
 
-  const productCards = items.map((p) => {
+  const productCards = items.map((p, index) => {
     const promoPct = p.discountPercent && p.discountPercent > 0 ? Math.round(p.discountPercent) : undefined
     return (
       <div key={p.id} className={cardShellClass}>
@@ -1541,8 +1622,8 @@ function AdminProductStrip({
             {productCards}
           </div>
           {seeAllLink ? (
-            <div className="mt-2.5 flex justify-center px-1 pb-0.5 sm:mt-3 sm:px-2 sm:pb-1">
-              <Link href={seeAllLink.href} className="footer-hits-see-all-cta">
+            <div className="home-menu-cat-view-all-wrap-web">
+              <Link href={seeAllLink.href} className="home-menu-cat-view-all-btn-web">
                 {seeAllLink.label}
               </Link>
             </div>
@@ -1553,7 +1634,12 @@ function AdminProductStrip({
   }
 
   const railInner = (
-    <div className="footer-promo-section-fullbleed mt-1">
+    <div
+      className={cn(
+        'footer-promo-section-fullbleed mt-1',
+        isRec && seeAllLink && 'footer-promo-section-fullbleed--hits-stack',
+      )}
+    >
       <div className="footer-promo-rail">
         <button
           type="button"
@@ -1591,8 +1677,8 @@ function AdminProductStrip({
   if (isRec) {
     const seeAllCta =
       seeAllLink && layoutMode === 'rail' ? (
-        <div className="mt-2.5 flex justify-center px-1 pb-0.5 sm:mt-3 sm:px-2 sm:pb-1">
-          <Link href={seeAllLink.href} className="footer-hits-see-all-cta">
+        <div className="home-menu-cat-view-all-wrap-web">
+          <Link href={seeAllLink.href} className="home-menu-cat-view-all-btn-web">
             {seeAllLink.label}
           </Link>
         </div>
@@ -1633,7 +1719,8 @@ export function CinematicFooter({
     return adminRecommendedProducts.slice(0, homeRecommendedStack.maxItems)
   }, [adminRecommendedProducts, homeRecommendedStack, isCompact])
 
-  const recLayoutMode: 'rail' | 'stack' = isCompact && homeRecommendedStack ? 'stack' : 'rail'
+  /** Головна compact: вертикальний стовпчик на телефоні — лише CSS (max-width 767px), без hydration flip. */
+  const recLayoutMode: 'rail' | 'stack' = 'rail'
   const recSeeAll = useMemo(() => {
     if (isCompact && homeRecommendedStack) {
       return { href: homeRecommendedStack.seeAllHref, label: homeRecommendedStack.seeAllLabel }
@@ -1692,34 +1779,9 @@ export function CinematicFooter({
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    /*
-     * Compact (головна під hero): без ScrollTrigger — блок одразу у вʼюпорті, інакше opacity:0
-     * тримається до «top 55%» і здається «порожнім» під відео.
-     */
+    /* Compact (головна): поява секцій — WattaInViewFade у JSX, без GSAP. */
     if (layout === 'compact') {
-      const ctx = gsap.context(() => {
-        if (!leftColRef.current) return
-        const children = Array.from(leftColRef.current.children)
-        if (children.length === 0) return
-        if (reduceMotion) {
-          gsap.set(children, { opacity: 1, y: 0 })
-          return
-        }
-        gsap.fromTo(
-          children,
-          { y: 14, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            stagger: 0.05,
-            duration: 0.48,
-            ease: 'power2.out',
-            delay: 0.05,
-          },
-        )
-      }, wrap)
-
-      return () => ctx.revert()
+      return undefined
     }
 
     const scroller = getMenuScrollParent(wrap)
@@ -1774,11 +1836,19 @@ export function CinematicFooter({
       }
     }, wrap)
 
-    const onRefresh = () => ScrollTrigger.refresh()
-    window.addEventListener('resize', onRefresh)
+    let refreshTimer = 0
+    const onRefresh = () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer)
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = 0
+        ScrollTrigger.refresh()
+      }, 480)
+    }
+    window.addEventListener('resize', onRefresh, { passive: true })
     const t = window.setTimeout(onRefresh, 300)
 
     return () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer)
       window.clearTimeout(t)
       window.removeEventListener('resize', onRefresh)
       ctx.revert()
@@ -1868,23 +1938,23 @@ export function CinematicFooter({
                   isCompact ? 'gap-2 sm:gap-3' : 'gap-8',
                 )}
               >
-                <div className="footer-ready-block">
-                  <div className="footer-ready-head">
-                    <p className="footer-ready-eyebrow">
-                      <span className="footer-ready-eyebrow-line" aria-hidden />
-                      <span className="footer-ready-eyebrow-label">{cf.readyTitleEyebrow}</span>
-                      <span className="footer-ready-eyebrow-line footer-ready-eyebrow-line--end" aria-hidden />
-                    </p>
-                    <div className="footer-ready-title-stack">
-                      <h2 className="footer-ready-heading w-full min-w-0 text-center">
-                        <span className="footer-ready-display">{cf.readyTitleKicker}</span>
-                      </h2>
-                      <blockquote className="footer-ready-quote">
-                        <p className="footer-ready-lede">{cf.readyTitleSub}</p>
-                      </blockquote>
-                    </div>
+                {isCompact ? (
+                  <WattaInViewFadeDiv className="footer-ready-block w-full">
+                    <FooterReadyAnimatedHead
+                      kicker={cf.readyTitleKicker}
+                      sub={cf.readyTitleSub}
+                      eyebrow={cf.readyTitleEyebrow}
+                    />
+                  </WattaInViewFadeDiv>
+                ) : (
+                  <div className="footer-ready-block">
+                    <FooterReadyAnimatedHead
+                      kicker={cf.readyTitleKicker}
+                      sub={cf.readyTitleSub}
+                      eyebrow={cf.readyTitleEyebrow}
+                    />
                   </div>
-                </div>
+                )}
 
                 <div
                   className={cn(
@@ -1892,34 +1962,71 @@ export function CinematicFooter({
                     isCompact ? 'gap-3 sm:gap-4' : 'gap-8',
                   )}
                 >
-                  <AdminProductStrip
-                    title={recommendedStripTitle}
-                    ariaLabel={cf.recommendedStripAria}
-                    items={compactRecItems}
-                    carouselRef={recCarouselRef}
-                    onScroll={scrollRecStrip}
-                    onProductAddToCart={onAdminProductAddToCart}
-                    onBeforeNavigateToProduct={onBeforeNavigateToProduct}
-                    prevLabel={cf.prevPromo}
-                    nextLabel={cf.nextPromo}
-                    cinematicRail="recommended"
-                    stripKind="recommended"
-                    layoutMode={recLayoutMode}
-                    seeAllLink={recSeeAll}
-                  />
+                  {isCompact && compactRecItems.length > 0 ? (
+                    <WattaInViewFadeDiv className="w-full">
+                      <AdminProductStrip
+                        title={recommendedStripTitle}
+                        ariaLabel={cf.recommendedStripAria}
+                        items={compactRecItems}
+                        carouselRef={recCarouselRef}
+                        onScroll={scrollRecStrip}
+                        onProductAddToCart={onAdminProductAddToCart}
+                        onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                        prevLabel={cf.prevPromo}
+                        nextLabel={cf.nextPromo}
+                        cinematicRail="recommended"
+                        stripKind="recommended"
+                        layoutMode={recLayoutMode}
+                        seeAllLink={recSeeAll}
+                      />
+                    </WattaInViewFadeDiv>
+                  ) : (
+                    <AdminProductStrip
+                      title={recommendedStripTitle}
+                      ariaLabel={cf.recommendedStripAria}
+                      items={compactRecItems}
+                      carouselRef={recCarouselRef}
+                      onScroll={scrollRecStrip}
+                      onProductAddToCart={onAdminProductAddToCart}
+                      onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                      prevLabel={cf.prevPromo}
+                      nextLabel={cf.nextPromo}
+                      cinematicRail="recommended"
+                      stripKind="recommended"
+                      layoutMode={recLayoutMode}
+                      seeAllLink={recSeeAll}
+                    />
+                  )}
 
-                  <AdminProductStrip
-                    title={cf.sectionPromoTitle}
-                    ariaLabel={cf.promoStripAria}
-                    items={adminPromoProducts}
-                    carouselRef={promoCarouselRef}
-                    onScroll={scrollPromoStrip}
-                    onProductAddToCart={onAdminProductAddToCart}
-                    onBeforeNavigateToProduct={onBeforeNavigateToProduct}
-                    prevLabel={cf.prevPromo}
-                    nextLabel={cf.nextPromo}
-                    cinematicRail="promo"
-                  />
+                  {!isCompact ? (
+                    <AdminProductStrip
+                      title={cf.sectionPromoTitle}
+                      ariaLabel={cf.promoStripAria}
+                      items={adminPromoProducts}
+                      carouselRef={promoCarouselRef}
+                      onScroll={scrollPromoStrip}
+                      onProductAddToCart={onAdminProductAddToCart}
+                      onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                      prevLabel={cf.prevPromo}
+                      nextLabel={cf.nextPromo}
+                      cinematicRail="promo"
+                    />
+                  ) : adminPromoProducts.length > 0 ? (
+                    <WattaInViewFadeDiv className="w-full">
+                      <AdminProductStrip
+                        title={cf.sectionPromoTitle}
+                        ariaLabel={cf.promoStripAria}
+                        items={adminPromoProducts}
+                        carouselRef={promoCarouselRef}
+                        onScroll={scrollPromoStrip}
+                        onProductAddToCart={onAdminProductAddToCart}
+                        onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+                        prevLabel={cf.prevPromo}
+                        nextLabel={cf.nextPromo}
+                        cinematicRail="promo"
+                      />
+                    </WattaInViewFadeDiv>
+                  ) : null}
                 </div>
               </div>
             </div>

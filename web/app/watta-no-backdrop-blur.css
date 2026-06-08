@@ -1,0 +1,257 @@
+/**
+ * Site-wide: no backdrop-filter (GPU cost + visual preference).
+ * Loaded last in layout.tsx — overrides CSS, Tailwind backdrop-blur-*, and inline backdropFilter.
+ */
+html,
+html * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Капсула + чіпи категорій у fixed chrome — суцільний білий фон (не напівпрозоре «скло» над відео) */
+html.watta-html-home-hero body .watta-sticky-chrome-portal .categories-panel-web,
+body .watta-sticky-chrome-portal .categories-panel-web,
+.watta-full-menu-sticky-chrome .categories-panel-web,
+.watta-public-sticky-chrome .categories-panel-web {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: var(--watta-cat-panel-outline, 0.5px solid rgba(20, 81, 66, 0.07)) !important;
+  outline: none !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-web {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-web::before,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-web::before,
+.watta-public-sticky-chrome .categories-panel-web .category-button-web::before {
+  display: none !important;
+}
+
+@media (hover: hover) {
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web:hover,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web:hover,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web:hover,
+  .categories-panel-web .category-button-web:hover,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web:hover,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web:hover,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-active-web:hover,
+  .categories-panel-web .category-button-active-web:hover {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web:hover .category-button-icon-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web:hover .category-button-icon-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web:hover .category-button-icon-web,
+  .categories-panel-web .category-button-web:hover .category-button-icon-web {
+    color: #145142 !important;
+    filter: none !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web:hover .category-button-icon-web svg,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web:hover .category-button-icon-web svg,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web:hover .category-button-icon-web svg,
+  .categories-panel-web .category-button-web:hover .category-button-icon-web svg {
+    color: #145142 !important;
+    stroke: #145142 !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web:hover .category-button-label-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web:hover .category-button-label-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web:hover .category-button-label-web,
+  .categories-panel-web .category-button-web:hover .category-button-label-web {
+    color: #145142 !important;
+    text-shadow: none !important;
+  }
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-active-web {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web .category-button-icon-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web,
+.categories-panel-web .category-button-active-web .category-button-icon-web {
+  color: #145142 !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web .category-button-icon-web svg,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web svg,
+.watta-public-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web svg,
+.categories-panel-web .category-button-active-web .category-button-icon-web svg {
+  color: #145142 !important;
+  stroke: #145142 !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web .category-button-label-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web .category-button-label-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-active-web .category-button-label-web,
+.categories-panel-web .category-button-active-web .category-button-label-web {
+  color: #145142 !important;
+}
+
+/* Дефолт: сіра рамка + сірий текст/іконка; зелений лише при hover */
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-web,
+.categories-panel-web .category-button-web {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  box-shadow: none !important;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-label-web,
+.categories-panel-web .category-button-label-web {
+  color: #555555 !important;
+  text-shadow: none !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web svg,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web svg,
+.watta-public-sticky-chrome .categories-panel-web .category-button-icon-web svg,
+.categories-panel-web .category-button-icon-web svg {
+  color: #555555 !important;
+  stroke: #555555 !important;
+}
+
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-icon-web,
+.categories-panel-web .category-button-icon-web {
+  color: #555555 !important;
+  filter: none !important;
+}
+
+/* Іконки категорій з адмінки — основне + hover-фото */
+.category-strip-icon-stack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.32rem;
+  height: 1.32rem;
+  flex-shrink: 0;
+}
+
+.category-strip-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.category-strip-icon-img--hover {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+@media (hover: hover) {
+  .category-button-web:hover .category-strip-icon-img--hover {
+    opacity: 1;
+  }
+}
+
+.category-button-active-web .category-strip-icon-img--hover {
+  opacity: 1;
+}
+
+@media (max-width: 480px) {
+  .category-strip-icon-stack {
+    width: 1.42rem;
+    height: 1.42rem;
+  }
+}
+
+/* Шапка: сірі кнопки й іконки; без оранжевої підсвітки стикерів */
+.header-actions-web .header-profile-btn-web,
+.header-actions-web .header-favorites-btn-web,
+.header-actions-web .header-cart-btn-text-web,
+.header-actions-web .header-cart-btn-text-web[data-watta-cart-filled='true'],
+.header-actions-web .header-menu-btn-web,
+.header-actions-web .header-lang-btn-web {
+  border-color: rgba(0, 0, 0, 0.13) !important;
+  background: #ffffff !important;
+  color: #555555 !important;
+  box-shadow: none !important;
+}
+
+.header-actions-web .header-profile-btn-web svg,
+.header-actions-web .header-favorites-btn-web svg,
+.header-actions-web .header-cart-btn-text-web svg,
+.header-actions-web .header-menu-btn-web svg,
+.header-actions-web .header-lang-btn-web .header-lang-label-web {
+  color: #555555 !important;
+  stroke: #555555 !important;
+  background: transparent !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.header-actions-web .header-favorites-icon-web {
+  fill: none !important;
+}
+
+.header-actions-web .header-favorites-icon-web--filled {
+  fill: rgba(85, 85, 85, 0.16) !important;
+}
+
+.header-actions-web .header-cart-btn-text-web.watta-cart-trigger-press:active,
+.header-actions-web .header-cart-btn-text-web.watta-cart-trigger-press[data-watta-cart-filled='true'] {
+  border-color: rgba(0, 0, 0, 0.13) !important;
+  background: #ffffff !important;
+  color: #555555 !important;
+  box-shadow: none !important;
+}
+
+.header-actions-web .header-cart-btn-text-web.watta-cart-trigger-press:active svg {
+  color: #145142 !important;
+  stroke: #145142 !important;
+  filter: none !important;
+}
+
+@media (hover: hover) {
+  .header-actions-web .header-profile-btn-web:hover,
+  .header-actions-web .header-favorites-btn-web:hover,
+  .header-actions-web .header-cart-btn-text-web:hover,
+  .header-actions-web .header-menu-btn-web:hover,
+  .header-actions-web .header-lang-btn-web:hover {
+    border-color: rgba(0, 0, 0, 0.13) !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .header-actions-web .header-profile-btn-web:hover svg,
+  .header-actions-web .header-favorites-btn-web:hover svg,
+  .header-actions-web .header-cart-btn-text-web:hover svg,
+  .header-actions-web .header-menu-btn-web:hover svg,
+  .header-actions-web .header-lang-btn-web:hover .header-lang-label-web {
+    color: #145142 !important;
+    stroke: #145142 !important;
+    background: transparent !important;
+  }
+
+  .header-actions-web .header-favorites-btn-web:hover .header-favorites-icon-web--filled {
+    fill: rgba(20, 81, 66, 0.18) !important;
+  }
+}

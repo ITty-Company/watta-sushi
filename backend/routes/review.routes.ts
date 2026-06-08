@@ -2,6 +2,10 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { checkAdmin } from '../authMiddleware';
+import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
+import { clearCachedKey, getCached, setCached } from '../lib/memoryCache.js';
+
+const REVIEWS_CACHE_KEY = 'reviews:public';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -32,8 +36,17 @@ function normalizeImages(raw: unknown): string[] {
 }
 
 /** Публічна стрічка відгуків */
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req: Request, res: Response) => {
   try {
+    const cacheable = !req.headers.authorization;
+    if (cacheable) {
+      const hit = getCached<unknown[]>(REVIEWS_CACHE_KEY);
+      if (hit) {
+        res.json(hit);
+        return;
+      }
+    }
+
     const rows = await prisma.orderReview.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -41,16 +54,16 @@ router.get('/', async (_req: Request, res: Response) => {
         user: { select: { name: true } },
       },
     });
-    res.json(
-      rows.map((r) => ({
-        id: r.id,
-        rating: r.rating,
-        text: r.text,
-        images: normalizeImages(r.images as unknown),
-        createdAt: r.createdAt,
-        authorName: formatPublicAuthorName(r.user?.name),
-      }))
-    );
+    const payload = rows.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      text: r.text,
+      images: normalizeImages(r.images as unknown),
+      createdAt: r.createdAt,
+      authorName: formatPublicAuthorName(r.user?.name),
+    }));
+    if (cacheable) setCached(REVIEWS_CACHE_KEY, payload, PUBLIC_CACHE_CATALOG_SEC);
+    res.json(payload);
   } catch (error) {
     console.error('reviews list error:', error);
     res.status(500).json({ message: 'Помилка завантаження відгуків' });
@@ -144,6 +157,7 @@ router.post('/', async (req: Request, res: Response) => {
       },
     });
 
+    clearCachedKey(REVIEWS_CACHE_KEY);
     res.json(mapCreatedReview(created));
   } catch (error: any) {
     console.error('review create error:', error);

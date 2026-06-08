@@ -3,8 +3,14 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m } from 'framer-motion'
 import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
+import {
+  WattaInViewFadeSection,
+  useWattaDisableScrollReveal,
+  wattaInViewFadeViewport,
+} from './WattaInViewFade'
+import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -24,16 +30,9 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
-import type { PrivacyPolicyBlock } from '@/lib/i18n/privacyPageContent'
+import { privacyPageByLang, type PrivacyPolicyBlock } from '@/lib/i18n/privacyPageContent'
 
 const ACCENT = '#FF5C00'
-
-function splitHeroTitle(title: string): string[] {
-  const words = title.trim().split(/\s+/)
-  if (words.length < 2) return [title]
-  const mid = Math.ceil(words.length / 2)
-  return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')]
-}
 
 function PrivacyFlowSection({
   children,
@@ -45,9 +44,12 @@ function PrivacyFlowSection({
   ariaLabel?: string
 }) {
   return (
-    <section className={cn('delivery-flow-section bg-white py-14 sm:py-18', className)} aria-label={ariaLabel}>
+    <WattaInViewFadeSection
+      className={cn('delivery-flow-section bg-white py-14 sm:py-18', className)}
+      aria-label={ariaLabel}
+    >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">{children}</div>
-    </section>
+    </WattaInViewFadeSection>
   )
 }
 
@@ -80,7 +82,7 @@ function PrivacyBlockCard({
   block: PrivacyPolicyBlock
   index: number
   fade:
-    | { initial: false }
+    | { initial: false; animate: { opacity: number; y: number } }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
 }) {
   const Icon = BLOCK_ICONS[block.id] ?? Shield
@@ -93,11 +95,11 @@ function PrivacyBlockCard({
   const blobTint = blobTints[index % blobTints.length]
 
   return (
-    <motion.article
+    <m.article
       id={block.id}
       className="privacy-page-block-web group flex flex-col rounded-[22px] border border-gray-200/70 bg-white p-4 shadow-[0_8px_36px_rgba(20,81,66,0.07)] transition hover:-translate-y-0.5 hover:border-[#145142]/15 hover:shadow-[0_14px_44px_rgba(20,81,66,0.12)] sm:p-6"
       {...fade}
-      viewport={{ once: true, margin: '-40px' }}
+      viewport={wattaInViewFadeViewport('-40px')}
       transition={{ duration: 0.45, delay: (index % 6) * 0.03 }}
     >
       <div className="relative mb-4 flex h-[4rem] w-[4rem] shrink-0 items-center justify-center sm:mb-5 sm:h-[4.5rem] sm:w-[4.5rem]">
@@ -110,7 +112,10 @@ function PrivacyBlockCard({
         />
         <Icon className="relative z-[1] h-8 w-8 text-gray-900 sm:h-9 sm:w-9" strokeWidth={1.35} />
       </div>
-      <h2 className="contact-watta-section-title text-lg sm:text-xl">{block.title}</h2>
+      <WattaStaggerSectionTitle
+        className="contact-watta-section-title text-lg sm:text-xl"
+        text={block.title}
+      />
       <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#6b7280] sm:mt-4 sm:text-[15px]">
         {block.paragraphs.map((para) => (
           <p key={para.slice(0, 48)}>{para}</p>
@@ -123,19 +128,19 @@ function PrivacyBlockCard({
           </ul>
         ) : null}
       </div>
-    </motion.article>
+    </m.article>
   )
 }
 
 export default function PrivacyPolicyView() {
-  const { t } = useLanguage()
-  const p = t.privacyPage
+  const { language, t } = useLanguage()
+  const p = privacyPageByLang[language]
   const a = t.aboutPage
-  const reduce = useReducedMotion()
+  const reduce = useWattaDisableScrollReveal()
   const [activeId, setActiveId] = useState<string>(p.blocks[0]?.id ?? 'controller')
 
   const fade = reduce
-    ? ({ initial: false as const } satisfies { initial: false })
+    ? ({ initial: false as const, animate: { opacity: 1, y: 0 } })
     : ({
         initial: { opacity: 0, y: 26 },
         whileInView: { opacity: 1, y: 0 },
@@ -165,7 +170,7 @@ export default function PrivacyPolicyView() {
   }, [observeSections])
 
   const tocItems = useMemo(() => p.blocks.map((b) => ({ id: b.id, label: b.title })), [p.blocks])
-  const heroTitleLines = useMemo(() => splitHeroTitle(p.title), [p.title])
+  const heroTitleLines = useMemo(() => [p.title], [p.title])
 
   const privacyLeadIntro = (
     <AnimatedHeroIntroBlock
@@ -174,14 +179,13 @@ export default function PrivacyPolicyView() {
       titleId="privacy-hero-title"
       titleLines={heroTitleLines}
       body={p.heroSubtitle}
-      accentLineIndex={heroTitleLines.length > 1 ? 1 : 0}
+      accentLineIndex={0}
       headingLevel="h1"
       reserveTopSpace
       innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
     >
       <p className="privacy-page-hero-web__badge mx-auto mt-4">{p.heroBadge}</p>
       <p className="privacy-page-hero-web__updated">{p.updated}</p>
-      <p className="privacy-page-hero-web__intro mx-auto max-w-2xl">{p.intro}</p>
     </AnimatedHeroIntroBlock>
   )
 
@@ -245,20 +249,18 @@ export default function PrivacyPolicyView() {
             </PrivacyFlowSection>
 
             <PrivacyFlowSection>
-              <motion.div
-                className="privacy-page-rights-web rounded-[24px] border border-[#145142]/10 bg-white p-5 shadow-[0_10px_40px_rgba(20,81,66,0.08)] sm:rounded-[28px] sm:p-8 md:p-10"
-                {...fade}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <h2 className="contact-watta-section-title flex items-center gap-2">
-                  <span
-                    className="inline-block h-8 w-1.5 shrink-0 rounded-full sm:h-9"
-                    style={{ background: ACCENT }}
-                    aria-hidden
-                  />
-                  {p.rightsTitle}
-                </h2>
+              <div className="privacy-page-rights-web rounded-[24px] border border-[#145142]/10 bg-white p-5 shadow-[0_10px_40px_rgba(20,81,66,0.08)] sm:rounded-[28px] sm:p-8 md:p-10">
+                <WattaStaggerSectionTitle
+                  className="contact-watta-section-title flex items-center gap-2"
+                  text={p.rightsTitle}
+                  before={
+                    <span
+                      className="inline-block h-8 w-1.5 shrink-0 rounded-full sm:h-9"
+                      style={{ background: ACCENT }}
+                      aria-hidden
+                    />
+                  }
+                />
                 <p className="delivery-page-section-lead mt-4 max-w-3xl">{p.rightsIntro}</p>
                 <ul className="mt-5 grid gap-2 sm:grid-cols-2 sm:gap-3">
                   {p.rightsItems.map((item, i) => (
@@ -281,31 +283,37 @@ export default function PrivacyPolicyView() {
                     </li>
                   ))}
                 </ul>
-              </motion.div>
+              </div>
             </PrivacyFlowSection>
 
             <PrivacyFlowSection className="pb-8">
-              <motion.div
-                className="privacy-page-contact-web rounded-[22px] bg-gradient-to-br from-[#f6f9f7] to-white p-6 text-center shadow-[0_8px_32px_rgba(20,81,66,0.06)] sm:p-10"
-                {...fade}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
+              <div className="privacy-page-contact-web rounded-[22px] bg-gradient-to-br from-[#f6f9f7] to-white p-6 text-center shadow-[0_8px_32px_rgba(20,81,66,0.06)] sm:p-10">
                 <div
                   className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl text-white"
                   style={{ background: 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)' }}
                 >
                   <Mail className="h-7 w-7" strokeWidth={2} aria-hidden />
                 </div>
-                <h2 className="contact-watta-section-title text-center">{p.contactTitle}</h2>
+                <WattaStaggerSectionTitle
+                  className="contact-watta-section-title text-center"
+                  text={p.contactTitle}
+                />
                 <p className="delivery-page-section-lead mx-auto mt-3 max-w-2xl text-center">{p.contactBody}</p>
-                <Link
-                  href="/contacts"
-                  className="mt-6 inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#92e07a] to-[#5ebf55] px-6 py-3 text-sm font-bold text-[#0f241e] shadow-lg shadow-[#5ebf55]/25 transition hover:brightness-105"
-                >
-                  {a.ctaContacts}
-                </Link>
-              </motion.div>
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <Link
+                    href="/contacts"
+                    className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#92e07a] to-[#5ebf55] px-6 py-3 text-sm font-bold text-[#0f241e] shadow-lg shadow-[#5ebf55]/25 transition hover:brightness-105"
+                  >
+                    {a.ctaContacts}
+                  </Link>
+                  <Link
+                    href="/offer"
+                    className="inline-flex items-center justify-center rounded-2xl border border-[#145142]/15 bg-white px-6 py-3 text-sm font-semibold text-[#145142] transition hover:border-[#145142]/30"
+                  >
+                    {t.siteFooter.publicOffer}
+                  </Link>
+                </div>
+              </div>
             </PrivacyFlowSection>
           </div>
         </div>

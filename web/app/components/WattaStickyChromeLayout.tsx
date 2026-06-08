@@ -10,7 +10,10 @@ import {
   type RefObject,
 } from 'react'
 import clsx from 'clsx'
+import { useWattaChromeScrollCompact } from '@/hooks/useWattaChromeScrollCompact'
 import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
+import { isWattaChromeCompact } from '@/lib/wattaChromeScroll'
+import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR, WATTA_ROUTE_PRODUCT_CLASS } from '@/lib/wattaProductChrome'
 
 type WattaStickyChromeLayoutProps = {
   children: ReactNode
@@ -30,6 +33,8 @@ type WattaStickyChromeLayoutProps = {
    * при скролі відео видно під прозорою зоною до шапки.
    */
   flowAnchorHeaderOnly?: boolean
+  /** Додатковий резерв під fixed chrome (напр. /cart — тінь капсули категорій). */
+  flowAnchorSafetyPx?: number
 }
 
 /**
@@ -51,11 +56,52 @@ export default function WattaStickyChromeLayout({
   flowHeightFudgePx = defaultFlowHeightFudgePx,
   flowHeightMaxPx = DEFAULT_FLOW_LAYOUT_MAX_PX,
   flowAnchorHeaderOnly = false,
+  flowAnchorSafetyPx = 0,
 }: WattaStickyChromeLayoutProps) {
+  /** Усі публічні сторінки: скрол вниз — ховає шапку, вгору — показує (усі viewport). */
+  useWattaChromeScrollCompact(true)
+
   const [flowH, setFlowH] = useState(0)
+  const [rawChromeH, setRawChromeH] = useState(0)
   const [headerFlowH, setHeaderFlowH] = useState(0)
   const localRef = useRef<HTMLDivElement | null>(null)
   const lastChromeWidthRef = useRef<number | null>(null)
+  /** Повна висота chrome до compact — flow-anchor не стискається, інакше scroll «зависає». */
+  const expandedRawRef = useRef(0)
+
+  /** /product (лише чіпи): резерв під фактичну висоту категорій, не під сховану шапку. */
+  const isProductCategoriesOnlyChrome = () => {
+    if (typeof document === 'undefined') return false
+    const root = document.documentElement
+    return (
+      root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS) &&
+      root.dataset[WATTA_PRODUCT_HEADER_EXPANDED_ATTR] !== 'true'
+    )
+  }
+
+  /**
+   * Резерв висоти в потоці при compact: на /product — лише під видиму смугу категорій.
+   * /menu з photo-first hero — як на головній: anchor не стискається, інакше контент «стрибає».
+   */
+  const preserveExpandedChromeHeightInCompact = () => !isProductCategoriesOnlyChrome()
+  const expandedHeaderRef = useRef(0)
+  /** Кеш опублікованих значень — setProperty на <html> інакше перераховує стилі всього документа. */
+  const publishedCssVarsRef = useRef({
+    measuredH: '',
+    headerH: '',
+    bandH: '',
+    flowH: '',
+    anchorH: '',
+  })
+
+  const setRootCssVar = useCallback((name: string, px: number, cacheKey: keyof typeof publishedCssVarsRef.current) => {
+    if (px < 8) return
+    const next = `${px}px`
+    const cache = publishedCssVarsRef.current
+    if (cache[cacheKey] === next) return
+    cache[cacheKey] = next
+    document.documentElement.style.setProperty(name, next)
+  }, [])
 
   const toFlowLayoutHeight = useCallback(
     (raw: number) => {
@@ -65,24 +111,31 @@ export default function WattaStickyChromeLayout({
     [flowHeightFudgePx, flowHeightMaxPx],
   )
 
-  const syncMeasuredCssVars = useCallback((el: HTMLDivElement) => {
-    const root = document.documentElement
-    const raw = el.offsetHeight
-    const headerEl = el.querySelector<HTMLElement>('.watta-chrome-top-band-web')
-    const headerRaw = headerEl?.offsetHeight ?? 0
-    if (raw >= 8) {
-      root.style.setProperty('--watta-sticky-chrome-measured-h', `${raw}px`)
-    }
-    if (headerRaw >= 8) {
-      root.style.setProperty('--watta-chrome-header-measured-h', `${headerRaw}px`)
-    }
-    if (raw >= 8 && headerRaw >= 8) {
-      root.style.setProperty(
-        '--watta-chrome-categories-band-h',
-        `${Math.max(0, raw - headerRaw)}px`,
-      )
-    }
-  }, [])
+  const syncMeasuredCssVars = useCallback(
+    (el: HTMLDivElement) => {
+      const isCompact = isWattaChromeCompact()
+      const raw = el.offsetHeight
+      const headerEl = el.querySelector<HTMLElement>('.watta-chrome-top-band-web')
+      const headerRaw = headerEl?.offsetHeight ?? 0
+      const keepExpanded = preserveExpandedChromeHeightInCompact()
+      const effectiveRaw =
+        isCompact && keepExpanded && expandedRawRef.current >= 8 ? expandedRawRef.current : raw
+      const effectiveHeader =
+        isCompact && keepExpanded && expandedHeaderRef.current >= 8
+          ? expandedHeaderRef.current
+          : headerRaw
+      setRootCssVar('--watta-sticky-chrome-measured-h', effectiveRaw, 'measuredH')
+      setRootCssVar('--watta-chrome-header-measured-h', effectiveHeader, 'headerH')
+      if (effectiveRaw >= 8 && effectiveHeader >= 8) {
+        setRootCssVar(
+          '--watta-chrome-categories-band-h',
+          Math.max(0, effectiveRaw - effectiveHeader),
+          'bandH',
+        )
+      }
+    },
+    [setRootCssVar],
+  )
 
   const setInnerNode = useCallback(
     (el: HTMLDivElement | null) => {
@@ -91,7 +144,22 @@ export default function WattaStickyChromeLayout({
         (innerRef as MutableRefObject<HTMLDivElement | null>).current = el
       }
       if (el) {
-        const h = toFlowLayoutHeight(el.offsetHeight)
+        const isCompact = isWattaChromeCompact()
+        const raw = el.offsetHeight
+        if (!isCompact && raw >= 8) expandedRawRef.current = raw
+        const keepExpanded = preserveExpandedChromeHeightInCompact()
+        const effectiveRaw =
+          isCompact && keepExpanded && expandedRawRef.current >= 8 ? expandedRawRef.current : raw
+        const layoutRaw =
+          isCompact &&
+          preserveExpandedChromeHeightInCompact() &&
+          expandedRawRef.current >= 8
+            ? expandedRawRef.current
+            : effectiveRaw
+        const h = toFlowLayoutHeight(layoutRaw)
+        if (layoutRaw >= 8) {
+          setRawChromeH((prev) => (Math.abs(prev - layoutRaw) > 1 ? layoutRaw : prev))
+        }
         if (h >= 8) {
           setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
         }
@@ -105,13 +173,38 @@ export default function WattaStickyChromeLayout({
     const el = localRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
     const measure = () => {
-      const h = toFlowLayoutHeight(el.offsetHeight)
-      if (h < 8) return
-      setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
+      const isCompact = isWattaChromeCompact()
+      const raw = el.offsetHeight
       const headerEl = el.querySelector<HTMLElement>('.watta-chrome-top-band-web')
       const headerRaw = headerEl?.offsetHeight ?? 0
-      if (headerRaw >= 8) {
-        const headerFlow = toFlowLayoutHeight(headerRaw)
+
+      if (!isCompact) {
+        if (raw >= 8) expandedRawRef.current = raw
+        if (headerRaw >= 8) expandedHeaderRef.current = headerRaw
+      }
+
+      const keepExpanded = preserveExpandedChromeHeightInCompact()
+      const effectiveRaw =
+        isCompact && keepExpanded && expandedRawRef.current >= 8 ? expandedRawRef.current : raw
+      const effectiveHeader =
+        isCompact && keepExpanded && expandedHeaderRef.current >= 8
+          ? expandedHeaderRef.current
+          : headerRaw
+
+      const layoutRaw =
+        isCompact &&
+        preserveExpandedChromeHeightInCompact() &&
+        expandedRawRef.current >= 8
+          ? expandedRawRef.current
+          : effectiveRaw
+      const h = toFlowLayoutHeight(layoutRaw)
+      if (layoutRaw >= 8) {
+        setRawChromeH((prev) => (Math.abs(prev - layoutRaw) > 1 ? layoutRaw : prev))
+      }
+      if (h < 8) return
+      setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
+      if (effectiveHeader >= 8) {
+        const headerFlow = toFlowLayoutHeight(effectiveHeader)
         setHeaderFlowH((prev) => (Math.abs(prev - headerFlow) > 1 ? headerFlow : prev))
       }
       syncMeasuredCssVars(el)
@@ -131,28 +224,44 @@ export default function WattaStickyChromeLayout({
     }
     lastChromeWidthRef.current = typeof window !== 'undefined' ? window.innerWidth : null
     const onLayoutSync = () => measure()
+    const onCompactChange = () => measure()
     window.addEventListener('resize', onResize)
     window.addEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
+    window.addEventListener('wattaChromeCompactChange', onCompactChange)
     return () => {
       ro.disconnect()
       window.removeEventListener('resize', onResize)
       window.removeEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
+      window.removeEventListener('wattaChromeCompactChange', onCompactChange)
     }
-  }, [children, chromeClassName, toFlowLayoutHeight, flowHeightFudgePx, flowHeightMaxPx, syncMeasuredCssVars])
+  }, [chromeClassName, toFlowLayoutHeight, syncMeasuredCssVars])
 
   useLayoutEffect(() => {
-    const el = localRef.current
-    const root = document.documentElement
-    if (!el) return
+    if (!localRef.current) return
     const anchorFlowH =
       flowAnchorHeaderOnly && headerFlowH >= 8 ? headerFlowH : flowH
-    if (flowH >= 8) {
-      root.style.setProperty('--watta-sticky-chrome-flow-h', `${flowH}px`)
+    setRootCssVar('--watta-sticky-chrome-flow-h', flowH, 'flowH')
+    setRootCssVar('--watta-sticky-chrome-anchor-h', anchorFlowH, 'anchorH')
+  }, [flowH, headerFlowH, flowAnchorHeaderOnly, setRootCssVar])
+
+  const anchorFlowH = (() => {
+    if (flowAnchorHeaderOnly && headerFlowH >= 8) return headerFlowH
+    if (isProductCategoriesOnlyChrome() && flowH >= 8) {
+      return flowH + Math.max(0, flowAnchorSafetyPx)
     }
-    if (anchorFlowH >= 8) {
-      root.style.setProperty('--watta-sticky-chrome-anchor-h', `${anchorFlowH}px`)
-    }
-  }, [flowH, headerFlowH, flowAnchorHeaderOnly])
+    const expanded =
+      preserveExpandedChromeHeightInCompact() && expandedRawRef.current >= 8
+        ? Math.ceil(expandedRawRef.current)
+        : rawChromeH >= 8
+          ? Math.ceil(rawChromeH)
+          : flowH
+    /**
+     * iOS/WebKit інколи дає стрибок offsetHeight/ResizeObserver і ми отримуємо
+     * величезний flow-anchor (білий «екран» під fixed chrome). Обмежуємо зверху.
+     */
+    const capped = expanded >= 8 ? Math.min(flowHeightMaxPx, expanded) : 0
+    return capped >= 8 ? capped + Math.max(0, flowAnchorSafetyPx) : flowH
+  })()
 
   return (
     <div
@@ -160,6 +269,11 @@ export default function WattaStickyChromeLayout({
         'watta-sticky-chrome-flow-anchor shrink-0 w-full',
         flowAnchorHeaderOnly && 'watta-sticky-chrome-flow-anchor--header-only',
       )}
+      style={
+        anchorFlowH >= 8
+          ? { minHeight: anchorFlowH, height: anchorFlowH }
+          : undefined
+      }
     >
       <div
         ref={setInnerNode}

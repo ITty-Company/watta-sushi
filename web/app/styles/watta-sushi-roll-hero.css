@@ -1,0 +1,1052 @@
+/* ============================================================
+   Sushi roll marquee — dual row, adaptive gap, shadow-safe
+   ============================================================ */
+
+:root {
+  --watta-roll-gap: 18px;
+  --watta-roll-gap-tight: 8px;
+  --watta-roll-gap-loose: 24px;
+  --watta-roll-width: 338px;
+  --watta-roll-height: 358px;
+  --watta-roll-shadow-pad-top: 12px;
+  --watta-roll-shadow-pad-bottom: 22px;
+}
+
+.watta-sushi-roll-hero {
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  overflow-x: visible;
+  overflow-y: visible;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding-bottom: clamp(2px, 0.5vh, 6px);
+}
+
+/* ---- Title ---- */
+.watta-sushi-roll-hero__title-wrap {
+  position: relative;
+  z-index: 20;
+  width: 100%;
+  max-width: 920px;
+  margin: clamp(8px, 1.2vh, 14px) auto 0;
+  padding: 0 16px;
+  text-align: center;
+  user-select: none;
+  pointer-events: none;
+}
+
+.watta-sushi-roll-hero__title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.02em;
+  line-height: 0.9;
+  letter-spacing: 0.06em;
+}
+
+.watta-sushi-roll-hero__word {
+  display: block;
+  white-space: nowrap;
+}
+
+.watta-sushi-roll-hero__word--1 {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(48px, 12vw, 140px);
+  letter-spacing: 0.14em;
+}
+
+.watta-sushi-roll-hero__word--2 {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(62px, 16.5vw, 192px);
+  letter-spacing: 0.1em;
+  margin-top: -0.04em;
+}
+
+.watta-sushi-roll-hero__char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.45em);
+  color: #0a1210;
+  animation: watta-hero-char-in 0.55s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+}
+
+.watta-sushi-roll-hero__word--2 .watta-sushi-roll-hero__char {
+  color: #1a4538;
+}
+
+@keyframes watta-hero-char-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.watta-sushi-roll-hero__title-tagline {
+  margin: clamp(4px, 0.8vh, 8px) 0 0;
+  font-family: var(--font-brand-marck, 'Marck Script'), cursive;
+  font-size: clamp(19px, 3.2vw, 28px);
+  color: #3d6b52;
+  letter-spacing: 0.06em;
+}
+
+.watta-sushi-roll-hero__tagline-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.55em) scale(0.92);
+  animation: watta-hero-tagline-char-in 0.62s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+}
+
+@keyframes watta-hero-tagline-char-in {
+  to {
+    opacity: 0.92;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.watta-sushi-roll-hero__mobile-intro {
+  display: none;
+}
+
+.watta-home-photo-first-screen .watta-sushi-roll-hero__title-wrap {
+  animation: watta-home-hero-title-shell-in 0.85s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+}
+
+@media (min-width: 768px) {
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__title-wrap {
+    animation: watta-home-hero-title-shell-in-centered 0.85s cubic-bezier(0.22, 0.82, 0.22, 1) forwards;
+  }
+}
+
+.watta-home-photo-first-screen .watta-sushi-roll-hero__char {
+  animation-duration: 0.62s;
+}
+
+.watta-home-photo-first-screen .watta-roll-marquee-mask:not(.watta-roll-marquee-mask--split) {
+  opacity: 0;
+  animation: watta-home-hero-marquee-in 0.9s cubic-bezier(0.22, 0.82, 0.22, 1) 1.05s forwards;
+}
+
+@keyframes watta-home-hero-title-shell-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes watta-home-hero-title-shell-in-centered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes watta-home-hero-marquee-in {
+  from {
+    opacity: 0;
+    transform: rotate(var(--watta-roll-marquee-tilt, -4deg)) translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(var(--watta-roll-marquee-tilt, -4deg)) translateY(0);
+  }
+}
+
+/* ---- Marquee stack (2 rows) ---- */
+.watta-roll-marquee-mask {
+  position: relative;
+  align-self: stretch;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  min-height: 0;
+  margin-top: clamp(-6px, 0.2vh, 4px);
+  transform: rotate(var(--watta-roll-marquee-tilt, -4deg));
+  transform-origin: center center;
+  overflow: visible;
+  z-index: 5;
+  box-sizing: border-box;
+}
+
+.watta-roll-marquee-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  overflow: visible;
+}
+
+.watta-roll-marquee-row {
+  position: relative;
+  width: calc(100% + 12vw);
+  max-width: none;
+  margin-left: -6vw;
+  overflow: visible;
+}
+
+.watta-roll-marquee-row--back {
+  --watta-roll-width: 272px;
+  --watta-roll-height: 286px;
+  z-index: 1;
+  transform: translateY(6px);
+  opacity: 0.88;
+}
+
+.watta-roll-marquee-row--front {
+  z-index: 2;
+  margin-top: -98px;
+}
+
+/* Без горизонтальної mask — ролли до країв екрана і трохи за них */
+.watta-roll-marquee-fade {
+  position: relative;
+  overflow: visible;
+  padding: var(--watta-roll-shadow-pad-top) 0 var(--watta-roll-shadow-pad-bottom);
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.watta-roll-marquee-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  padding: 2px 0 6px;
+  animation: watta-roll-marquee-scroll var(--watta-roll-marquee-speed, 75s) linear infinite;
+  animation-play-state: running;
+  will-change: transform;
+}
+
+.watta-roll-marquee-track--reverse {
+  animation-name: watta-roll-marquee-scroll-reverse;
+}
+
+@keyframes watta-roll-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes watta-roll-marquee-scroll-reverse {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* ---- Roll wrapper — стабильная hit-зона, не двигается при hover ---- */
+.watta-roll-wrap {
+  position: relative;
+  width: var(--watta-roll-width);
+  height: var(--watta-roll-height);
+  flex-shrink: 0;
+  overflow: visible;
+  padding: 2px 0 8px;
+  box-sizing: content-box;
+}
+
+.watta-roll-wrap:last-child {
+  margin-right: 0 !important;
+}
+
+/* ---- Roll item — только визуальный слой, transform без смены hover-цели ---- */
+.watta-roll {
+  position: relative;
+  width: var(--watta-roll-width);
+  height: var(--watta-roll-height);
+  cursor: default;
+  overflow: visible;
+  transform:
+    rotate(calc(4deg + var(--watta-roll-wave-rot, 0deg)))
+    translateY(var(--watta-roll-wave-y, 0px))
+    scale(var(--watta-roll-wave-scale, 1));
+  transform-origin: center bottom;
+  transition: transform 420ms cubic-bezier(0.22, 0.82, 0.22, 1);
+  background: transparent;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .watta-roll-wrap {
+    cursor: pointer;
+  }
+
+  .watta-roll-wrap:hover {
+    z-index: 220 !important;
+  }
+
+  .watta-roll-wrap:hover .watta-roll {
+    transform:
+      rotate(calc(4deg + var(--watta-roll-wave-rot, 0deg)))
+      translateY(calc(var(--watta-roll-wave-y, 0px) - 22px))
+      scale(calc(var(--watta-roll-wave-scale, 1) * 1.12));
+  }
+
+  .watta-roll-wrap:hover .watta-roll__media {
+    transform: scale(1.04);
+  }
+
+  .watta-roll-wrap:hover .watta-roll__shadow {
+    opacity: 0.38;
+    transform: translateX(-50%) scale(1.08);
+  }
+}
+
+.watta-roll--product {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+.watta-roll__media {
+  position: relative;
+  z-index: 1;
+  width: 132%;
+  height: 132%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: transparent;
+  overflow: visible;
+  transition: transform 420ms cubic-bezier(0.22, 0.82, 0.22, 1);
+}
+
+/* М’яка тінь під ролом — не ріжеться overflow */
+.watta-roll__shadow {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  z-index: 0;
+  width: 72%;
+  height: 18%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(10, 18, 16, 0.28) 0%,
+    rgba(10, 18, 16, 0.1) 45%,
+    transparent 72%
+  );
+  pointer-events: none;
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease;
+}
+
+.watta-roll__img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+  object-position: bottom center;
+  background: transparent;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.watta-home-roll-hero-slot-web {
+  width: 100%;
+  background: transparent;
+  overflow: visible;
+}
+
+.menu-home-narrow-strip-hero-web {
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.delivery-page-hero-stack--roll-first {
+  gap: 0;
+}
+
+.delivery-page-hero-stack--roll-first .menu-home-narrow-strip-hero-web {
+  padding-top: var(--watta-roll-hero-below-cats-gap, clamp(18px, 2.4vh, 28px));
+  box-sizing: border-box;
+}
+
+/* Головна — brand title + tagline по центру фото (overlay) */
+.watta-home-photo-first-screen .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+  --watta-roll-hero-below-cats-gap: 0;
+}
+
+.watta-home-photo-first-screen .watta-home-hero-overlay-stack .menu-home-narrow-strip-hero-web {
+  padding-top: 0;
+}
+
+.watta-home-photo-first-screen .watta-home-hero-overlay-stack .watta-sushi-roll-hero__title-wrap {
+  margin-top: 0;
+}
+
+.delivery-page-hero-stack--roll-first .watta-home-roll-hero-slot-web {
+  margin-bottom: 0;
+  position: relative;
+}
+
+.delivery-page-hero-stack--roll-first #home-after-hero-intro {
+  position: relative;
+  z-index: 12;
+  margin-top: 0;
+}
+
+.menu-page-web[data-watta-home-narrow-strip-hero='1'] .watta-sushi-roll-hero {
+  min-height: 0;
+}
+
+/* Головна: текст → 1-й ряд товарів → 2-й ряд (DOM-порядок у split-marquee) */
+.watta-home-photo-first-screen .watta-roll-marquee-mask--split {
+  --watta-home-split-stack-lift: 0;
+  --watta-home-split-front-pull: 0;
+  --watta-home-split-rows-nudge: clamp(7px, 0.85vh, 9px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  align-items: stretch;
+  justify-items: stretch;
+  row-gap: clamp(2px, 0.45vh, 6px);
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 0;
+  transform: translateY(var(--watta-home-split-stack-lift));
+  animation: none;
+  opacity: 1;
+  overflow: visible;
+}
+
+.watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row {
+  width: calc(100% + 12vw);
+  max-width: none;
+  min-width: 0;
+  margin-left: -6vw;
+  overflow: visible;
+}
+
+.watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__title-wrap {
+  grid-row: 1;
+  grid-column: 1;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: clamp(15px, 1.8vh, 19px) 0 clamp(8px, 1.2vh, 14px) !important;
+  opacity: 1;
+  animation: none;
+}
+
+.watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row--back {
+  grid-row: 2;
+  margin-top: 0;
+}
+
+.watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row--front {
+  grid-row: 3;
+  margin-top: 0 !important;
+}
+
+.watta-home-photo-first-screen .watta-roll-marquee-row--front {
+  margin-top: 0 !important;
+}
+
+@media (min-width: 768px) {
+  .delivery-page-hero-stack--roll-first {
+    --watta-roll-hero-below-cats-gap: clamp(24px, 3vh, 36px);
+  }
+
+  .watta-home-photo-first-screen {
+    --watta-roll-gap: 12px;
+    --watta-roll-gap-tight: 5px;
+    --watta-roll-gap-loose: 16px;
+    --watta-home-wide-roll-back-nudge: clamp(4px, calc(-2vh + 20px), 10px);
+    --watta-home-wide-roll-front-nudge: clamp(-45px, calc(-1.2vh - 35px), -39px);
+  }
+
+  .watta-home-photo-first-screen .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+    --watta-roll-hero-below-cats-gap: 0;
+  }
+
+  .watta-home-photo-first-screen .watta-home-roll-hero-slot-web,
+  .watta-home-photo-first-screen .menu-home-narrow-strip-hero-web {
+    position: static;
+    min-height: 100%;
+    height: 100%;
+    width: 100%;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero {
+    position: relative;
+    display: block;
+    padding-top: clamp(18px, 3vh, 32px);
+    padding-bottom: 0;
+    min-height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+    transform: none;
+    margin: 0;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__title,
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__title-tagline {
+    display: none;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro {
+    display: block !important;
+    margin: 0 auto;
+    padding: 0;
+    text-align: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: none;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-title {
+    margin: 0 auto;
+    text-align: center;
+    font-size: clamp(32px, 3.75vh, 46px);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: #0a2018;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.95),
+      0 2px 14px rgba(255, 255, 255, 0.9),
+      0 0 24px rgba(255, 255, 255, 0.55);
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-line {
+    display: block;
+    text-align: center;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-line--script {
+    margin-top: 0.12em;
+    font-family: var(--font-brand-marck, 'Marck Script'), cursive;
+    font-weight: 400;
+    font-size: clamp(36px, 4.25vh, 50px);
+    color: #145142;
+    letter-spacing: 0.03em;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-body {
+    margin: clamp(10px, 1.2vh, 14px) auto 0;
+    max-width: min(38rem, 90vw);
+    text-align: center;
+    font-size: clamp(16px, 1.85vh, 20px);
+    line-height: 1.5;
+    color: #124a3c;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.92),
+      0 2px 12px rgba(255, 255, 255, 0.82);
+    white-space: pre-line;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: manual;
+    text-wrap: pretty;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-char {
+    text-shadow: inherit;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask:not(.watta-roll-marquee-mask--split) {
+    display: contents;
+    margin-top: 0;
+    transform: none;
+    animation: none;
+    opacity: 1;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split {
+    row-gap: clamp(4px, 0.65vh, 10px);
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__title-wrap {
+    width: min(40rem, 88vw);
+    max-width: min(40rem, 88vw);
+    margin: clamp(26px, 3vh, 32px) auto clamp(12px, 1.8vh, 20px) !important;
+    margin-inline: auto !important;
+    text-align: center;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-stack {
+    display: contents;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row--back {
+    transform: rotate(var(--watta-roll-marquee-tilt, -4deg))
+      translateY(var(--watta-home-wide-roll-back-nudge, clamp(4px, calc(-2vh + 20px), 10px)));
+    opacity: 0.88;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row--front {
+    transform: rotate(var(--watta-roll-marquee-tilt, -4deg))
+      translateY(var(--watta-home-wide-roll-front-nudge, clamp(-45px, calc(-1.2vh - 35px), -39px)));
+  }
+
+  .watta-home-photo-first-screen .menu-home-narrow-strip-hero-web {
+    width: 100%;
+    overflow: visible;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .watta-home-photo-first-screen {
+    --watta-roll-width: 190px;
+    --watta-roll-height: 204px;
+    --watta-roll-shadow-pad-top: 8px;
+    --watta-roll-shadow-pad-bottom: 14px;
+    --watta-home-wide-roll-back-nudge: clamp(4px, calc(-2vh + 20px), 10px);
+    --watta-home-wide-roll-front-nudge: clamp(-45px, calc(-1.2vh - 35px), -39px);
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--back {
+    --watta-roll-width: 152px;
+    --watta-roll-height: 164px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .delivery-page-hero-stack--roll-first {
+    --watta-roll-hero-below-cats-gap: clamp(30px, 3.4vh, 44px);
+  }
+
+  .watta-home-photo-first-screen .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+    --watta-roll-hero-below-cats-gap: 0;
+  }
+
+  .watta-home-photo-first-screen {
+    --watta-roll-width: 224px;
+    --watta-roll-height: 240px;
+    --watta-roll-shadow-pad-top: 10px;
+    --watta-roll-shadow-pad-bottom: 16px;
+    --watta-home-wide-roll-back-nudge: clamp(4px, calc(-2vh + 20px), 10px);
+    --watta-home-wide-roll-front-nudge: clamp(-45px, calc(-1.2vh - 35px), -39px);
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--back {
+    --watta-roll-width: 178px;
+    --watta-roll-height: 192px;
+  }
+}
+
+@media (min-width: 1025px) and (max-height: 900px) {
+  .watta-home-photo-first-screen {
+    --watta-roll-width: 202px;
+    --watta-roll-height: 216px;
+    --watta-home-wide-roll-back-nudge: clamp(4px, calc(-2vh + 20px), 10px);
+    --watta-home-wide-roll-front-nudge: clamp(-45px, calc(-1.2vh - 35px), -39px);
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--back {
+    --watta-roll-width: 160px;
+    --watta-roll-height: 172px;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 760px) {
+  .watta-home-photo-first-screen {
+    --watta-roll-width: 178px;
+    --watta-roll-height: 192px;
+    --watta-roll-shadow-pad-top: 6px;
+    --watta-roll-shadow-pad-bottom: 12px;
+    --watta-home-wide-roll-back-nudge: clamp(4px, calc(-2vh + 20px), 10px);
+    --watta-home-wide-roll-front-nudge: clamp(-45px, calc(-1.2vh - 35px), -39px);
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--back {
+    --watta-roll-width: 142px;
+    --watta-roll-height: 154px;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--front {
+    margin-top: 0;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-title {
+    font-size: clamp(24px, 2.8vh, 30px);
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-line--script {
+    font-size: clamp(28px, 3.2vh, 34px);
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-body {
+    font-size: clamp(14px, 1.55vh, 17px);
+  }
+}
+
+@media (min-width: 1025px) {
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-title {
+    font-size: clamp(38px, 4.2vh, 54px);
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-line--script {
+    font-size: clamp(42px, 4.8vh, 58px);
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-body {
+    max-width: min(42rem, 88vw);
+    font-size: clamp(17px, 1.95vh, 22px);
+    line-height: 1.52;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 680px) {
+  .watta-home-photo-first-screen {
+    --watta-roll-width: 182px;
+    --watta-roll-height: 196px;
+    --watta-home-wide-roll-back-nudge: clamp(4px, calc(-2vh + 20px), 10px);
+    --watta-home-wide-roll-front-nudge: clamp(-45px, calc(-1.2vh - 35px), -39px);
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--back {
+    --watta-roll-width: 126px;
+    --watta-roll-height: 136px;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--front {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .delivery-page-hero-stack--roll-first {
+    --watta-roll-hero-below-cats-gap: clamp(28px, 4.5vh, 44px);
+  }
+
+  .watta-home-photo-first-screen .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+    --watta-roll-hero-below-cats-gap: 0;
+  }
+
+  .watta-sushi-roll-hero {
+    padding-bottom: clamp(6px, 1.2vh, 12px);
+  }
+
+  .watta-sushi-roll-hero__title-wrap {
+    margin-top: clamp(4px, 0.8vh, 10px);
+    margin-bottom: clamp(2px, 0.4vh, 6px);
+  }
+
+  .watta-sushi-roll-hero__title {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0.28em;
+    line-height: 1;
+  }
+
+  .watta-sushi-roll-hero__word--1 {
+    font-size: clamp(31px, 9vw, 46px);
+    letter-spacing: 0.06em;
+  }
+
+  .watta-sushi-roll-hero__word--2 {
+    font-size: clamp(36px, 10.2vw, 52px);
+    letter-spacing: 0.05em;
+    margin-top: 0;
+  }
+
+  .watta-sushi-roll-hero__title-tagline {
+    margin-top: clamp(6px, 1vh, 12px);
+    font-size: clamp(19px, 3.7vw, 26px);
+  }
+
+  .watta-roll-marquee-mask {
+    margin-top: clamp(20px, 3.6vh, 36px);
+  }
+
+  /* Головна: split-marquee — текст → 1-й ряд → 2-й ряд */
+  .watta-home-photo-first-screen {
+    --watta-home-split-stack-lift: 0;
+    --watta-home-split-rows-nudge: clamp(7px, 0.85vh, 9px);
+    --watta-home-split-back-lift: clamp(17px, 1.75vh, 20px);
+    --watta-home-split-front-lift: calc(clamp(-44px, -6.4vh, -30px) + var(--watta-home-split-rows-nudge));
+    --watta-home-split-front-pull: clamp(-14px, -2.1vh, -8px);
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero {
+    position: static;
+    display: block;
+    padding-top: 0;
+    padding-bottom: 0;
+    min-height: 0;
+    height: auto;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split {
+    margin-top: 0;
+  }
+
+  .watta-home-photo-first-screen .watta-home-hero-overlay-stack {
+    position: absolute;
+    inset: 0;
+  }
+
+  .watta-home-photo-first-screen .watta-home-roll-hero-slot-web,
+  .watta-home-photo-first-screen .menu-home-narrow-strip-hero-web {
+    position: static;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+    flex: 0 1 auto;
+    align-self: stretch;
+    margin-top: 0;
+    transform: none;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask:not(.watta-roll-marquee-mask--split) {
+    display: contents;
+    margin-top: 0;
+    transform: none;
+    animation: none;
+    opacity: 1;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__title-wrap {
+    padding: 0 clamp(10px, 3vw, 18px);
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    box-sizing: border-box;
+    pointer-events: none;
+    align-self: stretch;
+    justify-self: stretch;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__mobile-intro,
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__mobile-intro-title,
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__mobile-intro-body {
+    width: 100%;
+    max-width: min(22rem, 92vw);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__mobile-intro-line {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-stack {
+    display: contents;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__title,
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__title-tagline {
+    display: none;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro {
+    display: block !important;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: none;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: #0a2018;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.95),
+      0 2px 14px rgba(255, 255, 255, 0.9),
+      0 0 24px rgba(255, 255, 255, 0.55);
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-line {
+    display: block;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-line--script {
+    margin-top: calc(0.12em + clamp(7px, 0.85vh, 9px));
+    font-family: var(--font-brand-marck, 'Marck Script'), cursive;
+    font-weight: 400;
+    font-size: 25px;
+    color: #145142;
+    letter-spacing: 0.03em;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-body {
+    margin: 10px auto 0;
+    max-width: 22rem;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #124a3c;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.92),
+      0 2px 12px rgba(255, 255, 255, 0.82);
+    white-space: pre-line;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: manual;
+    text-wrap: pretty;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-char {
+    text-shadow: inherit;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-char--script {
+    font-family: var(--font-brand-marck, 'Marck Script'), cursive;
+    font-weight: 400;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row--back {
+    --watta-roll-width: 148px;
+    --watta-roll-height: 158px;
+    transform: rotate(var(--watta-roll-marquee-tilt, -4deg))
+      translateY(var(--watta-home-split-back-lift, clamp(-18px, -2.6vh, -10px)));
+    opacity: 0.88;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-roll-marquee-row--front {
+    --watta-roll-width: 180px;
+    --watta-roll-height: 194px;
+    margin-top: var(--watta-home-split-front-pull, clamp(-14px, -2.1vh, -8px)) !important;
+    transform: rotate(var(--watta-roll-marquee-tilt, -4deg))
+      translateY(var(--watta-home-split-front-lift, clamp(-44px, -6.4vh, -30px)));
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --watta-roll-gap: 14px;
+    --watta-roll-gap-tight: 6px;
+    --watta-roll-gap-loose: 18px;
+    --watta-roll-width: 284px;
+    --watta-roll-height: 304px;
+    --watta-roll-shadow-pad-top: 10px;
+    --watta-roll-shadow-pad-bottom: 18px;
+  }
+
+  .watta-roll-marquee-row--back {
+    --watta-roll-width: 226px;
+    --watta-roll-height: 240px;
+  }
+
+  .watta-roll-marquee-row--front {
+    margin-top: -84px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --watta-roll-gap: 10px;
+    --watta-roll-gap-tight: 4px;
+    --watta-roll-gap-loose: 14px;
+    --watta-roll-width: 236px;
+    --watta-roll-height: 256px;
+    --watta-roll-shadow-pad-top: 8px;
+    --watta-roll-shadow-pad-bottom: 14px;
+  }
+
+  .watta-roll-marquee-row--back {
+    --watta-roll-width: 190px;
+    --watta-roll-height: 204px;
+    transform: translateY(4px);
+  }
+
+  .watta-roll-marquee-row--front {
+    margin-top: -54px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --watta-roll-gap: 8px;
+    --watta-roll-gap-tight: 3px;
+    --watta-roll-gap-loose: 12px;
+    --watta-roll-width: 178px;
+    --watta-roll-height: 194px;
+    --watta-roll-shadow-pad-top: 6px;
+    --watta-roll-shadow-pad-bottom: 12px;
+  }
+
+  .watta-roll-marquee-row--back {
+    --watta-roll-width: 146px;
+    --watta-roll-height: 160px;
+  }
+
+  .watta-roll-marquee-row--front {
+    margin-top: -44px;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-row--front {
+    margin-top: clamp(6px, 1.2vh, 12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-roll-marquee-track {
+    animation: none;
+  }
+
+  .watta-sushi-roll-hero__char,
+  .watta-sushi-roll-hero__tagline-char {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .watta-home-photo-first-screen .watta-sushi-roll-hero__title-wrap,
+  .watta-home-photo-first-screen .watta-roll-marquee-mask {
+    opacity: 1;
+    animation: none;
+  }
+
+  .watta-home-photo-first-screen .watta-roll-marquee-mask {
+    transform: rotate(var(--watta-roll-marquee-tilt, -4deg));
+  }
+
+  @media (min-width: 768px) {
+    .watta-home-photo-first-screen .watta-sushi-roll-hero__title-wrap {
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+html[data-watta-scrolling='true'] .watta-roll-marquee-track {
+  animation-play-state: running !important;
+}

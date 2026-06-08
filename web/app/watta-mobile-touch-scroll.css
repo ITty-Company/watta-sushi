@@ -1,8 +1,8 @@
 /**
- * Телефон: один вертикальний скрол (body), жести не «застрягають» у горизонтальних стрічках.
+ * Головна: один вертикальний скрол (body) на всіх ширинах — інакше на ноуті/ПК
+ * .content-web (100dvh) обрізає каталог і футер.
  */
-@media (max-width: 767px) {
-  /* Головна — як /menu, /cart: без вкладеного .content-web у фіксованому 100vh */
+@media (min-width: 0) {
   body.watta-route-home .watta-app-shell-root,
   body.watta-route-home .watta-app-main-grow > .app-web {
     height: auto !important;
@@ -31,8 +31,24 @@
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     overscroll-behavior-y: auto;
+    scroll-padding-top: calc(118px + env(safe-area-inset-top, 0px));
+    scroll-padding-bottom: var(
+      --watta-floating-fab-clearance,
+      calc(4.75rem + env(safe-area-inset-bottom, 0px))
+    );
   }
 
+  @media (max-width: 767px) {
+    body.watta-route-home {
+      scroll-padding-top: calc(148px + env(safe-area-inset-top, 0px));
+    }
+  }
+}
+
+/**
+ * Телефон + планшет: горизонтальні стрічки не перехоплюють вертикальний свайп.
+ */
+@media (max-width: 1024px) {
   /* Горизонтальні стрічки: вертикальний свайп проходить на сторінку */
   .categories-panel-web,
   .home-menu-category-rail-web,
@@ -41,7 +57,7 @@
     touch-action: pan-x pan-y !important;
     overscroll-behavior-x: contain;
     overscroll-behavior-y: auto;
-    scroll-snap-type: x proximity !important;
+    scroll-snap-type: none !important;
   }
 
   .category-button-web {
@@ -57,5 +73,41 @@
 
   .content-web--watta-craft:has(.menu-page-web) {
     overscroll-behavior-y: auto !important;
+  }
+}
+
+/**
+ * Телефон: один вертикальний скрол (window/body) на всіх публічних сторінках.
+ * Вкладений overflow на .app-web / .content-web ловить свайп і дає «залипання».
+ */
+@media (max-width: 767px) {
+  html.watta-light-chrome,
+  html.watta-light-chrome body {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
+  }
+
+  body .watta-app-shell-root,
+  body .watta-app-shell-root > main,
+  body .watta-app-shell-root > main > .watta-app-main-grow,
+  body .watta-app-main-grow > .app-web {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0;
+    overflow: visible !important;
+  }
+
+  body .content-web,
+  body .content-web--watta-craft {
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    overscroll-behavior-y: auto !important;
+    flex: 0 0 auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: auto;
   }
 }

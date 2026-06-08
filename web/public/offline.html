@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Watta Sushi — немає з'єднання</title>
+    <link rel="icon" href="/favicon.ico" />
+    <style>
+      :root {
+        color-scheme: only light;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100dvh;
+        padding: 24px;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #f6f4ef;
+        color: #145142;
+        text-align: center;
+      }
+      .card {
+        max-width: 360px;
+      }
+      .logo {
+        width: 120px;
+        height: auto;
+        margin: 0 auto 20px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 24px;
+        color: #4a5b54;
+        line-height: 1.5;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: var(--watta-brand-action);
+        cursor: pointer;
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <img class="logo" src="/logo-splash-1x.webp" alt="Watta Sushi" />
+      <h1>Немає з'єднання</h1>
+      <p>
+        Схоже, інтернет зник. Сторінки, які ви вже відкривали, доступні офлайн —
+        решта завантажиться, щойно з'явиться мережа.
+      </p>
+      <button type="button" onclick="location.reload()">Спробувати ще раз</button>
+    </div>
+    <script>
+      // Як тільки зв'язок повернувся — автоматично перезавантажуємо.
+      window.addEventListener('online', function () {
+        location.reload();
+      });
+    </script>
+  </body>
+</html>

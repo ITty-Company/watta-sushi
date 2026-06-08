@@ -14,7 +14,7 @@ import { filterReachableHeroUrls } from '@/lib/wattaHeroVideo'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { readSiteSettingsRecord } from '@/lib/heroSettingsSiteCache'
 
-const MENU_HERO_URLS_CACHE_KEY = 'watta_menu_hero_urls_v1'
+const MENU_HERO_URLS_CACHE_KEY = 'watta_menu_hero_urls_v2'
 
 export function useMenuHeroVideo() {
   const [menuHeroVideoUrls, setMenuHeroVideoUrls] = useState<string[]>(() => {

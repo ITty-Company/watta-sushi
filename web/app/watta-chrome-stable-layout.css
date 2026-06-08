@@ -9,16 +9,16 @@
 
 @media (min-width: 768px) {
   :root {
-    --watta-chrome-header-measured-h: 86px;
-    --watta-chrome-categories-band-h: 48px;
-    --watta-sticky-chrome-measured-h: 134px;
+    --watta-chrome-header-measured-h: 78px;
+    --watta-chrome-categories-band-h: 52px;
+    --watta-sticky-chrome-measured-h: 130px;
   }
 }
 
 @media (min-width: 1025px) {
   :root {
-    --watta-chrome-header-measured-h: 90px;
-    --watta-chrome-categories-band-h: 46px;
+    --watta-chrome-header-measured-h: 82px;
+    --watta-chrome-categories-band-h: 54px;
     --watta-sticky-chrome-measured-h: 136px;
   }
 }

@@ -50,91 +50,6 @@
   width: 100%;
 }
 
-/* Hero stats — компактно, типографика как на /delivery */
-.watta-about-page .about-page-intro-band .about-page-hero-stats.delivery-page-stats-band {
-  padding: 0 0 clamp(1.25rem, 3vw, 1.75rem);
-}
-
-.watta-about-page.watta-delivery-page-about
-  .about-page-intro-band
-  .about-page-hero-stats.delivery-page-stats-band
-  .grid {
-  gap: 0.5rem !important;
-}
-
-@media (min-width: 640px) {
-  .watta-about-page.watta-delivery-page-about
-    .about-page-intro-band
-    .about-page-hero-stats.delivery-page-stats-band
-    .grid {
-    gap: 0.625rem !important;
-  }
-}
-
-.watta-about-page .about-page-intro-band .about-page-hero-stats .contact-watta-stat-pill,
-.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill--blob {
-  padding: clamp(0.5rem, 1.5vw, 0.68rem) clamp(0.42rem, 1.2vw, 0.58rem) !important;
-  border-radius: 12px;
-  box-shadow: 0 3px 14px rgba(20, 81, 66, 0.05);
-}
-
-.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill__icon-wrap {
-  margin: 0 auto 0.35rem;
-  height: 2rem;
-  width: 2rem;
-}
-
-.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill__icon-blob {
-  height: 1.65rem;
-  width: 2rem;
-}
-
-.watta-about-page .about-page-intro-band .about-page-hero-stats .delivery-stat-pill__icon {
-  height: 1.15rem;
-  width: 1.15rem;
-}
-
-.watta-about-page.watta-delivery-page-about
-  .about-page-intro-band
-  .about-page-hero-stats
-  .delivery-stat-pill--blob
-  .contact-watta-stat-pill__val,
-.watta-about-page.watta-delivery-page-about
-  .about-page-intro-band
-  .about-page-hero-stats
-  .delivery-stat-pill__val {
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
-  font-size: clamp(0.82rem, 2vw, 0.95rem) !important;
-  font-weight: 900 !important;
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-  color: #111827 !important;
-}
-
-.watta-about-page.watta-delivery-page-about
-  .about-page-intro-band
-  .about-page-hero-stats
-  .delivery-stat-pill__val--phrase {
-  font-size: clamp(0.72rem, 1.85vw, 0.88rem) !important;
-  font-weight: 800 !important;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  text-wrap: balance;
-}
-
-.watta-about-page.watta-delivery-page-about
-  .about-page-intro-band
-  .about-page-hero-stats
-  .delivery-stat-pill--blob
-  .contact-watta-stat-pill__label {
-  margin-top: 0.2rem;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif !important;
-  font-size: 0.65rem !important;
-  font-weight: 600;
-  line-height: 1.35;
-  color: #7a7a7a !important;
-}
-
 .watta-about-page.watta-delivery-page-about
   .delivery-page-intro-inner-web--standalone
   .home-after-hero-intro-body-web {
@@ -244,17 +159,18 @@
   background: #fff;
 }
 
+/* Телефон: framer-motion не лишає секції на opacity:0 до whileInView / LazyMotion */
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  .watta-about-page .about-page-content-flow :is(section, article, .about-page-why-heading-wrap) {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+  }
+}
+
 /* Зазор між hero stat-картками та «Почему выбирают нас?» */
 .watta-about-page.watta-delivery-page-about .about-page-section-web:first-of-type {
   padding-top: clamp(2.25rem, 5.5vw, 3.25rem);
-}
-
-@media (max-width: 1024px) {
-  .watta-about-page.watta-delivery-page-about
-    #about-page-lead-intro.home-after-hero-intro-web
-    .about-page-lead-intro-inner.home-after-hero-intro-inner-web--home-menu {
-    padding-top: clamp(18px, 2.6vh, 32px) !important;
-  }
 }
 
 @media (max-width: 380px) {

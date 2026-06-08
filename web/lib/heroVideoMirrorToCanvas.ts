@@ -20,8 +20,17 @@ export function bindHeroVideoMirrorToCanvas(
   let rvfc = 0
   let poll = 0
   let lastDraw = -Infinity
-  /** Частіші кадри на старті — швидший перший кадр на canvas; далі обмеження знімається не потрібно */
-  const MIN_FRAME_MS = 18
+  /** Декоративне відео: ~30fps достатньо й удвічі дешевше за ~55fps по CPU (Paint/Layout). */
+  const MIN_FRAME_MS = 32
+  /** Розмір canvas у CSS-пікселях; кешуємо й оновлюємо лише на resize, бо
+      getBoundingClientRect() щокадру викликає примусовий sync layout (дорого в Safari). */
+  let cachedW = 0
+  let cachedH = 0
+  const measure = () => {
+    const rect = canvas.getBoundingClientRect()
+    cachedW = rect.width
+    cachedH = rect.height
+  }
 
   const V = video as HTMLVideoElement & {
     requestVideoFrameCallback?: (cb: () => void) => number
@@ -121,14 +130,14 @@ export function bindHeroVideoMirrorToCanvas(
     const vh = video.videoHeight
     if (!vw || !vh) return
 
-    const rect = canvas.getBoundingClientRect()
-    const w = rect.width
-    const h = rect.height
+    if (cachedW <= 0 || cachedH <= 0) measure()
+    const w = cachedW
+    const h = cachedH
     if (w <= 0 || h <= 0) return
 
     const rawDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-    /* Повний DPR до 4 (Retina / iPhone Pro); обмеження — розмір canvas. */
-    const dpr = Math.min(Math.max(rawDpr, 1), 4)
+    /* Декоративний дзеркальний canvas: DPR до 2 достатньо; вище — лише марний Paint. */
+    const dpr = Math.min(Math.max(rawDpr, 1), 2)
     const cw = Math.max(1, Math.floor(w * dpr))
     const ch = Math.max(1, Math.floor(h * dpr))
     if (canvas.width !== cw || canvas.height !== ch) {
@@ -312,6 +321,7 @@ export function bindHeroVideoMirrorToCanvas(
     if (resizeRaf) return
     resizeRaf = requestAnimationFrame(() => {
       resizeRaf = 0
+      measure()
       invalidateStyleCache()
       draw()
     })
@@ -326,6 +336,7 @@ export function bindHeroVideoMirrorToCanvas(
 
   const onPageShow = () => {
     running = true
+    measure()
     invalidateStyleCache()
     pump()
   }

@@ -158,14 +158,14 @@ export default function AdminDashboardStudio({
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-[#145142]/10 blur-3xl"
+          className="pointer-events-none absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-watta-action/10 blur-3xl"
           aria-hidden
         />
         <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="admin-watta-kicker mb-2 inline-flex items-center gap-2 rounded-full border border-[#145142]/12 bg-white px-3 py-1 shadow-sm">
               <Sparkles size={12} className="text-[#ff5c00]" strokeWidth={2.5} />
-              Studio
+              {d.studioBadge}
             </div>
             <h2 className="admin-watta-page-title text-2xl font-bold sm:text-3xl md:text-4xl">
               {d.studioHeadline}
@@ -491,7 +491,7 @@ export default function AdminDashboardStudio({
               whileHover={reduceMotion ? undefined : { y: -3, transition: { duration: 0.22 } }}
               className="flex items-center gap-2.5 rounded-2xl border border-[#145142]/11 bg-gradient-to-br from-white to-[#f6fbf8] p-3 shadow-md shadow-[#145142]/[0.06]"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#145142]/10 text-[#145142]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-watta-action/10 text-[#145142]">
                 <Icon size={16} strokeWidth={2.4} />
               </div>
               <div className="min-w-0">

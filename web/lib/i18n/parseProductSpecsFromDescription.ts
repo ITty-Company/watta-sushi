@@ -38,3 +38,13 @@ export function formatProductWeightSubtitle(
 ): string {
   return parseProductSpecsFromDescription(desc, weightFallback, piecesFallback, lang).weightLine
 }
+
+/** Склад / опис на картці меню (без префікса ваги, якщо він уже в окремому рядку). */
+export function productCardIngredientsFromDescription(desc: string): string {
+  const d = (desc || '').trim()
+  if (!d) return ''
+  const withoutLeadingWeight = d
+    .replace(/^\s*\d+\s*(г|g|мл|ml|шт\.?|pcs|pieces|stuks|st\.)\b[^,]*,?\s*/i, '')
+    .trim()
+  return withoutLeadingWeight || d
+}

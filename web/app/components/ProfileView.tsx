@@ -1,31 +1,35 @@
 'use client'
 
+import '../profile-page-theme.css'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { m, useReducedMotion, type Variants } from 'framer-motion'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
 import { useLanguage } from '../context/LanguageContext'
-import { useOptionalRightNavDrawer } from '../context/RightNavDrawerContext'
+import { useOptionalRightNavDrawerActions } from '../context/RightNavDrawerContext'
+import { MenuHighlightStack, type MenuHighlightStackItem } from './MenuHighlightStack'
+import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import ClientProfileOrders, { type ProfileOrder } from './profile/ClientProfileOrders'
-import ProfileDeliveryAddressCard from './profile/ProfileDeliveryAddressCard'
+import ProfileAddressesFlow from './profile/ProfileAddressesFlow'
 import ProfilePersonalDataForm from './profile/ProfilePersonalDataForm'
 import ProfileLeadHero from './profile/ProfileLeadHero'
+import ProfilePublicPageLayout from './profile/ProfilePublicPageLayout'
 import {
   Phone, Bell, Heart, ShoppingBag, User, Menu,
-  MapPin, Clock, Settings, LogOut, Shield, Mail, X, ArrowLeft,
+  MapPin, Clock, Settings, LogOut, Shield, Mail, ArrowLeft,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { logoutClientSession } from '@/lib/authSession'
+import { getAuthUrl } from '@/lib/authGate'
+import { openWattaAuth } from '@/lib/openWattaAuth'
 import { readUserOrdersCache, writeUserOrdersCache } from '@/lib/userOrdersCache'
-import {
-  loadFavoriteProducts,
-  readFavoriteIds,
-  syncFavoriteIdsToStorage,
-} from '@/lib/favoritesStorage'
+import { loadFavoriteProducts, readFavoriteIds } from '@/lib/favoritesStorage'
+import { productGalleryFromApi } from '@/lib/productGallery'
 import { isAdminRole } from '@/lib/isAdminRole'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import type { WattaLanguage } from '@/lib/i18n/language'
-import { appendCartLines, writeCartToStorage } from '@/lib/cartStorage'
+import { writeCartToStorage } from '@/lib/cartStorage'
 import { getOrderStatusToastMessage } from '@/lib/orderStatusMessage'
 import { WATTA_NOTIFICATIONS_CHANGED_EVENT } from '@/lib/userNotificationsApi'
 import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
@@ -36,6 +40,20 @@ interface UserData {
   phone: string
   address: string
   isPhoneVerified?: boolean
+}
+
+/* Плавні появи секцій профілю — на маунті (не whileInView), щоб контент
+   ніколи не «зависав» невидимим на мобільному. Поважаємо reduced-motion. */
+const PROFILE_EASE = [0.22, 1, 0.36, 1] as const
+
+const profileFadeUp: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: PROFILE_EASE } },
+}
+
+const profileStagger: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
 }
 
 // ИСПРАВЛЕННЫЙ ИНТЕРФЕЙС
@@ -71,7 +89,17 @@ export default function ProfileView({
   const { t, language, getLocalized } = useLanguage()
   const { showBlogNav } = usePublicBlogNav()
   const a = t.siteAria
-  const rightNavDrawer = useOptionalRightNavDrawer()
+  const rightNavDrawer = useOptionalRightNavDrawerActions()
+  const reduceMotion = useReducedMotion()
+  const menuAddToCart = useMenuAddToCart()
+  // Поважаємо reduced-motion: вимикаємо появи, але контент завжди видимий.
+  const motionSection = reduceMotion
+    ? {}
+    : { variants: profileFadeUp, initial: 'hidden' as const, animate: 'show' as const }
+  const motionStaggerWrap = reduceMotion
+    ? {}
+    : { variants: profileStagger, initial: 'hidden' as const, animate: 'show' as const }
+  const motionStaggerItem = reduceMotion ? {} : { variants: profileFadeUp }
   const [profileAllowed, setProfileAllowed] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -80,7 +108,9 @@ export default function ProfileView({
     setProfileAllowed(ok)
     if (!ok) {
       const ret = layout === 'page' ? '/profile' : '/'
-      router.replace('/login?return=' + encodeURIComponent(ret))
+      if (!openWattaAuth({ returnUrl: ret })) {
+        router.replace(getAuthUrl(ret))
+      }
     }
   }, [router, layout])
 
@@ -324,7 +354,9 @@ export default function ProfileView({
         name: getLocalized(p, 'name'),
         description: getLocalized(p, 'description') || '',
         price: Number(p.price),
-        imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : undefined,
+        imageUrl:
+          productGalleryFromApi(p)[0] ||
+          (typeof p.imageUrl === 'string' ? p.imageUrl : undefined),
       }))
       setFavoriteItems(list)
     } catch (e) {
@@ -334,76 +366,63 @@ export default function ProfileView({
     }
   }, [getLocalized])
 
+  const syncFavoritesFromStorage = useCallback(() => {
+    const idSet = new Set(readFavoriteIds())
+    setFavoriteItems((prev) => {
+      const next = prev.filter((item) => idSet.has(item.id))
+      if (idSet.size > next.length) void loadFavoritesList()
+      return next
+    })
+  }, [loadFavoritesList])
+
   useEffect(() => {
-    if (layout === 'page' || activeTab === 'favorites') {
+    if (layout === 'page') {
       void loadFavoritesList()
+      return
     }
+    if (activeTab === 'favorites') void loadFavoritesList()
   }, [activeTab, layout, loadFavoritesList])
 
   useEffect(() => {
     const onUser = () => {
-      if (activeTab === 'favorites') void loadFavoritesList()
+      void loadFavoritesList()
     }
     window.addEventListener('userChanged', onUser)
     return () => window.removeEventListener('userChanged', onUser)
-  }, [activeTab, loadFavoritesList])
+  }, [loadFavoritesList])
 
   useEffect(() => {
-    const onFav = () => {
-      if (activeTab === 'favorites') void loadFavoritesList()
-    }
-    window.addEventListener('favoritesUpdated', onFav)
-    return () => window.removeEventListener('favoritesUpdated', onFav)
-  }, [activeTab, loadFavoritesList])
+    window.addEventListener('favoritesUpdated', syncFavoritesFromStorage)
+    return () => window.removeEventListener('favoritesUpdated', syncFavoritesFromStorage)
+  }, [syncFavoritesFromStorage])
 
-  const addFavoriteToCart = (item: {
-    id: number
-    name: string
-    description?: string
-    price: number
-    imageUrl?: string
-  }) => {
-    const result = appendCartLines({
-      id: item.id,
-      name: item.name,
-      description: item.description || '',
-      price: item.price,
-      category: '',
-      emoji: '🍣',
-      imageUrl: item.imageUrl,
-    })
-    if (result === 'max') {
-      toast.error(t.appToasts.maxCartQty)
-      return
-    }
-    toast.success(t.addToCart)
-  }
+  // Преміум-картки обраного (як на /favorites) — додавання в кошик і
+  // тогл «серця» інкапсульовані всередині WattaMenuProductCard.
+  const favoriteStackItems: MenuHighlightStackItem[] = useMemo(
+    () =>
+      favoriteItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        price: item.price,
+        emoji: '🍣',
+        imageUrl: item.imageUrl,
+      })),
+    [favoriteItems],
+  )
 
-  const removeFavorite = async (productId: number) => {
-    try {
-      const userStr = localStorage.getItem('currentUser')
-      if (!userStr) return
-      const auth = getBearerAuthHeaders()
-      if (Object.keys(auth as Record<string, string>).length === 0) {
-        toast.error(t.clientProfile.redirectLogin || t.appToasts.loginAgain)
-        return
-      }
-
-      await fetch('/api/favorites/toggle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...auth,
-        },
-        body: JSON.stringify({ productId })
-      })
-
-      setFavoriteItems((prev) => prev.filter((item) => item.id !== productId))
-      syncFavoriteIdsToStorage(readFavoriteIds().filter((id) => id !== productId))
-    } catch (e) {
-      toast.error(t.appToasts.removeFavoriteError)
-    }
-  }
+  const handleFavoriteAddToCart = useCallback(
+    (item: MenuHighlightStackItem) =>
+      menuAddToCart({
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        price: item.price,
+        emoji: item.emoji ?? '🍣',
+        imageUrl: item.imageUrl,
+      }),
+    [menuAddToCart],
+  )
 
   const displayName = (user?.name || t.clientProfile.notSpecified).trim() || t.clientProfile.notSpecified
   const headingName = language === 'en' ? displayName.toLowerCase() : displayName
@@ -417,20 +436,50 @@ export default function ProfileView({
   if (profileAllowed === null) {
     return (
       <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center watta-page-bg">
-        <p className="text-[#145142] font-medium">{t.clientProfile.loading}</p>
+        <p className="text-watta-action font-medium">{t.clientProfile.loading}</p>
       </div>
     )
   }
   if (!profileAllowed) {
     return (
       <div className="menu-page-web relative min-h-screen w-full flex items-center justify-center watta-page-bg px-6 text-center">
-        <p className="text-[#145142] font-medium">{t.clientProfile.redirectLogin}</p>
+        <p className="text-watta-action font-medium">{t.clientProfile.redirectLogin}</p>
       </div>
     )
   }
 
+  if (layout === 'page') {
+    return (
+      <ProfilePublicPageLayout
+        t={t}
+        language={language}
+        displayName={displayName}
+        headingName={headingName}
+        user={user}
+        bonusBalance={bonusBalance}
+        isAdmin={isAdmin}
+        orders={orders}
+        ordersLoading={loading}
+        favoriteItems={favoriteItems}
+        favLoading={favLoading}
+        showBlogNav={showBlogNav}
+        highlightOrderId={highlightOrderId}
+        initialTab={initialTab}
+        onGoMenu={() => router.push('/menu')}
+        onReorder={handleReorder}
+        onReviewSubmitted={handleReviewSubmitted}
+        onAddFavoriteToCart={handleFavoriteAddToCart}
+        onLogout={handleLogout}
+        onOpenAdmin={onOpenAdmin}
+        onAddressSaved={handleAddressSaved}
+        onPersonalDataSaved={handlePersonalDataSaved}
+        onPhoneVerified={handlePhoneVerified}
+      />
+    )
+  }
+
   const headerIconBtn =
-    'flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 hover:text-[#145142] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#145142]/40'
+    'flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 hover:text-watta-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-watta-action/40'
 
   const handleGlobalNavMenu = () => {
     if (rightNavDrawer?.enabled) rightNavDrawer.open()
@@ -448,7 +497,7 @@ export default function ProfileView({
           <img src="/logo.png" alt="" className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
           <div className="hidden min-w-0 flex-col text-left sm:flex">
             <span className="text-[11px] font-medium text-gray-500">{t.clientProfile.backHome}</span>
-            <span className="truncate text-sm font-bold text-[#145142]">{t.clientProfile.brandSubtitle}</span>
+            <span className="truncate text-sm font-bold text-watta-action">{t.clientProfile.brandSubtitle}</span>
           </div>
         </button>
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -470,7 +519,7 @@ export default function ProfileView({
             <ShoppingBag size={20} strokeWidth={2.25} />
           </button>
           <span
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#145142] text-white sm:h-11 sm:w-11"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-watta-action text-white sm:h-11 sm:w-11"
             aria-current="page"
             title={t.profilePage.title}
           >
@@ -484,10 +533,7 @@ export default function ProfileView({
     </header>
   )
 
-  const rootPad =
-    layout === 'page'
-      ? 'pb-16 font-sans sm:pb-20'
-      : 'pb-16 pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16'
+  const rootPad = 'pb-16 pt-[72px] font-sans sm:pt-[76px] sm:pb-16 lg:pb-16'
 
   const quickNavItems = [
     { id: 'address' as const, icon: MapPin, label: t.clientProfile.tabAddress },
@@ -495,10 +541,10 @@ export default function ProfileView({
     { id: 'data' as const, icon: Settings, label: t.clientProfile.tabData },
   ] as const
 
-  const goMenu = layout === 'page' ? () => router.push('/menu') : onBack
+  const goMenu = onBack
 
   const profileLeadIntro = (
-    <div className="delivery-page-intro-web w-full shrink-0 bg-white">
+    <m.div className="delivery-page-intro-web w-full shrink-0 bg-white" data-watta-cart-bar-gate="" {...motionSection}>
       <ProfileLeadHero
         sectionId="profile-inapp-lead-intro"
         nameLines={profileHeroTitleLines}
@@ -521,7 +567,7 @@ export default function ProfileView({
           <strong className="tabular-nums">{bonusBalance.toFixed(2)} €</strong>
         </span>
       </ProfileLeadHero>
-    </div>
+    </m.div>
   )
 
   const ordersBlock = (
@@ -552,31 +598,37 @@ export default function ProfileView({
 
   return (
     <div
-      className={`menu-page-web watta-profile-inapp watta-delivery-page-about${layout === 'page' ? ' watta-profile-page' : ''} relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden bg-white ${rootPad}`}
+      className={`menu-page-web watta-profile-inapp watta-delivery-page-about relative flex min-h-full w-full max-w-[100vw] flex-col overflow-x-hidden bg-white ${rootPad}`}
     >
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         {layout === 'embedded' ? <Header /> : null}
 
         {profileLeadIntro}
 
-        <nav className="watta-profile-quick-nav max-w-[1600px] mx-auto" aria-label={a.profileNav}>
+        <m.nav
+          className="watta-profile-quick-nav max-w-[1600px] mx-auto"
+          aria-label={a.profileNav}
+          {...motionStaggerWrap}
+        >
           {quickNavItems.map(({ id, icon: Icon, label }) => {
             const on = activeTab === id
             return (
-              <button
+              <m.button
                 key={id}
                 type="button"
                 onClick={() => setActiveTab(on ? 'history' : id)}
                 className={`watta-profile-quick-nav__btn${on ? ' watta-profile-quick-nav__btn--on' : ''}`}
+                {...motionStaggerItem}
+                whileTap={reduceMotion ? undefined : { scale: 0.96 }}
               >
                 <span className="watta-profile-quick-nav__btn-icon" aria-hidden>
                   <Icon size={18} strokeWidth={2.1} className={id === 'favorites' && on ? 'fill-current' : ''} />
                 </span>
                 <span>{label}</span>
-              </button>
+              </m.button>
             )
           })}
-        </nav>
+        </m.nav>
 
         {activeTab === 'history' ? ordersBlock : null}
 
@@ -587,7 +639,7 @@ export default function ProfileView({
           <div className="sticky top-20 space-y-6 rounded-2xl border border-gray-200/90 bg-white p-6 shadow-sm">
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-4">
-                <div className="flex h-[100px] w-[100px] items-center justify-center rounded-full bg-gradient-to-br from-[#145142] to-[#0c3028] text-white ring-4 ring-gray-100">
+                <div className="flex h-[100px] w-[100px] items-center justify-center rounded-full bg-gradient-to-br from-watta-action to-watta-action-active text-white ring-4 ring-gray-100">
                   <User size={44} strokeWidth={1.75} />
                 </div>
                 {isAdmin ? (
@@ -626,7 +678,7 @@ export default function ProfileView({
                     onClick={() => setActiveTab(id)}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${
                       on
-                        ? 'bg-[#145142] text-white shadow-sm'
+                        ? 'bg-watta-action text-white shadow-sm'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -663,10 +715,12 @@ export default function ProfileView({
 
         {/* ПРАВАЯ КОЛОНКА - КОНТЕНТ */}
         <div className={`flex-1 min-w-0${activeTab === 'history' ? ' hidden lg:block' : ''}`}>
-          <div
+          <m.div
+            key={activeTab}
             className={`watta-profile-inapp-content-card${
               activeTab === 'favorites' ? ' watta-profile-inapp-content-card--favorites' : ''
             }`}
+            {...motionSection}
           >
             <div className="relative z-10">
             {activeTab !== 'history' ? (
@@ -690,7 +744,7 @@ export default function ProfileView({
                     {showBlogNav ? (
                       <Link
                         href="/blog"
-                        className="rounded-lg bg-[#145142] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#0f3d32] sm:text-sm"
+                        className="rounded-lg bg-watta-action px-3 py-2 text-xs font-semibold text-white transition hover:bg-watta-action-hover sm:text-sm"
                       >
                         {t.blogPublic.title}
                       </Link>
@@ -713,57 +767,38 @@ export default function ProfileView({
               </div>
             )}
             {activeTab === 'favorites' && (
-              <div className="space-y-5">
+              <div className="watta-profile-fav-panel space-y-5">
                 <h2 className="watta-profile-inapp-panel-title">{t.clientProfile.favoritesTitle}</h2>
 
                 {favLoading ? (
-                  <div className="py-12 text-center text-sm text-gray-500">{t.clientProfile.loading}</div>
-                ) : favoriteItems.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                    {favoriteItems.map((item) => (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4" aria-hidden>
+                    {Array.from({ length: 4 }).map((_, i) => (
                       <div
-                        key={item.id}
-                        className="group relative flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
-                      >
-                        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                          {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-2xl">🍣</div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="line-clamp-1 font-semibold text-gray-900">{item.name}</h3>
-                          <p className="line-clamp-1 text-sm text-gray-500">{item.description}</p>
-                          <p className="mt-1 text-sm font-bold text-[#145142]">{item.price} €</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeFavorite(item.id)}
-                          className="absolute right-2 top-2 rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label={a.remove}
-                        >
-                          <X size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => addFavoriteToCart(item)}
-                          className="shrink-0 rounded-lg border border-gray-200 p-2 text-[#145142] transition hover:border-[#145142]/40 hover:bg-[#145142]/5"
-                          aria-label={a.cart}
-                        >
-                          <ShoppingBag size={18} />
-                        </button>
-                      </div>
+                        key={i}
+                        className="min-h-[220px] w-full animate-pulse rounded-[1.15rem] border border-watta-action/10 bg-white/80"
+                      />
                     ))}
                   </div>
+                ) : favoriteStackItems.length > 0 ? (
+                  <MenuHighlightStack
+                    title={t.clientProfile.favoritesTitle}
+                    ariaLabel={t.clientProfile.favoritesTitle}
+                    items={favoriteStackItems}
+                    weightFallback={t.productDetail.weightFallback}
+                    piecesFallback={t.productDetail.piecesFallback}
+                    onAddToCart={handleFavoriteAddToCart}
+                    layout="stack"
+                    productsGridClassName="favorites-page-products-grid"
+                    suppressHeading
+                  />
                 ) : (
-                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 py-16 text-center">
-                    <Heart size={40} className="mx-auto mb-3 text-gray-300" />
+                  <div className="rounded-[1.25rem] border border-dashed border-watta-action/20 bg-gradient-to-b from-[#f8fbf9] to-white py-16 text-center">
+                    <Heart size={40} className="mx-auto mb-3 text-watta-action/30" />
                     <p className="text-sm font-medium text-gray-600">{t.clientProfile.favEmpty}</p>
                     <button
                       type="button"
                       onClick={() => onSelectCategory?.('rolls')}
-                      className="mt-4 text-sm font-semibold text-[#145142] hover:underline"
+                      className="mt-4 text-sm font-semibold text-watta-action hover:underline"
                     >
                       {t.clientProfile.favToMenu}
                     </button>
@@ -776,16 +811,15 @@ export default function ProfileView({
                 <div className="mb-6">
                   <h2 className="watta-profile-inapp-panel-title">{t.clientProfile.addrTitle}</h2>
                   <p className="mt-1 flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin size={16} className="shrink-0 text-[#145142]" />
+                    <MapPin size={16} className="shrink-0 text-watta-action" />
                     {t.clientProfile.addrSub}
                   </p>
                 </div>
-                <ProfileDeliveryAddressCard
-                  initialAddress={user?.address ?? ''}
-                  onSaved={handleAddressSaved}
+                <ProfileAddressesFlow
                   cp={t.clientProfile}
                   d={t.deliveryPage}
                   enterAddressHint={t.cartSection.enterAddressForDeliveryFee}
+                  onPrimaryAddressChange={handleAddressSaved}
                 />
               </div>
             )}
@@ -794,7 +828,7 @@ export default function ProfileView({
                 <div className="mb-6">
                   <h2 className="watta-profile-inapp-panel-title">{t.clientProfile.dataTitle}</h2>
                   <p className="mt-1 flex items-center gap-2 text-sm text-gray-600">
-                    <Settings size={16} className="shrink-0 text-[#145142]" />
+                    <Settings size={16} className="shrink-0 text-watta-action" />
                     {t.clientProfile.dataSub}
                   </p>
                 </div>
@@ -811,7 +845,7 @@ export default function ProfileView({
               </div>
             )}
             </div>
-          </div>
+          </m.div>
         </div>
       </div>
       </div>

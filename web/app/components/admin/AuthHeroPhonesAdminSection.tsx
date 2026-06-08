@@ -96,7 +96,7 @@ function VideoSlotGrid({
                 <button
                   type="button"
                   onClick={() => fileInputRefs.current[slot.id]?.click()}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-[#145142]/5"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-watta-action/5"
                 >
                   <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   {t.heroVideoUpload}
@@ -119,7 +119,7 @@ function VideoSlotGrid({
       <button
         type="button"
         onClick={onAddSlot}
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-[#145142]/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-[#145142]/10 sm:w-auto"
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-watta-action/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-watta-action/10 sm:w-auto"
       >
         <Plus className="h-4 w-4 shrink-0" aria-hidden />
         {t.heroVideoAddBtn}
@@ -179,7 +179,7 @@ export default function AuthHeroPhonesAdminSection({
           type="button"
           disabled={saving || !canSave}
           onClick={onSave}
-          className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-watta-action-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Save className="h-4 w-4 shrink-0" aria-hidden />
           {saving ? t.heroVideoSaving : t.heroVideoSave}

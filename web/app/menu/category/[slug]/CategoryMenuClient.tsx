@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { ArrowLeft } from 'lucide-react'
 import { useLanguage } from '../../../context/LanguageContext'
@@ -9,10 +9,13 @@ import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import LogoBackground from '../../../components/LogoBackground'
 import { WattaMenuProductCard } from '../../../components/WattaMenuProductCard'
+import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import { productGalleryFromApi } from '@/lib/productGallery'
+import { readRawMenuCategoriesFromSession, readRawMenuProductsFromSession } from '@/lib/menuCatalogSessionCache'
 
 interface MenuItem {
   id: number
@@ -99,44 +102,8 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
     [getLocalized, t.categories, language]
   )
 
-  const loadCategoriesTitle = useCallback(async () => {
-    try {
-      const res = await fetchPublicApi(getApiUrl('/api/products/categories'))
-      if (!res.ok) return
-      const data = await res.json()
-      const rows: MenuCategoryRow[] = (data || [])
-        .filter((cat: any) => cat.isActive !== false)
-        .map((cat: any) => {
-          const name = getMenuCategoryDisplayName(cat, language, t.categories) || String(cat.name_ru ?? '')
-          return { id: Number(cat.id) || 0, slug: String(cat.slug ?? '').trim().toLowerCase(), name }
-        })
-      categoryRowsRef.current = rows
-      const hit = rows.find((c) => c.slug === normalizedSlug)
-      if (hit?.name) setCategoryTitle(hit.name)
-    } catch {
-      /* ignore */
-    }
-  }, [language, t.categories, normalizedSlug])
-
-  const loadProducts = useCallback(async (fresh = false) => {
-    setLoading(true)
-    try {
-      const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
-      const hasCity = cityId != null && cityId > 0
-      const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
-      const fetchFn = fresh ? fetchPublicApiFresh : fetchPublicApi
-      const scopedRes = await fetchFn(scopedUrl)
-      const scopedData = scopedRes.ok ? await scopedRes.json() : []
-      const scopedList = Array.isArray(scopedData) ? scopedData : []
-      const rawProducts =
-        hasCity && scopedList.length === 0
-          ? await (async () => {
-              const fallbackRes = await fetchFn(getApiUrl('/api/products'))
-              const fallbackData = fallbackRes.ok ? await fallbackRes.json() : []
-              return Array.isArray(fallbackData) ? fallbackData : []
-            })()
-          : scopedList
-      const mapped = mapProductsToItems(rawProducts)
+  const filterItemsForCategory = useCallback(
+    (mapped: MenuItem[]) => {
       const byId = new Map<number, string>()
       const byName = new Map<string, string>()
       for (const c of categoryRowsRef.current) {
@@ -163,13 +130,93 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
           })),
         })
       }
-      setItems(sortCategoryItems(filtered.length > 0 ? filtered : mapped))
+      return sortCategoryItems(filtered.length > 0 ? filtered : mapped)
+    },
+    [normalizedSlug],
+  )
+
+  const syncCategoryRowsFromRaw = useCallback(
+    (data: Record<string, unknown>[]) => {
+      const rows: MenuCategoryRow[] = data
+        .filter((cat) => (cat as { isActive?: boolean }).isActive !== false)
+        .map((cat) => {
+          const name =
+            getMenuCategoryDisplayName(cat, language, t.categories) || String((cat as { name_ru?: string }).name_ru ?? '')
+          return {
+            id: Number(cat.id) || 0,
+            slug: String(cat.slug ?? '').trim().toLowerCase(),
+            name,
+          }
+        })
+      categoryRowsRef.current = rows
+      const hit = rows.find((c) => c.slug === normalizedSlug)
+      if (hit?.name) setCategoryTitle(hit.name)
+    },
+    [language, t.categories, normalizedSlug],
+  )
+
+  const loadCategoriesTitle = useCallback(async () => {
+    const rawCategories = readRawMenuCategoriesFromSession()
+    if (rawCategories) {
+      syncCategoryRowsFromRaw(rawCategories)
+      return
+    }
+    try {
+      const res = await fetchPublicApi(getApiUrl('/api/products/categories'))
+      if (!res.ok) return
+      const data = await res.json()
+      const list = Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+      if (list.length > 0) syncCategoryRowsFromRaw(list)
+    } catch {
+      /* ignore */
+    }
+  }, [syncCategoryRowsFromRaw])
+
+  const loadProducts = useCallback(async (fresh = false) => {
+    const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
+    if (!fresh) {
+      const cached = readRawMenuProductsFromSession(cityId)
+      if (cached) {
+        setItems(filterItemsForCategory(mapProductsToItems(cached as any[])))
+        setLoading(false)
+        return
+      }
+    }
+
+    setLoading(true)
+    try {
+      const hasCity = cityId != null && cityId > 0
+      const scopedUrl = hasCity ? getApiUrl(`/api/products?cityId=${cityId}`) : getApiUrl('/api/products')
+      const fetchFn = fresh ? fetchPublicApiFresh : fetchPublicApi
+      const scopedRes = await fetchFn(scopedUrl)
+      const scopedData = scopedRes.ok ? await scopedRes.json() : []
+      const scopedList = Array.isArray(scopedData) ? scopedData : []
+      const rawProducts =
+        hasCity && scopedList.length === 0
+          ? await (async () => {
+              const fallbackRes = await fetchFn(getApiUrl('/api/products'))
+              const fallbackData = fallbackRes.ok ? await fallbackRes.json() : []
+              return Array.isArray(fallbackData) ? fallbackData : []
+            })()
+          : scopedList
+      setItems(filterItemsForCategory(mapProductsToItems(rawProducts)))
     } catch {
       setItems([])
     } finally {
       setLoading(false)
     }
-  }, [mapProductsToItems, normalizedSlug])
+  }, [filterItemsForCategory, mapProductsToItems])
+
+  useLayoutEffect(() => {
+    const rawCategories = readRawMenuCategoriesFromSession()
+    if (rawCategories) syncCategoryRowsFromRaw(rawCategories)
+    const cityId = readCityIdForProductApi()
+    const rawProducts = readRawMenuProductsFromSession(cityId)
+    if (rawProducts) {
+      setItems(filterItemsForCategory(mapProductsToItems(rawProducts as any[])))
+      setLoading(false)
+    }
+  }, [language, syncCategoryRowsFromRaw, filterItemsForCategory, mapProductsToItems])
 
   useEffect(() => {
     void loadCategoriesTitle()
@@ -177,7 +224,7 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
 
   useEffect(() => {
     void loadProducts()
-  }, [loadProducts, language])
+  }, [loadProducts])
 
   useWattaCatalogSync(() => void loadProducts(true), 'products')
 
@@ -230,12 +277,20 @@ export default function CategoryMenuClient({ slug }: { slug: string }) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((item) => (
               <WattaMenuProductCard
                 key={item.id}
                 variant="grid"
                 product={item}
+                subtitleLine={
+                  parseProductSpecsFromDescription(
+                    item.description,
+                    t.productDetail.weightFallback,
+                    t.productDetail.piecesFallback,
+                    language as WattaLanguage,
+                  ).weightLine
+                }
                 onAddToCart={(product) =>
                   addToCart({
                     id: product.id,

@@ -1,5 +1,12 @@
+import { bindHomeHeroVideoGuard } from '@/lib/bindHomeHeroVideoGuard'
+import { isDecorHeroVideoInViewport } from '@/lib/decorHeroVideoVisibility'
 import { isWebKitBrowser } from '@/lib/isWebKitBrowser'
-import { seekHeroVideoToStartSec, WATTA_HERO_VIDEO_START_SEC } from '@/lib/wattaHeroVideo'
+import { isWelcomeHeroVideo, resumeHeroVideoPlayback } from '@/lib/kickWelcomeHeroVideo'
+import {
+  bindHeroVideoLoopClamp,
+  isHeroVideoAtStartSec,
+  seekHeroVideoToStartSec,
+} from '@/lib/wattaHeroVideo'
 
 /**
  * Декоративне hero-відео: muted autoplay + loop.
@@ -14,12 +21,19 @@ export function bindHeroVideoAutoplay(
     blockInteractionRoot?: HTMLElement | null
     /** false — плейлист з адмінки: onEnded перемикає наступний ролик */
     loop?: boolean
+    /** true — відео грає безперервно навіть поза viewport (не паузиться при скролі). */
+    keepPlayingOffscreen?: boolean
   },
 ): () => void {
   const extendedRetries = options?.extendedRetries ?? false
   const shouldLoop = options?.loop !== false
+  const keepPlayingOffscreen = options?.keepPlayingOffscreen ?? false
   const webKit = isWebKitBrowser()
   const aggressiveRetries = extendedRetries || webKit
+
+  /** Поза viewport не граємо — окрім головного hero та keepPlayingOffscreen. */
+  const isPlayableNow = () =>
+    keepPlayingOffscreen || isWelcomeHeroVideo(video) || isDecorHeroVideoInViewport(video)
 
   const applyLoopMode = () => {
     try {
@@ -32,91 +46,47 @@ export function bindHeroVideoAutoplay(
   }
 
   let lastPlayAt = 0
-  let playScheduled = 0
   const MIN_PLAY_GAP_MS = aggressiveRetries ? 90 : 140
 
   const safePlay = () => {
+    if (!isPlayableNow()) return
     const now = performance.now()
-    if (!video.paused && now - lastPlayAt < MIN_PLAY_GAP_MS) return
-    if (video.paused && now - lastPlayAt < MIN_PLAY_GAP_MS) {
-      if (!playScheduled) {
-        playScheduled = window.setTimeout(() => {
-          playScheduled = 0
-          safePlay()
-        }, MIN_PLAY_GAP_MS)
-      }
-      return
+    /* На pause — resume одразу, без throttle. */
+    if (!video.paused) {
+      if (now - lastPlayAt < MIN_PLAY_GAP_MS) return
+      lastPlayAt = now
+    } else {
+      lastPlayAt = now
     }
-    lastPlayAt = now
 
-    seekHeroVideoToStartSec(video)
-
-    try {
-      video.defaultMuted = true
-      video.muted = true
-      video.volume = 0
-      video.playsInline = true
-      video.autoplay = true
-      video.preload = 'auto'
-      applyLoopMode()
-      video.controls = false
-      video.removeAttribute('controls')
-      video.disablePictureInPicture = true
-      video.disableRemotePlayback = true
-      video.setAttribute('playsinline', 'true')
-      video.setAttribute('webkit-playsinline', 'true')
-      video.setAttribute('muted', 'true')
-      video.setAttribute('autoplay', 'true')
-      video.setAttribute(
-        'controlsList',
-        'nodownload nofullscreen noremoteplayback noplaybackrate',
-      )
-      try {
-        video.setAttribute('x-webkit-airplay', 'deny')
-      } catch {
-        /* ignore */
-      }
-    } catch {
-      /* ignore */
-    }
-    const attemptPlay = () => {
-      const p = video.play()
-      if (p && typeof p.catch === 'function') {
-        p.catch(() => {
-          try {
-            video.defaultMuted = true
-            video.muted = true
-            video.volume = 0
-          } catch {
-            /* ignore */
-          }
-          queueMicrotask(() => {
-            video.play().catch(() => {
-              window.setTimeout(() => {
-                try {
-                  video.muted = true
-                  video.defaultMuted = true
-                } catch {
-                  /* ignore */
-                }
-                video.play().catch(() => {})
-              }, 48)
-            })
-          })
-        })
-      }
-    }
-    attemptPlay()
+    applyLoopMode()
+    resumeHeroVideoPlayback(video, {
+      loop: shouldLoop,
+      urgent: video.paused || video.ended,
+    })
   }
 
-  let pauseKickId = 0
+  let pauseRecoverRaf = 0
+  let lastPauseRecoverAt = 0
+  const PAUSE_RECOVER_COOLDOWN_MS = 320
+
   const onPause = () => {
-    if (video.ended) return
-    window.clearTimeout(pauseKickId)
-    pauseKickId = window.setTimeout(() => {
-      if (!video.paused) return
-      safePlay()
-    }, 80)
+    if (video.ended || video.seeking || video.error) return
+    if (!isPlayableNow()) return
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+    if (isWelcomeHeroVideo(video)) {
+      resumeHeroVideoPlayback(video, { loop: shouldLoop, urgent: true })
+      return
+    }
+    const now = performance.now()
+    if (now - lastPauseRecoverAt < PAUSE_RECOVER_COOLDOWN_MS) return
+    if (pauseRecoverRaf) return
+    pauseRecoverRaf = requestAnimationFrame(() => {
+      pauseRecoverRaf = 0
+      if (!video.paused || video.ended || video.error) return
+      lastPauseRecoverAt = performance.now()
+      resumeHeroVideoPlayback(video, { loop: shouldLoop, urgent: true })
+    })
   }
 
   const blockTapOnVideo = (e: Event) => {
@@ -148,8 +118,14 @@ export function bindHeroVideoAutoplay(
   const onCanPlayThrough = () => safePlay()
   const onLoadedData = () => safePlay()
   const onLoadedMeta = () => {
-    seekHeroVideoToStartSec(video)
+    if (isWelcomeHeroVideo(video)) seekHeroVideoToStartSec(video)
     safePlay()
+  }
+  const onPlayingSeek = () => {
+    if (aggressiveRetries) return
+    if (isHeroVideoAtStartSec(video)) return
+    if (video.currentTime > 0.5) return
+    seekHeroVideoToStartSec(video)
   }
   const onPageShow = () => safePlay()
   const onVisibility = () => {
@@ -201,17 +177,24 @@ export function bindHeroVideoAutoplay(
   if (video.readyState >= 1) safePlay()
   if (video.readyState >= 2) safePlay()
 
-  const delays = aggressiveRetries ? [0, 80, 280, 700, 1500, 3000] : [0, 120]
+  const delays = aggressiveRetries ? [0, 40, 120, 300, 700, 1200] : [0, 80]
   const timers = delays.map((ms) => window.setTimeout(safePlay, ms))
 
-  const watchdogMs = aggressiveRetries ? 1200 : 6000
+  const watchdogMs = aggressiveRetries ? 500 : 2200
   const watchdogId = window.setInterval(watchdog, watchdogMs)
 
   const burstId = window.setInterval(() => {
-    if (video.ended || video.error) return
+    if (video.error) return
+    if (video.ended) {
+      if (shouldLoop) {
+        if (!isHeroVideoAtStartSec(video)) seekHeroVideoToStartSec(video)
+        resumeHeroVideoPlayback(video, { loop: shouldLoop, urgent: true })
+      }
+      return
+    }
     if (!video.paused) return
-    safePlay()
-  }, aggressiveRetries ? 450 : 1800)
+    resumeHeroVideoPlayback(video, { loop: shouldLoop, urgent: true })
+  }, aggressiveRetries ? 900 : 1800)
 
   let intersectionObserver: IntersectionObserver | null = null
   if (typeof IntersectionObserver !== 'undefined') {
@@ -221,13 +204,14 @@ export function bindHeroVideoAutoplay(
           if (e.target !== video) continue
           if (e.isIntersecting) {
             safePlay()
-          } else if (!webKit) {
-            /* WebKit (Safari macOS/iOS): pause() часто «ламає» muted-autoplay до жесту користувача */
-            try {
-              video.pause()
-            } catch {
-              /* ignore */
-            }
+            return
+          }
+          // keepPlayingOffscreen — hero головної не паузимо при скролі.
+          if (keepPlayingOffscreen) continue
+          try {
+            if (!video.paused) video.pause()
+          } catch {
+            /* ignore */
           }
         }
       },
@@ -246,6 +230,7 @@ export function bindHeroVideoAutoplay(
   video.addEventListener('touchstart', onVideoGesture, gestureOpts)
 
   const onPlaying = () => {
+    onPlayingSeek()
     try {
       if (!video.muted) video.muted = true
     } catch {
@@ -255,22 +240,22 @@ export function bindHeroVideoAutoplay(
 
   let progressRaf = 0
   const onProgress = () => {
+    if (!isDecorHeroVideoInViewport(video)) return
     if (progressRaf) return
     progressRaf = requestAnimationFrame(() => {
       progressRaf = 0
       if (typeof document !== 'undefined' && document.hidden) return
+      if (!isDecorHeroVideoInViewport(video)) return
       if (!video.paused) return
       if (video.buffered.length === 0) return
       safePlay()
     })
   }
 
-  const onLoopStartClamp = () => {
-    if (!shouldLoop || video.seeking) return
-    if (video.currentTime < WATTA_HERO_VIDEO_START_SEC - 0.08) {
-      seekHeroVideoToStartSec(video)
-    }
-  }
+  const offLoopClamp = bindHeroVideoLoopClamp(video, { enabled: shouldLoop })
+  const offHomeHeroGuard = isWelcomeHeroVideo(video)
+    ? bindHomeHeroVideoGuard(video, { loop: shouldLoop })
+    : () => {}
 
   video.addEventListener('waiting', onWaiting)
   video.addEventListener('stalled', onStalled)
@@ -279,7 +264,6 @@ export function bindHeroVideoAutoplay(
   video.addEventListener('canplaythrough', onCanPlayThrough)
   video.addEventListener('loadeddata', onLoadedData)
   video.addEventListener('loadedmetadata', onLoadedMeta)
-  video.addEventListener('timeupdate', onLoopStartClamp)
   video.addEventListener('pause', onPause)
   video.addEventListener('playing', onPlaying)
   video.addEventListener('click', blockTapOnVideo, captureOpts)
@@ -301,14 +285,12 @@ export function bindHeroVideoAutoplay(
   )
 
   return () => {
-    if (playScheduled) window.clearTimeout(playScheduled)
-    playScheduled = 0
-    window.clearTimeout(pauseKickId)
-    pauseKickId = 0
     if (progressRaf) cancelAnimationFrame(progressRaf)
     progressRaf = 0
     if (focusRaf) cancelAnimationFrame(focusRaf)
     focusRaf = 0
+    if (pauseRecoverRaf) cancelAnimationFrame(pauseRecoverRaf)
+    pauseRecoverRaf = 0
     window.clearInterval(watchdogId)
     window.clearInterval(burstId)
     timers.forEach((id) => window.clearTimeout(id))
@@ -322,7 +304,8 @@ export function bindHeroVideoAutoplay(
     video.removeEventListener('canplaythrough', onCanPlayThrough)
     video.removeEventListener('loadeddata', onLoadedData)
     video.removeEventListener('loadedmetadata', onLoadedMeta)
-    video.removeEventListener('timeupdate', onLoopStartClamp)
+    offLoopClamp()
+    offHomeHeroGuard()
     video.removeEventListener('pause', onPause)
     video.removeEventListener('playing', onPlaying)
     video.removeEventListener('click', blockTapOnVideo, captureOpts)

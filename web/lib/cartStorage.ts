@@ -1,8 +1,8 @@
 import { redirectToAuth, isUserLoggedIn, getCurrentReturnPath } from '@/lib/authGate'
 import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
-import { productGalleryFromApi } from '@/lib/productGallery'
 import { getApiUrl } from '@/lib/utils'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
+import { applyCatalogProductRows } from '@/lib/wattaCatalogSnapshot'
 
 export type CartStorageLine = {
   id: number
@@ -22,6 +22,15 @@ export type CartStorageLine = {
 /** In-memory кеш — миттєве читання після першого parse localStorage. */
 let memoryCart: CartStorageLine[] | null = null
 let memoryCartHydrated = false
+let cartRevision = 0
+const cartQtyById = new Map<number, number>()
+
+function rebuildCartQtyIndex(lines: CartStorageLine[]): void {
+  cartQtyById.clear()
+  for (const line of lines) {
+    cartQtyById.set(line.id, lineQuantity(line))
+  }
+}
 
 function newCartLineId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -92,6 +101,7 @@ function hydrateCartFromLocalStorage(): CartStorageLine[] {
   if (typeof window === 'undefined' || !window.localStorage) {
     memoryCart = []
     memoryCartHydrated = true
+    cartQtyById.clear()
     return []
   }
   try {
@@ -99,6 +109,7 @@ function hydrateCartFromLocalStorage(): CartStorageLine[] {
     if (!Array.isArray(raw)) {
       memoryCart = []
       memoryCartHydrated = true
+      cartQtyById.clear()
       return []
     }
     const normalized = normalizeCartLines(raw)
@@ -107,10 +118,12 @@ function hydrateCartFromLocalStorage(): CartStorageLine[] {
     }
     memoryCart = normalized
     memoryCartHydrated = true
+    rebuildCartQtyIndex(normalized)
     return normalized
   } catch {
     memoryCart = []
     memoryCartHydrated = true
+    cartQtyById.clear()
     return []
   }
 }
@@ -124,6 +137,21 @@ export function readCartFromStorage(): CartStorageLine[] {
 export function invalidateCartMemoryCache(): void {
   memoryCart = null
   memoryCartHydrated = false
+  cartQtyById.clear()
+  cartRevision += 1
+}
+
+/** Лічильник змін кошика — для useSyncExternalStore (не покладатися на ref масиву). */
+export function getCartRevision(): number {
+  if (!memoryCartHydrated) hydrateCartFromLocalStorage()
+  return cartRevision
+}
+
+/** Швидкий quantity для картки меню — без linear scan по всьому кошику. */
+export function getCartLineQuantity(productId: number): number {
+  if (!Number.isFinite(productId) || productId <= 0) return 0
+  if (!memoryCartHydrated) hydrateCartFromLocalStorage()
+  return cartQtyById.get(productId) ?? 0
 }
 
 /** Підписка для лічильника кошика в шапці — миттєво після «Замовити». */
@@ -145,10 +173,13 @@ export function subscribeCartStorage(onStoreChange: () => void): () => void {
 
 export function writeCartToStorage(lines: CartStorageLine[]): void {
   if (typeof window === 'undefined' || !window.localStorage) return
-  memoryCart = lines
+  const normalized = normalizeCartLines(lines)
+  memoryCart = normalized
   memoryCartHydrated = true
+  rebuildCartQtyIndex(memoryCart)
+  cartRevision += 1
   try {
-    window.localStorage.setItem('cart', JSON.stringify(lines))
+    window.localStorage.setItem('cart', JSON.stringify(memoryCart))
   } catch {
     /* quota / private mode */
   }
@@ -204,42 +235,50 @@ export function appendCartLines(item: CartStorageLine, quantity = 1): 'ok' | 'ma
     const currentQty = existing ? lineQuantity(existing) : 0
     if (currentQty + quantity > 99) return 'max'
 
+    let next: CartStorageLine[]
     if (existing) {
-      existing.quantity = currentQty + quantity
-      existing.name = item.name
-      existing.description = item.description ?? existing.description
-      existing.price = item.price
-      existing.category = item.category ?? existing.category
-      existing.emoji = item.emoji ?? existing.emoji
-      if (item.imageUrl) existing.imageUrl = item.imageUrl
-      if (item.promoDiscountPercent != null) {
-        existing.promoDiscountPercent = item.promoDiscountPercent
-      }
-      if (item.cartUpsellDiscountEur != null && item.cartUpsellDiscountEur > 0) {
-        existing.cartUpsellDiscountEur = item.cartUpsellDiscountEur
-      } else {
-        delete existing.cartUpsellDiscountEur
-      }
+      next = cart.map((x) =>
+        x.id === item.id
+          ? {
+              ...x,
+              quantity: currentQty + quantity,
+              name: item.name,
+              description: item.description ?? x.description,
+              price: item.price,
+              category: item.category ?? x.category,
+              emoji: item.emoji ?? x.emoji,
+              imageUrl: item.imageUrl ?? x.imageUrl,
+              promoDiscountPercent: item.promoDiscountPercent ?? x.promoDiscountPercent,
+              cartUpsellDiscountEur:
+                item.cartUpsellDiscountEur != null && item.cartUpsellDiscountEur > 0
+                  ? item.cartUpsellDiscountEur
+                  : undefined,
+            }
+          : x,
+      )
     } else {
-      cart.push({
-        id: item.id,
-        name: item.name,
-        description: item.description ?? '',
-        price: item.price,
-        category: item.category ?? '',
-        emoji: item.emoji ?? '🍣',
-        imageUrl: item.imageUrl,
-        promoDiscountPercent: item.promoDiscountPercent,
-        cartUpsellDiscountEur:
-          item.cartUpsellDiscountEur != null && item.cartUpsellDiscountEur > 0
-            ? item.cartUpsellDiscountEur
-            : undefined,
-        cartLineId: newCartLineId(),
-        quantity,
-      })
+      next = [
+        ...cart,
+        {
+          id: item.id,
+          name: item.name,
+          description: item.description ?? '',
+          price: item.price,
+          category: item.category ?? '',
+          emoji: item.emoji ?? '🍣',
+          imageUrl: item.imageUrl,
+          promoDiscountPercent: item.promoDiscountPercent,
+          cartUpsellDiscountEur:
+            item.cartUpsellDiscountEur != null && item.cartUpsellDiscountEur > 0
+              ? item.cartUpsellDiscountEur
+              : undefined,
+          cartLineId: newCartLineId(),
+          quantity,
+        },
+      ]
     }
 
-    writeCartToStorage(cart)
+    writeCartToStorage(next)
     return 'ok'
   } catch {
     return 'max'
@@ -249,7 +288,9 @@ export function appendCartLines(item: CartStorageLine, quantity = 1): 'ok' | 'ma
 type RouterPush = { push: (href: string) => void }
 
 /**
- * Миттєво додає в кошик (гість і залогінений). Вхід — лише на checkout через requireAuth.
+ * Додає товар у localStorage-кошик без входу.
+ * `requireLogin: true` — лише якщо явно потрібен редирект (за замовчуванням кошик доступний гостю).
+ * Оформлення замовлення та профіль — окремо через `requireAuth` / `openCartAuth` на /cart.
  */
 export function addToCartWithAuthGate(
   _router: RouterPush,
@@ -266,11 +307,9 @@ export function addToCartWithAuthGate(
   return 'added'
 }
 
-/** Після зміни фото/товарів в адмінці — оновити imageUrl у рядках кошика з каталогу. */
+/** Після зміни товарів в адмінці — синхронізувати кошик, меню-кеш і detail-кеш з API. */
 export async function refreshCartProductMediaFromCatalog(): Promise<void> {
   if (typeof window === 'undefined') return
-  const cart = readCartFromStorage()
-  if (cart.length === 0) return
 
   const cityId = readCityIdForProductApi()
   const url =
@@ -284,54 +323,10 @@ export async function refreshCartProductMediaFromCatalog(): Promise<void> {
     const data: unknown = await res.json()
     if (!Array.isArray(data)) return
 
-    const coverById = new Map<number, string>()
-    const catalogById = new Map<
-      number,
-      { price: number; promoDiscountPercent?: number }
-    >()
-    for (const raw of data) {
-      const row = raw as {
-        id?: number
-        imageUrl?: string
-        imageUrls?: unknown
-        price?: number
-        promoDiscountPercent?: number
-      }
-      const id = Number(row.id)
-      if (!Number.isFinite(id) || id <= 0) continue
-      const cover = productGalleryFromApi(row)[0]
-      if (cover) coverById.set(id, cover)
-      const price = Number(row.price)
-      if (Number.isFinite(price) && price > 0) {
-        const promo = Number(row.promoDiscountPercent)
-        catalogById.set(id, {
-          price,
-          promoDiscountPercent:
-            Number.isFinite(promo) && promo > 0 ? promo : undefined,
-        })
-      }
-    }
-
-    let changed = false
-    for (const line of cart) {
-      const next = coverById.get(line.id)
-      if (next && next !== line.imageUrl) {
-        line.imageUrl = next
-        changed = true
-      }
-      if (line.cartUpsellDiscountEur != null && line.cartUpsellDiscountEur > 0) continue
-      const catalog = catalogById.get(line.id)
-      if (!catalog) continue
-      if (line.price !== catalog.price) {
-        line.price = catalog.price
-        changed = true
-      }
-      if (line.promoDiscountPercent !== catalog.promoDiscountPercent) {
-        line.promoDiscountPercent = catalog.promoDiscountPercent
-        changed = true
-      }
-    }
-    if (changed) writeCartToStorage(cart)
+    const rows = data.filter(
+      (row): row is Record<string, unknown> => Boolean(row && typeof row === 'object'),
+    )
+    applyCatalogProductRows(rows, { replaceMenuCache: true })
   } catch {
     /* ignore */
   }

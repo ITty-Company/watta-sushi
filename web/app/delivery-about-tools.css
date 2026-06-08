@@ -601,7 +601,7 @@
 }
 
 .delivery-showcase-flow .delivery-watta-map-tab--on {
-  background: #145142;
+  background: var(--watta-brand-action);
   color: #fff;
   box-shadow: 0 6px 18px rgba(20, 81, 66, 0.22);
 }

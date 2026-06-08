@@ -4,8 +4,12 @@ import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import ProfileView from '../components/ProfileView'
+import { openWattaNotifications } from '@/lib/openWattaNotifications'
+import { useOptionalNotificationsDrawer } from '../context/NotificationsDrawerContext'
+
 function ProfilePageInner() {
   const router = useInstantRouter()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
   const searchParams = useSearchParams()
   const tab = searchParams.get('tab')
   const initialTab =
@@ -21,7 +25,7 @@ function ProfilePageInner() {
       onBack={() => router.push('/')}
       onMenuClick={() => router.push('/menu')}
       onOpenPhone={() => router.push('/contacts')}
-      onOpenNotifications={() => router.push('/notifications')}
+      onOpenNotifications={() => openWattaNotifications(router, notificationsDrawer?.open)}
       onOpenFavorites={() => router.push('/favorites')}
       onOpenCart={() => router.push('/cart')}
       onOpenAdmin={() => router.push('/admin')}

@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useInstantRouter } from '@/hooks/useInstantRouter'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -20,19 +19,17 @@ const LANGUAGE_OPTIONS = [
 
 export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps) => {
   const { language, setLanguage } = useLanguage()
-  const router = useInstantRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const [position, setPosition] = useState({ top: 0, right: 0 })
+  const [position, setPosition] = useState<{ top: number; right: number } | null>(null)
 
   const currentLang = LANGUAGE_OPTIONS.find((lang) => lang.code === language) || LANGUAGE_OPTIONS[0]
 
   const pickLanguage = (code: WattaLanguage) => {
     setLanguage(code)
     setIsOpen(false)
-    router.refresh()
   }
 
   useEffect(() => {
@@ -40,6 +37,24 @@ export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps)
   }, [])
 
   useEffect(() => {
+    if (!isOpen) {
+      setPosition(null)
+      return
+    }
+
+    // Дропдаун рендериться через position: fixed, тож координати рахуємо
+    // відносно viewport (без scrollY) і перераховуємо на скрол/ресайз,
+    // щоб він не «з'їжджав» від кнопки.
+    const updatePosition = () => {
+      const button = buttonRef.current
+      if (!button) return
+      const rect = button.getBoundingClientRect()
+      setPosition({
+        top: rect.bottom + 12,
+        right: window.innerWidth - rect.right,
+      })
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
           buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
@@ -47,17 +62,15 @@ export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps)
       }
     }
 
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setPosition({
-        top: rect.bottom + window.scrollY + 12,
-        right: window.innerWidth - rect.right
-      })
-      document.addEventListener('mousedown', handleClickOutside)
-    }
+    updatePosition()
+    document.addEventListener('mousedown', handleClickOutside)
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
     }
   }, [isOpen])
 
@@ -86,23 +99,23 @@ export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps)
                   padding: '10px 8px',
                   border:
                     language === lang.code
-                      ? '2px solid #145142'
+                      ? '1.5px solid rgba(20,81,66,0.32)'
                       : '1.5px solid rgba(20,81,66,0.15)',
                   background:
                     language === lang.code
-                      ? 'linear-gradient(135deg, #145142 0%, #1a6b58 100%)'
+                      ? 'color-mix(in srgb, #145142 12%, #ffffff)'
                       : 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
                   cursor: 'pointer',
                   transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   fontSize: '13px',
                   fontWeight: language === lang.code ? '800' : '700',
-                  color: language === lang.code ? '#ffffff' : '#145142',
+                  color: '#145142',
                   textAlign: 'center',
                   borderRadius: '12px',
                   position: 'relative',
                   boxShadow:
                     language === lang.code
-                      ? '0 6px 20px rgba(20,81,66,0.4), inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 3px rgba(20,81,66,0.1)'
+                      ? 'none'
                       : '0 3px 10px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)',
                   overflow: 'hidden',
                   animation: `slideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${index * 0.08}s both`,
@@ -225,6 +238,8 @@ export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps)
         ref={buttonRef}
         type="button"
         className={isDrawer ? 'watta-nav-lang-btn' : 'header-lang-btn-web'}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         onClick={(e) => {
           e.stopPropagation()
           setIsOpen((open) => !open)
@@ -244,6 +259,7 @@ export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps)
       {isOpen &&
         mounted &&
         !isDrawer &&
+        position &&
         createPortal(
           <div
             ref={dropdownRef}
@@ -257,7 +273,6 @@ export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps)
               border: '2px solid rgba(20,81,66,0.12)',
               boxShadow:
                 '0 20px 50px rgba(0,0,0,0.25), 0 8px 24px rgba(20,81,66,0.2), inset 0 1px 0 rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(40px)',
               overflow: 'hidden',
               minWidth: '160px',
               zIndex: 11160,

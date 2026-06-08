@@ -1,5 +1,7 @@
 import { refreshCartProductMediaFromCatalog } from '@/lib/cartStorage'
+import { purgeProductClientCaches } from '@/lib/fetchProductById'
 import { purgeWattaClientCatalogCaches } from '@/lib/i18n/menuDataCacheBust'
+import { applyCatalogProductRows } from '@/lib/wattaCatalogSnapshot'
 import { WATTA_BLOG_UPDATED_EVENT } from '@/lib/wattaPublicBlogNav'
 import { WATTA_PROMOTIONS_UPDATED_EVENT } from '@/lib/wattaPublicPromotionsNav'
 
@@ -23,6 +25,8 @@ export type CatalogRefreshScope =
 export type CatalogRefreshDetail = {
   scope: CatalogRefreshScope
   at: number
+  /** Свіжі рядки з адмінки — миттєво в меню, кошик, /product без очікування fetch. */
+  productRows?: Record<string, unknown>[]
 }
 
 function dispatchScopeEvent(scope: CatalogRefreshScope): void {
@@ -72,26 +76,38 @@ function dispatchScopeEvent(scope: CatalogRefreshScope): void {
       break
   }
 
-  window.dispatchEvent(
-    new CustomEvent(WATTA_CATALOG_REFRESH_EVENT, {
-      detail: { scope, at: Date.now() } satisfies CatalogRefreshDetail,
-    }),
-  )
 }
 
 /**
  * Після збереження в адмінці: скидає клієнтський кеш і сповіщає всі відкриті сторінки.
  * Інші вкладки отримують оновлення через localStorage ping.
  */
-export function broadcastWattaCatalogUpdate(scope: CatalogRefreshScope = 'all'): void {
+export type BroadcastWattaCatalogOptions = {
+  productRows?: Record<string, unknown>[]
+}
+
+export function broadcastWattaCatalogUpdate(
+  scope: CatalogRefreshScope = 'all',
+  options?: BroadcastWattaCatalogOptions,
+): void {
   if (typeof window === 'undefined') return
+  const at = Date.now()
+  const productRows = options?.productRows?.filter(
+    (row): row is Record<string, unknown> => Boolean(row && typeof row === 'object'),
+  )
   purgeWattaClientCatalogCaches()
+  purgeProductClientCaches()
+  if (productRows?.length) {
+    applyCatalogProductRows(productRows, { replaceMenuCache: false })
+  }
   dispatchScopeEvent(scope)
+  const detail: CatalogRefreshDetail = { scope, at, productRows }
+  window.dispatchEvent(new CustomEvent(WATTA_CATALOG_REFRESH_EVENT, { detail }))
   if (scope === 'products' || scope === 'all') {
     void refreshCartProductMediaFromCatalog()
   }
   try {
-    localStorage.setItem(WATTA_CATALOG_PING_KEY, String(Date.now()))
+    localStorage.setItem(WATTA_CATALOG_PING_KEY, String(at))
   } catch {
     /* ignore */
   }
@@ -104,6 +120,7 @@ export function subscribeWattaCatalogCrossTab(onRefresh: (detail: CatalogRefresh
   const onStorage = (e: StorageEvent) => {
     if (e.key !== WATTA_CATALOG_PING_KEY || !e.newValue) return
     purgeWattaClientCatalogCaches()
+    purgeProductClientCaches()
     const detail: CatalogRefreshDetail = { scope: 'all', at: Number(e.newValue) || Date.now() }
     void refreshCartProductMediaFromCatalog()
     onRefresh(detail)

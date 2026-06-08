@@ -1,4 +1,4 @@
-import { normalizeInternalPath } from '@/lib/instantNav'
+import { normalizeInternalPath } from '@/lib/internalHref'
 
 type ChunkLoader = () => Promise<unknown>
 
@@ -12,7 +12,13 @@ const CHUNK_BY_PATH: Record<string, ChunkLoader> = {
   '/reviews': () => import('@/app/reviews/ReviewsPageClient'),
   '/cart': () => import('@/app/components/CartView'),
   '/profile': () => import('@/app/components/ProfileView'),
-  '/favorites': () => import('@/app/components/FavoritesPageClient'),
+  '/favorites': () =>
+    import('@/app/components/FavoritesPageClient').then((m) => {
+      void import('@/lib/preloadFavoritesEmptyImages').then(({ preloadFavoritesEmptyImages }) => {
+        preloadFavoritesEmptyImages()
+      })
+      return m
+    }),
   '/promotions': () => import('@/app/components/PromotionsView'),
   '/notifications': () =>
     import('@/app/components/NotificationsView').then((m) => ({
@@ -20,21 +26,39 @@ const CHUNK_BY_PATH: Record<string, ChunkLoader> = {
     })),
   '/blog': () => import('@/app/blog/BlogIndexClient'),
   '/privacy': () => import('@/app/components/PrivacyPolicyView'),
+  '/offer': () => import('@/app/components/PublicOfferView'),
   '/admin': () => import('@/app/components/AdminView'),
   '/login': () => import('@/app/components/auth/AuthScreen'),
   '/register': () => import('@/app/components/auth/AuthScreen'),
 }
 
+/** Лише найчастіші переходи з шапки — решта через idle prefetch. */
 const PRIORITY_PATHS = [
-  '/menu',
   '/delivery',
-  '/cart',
-  '/promotions',
   '/about',
   '/contacts',
+  '/menu',
+  '/cart',
+  '/promotions',
   '/favorites',
-  '/profile',
+  '/blog',
+  '/reviews',
 ] as const
+
+const NAV_INFO_PAGE_STYLE_LOADERS = [() => import('@/lib/prefetchNavPageStyles')] as const
+
+const prefetchedNavStyles = new Set<string>()
+
+function prefetchNavInfoPageStyles(): void {
+  for (const load of NAV_INFO_PAGE_STYLE_LOADERS) {
+    const key = load.toString()
+    if (prefetchedNavStyles.has(key)) continue
+    prefetchedNavStyles.add(key)
+    void load().catch(() => {
+      prefetchedNavStyles.delete(key)
+    })
+  }
+}
 
 const prefetchedChunks = new Set<string>()
 
@@ -49,12 +73,6 @@ function loadChunk(path: string, loader: ChunkLoader): void {
 function prefetchPathPattern(path: string): void {
   if (path.startsWith('/product/')) {
     loadChunk('/product/:id', () => import('@/app/components/ProductView'))
-    return
-  }
-  if (path.startsWith('/menu/category/')) {
-    loadChunk('/menu/category/:slug', () =>
-      import('@/app/menu/category/[slug]/CategoryMenuClient'),
-    )
     return
   }
   if (path.startsWith('/promotions/') && path !== '/promotions') {
@@ -75,8 +93,20 @@ export function prefetchRouteChunk(href: string): void {
   prefetchPathPattern(path)
 }
 
+/** На головній — лише найчастіші переходи; решта після idle. */
+const HOME_LIGHT_PRIORITY_PATHS = ['/menu', '/cart', '/delivery'] as const
+
 /** Спочатку найчастіші маршрути, решту — idle, щоб не забити мережу на старті. */
-export function prefetchPriorityRouteChunks(): void {
+export function prefetchPriorityRouteChunks(opts?: { light?: boolean }): void {
+  prefetchNavInfoPageStyles()
+  if (opts?.light) {
+    for (const path of HOME_LIGHT_PRIORITY_PATHS) {
+      const loader = CHUNK_BY_PATH[path]
+      if (loader) loadChunk(path, loader)
+    }
+    return
+  }
+  loadChunk('/product/:id', () => import('@/app/components/ProductView'))
   for (const path of PRIORITY_PATHS) {
     const loader = CHUNK_BY_PATH[path]
     if (loader) loadChunk(path, loader)
@@ -88,9 +118,6 @@ export function prefetchAllRouteChunks(): void {
     loadChunk(path, loader)
   }
   loadChunk('/product/:id', () => import('@/app/components/ProductView'))
-  loadChunk('/menu/category/:slug', () =>
-    import('@/app/menu/category/[slug]/CategoryMenuClient'),
-  )
   loadChunk('/promotions/:id', () => import('@/app/components/PromotionsDetailView'))
 }
 
@@ -106,9 +133,6 @@ export function scheduleIdleRouteChunkPrefetch(): void {
       loadChunk(path, loader)
     }
     loadChunk('/product/:id', () => import('@/app/components/ProductView'))
-    loadChunk('/menu/category/:slug', () =>
-      import('@/app/menu/category/[slug]/CategoryMenuClient'),
-    )
     loadChunk('/promotions/:id', () => import('@/app/components/PromotionsDetailView'))
   }
 

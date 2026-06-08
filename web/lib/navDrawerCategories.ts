@@ -9,6 +9,8 @@ export type NavDrawerCategory = {
   key: string
   name: string
   emoji: string
+  imageUrl?: string | null
+  hoverImageUrl?: string | null
 }
 
 export function buildNavDrawerCategoriesFromApi(
@@ -22,6 +24,8 @@ export function buildNavDrawerCategoriesFromApi(
     key: c.key,
     name: c.name,
     emoji: c.emoji || '🍣',
+    imageUrl: c.imageUrl,
+    hoverImageUrl: c.hoverImageUrl,
   }))
 }
 

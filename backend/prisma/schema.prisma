@@ -13,6 +13,8 @@ model User {
   email    String  @unique // Логин
   password String // Пароль
   phone    String // До 10 підтверджених акаунтів на один номер (див. auth.routes)
+  /// Google OAuth sub (унікальний ідентифікатор акаунта Google)
+  googleId String? @unique
   name     String?
   /// Адреса доставки за замовчуванням (профіль)
   address  String  @default("")
@@ -40,8 +42,30 @@ model User {
   favorites       Favorite[]
   reviews         OrderReview[]
   notifications   UserNotification[]
+  savedAddresses  UserAddress[]
 
   @@index([phone])
+}
+
+/// Номери телефонів з доступом до адмін-панелі (головний +380953398039 + додані адмінами).
+model AdminPhone {
+  id        Int      @id @default(autoincrement())
+  /// Лише цифри, без «+» (наприклад 380953398039)
+  phone     String   @unique
+  label     String?
+  createdAt DateTime @default(now())
+}
+
+/// Збережені адреси доставки користувача (кілька на акаунт)
+model UserAddress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  address   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // --- ТОВАРЫ ---
@@ -53,6 +77,10 @@ model Category {
   name_nl  String?
   slug     String    @unique
   emoji    String?   @default("🍣") // Эмодзи для категории
+  /// Іконка в панелі категорій (за замовчуванням)
+  imageUrl      String?
+  /// Іконка при наведенні / активній категорії
+  hoverImageUrl String?
   order    Int       @default(0) // Порядок отображения
   isActive Boolean   @default(true) // Активна ли категория
   /// Якщо false — товари з цієї категорії не в «хітах» на головній і не в рекомендаціях кошика
@@ -214,6 +242,11 @@ model Order {
   paidAt       DateTime?
   comment       String?
 
+  /// Дата доставки / самовивозу (YYYY-MM-DD, Europe/Amsterdam), обрана клієнтом
+  scheduledForDate String?
+  /// Слот: asap або HH:MM-HH:MM
+  scheduledForSlot String?
+
   /// Час готовності / доставки, який адмін встановлює при підтвердженні
   readyAt       DateTime?
 
@@ -351,6 +384,9 @@ model SiteSetting {
   bonusCashbackEnabled Boolean @default(true)
   /// Кешбэк для всіх, % від суми товарів (0–100)
   bonusCashbackPercent Float @default(5)
+
+  /// Онлайн-оплата карткою в кошику (потрібні STRIPE_SECRET_KEY або LIQPAY_* на сервері)
+  cardOnlineEnabled Boolean @default(true)
 }
 
 // --- КОМАНДА ---

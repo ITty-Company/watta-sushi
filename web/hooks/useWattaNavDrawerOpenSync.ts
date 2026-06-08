@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { clearNavDrawerInstantClose } from '@/lib/navDrawerInstantClose'
 
 let openCount = 0
 
@@ -23,6 +24,7 @@ export function useWattaNavDrawerOpenSync(isOpen: boolean) {
     return () => {
       openCount = Math.max(0, openCount - 1)
       syncNavDrawerOpenAttribute()
+      if (openCount === 0) clearNavDrawerInstantClose()
     }
   }, [isOpen])
 }

@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, startTransition } from 'react'
+import { flushSync } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import { useMenuAddToCart } from '@/hooks/useMenuAddToCart'
 import type { WattaMenuProductCardModel } from './WattaMenuProductCard'
@@ -11,23 +12,42 @@ import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
+import { WattaInViewFadeSection } from './WattaInViewFade'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { menuCategoriesSessionKey, menuItemsSessionKey } from '@/lib/i18n/menuDataCacheBust'
 import { parseCategoriesCacheJson } from '@/lib/buildMenuCategoriesFromApi'
 import {
   coerceProductsArray,
-  hasMenuProductsSessionCache,
   readRawMenuCategoriesFromSession,
   readRawMenuProductsFromSession,
   warmMenuCatalogCache,
 } from '@/lib/menuCatalogSessionCache'
 import { productGalleryFromApi } from '@/lib/productGallery'
-import { runUntilScrollSuccess } from '@/lib/menuScroll'
-import { createRafScrollListener, publishMenuCategoryHighlight } from '@/lib/scrollSync'
-import { WattaMenuProductCard } from './WattaMenuProductCard'
-import DeliveryHeroCopy from './DeliveryHeroCopy'
-import { UtensilsCrossed, Utensils, Cookie, Coffee, Flame, GlassWater, Fish, Layers, Package } from 'lucide-react'
+import {
+  runUntilScrollSuccess,
+  scrollFullMenuCategoryHeading,
+  scrollFullMenuCategoryHeadingEased,
+  cancelMenuScrollAnimation,
+  isMenuCatalogScrollLocked,
+  setMenuCatalogScrollLock,
+} from '@/lib/menuScroll'
+import {
+  beginMenuCategoryScrollChromeLock,
+  consumePendingMenuCatScroll,
+  FULL_MENU_SECTION_SCROLL_MARGIN,
+} from '@/lib/wattaChromeScroll'
+import { useMenuCategoryScrollSpy } from '@/hooks/useMenuCategoryScrollSpy'
+import { FullMenuCategorySection } from './FullMenuCategorySection'
+import WattaHeroRollTitle from './WattaHeroRollTitle'
+import WattaStellarHeroBackground from './WattaStellarHeroBackground'
+import { canonicalMenuCategorySlug } from '@/lib/menuCategoryCanonical'
+import {
+  WATTA_FULL_MENU_HERO_LANDSCAPE,
+  WATTA_FULL_MENU_HERO_LANDSCAPE_HQ,
+} from '@/lib/wattaMenuHeroVideo'
+import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
+import WattaMenuBalloonsTrigger from './WattaMenuBalloonsTrigger'
 
 interface MenuItem {
   id: number
@@ -54,27 +74,14 @@ interface MenuCategoryRow {
   name: string
   emoji: string
   order: number
+  imageUrl?: string | null
+  hoverImageUrl?: string | null
 }
 
 /** Єдиний регістр slug — інакше товари з `Rolls` vs категорія `rolls` не потрапляють у секції. */
 function normMenuSlug(s: string): string {
-  const t = s.trim().toLowerCase()
+  const t = canonicalMenuCategorySlug(s)
   return t.length > 0 ? t : 'misc'
-}
-
-const FULL_MENU_ICON_MAP: Record<string, React.ReactElement> = {
-  rolls: <Fish size={22} strokeWidth={1.8} aria-hidden />,
-  sushi: <Utensils size={22} strokeWidth={1.8} aria-hidden />,
-  sets: <Package size={22} strokeWidth={1.8} aria-hidden />,
-  soups: <Coffee size={22} strokeWidth={1.8} aria-hidden />,
-  bowls: <Layers size={22} strokeWidth={1.8} aria-hidden />,
-  snacks: <Cookie size={22} strokeWidth={1.8} aria-hidden />,
-  drinks: <GlassWater size={22} strokeWidth={1.8} aria-hidden />,
-  sauces: <Flame size={22} strokeWidth={1.8} aria-hidden />,
-}
-
-function getMenuCategoryIcon(slug: string, emoji: string): React.ReactNode {
-  return FULL_MENU_ICON_MAP[slug] ?? <span aria-hidden>{emoji}</span>
 }
 
 export default function FullMenuPageClient() {
@@ -85,24 +92,18 @@ export default function FullMenuPageClient() {
 
   const [categories, setCategories] = useState<MenuCategoryRow[]>([])
   const [items, setItems] = useState<MenuItem[]>([])
-  const [loading, setLoading] = useState(() =>
-    typeof window === 'undefined' ? true : !hasMenuProductsSessionCache(),
-  )
-  const scrollLockRef = useRef(false)
-  /** Під `WattaPublicSiteChrome` (шапка + стрічка) — той самий візуальний блок, що на /product, /cart, … */
-  const FULL_MENU_STICKY_RESERVE_PX = 180
-
-  /** Як на головній: ≤768px — поточна сітка; планшет+ — горизонтальний свайп. */
-  const [isNarrowViewport, setIsNarrowViewport] = useState(false)
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    const mq = window.matchMedia('(max-width: 768px)')
-    const apply = () => setIsNarrowViewport(mq.matches)
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
-  }, [])
-
+  /** Завжди true до mount — sessionStorage лише в useLayoutEffect (hydration-safe). */
+  const [loading, setLoading] = useState(true)
+  /** Slug з sessionStorage (клік категорії з /delivery тощо), поки ?cat= ще не в URL. */
+  const [deepLinkCat, setDeepLinkCat] = useState('')
+  /** Один автоскрол на цільову категорію за навігацію. */
+  const initialCatScrollDoneRef = useRef<string | null>(null)
+  const catScrollGenerationRef = useRef(0)
+  const catScrollSettledRef = useRef(false)
+  const itemsRef = useRef<MenuItem[]>([])
+  itemsRef.current = items
+  const visibleCategoriesRef = useRef<MenuCategoryRow[]>([])
+  const [pinnedMountSlugs, setPinnedMountSlugs] = useState<Set<string>>(() => new Set())
   const mapProductsToItems = useCallback(
     (data: unknown[]) =>
       (data || [])
@@ -151,6 +152,11 @@ export default function FullMenuPageClient() {
             name,
             emoji: typeof cat.emoji === 'string' && cat.emoji ? String(cat.emoji) : '🍣',
             order: typeof cat.order === 'number' ? cat.order : 0,
+            imageUrl: typeof cat.imageUrl === 'string' && cat.imageUrl.trim() ? cat.imageUrl.trim() : null,
+            hoverImageUrl:
+              typeof cat.hoverImageUrl === 'string' && cat.hoverImageUrl.trim()
+                ? cat.hoverImageUrl.trim()
+                : null,
           }
         })
         .filter((c) => c.slug.length > 0)
@@ -239,7 +245,7 @@ export default function FullMenuPageClient() {
         if (list.length > 0 && typeof sessionStorage !== 'undefined') {
           sessionStorage.setItem(cacheKey, JSON.stringify(list))
           sessionStorage.setItem(`${cacheKey}_time`, String(Date.now()))
-          setItems(mapProductsToItems(list))
+          startTransition(() => setItems(mapProductsToItems(list)))
         }
       } catch {
         /* keep cached list */
@@ -262,8 +268,13 @@ export default function FullMenuPageClient() {
         try {
           const data = JSON.parse(cached)
           if (Array.isArray(data) && data.length > 0) {
-            setItems(mapProductsToItems(data))
             setLoading(false)
+            const mapped = mapProductsToItems(data)
+            if (itemsRef.current.length === 0) {
+              setItems(mapped)
+            } else {
+              startTransition(() => setItems(mapped))
+            }
             void refreshProductsInBackground(scopedUrl, cacheKey, hasCity, fetchFn)
             return
           }
@@ -273,7 +284,8 @@ export default function FullMenuPageClient() {
       }
     }
 
-    setLoading(true)
+    const showLoadingSkeleton = !fresh || itemsRef.current.length === 0
+    if (showLoadingSkeleton) setLoading(true)
     try {
       const fetchProductList = async (url: string): Promise<unknown[]> => {
         try {
@@ -294,7 +306,12 @@ export default function FullMenuPageClient() {
         sessionStorage.setItem(cacheKey, JSON.stringify(list))
         sessionStorage.setItem(`${cacheKey}_time`, String(Date.now()))
       }
-      setItems(mapProductsToItems(list))
+      const mapped = mapProductsToItems(list)
+      if (showLoadingSkeleton) {
+        setItems(mapped)
+      } else {
+        startTransition(() => setItems(mapped))
+      }
     } catch {
       setItems([])
     } finally {
@@ -306,8 +323,8 @@ export default function FullMenuPageClient() {
     const cityId = typeof window !== 'undefined' ? readCityIdForProductApi() : null
     const rawProducts = readRawMenuProductsFromSession(cityId)
     if (rawProducts) {
-      setItems(mapProductsToItems(rawProducts))
       setLoading(false)
+      setItems(mapProductsToItems(rawProducts))
     }
     const rawCategories = readRawMenuCategoriesFromSession()
     if (rawCategories) {
@@ -316,11 +333,16 @@ export default function FullMenuPageClient() {
     }
   }, [mapProductsToItems, mapApiToCategoryRows])
 
+  const loadCategoriesRef = useRef(loadCategories)
+  loadCategoriesRef.current = loadCategories
+  const loadProductsRef = useRef(loadProducts)
+  loadProductsRef.current = loadProducts
+
   useEffect(() => {
-    void loadCategories()
-    void loadProducts()
+    void loadCategoriesRef.current()
+    void loadProductsRef.current()
     void warmMenuCatalogCache()
-  }, [loadCategories, loadProducts, language])
+  }, [])
 
   useWattaCatalogSync(() => {
     void loadProducts(true)
@@ -337,6 +359,7 @@ export default function FullMenuPageClient() {
   const itemsBySlug = useMemo(() => {
     const m = new Map<string, MenuItem[]>()
     const normalize = (v: string) => v.trim().toLowerCase()
+    const knownSlugs = new Set(categories.map((c) => normMenuSlug(c.slug)))
     const byId = new Map<number, string>()
     const byName = new Map<string, string>()
     const unresolved: Array<{
@@ -352,7 +375,7 @@ export default function FullMenuPageClient() {
     }
     for (const it of items) {
       let resolvedSlug = normMenuSlug(it.categorySlug || 'misc')
-      if (!categories.some((c) => normMenuSlug(c.slug) === resolvedSlug)) {
+      if (!knownSlugs.has(resolvedSlug)) {
         const byCategoryId = it.categoryId > 0 ? byId.get(it.categoryId) : undefined
         if (byCategoryId) {
           resolvedSlug = byCategoryId
@@ -398,155 +421,251 @@ export default function FullMenuPageClient() {
     return m
   }, [items, categories])
 
-  const visibleCategories = useMemo(() => {
-    return categories
-  }, [categories])
+  const visibleCategories = useMemo(() => categories, [categories])
 
-  /** Зсув для scroll-margin + поріг «Усі» — глобальна фіксована шапка (див. AppClient → WattaPublicSiteChrome) */
-  const scrollPadTotal = FULL_MENU_STICKY_RESERVE_PX
-  const scrollPadPx = `${scrollPadTotal}px`
+  const targetCategorySlug = useMemo(() => {
+    const raw = (catFromUrl || deepLinkCat).trim()
+    if (!raw || raw === FULL_MENU_ALL_SLUG) return ''
+    const norm = normMenuSlug(raw)
+    const row = visibleCategories.find((c) => normMenuSlug(c.slug) === norm)
+    return row ? normMenuSlug(row.slug) : norm
+  }, [catFromUrl, deepLinkCat, visibleCategories])
 
-  useEffect(() => {
-    if (visibleCategories.length === 0) return
+  const menuSectionsRef = useRef<Array<{ slug: string; el: HTMLElement }>>([])
+  useLayoutEffect(() => {
+    menuSectionsRef.current = visibleCategories.flatMap((c) => {
+      const el =
+        document.getElementById(`full-menu-heading-${c.slug}`) ??
+        document.getElementById(`full-menu-section-${c.slug}`)
+      return el ? [{ slug: c.slug, el }] : []
+    })
+  }, [visibleCategories, loading])
 
-    const lastHighlightSlugRef = { current: '' }
-    const publishCategoryStrip = (slug: string) =>
-      publishMenuCategoryHighlight(slug, lastHighlightSlugRef)
+  /** Стабільний scroll-margin (CSS var). */
+  const scrollPadPx = FULL_MENU_SECTION_SCROLL_MARGIN
 
-    const syncActiveFromScroll = () => {
-      if (scrollLockRef.current) return
-      const firstSlug = visibleCategories[0]?.slug
-      if (!firstSlug) return
-      // Біля верху: підсвітка з `?cat=` (перехід з головної), а не «Усі», поки користувач не проскролив
-      try {
-        const urlCat = new URLSearchParams(window.location.search).get('cat')?.trim()
-        if (urlCat && window.scrollY < 140) {
-          if (urlCat === FULL_MENU_ALL_SLUG) {
-            publishCategoryStrip(FULL_MENU_ALL_SLUG)
-            return
-          }
-          if (visibleCategories.some((c) => normMenuSlug(c.slug) === normMenuSlug(urlCat))) {
-            publishCategoryStrip(normMenuSlug(urlCat))
-            return
-          }
-        }
-      } catch {
-        /* ignore */
-      }
-      const firstEl = document.getElementById(`full-menu-section-${firstSlug}`)
-      if (!firstEl) return
-      const bandBase = scrollPadTotal - 8
-      if (firstEl.getBoundingClientRect().top > bandBase) {
-        publishCategoryStrip(FULL_MENU_ALL_SLUG)
-        return
-      }
-      let bestSlug: string | null = null
-      let bestScore = -1
-      for (const c of visibleCategories) {
-        const el = document.getElementById(`full-menu-section-${c.slug}`)
-        if (!el) continue
-        const r = el.getBoundingClientRect()
-        const vh = window.innerHeight
-        const bandTop = Math.max(vh * 0.08, scrollPadTotal * 0.32)
-        const bandBot = vh * 0.58
-        const vis = Math.max(0, Math.min(r.bottom, bandBot) - Math.max(r.top, bandTop))
-        if (vis <= 0) continue
-        const score = vis + (r.top >= scrollPadTotal * 0.18 && r.top < vh * 0.42 ? 50 : 0)
-        if (score > bestScore) {
-          bestScore = score
-          bestSlug = c.slug
-        }
-      }
-      if (bestSlug) {
-        publishCategoryStrip(bestSlug)
-      }
+  useEffect(
+    () => () => {
+      cancelMenuScrollAnimation()
+    },
+    [],
+  )
+
+  const getFullMenuScrollSections = useCallback(() => menuSectionsRef.current, [])
+
+  useMenuCategoryScrollSpy({
+    enabled: !loading && visibleCategories.length > 0,
+    getSections: getFullMenuScrollSections,
+    isScrollLocked: isMenuCatalogScrollLocked,
+    beforeFirstSectionSlug: FULL_MENU_ALL_SLUG,
+  })
+
+  useLayoutEffect(() => {
+    const pending = consumePendingMenuCatScroll()
+    if (pending) {
+      const norm = normMenuSlug(pending)
+      if (norm && norm !== FULL_MENU_ALL_SLUG) setDeepLinkCat(norm)
     }
-
-    const { onScroll, cancel } = createRafScrollListener(syncActiveFromScroll)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll, { passive: true })
-    const id = window.requestAnimationFrame(syncActiveFromScroll)
-    return () => {
-      window.cancelAnimationFrame(id)
-      cancel()
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-    }
-  }, [visibleCategories, scrollPadTotal])
-
-  const scrollToCategory = useCallback((slug: string): boolean => {
-    const findTarget = (): HTMLElement | null => {
-      if (slug === FULL_MENU_ALL_SLUG) {
-        return document.getElementById('full-menu-page-start')
-      }
-      const byId = document.getElementById(`full-menu-section-${slug}`)
-      if (byId) return byId
-      const norm = normMenuSlug(slug)
-      if (norm !== slug) {
-        const byNormId = document.getElementById(`full-menu-section-${norm}`)
-        if (byNormId) return byNormId
-      }
-      const safe =
-        typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(slug) : slug
-      return (
-        document.querySelector<HTMLElement>(`[data-full-menu-cat="${safe}"]`) ??
-        (norm !== slug
-          ? document.querySelector<HTMLElement>(
-              `[data-full-menu-cat="${typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(norm) : norm}"]`,
-            )
-          : null)
-      )
-    }
-
-    const scrollEl = (el: HTMLElement) => {
-      scrollLockRef.current = true
-      window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug } }))
-
-      const scroller = (document.scrollingElement as HTMLElement | null) ?? document.documentElement
-      const marginRaw = typeof getComputedStyle !== 'undefined' ? getComputedStyle(el).scrollMarginTop : ''
-      const marginParsed = Number.parseFloat(marginRaw)
-      const margin = Number.isFinite(marginParsed) ? marginParsed : FULL_MENU_STICKY_RESERVE_PX
-      const top = el.getBoundingClientRect().top + scroller.scrollTop - margin
-      scroller.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
-
-      window.setTimeout(() => {
-        scrollLockRef.current = false
-      }, 400)
-      return true
-    }
-
-    const el = findTarget()
-    if (el) return scrollEl(el)
-    return false
   }, [])
 
-  const scrollToCategoryWithRetry = useCallback(
-    (slug: string) => {
-      runUntilScrollSuccess(() => scrollToCategory(slug))
+  const findCategoryScrollTarget = useCallback((slug: string): HTMLElement | null => {
+    if (slug === FULL_MENU_ALL_SLUG) {
+      return document.getElementById('full-menu-page-start')
+    }
+    const norm = normMenuSlug(slug)
+    const keys = new Set<string>([slug.trim(), norm])
+    const row = visibleCategoriesRef.current.find(
+      (c) => normMenuSlug(c.slug) === norm,
+    )
+    if (row) keys.add(row.slug)
+    for (const key of keys) {
+      if (!key) continue
+      const heading = document.getElementById(`full-menu-heading-${key}`)
+      if (heading) return heading
+    }
+    return null
+  }, [])
+
+  const pinSectionMount = useCallback((slug: string) => {
+    const norm = normMenuSlug(slug)
+    if (!norm || norm === FULL_MENU_ALL_SLUG) return
+    setPinnedMountSlugs((prev) => {
+      if (prev.has(norm)) return prev
+      const next = new Set(prev)
+      next.add(norm)
+      return next
+    })
+  }, [])
+
+  /**
+   * Mobile UX: avoid "white gaps" during chip-to-section jumps by pre-mounting
+   * the target section and its immediate neighbors before the scroll completes.
+   */
+  const pinSectionMountCluster = useCallback((slug: string) => {
+    const norm = normMenuSlug(slug)
+    if (!norm || norm === FULL_MENU_ALL_SLUG) return
+    const cats = visibleCategoriesRef.current
+    const idx = cats.findIndex((c) => normMenuSlug(c.slug) === norm)
+    const slugs: string[] = [norm]
+    if (idx >= 0) {
+      const prev = cats[idx - 1]
+      const next = cats[idx + 1]
+      if (prev) slugs.push(normMenuSlug(prev.slug))
+      if (next) slugs.push(normMenuSlug(next.slug))
+    }
+    setPinnedMountSlugs((prev) => {
+      let changed = false
+      const next = new Set(prev)
+      for (const s of slugs) {
+        if (!s || s === FULL_MENU_ALL_SLUG) continue
+        if (!next.has(s)) {
+          next.add(s)
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [])
+
+  const scrollToCategoryOnce = useCallback(
+    (slug: string, generation: number, useEasedScroll = false): boolean => {
+      if (generation !== catScrollGenerationRef.current) return false
+      const trimmed = slug.trim()
+      if (!trimmed) return false
+      const normalized = trimmed === FULL_MENU_ALL_SLUG ? FULL_MENU_ALL_SLUG : normMenuSlug(trimmed)
+
+      if (normalized !== FULL_MENU_ALL_SLUG) {
+        if (useEasedScroll) {
+          pinSectionMountCluster(normalized)
+        } else {
+          flushSync(() => pinSectionMountCluster(normalized))
+        }
+      }
+
+      const target = findCategoryScrollTarget(normalized)
+      if (!target) return false
+
+      window.dispatchEvent(
+        new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug: normalized } }),
+      )
+
+      if (useEasedScroll) {
+        void scrollFullMenuCategoryHeadingEased(target)
+      } else {
+        scrollFullMenuCategoryHeading(target, 'auto')
+      }
+
+      catScrollSettledRef.current = true
+      return true
     },
-    [scrollToCategory],
+    [findCategoryScrollTarget, pinSectionMountCluster],
+  )
+
+  const requestScrollToCategory = useCallback(
+    (slug: string, options?: { smooth?: boolean }) => {
+      const trimmed = slug.trim()
+      if (!trimmed) return
+      const reduceMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const useEasedScroll = Boolean(options?.smooth && !reduceMotion)
+      cancelMenuScrollAnimation()
+      catScrollSettledRef.current = false
+      beginMenuCategoryScrollChromeLock(useEasedScroll ? 900 : 380)
+      setMenuCatalogScrollLock(true)
+      const generation = ++catScrollGenerationRef.current
+      runUntilScrollSuccess(
+        () => scrollToCategoryOnce(trimmed, generation, useEasedScroll),
+        useEasedScroll
+          ? [0, 48, 120, 280, 480]
+          : [0, 16, 32, 64, 96, 160, 240, 360, 520],
+      )
+      window.setTimeout(() => setMenuCatalogScrollLock(false), useEasedScroll ? 720 : 280)
+    },
+    [scrollToCategoryOnce],
   )
 
   useEffect(() => {
     const onScrollRequest = (ev: Event) => {
-      const slug = (ev as CustomEvent<{ slug?: string }>).detail?.slug?.trim()
+      const detail = (ev as CustomEvent<{ slug?: string; instant?: boolean }>).detail
+      const slug = detail?.slug?.trim()
       if (!slug) return
-      scrollToCategoryWithRetry(slug)
+      initialCatScrollDoneRef.current = null
+      const instant = detail?.instant !== false
+      const run = () => requestScrollToCategory(slug, { smooth: !instant })
+      if (instant) {
+        requestAnimationFrame(() => requestAnimationFrame(run))
+      } else {
+        run()
+      }
     }
     window.addEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
-    return () => window.removeEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
-  }, [scrollToCategoryWithRetry])
+    return () => {
+      window.removeEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
+      catScrollGenerationRef.current += 1
+    }
+  }, [requestScrollToCategory])
 
-  /** Перехід на /menu?cat= або клік у стрічці з іншої сторінки — скрол одразу після появи секцій. */
+  const prevCatFromUrlRef = useRef('')
+
+  /** Перехід на /menu?cat= (або pending з іншої сторінки) — скрол до заголовка секції після mount каталогу. */
+  useLayoutEffect(() => {
+    visibleCategoriesRef.current = visibleCategories
+  }, [visibleCategories])
+
+  useLayoutEffect(() => {
+    if (prevCatFromUrlRef.current !== catFromUrl) {
+      initialCatScrollDoneRef.current = null
+      catScrollSettledRef.current = false
+      prevCatFromUrlRef.current = catFromUrl
+      const norm = catFromUrl ? normMenuSlug(catFromUrl) : ''
+      if (norm && norm !== FULL_MENU_ALL_SLUG) {
+        setDeepLinkCat(norm)
+      }
+    }
+    if (loading || visibleCategories.length === 0) return
+    const slug = targetCategorySlug
+    if (!slug) return
+    if (initialCatScrollDoneRef.current === slug) return
+    initialCatScrollDoneRef.current = slug
+    pinSectionMountCluster(slug)
+    requestAnimationFrame(() => {
+      requestScrollToCategory(slug)
+    })
+  }, [
+    catFromUrl,
+    loading,
+    targetCategorySlug,
+    requestScrollToCategory,
+    visibleCategories.length,
+    pinSectionMountCluster,
+  ])
+
   useEffect(() => {
-    if (loading || !catFromUrl) return
-    scrollToCategoryWithRetry(catFromUrl)
-  }, [loading, catFromUrl, scrollToCategoryWithRetry, visibleCategories.length])
+    if (!targetCategorySlug) return
+    pinSectionMountCluster(targetCategorySlug)
+  }, [targetCategorySlug, pinSectionMountCluster])
+
+  /** Під час автоскролу до ?cat= — зупинити ретраї, якщо користувач уже крутить сторінку. */
+  useEffect(() => {
+    if (!targetCategorySlug || typeof window === 'undefined') return
+    const cancelPendingCatScroll = () => {
+      if (catScrollSettledRef.current) return
+      catScrollGenerationRef.current += 1
+    }
+    const opts: AddEventListenerOptions = { passive: true, capture: true }
+    window.addEventListener('wheel', cancelPendingCatScroll, opts)
+    window.addEventListener('touchmove', cancelPendingCatScroll, opts)
+    return () => {
+      window.removeEventListener('wheel', cancelPendingCatScroll, opts as EventListenerOptions)
+      window.removeEventListener('touchmove', cancelPendingCatScroll, opts as EventListenerOptions)
+    }
+  }, [targetCategorySlug])
 
   const addToCart = useMenuAddToCart()
   const addToCartFromCard = useCallback(
     (product: WattaMenuProductCardModel) => {
-      const full = items.find((x) => x.id === product.id)
+      const full = itemsRef.current.find((x) => x.id === product.id)
       addToCart({
         id: product.id,
         name: product.name,
@@ -558,43 +677,94 @@ export default function FullMenuPageClient() {
         promoDiscountPercent: product.promoDiscountPercent,
       })
     },
-    [addToCart, items],
+    [addToCart],
   )
 
-  const fullMenuIntroBlock = (
-    <section
-      id="menu-page-after-hero-intro"
-      className="home-after-hero-intro-web menu-after-welcome-web relative z-[2] w-full max-w-[100vw] shrink-0"
-      aria-labelledby="menu-page-after-hero-intro-title"
-    >
-      <div className="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu home-after-hero-intro-inner-web--headroom relative z-[1] mx-auto max-w-7xl px-6 pb-3 pt-6 sm:px-9 sm:pb-4 sm:pt-7 md:px-12 md:pb-5">
-        <DeliveryHeroCopy
-          titleId="menu-page-after-hero-intro-title"
-          kickerScript={mv.fullMenuIntroKickerScript}
-          headlineLead={mv.fullMenuIntroHeadlineLead}
-          headlineMark={mv.fullMenuIntroHeadlineMark}
-          sub={mv.fullMenuIntroSub}
-          statFresh={mv.fullMenuIntroStatFresh}
-          statFast={mv.fullMenuIntroStatHits}
-          statCity={mv.fullMenuIntroStatOrder}
-        />
+  const menuHeroTitleLines = useMemo(
+    () =>
+      [mv.fullMenuIntroHeadlineLead.trim(), mv.fullMenuIntroHeadlineMark.trim()].filter(
+        (line) => line.length > 0,
+      ),
+    [mv.fullMenuIntroHeadlineLead, mv.fullMenuIntroHeadlineMark],
+  )
+
+  const menuHeroBody = mv.fullMenuIntroSub
+
+  const menuHeroAriaLabel = `${mv.fullMenuIntroHeadlineLead} ${mv.fullMenuIntroHeadlineMark}. ${mv.fullMenuIntroSub}`
+
+  const menuHeroAccessibleTitle = `${mv.fullMenuIntroHeadlineLead} ${mv.fullMenuIntroHeadlineMark}`.trim()
+
+  useEffect(() => {
+    const signalReady = () => {
+      try {
+        document.documentElement.setAttribute('data-watta-hero-content-ready', '1')
+      } catch {
+        /* ignore */
+      }
+      window.dispatchEvent(new CustomEvent(WATTA_HERO_VIDEO_READY_EVENT))
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(signalReady)
+    })
+  }, [])
+
+  const fullMenuHeroStack = (
+    <div className="delivery-page-intro-web delivery-page-intro-web--video w-full shrink-0">
+      <div className="watta-home-hero-flow w-full shrink-0">
+        <div
+          className="watta-home-photo-first-screen watta-stellar-hero-stack menu-stellar-hero-stack watta-home-stellar-hero-stack w-full shrink-0 bg-white"
+          data-watta-home-photo-first=""
+        >
+          <WattaStellarHeroBackground
+            backgroundSrc={WATTA_FULL_MENU_HERO_LANDSCAPE}
+            backgroundSrcHiRes={WATTA_FULL_MENU_HERO_LANDSCAPE_HQ}
+            imageFit="cover"
+          />
+          <div className="watta-home-hero-overlay-stack delivery-page-hero-stack delivery-page-hero-stack--roll-first w-full shrink-0">
+            <div className="watta-home-roll-hero-slot-web relative z-[20] w-full shrink-0">
+              <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
+                <section
+                  className="watta-sushi-roll-hero watta-menu-photo-hero watta-menu-photo-hero--no-marquee"
+                  aria-labelledby="menu-page-after-hero-intro-title"
+                >
+                  <h1 id="menu-page-after-hero-intro-title" className="sr-only">
+                    {menuHeroAccessibleTitle}
+                  </h1>
+                  <div className="watta-menu-photo-hero__intro-stack">
+                    <WattaHeroRollTitle
+                      mobileIntro={{
+                        titleLines: menuHeroTitleLines,
+                        body: menuHeroBody,
+                        ariaLabel: menuHeroAriaLabel,
+                      }}
+                    />
+                    <WattaMenuBalloonsTrigger placement="hero" />
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   )
 
   return (
-    <div className="menu-page-web watta-page-bg relative flex min-h-0 w-full max-w-[100vw] flex-col bg-transparent">
-      <div className="delivery-page-home-flow w-full">
-        <div className="delivery-page-intro-web w-full shrink-0">{fullMenuIntroBlock}</div>
-      </div>
+    <div
+      className="menu-page-web watta-site-hero-page-web watta-page-bg relative flex min-h-0 w-full max-w-[100vw] flex-col bg-transparent"
+      data-watta-home-narrow-strip-hero="1"
+    >
+      <div className="delivery-page-home-flow w-full">{fullMenuHeroStack}</div>
 
-      <div className="watta-full-menu-page flex min-h-0 w-full min-w-0 flex-1 flex-col">
+      <div
+        className="watta-full-menu-page flex min-h-0 w-full min-w-0 flex-1 flex-col"
+      >
       <div
         id="full-menu-page-start"
         style={{ scrollMarginTop: scrollPadPx }}
         className="relative z-[1] w-full max-w-[100vw] shrink-0"
       >
-        <section
+        <WattaInViewFadeSection
           className="home-menu-catalog-section-web home-full-menu-catalog-web watta-full-menu-catalog-reveal-web relative z-[2] w-full max-w-[100vw] px-4 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-6 md:px-8 md:pb-14"
           aria-labelledby="menu-page-after-hero-intro-title"
         >
@@ -603,18 +773,15 @@ export default function FullMenuPageClient() {
               <div className="home-menu-cat-list-web pb-4" aria-busy="true" aria-live="polite">
                 <p className="sr-only">{mv.fullMenuLoading}</p>
                 {[0, 1].map((band) => (
-                  <div
-                    key={band}
-                    className="home-menu-cat-band-web animate-pulse rounded-[1.25rem] border border-[#145142]/10 bg-white/70 p-4 shadow-[0_14px_40px_-24px_rgba(15,36,30,0.35)] sm:p-5"
-                  >
-                    <div className="mb-5 flex gap-3 sm:mb-6">
-                      <div className="h-11 w-11 shrink-0 rounded-2xl bg-[#145142]/12 sm:h-12 sm:w-12" />
+                  <div key={band} className="home-menu-cat-band-web animate-pulse">
+                    <div className="mb-4 flex gap-3 sm:mb-5">
+                      <div className="h-11 w-11 shrink-0 rounded-2xl bg-watta-action/12 sm:h-12 sm:w-12" />
                       <div className="flex min-w-0 flex-1 flex-col gap-2.5 pt-1">
-                        <div className="h-5 max-w-[12rem] rounded-md bg-[#145142]/14" />
-                        <div className="h-3 max-w-[6rem] rounded bg-[#145142]/10" />
+                        <div className="h-5 max-w-[12rem] rounded-md bg-watta-action/14" />
+                        <div className="h-3 max-w-[6rem] rounded bg-watta-action/10" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
                       {Array.from({ length: band === 0 ? 8 : 4 }).map((_, i) => (
                         <div
                           key={i}
@@ -646,50 +813,26 @@ export default function FullMenuPageClient() {
                         list: items,
                       },
                     ]
-                ).map(({ cat, list }) => {
-                  return (
-                    <section
-                      key={cat.slug}
-                      id={`full-menu-section-${cat.slug}`}
-                      data-full-menu-cat={cat.slug}
-                      style={{ scrollMarginTop: scrollPadPx }}
-                      className="home-menu-cat-block-web watta-full-menu-section"
-                    >
-                      <div className="home-menu-cat-band-web">
-                        <div className="home-menu-cat-heading-web">
-                          <span className="home-menu-cat-emoji-bare-web">
-                            {getMenuCategoryIcon(cat.slug, cat.emoji)}
-                          </span>
-                          <div className="home-menu-cat-heading-text-web min-w-0">
-                            <h2 className="home-menu-cat-title-web">{cat.name}</h2>
-                            <p className="home-menu-cat-meta-line-web">
-                              {formatMenuItemsCount(list.length)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {list.length === 0 ? (
-                          <p className="py-8 text-sm text-[#145142]/50">{mv.emptyCategoryTitle}</p>
-                        ) : (
-                          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                            {list.map((item) => (
-                              <WattaMenuProductCard
-                                key={item.id}
-                                variant="grid"
-                                product={item}
-                                onAddToCart={addToCartFromCard}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </section>
-                  )
-                })}
+                ).map(({ cat, list }, sectionIndex) => (
+                  <FullMenuCategorySection
+                    key={cat.slug}
+                    cat={cat}
+                    list={list}
+                    scrollPadPx={scrollPadPx}
+                    emptyLabel={mv.emptyCategoryTitle}
+                    forceMountGrid={
+                      Boolean(targetCategorySlug) ||
+                      sectionIndex === 0 ||
+                      pinnedMountSlugs.has(normMenuSlug(cat.slug))
+                    }
+                    formatItemsCount={formatMenuItemsCount}
+                    onAddToCart={addToCartFromCard}
+                  />
+                ))}
               </div>
             )}
           </div>
-        </section>
+        </WattaInViewFadeSection>
       </div>
       </div>
     </div>

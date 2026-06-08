@@ -26,3 +26,31 @@ export function resolveCatalogMediaUrl(url: string | null | undefined): string |
   if (!resolved) return null
   return withCatalogMediaCacheBust(resolved)
 }
+
+/** next/image — лише same-origin /uploads (placehold.co та інші зовнішні — raw <img>). */
+export function isNextImageOptimizableCatalogUrl(url: string | null | undefined): boolean {
+  if (!url?.trim()) return false
+  const trimmed = url.trim()
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return false
+
+  const pathname = (() => {
+    if (trimmed.startsWith('/')) return trimmed.split('?')[0] ?? trimmed
+    try {
+      return new URL(trimmed).pathname
+    } catch {
+      return ''
+    }
+  })()
+
+  if (!pathname.startsWith('/uploads/')) return false
+
+  if (trimmed.startsWith('/')) return true
+
+  try {
+    const u = new URL(trimmed)
+    if (typeof window !== 'undefined') return u.origin === window.location.origin
+    return u.pathname.startsWith('/uploads/')
+  } catch {
+    return false
+  }
+}

@@ -250,7 +250,7 @@ export default function AdminDeliveryZoneEditor({
             if (drawMode) setDraftPoints([])
           }}
           className={`rounded-[10px] px-3 py-2 text-xs font-bold sm:text-sm ${
-            drawMode ? 'bg-[#c2410c] text-white' : 'bg-[#145142]/15 text-[#145142]'
+            drawMode ? 'bg-[#c2410c] text-white' : 'bg-watta-action/15 text-[#145142]'
           }`}
         >
           {drawMode ? 'Вимкнути малювання' : 'Малювати зону'}
@@ -286,7 +286,7 @@ export default function AdminDeliveryZoneEditor({
           type="button"
           disabled={saving}
           onClick={() => void saveZone()}
-          className="rounded-[10px] bg-[#145142] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#103d34] disabled:opacity-50"
+          className="rounded-[10px] bg-watta-action px-4 py-2.5 text-sm font-bold text-white hover:bg-watta-action-hover disabled:opacity-50"
         >
           {saving ? 'Збереження…' : 'Зберегти зону'}
         </button>

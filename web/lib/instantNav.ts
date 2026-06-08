@@ -1,11 +1,14 @@
 import { startTransition } from 'react'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import { tryOpenAuthModalFromHref } from '@/lib/openWattaAuth'
 import { MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
 import {
   readRawMenuCategoriesFromSession,
   warmMenuCatalogCache,
 } from '@/lib/menuCatalogSessionCache'
+import { normalizeInternalHref, normalizeInternalPath } from '@/lib/internalHref'
 import { prefetchRouteChunk } from '@/lib/prefetchRouteChunks'
+import { parseProductIdFromHref, warmProductRouteData } from '@/lib/fetchProductById'
 
 /** Публічні маршрути — префетч при старті, щоб тап відчувався миттєво. */
 export const WATTA_PUBLIC_PREFETCH_ROUTES = [
@@ -23,38 +26,74 @@ export const WATTA_PUBLIC_PREFETCH_ROUTES = [
   '/profile',
   '/notifications',
   '/privacy',
+  '/offer',
   '/login',
   '/register',
   '/checkout/success',
-  '/admin',
 ] as const
 
-const MAX_CATEGORY_PREFETCH = 24
+/** Центр шапки (desktop): Доставка / Про нас / Контакти — максимально швидкий перехід. */
+export const HEADER_CENTER_NAV_PATHS = ['/delivery', '/about', '/contacts'] as const
+
+export function isHeaderCenterNavPath(href: string): boolean {
+  const path = normalizeInternalPath(href)
+  return (
+    path != null && (HEADER_CENTER_NAV_PATHS as readonly string[]).includes(path)
+  )
+}
+
+/** Картка товару → /product/:id — той самий миттєвий перехід, що й шапка. */
+export function isProductNavPath(href: string): boolean {
+  const path = normalizeInternalPath(href)
+  return path != null && /^\/product\/\d+$/.test(path)
+}
+
+/** Усі внутрішні публічні маршрути — без startTransition, щоб push стартував на першому кліку. */
+export function isInstantNavPath(href: string): boolean {
+  const path = normalizeInternalPath(href)
+  if (!path) return false
+  if (path === '/admin' || path.startsWith('/admin/')) return false
+  return true
+}
+
+/** Шапка / drawer — префетч одразу, навіть коли повний список чекає hero на головній. */
+export const WATTA_PRIORITY_PREFETCH_ROUTES = [
+  '/delivery',
+  '/about',
+  '/contacts',
+  '/menu',
+  '/cart',
+  '/favorites',
+  '/profile',
+  '/promotions',
+  '/blog',
+  '/reviews',
+] as const
 
 const prefetchedPaths = new Set<string>()
 
-/** Внутрішній href (pathname + query, без hash). */
-export function normalizeInternalHref(href: string): string | null {
-  if (!href || href.startsWith('//') || href.startsWith('http') || href.startsWith('mailto:')) {
-    return null
-  }
-  if (!href.startsWith('/')) return null
-  const withoutHash = href.split('#')[0]?.trim()
-  return withoutHash && withoutHash.startsWith('/') ? withoutHash : null
+let recentPointerNavKey = ''
+let recentPointerNavAt = 0
+
+/** Запобігає дублю router.push після navigate на pointerdown. */
+export function markRecentPointerNav(href: string): void {
+  recentPointerNavKey = href
+  recentPointerNavAt = Date.now()
 }
 
-/** Лише pathname — для порівнянь маршруту. */
-export function normalizeInternalPath(href: string): string | null {
-  const full = normalizeInternalHref(href)
-  if (!full) return null
-  return full.split('?')[0] || full
+export function wasRecentPointerNav(href: string, withinMs = 480): boolean {
+  return recentPointerNavKey === href && Date.now() - recentPointerNavAt < withinMs
 }
+
+export { normalizeInternalHref, normalizeInternalPath }
 
 export function prefetchHref(router: AppRouterInstance, href: string): void {
   const target = normalizeInternalHref(href)
   if (!target || prefetchedPaths.has(target)) return
   prefetchedPaths.add(target)
   prefetchRouteChunk(target)
+  const productId = parseProductIdFromHref(normalizeInternalPath(target) ?? target)
+  if (productId != null) warmProductRouteData(productId)
   try {
     router.prefetch(target)
   } catch {
@@ -74,8 +113,7 @@ function prefetchCategoryRoutes(router: AppRouterInstance): void {
   if (slugs.length === 0) {
     slugs.push(...MENU_CATEGORY_FALLBACK_SLUGS)
   }
-  for (const slug of slugs.slice(0, MAX_CATEGORY_PREFETCH)) {
-    prefetchHref(router, `/menu/category/${encodeURIComponent(slug)}`)
+  for (const slug of slugs) {
     prefetchHref(router, `/menu?cat=${encodeURIComponent(slug)}`)
   }
 }
@@ -110,7 +148,15 @@ function prefetchFromIntentTarget(router: AppRouterInstance, target: EventTarget
   if (href) prefetchHref(router, href)
 }
 
+/** Найчастіші переходи з шапки — без очікування hero / idle. */
+export function prefetchPriorityPublicRoutes(router: AppRouterInstance): void {
+  for (const href of WATTA_PRIORITY_PREFETCH_ROUTES) {
+    prefetchHref(router, href)
+  }
+}
+
 export function prefetchPublicRoutes(router: AppRouterInstance): void {
+  prefetchPriorityPublicRoutes(router)
   for (const href of WATTA_PUBLIC_PREFETCH_ROUTES) {
     prefetchHref(router, href)
   }
@@ -121,9 +167,23 @@ export function prefetchPublicRoutes(router: AppRouterInstance): void {
 type NavigateOpts = {
   replace?: boolean
   scroll?: boolean
+  /** Без startTransition — для шапкових посилань, щоб router.push відпрацював одразу. */
+  immediate?: boolean
 }
 
-/** Миттєвий перехід: префетч + startTransition (UI не блокується). */
+function markSkipBootSplashForHome(href: string): void {
+  if (typeof document === 'undefined') return
+  const pathOnly = href.split('?')[0] || href
+  if (pathOnly !== '/' && pathOnly !== '') return
+  try {
+    document.documentElement.setAttribute('data-watta-skip-splash', '1')
+    document.documentElement.removeAttribute('data-watta-boot-splash-pending')
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Navigate / replace — миттєвий перехід без boot splash на головну. */
 export function navigateInstant(
   router: AppRouterInstance,
   href: string,
@@ -131,12 +191,20 @@ export function navigateInstant(
 ): void {
   const target = normalizeInternalHref(href)
   if (!target) return
+  if (tryOpenAuthModalFromHref(target)) return
+  markSkipBootSplashForHome(target)
   prefetchHref(router, target)
   const scroll = options?.scroll ?? true
-  startTransition(() => {
+  const runNav = () => {
     if (options?.replace) router.replace(target, { scroll })
     else router.push(target, { scroll })
-  })
+  }
+  if (options?.immediate || isInstantNavPath(target)) {
+    markRecentPointerNav(target)
+    runNav()
+  } else {
+    startTransition(runNav)
+  }
 }
 
 /**
@@ -159,6 +227,46 @@ function shouldSkipInstantNav(el: Element | null): boolean {
       '[data-watta-skip-instant-nav], [data-watta-embedded-nav], [data-watta-link="1"]',
     ),
   )
+}
+
+function isModifiedPointerNav(e: PointerEvent): boolean {
+  return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
+}
+
+/** pointerdown: prefetch + push раніше за click (кнопки з data-href, звичайні <a>). */
+export function installInstantNavPointerDown(router: AppRouterInstance): () => void {
+  if (typeof document === 'undefined') return () => {}
+
+  const onPointerDown = (e: PointerEvent) => {
+    if (e.defaultPrevented || isModifiedPointerNav(e)) return
+    const el = e.target as Element | null
+    if (shouldSkipInstantNav(el)) return
+    if (el?.closest?.('[data-watta-cat], .categories-scroll-btn-web')) {
+      const catBtn = el?.closest?.('[data-watta-cat]') as HTMLElement | null
+      const slug = catBtn?.getAttribute('data-watta-cat')?.trim()
+      if (slug) {
+        window.dispatchEvent(
+          new CustomEvent('wattaCategoryStripSelect', { detail: { slug } }),
+        )
+      }
+      prefetchFromIntentTarget(router, el)
+      return
+    }
+
+    const href = resolveClickNavHref(el)
+    const target = href ? normalizeInternalHref(href) : null
+    if (!target || !isInstantNavPath(target)) {
+      prefetchFromIntentTarget(router, el)
+      return
+    }
+    if (target === currentPathWithSearch()) return
+
+    navigateInstant(router, target, { immediate: true })
+  }
+
+  const opts = { capture: true, passive: true } as const
+  document.addEventListener('pointerdown', onPointerDown, opts)
+  return () => document.removeEventListener('pointerdown', onPointerDown, opts)
 }
 
 export function installInstantNavIntent(router: AppRouterInstance): () => void {
@@ -202,10 +310,11 @@ export function installInstantNavClick(router: AppRouterInstance): () => void {
     const href = resolveClickNavHref(el)
     const target = href ? normalizeInternalHref(href) : null
     if (!target || target === currentPathWithSearch()) return
+    if (wasRecentPointerNav(target)) return
 
     e.preventDefault()
     e.stopPropagation()
-    navigateInstant(router, target)
+    navigateInstant(router, target, { immediate: true })
   }
 
   document.addEventListener('click', onClick, true)

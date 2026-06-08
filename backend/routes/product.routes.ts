@@ -2,11 +2,18 @@ import { Router, Request, Response } from 'express';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC, PUBLIC_CACHE_MENU_SEC } from '../lib/publicApiCache.js';
+import { clearCatalogCache, getCached, setCached } from '../lib/memoryCache.js';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import multer from 'multer';
 import { getUploadsDir } from '../lib/uploadsDir.js';
+import {
+  compressUploadedFileOnDisk,
+  INGREDIENT_UPLOAD_PRESET,
+  optimizeProductFileOnDisk,
+  PRODUCT_UPLOAD_PRESET,
+} from '../lib/compressUploadImage.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -14,6 +21,27 @@ const prisma = new PrismaClient();
 const MAX_PRODUCT_GALLERY = 24;
 const MAX_IMAGE_URL_LENGTH = 2048;
 const uploadDir = getUploadsDir();
+
+const categoryImageDiskUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const rawExt = path.extname(file.originalname || '').toLowerCase();
+      const ext =
+        rawExt === '.jpeg' || rawExt === '.jpg'
+          ? '.jpg'
+          : ['.png', '.webp', '.gif'].includes(rawExt)
+            ? rawExt
+            : '.jpg';
+      cb(null, `category-${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`);
+    },
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype?.startsWith('image/')) cb(null, true);
+    else cb(new Error('Дозволені лише зображення'));
+  },
+});
 
 const productImageDiskUpload = multer({
   storage: multer.diskStorage({
@@ -68,6 +96,43 @@ function normalizeProductImageUrl(value: unknown): string | null {
   const url = value.trim();
   if (!url) return null;
   if (url.startsWith('data:image/')) return persistDataUrlProductImage(url);
+  if (url.length > MAX_IMAGE_URL_LENGTH) return null;
+  if (url.startsWith('/') || /^https?:\/\//i.test(url)) return url;
+  return null;
+}
+
+function persistDataUrlCategoryImage(dataUrl: string): string | null {
+  const trimmed = dataUrl.trim();
+  const m = /^data:image\/(png|jpeg|jpg|webp|gif);base64,([\s\S]+)$/i.exec(trimmed);
+  if (!m) return null;
+  let ext = m[1].toLowerCase();
+  if (ext === 'jpeg') ext = 'jpg';
+  const b64 = m[2].replace(/\s/g, '');
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(b64, 'base64');
+  } catch {
+    return null;
+  }
+  if (buf.length < 24 || buf.length > 8 * 1024 * 1024) return null;
+
+  const name = `category-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+  const fp = path.join(uploadDir, name);
+  try {
+    fs.writeFileSync(fp, buf);
+  } catch (e) {
+    console.error('Category image write failed:', e);
+    return null;
+  }
+  return `/uploads/${name}`;
+}
+
+function normalizeCategoryImageUrl(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string') return null;
+  const url = value.trim();
+  if (!url) return null;
+  if (url.startsWith('data:image/')) return persistDataUrlCategoryImage(url);
   if (url.length > MAX_IMAGE_URL_LENGTH) return null;
   if (url.startsWith('/') || /^https?:\/\//i.test(url)) return url;
   return null;
@@ -183,17 +248,97 @@ function toMenuListProduct(
   return { ...rest, ingredientIds };
 }
 
+/** Великі product-*.png у /uploads/ — перекодувати у JPEG у фоні (не блокує відповідь). */
+function scheduleProductImagesOptimize(
+  products: { id: number; imageUrl: string | null; imageUrls: unknown }[],
+): void {
+  const batch = products.slice(0, 24);
+  void (async () => {
+    for (const row of batch) {
+      const urls = new Set<string>();
+      const main = String(row.imageUrl || '').trim();
+      if (main.startsWith('/uploads/product-')) urls.add(main);
+      let gallery = row.imageUrls;
+      if (typeof gallery === 'string') {
+        try {
+          gallery = JSON.parse(gallery);
+        } catch {
+          gallery = [];
+        }
+      }
+      if (Array.isArray(gallery)) {
+        for (const u of gallery) {
+          const s = String(u || '').trim();
+          if (s.startsWith('/uploads/product-')) urls.add(s);
+        }
+      }
+      if (urls.size === 0) continue;
+
+      const map = new Map<string, string>();
+      for (const u of urls) {
+        try {
+          const optimized = await optimizeProductFileOnDisk(u);
+          if (optimized && optimized !== u) map.set(u, optimized);
+        } catch (e) {
+          console.error(`Product image optimize failed id=${row.id} url=${u}:`, e);
+        }
+      }
+      if (map.size === 0) continue;
+
+      let imageUrl = main;
+      if (map.has(imageUrl)) imageUrl = map.get(imageUrl)!;
+
+      let imageUrlsArr = Array.isArray(gallery) ? [...gallery] : [];
+      imageUrlsArr = imageUrlsArr.map((u) => {
+        const s = String(u || '').trim();
+        return map.has(s) ? map.get(s)! : s;
+      });
+
+      try {
+        await prisma.product.update({
+          where: { id: row.id },
+          data: {
+            imageUrl: imageUrl || imageUrlsArr[0] || '',
+            imageUrls: imageUrlsArr,
+          },
+        });
+      } catch (e) {
+        console.error(`Product image optimize DB update failed id=${row.id}:`, e);
+      }
+    }
+  })();
+}
+
 // 1. Получить ВСЕ товары (с фильтрацией по городу)
 router.get('/', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req, res) => {
   try {
     const cityId = req.query.cityId ? parseInt(req.query.cityId as string) : null;
     const cityWhere = whereVisibleInCity(Number.isFinite(cityId) && cityId > 0 ? cityId! : null);
 
+    // In-memory кеш лише для анонімних запитів вітрини. Адмінка (з Authorization)
+    // завжди отримує свіжі дані, бо мутації чистять кеш одразу.
+    const cacheable = !req.headers.authorization;
+    const cacheKey = `products:${Number.isFinite(cityId) && cityId! > 0 ? cityId : 'all'}`;
+    if (cacheable) {
+      const hit = getCached<unknown[]>(cacheKey);
+      if (hit) {
+        res.json(hit);
+        return;
+      }
+    }
+
     const products = await findPublicProducts(cityWhere ? { ...cityWhere } : {}, {
       category: true,
       ingredients: { select: { id: true } },
     });
-    res.json(products.map((p) => toMenuListProduct(p as { ingredients?: { id: number }[] } & Record<string, unknown>)));
+    scheduleProductImagesOptimize(
+      products as { id: number; imageUrl: string | null; imageUrls: unknown }[],
+    );
+    const payload = products.map((p) =>
+      toMenuListProduct(p as { ingredients?: { id: number }[] } & Record<string, unknown>),
+    );
+    if (cacheable) setCached(cacheKey, payload, PUBLIC_CACHE_MENU_SEC);
+    res.json(payload);
   } catch (error) {
     console.error('Ошибка получения товаров:', error);
     res.status(500).json({ message: 'Ошибка получения товаров' });
@@ -203,9 +348,18 @@ router.get('/', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req, res) => {
 // 2. Получить ВСЕ категории (ВАЖНО: должен быть ПЕРЕД роутом /:id)
 router.get('/categories', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req, res) => {
   try {
+    const cacheable = !req.headers.authorization;
+    if (cacheable) {
+      const hit = getCached<unknown[]>('categories:all');
+      if (hit) {
+        res.json(hit);
+        return;
+      }
+    }
     const categories = await prisma.category.findMany({
       orderBy: { order: 'asc' }
     });
+    if (cacheable) setCached('categories:all', categories, PUBLIC_CACHE_CATALOG_SEC);
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: 'Ошибка получения категорий' });
@@ -215,11 +369,14 @@ router.get('/categories', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req, 
 // 2.1. Создать категорию
 router.post('/categories', checkAdmin, async (req: Request, res: Response) => {
   try {
-    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations } = req.body;
+    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations, imageUrl, hoverImageUrl } = req.body;
     
     if (!name_ru) {
       return res.status(400).json({ error: 'Название категории (name_ru) обязательно' });
     }
+    
+    const normalizedImageUrl = imageUrl !== undefined ? normalizeCategoryImageUrl(imageUrl) : null;
+    const normalizedHoverImageUrl = hoverImageUrl !== undefined ? normalizeCategoryImageUrl(hoverImageUrl) : null;
     
     let categorySlug = slug || name_ru.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     let finalSlug = categorySlug;
@@ -245,11 +402,14 @@ router.post('/categories', checkAdmin, async (req: Request, res: Response) => {
         name_nl: name_nl || name_ru,
         slug: finalSlug,
         emoji: emoji || '🍣',
+        ...(imageUrl !== undefined ? { imageUrl: normalizedImageUrl } : {}),
+        ...(hoverImageUrl !== undefined ? { hoverImageUrl: normalizedHoverImageUrl } : {}),
         order: order || 0,
         isActive: isActive !== undefined ? isActive : true,
         allowRecommendations: allowRecommendations !== undefined ? Boolean(allowRecommendations) : true
       }
     });
+    clearCatalogCache();
     res.json(category);
   } catch (error: any) {
     console.error('Ошибка создания категории:', error);
@@ -284,7 +444,7 @@ function safeCategorySlug(input: unknown, name_ru: string | undefined): string {
 router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations } = req.body;
+    const { name_ru, name_ua, name_en, name_nl, slug, emoji, order, isActive, allowRecommendations, imageUrl, hoverImageUrl } = req.body;
     const existing = await prisma.category.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: 'Категория не найдена' });
@@ -296,9 +456,12 @@ router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) =>
       where: { id },
       data: {
         name_ru, name_ua, name_en, name_nl, slug: finalSlug, emoji, order, isActive,
-        ...(allowRecommendations !== undefined ? { allowRecommendations: Boolean(allowRecommendations) } : {})
+        ...(allowRecommendations !== undefined ? { allowRecommendations: Boolean(allowRecommendations) } : {}),
+        ...(imageUrl !== undefined ? { imageUrl: normalizeCategoryImageUrl(imageUrl) } : {}),
+        ...(hoverImageUrl !== undefined ? { hoverImageUrl: normalizeCategoryImageUrl(hoverImageUrl) } : {}),
       }
     });
+    clearCatalogCache();
     res.json(category);
   } catch (error) {
     console.error('Ошибка обновления категории:', error);
@@ -317,6 +480,7 @@ router.delete('/categories/:id', checkAdmin, async (req: Request, res: Response)
     }
     
     await prisma.category.delete({ where: { id } });
+    clearCatalogCache();
     res.json({ message: 'Категория удалена' });
   } catch (error) {
     console.error('Ошибка удаления категории:', error);
@@ -324,7 +488,27 @@ router.delete('/categories/:id', checkAdmin, async (req: Request, res: Response)
   }
 });
 
-/** Завантаження фото товару (multipart) — надійніше за base64 у JSON. */
+/** Завантаження іконки категорії для панелі меню (multipart). */
+router.post('/categories/upload-image', checkAdmin, (req: Request, res: Response, next) => {
+  categoryImageDiskUpload.single('image')(req, res, (err: unknown) => {
+    if (err) {
+      const msg = err instanceof Error ? err.message : 'Помилка завантаження';
+      res.status(400).json({ message: msg });
+      return;
+    }
+    next();
+  });
+}, async (req: Request, res: Response) => {
+  const file = (req as Request & { file?: { filename: string } }).file;
+  if (!file?.filename) {
+    res.status(400).json({ message: 'Потрібен файл image' });
+    return;
+  }
+  const url = await compressUploadedFileOnDisk(file.filename, 'category', INGREDIENT_UPLOAD_PRESET);
+  res.json({ url: url ?? `/uploads/${file.filename}` });
+});
+
+/** Завантаження фото товару (multipart) — sharp JPEG після запису на диск. */
 router.post('/upload-image', checkAdmin, (req: Request, res: Response, next) => {
   productImageDiskUpload.single('image')(req, res, (err: unknown) => {
     if (err) {
@@ -334,13 +518,14 @@ router.post('/upload-image', checkAdmin, (req: Request, res: Response, next) => 
     }
     next();
   });
-}, (req: Request, res: Response) => {
+}, async (req: Request, res: Response) => {
   const file = (req as Request & { file?: { filename: string } }).file;
   if (!file?.filename) {
     res.status(400).json({ message: 'Потрібен файл image' });
     return;
   }
-  res.json({ url: `/uploads/${file.filename}` });
+  const url = await compressUploadedFileOnDisk(file.filename, 'product', PRODUCT_UPLOAD_PRESET);
+  res.json({ url: url ?? `/uploads/${file.filename}` });
 });
 
 // 3. Создать товар
@@ -463,6 +648,7 @@ router.post('/', checkAdmin, async (req: Request, res: Response) => {
         ingredients: true
       }
     });
+    clearCatalogCache();
     res.json(sanitizeProductImagesForApi(product));
   } catch (error: any) {
     console.error(error);
@@ -626,6 +812,7 @@ router.put('/:id', checkAdmin, async (req: Request, res: Response) => {
       },
     });
 
+    clearCatalogCache();
     res.json(sanitizeProductImagesForApi(updatedProduct));
   } catch (error: unknown) {
     console.error('PUT /api/products/:id', error);
@@ -682,6 +869,7 @@ router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
           },
         });
       });
+      clearCatalogCache();
       return res.json({
         message: 'Товар убран из меню (есть в заказах)',
         id: productId,
@@ -699,6 +887,7 @@ router.delete('/:id', checkAdmin, async (req: Request, res: Response) => {
       await tx.product.delete({ where: { id: productId } });
     });
 
+    clearCatalogCache();
     res.json({ message: 'Товар удален', id: productId, archived: false });
   } catch (error: unknown) {
     console.error('DELETE /api/products/:id', error);
@@ -782,8 +971,16 @@ router.get('/:id', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req: any, res: 
     
     if (isNaN(Number(id))) return res.status(400).json({ error: 'Invalid ID' });
 
+    const numericId = Number(id);
+    const cacheable = !req.headers.authorization;
+    const cacheKey = `product:${numericId}`;
+    if (cacheable) {
+      const hit = getCached<unknown>(cacheKey);
+      if (hit) return res.json(hit);
+    }
+
     const product = await prisma.product.findUnique({
-      where: { id: Number(id) },
+      where: { id: numericId },
       include: { 
         category: true,
         cities: { include: { city: true } },
@@ -794,7 +991,9 @@ router.get('/:id', cachePublicGet(PUBLIC_CACHE_MENU_SEC), async (req: any, res: 
     if (!product || (product as { isArchived?: boolean }).isArchived === true) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    res.json(sanitizeProductImagesForApi(product));
+    const payload = sanitizeProductImagesForApi(product);
+    if (cacheable) setCached(cacheKey, payload, PUBLIC_CACHE_MENU_SEC);
+    res.json(payload);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error fetching product' });

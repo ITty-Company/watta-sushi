@@ -1,5 +1,5 @@
 /** Після заміни mp4 у `public/` — змініть bust, щоб не тримати старий кеш. */
-export const WATTA_DELIVERY_HERO_FALLBACK_CACHE_BUST = 'hq-1080p60-20260521'
+export const WATTA_DELIVERY_HERO_FALLBACK_CACHE_BUST = 'web-1080p30-crf22-20260531'
 
 const withDeliveryHeroFallbackCacheBust = (path: string) =>
   `${path}?${WATTA_DELIVERY_HERO_FALLBACK_CACHE_BUST}`
@@ -13,7 +13,7 @@ export const WATTA_DELIVERY_HERO_VIDEO_FALLBACKS = [
 
 export const WATTA_DELIVERY_HERO_PRIMARY_MP4 = WATTA_DELIVERY_HERO_VIDEO_FALLBACKS[0]
 
-export const WATTA_DELIVERY_HERO_POSTER = '/watta-home-hero-poster.jpg' as const
+export const WATTA_DELIVERY_HERO_POSTER = '/watta-home-hero-poster.webp' as const
 
 export const WATTA_DELIVERY_HERO_VIDEO_UPDATED_EVENT = 'watta:delivery-hero-video-updated' as const
 

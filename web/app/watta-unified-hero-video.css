@@ -31,7 +31,16 @@
   overflow: hidden !important;
   border-radius: inherit;
   line-height: 0 !important;
-  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html.watta-html-home-hero
+  .menu-page-web.watta-site-hero-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-hero-video-stack-web {
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
 .menu-page-web.watta-site-hero-page-web
@@ -72,6 +81,22 @@
   background-position: center center !important;
   background-color: transparent !important;
   aspect-ratio: unset !important;
+}
+
+html.watta-html-home-hero
+  .menu-page-web.watta-site-hero-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .watta-home-hero-native-video,
+html.watta-html-home-hero
+  .menu-page-web.watta-site-hero-page-web
+  .welcome-hero-section-web.watta-home-hero-as-card-web:not(.delivery-page-hero-embed-web)
+  .welcome-video-native-web,
+html.watta-html-home-hero #watta-hero-preroll-video {
+  object-position: center var(--watta-home-hero-media-pos-y, 59%) !important;
+  transform: scale(
+    var(--watta-home-hero-media-scale-x, 1.17),
+    var(--watta-home-hero-media-scale-y, 1.05)
+  ) !important;
 }
 
 .delivery-page-hero-standalone-web.welcome-hero-section-web.watta-home-hero-as-card-web {
@@ -117,7 +142,12 @@
   .menu-page-web.watta-site-hero-page-web
     .welcome-hero-section-web.watta-home-hero-as-card-web
     .welcome-hero-video-stack-web {
-    max-height: min(54vh, calc(100svh - 168px)) !important;
+    /* Не зажимаємо висоту — інакше 16∶9 ламається і відео стає маленьким із полями.
+       Замість цього обмежуємо ширину так, щоб 16∶9 за висотою влізало в екран. */
+    max-height: none !important;
+    max-width: min(100%, calc((100svh - 180px) * 16 / 9)) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 }
 
@@ -127,14 +157,12 @@
     .welcome-hero-video-stack-web {
     aspect-ratio: 16 / 9 !important;
     min-height: min(240px, 52vw, 48vh) !important;
-    max-height: min(
-      62vh,
-      var(--watta-home-hero-viewport-h, 86dvh),
-      86dvh,
-      calc(100svh - 168px)
-    ) !important;
+    max-height: none !important;
+    max-width: min(100%, calc((100svh - 190px) * 16 / 9)) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     height: auto !important;
   }
 }
 
-/* /delivery, /menu (планшет+): геометрія hero — watta-hero-home-match-tablet-desktop.css (як на `/`) */
+/* Головне hero-відео — cover на всю плитку (без pillarbox/letterbox). */

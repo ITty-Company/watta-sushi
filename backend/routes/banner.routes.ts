@@ -43,6 +43,23 @@ function persistDataUrlBannerImage(dataUrl: string): string | null {
   return `/uploads/${name}`;
 }
 
+/**
+ * На Render без persistent disk файли в /uploads зникають після деплою, а рядки
+ * банерів у БД лишаються → фронт ловить 404 на /uploads/banner-…. Не віддаємо такі URL.
+ * Перевіряємо тільки /uploads/ (локальні статичні /file.jpg та зовнішні http(s) пропускаємо).
+ */
+function bannerImageMissing(url: unknown): boolean {
+  const trimmed = typeof url === 'string' ? url.trim() : '';
+  if (!trimmed.startsWith('/uploads/')) return false;
+  const base = path.basename(trimmed.split('?')[0] ?? '');
+  if (!base || base.includes('..')) return true;
+  try {
+    return !fs.existsSync(path.join(uploadDir, base));
+  } catch {
+    return true;
+  }
+}
+
 function clampFocal(value: unknown, fallback: number): number {
   const n =
     typeof value === 'number'
@@ -86,7 +103,8 @@ router.get('/', cachePublicGet(PUBLIC_CACHE_CATALOG_SEC), async (req, res) => {
         order: 'asc'
       }
     });
-    res.json(banners);
+    // Не віддаємо банери, чий файл у /uploads зник (Render без persistent disk) — інакше 404 на фронті.
+    res.json(banners.filter((b) => !bannerImageMissing(b.imageUrl)));
   } catch (error) {
     console.error('Ошибка получения баннеров:', error);
     res.status(500).json({ message: 'Ошибка получения баннеров' });
@@ -108,7 +126,8 @@ router.get('/all', checkAdmin, async (req, res) => {
         order: 'asc'
       }
     });
-    res.json(banners);
+    // Адмінці показуємо всі банери, але позначаємо ті, чий файл у /uploads зник, щоб їх перезалити/видалити.
+    res.json(banners.map((b) => ({ ...b, imageMissing: bannerImageMissing(b.imageUrl) })));
   } catch (error) {
     console.error('Ошибка получения всех баннеров:', error);
     res.status(500).json({ message: 'Ошибка получения баннеров' });

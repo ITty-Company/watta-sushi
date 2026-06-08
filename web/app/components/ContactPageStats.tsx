@@ -1,9 +1,10 @@
 'use client'
 
 import { memo, useMemo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { BadgeCheck, Clock, MessageCircle, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useWattaDisableScrollReveal, wattaInViewFadeViewport } from './WattaInViewFade'
 
 const ACCENT = '#FF5C00'
 const BRAND_GREEN = '#145142'
@@ -20,7 +21,7 @@ export type ContactPageStatsLabels = {
 }
 
 function ContactPageStats({ labels }: { labels: ContactPageStatsLabels }) {
-  const reduce = useReducedMotion()
+  const reduce = useWattaDisableScrollReveal()
 
   const stats = useMemo(
     () => [
@@ -33,7 +34,7 @@ function ContactPageStats({ labels }: { labels: ContactPageStatsLabels }) {
   )
 
   const fade = reduce
-    ? ({ initial: false as const } satisfies { initial: false })
+    ? ({ initial: false as const, animate: { opacity: 1, y: 0 } })
     : ({
         initial: { opacity: 0, y: 22 },
         whileInView: { opacity: 1, y: 0 },
@@ -46,14 +47,14 @@ function ContactPageStats({ labels }: { labels: ContactPageStatsLabels }) {
           {stats.map((s, i) => {
             const isOrange = i === 0 || i === 3
             return (
-              <motion.div
+              <m.div
                 key={`${s.label}-${i}`}
                 className={cn(
                   'contact-watta-stat-pill delivery-stat-pill--blob flex flex-col items-center text-center',
                   isOrange ? 'delivery-stat-pill--orange' : 'delivery-stat-pill--green',
                 )}
                 {...fade}
-                viewport={{ once: true, margin: '-40px' }}
+                viewport={wattaInViewFadeViewport('-40px')}
                 transition={{ duration: 0.45, delay: i * 0.05 }}
                 whileHover={reduce ? undefined : { y: -3 }}
               >
@@ -68,7 +69,7 @@ function ContactPageStats({ labels }: { labels: ContactPageStatsLabels }) {
                 </div>
                 <div className="contact-watta-stat-pill__val delivery-stat-pill__val">{s.value}</div>
                 <div className="contact-watta-stat-pill__label">{s.label}</div>
-              </motion.div>
+              </m.div>
             )
           })}
         </div>

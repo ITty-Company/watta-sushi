@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { resolveUploadMediaUrl } from '@/lib/resolveUploadMediaUrl'
 import { appendHeroVideoStartSec, WATTA_HERO_VIDEO_START_SEC } from '@/lib/wattaHeroVideo'
+import { useLanguage } from '../../context/LanguageContext'
 
 function primeAdminHeroVideoPreview(video: HTMLVideoElement): void {
   try {
@@ -46,6 +47,8 @@ export default function AdminHeroVideoPreview({
   reduceMotion = false,
   aspectClassName = 'aspect-video w-full',
 }: AdminHeroVideoPreviewProps) {
+  const { t } = useLanguage()
+  const banners = t.adminPanel.banners
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [broken, setBroken] = useState(false)
 
@@ -65,7 +68,7 @@ export default function AdminHeroVideoPreview({
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className={`flex ${aspectClassName} items-center justify-center bg-[#145142]/5 text-xs text-[#145142]/45`}
+        className={`flex ${aspectClassName} items-center justify-center bg-watta-action/5 text-xs text-[#145142]/45`}
       >
         —
       </motion.div>
@@ -79,11 +82,8 @@ export default function AdminHeroVideoPreview({
         animate={{ opacity: 1, y: 0 }}
         className={`admin-hero-video-preview-missing ${aspectClassName}`}
       >
-        <span className="font-semibold text-[#145142]/85">Відео на сервері недоступне</span>
-        <span>
-          Файл відсутній (часто після redeploy на Render). Натисніть «Завантажити» і «Зберегти» знову; на
-          проді увімкніть Persistent Disk і UPLOAD_DIR.
-        </span>
+        <span className="font-semibold text-[#145142]/85">{banners.heroVideoUnavailableTitle}</span>
+        <span>{banners.heroVideoUnavailableHint}</span>
         {savedUrl ? (
           <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>
             {savedUrl}
@@ -101,7 +101,7 @@ export default function AdminHeroVideoPreview({
       key={srcWithFrameHint}
       ref={videoRef}
       src={srcWithFrameHint}
-      className={`${aspectClassName} max-h-52 w-full bg-[#145142]/8 object-contain`}
+      className={`${aspectClassName} max-h-52 w-full bg-watta-action/8 object-contain`}
       controls
       muted
       playsInline

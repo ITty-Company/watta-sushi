@@ -3,17 +3,16 @@
 import Link from 'next/link'
 import TeamMemberPhoto from '@/app/components/TeamMemberPhoto'
 import { useEffect, useMemo, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { teamMembersWithPhotos, type PublicTeamMember } from '@/lib/teamMembers'
+import { WattaInViewFadeDiv, WattaInViewFadeHeader } from '@/app/components/WattaInViewFade'
 
 const ACCENT = '#FF5C00'
 
 export default function TeamGalleryPageClient() {
   const { t, getLocalized } = useLanguage()
   const a = t.aboutPage
-  const reduce = useReducedMotion()
   const [teamMembers, setTeamMembers] = useState<PublicTeamMember[]>([])
   const [ready, setReady] = useState(false)
 
@@ -35,13 +34,6 @@ export default function TeamGalleryPageClient() {
 
   const withPhotos = useMemo(() => teamMembersWithPhotos(teamMembers), [teamMembers])
 
-  const fade = reduce
-    ? ({ initial: false as const } satisfies { initial: false })
-    : ({
-        initial: { opacity: 0, y: 20 },
-        whileInView: { opacity: 1, y: 0 },
-      } as const)
-
   return (
     <div id="team-gallery-page" className="about-page-web delivery-page-web w-full min-w-0 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-6xl">
@@ -53,19 +45,14 @@ export default function TeamGalleryPageClient() {
           {a.teamGalleryBack}
         </Link>
 
-        <motion.header
-          className="mb-8 text-center sm:mb-10"
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          animate={reduce ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-        >
+        <WattaInViewFadeHeader className="mb-8 text-center sm:mb-10">
           <h1 className="text-[clamp(1.75rem,6vw,2.75rem)] font-black tracking-tight text-gray-900">
             {a.teamGalleryPageTitle}
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base">
             {a.teamGalleryPageLead}
           </p>
-        </motion.header>
+        </WattaInViewFadeHeader>
 
         {!ready ? (
           <p className="text-center text-sm text-gray-500" aria-live="polite">
@@ -81,12 +68,11 @@ export default function TeamGalleryPageClient() {
               const name = getLocalized(member, 'name') || member.name_ru
               const position = getLocalized(member, 'position') || member.position_ru
               return (
-                <motion.li
+                <WattaInViewFadeDiv
                   key={member.id}
+                  role="listitem"
                   className="overflow-hidden rounded-[20px] border border-gray-200/80 bg-white shadow-[0_8px_28px_rgba(20,81,66,0.08)]"
-                  {...fade}
-                  viewport={{ once: true, margin: '-20px' }}
-                  transition={{ duration: 0.4, delay: index * 0.04 }}
+                  transition={{ delay: Math.min(index * 0.04, 0.24) }}
                 >
                   <div className="relative aspect-[4/5] bg-gradient-to-br from-[#f6f9f7] to-gray-100">
                     <TeamMemberPhoto src={member.imageUrl!} alt={name} sizes="(max-width: 640px) 50vw, 25vw" />
@@ -97,7 +83,7 @@ export default function TeamGalleryPageClient() {
                       {position}
                     </p>
                   </div>
-                </motion.li>
+                </WattaInViewFadeDiv>
               )
             })}
           </ul>

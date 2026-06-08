@@ -3,6 +3,13 @@ import { PrismaClient } from '@prisma/client';
 import { sendMassPromo } from '../services/email.service';
 import { checkAdmin } from '../authMiddleware';
 import { parseCashbackPercentInput } from '../lib/bonusCashback.js';
+import {
+  PRIMARY_ADMIN_PHONE,
+  formatAdminPhoneOut,
+  isPrimaryAdminPhone,
+  parseAdminPhoneInput,
+  syncUsersForAdminPhone,
+} from '../lib/adminPhones.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -419,6 +426,91 @@ router.post('/send-promo', checkAdmin, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('CRM send-promo error:', error);
     res.status(500).json({ message: 'Ошибка отправки рассылки' });
+  }
+});
+
+router.get('/admin-phones', checkAdmin, async (_req: Request, res: Response) => {
+  try {
+    const rows = await prisma.adminPhone.findMany({
+      orderBy: [{ phone: 'asc' }],
+    });
+    res.json(
+      rows.map((row) => ({
+        id: row.id,
+        phone: formatAdminPhoneOut(row.phone),
+        phoneDigits: row.phone,
+        label: row.label,
+        isPrimary: isPrimaryAdminPhone(row.phone),
+        createdAt: row.createdAt.toISOString(),
+      })),
+    );
+  } catch (error) {
+    console.error('CRM admin-phones GET error:', error);
+    res.status(500).json({ message: 'Не вдалося завантажити номери адмінів' });
+  }
+});
+
+router.post('/admin-phones', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const rawPhone = String(req.body?.phone ?? '').trim();
+    const label = String(req.body?.label ?? '').trim() || null;
+    const cleanPhone = parseAdminPhoneInput(rawPhone);
+    if (!cleanPhone) {
+      res.status(400).json({ message: 'Некорректный номер телефона (7–15 цифр)' });
+      return;
+    }
+
+    const existing = await prisma.adminPhone.findUnique({ where: { phone: cleanPhone } });
+    if (existing) {
+      res.status(400).json({ message: 'Этот номер уже добавлен в список админов' });
+      return;
+    }
+
+    const created = await prisma.adminPhone.create({
+      data: { phone: cleanPhone, label },
+    });
+    await syncUsersForAdminPhone(prisma, cleanPhone, true);
+
+    res.status(201).json({
+      id: created.id,
+      phone: formatAdminPhoneOut(created.phone),
+      phoneDigits: created.phone,
+      label: created.label,
+      isPrimary: isPrimaryAdminPhone(created.phone),
+      createdAt: created.createdAt.toISOString(),
+    });
+  } catch (error) {
+    console.error('CRM admin-phones POST error:', error);
+    res.status(500).json({ message: 'Не вдалося додати номер адміна' });
+  }
+});
+
+router.delete('/admin-phones/:id', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ message: 'Некорректный id' });
+      return;
+    }
+
+    const row = await prisma.adminPhone.findUnique({ where: { id } });
+    if (!row) {
+      res.status(404).json({ message: 'Номер не найден' });
+      return;
+    }
+
+    if (isPrimaryAdminPhone(row.phone) || row.phone === PRIMARY_ADMIN_PHONE) {
+      res.status(400).json({ message: 'Головний номер адміністратора не можна видалити' });
+      return;
+    }
+
+    await prisma.adminPhone.delete({ where: { id } });
+    await syncUsersForAdminPhone(prisma, row.phone, false);
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('CRM admin-phones DELETE error:', error);
+    res.status(500).json({ message: 'Не вдалося видалити номер адміна' });
   }
 });
 

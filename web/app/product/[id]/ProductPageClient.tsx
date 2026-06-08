@@ -16,6 +16,10 @@ import {
   type CatalogIngredient,
 } from '@/lib/wattaIngredientsCatalog'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
+import { openWattaCart } from '@/lib/openWattaCart'
+import { openWattaNotifications } from '@/lib/openWattaNotifications'
+import { useOptionalCartDrawer } from '../../context/CartDrawerContext'
+import { useOptionalNotificationsDrawer } from '../../context/NotificationsDrawerContext'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import { preloadImageUrls } from '@/lib/preloadImages'
@@ -32,6 +36,8 @@ export default function ProductPageClient({
   initialIngredientsCatalog,
 }: ProductPageClientProps) {
   const router = useInstantRouter()
+  const cartDrawer = useOptionalCartDrawer()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
   const params = useParams()
   const productId = useMemo(() => {
     const id = normalizeProductRouteId(params?.id)
@@ -75,9 +81,9 @@ export default function ProductPageClient({
     router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
   const handleFavorites = () =>
     router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
-  const handleNotifications = () => router.push('/notifications')
+  const handleNotifications = () => openWattaNotifications(router, notificationsDrawer?.open)
   const handleMenu = () => router.push('/menu')
-  const handleCart = () => router.push(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
+  const handleCart = () => openWattaCart(router, cartDrawer?.open)
   const handlePhone = () => {
     window.location.href = 'tel:+31649326549'
   }

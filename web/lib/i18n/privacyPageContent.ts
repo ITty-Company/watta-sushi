@@ -11,7 +11,6 @@ export type PrivacyPageContent = {
   title: string
   back: string
   updated: string
-  intro: string
   heroKicker: string
   heroSubtitle: string
   heroBadge: string
@@ -30,8 +29,6 @@ export const privacyPageRu: PrivacyPageContent = {
   title: 'Политика конфиденциальности',
   back: 'Назад',
   updated: 'Последнее обновление: 1 мая 2026',
-  intro:
-    'Настоящая политика описывает, какие персональные данные мы собираем при использовании сайта wattasushi.com, мобильной версии, оформлении заказов доставки и самовывоза, регистрации аккаунта, обращении в поддержку и подписке на рассылки. Мы обрабатываем данные добросовестно, прозрачно и в соответствии с Общим регламентом по защите данных (GDPR) и другим применимым законодательством.',
   heroKicker: 'Watta Sushi',
   heroSubtitle:
     'Ваши данные — только для заказа, сервиса и связи с вами.',
@@ -69,7 +66,7 @@ export const privacyPageRu: PrivacyPageContent = {
       title: '2. Область применения',
       paragraphs: [
         'Политика распространяется на всех посетителей сайта, зарегистрированных пользователей, клиентов, оформляющих заказы, а также лиц, направляющих сообщения через формы обратной связи, чат или мессенджеры, указанные на сайте.',
-        'Политика не заменяет условия использования сервиса и правила оформления заказов, но дополняет их в части персональных данных. Отдельные услуги третьих лиц (платёжные системы, карты, внешние ссылки) могут иметь собственные политики — ознакомьтесь с ними отдельно.',
+        'Политика не заменяет Публичный договор (условия заказа, оплаты и доставки), но дополняет их в части персональных данных. Условия купли-продажи изложены в отдельном документе «Публичный договор». Отдельные услуги третьих лиц (платёжные системы, карты, внешние ссылки) могут иметь собственные политики — ознакомьтесь с ними отдельно.',
       ],
     },
     {
@@ -222,8 +219,6 @@ export const privacyPageUk: PrivacyPageContent = {
   title: 'Політика конфіденційності',
   back: 'Назад',
   updated: 'Останнє оновлення: 1 травня 2026',
-  intro:
-    'Ця політика пояснює, які персональні дані ми збираємо під час використання сайту wattasushi.com, мобільної версії, оформлення замовлень доставки та самовивозу, реєстрації облікового запису, звернень у підтримку та підписки на розсилки. Ми обробляємо дані добросовісно, прозоро та відповідно до Загального регламенту захисту даних (GDPR) та іншого застосовного законодавства.',
   heroKicker: 'Watta Sushi',
   heroSubtitle:
     'Ваші дані — лише для замовлення, сервісу та зв’язку з вами.',
@@ -261,7 +256,7 @@ export const privacyPageUk: PrivacyPageContent = {
       title: '2. Сфера застосування',
       paragraphs: [
         'Політика поширюється на всіх відвідувачів сайту, зареєстрованих користувачів, клієнтів, що оформлюють замовлення, а також осіб, які надсилають повідомлення через форми зворотного зв’язку, чат або месенджери, зазначені на сайті.',
-        'Політика не замінює умови використання сервісу та правила оформлення замовлень, але доповнює їх щодо персональних даних. Окремі послуги третіх осіб (платіжні системи, карти, зовнішні посилання) можуть мати власні політики.',
+        'Політика не замінює Публічний договор (умови замовлення, оплати та доставки), але доповнює їх щодо персональних даних. Умови купівлі-продажу викладені в окремому документі «Публічний договор». Окремі послуги третіх осіб (платіжні системи, карти, зовнішні посилання) можуть мати власні політики.',
       ],
     },
     {
@@ -414,8 +409,6 @@ export const privacyPageEn: PrivacyPageContent = {
   title: 'Privacy policy',
   back: 'Back',
   updated: 'Last updated: 1 May 2026',
-  intro:
-    'This policy explains what personal data we collect when you use wattasushi.com, our mobile experience, place delivery or pickup orders, register an account, contact support, or subscribe to communications. We process data fairly, transparently, and in line with the General Data Protection Regulation (GDPR) and other applicable law.',
   heroKicker: 'Watta Sushi',
   heroSubtitle:
     'Your data is used for orders, service, and communication with you.',
@@ -453,7 +446,7 @@ export const privacyPageEn: PrivacyPageContent = {
       title: '2. Scope',
       paragraphs: [
         'This policy applies to website visitors, registered users, customers placing orders, and anyone sending messages via feedback forms, chat, or messengers listed on the site.',
-        'It does not replace terms of service or ordering rules but supplements them regarding personal data. Third-party services (payments, maps, external links) have their own policies.',
+        'It does not replace the Public agreement (ordering, payment, and delivery terms) but supplements it regarding personal data. Purchase terms are set out in a separate document, the Public agreement. Third-party services (payments, maps, external links) have their own policies.',
       ],
     },
     {
@@ -606,8 +599,6 @@ export const privacyPageNl: PrivacyPageContent = {
   title: 'Privacybeleid',
   back: 'Terug',
   updated: 'Laatst bijgewerkt: 1 mei 2026',
-  intro:
-    'Dit beleid legt uit welke persoonsgegevens wij verzamelen bij het gebruik van wattasushi.com, de mobiele ervaring, het plaatsen van bezorg- of afhaalbestellingen, registratie van een account, contact met support en nieuwsbrieven. Wij verwerken gegevens eerlijk, transparant en in overeenstemming met de AVG (GDPR) en ander toepasselijk recht.',
   heroKicker: 'Watta Sushi',
   heroSubtitle:
     'Uw gegevens worden gebruikt voor bestellingen, service en contact.',
@@ -645,7 +636,7 @@ export const privacyPageNl: PrivacyPageContent = {
       title: '2. Toepassingsgebied',
       paragraphs: [
         'Dit beleid geldt voor bezoekers, geregistreerde gebruikers, klanten die bestellen en iedereen die berichten stuurt via formulieren, chat of messengers op de site.',
-        'Het vervangt geen gebruiksvoorwaarden of bestelregels maar vult deze aan wat betreft persoonsgegevens. Diensten van derden hebben eigen privacybeleid.',
+        'Het vervangt geen publieke offerte (bestel-, betaal- en bezorgvoorwaarden) maar vult deze aan wat betreft persoonsgegevens. Koopvoorwaarden staan in een apart document, de publieke offerte. Diensten van derden hebben eigen privacybeleid.',
       ],
     },
     {

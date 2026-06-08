@@ -47,14 +47,17 @@ export function hasMenuProductsSessionCache(cityId?: number | null): boolean {
 function writeProductsCache(cityId: number | null, list: unknown[]): void {
   if (typeof sessionStorage === 'undefined' || list.length === 0) return
   const key = menuItemsSessionKey(cityId)
-  sessionStorage.setItem(key, JSON.stringify(list))
+  const json = JSON.stringify(list)
+  if (!safeSessionSet(key, json)) return
   sessionStorage.setItem(`${key}_time`, String(Date.now()))
+  pruneStaleMenuSessionCaches(cityId)
 }
 
 export function persistMenuCategoriesCache(list: Record<string, unknown>[]): void {
   if (typeof sessionStorage === 'undefined' || list.length === 0) return
   const key = menuCategoriesSessionKey()
-  sessionStorage.setItem(key, JSON.stringify(list))
+  const json = JSON.stringify(list)
+  if (!safeSessionSet(key, json)) return
   sessionStorage.setItem(`${key}_time`, String(Date.now()))
 }
 
@@ -63,7 +66,40 @@ function writeCategoriesCache(list: Record<string, unknown>[]): void {
 }
 
 const MENU_WARM_TTL_MS = 5 * 60 * 1000
+/** Safari sessionStorage ~5MB — не зберігаємо гігантські JSON. */
+const MAX_SESSION_ITEM_BYTES = 1_400_000
+
 let warmMenuCatalogInflight: Promise<void> | null = null
+
+function pruneStaleMenuSessionCaches(keepCityId: number | null): void {
+  if (typeof sessionStorage === 'undefined') return
+  const prefix = 'watta_menu_items_'
+  const keepKey = menuItemsSessionKey(keepCityId)
+  for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
+    const key = sessionStorage.key(i)
+    if (!key || !key.startsWith(prefix) || key.endsWith('_time')) continue
+    if (key === keepKey) continue
+    sessionStorage.removeItem(key)
+    sessionStorage.removeItem(`${key}_time`)
+  }
+}
+
+function safeSessionSet(key: string, json: string): boolean {
+  if (typeof sessionStorage === 'undefined') return false
+  if (json.length > MAX_SESSION_ITEM_BYTES) return false
+  try {
+    sessionStorage.setItem(key, json)
+    return true
+  } catch {
+    pruneStaleMenuSessionCaches(readCityIdForProductApi())
+    try {
+      sessionStorage.setItem(key, json)
+      return true
+    } catch {
+      return false
+    }
+  }
+}
 
 function isMenuCatalogWarmFresh(cityId: number | null): boolean {
   if (typeof sessionStorage === 'undefined') return false

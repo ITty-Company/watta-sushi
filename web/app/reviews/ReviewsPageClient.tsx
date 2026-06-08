@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { motion } from 'framer-motion'
-import { LocationPickerMascot } from '@/app/components/LocationPickerMascot'
-import { ArrowLeft, PenLine, Star, X } from 'lucide-react'
+import { WattaInViewFadeArticle } from '@/app/components/WattaInViewFade'
+import DeliveryHeroCopy from '@/app/components/DeliveryHeroCopy'
+import WattaStellarHeroSection from '@/app/components/WattaStellarHeroSection'
+import { PenLine, Star, X } from 'lucide-react'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { cn } from '@/lib/utils'
 import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
@@ -71,30 +72,6 @@ function pickFeaturedReview(list: PublicReview[]): PublicReview | null {
   return [...pool].sort((a, b) => b.text.length - a.text.length)[0] ?? null
 }
 
-function reviewTitleParts(title: string) {
-  const words = title.trim().split(/\s+/).filter(Boolean)
-  if (words.length <= 1) return { lead: title, accent: '' }
-  return {
-    lead: words.slice(0, -1).join(' '),
-    accent: words[words.length - 1] ?? '',
-  }
-}
-
-function ReviewsBackButton({ label, onBack }: { label: string; onBack: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onBack}
-      className="auth-watta-back-fab watta-reviews-back watta-reviews-back--inline"
-    >
-      <span className="auth-watta-back-fab__icon" aria-hidden>
-        <ArrowLeft className="auth-watta-back-fab__arrow" strokeWidth={2.5} />
-      </span>
-      <span className="auth-watta-back-fab__text">{label}</span>
-    </button>
-  )
-}
-
 function ReviewCard({
   rev,
   featured,
@@ -111,12 +88,10 @@ function ReviewCard({
   index: number
 }) {
   return (
-    <motion.article
+    <WattaInViewFadeArticle
       role="listitem"
       className={`watta-review-card${featured ? ' watta-review-card--featured' : ''}`}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03 }}
+      transition={{ delay: Math.min(index * 0.03, 0.24) }}
     >
       {featured ? (
         <div className="watta-review-card__badge-row">
@@ -160,7 +135,7 @@ function ReviewCard({
           ))}
         </div>
       ) : null}
-    </motion.article>
+    </WattaInViewFadeArticle>
   )
 }
 
@@ -168,7 +143,6 @@ export default function ReviewsPageClient() {
   const router = useInstantRouter()
   const { t, language } = useLanguage()
   const r = t.reviewsPublic
-  const titleParts = useMemo(() => reviewTitleParts(r.title), [r.title])
 
   const [loggedIn, setLoggedIn] = useState(false)
   const [list, setList] = useState<PublicReview[] | null>(() => {
@@ -310,37 +284,45 @@ export default function ReviewsPageClient() {
     <div
       id="reviews-page-container"
       className={cn(
-        'menu-page-web watta-reviews-page reviews-page-web relative flex w-full max-w-[100vw] min-w-0 flex-col',
+        'menu-page-web watta-site-hero-page-web watta-reviews-page reviews-page-web relative flex w-full max-w-[100vw] min-w-0 flex-col',
         hasReviews ? 'flex-1 pb-24' : 'watta-reviews-page--empty',
       )}
     >
-      <div className="watta-reviews-hero-zone">
-        <div className="watta-reviews-page__toolbar">
-          <ReviewsBackButton label={t.auth.back} onBack={() => router.push('/')} />
-        </div>
+      <div className="delivery-page-home-flow w-full">
+        <WattaStellarHeroSection
+          introId="reviews-page-lead-intro"
+          ariaLabelledBy="reviews-hero-title"
+        >
+          <DeliveryHeroCopy
+            titleId="reviews-hero-title"
+            kickerScript=""
+            headlineLead={r.title}
+            headlineMark=""
+            sub={r.subtitle}
+            statFresh=""
+            statFast=""
+            statCity=""
+            showStats={false}
+          />
+          {showEmptyHint ? (
+            <p className="watta-reviews-hero-empty-hint mt-4" role="status">
+              {r.empty} {r.emptyInvite}
+            </p>
+          ) : null}
+        </WattaStellarHeroSection>
+      </div>
 
-        <header className="watta-reviews-hero-static" aria-labelledby="reviews-hero-title">
-        <div className="watta-reviews-hero-static__inner mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="watta-reviews-hero-static__mascot-wrap" aria-hidden>
-            <LocationPickerMascot className="watta-reviews-hero-static__mascot" />
-          </div>
-          <div className="watta-reviews-hero-static__copy">
-            <h1 id="reviews-hero-title" className="watta-reviews-hero-static__title">
-              {titleParts.lead}
-              {titleParts.accent ? (
-                <>
-                  {' '}
-                  <span className="watta-reviews-hero-static__title-accent">{titleParts.accent}</span>
-                </>
-              ) : null}
-            </h1>
-            <p className="watta-reviews-hero-static__subtitle">{r.subtitle}</p>
-            {showEmptyHint ? (
-              <p className="watta-reviews-hero-empty-hint" role="status">
-                {r.empty} {r.emptyInvite}
-              </p>
-            ) : null}
-            <div className="watta-reviews-hero-actions">
+      {list === null ? (
+        <div className="watta-reviews-page__loading mx-auto px-4 py-8" aria-busy="true">
+          <div
+            className="mx-auto h-11 w-11 animate-spin rounded-2xl border-2 border-[#145142]/25 border-t-[#145142]"
+            aria-hidden
+          />
+        </div>
+      ) : (
+        <section className="watta-reviews-page__flow" aria-label={r.feedTitle}>
+          <div className="watta-reviews-page__inner mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="watta-reviews-page__cta-row">
               {loggedIn ? (
                 <button
                   type="button"
@@ -360,63 +342,52 @@ export default function ReviewsPageClient() {
                 </button>
               )}
             </div>
-          </div>
-        </div>
-        </header>
-      </div>
-
-      {list === null ? (
-        <div className="watta-reviews-page__loading mx-auto px-4 py-8" aria-busy="true">
-          <div
-            className="mx-auto h-11 w-11 animate-spin rounded-2xl border-2 border-[#145142]/25 border-t-[#145142]"
-            aria-hidden
-          />
-        </div>
-      ) : hasReviews ? (
-        <section className="watta-reviews-page__flow" aria-label={r.feedTitle}>
-          <div className="watta-reviews-page__inner mx-auto max-w-6xl px-4 sm:px-6">
-            <p className="watta-reviews-page__write-desc">{r.writeBlockDesc}</p>
-            {showWriteStrip ? (
-              <ul className="watta-reviews-write-strip" aria-label={r.writeBlockTitle}>
-                {eligibleOrders.map((order) => (
-                  <li key={order.id}>
-                    <button
-                      type="button"
-                      className="watta-reviews-write-strip__btn"
-                      onClick={() => openCompose(order)}
-                    >
-                      <PenLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      <span>{r.orderPickLabel.replace('{{id}}', String(order.id))}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            {hasReviews ? (
+              <>
+                <p className="watta-reviews-page__write-desc">{r.writeBlockDesc}</p>
+                {showWriteStrip ? (
+                  <ul className="watta-reviews-write-strip" aria-label={r.writeBlockTitle}>
+                    {eligibleOrders.map((order) => (
+                      <li key={order.id}>
+                        <button
+                          type="button"
+                          className="watta-reviews-write-strip__btn"
+                          onClick={() => openCompose(order)}
+                        >
+                          <PenLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span>{r.orderPickLabel.replace('{{id}}', String(order.id))}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="watta-reviews-grid" role="list">
+                  {featured ? (
+                    <ReviewCard
+                      rev={featured}
+                      featured
+                      language={language}
+                      featuredBadge={r.featuredBadge}
+                      onPhotoClick={setLightboxSrc}
+                      index={0}
+                    />
+                  ) : null}
+                  {feedList.map((rev, i) => (
+                    <ReviewCard
+                      key={rev.id}
+                      rev={rev}
+                      language={language}
+                      featuredBadge={r.featuredBadge}
+                      onPhotoClick={setLightboxSrc}
+                      index={i + (featured ? 1 : 0)}
+                    />
+                  ))}
+                </div>
+              </>
             ) : null}
-            <div className="watta-reviews-grid" role="list">
-              {featured ? (
-                <ReviewCard
-                  rev={featured}
-                  featured
-                  language={language}
-                  featuredBadge={r.featuredBadge}
-                  onPhotoClick={setLightboxSrc}
-                  index={0}
-                />
-              ) : null}
-              {feedList.map((rev, i) => (
-                <ReviewCard
-                  key={rev.id}
-                  rev={rev}
-                  language={language}
-                  featuredBadge={r.featuredBadge}
-                  onPhotoClick={setLightboxSrc}
-                  index={i + (featured ? 1 : 0)}
-                />
-              ))}
-            </div>
           </div>
         </section>
-      ) : null}
+      )}
 
       {showComposeModal ? (
         <ReviewComposeModal

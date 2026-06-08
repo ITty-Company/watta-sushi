@@ -6,16 +6,24 @@ import { getJwtSecret } from '../lib/jwtSecret';
 import { sendTelegramNotification } from '../services/telegram.service';
 import { addOrderToSheet } from '../services/sheets.service';
 import { sendOrderReceipt } from '../services/email.service';
-import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service';
-import Stripe from 'stripe';
+import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service.js';
 import crypto from 'crypto';
 import {
+  getPublicApiUrl,
   hasLiqPayConfigured,
   hasStripeConfigured,
-  isCardOnlinePaymentAvailable,
+  canProcessCardPayment,
 } from '../lib/paymentProviders.js';
+import { getStripeClient } from '../lib/stripeOrderPayment.js';
 import { awardOrderCashbackIfEligible } from '../lib/bonusCashback.js';
 import { linkGuestOrdersToUser } from '../lib/linkGuestOrders.js';
+import {
+  assertScheduledDeliveryAllowed,
+  getAmsterdamTodayKey,
+  parseScheduledForDate,
+  parseScheduledForSlot,
+} from '../lib/deliverySchedule.js';
+import { saveUserAddressIfNew } from '../lib/userAddressBook.js';
 import { verifyDeliveryQuote } from '../lib/deliveryQuote.js';
 import {
   buildByStatus,
@@ -33,12 +41,6 @@ import {
   eurToCents,
   type PricingLine,
 } from '../lib/orderPricing.js';
-
-function getStripeClient(): Stripe | null {
-  const key = process.env.STRIPE_SECRET_KEY?.trim()
-  if (!key) return null
-  return new Stripe(key)
-}
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -67,7 +69,7 @@ function buildLiqPayCheckout(orderId: number, amount: number) {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const safeAmount = Math.max(0.01, Math.round(Number(amount) * 100) / 100);
 
-  const params = {
+  const params: Record<string, string> = {
     public_key: publicKey,
     action: 'pay',
     amount: safeAmount.toFixed(2),
@@ -77,6 +79,11 @@ function buildLiqPayCheckout(orderId: number, amount: number) {
     result_url: `${frontendUrl}/checkout/success?orderId=${orderId}`,
     version: '3',
   };
+
+  const apiPublicUrl = getPublicApiUrl();
+  if (apiPublicUrl) {
+    params.server_url = `${apiPublicUrl}/api/payment/webhook`;
+  }
 
   const data = Buffer.from(JSON.stringify(params)).toString('base64');
   const signString = privateKey + data + privateKey;
@@ -89,6 +96,9 @@ function prismaOrderErrorMessage(error: unknown): string {
   const code = (error as { code?: string })?.code;
   if (code === 'P2003') {
     return 'Один або кілька товарів недоступні. Оновіть кошик і спробуйте знову.';
+  }
+  if (code === 'P2022') {
+    return 'Сервер потребує оновлення бази даних. Зверніться до підтримки або спробуйте пізніше.';
   }
   return 'Помилка при створенні замовлення';
 }
@@ -357,6 +367,8 @@ router.post('/', async (req: Request, res: Response) => {
       noDoorbellRing,
       dataProcessingConsent,
       clientRequestId,     // Client-generated UUID for idempotency (optional but recommended)
+      scheduledForDate,
+      scheduledForSlot,
     } = req.body;
 
     if (dataProcessingConsent !== true) {
@@ -368,7 +380,11 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const payMethod = String(paymentMethod || 'CASH').toUpperCase() === 'CARD' ? 'CARD' : 'CASH';
-    if (payMethod === 'CARD' && !isCardOnlinePaymentAvailable()) {
+    const sitePay = await prisma.siteSetting.findUnique({
+      where: { id: 1 },
+      select: { cardOnlineEnabled: true },
+    });
+    if (payMethod === 'CARD' && !canProcessCardPayment(sitePay?.cardOnlineEnabled)) {
       const devHint =
         process.env.NODE_ENV !== 'production' &&
         !hasStripeConfigured() &&
@@ -443,6 +459,18 @@ router.post('/', async (req: Request, res: Response) => {
 
     if (quantityByProductId.size === 0) {
       res.status(400).json({ message: 'Некоректні товари в кошику. Оновіть кошик.' });
+      return;
+    }
+
+    const parsedScheduleDate =
+      parseScheduledForDate(scheduledForDate) ?? getAmsterdamTodayKey();
+    const parsedScheduleSlot = parseScheduledForSlot(scheduledForSlot) ?? 'asap';
+    const scheduleCheck = assertScheduledDeliveryAllowed(
+      parsedScheduleDate,
+      parsedScheduleSlot,
+    );
+    if (!scheduleCheck.ok) {
+      res.status(400).json({ message: scheduleCheck.message });
       return;
     }
 
@@ -686,6 +714,8 @@ router.post('/', async (req: Request, res: Response) => {
           deliveryFee: deliveryFeeEur,
           paymentMethod: payMethod,
           comment: comment || null,
+          scheduledForDate: parsedScheduleDate,
+          scheduledForSlot: parsedScheduleSlot,
           noCallbackConfirm: Boolean(noCallbackConfirm),
           noDoorbellRing: Boolean(noDoorbellRing),
           dataProcessingConsentAt: new Date(),
@@ -725,6 +755,13 @@ router.post('/', async (req: Request, res: Response) => {
         await linkGuestOrdersToUser(prisma, effectiveUserId, orderPhone);
       }
       await notifyUserOrderStatusChange(prisma, effectiveUserId, order.id, 'PENDING', null);
+      if (fulfillment === 'DELIVERY') {
+        try {
+          await saveUserAddressIfNew(prisma, effectiveUserId, String(address || ''));
+        } catch (saveAddrErr) {
+          console.error('[Order] saveUserAddressIfNew:', saveAddrErr);
+        }
+      }
     }
 
     // ── CASH: fire notifications and respond ──────────────────────────────────

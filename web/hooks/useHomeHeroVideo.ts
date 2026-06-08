@@ -27,13 +27,18 @@ export function useHomeHeroVideo() {
   const [heroVideoSourceIndex, setHeroVideoSourceIndex] = useState(0)
   const heroVideoRef = useRef<HTMLVideoElement | null>(null)
 
+  const homeHeroVideoUrlsKey = useMemo(
+    () => homeHeroVideoUrls.join('\0'),
+    [homeHeroVideoUrls],
+  )
+
   const homeHeroPlaylist = useMemo(
     () => buildHomeHeroPlaylist(homeHeroVideoUrls),
-    [homeHeroVideoUrls],
+    [homeHeroVideoUrlsKey],
   )
   const videoSources = useMemo(
     () => buildHomeHeroVideoSources(homeHeroVideoUrls),
-    [homeHeroVideoUrls],
+    [homeHeroVideoUrlsKey],
   )
   const heroVideoSrc =
     homeHeroPlaylist[heroVideoSourceIndex] ??
@@ -104,9 +109,9 @@ export function useHomeHeroVideo() {
   }, [])
 
   useEffect(() => {
-    setHeroVideoSourceIndex(0)
-    setHeroVideoFailed(false)
-  }, [heroVideoSrc, homeHeroVideoUrls])
+    setHeroVideoSourceIndex((prev) => (prev === 0 ? prev : 0))
+    setHeroVideoFailed((failed) => (failed ? false : failed))
+  }, [homeHeroVideoUrlsKey])
 
   return {
     heroVideoRef,

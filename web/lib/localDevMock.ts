@@ -628,8 +628,8 @@ export const mockSiteSettings = {
   homeHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   deliveryHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   deliveryHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
-  menuHeroVideoUrl: '/watta-sushi-2-hero.mp4',
-  menuHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
+  menuHeroVideoUrl: '/menu-hero-keeping-safe-road-ready.mp4',
+  menuHeroVideoUrls: ['/menu-hero-keeping-safe-road-ready.mp4'],
   authHeroVideoUrl: '',
   authHeroVideoUrls: [],
   authHeroPhone2VideoUrls: [],
@@ -676,20 +676,7 @@ export const mockBanners = [
   },
 ]
 
-export const mockPromotions = [
-  {
-    id: 1,
-    title: 'Відкриття сезону',
-    description: 'Короткий опис акції для списку новин.',
-    content: 'Повний текст новини так само, як у таблиці Promo (поле content). Можна змінити в localDevMock.ts.',
-    imageUrl: 'https://placehold.co/900x560/145142/ffffff?text=Promo',
-    galleryUrls: ['https://placehold.co/900x560/145142/ffffff?text=Promo'],
-    productOffers: [] as { productId: number; discountPercent: number }[],
-    isHit: true,
-    createdAt: T,
-    updatedAt: T,
-  },
-]
+export const mockPromotions = getMiddlewareMockPromotions()
 
 export const mockTeam = [
   {

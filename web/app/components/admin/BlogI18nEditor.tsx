@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Languages } from 'lucide-react'
+import { useLanguage } from '../../context/LanguageContext'
 
 export type BlogI18nFormFields = {
   title_ua: string
@@ -31,6 +32,8 @@ type Props = {
 }
 
 export default function BlogI18nEditor({ value, onChange, onAutoTranslate, translating }: Props) {
+  const { t } = useLanguage()
+  const b = t.adminPanel.blog
   const [tab, setTab] = useState<LangTab>('ua')
 
   const setField = (field: keyof BlogI18nFormFields, text: string) => {
@@ -39,53 +42,52 @@ export default function BlogI18nEditor({ value, onChange, onAutoTranslate, trans
 
   const titleKey = `title_${tab}` as keyof BlogI18nFormFields
   const contentKey = `content_${tab}` as keyof BlogI18nFormFields
+  const langLabel = tab.toUpperCase()
 
   return (
     <div className="md:col-span-2 rounded-xl border border-[#145142]/15 bg-[#f6fbf8]/50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-bold text-[#145142]">Текст статті (4 мови)</p>
-          <p className="mt-0.5 text-xs text-[#145142]/65">
-            Заповніть вручну або спочатку українською, потім натисніть автопереклад.
-          </p>
+          <p className="text-sm font-bold text-[#145142]">{b.i18nTitle}</p>
+          <p className="mt-0.5 text-xs text-[#145142]/65">{b.i18nHint}</p>
         </div>
         <button
           type="button"
           disabled={translating || (!value.title_ua.trim() && !value.content_ua.trim())}
           onClick={() => void onAutoTranslate()}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#145142]/25 bg-white px-4 py-2 text-sm font-bold text-[#145142] transition hover:bg-[#145142]/5 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-[#145142]/25 bg-white px-4 py-2 text-sm font-bold text-[#145142] transition hover:bg-watta-action/5 disabled:opacity-50"
         >
           <Languages className="h-4 w-4" aria-hidden />
-          {translating ? 'Переклад…' : 'Автопереклад з UA'}
+          {translating ? b.translating : b.autoTranslateBtn}
         </button>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.id}
+            key={tabItem.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => setTab(tabItem.id)}
             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-              tab === t.id
-                ? 'bg-[#145142] text-white'
-                : 'bg-white text-[#145142]/80 border border-[#145142]/15 hover:bg-[#145142]/8'
+              tab === tabItem.id
+                ? 'bg-watta-action text-white'
+                : 'bg-white text-[#145142]/80 border border-[#145142]/15 hover:bg-watta-action/8'
             }`}
           >
-            {t.label}
+            {tabItem.label}
           </button>
         ))}
       </div>
 
       <input
         type="text"
-        placeholder={`Заголовок (${tab.toUpperCase()})`}
+        placeholder={b.titlePlaceholder.replace('{{lang}}', langLabel)}
         value={value[titleKey]}
         onChange={(e) => setField(titleKey, e.target.value)}
         className="mt-3 w-full p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
       />
       <textarea
-        placeholder={`Текст статті (${tab.toUpperCase()})`}
+        placeholder={b.contentPlaceholder.replace('{{lang}}', langLabel)}
         value={value[contentKey]}
         onChange={(e) => setField(contentKey, e.target.value)}
         className="mt-3 w-full p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] min-h-[200px]"

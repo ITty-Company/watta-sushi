@@ -1,0 +1,2383 @@
+/**
+ * /cart — оформлення замовлення (форма зліва, кошик + CTA справа, стиль Watta).
+ */
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-body {
+  background: transparent;
+}
+
+html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body,
+html.watta-light-chrome:has(.watta-cart-checkout-page--v2) .watta-app-shell-root,
+html.watta-light-chrome:has(.watta-cart-checkout-page--v2) .watta-app-main-grow {
+  background: #ffffff !important;
+}
+
+html.watta-light-chrome:has(.watta-cart-checkout-page--v2),
+html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.watta-cart-checkout-page--v2.watta-cart-page {
+  overflow-x: clip;
+  max-width: 100vw;
+  touch-action: pan-y;
+}
+
+@media (max-width: 1023px) {
+  .watta-cart-checkout-page--v2.watta-cart-page {
+    overflow: visible;
+  }
+}
+
+.watta-cart-checkout-page--v2 .watta-public-page-shell__bg {
+  display: none;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-page__content {
+  max-width: 1180px;
+  background: transparent;
+}
+
+/* —— Шапка (без картки-панелі) —— */
+.watta-cart-checkout-lead {
+  margin-bottom: 1.1rem;
+}
+
+.watta-cart-checkout-lead__toolbar {
+  margin-bottom: 0.85rem;
+}
+
+.watta-cart-checkout-lead__copy {
+  max-width: 40rem;
+}
+
+.watta-cart-checkout-lead__meta {
+  display: inline-flex;
+  margin: 0 0 0.5rem;
+  border-radius: 9999px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #145142;
+  background: rgba(122, 184, 58, 0.14);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+}
+
+.watta-cart-checkout-lead__title {
+  margin: 0;
+  font-size: clamp(1.65rem, 4.5vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: #0f2a22;
+}
+
+.watta-cart-checkout-lead__sub {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.watta-cart-checkout-lead__login {
+  margin-top: 0.85rem;
+  display: inline-flex;
+  min-height: 2.65rem;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0.85rem;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--watta-brand-action);
+  box-shadow: 0 8px 20px -12px rgba(20, 81, 66, 0.4);
+  cursor: pointer;
+  transition:
+    filter 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-cart-checkout-lead__login:hover {
+  filter: brightness(1.05);
+}
+
+.watta-cart-checkout-lead__login:active {
+  transform: scale(0.98);
+}
+
+@media (min-width: 768px) {
+  .watta-cart-checkout-lead__copy {
+    max-width: 36rem;
+  }
+}
+
+.watta-cart-checkout-body {
+  width: 100%;
+  min-width: 0;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-lead,
+.watta-cart-checkout-page--v2 .watta-cart-checkout-body {
+  padding-left: max(1.45rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.45rem, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 640px) {
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-lead,
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-body {
+    padding-left: max(1.85rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.85rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-lead,
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-body {
+    padding-left: max(2.35rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2.35rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* —— Секції форми — відкритий layout без карток —— */
+.watta-cart-checkout-section {
+  padding: 0 0 1.35rem;
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.08);
+  background: transparent;
+  box-shadow: none;
+  transition-delay: calc(var(--watta-checkout-section-i, 0) * 70ms);
+}
+
+.watta-cart-form-section {
+  padding: 0 0 1.35rem;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.watta-cart-checkout-section--pay,
+.watta-cart-form-section:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.watta-cart-form-section__head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+}
+
+.watta-cart-form-section__head--sub {
+  margin-bottom: 0.55rem;
+}
+
+.watta-cart-form-section__ico {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #145142;
+}
+
+.watta-cart-form-section__ico svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.watta-cart-form-section__head--sub .watta-cart-form-section__ico,
+.watta-cart-form-section__head--sub .watta-cart-form-section__ico svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.watta-cart-form-section__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: #0f2a22;
+}
+
+.watta-cart-form-section__head--sub .watta-cart-form-section__title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #145142;
+}
+
+.watta-cart-form-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.watta-cart-form-fields {
+  gap: 0.85rem;
+}
+
+.watta-cart-delivery-time-block {
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(122, 181, 21, 0.2);
+}
+
+.watta-cart-delivery-time-block__hint {
+  margin: -0.15rem 0 0.65rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+/* —— Планувальник дати / часу —— */
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-delivery-scheduler {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(122, 181, 21, 0.16);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(247, 252, 242, 0.96) 100%
+  );
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-delivery-scheduler__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-delivery-scheduler__label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.62);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-delivery-scheduler__empty {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(254, 243, 199, 0.55);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #92400e;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-rail-wrap {
+  position: relative;
+  min-width: 0;
+  margin: 0 -0.15rem;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-rail-wrap::before,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-rail-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0.25rem;
+  width: 1.1rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-rail-wrap::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(247, 252, 242, 0.98) 15%, transparent);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-rail-wrap::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(247, 252, 242, 0.98) 15%, transparent);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-rail {
+  display: flex;
+  gap: 0.45rem;
+  max-width: 100%;
+  margin-bottom: 0;
+  padding: 0.15rem 0.15rem 0.35rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip {
+  flex: 0 0 auto;
+  min-height: 2.15rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: #ffffff;
+  font-size: max(13px, 0.74rem);
+  font-weight: 700;
+  color: #475569;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip:active {
+  transform: scale(0.98);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip:not(.watta-cart-date-chip--active):hover {
+  border-color: rgba(122, 181, 21, 0.35);
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip--active,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip--active:hover,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip--active:focus-visible {
+  border-color: transparent;
+  background: var(--watta-brand-mint, #5c9010);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.45);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__native-input {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+  color: transparent;
+  background: transparent;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar > *:not(.watta-cart-date-picker__native-input) {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-fallback {
+  display: block;
+  font-size: max(16px, 0.88rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #145142;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-height: 2.35rem;
+  justify-content: center;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.55rem 0.75rem 0.55rem 0.65rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(122, 181, 21, 0.22);
+  background: #ffffff;
+  color: #145142;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(122, 181, 21, 0.12);
+  box-shadow: 0 2px 10px -8px rgba(20, 81, 66, 0.25);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-leading,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-chevron,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-kicker,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-fallback {
+  pointer-events: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__native-input {
+    opacity: 0.011;
+  }
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar:active {
+  transform: scale(0.99);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar:focus-visible {
+  outline: none;
+  border-color: rgba(122, 181, 21, 0.45);
+  box-shadow: 0 0 0 3px rgba(122, 181, 21, 0.14);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar:hover {
+  border-color: rgba(122, 181, 21, 0.42);
+  box-shadow: 0 6px 18px -10px rgba(122, 181, 21, 0.35);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-leading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex-shrink: 0;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 14%, #ffffff);
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-kicker {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.52);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-chevron {
+  color: rgba(20, 81, 66, 0.38);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+}
+
+@media (min-width: 480px) {
+  .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip {
+  min-height: 2.35rem;
+  padding: 0.5rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #ffffff;
+  font-size: max(13px, 0.74rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #475569;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip:active {
+  transform: scale(0.98);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--asap {
+  grid-column: 1 / -1;
+  font-size: max(14px, 0.78rem);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip:not(.watta-cart-slot-chip--active):hover {
+  border-color: rgba(122, 181, 21, 0.35);
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--active,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--active:hover,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--active:focus-visible,
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--asap.watta-cart-slot-chip--active {
+  border-color: transparent;
+  background: var(--watta-brand-mint, #5c9010);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.42);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-city-pill:not(.watta-checkout-city-pill--active):hover {
+  border-color: rgba(122, 181, 21, 0.28);
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-fee-pill:not(.watta-cart-fee-pill--error):not(.watta-cart-fee-pill--muted) {
+  border-color: rgba(122, 181, 21, 0.28);
+  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 11%, #ffffff);
+  color: #145142;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-consent {
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  padding: 0.15rem 0 0;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-consent--error {
+  margin: 0 -0.35rem;
+  padding: 0.45rem 0.35rem;
+  border-radius: 0.65rem;
+  background: rgba(254, 242, 242, 0.65);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35);
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-section .watta-cart-checkout-head {
+  margin-bottom: 1rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-section .watta-cart-checkout-head__ico {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    145deg,
+    rgba(122, 184, 58, 0.22) 0%,
+    rgba(20, 81, 66, 0.12) 100%
+  );
+  color: #145142;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-section .watta-cart-checkout-head__title {
+  font-size: 1.05rem;
+}
+
+/* —— Кошик + upsell — без окремих панелей —— */
+.watta-cart-checkout-panel {
+  padding: 0 0 1.25rem;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.watta-cart-checkout-panel + .watta-cart-checkout-panel,
+.watta-cart-order-panel + .watta-cart-upsell-v2,
+.watta-cart-order-panel > .watta-cart-upsell-v2 {
+  margin-top: 0;
+}
+
+.watta-cart-order-panel > .watta-cart-upsell-v2 {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+.watta-cart-checkout-layout--v2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
+  order: 1;
+}
+
+.watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
+  order: 2;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-checkout-layout--v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    gap: 1.5rem 2rem;
+  }
+
+  /* DOM: aside → main; візуально форма зліва, кошик справа (як Ninja). */
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
+    order: 1;
+    grid-column: 1;
+  }
+
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
+    order: 2;
+    grid-column: 2;
+    position: sticky;
+    top: calc(var(--watta-sticky-chrome-flow-h, 132px) + 10px);
+    align-self: start;
+    max-height: none;
+    overflow: visible;
+    overscroll-behavior: auto;
+    padding-right: 0;
+  }
+}
+
+.watta-cart-order-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.watta-cart-order-panel__meta {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #145142;
+  background: linear-gradient(90deg, rgba(20, 81, 66, 0.1) 0%, rgba(255, 107, 53, 0.08) 100%);
+  border: 1px solid rgba(20, 81, 66, 0.12);
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-head__ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watta-checkout-pickup-card {
+  padding: 0.15rem 0 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.watta-checkout-pickup-card__kicker {
+  margin: 0 0 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.72);
+}
+
+.watta-checkout-pickup-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.watta-checkout-pickup-card__pin {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  color: #145142;
+  background: none;
+  box-shadow: none;
+}
+
+.watta-checkout-pickup-card__addr {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #0f172a;
+  text-decoration: underline;
+  text-decoration-color: rgba(20, 81, 66, 0.28);
+  text-underline-offset: 3px;
+  transition:
+    color 0.15s ease,
+    text-decoration-color 0.15s ease;
+}
+
+.watta-checkout-pickup-card__addr:hover {
+  color: #145142;
+  text-decoration-color: rgba(20, 81, 66, 0.5);
+}
+
+.watta-checkout-pickup-card__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-field {
+  width: 100%;
+  min-width: 0;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #ffffff;
+  padding: 0.72rem 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #1e293b;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-field::placeholder {
+  color: #94a3b8;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-field:focus {
+  border-color: rgba(20, 81, 66, 0.45);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(20, 81, 66, 0.12);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(20, 81, 66, 0.78);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-city-pill {
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  padding: 0.45rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-city-pill:not(.watta-checkout-city-pill--active) {
+  background: #f1f5f4;
+  color: #64748b;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-city-pill:not(.watta-checkout-city-pill--active):hover {
+  background: #ffffff;
+  border-color: rgba(20, 81, 66, 0.15);
+  color: #145142;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-city-pill--active {
+  border-color: transparent;
+  background: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-mint-ink, #ffffff);
+  box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.45);
+}
+
+.watta-checkout-saved-addresses {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.watta-checkout-saved-address {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.08);
+  background: transparent;
+  text-align: left;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: #1e293b;
+  transition: color 0.2s ease;
+}
+
+.watta-checkout-saved-address span {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.watta-checkout-saved-address:hover {
+  border-color: rgba(20, 81, 66, 0.22);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-saved-address--active {
+  color: #145142;
+  font-weight: 700;
+  border-bottom-color: rgba(122, 181, 21, 0.35);
+  box-shadow: none;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-saved-address--active svg {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-saved-address--new.watta-checkout-saved-address--active {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-saved-address-active svg {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-checkout-saved-address--new {
+  justify-content: flex-start;
+  align-items: center;
+  font-weight: 700;
+  color: #145142;
+  border-bottom-style: dashed;
+}
+
+.watta-checkout-saved-address-active {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.65rem 0;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.1);
+  background: transparent;
+}
+
+.watta-checkout-saved-address-active p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #0f241e;
+  word-break: break-word;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.32rem;
+  border-radius: 9999px;
+  background: rgba(241, 245, 244, 0.98);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.62rem 0.7rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn:not(.watta-checkout-fulfillment__btn--active):hover {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn:active {
+  transform: scale(0.98);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn--active {
+  background: #ffffff;
+  color: var(--watta-brand-mint, #5c9010);
+  box-shadow:
+    0 2px 10px -4px rgba(122, 181, 21, 0.28),
+    0 1px 3px rgba(20, 81, 66, 0.08);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn--active svg {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-field:focus {
+  border-color: rgba(122, 181, 21, 0.45);
+  box-shadow: 0 0 0 3px rgba(122, 181, 21, 0.14);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-place-found {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+@media (min-width: 768px) {
+  .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-place-found {
+    font-size: 0.72rem;
+  }
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details {
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.6rem 0.6rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(122, 181, 21, 0.16);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(247, 252, 242, 0.96) 100%
+  );
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.62);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__hint {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgba(20, 81, 66, 0.58);
+  background: rgba(122, 181, 21, 0.1);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+@media (max-width: 479px) {
+  .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem 0.35rem;
+  }
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.18rem;
+  cursor: text;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__field-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: rgba(20, 81, 66, 0.52);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__input {
+  width: 100%;
+  min-width: 0;
+  min-height: 1.95rem;
+  padding: 0.28rem 0.35rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #ffffff;
+  font-size: max(16px, 0.78rem);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  color: #1e293b;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__input::placeholder {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-address-details__input:focus {
+  border-color: rgba(122, 181, 21, 0.45);
+  box-shadow: 0 0 0 2px rgba(122, 181, 21, 0.12);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(20, 81, 66, 0.06);
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #64748b;
+  transition: color 0.15s ease;
+}
+
+@media (min-width: 480px) {
+  .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-checks {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.85rem;
+  }
+
+  .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-check {
+    font-size: 0.74rem;
+  }
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-check input[type='checkbox'] {
+  margin-top: 0.08rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+  accent-color: var(--watta-brand-mint, #5c9010);
+  cursor: pointer;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-check:has(input:checked) {
+  color: #145142;
+}
+
+.watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-check:has(input:focus-visible) {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-order-panel .watta-cart-aside-lines__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f2a22;
+}
+
+.watta-cart-line-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.07);
+  background: transparent;
+  box-shadow: none;
+}
+
+.watta-cart-line-card + .watta-cart-line-card {
+  margin-top: 0;
+}
+
+.watta-cart-line-card__media {
+  flex-shrink: 0;
+  width: 4.25rem;
+  height: 4.25rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: #f1f5f4;
+}
+
+.watta-cart-line-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watta-cart-line-card__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.watta-cart-line-card__name {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.watta-cart-line-card__weight {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.watta-cart-line-card__meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.watta-cart-line-card__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.watta-cart-line-card__total {
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #145142;
+}
+
+.watta-cart-line-card--subtotal {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 0 0;
+  justify-content: space-between;
+  border: none;
+  border-top: 1px dashed rgba(20, 81, 66, 0.14);
+  border-bottom: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* —— Спосіб оплати —— */
+.watta-cart-checkout-page--v2 .watta-cart-checkout-section--pay {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+@media (max-width: 479px) {
+  .watta-cart-checkout-page--v2 .watta-checkout-pay-tiles:not(.watta-checkout-pay-tiles--single) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.watta-checkout-pay-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.watta-checkout-pay-tiles--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 2.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #ffffff;
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-checkout-pay-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: transparent;
+  padding: 0.75rem 0;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile:hover:not(.watta-checkout-pay-tile--active) {
+  border-color: rgba(122, 181, 21, 0.35);
+}
+
+.watta-checkout-pay-tile:hover {
+  border-color: rgba(20, 81, 66, 0.22);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:hover,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:focus-visible {
+  border-color: transparent;
+  background: var(--watta-brand-mint, #5c9010);
+  box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.42);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active .watta-checkout-pay-tile__label,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:hover .watta-checkout-pay-tile__label,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:focus-visible .watta-checkout-pay-tile__label {
+  color: #ffffff;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active .watta-checkout-pay-tile__hint,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:hover .watta-checkout-pay-tile__hint,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:focus-visible .watta-checkout-pay-tile__hint {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active .watta-checkout-pay-tile__icon,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:hover .watta-checkout-pay-tile__icon,
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:focus-visible .watta-checkout-pay-tile__icon {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.watta-checkout-pay-tile--active {
+  border-color: rgba(20, 81, 66, 0.35);
+  background: transparent;
+  box-shadow: none;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile__icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.55rem;
+  color: var(--watta-brand-mint, #5c9010);
+  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 12%, #ffffff);
+}
+
+.watta-checkout-pay-tile__icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0;
+  color: #145142;
+  background: none;
+}
+
+.watta-checkout-pay-tile__icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile__icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.watta-checkout-pay-tile__icon--card {
+  background: none;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active .watta-checkout-pay-tile__icon {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.watta-checkout-pay-tile--active .watta-checkout-pay-tile__icon {
+  color: #145142;
+  background: none;
+}
+
+.watta-checkout-pay-tile__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile__label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0f2a22;
+}
+
+.watta-checkout-pay-tile__label {
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0f2a22;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active .watta-checkout-pay-tile__label {
+  color: #ffffff;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile__hint {
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #64748b;
+}
+
+.watta-checkout-pay-tile__hint {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #64748b;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active .watta-checkout-pay-tile__hint {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.watta-checkout-pay-tile--active .watta-checkout-pay-tile__hint {
+  color: rgba(20, 81, 66, 0.75);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-note {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.65rem;
+  background: rgba(254, 243, 199, 0.55);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #92400e;
+}
+
+.watta-checkout-pay-note {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: rgba(20, 81, 66, 0.72);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-card-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(122, 181, 21, 0.18);
+  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 8%, #ffffff);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #145142;
+}
+
+.watta-checkout-pay-card-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid rgba(20, 81, 66, 0.1);
+  background: transparent;
+  padding: 0.65rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #145142;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-cash-banner {
+  margin: 0;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-note--setup {
+  background: rgba(254, 243, 199, 0.55);
+  color: #92400e;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--disabled:hover {
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-tile--card.watta-checkout-pay-tile--disabled:not(.watta-checkout-pay-tile--active) {
+  background: #f8fafc;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.6rem 0.6rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(122, 181, 21, 0.16);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(247, 252, 242, 0.96) 100%
+  );
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-block__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-block__title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.62);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-block__hint {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgba(20, 81, 66, 0.58);
+  background: rgba(122, 181, 21, 0.1);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-row__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #ffffff;
+  font-size: max(16px, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1e293b;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-row__input::placeholder {
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-promo-row__input:focus {
+  border-color: rgba(122, 181, 21, 0.45);
+  box-shadow: 0 0 0 2px rgba(122, 181, 21, 0.12);
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-feedback {
+  margin: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-feedback--error {
+  color: #dc2626;
+}
+
+.watta-cart-checkout-page--v2 .watta-checkout-pay-feedback--success {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-checkout-section--pay .watta-cart-checkout-total {
+  margin-top: 0.15rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(122, 181, 21, 0.14);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(247, 252, 242, 0.96) 100%
+  );
+  padding: 0.55rem 0.65rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-total__row {
+  font-size: 0.74rem;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-total__row--accent {
+  color: var(--watta-brand-mint, #5c9010);
+  font-weight: 700;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-total__bonus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #145142;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-total__bonus input[type='checkbox'] {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+  accent-color: var(--watta-brand-mint, #5c9010);
+  cursor: pointer;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-total__grand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(122, 181, 21, 0.18);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f2a22;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-total__amount {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-cart-aside-sticky .watta-cart-checkout-total {
+  border-radius: 0;
+  padding: 0.85rem 0 0;
+  background: transparent;
+  border-top: 1px dashed rgba(20, 81, 66, 0.14);
+  box-shadow: none;
+}
+
+.watta-cart-upsell-v2 .home-menu-product-card-web {
+  border: 1px solid rgba(20, 81, 66, 0.08);
+  box-shadow: none;
+  background: #ffffff;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-submit {
+  margin-top: 0.85rem;
+  min-height: 3.15rem;
+  width: 100%;
+  border: none;
+  border-radius: 0.95rem;
+  background: #50800c;
+  color: var(--watta-brand-mint-ink, #ffffff);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 24px -10px rgba(20, 81, 66, 0.4);
+  transition:
+    background 0.18s ease,
+    transform 0.12s ease,
+    box-shadow 0.18s ease;
+}
+
+@media (hover: hover) {
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-submit:hover:not(:disabled) {
+    background: #446b0a;
+  }
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-submit:active:not(:disabled) {
+  transform: scale(0.99);
+  background: #52800e;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === Спецпропозиції зі знижкою (стек повноширинних карток) === */
+.watta-cart-upsell-v2__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.watta-cart-upsell-v2__ico {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #145142;
+}
+
+.watta-cart-upsell-v2__ico svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.watta-cart-upsell-v2__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: #0f2a22;
+}
+
+.watta-cart-upsell-v2__sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: #64748b;
+}
+
+/* Стрічка карток — той самий патерн, що на головній */
+.watta-cart-upsell-v2 .cart-upsell-rail-outer {
+  min-width: 0;
+  margin-inline: -0.15rem;
+}
+
+.watta-cart-upsell-v2 .cart-upsell-rail-scroll {
+  padding-inline: 0.15rem;
+  scroll-padding-inline: 0.15rem;
+}
+
+/* Телефон — вертикальний стек: одна пропозиція на рядок, без горизонтального скролу */
+.watta-cart-upsell-stack {
+  overflow: visible;
+  gap: 0.65rem;
+}
+
+.watta-cart-upsell-stack > * {
+  width: 100%;
+  max-width: none;
+  flex: none;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-inner-web {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
+  flex: 0 0 4.75rem;
+  width: 4.75rem;
+  align-self: center;
+  aspect-ratio: 1;
+  border-radius: 0.75rem;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-body-web {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 4.75rem;
+  gap: 0;
+  justify-content: space-between;
+  padding: 0.08rem 0;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-head-web {
+  flex: 0 0 auto;
+  gap: 0.1rem;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-desc-web {
+  display: none;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-title-web {
+  font-size: 0.875rem;
+  line-height: 1.22;
+  min-height: 0;
+  max-height: none;
+  -webkit-line-clamp: 2;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-spec-weight-web {
+  margin: 0;
+  min-height: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card--grid-web .home-menu-product-card-footer-web {
+  margin-top: 0;
+  padding-top: 0;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-price-row-web {
+  gap: 0.35rem;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-card-price-col-web .home-menu-product-price-old-web {
+  font-size: 0.7rem;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-add-web--icon {
+  width: 2.15rem;
+  height: 2.15rem;
+  min-height: 2.15rem;
+  padding: 0;
+}
+
+/* Планшет / десктоп — нижній блок, горизонтальна стрічка */
+@media (min-width: 768px) {
+  .watta-cart-upsell-bottom .cart-upsell-rail-scroll > * {
+    flex: 0 0 min(13.5rem, calc((100% - 1.5rem) / 2.15));
+    max-width: 13.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-upsell-bottom .cart-upsell-rail-scroll > * {
+    flex: 0 0 min(14.5rem, calc((100% - 2rem) / 3.1));
+    max-width: 14.5rem;
+  }
+}
+
+/* Ціни та кнопка «+» — як у каталозі, без обрізання */
+.watta-cart-upsell-v2 .home-menu-product-card-footer-web {
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+}
+
+.watta-cart-upsell-v2 .home-menu-product-card-price-col-web {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.watta-cart-upsell-v2 .home-menu-product-price-row-web {
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+}
+
+.watta-cart-upsell-v2 .home-menu-product-price-web {
+  font-size: clamp(0.95rem, 2.4vw, 1.15rem);
+  white-space: nowrap;
+}
+
+.watta-cart-upsell-v2 .home-menu-product-card-price-col-web .home-menu-product-price-old-web {
+  font-size: 0.72rem;
+  color: #dc2626;
+  text-decoration-color: #dc2626;
+  white-space: nowrap;
+}
+
+.watta-cart-upsell-v2 .home-menu-product-add-web--icon {
+  flex-shrink: 0;
+}
+
+/* У кошику — лише «+», без окремої кнопки «обране» */
+.watta-cart-upsell-v2 .home-menu-product-favorite-btn-web {
+  display: none;
+}
+
+.watta-cart-upsell-v2 .home-menu-product-card-actions-web {
+  gap: 0;
+}
+
+.watta-cart-upsell-sidebar .home-menu-product-price-discount-tag-web {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1rem;
+  padding: 0.14rem 0.38rem;
+  border-radius: 9999px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #c95a1a;
+  background: rgba(255, 249, 244, 0.97);
+  border: 1px solid rgba(201, 90, 26, 0.16);
+  white-space: nowrap;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-promo-btn {
+  flex-shrink: 0;
+  align-self: stretch;
+  min-height: 2.35rem;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  background: var(--watta-brand-mint, #5c9010);
+  box-shadow: 0 4px 12px -6px rgba(122, 181, 21, 0.45);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.12s ease,
+    box-shadow 0.15s ease;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-promo-btn:hover {
+  background: var(--watta-brand-mint-hover, #50800c);
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-checkout-promo-btn:active {
+  transform: scale(0.98);
+  background: var(--watta-brand-mint-active, #446b0a);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Планшет / ноут / десктоп — атмосфера, сітка, картки
+   ═══════════════════════════════════════════════════════════════ */
+
+.watta-cart-checkout-page--v2 {
+  background: #ffffff !important;
+}
+
+.watta-cart-checkout-page--v2::before,
+.watta-cart-checkout-page--v2::after {
+  content: none;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .watta-cart-checkout-lead {
+    margin-bottom: 1.45rem;
+    padding-top: 0.35rem;
+  }
+
+  .watta-cart-checkout-lead__title {
+    font-size: clamp(1.85rem, 3.2vw, 2.45rem);
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-page__content {
+    padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Планшет: форма зліва, кошик справа */
+  .watta-cart-checkout-layout--v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(228px, 300px);
+    gap: 1.35rem 1.5rem;
+  }
+
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
+    order: 1;
+    grid-column: 1;
+  }
+
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
+    order: 2;
+    grid-column: 2;
+    position: sticky;
+    top: calc(var(--watta-sticky-chrome-flow-h, 132px) + 8px);
+    align-self: start;
+    max-height: none;
+    overflow: visible;
+    overscroll-behavior: auto;
+    padding-right: 0;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-order-panel {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-grid {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    gap: 1rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-form-section,
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-section--pay {
+    padding: 1.15rem 1.25rem 1.25rem;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(20, 81, 66, 0.1);
+    background: #ffffff;
+    box-shadow:
+      0 16px 44px -30px rgba(20, 81, 66, 0.16),
+      0 2px 8px rgba(20, 81, 66, 0.04);
+    border-bottom: 1px solid rgba(20, 81, 66, 0.1);
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-form-section,
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-section {
+    padding-bottom: 1.25rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-form-section__title {
+    font-size: 1.05rem;
+  }
+
+  /* У бічній колонці — десктопні рядки кошика (не мобільні) */
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__remove,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__weight,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__price-main,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__qty {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__meta--desktop {
+    display: block;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__controls-desktop {
+    display: flex;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__total {
+    display: block;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card {
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.5rem;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(20, 81, 66, 0.07);
+    border-bottom: 1px solid rgba(20, 81, 66, 0.07);
+    background: rgba(255, 255, 255, 0.88);
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card + .watta-cart-line-card {
+    margin-top: 0.45rem;
+  }
+
+  @media (hover: hover) {
+    .watta-cart-checkout-page--v2 .watta-cart-line-card:hover {
+      border-color: rgba(122, 181, 21, 0.22);
+      background: #ffffff;
+      box-shadow: 0 8px 22px -14px rgba(20, 81, 66, 0.16);
+    }
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__media {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(20, 81, 66, 0.08);
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__name {
+    font-size: 0.86rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card--subtotal {
+    margin-top: 0.85rem;
+    padding: 0.75rem 0.5rem 0;
+    border-radius: 0;
+    border: none;
+    border-top: 1px dashed rgba(20, 81, 66, 0.16);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .watta-cart-order-panel__head {
+    margin-bottom: 0.95rem;
+  }
+
+  .watta-cart-order-panel .watta-cart-aside-lines__title {
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .watta-cart-checkout-page--v2 .watta-cart-line-card {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__body {
+    flex: 1 1 calc(100% - 5.2rem);
+    min-width: 0;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__aside {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: calc(4.5rem + 0.7rem);
+    margin-top: 0.15rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__total {
+    font-size: 0.88rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-checkout-layout--v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    gap: 1.5rem 2rem;
+  }
+
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
+    top: calc(var(--watta-sticky-chrome-flow-h, 132px) + 10px);
+    max-height: none;
+    overflow: visible;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-order-panel {
+    padding: 0;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-grid {
+    padding: 0;
+    gap: 1.1rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__media {
+    width: 4.75rem;
+    height: 4.75rem;
+    border-radius: 0.8rem;
+  }
+
+  .watta-cart-order-panel .watta-cart-aside-lines__title {
+    font-size: 1.05rem;
+  }
+
+  .watta-cart-checkout-lead__copy {
+    max-width: 42rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .watta-cart-checkout-layout--v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    gap: 2rem 2.75rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-page__content {
+    max-width: 1260px;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-lead,
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-body {
+    padding-left: max(2.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .watta-cart-checkout-lead__title {
+    font-size: 2.5rem;
+  }
+
+  .watta-cart-order-panel .watta-cart-aside-lines__title {
+    font-size: 1.18rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card {
+    padding: 0.7rem 0.6rem;
+    gap: 0.8rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__media {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__name {
+    font-size: 0.98rem;
+  }
+
+  .watta-cart-form-section__title {
+    font-size: 1.18rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-grid {
+    gap: 1.15rem;
+  }
+}
+/* ═══ Ninja-style rail: кошик + рекомендації + «Разом» + CTA (планшет / ПК) ═══ */
+@media (min-width: 768px) {
+  .watta-cart-checkout-pay-desktop-hidden {
+    display: none !important;
+  }
+
+  .watta-cart-checkout-rail {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    border-radius: 1.2rem;
+    border: 1px solid rgba(20, 81, 66, 0.1);
+    background: #ffffff;
+    box-shadow:
+      0 20px 52px -32px rgba(20, 81, 66, 0.18),
+      0 2px 10px rgba(20, 81, 66, 0.05);
+    overflow: visible;
+  }
+
+  .watta-cart-checkout-rail .watta-cart-order-panel {
+    padding: 1.1rem 1.15rem 0.75rem;
+  }
+
+  .watta-cart-checkout-rail .watta-cart-upsell-v2 {
+    margin-top: 0;
+    padding: 0.85rem 1.15rem 0.95rem;
+    border-top: 1px solid rgba(20, 81, 66, 0.08);
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .watta-cart-checkout-rail .watta-cart-upsell-v2__title {
+    font-size: 1.05rem;
+  }
+
+  .watta-cart-aside-sticky {
+    display: block;
+    padding: 0.9rem 1.15rem 1.15rem;
+    border-top: 1px solid rgba(20, 81, 66, 0.1);
+    background: linear-gradient(180deg, rgba(248, 252, 250, 0.75) 0%, #ffffff 100%);
+    border-radius: 0 0 1.2rem 1.2rem;
+  }
+
+  .watta-cart-aside-sticky .watta-cart-min-order-warning {
+    margin: 0 0 0.65rem;
+    text-align: left;
+    font-size: 0.82rem;
+  }
+
+  .watta-cart-aside-sticky__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .watta-cart-aside-sticky__total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+    min-width: 0;
+  }
+
+  .watta-cart-aside-sticky__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(20, 81, 66, 0.62);
+    line-height: 1.2;
+  }
+
+  .watta-cart-aside-sticky__amount {
+    font-size: clamp(1.4rem, 2.1vw, 1.75rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+    color: #145142;
+    line-height: 1.05;
+  }
+
+  .watta-cart-aside-sticky__submit {
+    flex-shrink: 0;
+    min-height: 3.05rem;
+    max-width: min(58%, 13.5rem);
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--watta-brand-mint-border, rgba(0, 0, 0, 0.08));
+    border-radius: 0.95rem;
+    background: var(--watta-brand-action);
+    color: var(--watta-brand-mint-ink, #ffffff);
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    box-shadow: 0 10px 26px -12px rgba(20, 81, 66, 0.38);
+    cursor: pointer;
+    transition:
+      background 0.18s ease,
+      transform 0.12s ease,
+      box-shadow 0.18s ease;
+  }
+
+  @media (hover: hover) {
+    .watta-cart-aside-sticky__submit:hover:not(:disabled) {
+      background: var(--watta-brand-action-hover);
+    }
+  }
+
+  .watta-cart-aside-sticky__submit:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  .watta-cart-aside-sticky__submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .watta-cart-order-panel .watta-cart-aside-lines__title {
+    font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+    font-size: 1.12rem;
+    font-weight: 800;
+  }
+
+  .watta-cart-order-panel__meta {
+    font-size: 0.72rem;
+    padding: 0.28rem 0.62rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card {
+    padding: 0.65rem 0.45rem;
+    border-radius: 0.9rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__name {
+    font-size: 0.94rem;
+    line-height: 1.2;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__meta--desktop {
+    font-size: 0.84rem;
+    margin-top: 0.12rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__total {
+    font-size: 0.98rem;
+    font-weight: 800;
+  }
+
+  .watta-cart-form-section__title {
+    font-size: 1.12rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-checkout-field {
+    font-size: 0.95rem;
+    padding: 0.78rem 0.95rem;
+  }
+
+  .watta-checkout-label {
+    font-size: 0.84rem;
+  }
+
+  .watta-cart-checkout-lead__sub {
+    font-size: 0.98rem;
+  }
+
+  .watta-cart-checkout-layout--v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+    gap: 1.35rem 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-checkout-layout--v2 {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+    gap: 1.5rem 2rem;
+  }
+
+  .watta-cart-checkout-rail {
+    border-radius: 1.25rem;
+  }
+
+  .watta-cart-aside-sticky {
+    padding: 1rem 1.25rem 1.25rem;
+    border-radius: 0 0 1.25rem 1.25rem;
+  }
+
+  .watta-cart-checkout-rail .watta-cart-order-panel {
+    padding: 1.15rem 1.25rem 0.85rem;
+  }
+
+  .watta-cart-checkout-rail .watta-cart-upsell-v2 {
+    padding: 0.95rem 1.25rem 1rem;
+  }
+
+  .watta-cart-aside-sticky__submit {
+    font-size: 0.95rem;
+    min-height: 3.15rem;
+    padding: 0.8rem 1.45rem;
+  }
+}

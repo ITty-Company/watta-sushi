@@ -4,10 +4,14 @@ import React, { useState, useEffect } from 'react'
 import { Instagram } from 'lucide-react'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { useMobileCartBarGate } from '@/hooks/useMobileCartBarGate'
+import WattaFloatingCartFab from './WattaFloatingCartFab'
+import WattaMobileCartBar from './WattaMobileCartBar'
 
-/** Лише Instagram (без Telegram / WhatsApp), щоб не дублювати кошик і месенджери внизу екрана */
+/** Кошик + Instagram знизу екрана (телефон); месенджери прибрані, щоб не дублювати FAB. */
 export default function FloatingContactButtons() {
   const { t } = useLanguage()
+  useMobileCartBarGate()
   const [instagramUrl, setInstagramUrl] = useState(WATTA_INSTAGRAM_URL)
 
   useEffect(() => {
@@ -23,10 +27,13 @@ export default function FloatingContactButtons() {
     'bottom-[calc(max(0.75rem,env(safe-area-inset-bottom,0px))+8px)] md:bottom-[calc(max(0.875rem,env(safe-area-inset-bottom,0px))+8px)]'
 
   return (
-    <div
+    <>
+      <WattaMobileCartBar />
+      <div
       className={`floating-contact-buttons-root pointer-events-none fixed right-4 z-[9980] flex flex-col items-end gap-2.5 md:right-6 ${bottomPos}`}
     >
-      <div className="pointer-events-auto">
+      <div className="pointer-events-auto flex flex-col items-end gap-2.5">
+        <WattaFloatingCartFab />
         <a
           href={instagramUrl}
           target="_blank"
@@ -38,5 +45,6 @@ export default function FloatingContactButtons() {
         </a>
       </div>
     </div>
+    </>
   )
 }

@@ -1,0 +1,2005 @@
+/*
+ * Stellar-style hero — фото ландшафту, Inter, fade-in, білі gradient overlays.
+ * Спільний для /menu, /delivery, /about, /contacts, /reviews.
+ */
+
+.watta-stellar-hero-stack,
+.menu-stellar-hero-stack {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  font-family: 'Inter', var(--font-inter, ui-sans-serif), sans-serif;
+  min-height: clamp(480px, 72vh, 820px);
+  --menu-stellar-media-push: 120px;
+  --watta-stellar-bottom-fade-thin-h: clamp(24px, 4.2vh, 40px);
+  --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h);
+  display: flex;
+  flex-direction: column;
+}
+
+/* /delivery, /about, /contacts, /reviews — текстовий intro без фото */
+.watta-stellar-hero-stack--text-only,
+.menu-stellar-hero-stack.watta-stellar-hero-stack--text-only {
+  min-height: 0 !important;
+  max-height: none !important;
+  padding-bottom: 0 !important;
+  overflow: visible;
+}
+
+@media (min-width: 768px) {
+  .watta-stellar-hero-stack,
+  .menu-stellar-hero-stack {
+    min-height: clamp(520px, 78vh, 860px);
+    --menu-stellar-media-push: 200px;
+    --watta-stellar-bottom-fade-thin-h: clamp(26px, 4.5vh, 42px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h);
+  }
+}
+
+@media (max-width: 767px) {
+  .watta-stellar-hero-stack,
+  .menu-stellar-hero-stack {
+    min-height: clamp(560px, 82vh, 900px);
+    padding-bottom: clamp(120px, 20vh, 180px);
+    --watta-stellar-bottom-fade-thin-h: clamp(22px, 3.8vh, 36px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h);
+  }
+
+  .watta-stellar-hero-stack--text-only,
+  .menu-stellar-hero-stack.watta-stellar-hero-stack--text-only {
+    min-height: 0 !important;
+    max-height: none !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Поки смуга кошика схована — hero без «запасу» під неї, фото видно до низу */
+  html:not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1']) .watta-stellar-hero-stack,
+  html:not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1']) .menu-stellar-hero-stack {
+    padding-bottom: 0;
+    --watta-stellar-bottom-fade-thin-h: clamp(22px, 3.8vh, 36px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h);
+  }
+}
+
+.menu-stellar-hero-bg {
+  z-index: 0;
+}
+
+.menu-stellar-hero-fades {
+  z-index: 5;
+}
+
+.menu-stellar-hero-bg__image {
+  top: var(--menu-stellar-media-push);
+  height: calc(100% - var(--menu-stellar-media-push));
+  object-position: center center;
+}
+
+.watta-stellar-hero-bg__picture,
+.menu-stellar-hero-bg__picture {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.watta-stellar-hero-bg__picture .watta-stellar-hero-bg__image,
+.watta-stellar-hero-bg__picture .menu-stellar-hero-bg__image,
+.menu-stellar-hero-bg__picture .watta-stellar-hero-bg__image,
+.menu-stellar-hero-bg__picture .menu-stellar-hero-bg__image {
+  position: absolute;
+  inset: 0;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  object-fit: cover !important;
+}
+
+@media (max-width: 767px) {
+  .watta-stellar-hero-bg__image,
+  .menu-stellar-hero-bg__image {
+    object-position: center 72%;
+  }
+}
+
+.watta-stellar-hero-bg__fade,
+.menu-stellar-hero-bg__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.watta-stellar-hero-bg__fade--general,
+.menu-stellar-hero-bg__fade--general {
+  top: 120px;
+  height: 200px;
+}
+
+.watta-stellar-hero-bg__fade--desktop,
+.menu-stellar-hero-bg__fade--desktop {
+  top: 200px;
+  height: 300px;
+}
+
+.watta-stellar-hero-bg__fade--mobile,
+.menu-stellar-hero-bg__fade--mobile {
+  top: 120px;
+  height: 200px;
+}
+
+.watta-stellar-hero-bg__fade--bottom,
+.menu-stellar-hero-bg__fade--bottom {
+  top: auto;
+  bottom: 0;
+  height: var(--menu-stellar-bottom-fade-h);
+  background: linear-gradient(
+    to top,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.68) 38%,
+    rgba(255, 255, 255, 0.14) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.watta-stellar-hero-bg__fade--bottom-mobile,
+.menu-stellar-hero-bg__fade--bottom-mobile {
+  height: var(--menu-stellar-bottom-fade-h);
+}
+
+.watta-stellar-hero-bg__fade--top-shadow,
+.menu-stellar-hero-bg__fade--top-shadow {
+  display: none;
+  bottom: auto;
+  top: 0;
+  z-index: 4;
+  background: none;
+}
+
+.watta-stellar-hero-bg__fade--bottom-shadow,
+.menu-stellar-hero-bg__fade--bottom-shadow {
+  display: none;
+  top: auto;
+  bottom: 0;
+  z-index: 4;
+  background: none;
+}
+
+/* Intro: прозорий фон, Stellar typography */
+.watta-site-hero-page-web .watta-stellar-hero-intro.home-after-hero-intro-web,
+.menu-page-web.watta-site-hero-page-web #menu-page-after-hero-intro.home-after-hero-intro-web {
+  background: transparent !important;
+  border-top: none !important;
+}
+
+.watta-site-hero-page-web .delivery-page-intro-web--video,
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page) .delivery-page-intro-web--video {
+  background: transparent !important;
+}
+
+.watta-stellar-hero-stack .watta-stellar-hero-intro,
+.menu-stellar-hero-stack .watta-stellar-hero-intro {
+  position: relative;
+  z-index: 20;
+  isolation: isolate;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.watta-stellar-hero-stack .watta-stellar-hero-intro__inner,
+.menu-stellar-hero-stack .watta-stellar-hero-intro__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.watta-stellar-hero-stack .delivery-hero-copy-home--stage,
+.menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home--stage,
+.menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home--stage {
+  position: relative;
+  z-index: 1;
+}
+
+.watta-stellar-hero-stack .watta-stellar-hero-intro .home-after-hero-intro-inner-web--home-menu,
+.menu-stellar-hero-stack .watta-stellar-hero-intro .home-after-hero-intro-inner-web--home-menu,
+.menu-stellar-hero-stack #menu-page-after-hero-intro .home-after-hero-intro-inner-web--home-menu {
+  padding-top: clamp(12px, 8vh, 48px);
+  padding-bottom: clamp(18px, 3.5vh, 36px);
+}
+
+/*
+ * /menu (вкладка «Меню»): «Усе меню в одному місці» — нижче, більше повітря під категоріями.
+ */
+.menu-page-web.watta-site-hero-page-web:not([data-watta-menu-cat-hero])
+  .delivery-page-hero-stack--intro-first
+  .menu-stellar-hero-intro {
+  justify-content: flex-end;
+}
+
+.menu-page-web.watta-site-hero-page-web:not([data-watta-menu-cat-hero])
+  #menu-page-after-hero-intro.home-after-hero-intro-web {
+  margin-top: clamp(16px, 2.8vh, 28px);
+}
+
+.menu-page-web.watta-site-hero-page-web:not([data-watta-menu-cat-hero])
+  #menu-page-after-hero-intro
+  .home-after-hero-intro-inner-web--home-menu {
+  padding-top: clamp(44px, 12vh, 96px) !important;
+  padding-bottom: clamp(18px, 3vh, 32px) !important;
+}
+
+@media (max-width: 767px) {
+  .menu-page-web.watta-site-hero-page-web:not([data-watta-menu-cat-hero])
+    #menu-page-after-hero-intro.home-after-hero-intro-web {
+    margin-top: clamp(12px, 2.2vh, 20px);
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not([data-watta-menu-cat-hero])
+    #menu-page-after-hero-intro
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(52px, 15vh, 112px) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web:not([data-watta-menu-cat-hero])
+    #menu-page-after-hero-intro
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(56px, 11vh, 120px) !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .menu-page-web.watta-site-hero-page-web:not([data-watta-menu-cat-hero])
+    #menu-page-after-hero-intro
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(64px, 9vh, 128px) !important;
+    padding-bottom: clamp(24px, 3.5vh, 40px) !important;
+  }
+}
+
+.watta-stellar-hero-stack .delivery-hero-copy-home__title--stage,
+.menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home__title--stage,
+.menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home__title--stage {
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #000;
+  text-shadow: none;
+}
+
+.watta-stellar-hero-stack .delivery-hero-copy-home__title-line--accent,
+.menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home__title-line--accent,
+.menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home__title-line--accent {
+  background: linear-gradient(to right, #000000 0%, #6b7280 50%, #9ca3af 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: none;
+}
+
+.watta-stellar-hero-stack .delivery-hero-copy-home__script,
+.menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home__script,
+.menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home__script {
+  font-family: 'Inter', var(--font-inter, ui-sans-serif), sans-serif !important;
+  font-style: italic;
+  font-weight: 400;
+  color: #4b5563 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.watta-stellar-hero-stack .delivery-hero-copy-home__body--stage,
+.menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home__body--stage,
+.menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home__body--stage {
+  color: #4b5563;
+  font-weight: 400;
+  text-shadow: none;
+}
+
+.watta-stellar-hero-stack .delivery-hero-copy-home__stats li,
+.menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home__stats li,
+.menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home__stats li {
+  color: #374151;
+  border-color: color-mix(in srgb, #000 8%, transparent);
+  background: color-mix(in srgb, #fff 88%, transparent);
+}
+
+@media (max-width: 767px) {
+  .watta-stellar-hero-stack .delivery-hero-copy-home__title,
+  .menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home__title,
+  .menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home__title {
+    font-size: clamp(1.75rem, 9vw, 2.35rem);
+    line-height: 1.1;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-stellar-hero-stack .delivery-hero-copy-home__title,
+  .menu-stellar-hero-stack .watta-stellar-hero-intro .delivery-hero-copy-home__title,
+  .menu-stellar-hero-stack #menu-page-after-hero-intro .delivery-hero-copy-home__title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1.08;
+  }
+}
+
+.watta-stellar-hero-stack .watta-reviews-hero-actions {
+  margin-top: 1.25rem;
+}
+
+.watta-stellar-hero-stack .contact-page-hero-cta-row {
+  margin-top: 1.5rem;
+}
+
+@keyframes menuStellarFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.watta-stellar-hero-stack .menu-stellar-fade-in-up,
+.menu-stellar-hero-stack .menu-stellar-fade-in-up {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-stellar-hero-stack .menu-stellar-fade-in-up,
+  .menu-stellar-hero-stack .menu-stellar-fade-in-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * /delivery stellar hero — 1:1 з /menu: прозорий intro, ті самі шрифти/відступи.
+ * Перебиває delivery-page-web правила для --intro-first.
+ */
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-stack #delivery-page-lead-intro.home-after-hero-intro-web {
+  position: relative;
+  z-index: 20;
+  margin-top: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  background: transparent !important;
+  border-top: none !important;
+}
+
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-stack #delivery-page-lead-intro .home-after-hero-intro-inner-web--headroom,
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-stack #delivery-page-lead-intro .home-after-hero-intro-inner-web--home-menu,
+#reviews-page-container.watta-reviews-page .watta-stellar-hero-stack #reviews-page-lead-intro .home-after-hero-intro-inner-web--headroom,
+#reviews-page-container.watta-reviews-page .watta-stellar-hero-stack #reviews-page-lead-intro .home-after-hero-intro-inner-web--home-menu,
+#about-page-container.watta-about-page .watta-stellar-hero-stack #about-page-lead-intro .home-after-hero-intro-inner-web--headroom,
+#about-page-container.watta-about-page .watta-stellar-hero-stack #about-page-lead-intro .home-after-hero-intro-inner-web--home-menu,
+#contacts-page-container.watta-contacts-page .watta-stellar-hero-stack #contact-page-lead-intro .home-after-hero-intro-inner-web--headroom,
+#contacts-page-container.watta-contacts-page .watta-stellar-hero-stack #contact-page-lead-intro .home-after-hero-intro-inner-web--home-menu {
+  padding-top: clamp(28px, 8vh, 52px) !important;
+  padding-bottom: clamp(12px, 2vh, 22px) !important;
+}
+
+.watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title-line--accent {
+  background: linear-gradient(108deg, #0f3d32 0%, #145142 42%, #ff5c00 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: none;
+}
+
+.delivery-hero-copy-home__title-gap {
+  display: inline;
+  white-space: pre;
+}
+
+.watta-stellar-hero-stack [id$='-page-lead-intro'].home-after-hero-intro-web {
+  margin-top: 0;
+  margin-bottom: clamp(0px, 0.4vh, 8px);
+}
+
+.watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title--single-line {
+  margin-bottom: clamp(6px, 1vh, 12px);
+}
+
+.watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__body--stage {
+  margin-bottom: clamp(6px, 1vh, 12px) !important;
+  color: color-mix(in srgb, #145142 82%, #2d4a42) !important;
+}
+
+.watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home--stage .delivery-hero-copy-home__script {
+  background: linear-gradient(118deg, #0f3d32 0%, #1a6b58 55%, #ff5c00 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .watta-stellar-hero-stack [id$='-page-lead-intro'].home-after-hero-intro-web {
+    margin-top: clamp(0.35rem, 0.8vh, 0.65rem);
+    margin-bottom: clamp(0.65rem, 1.4vh, 1.1rem);
+  }
+}
+
+@media (min-width: 1025px) {
+  .watta-stellar-hero-stack [id$='-page-lead-intro'].home-after-hero-intro-web {
+    margin-top: clamp(0.5rem, 1vh, 0.85rem);
+    margin-bottom: clamp(0.75rem, 1.6vh, 1.25rem);
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .home-after-hero-intro-inner-web--home-menu {
+    max-width: 56rem !important;
+    padding-top: clamp(1.75rem, 3.2vh, 2.65rem) !important;
+    padding-bottom: clamp(1.15rem, 2.2vh, 1.75rem) !important;
+    padding-left: clamp(1.75rem, 2.8vw, 3.25rem) !important;
+    padding-right: clamp(1.75rem, 2.8vw, 3.25rem) !important;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title--stage {
+    font-size: clamp(2.28rem, 2.85vw, 3.2rem) !important;
+    line-height: 1.06 !important;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home--stage .delivery-hero-copy-home__script {
+    font-size: clamp(1.58rem, 2.28vw, 2.2rem) !important;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__body--stage {
+    max-width: 48rem;
+    font-size: 1.125rem !important;
+    line-height: 1.78 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title {
+    font-size: clamp(1.625rem, 4.6vw, 2.65rem);
+    line-height: 1.12;
+    margin-bottom: 0;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__kicker--brand-only {
+    margin-top: clamp(6px, 1vh, 12px);
+    margin-bottom: clamp(10px, 1.6vh, 16px);
+    gap: 0;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__kicker--script-after-title {
+    margin-top: clamp(2px, 0.4vh, 6px);
+    margin-bottom: clamp(8px, 1.2vh, 14px);
+    gap: 0;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home--stage .delivery-hero-copy-home__script {
+    font-size: clamp(0.94rem, 2.75vw, 1.2rem);
+    line-height: 1.2;
+    font-weight: 400;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__body--stage {
+    font-size: clamp(0.9375rem, 2.65vw, 1.0625rem);
+    line-height: 1.55;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home--stage {
+    max-width: 54rem;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title--stage {
+    max-width: none;
+    margin-bottom: clamp(0.65rem, 1.2vh, 1rem);
+    font-size: clamp(2.125rem, 3.85vw, 3rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.032em !important;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title-line {
+    display: inline;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__title-line + .delivery-hero-copy-home__title-line::before {
+    content: ' ';
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home--stage .delivery-hero-copy-home__script {
+    font-size: clamp(1.42rem, 2.9vw, 2.05rem) !important;
+    line-height: 1.1 !important;
+    font-weight: 400;
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__kicker--script-after-title {
+    margin-top: clamp(0.25rem, 0.55vh, 0.45rem);
+    margin-bottom: clamp(0.55rem, 1.1vh, 0.85rem);
+  }
+
+  .watta-stellar-hero-stack [id$='-page-lead-intro'] .delivery-hero-copy-home__body--stage {
+    margin-top: clamp(0.55rem, 1.1vh, 0.85rem);
+    max-width: 46rem;
+    font-size: clamp(1.0625rem, 1.55vw, 1.1875rem) !important;
+    line-height: 1.72 !important;
+  }
+}
+
+/* /delivery — фото цілком без розтягування + білі fade зверху/знизу */
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-stack,
+#delivery-page-container.watta-delivery-page .menu-stellar-hero-stack {
+  position: relative;
+  overflow: hidden;
+  --menu-stellar-media-push: 0;
+  --watta-delivery-hero-photo-ratio: 777 / 1024;
+  --watta-delivery-hero-photo-top: clamp(168px, 28vh, 248px);
+  --menu-stellar-top-fade-h: clamp(128px, 24vh, 220px);
+  --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px));
+}
+
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-bg--contain {
+  display: block;
+  top: var(--watta-delivery-hero-photo-top);
+  bottom: auto;
+  left: 0;
+  right: 0;
+  height: calc(100vw * var(--watta-delivery-hero-photo-ratio));
+  max-height: none;
+}
+
+/* object-fit: contain — пропорції файлу, без height:100% на img */
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-bg__photo--contain,
+#delivery-page-container.watta-delivery-page .menu-stellar-hero-bg__photo--contain {
+  position: absolute;
+  inset: auto 0 0;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-bg__fade--general,
+#delivery-page-container.watta-delivery-page .menu-stellar-hero-bg__fade--general,
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-bg__fade--desktop,
+#delivery-page-container.watta-delivery-page .menu-stellar-hero-bg__fade--desktop,
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-bg__fade--mobile,
+#delivery-page-container.watta-delivery-page .menu-stellar-hero-bg__fade--mobile {
+  top: 0;
+  height: var(--menu-stellar-top-fade-h);
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #ffffff 42%,
+    rgba(255, 255, 255, 0.94) 58%,
+    rgba(255, 255, 255, 0.62) 76%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-bg__fade--bottom,
+#delivery-page-container.watta-delivery-page .menu-stellar-hero-bg__fade--bottom,
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-bg__fade--bottom-mobile,
+#delivery-page-container.watta-delivery-page .menu-stellar-hero-bg__fade--bottom-mobile {
+  display: block !important;
+  top: auto;
+  z-index: 6;
+  height: var(--menu-stellar-bottom-fade-h);
+  background: linear-gradient(
+    to top,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.68) 38%,
+    rgba(255, 255, 255, 0.14) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+#delivery-page-container.watta-delivery-page .delivery-page-home-flow {
+  gap: 0;
+}
+
+#delivery-page-container.watta-delivery-page .delivery-page-home-flow > .delivery-page-intro-web {
+  margin-bottom: 0;
+}
+
+#delivery-page-container.watta-delivery-page .delivery-page-home-flow > .w-full:has(.delivery-page-stats-band) {
+  margin-top: calc(-1 * clamp(24px, 5vh, 40px));
+  position: relative;
+  z-index: 8;
+}
+
+#delivery-page-container.watta-delivery-page .watta-stellar-hero-stack #delivery-page-lead-intro.home-after-hero-intro-web {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 767px) {
+  #delivery-page-container.watta-delivery-page .watta-stellar-hero-stack,
+  #delivery-page-container.watta-delivery-page .menu-stellar-hero-stack {
+    min-height: calc(
+      var(--watta-delivery-hero-photo-top) + 100vw * var(--watta-delivery-hero-photo-ratio) +
+        clamp(12px, 2vh, 24px)
+    );
+    padding-bottom: clamp(20px, 3vh, 32px);
+    --watta-delivery-hero-photo-top: clamp(180px, 32vh, 268px);
+    --menu-stellar-top-fade-h: clamp(128px, 24vh, 220px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(22px, 3.8vh, 36px));
+  }
+
+  #delivery-page-container.watta-delivery-page .watta-stellar-hero-bg--contain {
+    height: calc(100vw * var(--watta-delivery-hero-photo-ratio));
+  }
+
+  #delivery-page-container.watta-delivery-page .delivery-page-home-flow > .w-full:has(.delivery-page-stats-band) {
+    margin-top: calc(-1 * clamp(28px, 5.5vh, 48px));
+  }
+}
+
+@media (min-width: 768px) {
+  #delivery-page-container.watta-delivery-page .watta-stellar-hero-stack,
+  #delivery-page-container.watta-delivery-page .menu-stellar-hero-stack {
+    min-height: calc(
+      var(--watta-delivery-hero-photo-top) + min(100vw, 920px) * var(--watta-delivery-hero-photo-ratio) +
+        clamp(16px, 2.5vh, 32px)
+    );
+    --menu-stellar-top-fade-h: clamp(160px, 28vh, 260px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(26px, 4.5vh, 42px));
+  }
+
+  #delivery-page-container.watta-delivery-page .watta-stellar-hero-stack #delivery-page-lead-intro.home-after-hero-intro-web {
+    margin-bottom: 0 !important;
+  }
+}
+
+/* Головна `/` — фото на всю висоту hero (cover) + білі fade зверху/знизу */
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack {
+  position: relative;
+  overflow: hidden;
+  --menu-stellar-media-push: 0;
+  --menu-stellar-top-fade-h: clamp(140px, 26vh, 240px);
+  --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px));
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack #home-after-hero-intro.home-after-hero-intro-web {
+  background: transparent !important;
+  border-top: none !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .watta-stellar-hero-bg__image,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .menu-stellar-hero-bg__image {
+  top: 0 !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100% !important;
+  max-height: none;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .watta-stellar-hero-bg__fade--general,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .menu-stellar-hero-bg__fade--general,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .watta-stellar-hero-bg__fade--desktop,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .menu-stellar-hero-bg__fade--desktop,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .watta-stellar-hero-bg__fade--mobile,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .menu-stellar-hero-bg__fade--mobile {
+  top: 0;
+  height: var(--menu-stellar-top-fade-h);
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #ffffff 42%,
+    rgba(255, 255, 255, 0.94) 58%,
+    rgba(255, 255, 255, 0.62) 76%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .watta-stellar-hero-bg__fade--bottom,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .menu-stellar-hero-bg__fade--bottom,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .watta-stellar-hero-bg__fade--bottom-mobile,
+.menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack .menu-stellar-hero-bg__fade--bottom-mobile {
+  display: block !important;
+  z-index: 6;
+  height: var(--menu-stellar-bottom-fade-h);
+  background: linear-gradient(
+    to top,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.68) 38%,
+    rgba(255, 255, 255, 0.14) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+html:not([data-watta-home-past-hero='1'])
+  .menu-page-web.watta-site-hero-page-web
+  .watta-home-stellar-hero-stack:not(.watta-home-photo-first-screen) {
+  --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px));
+}
+
+@media (max-width: 767px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack:not(.watta-home-photo-first-screen) {
+    /* svh, не dvh: на телефоні dvh «дихає» при показі/ховранні адресної смуги → контент стрибає. */
+    min-height: clamp(520px, calc(100svh - 7.5rem), 920px);
+    padding-bottom: 0;
+    --menu-stellar-top-fade-h: clamp(128px, 24vh, 220px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(22px, 3.8vh, 36px));
+  }
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-stellar-hero-stack:not(.watta-home-photo-first-screen) {
+    --menu-stellar-top-fade-h: clamp(160px, 28vh, 260px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(26px, 4.5vh, 42px));
+  }
+}
+
+/* Головна `/` — телефон і планшет/ПК: cover на всю висоту + білі fade зверху/знизу */
+.menu-page-web.watta-site-hero-page-web .watta-home-hero-flow {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+  position: relative;
+  display: block;
+  overflow: visible !important;
+  flex-shrink: 0;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  --watta-home-hero-chrome-overlap: var(
+    --watta-sticky-chrome-measured-h,
+    var(--watta-sticky-chrome-flow-h, 148px)
+  );
+  --watta-home-hero-viewport-h: 100svh;
+  height: var(--watta-home-hero-viewport-h) !important;
+  min-height: var(--watta-home-hero-viewport-h) !important;
+  max-height: var(--watta-home-hero-viewport-h) !important;
+  margin-top: calc(-1 * var(--watta-home-hero-chrome-overlap));
+  padding-bottom: 0 !important;
+  --menu-stellar-media-push: 0;
+  --watta-home-hero-photo-ratio: 777 / 1024;
+  --watta-home-hero-overlay-pad-top: calc(var(--watta-home-hero-chrome-overlap) + clamp(4px, 0.8vh, 12px));
+  --watta-home-hero-overlay-pad-bottom: clamp(8px, 1.2vh, 16px);
+  --watta-home-hero-top-white-fade-extra: clamp(72px, 14vh, 132px);
+  --watta-home-hero-bottom-white-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px));
+  --menu-stellar-top-fade-h: calc(
+    var(--watta-home-hero-chrome-overlap) + var(--watta-home-hero-top-white-fade-extra)
+  ) !important;
+  --menu-stellar-bottom-fade-h: var(--watta-home-hero-bottom-white-fade-h) !important;
+  --watta-home-hero-top-fade-push: clamp(8px, 1.2vh, 16px);
+  --watta-home-hero-bottom-fade-push: clamp(8px, 1.2vh, 16px);
+  --watta-home-hero-bg-bleed-left: 4%;
+  --watta-home-hero-bg-bleed-right: 1.5%;
+  --watta-home-hero-bg-pos-x: 40%;
+  --watta-home-hero-bg-scale: 1.06;
+}
+
+/* Фон hero — в межах блоку; стрічки суші можуть виходити за краї вікна */
+.menu-page-web.watta-site-hero-page-web
+  .watta-home-photo-first-screen.watta-home-stellar-hero-stack
+  .watta-stellar-hero-bg,
+.menu-page-web.watta-site-hero-page-web
+  .watta-home-photo-first-screen.watta-home-stellar-hero-stack
+  .menu-stellar-hero-bg {
+  overflow: hidden;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg--contain,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg--contain {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100%;
+  transform: none;
+  overflow: visible;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__image,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__image {
+  position: absolute;
+  inset: 0;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__image,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__image {
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    transform: none !important;
+  }
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-hero-overlay-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(8px, 1.5vh, 16px) clamp(10px, 2.5vw, 20px);
+  box-sizing: border-box;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.menu-page-web.watta-site-hero-page-web
+  .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+  padding-left: 0;
+  padding-right: 0;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.menu-page-web.watta-site-hero-page-web
+  .watta-home-photo-first-screen
+  .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  min-height: 100%;
+  height: 100%;
+  padding-top: var(--watta-home-hero-overlay-pad-top);
+  padding-bottom: 0;
+  box-sizing: border-box;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-home-roll-hero-slot-web {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: auto;
+  justify-content: flex-start;
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-home-roll-hero-slot-web {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: visible;
+  }
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-hero-overlay-stack > * {
+  pointer-events: auto;
+}
+
+.menu-page-web.watta-site-hero-page-web .delivery-page-home-flow > #menu-cinematic-block {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  position: relative;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--top-shadow,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--top-shadow {
+  display: block !important;
+  top: 0;
+  height: calc(var(--menu-stellar-top-fade-h) + clamp(12px, 2vh, 24px));
+  background-image: linear-gradient(
+    to bottom,
+    rgba(12, 20, 16, 0.05) 0%,
+    rgba(12, 20, 16, 0.025) 18%,
+    rgba(12, 20, 16, 0.14) 42%,
+    rgba(12, 20, 16, 0.08) 58%,
+    rgba(12, 20, 16, 0.03) 78%,
+    rgba(12, 20, 16, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--general,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--general,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--desktop,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--desktop,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--mobile,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--mobile {
+  z-index: 6;
+  top: 0;
+  height: var(--menu-stellar-top-fade-h);
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #ffffff 16%,
+    rgba(255, 255, 255, 0.98) 26%,
+    rgba(255, 255, 255, 0.9) 38%,
+    rgba(255, 255, 255, 0.72) 52%,
+    rgba(255, 255, 255, 0.48) 66%,
+    rgba(255, 255, 255, 0.24) 78%,
+    rgba(255, 255, 255, 0.08) 90%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom-shadow,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom-shadow {
+  display: block !important;
+  bottom: 0;
+  height: calc(var(--menu-stellar-bottom-fade-h) + clamp(8px, 1.4vh, 14px));
+  background-image: linear-gradient(
+    to top,
+    rgba(12, 20, 16, 0.1) 0%,
+    rgba(12, 20, 16, 0.07) 14%,
+    rgba(12, 20, 16, 0.12) 32%,
+    rgba(12, 20, 16, 0.06) 50%,
+    rgba(12, 20, 16, 0.025) 68%,
+    rgba(12, 20, 16, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom-mobile,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom-mobile {
+  display: block !important;
+  z-index: 6;
+  bottom: 0;
+  height: var(--menu-stellar-bottom-fade-h);
+  opacity: 1;
+  background: linear-gradient(
+    to top,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.68) 38%,
+    rgba(255, 255, 255, 0.14) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-below-photo {
+  position: relative;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-below-photo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(22px, 3.2vh, 40px);
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    rgba(12, 20, 16, 0.24) 0%,
+    rgba(12, 20, 16, 0.18) 14%,
+    rgba(12, 20, 16, 0.07) 36%,
+    rgba(12, 20, 16, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-below-photo #home-after-hero-intro.home-after-hero-intro-web {
+  margin-top: 0 !important;
+  padding-top: clamp(24px, 4vh, 40px) !important;
+  background: #ffffff !important;
+  border-top: none !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-below-photo #home-after-hero-intro .home-after-hero-intro-inner-web--home-menu {
+  padding-top: clamp(8px, 1.2vh, 14px) !important;
+}
+
+@media (max-width: 767px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+    overflow: visible !important;
+    /*
+     * Hero підтягується під sticky chrome (негативний margin-top).
+     * Додаємо overlap до висоти — інакше внизу екрана видно початок наступної секції.
+     */
+    --watta-home-hero-viewport-h: calc(
+      100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+    );
+    --watta-home-hero-top-white-fade-extra: clamp(92px, 17vh, 156px);
+    --watta-home-hero-bottom-white-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(22px, 3.8vh, 36px));
+    --menu-stellar-top-fade-h: calc(
+      var(--watta-home-hero-chrome-overlap) + var(--watta-home-hero-top-white-fade-extra)
+    ) !important;
+    --menu-stellar-bottom-fade-h: var(--watta-home-hero-bottom-white-fade-h) !important;
+    --watta-home-hero-top-fade-push: clamp(6px, 1vh, 12px);
+    --watta-home-hero-bottom-fade-peek: clamp(10px, 1.8vh, 18px);
+    --watta-home-hero-bottom-fade-push: calc(
+      var(--menu-stellar-bottom-fade-h) - var(--watta-home-hero-bottom-fade-peek)
+    );
+  }
+
+  .menu-page-web.watta-site-hero-page-web
+    .watta-home-photo-first-screen
+    .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+    justify-content: flex-start;
+    align-items: stretch;
+    padding-bottom: 0;
+    z-index: 24;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-home-roll-hero-slot-web {
+    flex: 0 1 auto;
+    height: auto;
+    min-height: 0;
+    align-self: stretch;
+    justify-content: flex-start;
+    margin-top: 0;
+    transform: none;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(6px, 1vh, 10px);
+    pointer-events: none;
+    z-index: 8;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.72) 55%, #ffffff 100%);
+  }
+
+  .menu-page-web.watta-site-hero-page-web .delivery-page-intro-web--video:has(.watta-home-photo-first-screen) {
+    min-height: calc(
+      100svh + var(--watta-home-hero-chrome-overlap, var(--watta-sticky-chrome-measured-h, 132px)) - 64px
+    );
+    overflow: visible;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__image,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__image {
+    transform: none !important;
+    scale: 1 !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg--contain {
+    overflow: hidden;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain {
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    image-rendering: auto;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom-shadow,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom-shadow {
+    bottom: calc(-1 * var(--watta-home-hero-bottom-fade-push));
+    height: calc(var(--menu-stellar-bottom-fade-h) + clamp(8px, 1.4vh, 14px));
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom-mobile,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom-mobile {
+    bottom: calc(-1 * var(--watta-home-hero-bottom-fade-push));
+    height: var(--menu-stellar-bottom-fade-h);
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--top-shadow,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--top-shadow {
+    top: 0;
+    height: calc(var(--menu-stellar-top-fade-h) + clamp(12px, 2vh, 22px));
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--general,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--general,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--desktop,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--desktop,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--mobile,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--mobile {
+    top: 0;
+    height: var(--menu-stellar-top-fade-h);
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-below-photo {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-below-photo #home-after-hero-intro.home-after-hero-intro-web {
+    padding-top: clamp(28px, 5vh, 48px) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    > #menu-cinematic-block {
+    margin-top: clamp(-16px, -2.4vh, -8px) !important;
+    padding-top: clamp(8px, 1.2vh, 14px) !important;
+    min-height: 0 !important;
+  }
+}
+
+@media (min-width: 768px) {
+  /* Планшет / ноут / ПК: текст про доставку лише на фото — без білого дубля під hero */
+  .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page) .watta-home-below-photo {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+    overflow: visible !important;
+    background: transparent !important;
+    --watta-home-hero-viewport-h: 100svh;
+    height: var(--watta-home-hero-viewport-h) !important;
+    min-height: var(--watta-home-hero-viewport-h) !important;
+    max-height: var(--watta-home-hero-viewport-h) !important;
+    --menu-stellar-top-fade-h: calc(
+      var(--watta-home-hero-chrome-overlap) + clamp(64px, 12vh, 118px)
+    ) !important;
+    --watta-home-hero-bottom-white-fade-h: 0 !important;
+    --menu-stellar-bottom-fade-h: 0 !important;
+    --watta-home-hero-top-fade-push: clamp(6px, 1vh, 12px);
+    --watta-home-hero-bottom-fade-push: 0;
+    --watta-home-hero-overlay-pad-top: calc(
+      var(--watta-home-hero-chrome-overlap) + clamp(4px, 0.8vh, 12px)
+    );
+    --watta-home-hero-overlay-pad-bottom: 0;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen::after {
+    content: '' !important;
+    display: block !important;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: clamp(26px, 4.2vh, 48px) !important;
+    pointer-events: none;
+    z-index: 7;
+    background:
+      radial-gradient(
+        ellipse 78% 100% at 50% 100%,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.92) 24%,
+        rgba(255, 255, 255, 0.52) 52%,
+        rgba(255, 255, 255, 0.12) 76%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.28) 62%,
+        rgba(255, 255, 255, 0.72) 100%
+      );
+  }
+
+  .menu-page-web.watta-site-hero-page-web .delivery-page-intro-web--video:has(.watta-home-photo-first-screen) {
+    min-height: 100svh;
+    overflow: visible;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-home-hero-overlay-stack {
+    padding-top: var(--watta-home-hero-overlay-pad-top);
+    padding-bottom: 0;
+    justify-content: stretch;
+    align-items: stretch;
+    min-height: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-home-roll-hero-slot-web {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: stretch;
+    width: 100%;
+    min-height: 0;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .menu-page-web.watta-site-hero-page-web
+    .watta-home-photo-first-screen
+    .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
+    justify-content: stretch;
+    align-items: stretch;
+    min-height: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .menu-page-web.watta-site-hero-page-web
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    > #menu-cinematic-block {
+    margin-top: clamp(-48px, -7vh, -36px) !important;
+    padding-top: clamp(4px, 0.8vh, 10px) !important;
+    position: relative;
+    z-index: 12;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg {
+    overflow: hidden;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__image,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__image {
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    transform: none !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom-shadow,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom-shadow,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--bottom-mobile,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--bottom-mobile {
+    display: none !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--top-shadow,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--top-shadow {
+    display: block !important;
+    top: 0;
+    height: calc(var(--menu-stellar-top-fade-h) + clamp(12px, 2vh, 24px));
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--general,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--general,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--desktop,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--desktop,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__fade--mobile,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__fade--mobile {
+    display: block !important;
+    top: 0;
+    height: var(--menu-stellar-top-fade-h);
+  }
+}
+
+/* Планшет: cover на весь екран + тінь зверху */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+    --watta-home-hero-overlay-pad-top: calc(
+      var(--watta-home-hero-chrome-overlap) + clamp(6px, 1vh, 14px)
+    );
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__image,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__image {
+    object-position: center center !important;
+  }
+}
+
+/* Ноут / десктоп: cover на весь екран */
+@media (min-width: 1025px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+    --watta-home-hero-overlay-pad-top: calc(
+      var(--watta-home-hero-chrome-overlap) + clamp(8px, 1.2vh, 18px)
+    );
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__image,
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__image {
+    object-position: center center !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+    --watta-home-hero-overlay-pad-top: calc(
+      var(--watta-home-hero-chrome-overlap) + clamp(10px, 1.4vh, 20px)
+    );
+  }
+}
+
+/*
+ * /menu?cat= — фото категорії на всю ширину/висоту hero (cover), далі секції каталогу.
+ */
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack {
+  position: relative;
+  overflow: hidden;
+  --menu-stellar-media-push: 0;
+  --menu-stellar-top-fade-h: clamp(120px, 22vh, 200px);
+  --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px));
+  /* svh, не dvh: стабільна висота hero — інакше на телефоні контент «дихає» вгору-вниз при скролі. */
+  min-height: clamp(480px, calc(100svh - var(--watta-sticky-chrome-flow-h, 148px)), 920px);
+  padding-bottom: 0 !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-bg__image,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .menu-stellar-hero-bg__image {
+  top: -4% !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 108% !important;
+  max-height: none;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-bg__fade--general,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .menu-stellar-hero-bg__fade--general,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-bg__fade--desktop,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .menu-stellar-hero-bg__fade--desktop,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-bg__fade--mobile,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .menu-stellar-hero-bg__fade--mobile {
+  top: 0;
+  height: var(--menu-stellar-top-fade-h);
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #ffffff 32%,
+    rgba(255, 255, 255, 0.88) 52%,
+    rgba(255, 255, 255, 0.42) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-bg__fade--bottom,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-bg__fade--bottom-mobile,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .menu-stellar-hero-bg__fade--bottom,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .menu-stellar-hero-bg__fade--bottom-mobile {
+  display: block !important;
+  z-index: 6;
+  height: var(--menu-stellar-bottom-fade-h);
+  background: linear-gradient(
+    to top,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.68) 38%,
+    rgba(255, 255, 255, 0.14) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-intro__inner,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .home-after-hero-intro-inner-web--home-menu {
+  padding-top: clamp(48px, 14vh, 120px) !important;
+  padding-bottom: clamp(20px, 4vh, 40px) !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .delivery-hero-copy-home__title--stage {
+  font-size: clamp(2rem, 8vw, 3.5rem) !important;
+  line-height: 1.06 !important;
+  text-shadow: 0 2px 24px rgba(255, 255, 255, 0.65);
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .delivery-hero-copy-home__script {
+  font-size: clamp(0.95rem, 2.8vw, 1.15rem) !important;
+  color: #374151 !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .delivery-hero-copy-home__title-line--accent,
+.menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .delivery-hero-copy-home__body--stage {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  .menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack {
+    min-height: clamp(520px, calc(100svh - 7.5rem), 960px);
+    --menu-stellar-top-fade-h: clamp(104px, 20vh, 168px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(22px, 3.8vh, 36px));
+  }
+
+  .menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .watta-stellar-hero-intro__inner,
+  .menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(56px, 16vh, 128px) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web .watta-menu-category-hero-stack {
+    min-height: clamp(560px, calc(100svh - 9rem), 980px);
+    --menu-stellar-top-fade-h: clamp(140px, 24vh, 220px);
+    --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(26px, 4.5vh, 42px));
+  }
+}
+
+.watta-menu-balloons-cta {
+  --watta-menu-balloons-dot: 48px;
+  --watta-menu-balloons-inset-x: 14px;
+  position: relative;
+  margin: 0 auto;
+  padding: 12px 18px 12px var(--watta-menu-balloons-inset-x);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.watta-menu-balloons-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  display: block;
+  width: var(--watta-menu-balloons-dot);
+  height: var(--watta-menu-balloons-dot);
+  border-radius: 50px;
+  background: var(--watta-brand-action, #3a7d3f);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 4px 14px rgba(15, 48, 28, 0.16),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.watta-menu-balloons-cta__label {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: clamp(0.9375rem, 1.45vw, 1.0625rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.watta-menu-balloons-cta__label-base {
+  color: var(--watta-mobile-cart-bar-green, var(--watta-brand-action, #5c9010));
+}
+
+.watta-menu-balloons-cta__label-ink {
+  position: absolute;
+  inset: 0 auto auto 0;
+  color: var(--watta-mobile-cart-bar-ink, #ffffff);
+  text-shadow: none;
+  clip-path: inset(
+    0 calc(100% - (var(--watta-menu-balloons-dot) - var(--watta-menu-balloons-inset-x))) 0 0
+  );
+  pointer-events: none;
+}
+
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-home-photo-first-screen
+  .watta-menu-balloons-cta
+  .watta-menu-balloons-cta__label-base {
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 14px rgba(255, 255, 255, 0.88);
+}
+
+.watta-menu-balloons-cta svg {
+  position: relative;
+  z-index: 1;
+  top: 0;
+  margin-left: 10px;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke: var(--watta-mobile-cart-bar-green, var(--watta-brand-action, #5c9010));
+  stroke-width: 2;
+  transform: translateX(-5px);
+  transition:
+    transform 0.3s ease,
+    stroke 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .watta-menu-balloons-cta:hover::before {
+    width: 100%;
+    background: var(--watta-brand-action-hover, #40802e);
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.14) inset,
+      0 4px 14px rgba(15, 48, 28, 0.18),
+      0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .watta-menu-balloons-cta:hover .watta-menu-balloons-cta__label-base,
+  .watta-menu-balloons-cta:hover .watta-menu-balloons-cta__label-ink {
+    color: var(--watta-mobile-cart-bar-ink, #ffffff);
+    text-shadow: none;
+  }
+
+  .watta-menu-balloons-cta:hover .watta-menu-balloons-cta__label-ink {
+    clip-path: none;
+  }
+
+  .watta-menu-balloons-cta:hover svg {
+    transform: translateX(0);
+    stroke: var(--watta-mobile-cart-bar-ink, #ffffff);
+  }
+}
+
+.watta-menu-balloons-cta:active {
+  transform: scale(0.95);
+}
+
+.watta-menu-balloons-cta:focus-visible {
+  outline: 2px solid #145142;
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-menu-balloons-cta {
+    --watta-menu-balloons-inset-x: 13px;
+    padding: 13px 20px 13px var(--watta-menu-balloons-inset-x);
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-menu-balloons-cta
+    .watta-menu-balloons-cta__label {
+    font-size: 1.125rem;
+  }
+}
+
+@media (min-width: 1025px) {
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-menu-balloons-cta
+    .watta-menu-balloons-cta__label {
+    font-size: 1.1875rem;
+  }
+}
+
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-menu-photo-hero__intro-stack {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  z-index: 330;
+  width: min(48rem, 92vw);
+  max-width: min(48rem, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+@media (min-width: 1025px) {
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-menu-photo-hero__intro-stack {
+    width: min(52rem, 88vw);
+    max-width: min(52rem, 88vw);
+  }
+}
+
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-menu-photo-hero__intro-stack
+  .watta-sushi-roll-hero__title-wrap {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  animation: none !important;
+}
+
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-menu-balloons-trigger-wrap--under-copy {
+  margin-top: clamp(18px, 3.2vh, 28px);
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-menu-balloons-trigger-wrap--under-copy {
+    margin-top: clamp(22px, 3.6vh, 34px);
+  }
+}
+
+/*
+ * /menu — photo-first hero 1:1 з головною (cover, fade, типографіка, анімації),
+ * лише без бігучої смуги ролів. Позиція тексту — спільні .watta-home-photo-first-screen правила.
+ */
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page) .watta-menu-photo-hero--no-marquee {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 100%;
+  width: 100%;
+  padding-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-home-photo-first-screen
+    .watta-menu-photo-hero--no-marquee {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding-top: clamp(6px, 1.4vh, 14px);
+    padding-bottom: clamp(6px, 1.2vh, 12px);
+  }
+}
+
+.menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+  .watta-home-photo-first-screen
+  .watta-menu-photo-hero--no-marquee
+  .watta-sushi-roll-hero__mobile-intro {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.menu-page-web.watta-site-hero-page-web[data-watta-menu-cat-hero]
+  .watta-home-photo-first-screen.watta-menu-category-photo-first {
+  --menu-stellar-top-fade-h: clamp(120px, 22vh, 200px);
+  --menu-stellar-bottom-fade-h: var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px));
+}
+
+.menu-page-web.watta-site-hero-page-web[data-watta-menu-cat-hero]
+  .watta-home-photo-first-screen.watta-menu-category-photo-first
+  .watta-stellar-hero-bg__image,
+.menu-page-web.watta-site-hero-page-web[data-watta-menu-cat-hero]
+  .watta-home-photo-first-screen.watta-menu-category-photo-first
+  .menu-stellar-hero-bg__image {
+  object-position: center center !important;
+}
+
+@media (max-width: 767px) {
+  html.watta-html-home-hero
+    .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-full-menu-page {
+    margin-top: clamp(-108px, -15vh, -84px) !important;
+    padding-top: 0 !important;
+    position: relative;
+    z-index: 12;
+    background: #ffffff;
+  }
+
+  html.watta-html-home-hero
+    .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-full-menu-page
+    .home-menu-catalog-section-web {
+    padding-top: clamp(8px, 1.5vh, 16px) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-full-menu-page,
+  html.watta-html-home-hero
+    .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-full-menu-page {
+    margin-top: clamp(-72px, -10vh, -56px) !important;
+    padding-top: clamp(4px, 0.8vh, 10px) !important;
+    position: relative;
+    z-index: 12;
+    background: #ffffff;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-full-menu-page
+    .home-menu-catalog-section-web,
+  html.watta-html-home-hero
+    .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .watta-full-menu-page
+    .home-menu-catalog-section-web {
+    padding-top: clamp(4px, 0.8vh, 10px) !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-full-menu-page,
+  html.watta-html-home-hero
+    .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-full-menu-page {
+    margin-top: clamp(-56px, -8vh, -44px) !important;
+  }
+}
+
+/*
+ * /delivery — photo-first hero як на /menu: cover, fade, текст по центру, без marquee.
+ */
+.watta-delivery-page.watta-site-hero-page-web .watta-menu-photo-hero--no-marquee {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 100%;
+  width: 100%;
+  padding-bottom: 0;
+}
+
+.watta-delivery-page.watta-site-hero-page-web .watta-menu-photo-hero__intro-stack {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  z-index: 330;
+  width: min(40rem, 88vw);
+  max-width: min(40rem, 88vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.watta-delivery-page.watta-site-hero-page-web
+  .watta-menu-photo-hero__intro-stack
+  .watta-sushi-roll-hero__title-wrap {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  animation: none !important;
+}
+
+.watta-delivery-page.watta-site-hero-page-web
+  .watta-home-photo-first-screen
+  .watta-menu-photo-hero--no-marquee
+  .watta-sushi-roll-hero__mobile-intro {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+@media (max-width: 767px) {
+  .watta-delivery-page.watta-site-hero-page-web .watta-menu-photo-hero__intro-stack {
+    top: 32%;
+  }
+
+  .watta-delivery-page.watta-site-hero-page-web
+    .watta-home-photo-first-screen
+    .watta-menu-photo-hero--no-marquee {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding-top: clamp(6px, 1.4vh, 14px);
+    padding-bottom: clamp(6px, 1.2vh, 12px);
+  }
+
+  html.watta-html-delivery-hero
+    .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-delivery-page-flow {
+    margin-top: clamp(-108px, -15vh, -84px) !important;
+    padding-top: 0 !important;
+    position: relative;
+    z-index: 12;
+    background: #ffffff;
+  }
+}
+
+@media (min-width: 768px) {
+  html.watta-html-delivery-hero
+    .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-delivery-page-flow {
+    margin-top: clamp(-72px, -10vh, -56px) !important;
+    padding-top: clamp(4px, 0.8vh, 10px) !important;
+    position: relative;
+    z-index: 12;
+    background: #ffffff;
+  }
+}
+
+@media (min-width: 1025px) {
+  html.watta-html-delivery-hero
+    .watta-delivery-page.watta-site-hero-page-web
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    + .watta-delivery-page-flow {
+    margin-top: clamp(-56px, -8vh, -44px) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  #delivery-page-container[data-watta-delivery-photo-first='1']
+    .watta-home-photo-first-screen
+    .watta-stellar-hero-bg--responsive
+    .watta-stellar-hero-bg__picture
+    .watta-stellar-hero-bg__image,
+  #delivery-page-container[data-watta-delivery-photo-first='1']
+    .watta-home-photo-first-screen
+    .watta-stellar-hero-bg--responsive
+    .watta-stellar-hero-bg__picture
+    .menu-stellar-hero-bg__image {
+    object-position: center 42% !important;
+  }
+
+  #delivery-page-container[data-watta-delivery-photo-first='1']
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro-title {
+    color: #0a2018;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.95),
+      0 2px 12px rgba(255, 255, 255, 0.82);
+  }
+
+  #delivery-page-container[data-watta-delivery-photo-first='1']
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro-line--script {
+    color: #145142;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.92),
+      0 2px 10px rgba(255, 255, 255, 0.75);
+  }
+
+  #delivery-page-container[data-watta-delivery-photo-first='1']
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro-body {
+    color: #124a3c;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.9),
+      0 2px 10px rgba(255, 255, 255, 0.72);
+  }
+
+  #delivery-page-container[data-watta-delivery-photo-first='1']
+    .watta-home-photo-first-screen
+    .watta-sushi-roll-hero__mobile-intro-char {
+    text-shadow: inherit;
+  }
+}
+
+/*
+ * Усі stellar hero — дуже тонкий нижній білий fade (/, /menu, /delivery, about…).
+ */
+.watta-stellar-hero-stack .watta-stellar-hero-bg__fade--bottom,
+.watta-stellar-hero-stack .watta-stellar-hero-bg__fade--bottom-mobile,
+.menu-stellar-hero-stack .menu-stellar-hero-bg__fade--bottom,
+.menu-stellar-hero-stack .menu-stellar-hero-bg__fade--bottom-mobile {
+  height: var(--menu-stellar-bottom-fade-h, var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px))) !important;
+  max-height: var(--menu-stellar-bottom-fade-h, var(--watta-stellar-bottom-fade-thin-h, clamp(24px, 4.2vh, 40px))) !important;
+  background: linear-gradient(
+    to top,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.65) 38%,
+    rgba(255, 255, 255, 0.12) 72%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
+}
+
+/*
+ * Головна hero: фото вплотну до лівого краю — легке розтягування і зсув фокусу.
+ */
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen > .watta-stellar-hero-bg,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen > .menu-stellar-hero-bg {
+  left: calc(-1 * var(--watta-home-hero-bg-bleed-left, 4%)) !important;
+  right: calc(-1 * var(--watta-home-hero-bg-bleed-right, 1.5%)) !important;
+  width: calc(
+    100% + var(--watta-home-hero-bg-bleed-left, 4%) + var(--watta-home-hero-bg-bleed-right, 1.5%)
+  ) !important;
+}
+
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__image,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__image,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .watta-stellar-hero-bg__photo--contain,
+.menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen .menu-stellar-hero-bg__photo--contain {
+  object-position: var(--watta-home-hero-bg-pos-x, 40%) center !important;
+  transform: scale(var(--watta-home-hero-bg-scale, 1.06)) !important;
+  transform-origin: var(--watta-home-hero-bg-pos-x, 40%) center !important;
+}
+
+@media (min-width: 768px) {
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+    --watta-home-hero-bg-bleed-left: 5%;
+    --watta-home-hero-bg-bleed-right: 2%;
+    --watta-home-hero-bg-pos-x: 38%;
+    --watta-home-hero-bg-scale: 1.08;
+  }
+
+  /* М’яке «пятно» на лінії hero → білий блок */
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen::after {
+    height: clamp(28px, 4.5vh, 52px) !important;
+    background:
+      radial-gradient(
+        ellipse 82% 100% at 50% 100%,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.94) 22%,
+        rgba(255, 255, 255, 0.58) 50%,
+        rgba(255, 255, 255, 0.14) 74%,
+        rgba(255, 255, 255, 0) 100%
+      ),
+      linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.32) 58%,
+        rgba(255, 255, 255, 0.78) 100%
+      ) !important;
+  }
+}

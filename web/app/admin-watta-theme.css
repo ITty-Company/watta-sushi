@@ -174,16 +174,16 @@
 }
 
 .admin-watta-icon-btn--primary {
-  background: linear-gradient(145deg, #0f3d32 0%, #145142 55%, #155044 100%);
+  background: var(--watta-brand-action);
   border-color: rgba(20, 81, 66, 0.2);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(20, 81, 66, 0.22);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--watta-brand-action) 28%, transparent);
 }
 
 .admin-watta-icon-btn--primary:hover {
-  background: linear-gradient(145deg, #0d3530 0%, #103d34 55%, #145142 100%);
+  background: var(--watta-brand-action-hover);
   color: #fff;
-  box-shadow: 0 8px 22px rgba(20, 81, 66, 0.28);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--watta-brand-action) 32%, transparent);
 }
 
 .admin-watta-lang-switch {
@@ -367,3 +367,202 @@
     max-width: min(46vw, 12rem);
   }
 }
+
+.admin-orders-by-day {
+  border-radius: 20px;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 1rem 1rem 1.1rem;
+  box-shadow: 0 16px 40px -28px rgba(20, 81, 66, 0.28);
+}
+
+.admin-orders-by-day__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .admin-orders-by-day__head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.admin-orders-by-day__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #145142;
+}
+
+.admin-orders-by-day__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.admin-orders-by-day__nav-btn,
+.admin-orders-by-day__today-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: #fff;
+  color: #145142;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-orders-by-day__nav-btn {
+  width: 2.35rem;
+  padding: 0;
+}
+
+.admin-orders-by-day__today-btn {
+  padding: 0 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-orders-by-day__nav-btn:hover,
+.admin-orders-by-day__today-btn:hover {
+  border-color: rgba(122, 181, 21, 0.35);
+  background: rgba(122, 181, 21, 0.08);
+}
+
+.admin-orders-by-day__date-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.35rem;
+  padding: 0 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(122, 181, 21, 0.28);
+  background: rgba(122, 181, 21, 0.1);
+  color: #145142;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-orders-by-day__date-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.admin-orders-by-day__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.admin-orders-by-day__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 14px;
+  background: rgba(20, 81, 66, 0.04);
+  border: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+.admin-orders-by-day__stat-k {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.62);
+}
+
+.admin-orders-by-day__stat-v {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #145142;
+}
+
+.admin-orders-by-day__chips-wrap {
+  margin-top: 0.85rem;
+}
+
+.admin-orders-by-day__chips-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(20, 81, 66, 0.65);
+}
+
+.admin-orders-by-day__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-height: 6.5rem;
+  overflow-y: auto;
+}
+
+.admin-orders-by-day__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: #fff;
+  font-size: 0.72rem;
+  color: #475569;
+  cursor: pointer;
+}
+
+.admin-orders-by-day__chip strong {
+  color: #145142;
+}
+
+.admin-orders-by-day__chip--active {
+  border-color: transparent;
+  background: var(--watta-brand-mint, #5c9010);
+  color: #fff;
+}
+
+.admin-shell-watta-web .admin-watta-empty-state {
+  border-color: rgba(20, 81, 66, 0.15);
+  color: var(--admin-muted-soft);
+}
+
+.admin-page-root {
+  font-family:
+    var(--font-inter, 'Inter'),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+
+.admin-shell-watta-web .admin-watta-section-lead {
+  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+}
+
+.admin-hero-video-preview-missing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(20, 81, 66, 0.72);
+  background: rgba(20, 81, 66, 0.04);
+  border: 1px dashed rgba(20, 81, 66, 0.18);
+  border-radius: 12px;
+}
+

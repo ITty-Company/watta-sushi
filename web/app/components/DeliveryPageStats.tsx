@@ -1,10 +1,11 @@
 'use client'
 
 import { memo, useMemo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import { MapPinned, MessagesSquare, Snowflake, UtensilsCrossed } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useWattaDisableScrollReveal, wattaInViewFadeViewport } from './WattaInViewFade'
 
 const ACCENT = '#FF5C00'
 const BRAND_GREEN = '#145142'
@@ -41,10 +42,10 @@ export function WattaStatPillsBand({
   className?: string
   accentPattern?: 'delivery' | 'alternate'
 }) {
-  const reduce = useReducedMotion()
+  const reduce = useWattaDisableScrollReveal()
 
   const fade = reduce
-    ? ({ initial: false as const } satisfies { initial: false })
+    ? ({ initial: false as const, animate: { opacity: 1, y: 0 } })
     : ({
         initial: { opacity: 0, y: 22 },
         whileInView: { opacity: 1, y: 0 },
@@ -60,14 +61,14 @@ export function WattaStatPillsBand({
           {items.map((s, i) => {
             const isOrange = isOrangePill(i, accentPattern)
             return (
-              <motion.div
+              <m.div
                 key={`${s.value}-${s.label}-${i}`}
                 className={cn(
                   'contact-watta-stat-pill delivery-stat-pill--blob flex flex-col items-center text-center',
                   isOrange ? 'delivery-stat-pill--orange' : 'delivery-stat-pill--green',
                 )}
                 {...fade}
-                viewport={{ once: true, margin: '-40px' }}
+                viewport={wattaInViewFadeViewport('-40px')}
                 transition={{ duration: 0.45, delay: i * 0.05 }}
                 whileHover={reduce ? undefined : { y: -3 }}
               >
@@ -89,7 +90,7 @@ export function WattaStatPillsBand({
                   {s.value}
                 </div>
                 {s.label ? <div className="contact-watta-stat-pill__label">{s.label}</div> : null}
-              </motion.div>
+              </m.div>
             )
           })}
         </div>

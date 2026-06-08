@@ -64,6 +64,30 @@ export function isBrowserReloadOnHome(): boolean {
   return (p === '/' || p === '') && isDocumentReloadNavigation()
 }
 
+/** Прапорець: reload з іншого публічного маршруту → redirect на `/` (nav type уже не reload). */
+export const BOOT_SPLASH_RELOAD_FLAG_KEY = 'watta_boot_splash_reload'
+
+/** Показати boot splash лише при F5 / Reload на головній (включно з redirect після reload з /menu тощо). */
+export function shouldRunBootSplashOnHome(): boolean {
+  if (typeof window === 'undefined') return false
+  const p = window.location.pathname || '/'
+  if (p !== '/' && p !== '') return false
+  if (isDocumentReloadNavigation()) return true
+  try {
+    return sessionStorage.getItem(BOOT_SPLASH_RELOAD_FLAG_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function clearBootSplashReloadFlag(): void {
+  try {
+    sessionStorage.removeItem(BOOT_SPLASH_RELOAD_FLAG_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 export function writeMenuBrowseReturn(
   fields: Omit<MenuBrowseReturnPayload, 'v' | 'savedAt'> & {
     pathname: string

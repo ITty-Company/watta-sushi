@@ -9,7 +9,7 @@ html:has(#reviews-page-container) body {
 }
 
 #reviews-page-container.reviews-page-web {
-  --reviews-accent: #145142;
+  --reviews-accent: var(--watta-brand-action, #3a7d3f);
   --reviews-orange: #ff5c00;
   position: relative;
   overflow-x: clip;
@@ -30,6 +30,18 @@ html:has(#reviews-page-container) .site-footer-watta.site-footer-watta--light {
   background: #ffffff !important;
   border-top: none !important;
   box-shadow: none !important;
+}
+
+.watta-reviews-page .delivery-page-home-flow {
+  position: relative;
+}
+
+.watta-reviews-page .watta-stellar-hero-intro .watta-reviews-hero-empty-hint {
+  color: #4b5563;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  max-width: 36rem;
+  margin-inline: auto;
 }
 
 .watta-reviews-hero-zone {
@@ -56,62 +68,16 @@ html:has(#reviews-page-container) .watta-sticky-chrome-flow-anchor {
   background: #ffffff;
 }
 
-.watta-reviews-page .watta-reviews-page__toolbar,
+.watta-reviews-page__cta-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: clamp(1rem, 2.4vh, 1.35rem);
+}
+
 .watta-reviews-hero-static {
   position: relative;
   z-index: 1;
   background: transparent !important;
-}
-
-.watta-reviews-page .watta-reviews-page__toolbar {
-  position: relative;
-  z-index: 12;
-  width: 100%;
-  max-width: min(100rem, calc(100vw - 2rem));
-  margin-inline: auto;
-  padding: clamp(0.25rem, 0.8vw, 0.5rem) max(1rem, env(safe-area-inset-left, 0px)) 0.15rem
-    max(1rem, env(safe-area-inset-right, 0px));
-}
-
-.watta-reviews-page .watta-reviews-back--inline {
-  position: relative !important;
-  top: auto !important;
-  left: auto !important;
-}
-
-/* Компактніша кнопка «Назад» лише на /reviews */
-.watta-reviews-page .watta-reviews-back--inline.auth-watta-back-fab {
-  gap: 0.32rem;
-  padding: 0.18rem 0.38rem 0.18rem 0.24rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  border-width: 1px;
-  box-shadow:
-    0 5px 16px rgba(20, 81, 66, 0.11),
-    0 1px 0 rgba(255, 255, 255, 0.95) inset;
-}
-
-.watta-reviews-page .watta-reviews-back--inline .auth-watta-back-fab__icon {
-  width: 1.625rem;
-  height: 1.625rem;
-}
-
-.watta-reviews-page .watta-reviews-back--inline .auth-watta-back-fab__arrow {
-  width: 1.0625rem;
-  height: 1.0625rem;
-}
-
-.watta-reviews-page .watta-reviews-back--inline.auth-watta-back-fab:hover {
-  box-shadow:
-    0 8px 20px rgba(20, 81, 66, 0.14),
-    0 1px 0 rgba(255, 255, 255, 1) inset;
-}
-
-.watta-reviews-page .watta-reviews-back--inline.auth-watta-back-fab:hover .auth-watta-back-fab__icon {
-  transform: translateX(-2px);
-}
-
-.watta-reviews-hero-static {
   width: 100%;
 }
 
@@ -253,7 +219,7 @@ html:has(#reviews-page-container) .watta-sticky-chrome-flow-anchor {
 }
 
 .watta-reviews-hero-actions__btn--primary:hover {
-  background: color-mix(in srgb, var(--reviews-accent) 88%, #000);
+  background: var(--watta-brand-action-hover);
 }
 
 .watta-reviews-page__write-desc {

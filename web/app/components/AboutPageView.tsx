@@ -2,8 +2,8 @@
 
 import Image from 'next/image'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { m } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
   ArrowLeft,
@@ -24,10 +24,19 @@ import {
   Zap,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
-import AnimatedHeroIntroBlock from './AnimatedHeroIntroBlock'
-import { WattaStatPillsBand, type WattaStatPillItem } from './DeliveryPageStats'
+import DeliveryHeroCopy from './DeliveryHeroCopy'
+import WattaStellarHeroSection from './WattaStellarHeroSection'
 import AboutTeamSection from './AboutTeamSection'
+import {
+  WATTA_IN_VIEW_FADE_VIEWPORT,
+  WattaInViewFadeSection,
+  useWattaMotionFade,
+  wattaInViewFadeViewport,
+} from './WattaInViewFade'
+import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
+import { WattaStaggerRevealText } from './WattaStaggerRevealText'
 import type { PublicTeamMember } from '@/lib/teamMembers'
+import { readTeamMembersCache } from '@/lib/publicRouteWarmCache'
 import { cn } from '@/lib/utils'
 
 const ACCENT = '#FF5C00'
@@ -45,19 +54,19 @@ function PhilosophySlideCard({
   title: string
   body: string
   fade:
-    | { initial: false }
+    | { initial: false; animate: { opacity: number; y: number } }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
   accentOrange?: boolean
 }) {
   return (
-    <motion.article
+    <m.article
       className={cn(
         'about-page-philosophy-card delivery-page-stat-card flex flex-col items-center rounded-[18px] p-3.5 text-center sm:rounded-[22px] sm:p-5',
         accentOrange ? 'delivery-page-stat-card--orange' : 'delivery-page-stat-card--green',
       )}
       {...fade}
-      viewport={{ once: true, margin: '-40px' }}
+      viewport={wattaInViewFadeViewport('-40px')}
       transition={{ duration: 0.45, delay }}
       whileHover={fade.initial === false ? undefined : { y: -3 }}
     >
@@ -67,7 +76,7 @@ function PhilosophySlideCard({
       </div>
       <h3 className="delivery-page-stat-card__value mt-0 text-base sm:text-lg">{title}</h3>
       <p className="delivery-page-stat-card__label mt-2">{body}</p>
-    </motion.article>
+    </m.article>
   )
 }
 
@@ -83,7 +92,7 @@ function InsideCard({
   title: string
   body: string
   fade:
-    | { initial: false }
+    | { initial: false; animate: { opacity: number; y: number } }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
   accentIndex?: number
@@ -99,10 +108,10 @@ function InsideCard({
   const blobTint = blobTints[accentIndex % blobTints.length]
 
   return (
-    <motion.article
+    <m.article
       className="about-page-inside-card group flex flex-col rounded-[22px] border border-gray-200/70 bg-white p-4 shadow-[0_8px_36px_rgba(20,81,66,0.07)] transition hover:-translate-y-0.5 hover:border-[#145142]/15 hover:shadow-[0_14px_44px_rgba(20,81,66,0.12)] sm:p-6"
       {...fade}
-      viewport={{ once: true, margin: '-40px' }}
+      viewport={wattaInViewFadeViewport('-40px')}
       transition={{ duration: 0.45, delay }}
     >
       <div className="relative mb-4 flex h-[4rem] w-[4rem] shrink-0 items-center justify-center sm:mb-5 sm:h-[4.5rem] sm:w-[4.5rem]">
@@ -117,7 +126,7 @@ function InsideCard({
       </div>
       <h3 className="text-lg font-black leading-tight text-gray-900 sm:text-xl">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-[#6b7280] sm:text-[15px]">{body}</p>
-    </motion.article>
+    </m.article>
   )
 }
 
@@ -133,16 +142,16 @@ function AboutStatPill({
   value: string
   label: string
   fade:
-    | { initial: false }
+    | { initial: false; animate: { opacity: number; y: number } }
     | { initial: { opacity: number; y: number }; whileInView: { opacity: number; y: number } }
   delay: number
   accent?: boolean
 }) {
   return (
-    <motion.div
+    <m.div
       className="about-page-stat-pill flex flex-col items-center justify-center rounded-2xl bg-white/10 px-2 py-3.5 text-center backdrop-blur-sm sm:rounded-[18px] sm:px-3 sm:py-4"
       {...fade}
-      viewport={{ once: true, margin: '-30px' }}
+      viewport={wattaInViewFadeViewport('-30px')}
       transition={{ duration: 0.4, delay }}
     >
       <Icon
@@ -157,7 +166,7 @@ function AboutStatPill({
         {value}
       </div>
       <div className="mt-1.5 text-[10px] font-semibold leading-snug text-white/75 sm:text-xs">{label}</div>
-    </motion.div>
+    </m.div>
   )
 }
 
@@ -171,7 +180,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
   const router = useInstantRouter()
   const { t, getLocalized } = useLanguage()
   const a = t.aboutPage
-  const reduce = useReducedMotion()
+  const fade = useWattaMotionFade()
 
   const [teamMembers, setTeamMembers] = useState<PublicTeamMember[]>([])
   const [teamReady, setTeamReady] = useState(false)
@@ -184,6 +193,13 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
     if (typeof window !== 'undefined' && window.history.length > 1) router.back()
     else router.push('/')
   }, [embedded, onBack, router])
+
+  useLayoutEffect(() => {
+    const cached = readTeamMembersCache()
+    if (!cached?.length) return
+    setTeamMembers(cached as PublicTeamMember[])
+    setTeamReady(true)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -204,7 +220,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
     }
   }, [])
 
-  const stats = useMemo<WattaStatPillItem[]>(
+  const stats = useMemo(
     () => [
       { icon: Users, value: '10K+', label: a.stats.clients },
       { icon: Award, value: '5+', label: a.stats.experience },
@@ -237,36 +253,23 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
     [a]
   )
 
-  const fade = reduce
-    ? ({ initial: false as const } satisfies { initial: false })
-    : ({
-        initial: { opacity: 0, y: 26 },
-        whileInView: { opacity: 1, y: 0 },
-      } as const)
-
-  const aboutPageLeadIntro = (
-    <AnimatedHeroIntroBlock
-      sectionId="about-page-lead-intro"
-      ariaLabel={`${a.philosophyTitlePart1} ${a.philosophyTitlePart2}`}
-      titleId="about-page-lead-title"
-      titleLines={[a.philosophyTitlePart1, a.philosophyTitlePart2]}
-      body={a.darkHeroSubtitle}
-      accentLineIndex={1}
-      headingLevel="h1"
-      reserveTopSpace
-      innerClassName="home-after-hero-intro-inner-web home-after-hero-intro-inner-web--home-menu delivery-page-intro-inner-web--standalone about-page-lead-intro-inner relative z-[1] mx-auto w-full max-w-6xl px-4 pb-3 text-center sm:px-6 sm:pb-4 md:pb-5"
-    />
-  )
-
   const aboutIntroBand = (
-    <div className="about-page-intro-band w-full shrink-0 bg-transparent">
-      {aboutPageLeadIntro}
-      <WattaStatPillsBand
-        items={stats}
-        className="about-page-hero-stats"
-        accentPattern="delivery"
+    <WattaStellarHeroSection
+      introId="about-page-lead-intro"
+      ariaLabelledBy="about-page-lead-title"
+    >
+      <DeliveryHeroCopy
+        titleId="about-page-lead-title"
+        kickerScript={a.heroKicker}
+        headlineLead={a.philosophyTitlePart1}
+        headlineMark={a.philosophyTitlePart2}
+        sub={a.darkHeroSubtitle}
+        statFresh=""
+        statFast=""
+        statCity=""
+        showStats={false}
       />
-    </div>
+    </WattaStellarHeroSection>
   )
 
   const aboutMainContent = (
@@ -345,7 +348,14 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
                 fontFamily: 'var(--font-inter, ui-sans-serif), system-ui, sans-serif',
               }}
             >
-              watta sushi
+              <WattaStaggerRevealText
+                text="watta sushi"
+                variant="title"
+                inView
+                replay={false}
+                staggerStyle="catalog"
+                as="span"
+              />
             </h2>
             <p className="mt-4 max-w-xl text-balance text-[15px] leading-relaxed text-white/75 sm:mt-6 sm:text-base md:text-lg">
               {a.darkHeroSubtitle}
@@ -365,16 +375,16 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
       </section>
       ) : null}
 
-      <section
+      <WattaInViewFadeSection
         className="about-page-section-web relative z-10 w-full watta-page-bg px-4 py-10 sm:px-6 sm:py-16 md:py-20"
         aria-labelledby="about-philosophy-heading"
       >
         <div className="mx-auto max-w-6xl">
         {embedded ? (
-        <motion.div
+        <m.div
           className="about-page-philosophy-heading-wrap mb-8 flex justify-center sm:mb-12 md:mb-16"
           {...fade}
-          viewport={{ once: true }}
+          viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
           transition={{ duration: 0.5 }}
         >
           <h2
@@ -392,21 +402,20 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
               </span>
             </span>
           </h2>
-        </motion.div>
+        </m.div>
         ) : (
-          <motion.div
+          <m.div
             className="about-page-why-heading-wrap mb-8 flex w-full justify-center sm:mb-10 md:mb-12"
             {...fade}
-            viewport={{ once: true }}
+            viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
             transition={{ duration: 0.5 }}
           >
-            <h2
+            <WattaStaggerSectionTitle
               id="about-philosophy-heading"
               className="about-page-why-heading contact-watta-section-title text-center"
-            >
-              {a.whyUs}
-            </h2>
-          </motion.div>
+              text={a.whyUs}
+            />
+          </m.div>
         )}
 
         <div className="delivery-page-stats-grid grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
@@ -423,12 +432,12 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
           ))}
         </div>
         </div>
-      </section>
+      </WattaInViewFadeSection>
 
       {/* Арт-блок + «плаваюче» зображення */}
-      <section className="about-page-art-web relative z-10 watta-page-bg">
+      <WattaInViewFadeSection className="about-page-art-web relative z-10 watta-page-bg">
         <div className="mx-auto grid max-w-6xl items-center gap-6 px-4 pb-2 pt-8 sm:gap-8 sm:px-6 sm:pb-4 sm:pt-12 md:pt-14 lg:grid-cols-[1fr_0.9fr] lg:gap-14 lg:pb-6">
-          <motion.div {...fade} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+          <m.div {...fade} viewport={WATTA_IN_VIEW_FADE_VIEWPORT} transition={{ duration: 0.5 }}>
             <p className="text-2xl font-black leading-[1.12] tracking-tight text-balance text-gray-900 sm:text-3xl md:text-[2.75rem] lg:text-5xl">
               {a.artHeadlineLine1}
               <br />
@@ -437,11 +446,11 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
                 {a.artHeadlineAccent}
               </span>
             </p>
-          </motion.div>
-          <motion.div
+          </m.div>
+          <m.div
             className="relative flex justify-center lg:justify-end"
             {...fade}
-            viewport={{ once: true }}
+            viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
             transition={{ duration: 0.55, delay: 0.08 }}
           >
             <div
@@ -457,35 +466,34 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
                 priority
               />
             </div>
-          </motion.div>
+          </m.div>
         </div>
-      </section>
+      </WattaInViewFadeSection>
 
       {/* Що всередині + статистика + історія + команда + контакти — єдиний потік без роздільників */}
       <div className="about-page-lower-flow relative z-10 watta-page-bg">
-        <section
+        <WattaInViewFadeSection
           className="about-page-inside-web relative px-4 pt-1 pb-8 sm:px-6 sm:pt-2 sm:pb-12"
           aria-labelledby="about-inside-heading"
         >
           <div className="about-page-inside-shell mx-auto max-w-6xl rounded-[28px] bg-gradient-to-b from-[#f6f9f7] via-[#f6f9f7] to-white px-3 py-6 sm:rounded-[32px] sm:px-5 sm:py-8 md:py-10">
-            <motion.div
+            <m.div
               className="mb-6 text-center sm:mb-8"
               {...fade}
-              viewport={{ once: true }}
+              viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
               transition={{ duration: 0.45 }}
             >
-              <h2
+              <WattaStaggerSectionTitle
                 id="about-inside-heading"
                 className="text-[clamp(1.45rem,5.5vw,2.35rem)] font-black leading-tight tracking-tight text-gray-900"
-              >
-                {a.insideSectionTitle}
-              </h2>
+                text={a.insideSectionTitle}
+              />
               <span
                 className="mx-auto mt-3 block h-1 w-12 rounded-full"
                 style={{ background: `linear-gradient(90deg, ${ACCENT}, #145142)` }}
                 aria-hidden
               />
-            </motion.div>
+            </m.div>
 
             <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
               {insideSlides.map((item, i) => (
@@ -523,13 +531,13 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
               </div>
             ) : null}
           </div>
-        </section>
+        </WattaInViewFadeSection>
 
-        <section className="about-page-story-web px-4 pb-6 sm:px-6 sm:pb-8">
-          <motion.div
+        <WattaInViewFadeSection className="about-page-story-web px-4 pb-6 sm:px-6 sm:pb-8">
+          <m.div
             className="about-page-story-card mx-auto max-w-6xl rounded-[24px] border border-[#145142]/10 bg-white p-5 shadow-[0_10px_40px_rgba(20,81,66,0.08)] sm:rounded-[28px] sm:p-8 md:p-10"
             {...fade}
-            viewport={{ once: true }}
+            viewport={WATTA_IN_VIEW_FADE_VIEWPORT}
             transition={{ duration: 0.5 }}
           >
             <h3 className="text-[clamp(1.35rem,5vw,2rem)] font-black leading-tight text-gray-900">
@@ -541,8 +549,8 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
               <p>{a.storyP2}</p>
               <p>{a.storyP3}</p>
             </div>
-          </motion.div>
-        </section>
+          </m.div>
+        </WattaInViewFadeSection>
 
         <AboutTeamSection teamMembers={teamMembers} teamReady={teamReady} fade={fade} />
       </div>
@@ -563,7 +571,7 @@ function AboutPageView({ embedded = false, onBack, onMenuClick }: AboutPageViewP
   return (
     <div
       id="about-page-container"
-      className="menu-page-web delivery-page-web contact-page-web watta-about-page watta-delivery-page watta-delivery-page-about about-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
+      className="menu-page-web watta-site-hero-page-web delivery-page-web contact-page-web watta-about-page watta-delivery-page watta-delivery-page-about about-page-web relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-hidden bg-white pb-24"
     >
       <div className="delivery-page-home-flow w-full">
         {aboutIntroBand}

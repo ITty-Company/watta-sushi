@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertCircle, CheckCircle2, Loader2, MapPin } from 'lucide-react'
-import { toast } from 'sonner'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2, MapPin } from 'lucide-react'
+import toast from 'react-hot-toast'
 import type { Translations } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import {
@@ -15,26 +15,36 @@ import {
 import DeliveryUnavailableCityNotice from '../delivery/DeliveryUnavailableCityNotice'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
 import { cityIdPreferAmsterdam } from '@/lib/wattaPreferredDefaultCity'
+import type { SavedUserAddress } from './ProfileAddressesFlow'
 
 type CityRow = { id: number; name?: string | null; name_en?: string | null }
 
-export type ProfileDeliveryAddressCardProps = {
-  initialAddress: string
-  onSaved: (address: string) => void
+type ProfileDeliveryAddressCardBaseProps = {
   cp: Translations['clientProfile']
   d: Translations['deliveryPage']
   enterAddressHint: string
 }
 
+export type ProfileDeliveryAddressCardProps = ProfileDeliveryAddressCardBaseProps &
+  (
+    | {
+        mode: 'add'
+        onAdded: (entry: SavedUserAddress | null, primaryAddress: string) => void
+      }
+    | {
+        mode?: 'legacy'
+        initialAddress: string
+        onSaved: (address: string) => void
+      }
+  )
+
 const CHECK_DEBOUNCE_MS = 650
 
-export default function ProfileDeliveryAddressCard({
-  initialAddress,
-  onSaved,
-  cp,
-  d,
-  enterAddressHint,
-}: ProfileDeliveryAddressCardProps) {
+export default function ProfileDeliveryAddressCard(props: ProfileDeliveryAddressCardProps) {
+  const { cp, d, enterAddressHint } = props
+  const isAddMode = props.mode === 'add'
+  const initialAddress = isAddMode ? '' : props.initialAddress
+  const inputId = useId()
   const [draft, setDraft] = useState(initialAddress)
   const [cityId, setCityId] = useState<number | null>(null)
   const [checking, setChecking] = useState(false)
@@ -44,8 +54,10 @@ export default function ProfileDeliveryAddressCard({
   const requestIdRef = useRef(0)
 
   useEffect(() => {
-    setDraft(initialAddress)
-  }, [initialAddress])
+    if (!isAddMode) {
+      setDraft(initialAddress)
+    }
+  }, [initialAddress, isAddMode])
 
   useEffect(() => {
     let cancelled = false
@@ -128,6 +140,26 @@ export default function ProfileDeliveryAddressCard({
     }
     setSaving(true)
     try {
+      if (isAddMode) {
+        const res = await fetch('/api/auth/addresses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...auth },
+          body: JSON.stringify({ address: trimmed }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          toast.error((data.message as string) || cp.addrSaveError)
+          return
+        }
+        const entry = data.address as SavedUserAddress | undefined
+        const primary = String(data.primaryAddress ?? trimmed)
+        props.onAdded(entry ?? null, primary)
+        setDraft('')
+        setResult(null)
+        toast.success(cp.addrSaved)
+        return
+      }
+
       const res = await fetch('/api/auth/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...auth },
@@ -135,16 +167,16 @@ export default function ProfileDeliveryAddressCard({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error((data.message as string) || d.postalGeocodeFail)
+        toast.error((data.message as string) || cp.addrSaveError)
         return
       }
       const saved = String(data.user?.address ?? trimmed)
       setDraft(saved)
-      onSaved(saved)
+      props.onSaved(saved)
       toast.success(cp.addrSaved)
       void runCheck(saved)
     } catch {
-      toast.error(d.postalGeocodeFail)
+      toast.error(cp.addrSaveError)
     } finally {
       setSaving(false)
     }
@@ -166,6 +198,9 @@ export default function ProfileDeliveryAddressCard({
 
   const cityUnavailable = result != null && isDeliveryCityUnavailable(result.status)
 
+  const trimmedDraft = draft.trim()
+  const showDraftPreview = trimmedDraft.length > 0
+
   let statusMessage: string | null = null
   if (cityUnavailable) {
     statusMessage = null
@@ -179,12 +214,12 @@ export default function ProfileDeliveryAddressCard({
 
   return (
     <div className="watta-profile-address-form mt-4">
-      <label className="watta-profile-address-form__label" htmlFor="profile-delivery-address-input">
+      <label className="watta-profile-address-form__label" htmlFor={inputId}>
         <MapPin size={14} aria-hidden />
         {cp.addrInputLabel}
       </label>
       <textarea
-        id="profile-delivery-address-input"
+        id={inputId}
         className="watta-profile-address-form__input"
         rows={3}
         value={draft}
@@ -193,6 +228,18 @@ export default function ProfileDeliveryAddressCard({
         autoComplete="street-address"
       />
       <p className="watta-profile-address-form__hint">{cp.addrCheckHint}</p>
+
+      {showDraftPreview ? (
+        <div className="watta-profile-address-form__draft" aria-live="polite">
+          <span className="watta-profile-address-form__draft-label">{cp.addrDraftPreview}</span>
+          <p className="watta-profile-address-form__draft-text">{trimmedDraft}</p>
+          {!checking && result?.placeLabel && result.placeLabel !== trimmedDraft ? (
+            <p className="watta-profile-address-form__draft-geocode">
+              {d.postalAddressFound}: {result.placeLabel}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {(checking || result) && (
         <div
@@ -209,8 +256,8 @@ export default function ProfileDeliveryAddressCard({
           ) : null}
           {!checking && feeReady ? (
             <div className="flex flex-wrap items-baseline justify-center gap-2 sm:justify-start">
-              <CheckCircle2 size={18} className="shrink-0 text-[#145142]" aria-hidden />
-              <span className="text-sm font-semibold text-[#145142]">{d.postalDeliveryFeeTitle}:</span>
+              <CheckCircle2 size={18} className="shrink-0 text-watta-action" aria-hidden />
+              <span className="text-sm font-semibold text-watta-action">{d.postalDeliveryFeeTitle}:</span>
               <span className="text-2xl font-bold tabular-nums text-[#ff5c00]">
                 {result!.estimatedDeliveryFee} €
               </span>
@@ -246,11 +293,12 @@ export default function ProfileDeliveryAddressCard({
 
       <button
         type="button"
-        className="watta-profile-address-form__save"
+        className="watta-profile-address-form__save watta-profile-address-form__save--brand"
         disabled={saving || draft.trim().length < 3}
         onClick={() => void handleSave()}
       >
-        {saving ? cp.addrSaving : cp.addrSave}
+        <span>{saving ? cp.addrSaving : cp.addrSave}</span>
+        {!saving ? <ArrowRight size={18} strokeWidth={2.2} aria-hidden /> : null}
       </button>
     </div>
   )

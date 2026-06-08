@@ -1,0 +1,345 @@
+/* Мобільне бічне меню: читабельна сітка, тёмно-зелёный + салатовый акцент */
+
+.watta-nav-compact--drawer {
+  --watta-drawer-forest: #145142;
+  --watta-drawer-forest-soft: rgba(20, 81, 66, 0.08);
+  --watta-drawer-forest-border: rgba(20, 81, 66, 0.14);
+  --watta-drawer-mint: var(--watta-brand-mint, #5c9010);
+  --watta-drawer-mint-soft: color-mix(in srgb, var(--watta-drawer-mint) 12%, #ffffff);
+  --watta-drawer-ink: #0f241e;
+  --watta-drawer-ink-muted: rgba(20, 81, 66, 0.62);
+  background: #ffffff;
+  min-height: 100%;
+}
+
+/* Телефон, планшет, ноут, ПК — однакова панель меню */
+.watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer)::before {
+  display: none;
+}
+
+.watta-nav-compact--drawer {
+    color: var(--watta-drawer-ink);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__head {
+    padding:
+      max(12px, env(safe-area-inset-top, 0px))
+      max(16px, env(safe-area-inset-right, 0px))
+      10px
+      max(16px, env(safe-area-inset-left, 0px));
+    border-bottom: 1px solid var(--watta-drawer-forest-border);
+    background: #ffffff;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__tagline {
+    display: none;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border-color: var(--watta-drawer-forest-border);
+    background: var(--watta-drawer-forest-soft);
+    color: var(--watta-drawer-forest);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__close:hover {
+    background: rgba(20, 81, 66, 0.12);
+    border-color: rgba(20, 81, 66, 0.22);
+    color: #0f3d32;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: #ffffff;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding:
+      12px
+      max(16px, env(safe-area-inset-right, 0px))
+      max(28px, calc(env(safe-area-inset-bottom, 0px) + 20px))
+      max(16px, env(safe-area-inset-left, 0px));
+    min-height: min-content;
+    background: #ffffff;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__selectors {
+    gap: 8px;
+  }
+
+  .watta-nav-compact--drawer .location-picker-trigger--drawer,
+  .watta-nav-compact--drawer .watta-nav-lang-btn {
+    min-height: 40px;
+    height: 40px;
+    border-radius: 11px;
+    border-color: var(--watta-drawer-forest-border);
+    color: var(--watta-drawer-forest);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .watta-nav-compact--drawer .location-picker-trigger--drawer .location-picker-trigger__pin {
+    color: var(--watta-drawer-forest);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-lang-btn:hover,
+  .watta-nav-compact--drawer .location-picker-trigger--drawer:hover {
+    border-color: rgba(20, 81, 66, 0.28);
+    background: var(--watta-drawer-forest-soft);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-lang-btn[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--watta-drawer-forest) 28%, transparent);
+    background: color-mix(in srgb, var(--watta-drawer-forest) 10%, #ffffff);
+    color: var(--watta-drawer-forest);
+  }
+
+  .watta-nav-compact--drawer .location-picker-trigger--drawer[data-open='true'] {
+    border-color: color-mix(in srgb, var(--watta-drawer-forest) 28%, transparent);
+    background: color-mix(in srgb, var(--watta-drawer-forest) 10%, #ffffff);
+    color: var(--watta-drawer-forest);
+  }
+
+  /* Категорії — сітка 4×2, нормальний розмір */
+  .watta-nav-compact--drawer .watta-nav-compact__cat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__cat {
+    min-height: 3.35rem;
+    padding: 6px 4px;
+    border-radius: 12px;
+    border-color: var(--watta-drawer-forest-border);
+    background: #fff;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__cat:hover {
+    border-color: rgba(20, 81, 66, 0.24);
+    background: var(--watta-drawer-forest-soft);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__cat-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--watta-drawer-forest);
+    -webkit-line-clamp: 2;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__cat-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  /* Навігація — 2 колонки, іконка + підпис у ряд */
+  .watta-nav-compact--drawer .watta-nav-compact__nav-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__nav-tile {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 2.75rem;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border-color: var(--watta-drawer-forest-border);
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__nav-tile:hover {
+    border-color: rgba(20, 81, 66, 0.22);
+    background: var(--watta-drawer-forest-soft);
+    box-shadow: none;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__nav-tile:active {
+    border-color: color-mix(in srgb, var(--watta-drawer-mint) 35%, var(--watta-drawer-forest-border));
+    background: var(--watta-drawer-mint-soft);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__nav-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: left;
+    color: var(--watta-drawer-ink);
+    -webkit-line-clamp: 2;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__nav-ico-wrap,
+  .watta-nav-compact--drawer .watta-nav-compact__nav-ico-wrap--brand,
+  .watta-nav-compact--drawer .watta-nav-compact__nav-ico-wrap--tone-0,
+  .watta-nav-compact--drawer .watta-nav-compact__nav-ico-wrap--tone-1,
+  .watta-nav-compact--drawer .watta-nav-compact__nav-ico-wrap--tone-2,
+  .watta-nav-compact--drawer .watta-nav-compact__nav-ico-wrap--tone-3 {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 8px;
+    background: var(--watta-drawer-forest-soft);
+    color: var(--watta-drawer-forest);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__nav-ico {
+    width: 14px;
+    height: 14px;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__legal-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__legal-links .watta-nav-compact__nav-privacy {
+    min-height: 2.25rem;
+    margin: 0;
+    padding: 8px 10px;
+    border-style: solid;
+    border-radius: 11px;
+    border-color: var(--watta-drawer-forest-border);
+    background: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--watta-drawer-ink-muted);
+    gap: 6px;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__legal-links .watta-nav-compact__nav-privacy:hover {
+    color: var(--watta-drawer-forest);
+    border-color: rgba(20, 81, 66, 0.28);
+    background: var(--watta-drawer-forest-soft);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__legal-links .watta-nav-compact__nav-privacy svg {
+    color: var(--watta-drawer-forest);
+    flex-shrink: 0;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__extras {
+    gap: 8px;
+    padding-top: 2px;
+    border-top: 1px solid var(--watta-drawer-forest-border);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__support {
+    min-height: 2.5rem;
+    border-radius: 12px;
+    background: var(--watta-drawer-mint);
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--watta-drawer-mint) 32%, transparent);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__support:hover {
+    background: var(--watta-brand-mint-hover);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__support:active {
+    background: var(--watta-brand-mint-active);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__contact {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border-color: var(--watta-drawer-forest-border);
+    background: var(--watta-drawer-forest-soft);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__contact-title {
+    margin: 0 0 2px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--watta-drawer-ink-muted);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__phone {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--watta-drawer-forest);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__hours {
+    display: block;
+    margin: 4px 0 0;
+    font-size: 10px;
+    color: var(--watta-drawer-ink-muted);
+    line-height: 1.35;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__logout {
+    min-height: 2.25rem;
+    border-radius: 11px;
+    border-color: var(--watta-drawer-forest-border);
+    color: var(--watta-drawer-forest);
+    font-size: 11px;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__logout:hover {
+    border-color: rgba(20, 81, 66, 0.3);
+    background: var(--watta-drawer-forest-soft);
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__admin {
+    min-height: 2.25rem;
+    border-radius: 11px;
+    border-color: color-mix(in srgb, var(--watta-drawer-mint) 40%, transparent);
+    background: var(--watta-drawer-mint-soft);
+    color: var(--watta-drawer-forest);
+    font-size: 11px;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__legal {
+    font-size: 10px;
+    line-height: 1.45;
+    color: var(--watta-drawer-ink-muted);
+  }
+
+.watta-nav-compact--drawer .watta-nav-compact__inner--animate .watta-nav-compact__pop {
+  animation-duration: 0.26s;
+}
+
+/* Кнопки навігації — той самий тап, що й категорії (pointerdown → navigateInstant) */
+.watta-nav-compact--drawer button.watta-nav-compact__nav-tile,
+.watta-nav-compact--drawer button.watta-nav-compact__nav-privacy,
+.watta-nav-compact--drawer button.watta-nav-compact__admin {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  text-align: inherit;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+/* Іконки навігації: тёмно-зелёный; CTA в drawer — салатовий */
+.watta-nav-compact__nav-ico-wrap--brand {
+  background: rgba(20, 81, 66, 0.1);
+  color: #145142;
+}
+
+.watta-nav-compact__legal-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+

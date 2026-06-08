@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import { ROTATING_WELCOME } from '@/lib/welcomeRotatingPhrases'
 import { scrollMenuToSelector } from '@/lib/menuScroll'
@@ -40,14 +40,14 @@ export function WelcomeHeroBadge({ ariaLabel, nextSectionSelector }: Props) {
         <div className="welcome-hero-badge-greeting-web" aria-live="polite">
           <div className="welcome-hero-badge-greeting-perspective-web">
             <AnimatePresence mode="wait" initial={false}>
-              <motion.span
+              <m.span
                 key={current.lang + (reduceMotion ? '-still' : String(index))}
                 lang={current.lang}
                 className="welcome-hero-badge-greeting-text-web"
                 initial={
                   reduceMotion
                     ? false
-                    : { opacity: 0, rotateX: -78, y: 14, z: -36, filter: 'blur(6px)' }
+                    : { opacity: 0, rotateX: -78, y: 14, z: -36 }
                 }
                 animate={
                   reduceMotion
@@ -57,7 +57,6 @@ export function WelcomeHeroBadge({ ariaLabel, nextSectionSelector }: Props) {
                         rotateX: 0,
                         y: 0,
                         z: 0,
-                        filter: 'blur(0px)',
                       }
                 }
                 exit={
@@ -68,7 +67,6 @@ export function WelcomeHeroBadge({ ariaLabel, nextSectionSelector }: Props) {
                         rotateX: 72,
                         y: -12,
                         z: -28,
-                        filter: 'blur(5px)',
                       }
                 }
                 transition={{
@@ -78,7 +76,7 @@ export function WelcomeHeroBadge({ ariaLabel, nextSectionSelector }: Props) {
                 style={{ transformStyle: 'preserve-3d', display: 'block', transformOrigin: '50% 50% 0' }}
               >
                 {current.text}
-              </motion.span>
+              </m.span>
             </AnimatePresence>
           </div>
         </div>

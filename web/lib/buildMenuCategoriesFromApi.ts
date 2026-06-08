@@ -1,5 +1,6 @@
 import type { WattaLanguage } from './i18n/language'
 import { getMenuCategoryDisplayName } from './i18n/getMenuCategoryDisplayName'
+import { canonicalMenuCategorySlug } from './menuCategoryCanonical'
 
 /** Сирі рядки з /api/products/categories (поля name_* з Prisma). Старий кеш: лише `name` без name_ru. */
 function isRawCategoriesJson(data: unknown): data is Record<string, unknown>[] {
@@ -29,15 +30,18 @@ export function buildMenuCategoriesFromApi(
   return data
     .filter((cat) => cat.isActive !== false)
     .map((cat) => {
-      const slugRaw = String(cat.slug ?? '')
-        .trim()
-        .toLowerCase()
+      const slugRaw = canonicalMenuCategorySlug(cat.slug as string)
       return {
         id: String(cat.id),
         key: slugRaw.length > 0 ? slugRaw : `id-${String(cat.id)}`,
         slug: slugRaw.length > 0 ? slugRaw : `id-${String(cat.id)}`,
         name: getMenuCategoryDisplayName(cat, language, categoryLabels),
         emoji: (cat.emoji as string) || '🍣',
+        imageUrl: typeof cat.imageUrl === 'string' && cat.imageUrl.trim() ? cat.imageUrl.trim() : null,
+        hoverImageUrl:
+          typeof cat.hoverImageUrl === 'string' && cat.hoverImageUrl.trim()
+            ? cat.hoverImageUrl.trim()
+            : null,
         subcategories: [],
       }
     })

@@ -33,6 +33,9 @@ function LinkSection({
   selectedIds,
   onToggle,
   getLabel,
+  searchPlaceholder,
+  searchEmpty,
+  selectedCountLabel,
 }: {
   title: string
   hint: string
@@ -40,6 +43,9 @@ function LinkSection({
   selectedIds: number[]
   onToggle: (id: number) => void
   getLabel: (row: NamedRow) => string
+  searchPlaceholder: string
+  searchEmpty: string
+  selectedCountLabel: (count: number) => string
 }) {
   const [q, setQ] = useState('')
   const filtered = useMemo(() => {
@@ -56,12 +62,12 @@ function LinkSection({
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Пошук…"
+        placeholder={searchPlaceholder}
         className="mt-2 w-full rounded-lg border border-[#145142]/20 px-3 py-2 text-sm outline-none focus:border-[#145142]"
       />
       <div className="mt-2 max-h-40 overflow-y-auto space-y-1 admin-watta-scroll-y">
         {filtered.length === 0 ? (
-          <p className="py-2 text-xs text-gray-400">Нічого не знайдено</p>
+          <p className="py-2 text-xs text-[#145142]/45">{searchEmpty}</p>
         ) : (
           filtered.map((row) => {
             const checked = selectedIds.includes(row.id)
@@ -69,7 +75,7 @@ function LinkSection({
               <label
                 key={row.id}
                 className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
-                  checked ? 'bg-[#145142]/12 text-[#145142]' : 'hover:bg-[#145142]/5 text-gray-700'
+                  checked ? 'bg-watta-action/12 text-[#145142]' : 'hover:bg-watta-action/5 text-[#0f241e]/80'
                 }`}
               >
                 <input
@@ -86,7 +92,9 @@ function LinkSection({
         )}
       </div>
       {selectedIds.length > 0 ? (
-        <p className="mt-2 text-xs font-semibold text-[#145142]/80">Обрано: {selectedIds.length}</p>
+        <p className="mt-2 text-xs font-semibold text-[#145142]/80">
+          {selectedCountLabel(selectedIds.length)}
+        </p>
       ) : null}
     </div>
   )
@@ -103,7 +111,8 @@ export default function BlogLinksPicker({
   onToggleCategory,
   onToggleIngredient,
 }: Props) {
-  const { getLocalized } = useLanguage()
+  const { getLocalized, t } = useLanguage()
+  const b = t.adminPanel.blog
 
   const label = (row: NamedRow) =>
     getLocalized(row, 'name') || row.name_ru || `#${row.id}`
@@ -129,37 +138,45 @@ export default function BlogLinksPicker({
   return (
     <div className="md:col-span-2 space-y-3">
       <div>
-        <p className="text-sm font-bold text-[#145142]">Звʼязки з меню</p>
+        <p className="text-sm font-bold text-[#145142]">{b.linksTitle}</p>
         <p className="mt-1 text-xs text-[#145142]/65">
-          Відмітьте страви, категорії або інгредієнти — на сторінці статті зʼявиться блок «У статті
-          згадуємо» з посиланнями в меню.
-          {total > 0 ? ` Зараз обрано: ${total}.` : ''}
+          {b.linksHint}
+          {total > 0 ? b.linksSelectedTotal.replace('{{count}}', String(total)) : ''}
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <LinkSection
-          title="Страви"
-          hint="Товари з меню — посилання на сторінку страви"
+          title={b.linksProductsTitle}
+          hint={b.linksProductsHint}
           rows={safeProducts}
           selectedIds={linkedProductIds}
           onToggle={onToggleProduct}
           getLabel={label}
+          searchPlaceholder={b.searchPlaceholder}
+          searchEmpty={b.searchEmpty}
+          selectedCountLabel={(count) => b.selectedCount.replace('{{count}}', String(count))}
         />
         <LinkSection
-          title="Категорії"
-          hint="Розділи меню — посилання на категорію"
+          title={b.linksCategoriesTitle}
+          hint={b.linksCategoriesHint}
           rows={safeCategories}
           selectedIds={linkedCategoryIds}
           onToggle={onToggleCategory}
           getLabel={label}
+          searchPlaceholder={b.searchPlaceholder}
+          searchEmpty={b.searchEmpty}
+          selectedCountLabel={(count) => b.selectedCount.replace('{{count}}', String(count))}
         />
         <LinkSection
-          title="Інгредієнти"
-          hint="Лосось, рис, норі — для довіри та прозорості"
+          title={b.linksIngredientsTitle}
+          hint={b.linksIngredientsHint}
           rows={safeIngredients}
           selectedIds={linkedIngredientIds}
           onToggle={onToggleIngredient}
           getLabel={label}
+          searchPlaceholder={b.searchPlaceholder}
+          searchEmpty={b.searchEmpty}
+          selectedCountLabel={(count) => b.selectedCount.replace('{{count}}', String(count))}
         />
       </div>
     </div>

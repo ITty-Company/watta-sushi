@@ -2,16 +2,15 @@
 
 import { useState, useEffect, useLayoutEffect, useCallback, useSyncExternalStore } from 'react'
 import dynamic from 'next/dynamic'
+import './styles/watta-site-hero-delivery.css'
 import MenuView from './components/MenuView'
 import Footer from './components/Footer'
+import { WattaInViewFadeDiv } from './components/WattaInViewFade'
 import WattaBootSplashGate from './components/WattaBootSplashGate'
-import { scrollEntireAppToTop } from '@/lib/menuScroll'
-import {
-  installWebKitHeroAutoplayDocUnlock,
-  kickWelcomeHeroVideoPlayBurst,
-  kickWelcomeHeroVideoPlayOnce,
-} from '@/lib/kickWelcomeHeroVideo'
+import { scrollEntireAppToTop, markHomeScrollReady, readAppScrollTop } from '@/lib/menuScroll'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
+import { openWattaNotifications } from '@/lib/openWattaNotifications'
+import { useOptionalNotificationsDrawer } from './context/NotificationsDrawerContext'
 
 /**
  * Перший екран — лише `MenuView`. `CartView`/`ProfileView`/`NotificationsView`
@@ -20,22 +19,11 @@ import { useInstantRouter } from '@/hooks/useInstantRouter'
  */
 const CartView = dynamic(() => import('./components/CartView'), { ssr: false })
 const ProfileView = dynamic(() => import('./components/ProfileView'), { ssr: false })
-/**
- * Named export → обовʼязково обертаємо в `{ default: ... }`. Без цього `next/dynamic`
- * (Next 14.2) інколи кидає `Unsupported Server Component type: undefined` після hot-reload.
- */
-const NotificationsView = dynamic(
-  () =>
-    import('./components/NotificationsView').then((m) => ({
-      default: m.NotificationsView,
-    })),
-  { ssr: false }
-)
 
 export default function HomeClient() {
   const router = useInstantRouter()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
   const [activeTab, setActiveTab] = useState(0)
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const hidePublicFooter = useSyncExternalStore(
     (onStoreChange) => {
       if (typeof window === 'undefined') return () => {}
@@ -54,55 +42,24 @@ export default function HomeClient() {
     () => false,
   )
 
-  /**
-   * Гідратація + повернення з іншої сторінки (SPA-back / bfcache / pageshow).
-   * Серія nudge: queueMicrotask + rAF + delays до 2s. Це окрема страховка від
-   * `bindHeroVideoAutoplay` всередині `MenuView`: при mount після SPA-back браузер
-   * інколи відкидає перший play() (autoplay-policy after navigation), і binding
-   * сам не встигає підхопити video у paused-стані.
-   */
   const handleBootSplashEnded = useCallback(() => {
-    kickWelcomeHeroVideoPlayBurst()
+    markHomeScrollReady()
+    if (readAppScrollTop() <= 20) {
+      scrollEntireAppToTop({ force: true })
+    }
   }, [])
 
+  /** bfcache: показати контент без примусового scroll-to-top. */
   useEffect(() => {
-    installWebKitHeroAutoplayDocUnlock()
-    queueMicrotask(kickWelcomeHeroVideoPlayOnce)
-    const raf = requestAnimationFrame(() => {
-      kickWelcomeHeroVideoPlayOnce()
-    })
-    const cancelBurst = kickWelcomeHeroVideoPlayBurst()
-
-    /* `popstate` — back/forward через історію браузера, `pageshow` — повернення з
-       bfcache (Safari/Firefox). Обидва зазвичай лишають hero у paused-стані. */
-    const onPopState = () => {
-      kickWelcomeHeroVideoPlayBurst()
-    }
     const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) {
-        /* bfcache restore — найчастіше autoplay блокований до user-gesture */
-        kickWelcomeHeroVideoPlayBurst()
-      } else {
-        kickWelcomeHeroVideoPlayOnce()
-      }
+      if (e.persisted) markHomeScrollReady()
     }
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        kickWelcomeHeroVideoPlayOnce()
-      }
-    }
-
-    window.addEventListener('popstate', onPopState)
     window.addEventListener('pageshow', onPageShow)
-    document.addEventListener('visibilitychange', onVisible)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
-    return () => {
-      cancelAnimationFrame(raf)
-      cancelBurst()
-      window.removeEventListener('popstate', onPopState)
-      window.removeEventListener('pageshow', onPageShow)
-      document.removeEventListener('visibilitychange', onVisible)
-    }
+  useLayoutEffect(() => {
+    markHomeScrollReady()
   }, [])
 
   const handleSwitchTab = useCallback((tab: number) => {
@@ -117,14 +74,17 @@ export default function HomeClient() {
 
   /** Меню / кошик / профіль — зверху контейнера, щоб була видима початкова секція. */
   useLayoutEffect(() => {
-    scrollEntireAppToTop()
+    scrollEntireAppToTop({ force: true })
   }, [activeTab])
 
   const handleBack = useCallback(() => setActiveTab(0), [])
   const handleOpenProfile = useCallback(() => setActiveTab(2), [])
   const handleOpenFavorites = useCallback(() => router.push('/favorites'), [router])
   const handleOpenPhone = useCallback(() => {}, [])
-  const handleOpenNotifications = useCallback(() => setNotificationsOpen(true), [])
+  const handleOpenNotifications = useCallback(
+    () => openWattaNotifications(router, notificationsDrawer?.open),
+    [router, notificationsDrawer],
+  )
   const handleMenuClick = useCallback(() => {}, [])
   const handleProfileBack = useCallback(() => setActiveTab(0), [])
   const handleOpenCart = useCallback(() => router.push('/cart'), [router])
@@ -194,10 +154,13 @@ export default function HomeClient() {
             onOpenAdmin={handleOpenAdmin}
           />
         )}
-        {activeTab !== 0 ? (
-          <NotificationsView isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+        {!hidePublicFooter && activeTab === 0 ? (
+          <WattaInViewFadeDiv className="w-full shrink-0">
+            <Footer />
+          </WattaInViewFadeDiv>
+        ) : !hidePublicFooter ? (
+          <Footer />
         ) : null}
-        {!hidePublicFooter ? <Footer /> : null}
       </div>
     </div>
     </WattaBootSplashGate>

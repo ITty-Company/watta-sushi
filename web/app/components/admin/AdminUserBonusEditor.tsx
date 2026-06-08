@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../context/LanguageContext'
 
 export type AdminBonusUser = {
   id: number
@@ -35,6 +36,8 @@ export default function AdminUserBonusEditor({
   onClose,
   onSaved,
 }: Props) {
+  const { t } = useLanguage()
+  const b = t.adminPanel.userBonus
   const [usePersonalPercent, setUsePersonalPercent] = useState(
     user.bonusCashbackPercentOverride != null,
   )
@@ -83,10 +86,10 @@ export default function AdminUserBonusEditor({
       })
       const json = (await res.json().catch(() => null)) as AdminBonusUser & { message?: string }
       if (!res.ok) {
-        toast.error(json?.message || 'Не вдалося зберегти')
+        toast.error(json?.message || b.saveError)
         return
       }
-      toast.success('Збережено')
+      toast.success(b.saved)
       onSaved({
         id: json.id,
         name: json.name,
@@ -100,7 +103,7 @@ export default function AdminUserBonusEditor({
       })
       onClose()
     } catch {
-      toast.error('Помилка мережі')
+      toast.error(b.networkError)
     } finally {
       setSaving(false)
     }
@@ -111,36 +114,36 @@ export default function AdminUserBonusEditor({
       <div
         role="dialog"
         aria-labelledby="bonus-editor-title"
-        className="relative w-full max-w-md rounded-2xl border-2 border-[#145142]/15 bg-white p-6 shadow-2xl"
+        className="admin-watta-modal-panel relative w-full max-w-md rounded-2xl border-2 border-[#145142]/15 bg-white p-6 shadow-2xl"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-2 text-gray-500 hover:bg-gray-100"
-          aria-label="Закрити"
+          className="absolute right-3 top-3 rounded-full p-2 text-[#145142]/55 hover:bg-watta-action/10"
+          aria-label={b.closeAria}
         >
           <X size={20} />
         </button>
 
         <h3 id="bonus-editor-title" className="mb-1 text-lg font-bold text-[#145142]">
-          Бонуси клієнта
+          {b.title}
         </h3>
-        <p className="mb-4 text-sm text-gray-600">
+        <p className="mb-4 text-sm text-[#145142]/70">
           {user.name || '—'} · {user.email}
         </p>
 
-        <p className="mb-4 rounded-xl bg-[#145142]/5 px-3 py-2 text-sm">
-          Баланс:{' '}
+        <p className="mb-4 rounded-xl bg-watta-action/5 px-3 py-2 text-sm">
+          {b.balanceLabel}{' '}
           <strong className="tabular-nums text-[#145142]">
             {Number(user.bonusBalance).toFixed(2)} €
           </strong>
           <br />
-          Загальний кешбэк сайту:{' '}
+          {b.globalCashbackLabel}{' '}
           <strong>
-            {globalCashbackEnabled ? `${globalCashbackPercent}%` : 'вимкнено'}
+            {globalCashbackEnabled ? `${globalCashbackPercent}%` : b.disabled}
           </strong>
           <br />
-          Ефективний % для клієнта: <strong>{effectivePercent}%</strong>
+          {b.effectivePercentLabel} <strong>{effectivePercent}%</strong>
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -151,13 +154,13 @@ export default function AdminUserBonusEditor({
               onChange={(e) => setUsePersonalPercent(e.target.checked)}
               className="h-4 w-4 accent-[#145142]"
             />
-            Персональний % кешбэку (вище загального)
+            {b.personalPercentCheckbox}
           </label>
 
           {usePersonalPercent ? (
             <div>
               <label className="mb-1 block text-xs font-bold text-[#145142]">
-                Кешбэк для цього клієнта, %
+                {b.personalPercentField}
               </label>
               <input
                 type="number"
@@ -171,26 +174,22 @@ export default function AdminUserBonusEditor({
               />
             </div>
           ) : (
-            <p className="text-xs text-gray-500">
-              Використовується загальний відсоток з налаштувань сайту.
-            </p>
+            <p className="text-xs text-[#145142]/55">{b.useGlobalHint}</p>
           )}
 
           <div>
             <label className="mb-1 block text-xs font-bold text-[#145142]">
-              Коригування балансу (± €), необовʼязково
+              {b.adjustmentLabel}
             </label>
             <input
               type="number"
               step={0.01}
               value={balanceDelta}
               onChange={(e) => setBalanceDelta(e.target.value)}
-              placeholder="Наприклад: 5 або -2.5"
+              placeholder={b.adjustmentPlaceholder}
               className="w-full rounded-xl border-2 border-[#145142]/20 p-3 outline-none focus:border-[#145142]"
             />
-            <p className="mt-1 text-xs text-gray-400">
-              Додати або зняти бонуси вручну (подарунок, виправлення).
-            </p>
+            <p className="mt-1 text-xs text-[#145142]/45">{b.adjustmentHint}</p>
           </div>
 
           <div className="flex gap-2 pt-2">
@@ -199,14 +198,14 @@ export default function AdminUserBonusEditor({
               onClick={onClose}
               className="flex-1 rounded-xl border-2 border-[#145142]/20 py-3 font-semibold text-[#145142]"
             >
-              Скасувати
+              {b.cancelBtn}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-xl bg-[#145142] py-3 font-bold text-white disabled:opacity-50"
+              className="flex-1 rounded-xl bg-watta-action py-3 font-bold text-white disabled:opacity-50"
             >
-              {saving ? '…' : 'Зберегти'}
+              {saving ? '…' : b.saveBtn}
             </button>
           </div>
         </form>

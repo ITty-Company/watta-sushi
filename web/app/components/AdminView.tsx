@@ -47,15 +47,7 @@ import CityMapPicker from './CityMapPicker'
 import AdminDeliveryZoneEditor from './AdminDeliveryZoneEditor'
 import { useLanguage } from '../context/LanguageContext'
 import { WATTA_INSTAGRAM_URL } from '@/lib/wattaSiteDefaults'
-import { parseHomeHeroVideoUrlsFromApi } from '@/lib/homeHeroVideoSettings'
-import { parseAuthHeroVideoUrlsFromApi } from '@/lib/authHeroVideoSettings'
-import { parseAuthHeroPhone2VideoUrlsFromApi } from '@/lib/authHeroPhoneSettings'
-import AuthHeroPhonesAdminSection from './admin/AuthHeroPhonesAdminSection'
 import AdminNavDrawer from './admin/AdminNavDrawer'
-import AdminHeroVideoPreview from './admin/AdminHeroVideoPreview'
-import { WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaAuthHeroVideo'
-import { uploadHomeHeroVideoFile } from '@/lib/uploadHomeHeroVideo'
-import { WATTA_HOME_HERO_VIDEO_UPDATED_EVENT } from '@/lib/wattaHeroVideo'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import {
   adminProductCoverSrc,
@@ -78,15 +70,20 @@ import {
   buildStatsFromOrders,
   type AdminOrderStatsPayload,
 } from '@/lib/orderAdminStats'
+import { formatSlotLabel, getAmsterdamTodayKey, getOrderServiceDateKey } from '@/lib/orderServiceDate'
 import AdminDashboardStudio from './admin/AdminDashboardStudio'
+import AdminOrdersByDayPanel from './admin/AdminOrdersByDayPanel'
 import AdminReviewsPanel, { type AdminReviewRow } from './admin/AdminReviewsPanel'
 import AdminCartUpsellPanel from './admin/AdminCartUpsellPanel'
 import AdminCustomersPanel from './admin/AdminCustomersPanel'
 import AdminContactInquiriesPanel from './admin/AdminContactInquiriesPanel'
 import AdminUserBonusEditor, { type AdminBonusUser } from './admin/AdminUserBonusEditor'
+import AdminAdminPhonesPanel from './admin/AdminAdminPhonesPanel'
 import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
 import { resolveProductImageUrlsForSave } from '@/lib/resolveProductImagesForSave'
 import { compressProductImageFile } from '@/lib/compressProductImage'
+import { compressIngredientImageFile } from '@/lib/compressIngredientImage'
+import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { parseBlogIdList } from '@/lib/blogLinks'
 import BlogLinksPicker from '@/app/components/admin/BlogLinksPicker'
 import BlogI18nEditor, {
@@ -98,6 +95,13 @@ import {
   mergeIngredientIdsFromProducts,
   productRowIngredientIds,
 } from '@/lib/mergeSetIngredientsFromProducts'
+import { IngredientLocaleFields } from '@/app/components/admin/IngredientLocaleFields'
+import type { WattaLanguage } from '@/lib/i18n/language'
+import {
+  ingredientDisplayName,
+  ingredientNameForSuffix,
+  INGREDIENT_LOCALE_SUFFIXES,
+} from '@/lib/i18n/ingredientLocale'
 
 function notifyCountriesCatalogUpdated() {
   broadcastWattaCatalogUpdate('countries')
@@ -211,6 +215,8 @@ interface Order {
   fulfillmentType?: string
   deliveryFee?: number
   readyAt?: string | null
+  scheduledForDate?: string | null
+  scheduledForSlot?: string | null
 
   paymentMethod: 'CASH' | 'CARD' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'IDEAL'
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED'
@@ -326,6 +332,8 @@ interface Banner {
   isActive: boolean
   focalX?: number
   focalY?: number
+  /** Бэкенд (GET /all) помечает баннеры, чей файл в /uploads пропал — нужно перезалить. */
+  imageMissing?: boolean
 }
 
 interface MenuCategory {
@@ -336,6 +344,8 @@ interface MenuCategory {
   name_nl?: string
   slug: string
   emoji?: string
+  imageUrl?: string | null
+  hoverImageUrl?: string | null
   order: number
   isActive: boolean
   /** Участие товаров категории в блоке рекомендаций (если у товара включено «рекомендуем») */
@@ -390,30 +400,6 @@ interface TeamMember {
   order: number
   isActive: boolean
 }
-type HeroVideoSlotState = {
-  id: string
-  savedUrl: string
-  pendingFile: File | null
-  pendingPreviewUrl: string | null
-}
-
-function newHeroVideoSlot(savedUrl = ''): HeroVideoSlotState {
-  return {
-    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `hv-${Date.now()}-${Math.random()}`,
-    savedUrl,
-    pendingFile: null,
-    pendingPreviewUrl: null,
-  }
-}
-
-function heroVideoSlotsFromUrls(urls: string[]): HeroVideoSlotState[] {
-  if (urls.length === 0) return [newHeroVideoSlot()]
-  return urls.map((savedUrl) => newHeroVideoSlot(savedUrl))
-}
-
-function revokeHeroPreviewUrl(url: string | null) {
-  if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
-}
 
 interface SiteSettings {
   bannerInterval: number
@@ -436,6 +422,12 @@ interface SiteSettings {
   deliveryFee: number
   bonusCashbackEnabled: boolean
   bonusCashbackPercent: number
+  cardOnlineEnabled?: boolean
+  cardOnlineAvailable?: boolean
+  cardPaymentReady?: boolean
+  hasStripeConfigured?: boolean
+  hasLiqPayConfigured?: boolean
+  cardOnlineSetupHint?: string | null
 }
 
 /** Вкладки, які підвантажуються у фоні одразу після входу в адмінку. */
@@ -459,8 +451,8 @@ const defaultSiteSettings: SiteSettings = {
   homeHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   deliveryHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   deliveryHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
-  menuHeroVideoUrl: '/watta-sushi-2-hero.mp4',
-  menuHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
+  menuHeroVideoUrl: '/menu-hero-keeping-safe-road-ready.mp4',
+  menuHeroVideoUrls: ['/menu-hero-keeping-safe-road-ready.mp4'],
   authHeroVideoUrl: '/watta-sushi-2-hero.mp4',
   authHeroVideoUrls: ['/watta-sushi-2-hero.mp4'],
   telegramUrl: '',
@@ -471,10 +463,25 @@ const defaultSiteSettings: SiteSettings = {
   deliveryFee: 50,
   bonusCashbackEnabled: true,
   bonusCashbackPercent: 5,
+  cardOnlineEnabled: true,
 }
 
 export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
-  const { t, adminUiLanguage, setAdminUiLanguage, getLocalized } = useLanguage()
+  const { t, language, adminUiLanguage, setAdminUiLanguage, getLocalized } = useLanguage()
+  const ingLangMeta = useMemo(
+    () => [
+      { suffix: 'ru' as const, label: t.adminPanel.ingredients.langRu, required: true },
+      { suffix: 'ua' as const, label: t.adminPanel.ingredients.langUa },
+      { suffix: 'en' as const, label: t.adminPanel.ingredients.langEn },
+      { suffix: 'nl' as const, label: t.adminPanel.ingredients.langNl },
+    ],
+    [t.adminPanel.ingredients],
+  )
+  const ingredientLabelForSite = useCallback(
+    (ing: { name_ru?: string; name_ua?: string; name_en?: string; name_nl?: string }) =>
+      ingredientDisplayName(ing, language as WattaLanguage) || ing.name_ru || '',
+    [language],
+  )
   const reduceMotion = useReducedMotion()
   // Добавили вкладку 'promos', 'cities', 'banners', 'menuCategories' и 'users'
   useLayoutEffect(() => {
@@ -506,6 +513,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     | 'banners'
     | 'menuCategories'
     | 'users'
+    | 'adminPhones'
     | 'team'
     | 'settings'
     | 'newsletter'
@@ -516,6 +524,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   const [crmSubview, setCrmSubview] = useState<'customers' | 'inquiries'>('customers')
   
   const [orders, setOrders] = useState<Order[]>([])
+  const [ordersDayFilter, setOrdersDayFilter] = useState(() => getAmsterdamTodayKey())
   const [orderReadyTimeModal, setOrderReadyTimeModal] = useState<OrderReadyTimeModal | null>(null)
   const [orderStatusSaving, setOrderStatusSaving] = useState(false)
   const initialAdminProducts = useMemo(() => readAdminProductsCache() ?? [], [])
@@ -550,42 +559,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   
   const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings)
   const [settingsLoading, setSettingsLoading] = useState(false)
-  const [heroVideoSaving, setHeroVideoSaving] = useState(false)
-  const [heroVideoSlots, setHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [newHeroVideoSlot()])
-  const heroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const [authHeroVideoSaving, setAuthHeroVideoSaving] = useState(false)
-  const [authHeroVideoSlots, setAuthHeroVideoSlots] = useState<HeroVideoSlotState[]>(() => [
-    newHeroVideoSlot(),
-  ])
-  const authHeroVideoFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const [authHeroPhone2VideoSlots, setAuthHeroPhone2VideoSlots] = useState<HeroVideoSlotState[]>(() => [
-    newHeroVideoSlot(),
-  ])
-  const authHeroPhone2FileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
-
-  useEffect(() => {
-    const urls = parseHomeHeroVideoUrlsFromApi(settings)
-    setHeroVideoSlots((prev) => {
-      prev.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-      return heroVideoSlotsFromUrls(urls)
-    })
-  }, [settings.homeHeroVideoUrl, settings.homeHeroVideoUrls])
-
-  useEffect(() => {
-    const urls = parseAuthHeroVideoUrlsFromApi(settings)
-    setAuthHeroVideoSlots((prev) => {
-      prev.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-      return heroVideoSlotsFromUrls(urls)
-    })
-  }, [settings.authHeroVideoUrl, settings.authHeroVideoUrls])
-
-  useEffect(() => {
-    const urls = parseAuthHeroPhone2VideoUrlsFromApi(settings)
-    setAuthHeroPhone2VideoSlots((prev) => {
-      prev.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-      return heroVideoSlotsFromUrls(urls.length > 0 ? urls : [])
-    })
-  }, [settings.authHeroPhone2VideoUrls])
 
   // Состояния для модального окна БАННЕРОВ
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false)
@@ -611,6 +584,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     name_ru: '', name_ua: '', name_en: '', name_nl: '',
     slug: '',
     emoji: '🍣',
+    imageUrl: '',
+    hoverImageUrl: '',
     order: 0,
     isActive: true,
     allowRecommendations: true,
@@ -640,7 +615,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     slug: '',
     imageUrl: '',
     videoUrl: '',
-    author: 'Команда Watta Sushi',
+    author: t.adminPanel.blog.defaultAuthor,
     isPublished: true,
     i18n: emptyBlogI18nFields(),
     linkedProductIds: [] as number[],
@@ -995,6 +970,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             loadedTabsRef.current.add('users')
             break
           }
+          case 'adminPhones':
+            loadedTabsRef.current.add('adminPhones')
+            break
           case 'team': {
             const teamRes = await fetch('/api/team/all', { headers })
             if (teamRes.ok) setTeamMembers(await teamRes.json())
@@ -1649,6 +1627,43 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     return urls
   }
 
+  const uploadCategoryImageFile = async (file: File): Promise<string> => {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Увійдіть знову в адмінку')
+    const image = await compressIngredientImageFile(file)
+    const body = new FormData()
+    body.append('image', image)
+    const res = await fetch('/api/products/categories/upload-image', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+    })
+    const data = (await res.json().catch(() => ({}))) as { url?: string; message?: string }
+    if (!res.ok || !data.url?.trim()) {
+      throw new Error(data.message || `Помилка завантаження (${res.status})`)
+    }
+    return data.url.trim()
+  }
+
+  const handleCategoryImageUpload = async (
+    field: 'imageUrl' | 'hoverImageUrl',
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const toastId = toast.loading(field === 'imageUrl' ? 'Завантаження іконки…' : 'Завантаження hover-іконки…')
+    try {
+      const url = await uploadCategoryImageFile(file)
+      setCategoryFormData((prev) => ({ ...prev, [field]: url }))
+      toast.success('Фото завантажено', { id: toastId })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Помилка завантаження'
+      toast.error(msg, { id: toastId })
+    } finally {
+      e.target.value = ''
+    }
+  }
+
   const productImageInputRef = useRef<HTMLInputElement | null>(null)
   const [productGalleryDnd, setProductGalleryDnd] = useState(false)
 
@@ -2042,7 +2057,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         closeProductModal()
         setEditingId(null)
         if (typeof window !== 'undefined') {
-          broadcastWattaCatalogUpdate('products')
+          broadcastWattaCatalogUpdate('products', {
+            productRows: [normalized as unknown as Record<string, unknown>],
+          })
         }
         toast.success(t.adminPage.products.saved)
         window.setTimeout(() => {
@@ -2655,7 +2672,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       slug: '',
       imageUrl: '',
       videoUrl: '',
-      author: 'Команда Watta Sushi',
+      author: t.adminPanel.blog.defaultAuthor,
       isPublished: true,
       i18n: emptyBlogI18nFields(),
       linkedProductIds: [],
@@ -2782,7 +2799,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       slug: post.slug,
       imageUrl: post.imageUrl || '',
       videoUrl: post.videoUrl || '',
-      author: post.author || 'Команда Watta Sushi',
+      author: post.author || t.adminPanel.blog.defaultAuthor,
       isPublished: post.isPublished,
       i18n: blogI18nFromPost(post as unknown as Record<string, unknown>),
       linkedProductIds: parseBlogIdList(post.linkedProductIds),
@@ -2815,7 +2832,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           slug: blogForm.slug,
           imageUrl: blogForm.imageUrl || null,
           videoUrl: blogForm.videoUrl || null,
-          author: blogForm.author || 'Команда Watta Sushi',
+          author: blogForm.author || t.adminPanel.blog.defaultAuthor,
           isPublished: blogForm.isPublished,
           ...blogForm.i18n,
           linkedProductIds: blogForm.linkedProductIds,
@@ -3379,13 +3396,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
   const [ingDraft, setIngDraft] = useState<IngredientDraft>(emptyIngredientDraft)
   const [editingIngredientId, setEditingIngredientId] = useState<number | null>(null)
-  const [ingEditorLang, setIngEditorLang] = useState<'ru' | 'ua' | 'en' | 'nl'>('ru')
   const [ingLoading, setIngLoading] = useState(false)
 
   const resetIngredientForm = () => {
     setIngDraft(emptyIngredientDraft())
     setEditingIngredientId(null)
-    setIngEditorLang(adminUiLanguage === 'uk' ? 'ua' : 'ru')
   }
 
   const openEditIngredient = (ing: {
@@ -3404,17 +3419,22 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       name_nl: ing.name_nl || '',
       imageUrl: ing.imageUrl || '',
     })
-    setIngEditorLang(adminUiLanguage === 'uk' ? 'ua' : 'ru')
   }
 
-  const handleIngImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIngImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
+    if (!file) return
+    try {
+      const compressed = await compressIngredientImageFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
         setIngDraft((prev) => ({ ...prev, imageUrl: reader.result as string }))
       }
-      reader.readAsDataURL(file)
+      reader.readAsDataURL(compressed)
+    } catch {
+      toast.error(t.adminPanel.ingredients.photoLabel)
+    } finally {
+      e.target.value = ''
     }
   }
 
@@ -3459,10 +3479,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       if (res.ok) {
         const saved = await res.json()
         setIngredients((prev) => {
-          if (isEdit) {
-            return prev.map((row) => (row.id === saved.id ? saved : row))
-          }
-          return [...prev, saved]
+          const next = isEdit
+            ? prev.map((row) => (row.id === saved.id ? saved : row))
+            : [...prev, saved]
+          seedIngredientsCatalog(next)
+          return next
         })
         resetIngredientForm()
         broadcastWattaCatalogUpdate('products')
@@ -3497,7 +3518,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
-        setIngredients((prev) => prev.filter((i) => i.id !== id))
+        setIngredients((prev) => {
+          const next = prev.filter((i) => i.id !== id)
+          seedIngredientsCatalog(next)
+          return next
+        })
         if (editingIngredientId === id) resetIngredientForm()
         setFormData((prev) => ({
           ...prev,
@@ -3527,6 +3552,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       name_ru: '', name_ua: '', name_en: '', name_nl: '',
       slug: '',
       emoji: '🍣',
+      imageUrl: '',
+      hoverImageUrl: '',
       order: menuCategories.length,
       isActive: true,
       allowRecommendations: true,
@@ -3545,6 +3572,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       name_nl: category.name_nl || '',
       slug: category.slug,
       emoji: category.emoji || '🍣',
+      imageUrl: category.imageUrl || '',
+      hoverImageUrl: category.hoverImageUrl || '',
       order: category.order,
       isActive: category.isActive,
       allowRecommendations: category.allowRecommendations !== false,
@@ -3686,306 +3715,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
     }
   }
 
-  const handleHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    if (!file.type.startsWith('video/')) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    if (file.size > 120 * 1024 * 1024) {
-      toast.error(t.adminPanel.banners.heroVideoTooLarge)
-      return
-    }
-    const previewUrl = URL.createObjectURL(file)
-    setHeroVideoSlots((prev) =>
-      prev.map((slot) => {
-        if (slot.id !== slotId) return slot
-        revokeHeroPreviewUrl(slot.pendingPreviewUrl)
-        return { ...slot, pendingFile: file, pendingPreviewUrl: previewUrl }
-      }),
-    )
-  }
-
-  const addHeroVideoSlot = () => {
-    setHeroVideoSlots((prev) => [...prev, newHeroVideoSlot()])
-  }
-
-  const removeHeroVideoSlot = (slotId: string) => {
-    setHeroVideoSlots((prev) => {
-      const target = prev.find((s) => s.id === slotId)
-      revokeHeroPreviewUrl(target?.pendingPreviewUrl ?? null)
-      const next = prev.filter((s) => s.id !== slotId)
-      return next.length > 0 ? next : [newHeroVideoSlot()]
-    })
-  }
-
-  const heroVideoHasFilledSlot = heroVideoSlots.some(
-    (s) => Boolean(s.pendingFile) || Boolean(s.savedUrl?.trim()),
-  )
-
-  const heroVideoHasPending = heroVideoSlots.some((s) => Boolean(s.pendingFile))
-
-  const toastHeroVideoSaveError = (status?: number, code?: string) => {
-    if (status === 401 || status === 403) {
-      toast.error(t.adminPanel.banners.heroVideoErrorAuth)
-      return
-    }
-    if (status === 503 || code === 'mock_mode_no_backend') {
-      toast.error(t.adminPanel.banners.heroVideoErrorMock)
-      return
-    }
-    if (code === 'invalid_video_type' || code === 'no_file' || code === 'upload_failed') {
-      toast.error(t.adminPanel.banners.heroVideoErrorUpload)
-      return
-    }
-    toast.error(t.adminPanel.banners.heroVideoError)
-  }
-
-  const handleSaveHomeHeroVideos = async () => {
-    if (!heroVideoHasFilledSlot) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    setHeroVideoSaving(true)
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        toastHeroVideoSaveError(401)
-        return
-      }
-      const payload: string[] = []
-      for (const slot of heroVideoSlots) {
-        if (slot.pendingFile) {
-          const url = await uploadHomeHeroVideoFile(slot.pendingFile, token)
-          payload.push(url)
-        } else if (slot.savedUrl?.trim()) {
-          payload.push(slot.savedUrl.trim())
-        }
-      }
-      if (payload.length === 0) {
-        toast.error(t.adminPanel.banners.heroVideoError)
-        return
-      }
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ homeHeroVideoUrls: payload }),
-      })
-      if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as { error?: string; message?: string } | null
-        toastHeroVideoSaveError(res.status, errBody?.error)
-        return
-      }
-      const saved = await res.json()
-      const urls = parseHomeHeroVideoUrlsFromApi(saved)
-      const primary = urls[0] ?? settings.homeHeroVideoUrl
-      setSettings((prev) => ({
-        ...prev,
-        homeHeroVideoUrl: primary,
-        homeHeroVideoUrls: urls.length > 0 ? urls : prev.homeHeroVideoUrls,
-      }))
-      setHeroVideoSlots(() => {
-        heroVideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-        return heroVideoSlotsFromUrls(urls)
-      })
-      toast.success(t.adminPanel.banners.heroVideoSaved)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, {
-            detail: { urls, url: primary },
-          }),
-        )
-        broadcastWattaCatalogUpdate('settings')
-      }
-    } catch (err) {
-      console.error(err)
-      const code = err instanceof Error ? err.message : ''
-      if (code === 'upload_failed' || code === 'invalid_video_type' || code === 'no_file') {
-        toast.error(t.adminPanel.banners.heroVideoErrorUpload)
-      } else if (code === 'mock_mode_no_backend') {
-        toast.error(t.adminPanel.banners.heroVideoErrorMock)
-      } else {
-        toast.error(t.adminPanel.banners.heroVideoError)
-      }
-    } finally {
-      setHeroVideoSaving(false)
-    }
-  }
-
-  const handleAuthHeroVideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    if (!file.type.startsWith('video/')) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    if (file.size > 120 * 1024 * 1024) {
-      toast.error(t.adminPanel.banners.heroVideoTooLarge)
-      return
-    }
-    const previewUrl = URL.createObjectURL(file)
-    setAuthHeroVideoSlots((prev) =>
-      prev.map((slot) => {
-        if (slot.id !== slotId) return slot
-        revokeHeroPreviewUrl(slot.pendingPreviewUrl)
-        return { ...slot, pendingFile: file, pendingPreviewUrl: previewUrl }
-      }),
-    )
-  }
-
-  const addAuthHeroVideoSlot = () => {
-    setAuthHeroVideoSlots((prev) => [...prev, newHeroVideoSlot()])
-  }
-
-  const removeAuthHeroVideoSlot = (slotId: string) => {
-    setAuthHeroVideoSlots((prev) => {
-      const target = prev.find((s) => s.id === slotId)
-      revokeHeroPreviewUrl(target?.pendingPreviewUrl ?? null)
-      const next = prev.filter((s) => s.id !== slotId)
-      return next.length > 0 ? next : [newHeroVideoSlot()]
-    })
-  }
-
-  const handleAuthHeroPhone2VideoFileChange = (slotId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    if (!file.type.startsWith('video/')) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    if (file.size > 120 * 1024 * 1024) {
-      toast.error(t.adminPanel.banners.heroVideoTooLarge)
-      return
-    }
-    const previewUrl = URL.createObjectURL(file)
-    setAuthHeroPhone2VideoSlots((prev) =>
-      prev.map((slot) => {
-        if (slot.id !== slotId) return slot
-        revokeHeroPreviewUrl(slot.pendingPreviewUrl)
-        return { ...slot, pendingFile: file, pendingPreviewUrl: previewUrl }
-      }),
-    )
-  }
-
-  const addAuthHeroPhone2VideoSlot = () => {
-    setAuthHeroPhone2VideoSlots((prev) => [...prev, newHeroVideoSlot()])
-  }
-
-  const removeAuthHeroPhone2VideoSlot = (slotId: string) => {
-    setAuthHeroPhone2VideoSlots((prev) => {
-      const target = prev.find((s) => s.id === slotId)
-      revokeHeroPreviewUrl(target?.pendingPreviewUrl ?? null)
-      const next = prev.filter((s) => s.id !== slotId)
-      return next.length > 0 ? next : [newHeroVideoSlot()]
-    })
-  }
-
-  const authHeroVideoHasFilledSlot = authHeroVideoSlots.some(
-    (s) => Boolean(s.pendingFile) || Boolean(s.savedUrl?.trim()),
-  )
-
-  const buildHeroVideoPayload = async (slots: HeroVideoSlotState[], token: string) => {
-    const payload: string[] = []
-    for (const slot of slots) {
-      if (slot.pendingFile) {
-        const url = await uploadHomeHeroVideoFile(slot.pendingFile, token)
-        payload.push(url)
-      } else if (slot.savedUrl?.trim()) {
-        payload.push(slot.savedUrl.trim())
-      }
-    }
-    return payload
-  }
-
-  const handleSaveAuthHeroPhones = async () => {
-    if (!authHeroVideoHasFilledSlot) {
-      toast.error(t.adminPanel.banners.heroVideoError)
-      return
-    }
-    setAuthHeroVideoSaving(true)
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        toastHeroVideoSaveError(401)
-        return
-      }
-      const phone1Urls = await buildHeroVideoPayload(authHeroVideoSlots, token)
-      if (phone1Urls.length === 0) {
-        toast.error(t.adminPanel.banners.heroVideoError)
-        return
-      }
-      const phone2Urls = await buildHeroVideoPayload(authHeroPhone2VideoSlots, token)
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          authHeroVideoUrls: phone1Urls,
-          authHeroPhone2VideoUrls: phone2Urls,
-        }),
-      })
-      if (!res.ok) {
-        const errBody = (await res.json().catch(() => null)) as { error?: string; message?: string } | null
-        toastHeroVideoSaveError(res.status, errBody?.error)
-        return
-      }
-      const saved = await res.json()
-      const urls = parseAuthHeroVideoUrlsFromApi(saved)
-      const urls2 = parseAuthHeroPhone2VideoUrlsFromApi(saved)
-      const primary = urls[0] ?? settings.authHeroVideoUrl
-      setSettings((prev) => ({
-        ...prev,
-        authHeroVideoUrl: primary,
-        authHeroVideoUrls: urls.length > 0 ? urls : prev.authHeroVideoUrls,
-        authHeroPhone2VideoUrls: urls2,
-      }))
-      setAuthHeroVideoSlots(() => {
-        authHeroVideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-        return heroVideoSlotsFromUrls(urls)
-      })
-      setAuthHeroPhone2VideoSlots(() => {
-        authHeroPhone2VideoSlots.forEach((s) => revokeHeroPreviewUrl(s.pendingPreviewUrl))
-        return heroVideoSlotsFromUrls(urls2)
-      })
-      toast.success(t.adminPanel.banners.heroVideoSaved)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent(WATTA_AUTH_HERO_VIDEO_UPDATED_EVENT, {
-            detail: {
-              urls,
-              url: primary,
-              phone2Urls: urls2,
-              phone1Copy: settings.authHeroPhone1Copy,
-              phone2Copy: settings.authHeroPhone2Copy,
-            },
-          }),
-        )
-        broadcastWattaCatalogUpdate('settings')
-      }
-    } catch (err) {
-      console.error(err)
-      const code = err instanceof Error ? err.message : ''
-      if (code === 'upload_failed' || code === 'invalid_video_type' || code === 'no_file') {
-        toast.error(t.adminPanel.banners.heroVideoErrorUpload)
-      } else if (code === 'mock_mode_no_backend') {
-        toast.error(t.adminPanel.banners.heroVideoErrorMock)
-      } else {
-        toast.error(t.adminPanel.banners.heroVideoError)
-      }
-    } finally {
-      setAuthHeroVideoSaving(false)
-    }
-  }
-
   const dashboardMetrics = useMemo(() => {
     if (orderStats) {
       const byStatus = orderStats.byStatus
@@ -4027,6 +3756,11 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
       fromDb: false as const,
     }
   }, [orderStats, orders])
+
+  const ordersForSelectedDay = useMemo(
+    () => orders.filter((order) => getOrderServiceDateKey(order) === ordersDayFilter),
+    [orders, ordersDayFilter],
+  )
 
   // --- ХЕДЕР ---
   const Header = () => (
@@ -4185,7 +3919,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     onClick={openCreateModal}
                     whileHover={reduceMotion ? undefined : { scale: 1.02 }}
                     whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                    className="admin-watta-products-add-btn inline-flex min-h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#155044] px-3 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#103d34] sm:min-h-11 sm:text-base"
+                    className="admin-watta-products-add-btn inline-flex min-h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#155044] px-3 py-2 text-sm font-bold text-white shadow-md transition hover:bg-watta-action-hover sm:min-h-11 sm:text-base"
                   >
                     <Plus size={18} className="shrink-0" strokeWidth={2.5} />
                     <span className="truncate">{t.adminPanel.products.addBtn}</span>
@@ -4194,15 +3928,19 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </div>
           {activeTab === 'orders' && (
             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 items-center">
+              <AdminOrdersByDayPanel
+                orders={orders}
+                selectedDate={ordersDayFilter}
+                onSelectedDateChange={setOrdersDayFilter}
+              />
               {isLoading && orders.length === 0 ? (
                  <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10">{t.adminPanel.dashboard.loading}</div>
-              ) : orders.length === 0 ? (
+              ) : ordersForSelectedDay.length === 0 ? (
                  <div className="text-lg sm:text-xl md:text-2xl text-gray-400 mt-6 sm:mt-8 md:mt-10 text-center">
-                   {t.adminPanel.common.emptyOrders}
-                   <div className="text-sm mt-2">No orders found</div>
+                   {t.adminPanel.orders.ordersByDayEmpty}
                  </div>
               ) : (
-                orders.map((order) => (
+                ordersForSelectedDay.map((order) => (
                   <div 
                     key={order.id} 
                     className="admin-watta-hover-lift relative flex w-full flex-col gap-4 border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-5 sm:rounded-[20px] sm:p-6 md:gap-6 md:rounded-[25px] md:p-8 rounded-[16px]"
@@ -4247,6 +3985,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               {formatReadyAtDisplay(order.readyAt)}
                             </span>
                           ) : null}
+                          <span className="inline-flex items-center rounded-full border border-[#5c9010]/30 bg-[#5c9010]/10 px-3 py-1 text-xs font-semibold text-[#145142]">
+                            {t.adminPanel.orders.scheduledForLabel}: {getOrderServiceDateKey(order)}
+                            {order.scheduledForSlot
+                              ? ` · ${formatSlotLabel(order.scheduledForSlot, t.cartSection.slotAsap)}`
+                              : ''}
+                          </span>
                           {order.fulfillmentType !== 'PICKUP' && typeof order.deliveryFee === 'number' && (
                             <span className="text-xs font-semibold text-gray-600">
                               {t.adminPanel.orders.deliveryFeeAdmin}{' '}
@@ -4269,7 +4013,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     </div>
 
                     {/* Данные клиента */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 bg-[#145142]/5 p-3 sm:p-4 rounded-[12px] sm:rounded-[15px] border border-[#145142]/10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 bg-watta-action/5 p-3 sm:p-4 rounded-[12px] sm:rounded-[15px] border border-[#145142]/10">
                       <div className="flex flex-col gap-2 text-sm sm:text-base md:text-[16px] text-[#555]">
                         <div className="flex items-center gap-2 font-bold text-black"><User size={16} className="sm:w-5 sm:h-5"/> {order.customerName}</div>
                         <div className="flex items-center gap-2"><Phone size={16} className="sm:w-5 sm:h-5"/> {order.phone}</div>
@@ -4415,7 +4159,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           type="button"
                           disabled={orderStatusSaving}
                           onClick={() => addReadyTimeMinutes(m)}
-                          className="rounded-lg border border-[#145142]/20 bg-[#145142]/5 px-3 py-1.5 text-xs font-semibold text-[#145142] hover:bg-[#145142]/10 disabled:opacity-50"
+                          className="rounded-lg border border-[#145142]/20 bg-watta-action/5 px-3 py-1.5 text-xs font-semibold text-[#145142] hover:bg-watta-action/10 disabled:opacity-50"
                         >
                           +{m} {t.adminPanel.orders.readyTimeMinutes}
                         </button>
@@ -4448,7 +4192,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         type="button"
                         disabled={orderStatusSaving}
                         onClick={() => void submitOrderReadyTimeModal()}
-                        className="flex-1 rounded-xl bg-[#145142] py-2.5 text-sm font-bold text-white hover:bg-[#103d34] disabled:opacity-50"
+                        className="flex-1 rounded-xl bg-watta-action py-2.5 text-sm font-bold text-white hover:bg-watta-action-hover disabled:opacity-50"
                       >
                         {orderStatusSaving
                           ? t.adminPanel.dashboard.loading
@@ -4512,7 +4256,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                        <AdminProductCoverImage coverSrc={coverSrc} alt={product.name_ru} compact />
                          <div className="pointer-events-none absolute right-1 top-1 z-[2] flex max-w-[70%] flex-col items-end gap-0.5">
                           {product.isHomeHit || product.isPopular ? (
-                            <span className="rounded-full bg-[#145142] px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
+                            <span className="rounded-full bg-watta-action px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
                               Наші хіти
                             </span>
                           ) : null}
@@ -4544,7 +4288,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               <button
                                 type="button"
                                 onClick={() => openEditModal(product)}
-                                className="rounded-md p-1 text-[#145142]/50 transition hover:bg-[#145142]/10 hover:text-[#145142] touch-manipulation"
+                                className="rounded-md p-1 text-[#145142]/50 transition hover:bg-watta-action/10 hover:text-[#145142] touch-manipulation"
                                 title={t.adminPanel.actions.edit}
                               >
                                 <Pencil size={15} />
@@ -4572,16 +4316,16 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         key={i}
                         className="flex flex-col gap-2 rounded-[12px] border border-[#145142]/8 bg-white/80 p-2.5"
                       >
-                        <div className="aspect-[4/3] w-full animate-pulse rounded-[10px] bg-[#145142]/10" />
-                        <div className="h-3 w-4/5 animate-pulse rounded bg-[#145142]/10" />
-                        <div className="h-2.5 w-1/2 animate-pulse rounded bg-[#145142]/8" />
+                        <div className="aspect-[4/3] w-full animate-pulse rounded-[10px] bg-watta-action/10" />
+                        <div className="h-3 w-4/5 animate-pulse rounded bg-watta-action/10" />
+                        <div className="h-2.5 w-1/2 animate-pulse rounded bg-watta-action/8" />
                       </div>
                     ))}
                   </div>
                 ) : null}
                 {productsListReady && !productsListLoading && products.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 p-4 text-center text-sm text-gray-500">
-                    {adminUiLanguage === 'ru' ? 'Товаров не найдено' : 'Товарів не знайдено'}
+                    {t.adminPanel.products.empty}
                   </div>
                 ) : null}
              </div>
@@ -4589,19 +4333,20 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           {/* === Вкладка: ИНГРЕДИЕНТЫ === */}
             {activeTab === 'ingredients' && (
               <div className="mx-auto max-w-5xl">
-                <h2 className="mb-6 text-2xl font-bold text-[#145142]">{t.adminPanel.ingredients.title}</h2>
+                <h2 className="mb-2 text-2xl font-bold text-[#145142]">{t.adminPanel.ingredients.title}</h2>
+                <p className="mb-6 max-w-2xl text-sm text-[#145142]/65">{t.adminPanel.ingredients.langsHint}</p>
 
-                <div className="mb-8 rounded-2xl border border-[#145142]/15 bg-white p-6">
-                  <h3 className="mb-2 font-bold text-[#145142]">
+                <div className="mb-8 overflow-hidden rounded-2xl border border-[#145142]/15 bg-gradient-to-br from-white via-white to-[#f6faf8] p-5 shadow-lg shadow-[#145142]/8 sm:p-6">
+                  <h3 className="mb-1 font-bold text-[#145142]">
                     {editingIngredientId != null
                       ? t.adminPanel.ingredients.editTitle
                       : t.adminPanel.ingredients.addNew}
                   </h3>
-                  <p className="mb-4 text-xs text-[#145142]/65">{t.adminPanel.ingredients.langsHint}</p>
 
-                  <form onSubmit={handleSaveIngredient} className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                      <div className="relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-gray-300 transition hover:border-[#145142]">
+                  <form onSubmit={handleSaveIngredient} className="mt-4 flex flex-col gap-5">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+                      <label className="relative mx-auto h-28 w-28 shrink-0 cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-[#145142]/25 bg-white shadow-inner transition hover:border-[#145142] lg:mx-0">
+                        <span className="sr-only">{t.adminPanel.ingredients.photoLabel}</span>
                         <input
                           type="file"
                           onChange={handleIngImageUpload}
@@ -4609,56 +4354,37 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           accept="image/*"
                         />
                         {ingDraft.imageUrl ? (
-                          <img src={ingDraft.imageUrl} alt="" className="h-full w-full object-cover" />
+                          <img src={ingDraft.imageUrl} alt="" className="h-full w-full object-contain p-2" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-gray-400">
-                            <Upload size={24} />
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#145142]/45">
+                            <Upload size={26} />
+                            <span className="text-[10px] font-bold uppercase tracking-wide">
+                              {t.adminPanel.ingredients.photoLabel}
+                            </span>
                           </div>
                         )}
-                      </div>
+                      </label>
 
-                      <div className="min-w-0 flex-1 space-y-3">
-                        <div className="flex rounded-lg bg-gray-100 p-1">
-                          {(['ru', 'ua', 'en', 'nl'] as const).map((lang) => (
-                            <button
-                              key={lang}
-                              type="button"
-                              onClick={() => setIngEditorLang(lang)}
-                              className={`flex-1 rounded-md py-2 text-xs font-bold transition-all ${
-                                ingEditorLang === lang
-                                  ? 'bg-white text-[#145142] shadow-sm'
-                                  : 'text-gray-400 hover:text-gray-600'
-                              }`}
-                            >
-                              {lang.toUpperCase()}
-                            </button>
-                          ))}
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-xs font-bold text-gray-500">
-                            {t.adminPanel.ingredients.nameRu} ({ingEditorLang.toUpperCase()})
-                          </label>
-                          <input
-                            type="text"
-                            value={ingDraft[`name_${ingEditorLang}`] || ''}
-                            onChange={(e) =>
-                              setIngDraft((prev) => ({
-                                ...prev,
-                                [`name_${ingEditorLang}`]: e.target.value,
-                              }))
-                            }
-                            className="w-full rounded-xl border p-3 outline-none focus:border-[#145142]"
-                            placeholder={t.adminPanel.ingredients.namePlaceholder}
-                          />
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <IngredientLocaleFields
+                          value={ingDraft}
+                          onChange={(names) => setIngDraft((prev) => ({ ...prev, ...names }))}
+                          labels={{
+                            sectionTitle: t.adminPanel.ingredients.namesTitle,
+                            hint: t.adminPanel.ingredients.langsHint,
+                            placeholder: t.adminPanel.ingredients.namePlaceholder,
+                            previewTitle: t.adminPanel.ingredients.previewOnSite,
+                          }}
+                          langMeta={ingLangMeta}
+                        />
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 border-t border-[#145142]/10 pt-4">
                       <button
                         type="submit"
                         disabled={ingLoading}
-                        className="h-[46px] rounded-xl bg-[#145142] px-6 font-bold text-white transition hover:bg-[#103d34] disabled:opacity-60"
+                        className="h-[46px] rounded-xl bg-watta-action px-6 font-bold text-white transition hover:bg-watta-action-hover disabled:opacity-60"
                       >
                         {ingLoading
                           ? '...'
@@ -4666,7 +4392,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                             ? t.adminPanel.ingredients.saveBtn
                             : t.adminPanel.ingredients.addBtn}
                       </button>
-                      {editingIngredientId != null && (
+                      {editingIngredientId != null ? (
                         <button
                           type="button"
                           onClick={resetIngredientForm}
@@ -4674,26 +4400,26 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         >
                           {t.adminPanel.ingredients.cancelEdit}
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </form>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                   {ingredients.map((ing) => (
                     <div
                       key={ing.id}
-                      className={`admin-watta-hover-lift group relative flex flex-col items-center rounded-xl border bg-white/85 p-3 shadow-md shadow-[#145142]/8 backdrop-blur-sm ${
+                      className={`admin-watta-hover-lift group relative flex flex-col rounded-2xl border bg-white/90 p-3 shadow-md shadow-[#145142]/8 backdrop-blur-sm ${
                         editingIngredientId === ing.id
                           ? 'border-[#145142] ring-2 ring-[#145142]/25'
-                          : 'border-white/60'
+                          : 'border-[#145142]/10'
                       }`}
                     >
-                      <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition group-hover:opacity-100">
+                      <div className="absolute right-1.5 top-1.5 z-[2] flex gap-0.5 opacity-0 transition group-hover:opacity-100">
                         <button
                           type="button"
                           onClick={() => openEditIngredient(ing)}
-                          className="rounded-md bg-[#145142]/10 p-1 text-[#145142]"
+                          className="rounded-md bg-watta-action/10 p-1 text-[#145142]"
                           title={t.adminPanel.actions.edit}
                         >
                           <Pencil size={14} />
@@ -4707,31 +4433,37 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           <Trash2 size={14} />
                         </button>
                       </div>
-                      <img
-                        src={ing.imageUrl}
-                        alt=""
-                        className="mb-2 h-12 w-12 object-contain"
-                        loading="eager"
-                        decoding="async"
-                      />
-                      <span className="line-clamp-2 text-center text-xs font-bold">
-                        {getLocalized(ing, 'name') || ing.name_ru}
-                      </span>
-                      <div className="mt-1 flex flex-wrap justify-center gap-0.5">
-                        {(['ru', 'ua', 'en', 'nl'] as const).map((code) => {
-                          const label =
-                            (ing[`name_${code}` as keyof typeof ing] as string | undefined)?.trim() || '—'
+                      <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#f6faf8] to-white shadow-inner ring-1 ring-[#145142]/10">
+                        <img
+                          src={ing.imageUrl}
+                          alt={ingredientLabelForSite(ing)}
+                          className="h-10 w-10 object-contain"
+                          loading="eager"
+                          decoding="async"
+                        />
+                      </div>
+                      <p className="line-clamp-2 text-center text-xs font-bold text-[#0f241e]">
+                        {ingredientLabelForSite(ing)}
+                      </p>
+                      <ul className="mt-2 space-y-0.5 border-t border-[#145142]/8 pt-2">
+                        {INGREDIENT_LOCALE_SUFFIXES.map((code) => {
+                          const label = ingredientNameForSuffix(ing, code) || '—'
+                          const filled = label !== '—'
                           return (
-                            <span
+                            <li
                               key={code}
-                              className="rounded bg-[#145142]/6 px-1 text-[8px] font-semibold uppercase text-[#145142]/55"
-                              title={label}
+                              className={`flex items-baseline gap-1 text-[9px] leading-tight ${
+                                filled ? 'text-[#145142]/80' : 'text-gray-400'
+                              }`}
                             >
-                              {code}
-                            </span>
+                              <span className="w-5 shrink-0 font-extrabold uppercase text-[#145142]/45">
+                                {code}
+                              </span>
+                              <span className="min-w-0 truncate font-medium">{label}</span>
+                            </li>
                           )
                         })}
-                      </div>
+                      </ul>
                     </div>
                   ))}
                 </div>
@@ -4834,8 +4566,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                     }}
                                     className={`p-2 rounded-[10px] text-lg transition-all duration-200 ${
                                       newCountryFlag === flag 
-                                        ? 'bg-[#145142]/15 ring-2 ring-[#145142]/50' 
-                                        : 'bg-[#145142]/5 hover:bg-[#145142]/10'
+                                        ? 'bg-watta-action/15 ring-2 ring-[#145142]/50' 
+                                        : 'bg-watta-action/5 hover:bg-watta-action/10'
                                     }`}
                                   >
                                     {flag}
@@ -4948,7 +4680,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         <button
                           type="button"
                           onClick={handleSearchCityByNames}
-                          className="shrink-0 px-4 py-3 bg-[#145142]/15 text-[#145142] font-semibold rounded-[16px] border-2 border-[#145142]/30 hover:bg-[#145142]/25 transition"
+                          className="shrink-0 px-4 py-3 bg-watta-action/15 text-[#145142] font-semibold rounded-[16px] border-2 border-[#145142]/30 hover:bg-watta-action/25 transition"
                         >
                           {t.adminPanel.cities.searchMapBtn}
                         </button>
@@ -4960,7 +4692,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               key={i}
                               type="button"
                               onClick={() => handleChooseCityFromMap(r)}
-                              className="w-full px-4 py-3 text-left hover:bg-[#145142]/10 transition flex items-center justify-between gap-2 border-b border-[#145142]/10 last:border-b-0"
+                              className="w-full px-4 py-3 text-left hover:bg-watta-action/10 transition flex items-center justify-between gap-2 border-b border-[#145142]/10 last:border-b-0"
                             >
                               <span className="text-sm font-medium text-gray-800 truncate flex-1">{r.display_name}</span>
                               <span className="text-xs text-[#145142] font-semibold shrink-0">{t.adminPanel.common.choose}</span>
@@ -5088,7 +4820,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         <button
                           type="button"
                           onClick={handleCancelEditCity}
-                          className="px-6 sm:px-8 py-3 sm:py-4 bg-white/80 backdrop-blur-sm text-[#145142] font-semibold rounded-[14px] sm:rounded-[16px] border-2 border-[#145142]/20 hover:bg-[#145142]/10 hover:border-[#145142]/30 transition text-sm sm:text-base"
+                          className="px-6 sm:px-8 py-3 sm:py-4 bg-white/80 backdrop-blur-sm text-[#145142] font-semibold rounded-[14px] sm:rounded-[16px] border-2 border-[#145142]/20 hover:bg-watta-action/10 hover:border-[#145142]/30 transition text-sm sm:text-base"
                         >
                          {t.adminPanel.cities.cancelEdit}
                         </button>
@@ -5170,7 +4902,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                       flatDeliveryFee: z.flatDeliveryFee,
                                     })
                                   }
-                                  className="rounded-[10px] bg-[#145142] px-3 py-2 text-xs font-bold text-white hover:bg-[#103d34]"
+                                  className="rounded-[10px] bg-watta-action px-3 py-2 text-xs font-bold text-white hover:bg-watta-action-hover"
                                 >
                                   Зберегти тариф
                                 </button>
@@ -5268,7 +5000,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                             setEditCountryFlag(f)
                                             setIsEditFlagPickerOpen(false)
                                           }}
-                                          className={`p-1.5 rounded-[8px] text-base transition ${editCountryFlag === f ? 'bg-[#145142]/15 ring-1 ring-[#145142]/50' : 'bg-[#145142]/5 hover:bg-[#145142]/10'}`}
+                                          className={`p-1.5 rounded-[8px] text-base transition ${editCountryFlag === f ? 'bg-watta-action/15 ring-1 ring-[#145142]/50' : 'bg-watta-action/5 hover:bg-watta-action/10'}`}
                                         >
                                           {f}
                                         </button>
@@ -5302,7 +5034,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                     }
                                     handleUpdateCountry(country.id, name, name_ua, name_en, name_nl, editCountryFlag, code, isActive)
                                   }}
-                                  className="flex-1 px-3 py-2 bg-[#155044] text-white rounded-[10px] hover:bg-[#103d34] transition text-sm font-medium"
+                                  className="flex-1 px-3 py-2 bg-[#155044] text-white rounded-[10px] hover:bg-watta-action-hover transition text-sm font-medium"
                                 >
                                   {t.adminPanel.actions.save}
                                 </button>
@@ -5312,7 +5044,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                     setEditingCountryId(null)
                                     setIsEditFlagPickerOpen(false)
                                   }}
-                                  className="px-3 py-2 bg-white/80 backdrop-blur-sm rounded-[10px] border border-[#145142]/20 hover:bg-[#145142]/10 transition text-sm text-[#145142] font-medium"
+                                  className="px-3 py-2 bg-white/80 backdrop-blur-sm rounded-[10px] border border-[#145142]/20 hover:bg-watta-action/10 transition text-sm text-[#145142] font-medium"
                                 >
                                   {t.adminPanel.actions.cancel}
                                 </button>
@@ -5329,7 +5061,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                   </div>
                                 </div>
                                 <span className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
-                                  country.isActive ? 'bg-green-100 text-green-700' : 'bg-[#145142]/10 text-[#145142]/70'
+                                  country.isActive ? 'bg-green-100 text-green-700' : 'bg-watta-action/10 text-[#145142]/70'
                                 }`}>
                                   {country.isActive ? '✓' : '○'}
                                 </span>
@@ -5384,7 +5116,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     <div key={city.id} className={`admin-watta-hover-lift flex flex-col gap-3 rounded-[14px] border-2 bg-white/80 p-3 shadow-sm backdrop-blur-sm sm:gap-4 sm:rounded-[16px] sm:p-4 md:rounded-[20px] md:p-6 hover:shadow-lg hover:shadow-[#145142]/10 ${editingCityId === city.id ? 'border-[#145142] ring-2 ring-[#145142]/30' : 'border-[#145142]/10 hover:border-[#145142]/30'}`}>
                         <>
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#145142]/10 rounded-full flex items-center justify-center text-[#155044] flex-shrink-0">
+                            <div className="w-10 h-10 bg-watta-action/10 rounded-full flex items-center justify-center text-[#155044] flex-shrink-0">
                               <MapPin size={18} className="sm:w-5 sm:h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -5405,7 +5137,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               </p>
                             </div>
                             <span className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
-                              city.isActive ? 'bg-green-100 text-green-700' : 'bg-[#145142]/10 text-[#145142]/70'
+                              city.isActive ? 'bg-green-100 text-green-700' : 'bg-watta-action/10 text-[#145142]/70'
                             }`}>
                               {city.isActive ? 'Активен' : 'Неактивен'}
                             </span>
@@ -5446,7 +5178,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             <div className="admin-banners-tab-shell flex flex-col gap-6 sm:gap-8">
               <div className="admin-banners-tab-hero rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
                 <div
-                  className="admin-banners-tab-hero-orb absolute -right-10 -top-12 h-40 w-40 rounded-full bg-[#145142]/12 blur-3xl"
+                  className="admin-banners-tab-hero-orb absolute -right-10 -top-12 h-40 w-40 rounded-full bg-watta-action/12 blur-3xl"
                   aria-hidden
                 />
                 <div
@@ -5454,7 +5186,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   aria-hidden
                 />
                 <div className="relative min-w-0">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-[#145142]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#145142]/85 ring-1 ring-[#145142]/15">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-watta-action/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#145142]/85 ring-1 ring-[#145142]/15">
                     <LayoutTemplate className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
                     {t.adminPanel.sidebar.bannersDesc}
                   </div>
@@ -5477,130 +5209,6 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   {t.adminPanel.banners.addBtn}
                 </span>
               </button>
-
-              <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
-                <h3 className="text-lg font-bold text-[#155044] sm:text-xl">
-                  {t.adminPanel.banners.heroVideoTitle}
-                </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-[#145142]/75">
-                  {t.adminPanel.banners.heroVideoSubtitle}
-                </p>
-                <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  {heroVideoSlots.map((slot, slotIndex) => {
-                    const previewSrc = slot.pendingPreviewUrl ?? slot.savedUrl
-                    const slotLabel = t.adminPanel.banners.heroVideoSlotLabel.replace(
-                      '{{n}}',
-                      String(slotIndex + 1),
-                    )
-                    return (
-                      <motion.div
-                        key={slot.id}
-                        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: slotIndex * 0.05 }}
-                        className="flex flex-col rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/80 p-3"
-                      >
-                        <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">
-                          {slotLabel}
-                        </p>
-                        <motion.div
-                          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                          className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5"
-                        >
-                          <AdminHeroVideoPreview
-                            previewSrc={previewSrc}
-                            savedUrl={slot.savedUrl}
-                            reduceMotion={Boolean(reduceMotion)}
-                          />
-                        </motion.div>
-                        {previewSrc && !slot.pendingFile ? (
-                          <p
-                            className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55"
-                            title={slot.savedUrl}
-                          >
-                            {slot.savedUrl}
-                          </p>
-                        ) : null}
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <input
-                            ref={(el) => {
-                              heroVideoFileInputRefs.current[slot.id] = el
-                            }}
-                            type="file"
-                            accept="video/mp4,video/webm,video/quicktime"
-                            className="hidden"
-                            onChange={(e) => handleHeroVideoFileChange(slot.id, e)}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => heroVideoFileInputRefs.current[slot.id]?.click()}
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-[#145142]/5"
-                          >
-                            <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            {t.adminPanel.banners.heroVideoUpload}
-                          </button>
-                          {previewSrc || heroVideoSlots.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => removeHeroVideoSlot(slot.id)}
-                              className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-[#145142]/20 bg-white px-3 py-2 text-xs font-semibold text-[#145142]/80 transition hover:bg-red-50 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                              {t.adminPanel.banners.heroVideoRemove}
-                            </button>
-                          ) : null}
-                        </div>
-                      </motion.div>
-                    )
-                  })}
-                </div>
-                <button
-                  type="button"
-                  onClick={addHeroVideoSlot}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-[#145142]/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-[#145142]/10 sm:w-auto"
-                >
-                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                  {t.adminPanel.banners.heroVideoAddBtn}
-                </button>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                  <button
-                    type="button"
-                    disabled={heroVideoSaving || !heroVideoHasFilledSlot}
-                    onClick={() => void handleSaveHomeHeroVideos()}
-                    className="admin-hero-video-save-btn relative z-[5] inline-flex touch-manipulation items-center justify-center gap-2 rounded-[12px] bg-[#155044] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Save className="h-4 w-4 shrink-0" aria-hidden />
-                    {heroVideoSaving
-                      ? t.adminPanel.banners.heroVideoSaving
-                      : t.adminPanel.banners.heroVideoSave}
-                  </button>
-                  {heroVideoHasPending ? (
-                    <p className="text-xs font-semibold text-[#ff6b35]">
-                      {t.adminPanel.banners.heroVideoCurrent}: …
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              <AuthHeroPhonesAdminSection
-                t={t.adminPanel.banners}
-                reduceMotion={Boolean(reduceMotion)}
-                saving={authHeroVideoSaving}
-                canSave={authHeroVideoHasFilledSlot}
-                onSave={() => void handleSaveAuthHeroPhones()}
-                phone1Slots={authHeroVideoSlots}
-                phone2Slots={authHeroPhone2VideoSlots}
-                phone1FileInputRefs={authHeroVideoFileInputRefs}
-                phone2FileInputRefs={authHeroPhone2FileInputRefs}
-                onPhone1FileChange={handleAuthHeroVideoFileChange}
-                onPhone2FileChange={handleAuthHeroPhone2VideoFileChange}
-                onAddPhone1Slot={addAuthHeroVideoSlot}
-                onAddPhone2Slot={addAuthHeroPhone2VideoSlot}
-                onRemovePhone1Slot={removeAuthHeroVideoSlot}
-                onRemovePhone2Slot={removeAuthHeroPhone2VideoSlot}
-              />
 
               {sortedBanners.length > 0 && (
                 <p className="-mt-1 px-1 text-sm leading-snug text-[#145142]/70">{t.adminPanel.common.bannerDragHint}</p>
@@ -5646,8 +5254,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         </div>
                       )}
                       {!banner.isActive && (
-                        <div className="absolute right-2 top-2 rounded-full bg-[#145142]/88 px-2 py-1 text-xs text-white backdrop-blur-sm">
+                        <div className="absolute right-2 top-2 rounded-full bg-watta-action/88 px-2 py-1 text-xs text-white backdrop-blur-sm">
                           {t.adminPanel.common.inactiveLabel}
+                        </div>
+                      )}
+                      {banner.imageMissing && (
+                        <div className="absolute inset-x-2 bottom-2 flex items-center gap-1.5 rounded-lg bg-red-600/90 px-2 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                          <ImageIcon size={14} className="shrink-0" aria-hidden />
+                          <span>Файл картинки пропал — перезалейте</span>
                         </div>
                       )}
                     </div>
@@ -5662,7 +5276,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           ev.stopPropagation()
                           openEditBannerModal(banner)
                         }}
-                        className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-[#145142]/10 px-4 py-2 text-[#145142] ring-1 ring-[#145142]/18 transition hover:bg-[#145142]/18 active:scale-[0.98]"
+                        className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-watta-action/10 px-4 py-2 text-[#145142] ring-1 ring-[#145142]/18 transition hover:bg-watta-action/18 active:scale-[0.98]"
                       >
                         <Pencil size={16} /> {t.adminPanel.actions.edit}
                       </button>
@@ -5681,7 +5295,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </div>
                 ))}
                 {sortedBanners.length === 0 && (
-                  <div className="admin-banner-card-enter col-span-full rounded-[18px] border border-dashed border-[#145142]/25 bg-[#145142]/[0.04] py-14 text-center text-[#145142]/55">
+                  <div className="admin-banner-card-enter col-span-full rounded-[18px] border border-dashed border-[#145142]/25 bg-watta-action/[0.04] py-14 text-center text-[#145142]/55">
                     {t.adminPanel.common.emptyBanners}
                   </div>
                 )}
@@ -5694,7 +5308,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
               <button 
                 onClick={openCreateCategoryModal}
-                className="w-full h-14 sm:h-16 md:h-[77px] bg-[#155044] rounded-[12px] sm:rounded-[15px] flex items-center justify-center text-white text-base sm:text-xl md:text-[24px] font-bold hover:bg-[#103d34] transition shadow-md px-4"
+                className="w-full h-14 sm:h-16 md:h-[77px] bg-[#155044] rounded-[12px] sm:rounded-[15px] flex items-center justify-center text-white text-base sm:text-xl md:text-[24px] font-bold hover:bg-watta-action-hover transition shadow-md px-4"
               >
                 {t.adminPanel.categories.addBtn}
               </button>
@@ -5702,17 +5316,45 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {menuCategories.map(category => (
                   <div key={category.id} className="admin-watta-hover-lift flex flex-col gap-3 rounded-[16px] border border-white/60 bg-white/85 p-4 shadow-xl shadow-[#145142]/10 backdrop-blur-xl sm:gap-4 sm:rounded-[20px] sm:p-6">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#145142]/10 rounded-[10px] sm:rounded-[12px] flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
-                        {category.emoji || '🍣'}
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#f6faf8] to-white ring-1 ring-[#145142]/12 sm:h-16 sm:w-16">
+                        {category.imageUrl ? (
+                          <img
+                            src={resolveCatalogMediaUrl(category.imageUrl) ?? category.imageUrl}
+                            alt=""
+                            className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+                          />
+                        ) : (
+                          <span className="text-2xl sm:text-3xl">{category.emoji || '🍣'}</span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-base sm:text-lg truncate">{category.name_ru}</h3>
-                        <p className="text-xs sm:text-sm text-gray-500 truncate">{t.adminPanel.categories.slug}: {category.slug}</p>
+                        <h3 className="font-bold text-base sm:text-lg truncate">
+                          {ingredientLabelForSite({
+                            name_ru: category.name_ru,
+                            name_ua: category.name_ua,
+                            name_en: category.name_en,
+                            name_nl: category.name_nl,
+                          }) || category.name_ru}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-500 truncate">
+                          {t.adminPanel.categories.slug}: {category.slug} · {category.emoji || '🍣'}
+                        </p>
                         <p className="text-xs sm:text-sm text-gray-500">Порядок: {category.order}</p>
+                        <ul className="mt-1.5 space-y-0.5">
+                          {INGREDIENT_LOCALE_SUFFIXES.map((code) => {
+                            const label = ingredientNameForSuffix(category, code) || '—'
+                            return (
+                              <li key={code} className="flex gap-1 text-[9px] text-[#145142]/65">
+                                <span className="w-5 font-extrabold uppercase">{code}</span>
+                                <span className="truncate">{label}</span>
+                              </li>
+                            )
+                          })}
+                        </ul>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
-                        category.isActive ? 'bg-green-100 text-green-700' : 'bg-[#145142]/10 text-[#145142]/70'
+                        category.isActive ? 'bg-green-100 text-green-700' : 'bg-watta-action/10 text-[#145142]/70'
                       }`}>
                         {category.isActive ? 'Активна' : 'Неактивна'}
                       </span>
@@ -5752,7 +5394,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[24px] md:rounded-[28px] p-4 sm:p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70 relative overflow-hidden">
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#145142] mb-4 sm:mb-6 flex items-center gap-2">
                   <span>👥</span>
-                  <span>Зарегистрированные пользователи</span>
+                  <span>{t.adminPanel.users.title.replace('👥 ', '')}</span>
                 </h2>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -5766,7 +5408,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="font-bold text-base sm:text-lg text-[#145142] truncate">
-                                {user.name || 'Без имени'}
+                                {user.name || t.adminPanel.users.noName}
                               </h3>
                               <p className="text-xs sm:text-sm text-gray-500 truncate">{user.email}</p>
                             </div>
@@ -5785,22 +5427,22 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                 ? 'bg-red-100 text-red-700' 
                                 : 'bg-green-100 text-green-700'
                             }`}>
-                              {isAdminRole(user.role) ? '👑 Админ' : '👤 Пользователь'}
+                              {isAdminRole(user.role) ? t.adminPanel.users.admin : t.adminPanel.users.user}
                             </span>
                             <span className="text-xs text-gray-500">
-                              Заказов: {user._count.orders}
+                              {t.adminPanel.users.ordersCount} {user._count.orders}
                             </span>
                           </div>
 
                           <p className="mt-2 text-xs text-[#145142]">
-                            Бонуси:{' '}
+                            {t.adminPanel.users.bonusesLabel}{' '}
                             <strong className="tabular-nums">
                               {Number(user.bonusBalance ?? 0).toFixed(2)} €
                             </strong>
                             {user.bonusCashbackPercentOverride != null ? (
                               <span className="text-gray-500">
                                 {' '}
-                                · кешбэк {user.bonusCashbackPercentOverride}%
+                                · {t.adminPanel.users.cashbackLabel} {user.bonusCashbackPercentOverride}%
                               </span>
                             ) : null}
                           </p>
@@ -5818,13 +5460,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                   user.bonusCashbackPercentOverride ?? null,
                               })
                             }
-                            className="mt-2 w-full rounded-xl border-2 border-[#145142]/25 py-2 text-xs font-bold text-[#145142] hover:bg-[#145142]/5"
+                            className="mt-2 w-full rounded-xl border-2 border-[#145142]/25 py-2 text-xs font-bold text-[#145142] hover:bg-watta-action/5"
                           >
-                            Налаштувати бонуси
+                            {t.adminPanel.users.configureBonuses}
                           </button>
                           
                           <p className="text-xs text-gray-400 mt-2">
-                            Регистрация: {new Date(user.createdAt).toLocaleDateString('ru-RU', {
+                            {t.adminPanel.users.registration} {new Date(user.createdAt).toLocaleDateString(adminUiLanguage === 'ru' ? 'ru-RU' : 'uk-UA', {
                               year: 'numeric',
                               month: 'long',
                               day: 'numeric',
@@ -5837,24 +5479,29 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     </div>
                   ))}
                   {users.length === 0 && (
-                    <div className="text-gray-400 col-span-full text-center py-8 text-sm sm:text-base">
-                      Пользователей пока нет
+                    <div className="text-[#145142]/45 col-span-full text-center py-8 text-sm sm:text-base">
+                      {t.adminPanel.common.emptyUsers}
                     </div>
                   )}
                 </div>
               </div>
             </div>
           )}
+
+          {activeTab === 'adminPhones' && (
+            <AdminAdminPhonesPanel authHeaders={adminAuthHeaders()} />
+          )}
+
           {/* Вкладка РАССЫЛКА */}
           {!isRightPanelOpen && activeTab === 'newsletter' && (
             <div className="max-w-4xl mx-auto">
               <div className="rounded-[24px] border-2 border-white/70 bg-white/85 p-8 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl">
-                <h2 className="mb-2 text-3xl font-bold text-[#145142]">Email Рассылка</h2>
-                <p className="text-gray-500 mb-8">Отправка писем всем зарегистрированным пользователям</p>
+                <h2 className="mb-2 text-3xl font-bold text-[#145142]">{t.adminPanel.newsletter.title}</h2>
+                <p className="admin-watta-section-lead text-[#145142]/65 mb-8">{t.adminPanel.newsletter.desc}</p>
 
                 <form onSubmit={async (e) => {
                   e.preventDefault();
-                  if(!confirm('Отправить это письмо всем пользователям?')) return;
+                  if(!confirm(t.adminPanel.newsletter.confirmSend)) return;
                   
                   const form = e.target as HTMLFormElement;
                   const data = {
@@ -5878,32 +5525,32 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       notifySuccess(`Успешно отправлено ${json.count} пользователям!`);
                       form.reset();
                     } else {
-                      notifyError('Ошибка: ' + json.message);
+                      notifyError(t.adminPanel.newsletter.errorPrefix + json.message);
                     }
                   } catch(err) {
-                    notifyError('Ошибка сети');
+                    notifyError(t.adminPanel.newsletter.errorNetwork);
                   }
                 }} className="space-y-6">
                   
                   <div>
-                    <label className="block font-bold text-gray-700 mb-2">Тема письма</label>
-                    <input name="subject" required className="w-full p-4 border rounded-xl focus:border-[#155044] outline-none" placeholder="Например: Скидки на роллы!"/>
+                    <label className="block font-bold text-[#145142]/80 mb-2">{t.adminPanel.newsletter.subject}</label>
+                    <input name="subject" required className="w-full p-4 border border-[#145142]/20 rounded-xl focus:border-[#145142] outline-none" placeholder={t.adminPanel.newsletter.subjectPlaceholder}/>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700 mb-2">Текст сообщения</label>
-                    <textarea name="message" required rows={6} className="w-full p-4 border rounded-xl focus:border-[#155044] outline-none" placeholder="Введите текст рассылки..."/>
+                    <label className="block font-bold text-[#145142]/80 mb-2">{t.adminPanel.newsletter.message}</label>
+                    <textarea name="message" required rows={6} className="w-full p-4 border border-[#145142]/20 rounded-xl focus:border-[#145142] outline-none" placeholder={t.adminPanel.newsletter.messagePlaceholder}/>
                   </div>
 
                   <div className="bg-orange-50 p-6 rounded-xl border border-orange-100">
-                    <label className="block font-bold text-orange-800 mb-2">🎁 Промокод (опционально)</label>
-                    <input name="promoCode" className="w-full p-4 border border-orange-200 rounded-xl focus:border-orange-500 outline-none" placeholder="Например: PROMO2025"/>
-                    <p className="text-xs text-orange-600 mt-2">Будет выделен в письме крупным шрифтом</p>
+                    <label className="block font-bold text-orange-800 mb-2">{t.adminPanel.newsletter.promoOptional}</label>
+                    <input name="promoCode" className="w-full p-4 border border-orange-200 rounded-xl focus:border-orange-500 outline-none" placeholder={t.adminPanel.newsletter.promoPlaceholder}/>
+                    <p className="text-xs text-orange-600 mt-2">{t.adminPanel.newsletter.promoHint}</p>
                   </div>
 
-                  <button type="submit" className="w-full py-4 bg-[#155044] text-white font-bold rounded-xl hover:bg-[#103d34] transition flex items-center justify-center gap-2 text-lg">
+                  <button type="submit" className="w-full py-4 bg-[#155044] text-white font-bold rounded-xl hover:bg-watta-action-hover transition flex items-center justify-center gap-2 text-lg">
                     <Mail size={24} />
-                    Отправить рассылку
+                    {t.adminPanel.newsletter.sendBtn}
                   </button>
 
                 </form>
@@ -5916,13 +5563,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#145142] flex items-center gap-2">
                   <span>👨‍👩‍👧‍👦</span>
-                  <span>Команда</span>
+                  <span>{t.adminPanel.team.title.replace(/^👨‍👩‍👧‍👦\s*/, '')}</span>
                 </h2>
                 <button
                   onClick={openCreateTeamModal}
                   className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#145142] to-[#1a6b58] text-white font-bold rounded-xl hover:from-[#103d34] hover:to-[#145142] transition-all shadow-lg shadow-[#145142]/30 hover:shadow-xl hover:shadow-[#145142]/40 transform hover:scale-[1.02] text-sm sm:text-base"
                 >
-                  + Додати члена команди
+                  {t.adminPanel.team.addBtn}
                 </button>
               </div>
               
@@ -5939,7 +5586,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       )}
                       {!member.isActive && (
                         <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
-                          Неактивен
+                          {t.adminPanel.team.inactiveBadge}
                         </div>
                       )}
                     </div>
@@ -5951,9 +5598,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     <div className="flex gap-2">
                       <button
                         onClick={() => openEditTeamModal(member)}
-                        className="flex-1 px-3 py-2 bg-[#145142]/10 hover:bg-[#145142]/20 text-[#145142] font-semibold rounded-lg transition-all text-sm"
+                        className="flex-1 px-3 py-2 bg-watta-action/10 hover:bg-watta-action/20 text-[#145142] font-semibold rounded-lg transition-all text-sm"
                       >
-                        Редагувати
+                        {t.adminPanel.actions.edit}
                       </button>
                       <button
                         onClick={() => handleDeleteTeam(member.id)}
@@ -5966,7 +5613,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 ))}
                 {teamMembers.length === 0 && (
                   <div className="text-gray-400 col-span-full text-center py-12 text-sm sm:text-base">
-                    Членів команди поки немає
+                    {t.adminPanel.common.emptyTeam}
                   </div>
                 )}
               </div>
@@ -5976,9 +5623,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           {activeTab === 'reviews' && (
             <div className="flex flex-col gap-6">
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
-                <h2 className="mb-2 text-2xl font-bold text-[#145142]">Відгуки клієнтів</h2>
-                <p className="mb-6 text-sm text-gray-600">
-                  Відгуки клієнтів на /reviews: редагування тексту та видалення.
+                <h2 className="admin-watta-section-title mb-2 text-2xl font-bold text-[#145142]">{t.adminPanel.reviews.title}</h2>
+                <p className="admin-watta-section-lead mb-6 text-sm">
+                  {t.adminPanel.reviews.subtitle}
                 </p>
                 <AdminReviewsPanel
                   reviews={adminReviews}
@@ -5998,15 +5645,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
           {activeTab === 'blog' && (
             <div className="flex flex-col gap-6">
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
-                <h2 className="mb-2 text-2xl font-bold text-[#145142]">Блог / Рекомендації</h2>
-                <p className="mb-5 text-sm text-[#145142]/75">
-                  Статті для гостей: що замовити в Watta, поради з меню та доставки — без рецептів «готуйте вдома».
-                  Завантажте фото обкладинки з комп&apos;ютера або вставте посилання.
+                <h2 className="admin-watta-section-title mb-2 text-2xl font-bold text-[#145142]">{t.adminPanel.blog.title}</h2>
+                <p className="admin-watta-section-lead mb-5 text-sm text-[#145142]/75">
+                  {t.adminPanel.blog.subtitle}
                 </p>
                 <form onSubmit={handleSaveBlogPost} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
                     type="text"
-                    placeholder="Slug (напр. first-order-watta)"
+                    placeholder={t.adminPanel.blog.slugPlaceholder}
                     value={blogForm.slug}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
                     className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] md:col-span-2"
@@ -6019,9 +5665,9 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     translating={blogTranslating}
                   />
                   <div className="md:col-span-2 rounded-xl border-2 border-dashed border-[#145142]/25 bg-[#f6fbf8]/80 p-4">
-                    <p className="text-sm font-semibold text-[#145142]">Фото обкладинки</p>
+                    <p className="text-sm font-semibold text-[#145142]">{t.adminPanel.blog.coverTitle}</p>
                     <p className="mt-1 text-xs text-[#145142]/65">
-                      Горизонтальне фото ролів або сету — на картці блогу та зверху статті.
+                      {t.adminPanel.blog.coverHint}
                     </p>
                     {blogForm.imageUrl ? (
                       <div className="mt-3 flex flex-wrap items-start gap-4">
@@ -6036,7 +5682,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           onClick={() => setBlogForm((prev) => ({ ...prev, imageUrl: '' }))}
                           className="text-sm font-semibold text-red-600 hover:underline"
                         >
-                          Прибрати фото
+                          {t.adminPanel.blog.removeCover}
                         </button>
                       </div>
                     ) : null}
@@ -6052,14 +5698,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         type="button"
                         disabled={blogImageUploading}
                         onClick={() => blogImageInputRef.current?.click()}
-                        className="rounded-xl bg-[#145142] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0f3d34] disabled:opacity-60"
+                        className="rounded-xl bg-watta-action px-4 py-2.5 text-sm font-bold text-white transition hover:bg-watta-action-hover disabled:opacity-60"
                       >
-                        {blogImageUploading ? 'Завантаження…' : 'Завантажити фото'}
+                        {blogImageUploading ? t.adminPanel.blog.uploadingCover : t.adminPanel.blog.uploadCover}
                       </button>
                     </div>
                     <input
                       type="url"
-                      placeholder="Або посилання на фото (https://…)"
+                      placeholder={t.adminPanel.blog.coverUrlPlaceholder}
                       value={blogForm.imageUrl}
                       onChange={(e) => setBlogForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
                       className="mt-3 w-full p-3 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] text-sm"
@@ -6067,14 +5713,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </div>
                   <input
                     type="url"
-                    placeholder="YouTube (необовʼязково)"
+                    placeholder={t.adminPanel.blog.youtubePlaceholder}
                     value={blogForm.videoUrl}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, videoUrl: e.target.value }))}
                     className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
                   />
                   <input
                     type="text"
-                    placeholder="Автор (напр. Команда Watta Sushi)"
+                    placeholder={t.adminPanel.blog.authorPlaceholder}
                     value={blogForm.author}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, author: e.target.value }))}
                     className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
@@ -6097,15 +5743,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       onChange={(e) => setBlogForm((prev) => ({ ...prev, isPublished: e.target.checked }))}
                       className="w-5 h-5 accent-[#145142]"
                     />
-                    Is Published
+                    {t.adminPanel.blog.isPublished}
                   </label>
                   <div className="md:col-span-2 flex gap-3">
-                    <button className="px-6 py-3 rounded-xl bg-[#145142] text-white font-bold hover:bg-[#0f3d34] transition">
-                      {blogForm.id ? 'Обновить' : 'Создать'}
+                    <button className="px-6 py-3 rounded-xl bg-watta-action text-white font-bold hover:bg-watta-action-hover transition">
+                      {blogForm.id ? t.adminPanel.blog.updateBtn : t.adminPanel.blog.createBtn}
                     </button>
                     {blogForm.id && (
                       <button type="button" onClick={resetBlogForm} className="px-6 py-3 rounded-xl border border-[#145142]/30 text-[#145142] font-semibold">
-                        Отмена
+                        {t.adminPanel.actions.cancel}
                       </button>
                     )}
                   </div>
@@ -6121,19 +5767,20 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           {post.title_ua || post.title}
                         </h3>
                         <p className="text-sm text-gray-500">/{post.slug}</p>
-                        <p className="text-xs mt-1 text-gray-500">{post.isPublished ? 'Опубликовано' : 'Черновик'}</p>
+                        <p className="text-xs mt-1 text-gray-500">{post.isPublished ? t.adminPanel.blog.publishedBadge : t.adminPanel.blog.draftBadge}</p>
                         {(parseBlogIdList(post.linkedProductIds).length +
                           parseBlogIdList(post.linkedCategoryIds).length +
                           parseBlogIdList(post.linkedIngredientIds).length) > 0 ? (
                           <p className="text-xs mt-1 text-[#145142]/70">
-                            Звʼязки: {parseBlogIdList(post.linkedProductIds).length} страв,{' '}
-                            {parseBlogIdList(post.linkedCategoryIds).length} кат.,{' '}
-                            {parseBlogIdList(post.linkedIngredientIds).length} інгр.
+                            {t.adminPanel.blog.linksSummary
+                              .replace('{{products}}', String(parseBlogIdList(post.linkedProductIds).length))
+                              .replace('{{categories}}', String(parseBlogIdList(post.linkedCategoryIds).length))
+                              .replace('{{ingredients}}', String(parseBlogIdList(post.linkedIngredientIds).length))}
                           </p>
                         ) : null}
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => handleEditBlogPost(post)} className="p-2 rounded-lg bg-[#145142]/10 text-[#145142]"><Pencil size={16} /></button>
+                        <button onClick={() => handleEditBlogPost(post)} className="p-2 rounded-lg bg-watta-action/10 text-[#145142]"><Pencil size={16} /></button>
                         <button onClick={() => handleDeleteBlogPost(post.id)} className="p-2 rounded-lg bg-red-50 text-red-600"><Trash2 size={16} /></button>
                       </div>
                     </div>
@@ -6143,7 +5790,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </div>
                 ))}
                 {blogPosts.length === 0 && (
-                  <div className="col-span-full text-center text-gray-400 py-10">Постов пока нет</div>
+                  <div className="col-span-full text-center text-[#145142]/45 py-10">{t.adminPanel.blog.emptyPosts}</div>
                 )}
               </div>
             </div>
@@ -6157,22 +5804,22 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   onClick={() => setCrmSubview('customers')}
                   className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                     crmSubview === 'customers'
-                      ? 'bg-[#145142] text-white shadow-md'
-                      : 'text-[#145142] hover:bg-[#145142]/10'
+                      ? 'bg-watta-action text-white shadow-md'
+                      : 'text-[#145142] hover:bg-watta-action/10'
                   }`}
                 >
-                  База клиентов
+                  {t.adminPanel.crm.customersTab}
                 </button>
                 <button
                   type="button"
                   onClick={() => setCrmSubview('inquiries')}
                   className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                     crmSubview === 'inquiries'
-                      ? 'bg-[#145142] text-white shadow-md'
-                      : 'text-[#145142] hover:bg-[#145142]/10'
+                      ? 'bg-watta-action text-white shadow-md'
+                      : 'text-[#145142] hover:bg-watta-action/10'
                   }`}
                 >
-                  Обращения с сайта
+                  {t.adminPanel.crm.inquiriesTab}
                 </button>
               </div>
 
@@ -6181,7 +5828,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <AdminCustomersPanel />
 
               <div className="rounded-[24px] border-2 border-white/70 bg-white/80 p-6 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl md:p-8">
-                <h2 className="mb-4 text-2xl font-bold text-[#145142]">Создать рассылку</h2>
+                <h2 className="mb-4 text-2xl font-bold text-[#145142]">{t.adminPanel.crm.createMailing}</h2>
                 <form onSubmit={handleSendCrmPromo} className="grid grid-cols-1 gap-4">
                   <div className="inline-flex items-center gap-3">
                     <button
@@ -6189,8 +5836,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       onClick={() => setCrmMailing((prev) => ({ ...prev, channel: 'email' }))}
                       className={`px-4 py-2 rounded-xl font-semibold transition ${
                         crmMailing.channel === 'email'
-                          ? 'bg-[#145142] text-white'
-                          : 'bg-[#145142]/10 text-[#145142]'
+                          ? 'bg-watta-action text-white'
+                          : 'bg-watta-action/10 text-[#145142]'
                       }`}
                     >
                       Email
@@ -6200,8 +5847,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       onClick={() => setCrmMailing((prev) => ({ ...prev, channel: 'sms' }))}
                       className={`px-4 py-2 rounded-xl font-semibold transition ${
                         crmMailing.channel === 'sms'
-                          ? 'bg-[#145142] text-white'
-                          : 'bg-[#145142]/10 text-[#145142]'
+                          ? 'bg-watta-action text-white'
+                          : 'bg-watta-action/10 text-[#145142]'
                       }`}
                     >
                       SMS
@@ -6223,7 +5870,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     className="p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] min-h-[150px]"
                     required
                   />
-                  <button className="w-fit px-6 py-3 rounded-xl bg-[#145142] text-white font-bold hover:bg-[#0f3d34] transition">
+                  <button className="w-fit px-6 py-3 rounded-xl bg-watta-action text-white font-bold hover:bg-watta-action-hover transition">
                     Отправить всем
                   </button>
                 </form>
@@ -6272,7 +5919,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                   u.bonusCashbackPercentOverride ?? null,
                               })
                             }
-                            className="rounded-lg border border-[#145142]/25 px-2 py-1 text-xs font-semibold text-[#145142] hover:bg-[#145142]/5"
+                            className="rounded-lg border border-[#145142]/25 px-2 py-1 text-xs font-semibold text-[#145142] hover:bg-watta-action/5"
                           >
                             Змінити
                           </button>
@@ -6281,8 +5928,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     ))}
                     {crmUsers.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-gray-400">
-                          Пользователей пока нет
+                        <td colSpan={7} className="py-8 text-center text-[#145142]/45">
+                          {t.adminPanel.common.emptyUsers}
                         </td>
                       </tr>
                     )}
@@ -6308,12 +5955,12 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 <div className="relative z-10">
                   <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#145142] mb-4 sm:mb-6 flex items-center gap-2">
                     <Tag className="w-5 h-5 sm:w-6 sm:h-6" /> 
-                    <span>Створити новий промокод</span>
+                    <span>{t.adminPanel.promos.createTitle}</span>
                   </h2>
                   <form onSubmit={handleCreatePromo} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <input 
                       type="text" 
-                      placeholder="Код (наприклад, NEW2025)"
+                      placeholder={t.adminPanel.promos.codePlaceholder}
                       value={newPromoCode}
                       onChange={e => setNewPromoCode(e.target.value.toUpperCase())}
                       className="flex-1 p-3 sm:p-4 bg-white/80 backdrop-blur-sm rounded-[14px] sm:rounded-[16px] outline-none border-2 border-[#145142]/20 font-bold text-sm sm:text-base uppercase transition-all focus:border-[#145142] focus:bg-white/90 focus:shadow-lg focus:shadow-[#145142]/10"
@@ -6321,14 +5968,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   />
                   <input 
                     type="number" 
-                    placeholder="Знижка %"
+                    placeholder={t.adminPanel.promos.discountPlaceholder}
                     value={newPromoDiscount}
                     onChange={e => setNewPromoDiscount(e.target.value)}
                     className="w-full sm:w-32 p-3 sm:p-4 bg-white/80 backdrop-blur-sm rounded-[14px] sm:rounded-[16px] outline-none border-2 border-[#145142]/20 font-bold text-sm sm:text-base transition-all focus:border-[#145142] focus:bg-white/90 focus:shadow-lg focus:shadow-[#145142]/10"
                     required
                   />
                   <button className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-gradient-to-r from-[#145142] to-[#1a6b58] text-white font-bold rounded-[14px] sm:rounded-[16px] hover:from-[#103d34] hover:to-[#145142] transition-all shadow-lg shadow-[#145142]/30 hover:shadow-xl hover:shadow-[#145142]/40 transform hover:scale-[1.02] text-sm sm:text-base">
-                    Створити
+                    {t.adminPanel.promos.createBtn}
                   </button>
                 </form>
                 </div>
@@ -6344,7 +5991,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                        </div>
                        <div className="min-w-0 flex-1">
                          <div className="text-base sm:text-xl font-bold text-[#145142] truncate">{promo.code}</div>
-                         <div className="text-green-600 font-bold text-sm sm:text-base">-{promo.discount}% знижка</div>
+                         <div className="text-green-600 font-bold text-sm sm:text-base">-{promo.discount}% {t.adminPanel.promos.discountText}</div>
                        </div>
                      </div>
                      <button 
@@ -6355,7 +6002,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                      </button>
                    </div>
                  ))}
-                 {promos.length === 0 && <div className="text-gray-400 col-span-full text-center py-8 text-sm sm:text-base">Промокодів поки немає</div>}
+                 {promos.length === 0 && <div className="text-[#145142]/45 col-span-full text-center py-8 text-sm sm:text-base">{t.adminPanel.common.emptyPromos}</div>}
               </div>
             </div>
           )}
@@ -6365,13 +6012,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                <div className="bg-white/80 backdrop-blur-2xl rounded-[20px] sm:rounded-[24px] md:rounded-[28px] p-4 sm:p-6 md:p-8 shadow-2xl shadow-[#145142]/15 border-2 border-white/70">
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#145142] mb-6 flex items-center gap-2">
                      <Settings className="w-6 h-6 sm:w-8 sm:h-8" />
-                     <span>Налаштування сайту</span>
+                     <span>{t.adminPanel.settings.title}</span>
                   </h2>
 
                   <form onSubmit={handleSaveSettings} className="space-y-6">
                      <div>
                         <label className="block text-sm font-bold text-[#145142] mb-2">
-                           Інтервал зміни банерів (секунди)
+                           {t.adminPanel.settings.intervalLabel}
                         </label>
                         <div className="flex items-center gap-3">
                            <input 
@@ -6381,10 +6028,10 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                              onChange={(e) => setSettings({...settings, bannerInterval: parseInt(e.target.value) * 1000})}
                              className="flex-1 p-4 bg-white/80 backdrop-blur-sm rounded-[16px] outline-none border-2 border-[#145142]/20 font-bold text-lg transition-all focus:border-[#145142]"
                            />
-                           <span className="text-gray-500 font-medium">сек.</span>
+                           <span className="text-[#145142]/55 font-medium">{t.adminPanel.settings.sec}</span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-2">
-                           Вкажіть час, через який слайди на головній сторінці будуть автоматично перемикатися.
+                        <p className="admin-watta-section-lead text-xs mt-2">
+                           {t.adminPanel.settings.intervalDesc}
                         </p>
                      </div>
 
@@ -6472,6 +6119,60 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                      </div>
 
                      <div className="border-t border-gray-200 pt-6 space-y-4">
+                        <h3 className="text-sm font-bold text-[#145142] uppercase tracking-wide">Оплата карткою онлайн</h3>
+                        <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-[#145142]">
+                          <input
+                            type="checkbox"
+                            checked={settings.cardOnlineEnabled !== false}
+                            onChange={(e) =>
+                              setSettings({ ...settings, cardOnlineEnabled: e.target.checked })
+                            }
+                            className="h-4 w-4 accent-[#145142]"
+                          />
+                          Показувати «Карткою онлайн» у кошику (Stripe / LiqPay)
+                        </label>
+                        <ul className="space-y-1 text-xs text-gray-600">
+                          <li>
+                            Stripe:{' '}
+                            {settings.hasStripeConfigured ? (
+                              <span className="font-semibold text-[#145142]">підключено</span>
+                            ) : (
+                              <span className="text-amber-700">немає STRIPE_SECRET_KEY на сервері</span>
+                            )}
+                          </li>
+                          <li>
+                            LiqPay:{' '}
+                            {settings.hasLiqPayConfigured ? (
+                              <span className="font-semibold text-[#145142]">підключено</span>
+                            ) : (
+                              <span className="text-amber-700">немає LIQPAY_* на сервері</span>
+                            )}
+                          </li>
+                          <li>
+                            Плитка в кошику:{' '}
+                            {settings.cardOnlineAvailable ? (
+                              <span className="font-semibold text-[#145142]">увімкнено</span>
+                            ) : (
+                              <span className="text-amber-700">вимкнено в адмінці</span>
+                            )}
+                          </li>
+                          <li>
+                            Оплата працює:{' '}
+                            {settings.cardPaymentReady ? (
+                              <span className="font-semibold text-[#145142]">так (Stripe / LiqPay)</span>
+                            ) : (
+                              <span className="text-amber-700">потрібні ключі на сервері</span>
+                            )}
+                          </li>
+                        </ul>
+                        {settings.cardOnlineSetupHint ? (
+                          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                            {settings.cardOnlineSetupHint}
+                          </p>
+                        ) : null}
+                     </div>
+
+                     <div className="border-t border-gray-200 pt-6 space-y-4">
                         <h3 className="text-sm font-bold text-[#145142] uppercase tracking-wide">Доставка (фіксована)</h3>
                         <div>
                           <label className="block text-sm font-bold text-[#145142] mb-2">Безкоштовна доставка від (€)</label>
@@ -6510,7 +6211,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                      <button 
                        type="submit" 
                        disabled={settingsLoading}
-                       className="w-full py-4 bg-[#155044] text-white font-bold rounded-[16px] hover:bg-[#103d34] transition shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
+                       className="w-full py-4 bg-[#155044] text-white font-bold rounded-[16px] hover:bg-watta-action-hover transition shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
                      >
                         <Save size={20} />
                         {settingsLoading ? 'Збереження...' : 'Зберегти налаштування'}
@@ -6566,7 +6267,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   className={
                     'rounded-[14px] border-2 border-dashed p-2 transition-colors ' +
                     (productGalleryDnd
-                      ? 'border-[#145142] bg-[#145142]/10 ring-2 ring-[#145142]/30'
+                      ? 'border-[#145142] bg-watta-action/10 ring-2 ring-[#145142]/30'
                       : 'border-transparent')
                   }
                   onDragOver={(e) => {
@@ -6609,7 +6310,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   <button
                     type="button"
                     onClick={() => productImageInputRef.current?.click()}
-                    className="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-[12px] border-2 border-dashed border-[#145142]/25 bg-white/50 px-3 py-4 text-sm text-gray-500 transition hover:border-[#145142]/40 hover:bg-[#145142]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40"
+                    className="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-[12px] border-2 border-dashed border-[#145142]/25 bg-white/50 px-3 py-4 text-sm text-gray-500 transition hover:border-[#145142]/40 hover:bg-watta-action/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/40"
                   >
                     <Upload size={22} className="text-[#145142]/50" />
                     <span>Натисніть або перетягніть фото сюди</span>
@@ -6664,7 +6365,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     <button
                       type="button"
                       onClick={() => productImageInputRef.current?.click()}
-                      className="flex h-20 w-20 flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-[#145142]/35 bg-white/60 hover:bg-[#145142]/5"
+                      className="flex h-20 w-20 flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-[#145142]/35 bg-white/60 hover:bg-watta-action/5"
                     >
                       <Upload size={20} className="text-[#145142]/60" />
                       <span className="px-1 text-center text-[9px] font-bold text-[#145142]/70">Додати</span>
@@ -6740,14 +6441,14 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   <label className="block text-xs sm:text-sm font-medium text-[#145142]/80 mb-2">
                     Города доставки *
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 max-h-40 sm:max-h-48 overflow-y-auto p-2 sm:p-3 bg-[#145142]/5 rounded-[8px] sm:rounded-[10px] border border-[#145142]/10">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 max-h-40 sm:max-h-48 overflow-y-auto p-2 sm:p-3 bg-watta-action/5 rounded-[8px] sm:rounded-[10px] border border-[#145142]/10">
                     {cities.map(city => (
                       <label
                         key={city.id}
                         className={`flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg cursor-pointer transition text-xs sm:text-sm ${
                           formData.cityIds.includes(city.id)
                             ? 'bg-[#155044] text-white'
-                            : 'bg-white/80 hover:bg-[#145142]/10 backdrop-blur-sm border border-[#145142]/10'
+                            : 'bg-white/80 hover:bg-watta-action/10 backdrop-blur-sm border border-[#145142]/10'
                         }`}
                       >
                         <input
@@ -6764,7 +6465,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </div>
                   {cities.length === 0 && (
                     <p className="text-xs sm:text-sm text-[#145142]/60 mt-2">
-                      Сначала добавьте города во вкладке "Города"
+                      Сначала добавьте города во вкладке &quot;Города&quot;
                     </p>
                   )}
                   {cities.length > 0 && (
@@ -6839,7 +6540,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               <li key={p.id}>
                                 <label
                                   className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition ${
-                                    checked ? 'bg-[#145142]/12' : 'hover:bg-white'
+                                    checked ? 'bg-watta-action/12' : 'hover:bg-white'
                                   }`}
                                 >
                                   <input
@@ -6882,7 +6583,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                 key={id}
                                 className="inline-flex items-center gap-1 rounded-full border border-[#145142]/15 bg-white px-2 py-0.5 text-[10px] font-medium text-[#145142]"
                               >
-                                {getLocalized(ing, 'name') || ing.name_ru}
+                                {ingredientLabelForSite(ing)}
                               </span>
                             )
                           })}
@@ -6893,16 +6594,15 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 ) : (
                   <>
                     <label className="mb-2 block text-sm font-bold text-[#145142]/70">
-                      Склад (ингредиенты на сайте)
+                      {t.adminPanel.ingredients.productPickerTitle}
                     </label>
-                    <p className="mb-2 text-[11px] text-gray-500">
-                      Выберите из библиотеки (вкладка «Ингредиенты»). На странице товара показываются только
-                      названия и фото плиток.
+                    <p className="mb-2 text-[11px] text-[#145142]/55">
+                      {t.adminPanel.ingredients.productPickerHint}
                     </p>
-                    <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-xl border border-[#145142]/15 bg-[#f6faf8] p-2 sm:max-h-64">
+                    <div className="grid max-h-56 grid-cols-3 gap-2 overflow-y-auto rounded-xl border border-[#145142]/15 bg-gradient-to-br from-[#f6faf8] to-white p-2 sm:max-h-64 sm:grid-cols-4">
                       {ingredients.length === 0 ? (
-                        <p className="col-span-4 py-4 text-center text-xs text-gray-500">
-                          Сначала добавьте ингредиенты во вкладке «Ингредиенты».
+                        <p className="col-span-3 py-4 text-center text-xs text-gray-500 sm:col-span-4">
+                          {t.adminPanel.ingredients.emptyLibrary}
                         </p>
                       ) : (
                         ingredients.map((ing) => {
@@ -6918,19 +6618,21 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                                   : [...currentIds, ing.id]
                                 setFormData((prev) => ({ ...prev, ingredientIds: newIds }))
                               }}
-                              className={`flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 p-1.5 transition-all ${
+                              className={`admin-ing-picker-chip flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 p-1.5 transition-all ${
                                 isSelected
-                                  ? 'border-[#145142] bg-[#145142]/12 ring-1 ring-[#145142]/25'
+                                  ? 'border-[#145142] bg-watta-action/12 ring-1 ring-[#145142]/25'
                                   : 'border-[#145142]/10 bg-white hover:border-[#145142]/30'
                               }`}
                             >
-                              <img
-                                src={ing.imageUrl}
-                                className="h-8 w-8 object-contain sm:h-9 sm:w-9"
-                                alt={getLocalized(ing, 'name') || ing.name_ru}
-                              />
+                              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f6faf8] ring-1 ring-[#145142]/8">
+                                <img
+                                  src={ing.imageUrl}
+                                  className="h-7 w-7 object-contain"
+                                  alt={ingredientLabelForSite(ing)}
+                                />
+                              </span>
                               <span className="line-clamp-2 w-full text-center text-[9px] font-bold leading-tight text-[#145142] sm:text-[10px]">
-                                {getLocalized(ing, 'name') || ing.name_ru}
+                                {ingredientLabelForSite(ing)}
                               </span>
                             </button>
                           )
@@ -6939,7 +6641,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     </div>
                     {formData.ingredientIds.length > 0 ? (
                       <p className="mt-1.5 text-[11px] font-medium text-[#145142]/70">
-                        Выбрано: {formData.ingredientIds.length}
+                        {t.adminPanel.ingredients.selectedCount}: {formData.ingredientIds.length}
                       </p>
                     ) : null}
                   </>
@@ -6949,7 +6651,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <button
                 type="submit"
                 disabled={productSaving}
-                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-[#103d34] disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-[15px] sm:py-4 sm:text-base"
+                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-watta-action-hover disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-[15px] sm:py-4 sm:text-base"
               >
                 {productSaving
                   ? 'Сохранение…'
@@ -6989,7 +6691,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <div>
                 <label className="block text-sm font-medium text-[#145142]/80 mb-2">Эмодзи (стикер) *</label>
                 <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#145142]/10 rounded-[12px] flex items-center justify-center text-3xl sm:text-4xl border-2 border-[#145142]/20 flex-shrink-0">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-watta-action/10 rounded-[12px] flex items-center justify-center text-3xl sm:text-4xl border-2 border-[#145142]/20 flex-shrink-0">
                     {categoryFormData.emoji || '🍣'}
                   </div>
                   <div className="flex-1 w-full">
@@ -7010,7 +6712,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           emojiPicker.style.display = emojiPicker.style.display === 'none' ? 'block' : 'none'
                         }
                       }}
-                      className="w-full mt-2 px-3 py-2 bg-[#145142]/10 text-[#145142] rounded-lg hover:bg-[#145142]/20 transition text-xs sm:text-sm font-medium border border-[#145142]/20"
+                      className="w-full mt-2 px-3 py-2 bg-watta-action/10 text-[#145142] rounded-lg hover:bg-watta-action/20 transition text-xs sm:text-sm font-medium border border-[#145142]/20"
                     >
                       Выбрать из списка
                     </button>
@@ -7038,7 +6740,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                           const emojiPicker = document.getElementById('emoji-picker-category')
                           if (emojiPicker) emojiPicker.style.display = 'none'
                         }}
-                        className="w-10 h-10 sm:w-12 sm:h-12 text-2xl sm:text-3xl hover:bg-[#145142]/10 hover:scale-110 transition rounded-lg flex items-center justify-center"
+                        className="w-10 h-10 sm:w-12 sm:h-12 text-2xl sm:text-3xl hover:bg-watta-action/10 hover:scale-110 transition rounded-lg flex items-center justify-center"
                       >
                         {emoji}
                       </button>
@@ -7047,51 +6749,118 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </div>
               </div>
 
-              {/* Названия на разных языках */}
               <div>
-                <label className="block text-sm font-medium text-[#145142]/80 mb-1">Название (RU) *</label>
-                <input 
-                  name="name_ru" 
-                  required 
-                  value={categoryFormData.name_ru} 
-                  onChange={(e) => setCategoryFormData(prev => ({ ...prev, name_ru: e.target.value }))}
-                  className="w-full p-3 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142]"
-                  placeholder="Например: Десерты" 
-                />
+                <label className="mb-2 block text-sm font-medium text-[#145142]/80">
+                  Іконки для панелі категорій
+                </label>
+                <p className="mb-3 text-xs text-gray-500">
+                  Основне фото всередині кружка. Друге — при наведенні або коли категорія активна. Якщо не завантажено — показується емодзі або стандартна іконка.
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="mb-1 block text-xs font-semibold text-[#145142]/70">Основна іконка</span>
+                    <label className="group relative flex h-28 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[12px] border-2 border-dashed border-[#145142]/25 bg-watta-action/[0.04] transition hover:bg-watta-action/[0.07]">
+                      {categoryFormData.imageUrl ? (
+                        <img
+                          src={resolveCatalogMediaUrl(categoryFormData.imageUrl) ?? categoryFormData.imageUrl}
+                          alt=""
+                          className="h-full w-full object-contain p-3"
+                        />
+                      ) : (
+                        <>
+                          <Upload size={22} className="mb-1 text-gray-400" />
+                          <span className="px-2 text-center text-xs text-gray-500">Завантажити</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => void handleCategoryImageUpload('imageUrl', e)}
+                      />
+                      {categoryFormData.imageUrl ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+                          <span className="text-sm font-medium text-white">Змінити</span>
+                        </div>
+                      ) : null}
+                    </label>
+                    {categoryFormData.imageUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setCategoryFormData((prev) => ({ ...prev, imageUrl: '' }))}
+                        className="mt-1 text-xs text-red-600 hover:underline"
+                      >
+                        Видалити
+                      </button>
+                    ) : null}
+                  </div>
+                  <div>
+                    <span className="mb-1 block text-xs font-semibold text-[#145142]/70">При наведенні</span>
+                    <label className="group relative flex h-28 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[12px] border-2 border-dashed border-[#145142]/25 bg-watta-action/[0.04] transition hover:bg-watta-action/[0.07]">
+                      {categoryFormData.hoverImageUrl ? (
+                        <img
+                          src={resolveCatalogMediaUrl(categoryFormData.hoverImageUrl) ?? categoryFormData.hoverImageUrl}
+                          alt=""
+                          className="h-full w-full object-contain p-3"
+                        />
+                      ) : (
+                        <>
+                          <Upload size={22} className="mb-1 text-gray-400" />
+                          <span className="px-2 text-center text-xs text-gray-500">Hover-іконка</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => void handleCategoryImageUpload('hoverImageUrl', e)}
+                      />
+                      {categoryFormData.hoverImageUrl ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+                          <span className="text-sm font-medium text-white">Змінити</span>
+                        </div>
+                      ) : null}
+                    </label>
+                    {categoryFormData.hoverImageUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setCategoryFormData((prev) => ({ ...prev, hoverImageUrl: '' }))}
+                        className="mt-1 text-xs text-red-600 hover:underline"
+                      >
+                        Видалити
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-[#145142]/80 mb-1">Название (UA)</label>
-                  <input 
-                    name="name_ua" 
-                    value={categoryFormData.name_ua} 
-                    onChange={(e) => setCategoryFormData(prev => ({ ...prev, name_ua: e.target.value }))}
-                    className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm"
-                    placeholder="UA" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#145142]/80 mb-1">Название (EN)</label>
-                  <input 
-                    name="name_en" 
-                    value={categoryFormData.name_en} 
-                    onChange={(e) => setCategoryFormData(prev => ({ ...prev, name_en: e.target.value }))}
-                    className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm"
-                    placeholder="EN" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#145142]/80 mb-1">Название (NL)</label>
-                  <input 
-                    name="name_nl" 
-                    value={categoryFormData.name_nl} 
-                    onChange={(e) => setCategoryFormData(prev => ({ ...prev, name_nl: e.target.value }))}
-                    className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-[10px] outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm"
-                    placeholder="NL" 
-                  />
-                </div>
-              </div>
+              <IngredientLocaleFields
+                value={{
+                  name_ru: categoryFormData.name_ru,
+                  name_ua: categoryFormData.name_ua,
+                  name_en: categoryFormData.name_en,
+                  name_nl: categoryFormData.name_nl,
+                }}
+                onChange={(names) =>
+                  setCategoryFormData((prev) => ({
+                    ...prev,
+                    name_ru: names.name_ru,
+                    name_ua: names.name_ua,
+                    name_en: names.name_en,
+                    name_nl: names.name_nl,
+                  }))
+                }
+                labels={{
+                  sectionTitle: t.adminPanel.ingredients.namesTitle,
+                  hint:
+                    adminUiLanguage === 'ru'
+                      ? 'Название на каждом языке — в панели категорий и на карточке товара.'
+                      : 'Назва кожною мовою — у панелі категорій і на картці товару.',
+                  placeholder: t.adminPanel.ingredients.namePlaceholder,
+                  previewTitle: t.adminPanel.ingredients.previewOnSite,
+                }}
+                langMeta={ingLangMeta}
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
@@ -7152,7 +6921,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </div>
               <button
                 type="submit"
-                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-[#103d34] sm:rounded-[15px] sm:py-4 sm:text-base"
+                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-watta-action-hover sm:rounded-[15px] sm:py-4 sm:text-base"
               >
                 {editingCategoryId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
@@ -7222,8 +6991,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     onDrop={onBannerUploadDrop}
                     className={`group relative flex h-48 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed p-3 transition-all duration-300 sm:h-56 md:h-64 sm:rounded-2xl sm:p-4 ${
                       bannerImageDropActive
-                        ? 'scale-[1.01] border-[#145142] border-solid bg-[#145142]/12 ring-2 ring-[#145142]/40 ring-offset-2'
-                        : `border-[#145142]/28 bg-white/60 hover:border-[#145142]/50 hover:bg-[#145142]/[0.05] ${
+                        ? 'scale-[1.01] border-[#145142] border-solid bg-watta-action/12 ring-2 ring-[#145142]/40 ring-offset-2'
+                        : `border-[#145142]/28 bg-white/60 hover:border-[#145142]/50 hover:bg-watta-action/[0.05] ${
                             !bannerFormData.imageUrl ? 'admin-banner-dropzone-idle' : ''
                           }`
                     }`}
@@ -7239,8 +7008,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                         <div
                           className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-[#145142] ring-1 transition ${
                             bannerImageDropActive
-                              ? 'scale-110 bg-[#145142]/20 ring-[#145142]/40'
-                              : 'bg-[#145142]/10 ring-[#145142]/15'
+                              ? 'scale-110 bg-watta-action/20 ring-[#145142]/40'
+                              : 'bg-watta-action/10 ring-[#145142]/15'
                           }`}
                         >
                           <Upload className="h-7 w-7" strokeWidth={1.75} />
@@ -7261,7 +7030,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       onChange={handleBannerImageUpload}
                     />
                     {bannerFormData.imageUrl && bannerImageDropActive && (
-                      <div className="absolute inset-0 z-[6] flex items-center justify-center rounded-lg bg-[#145142]/35 ring-2 ring-inset ring-[#145142]/60">
+                      <div className="absolute inset-0 z-[6] flex items-center justify-center rounded-lg bg-watta-action/35 ring-2 ring-inset ring-[#145142]/60">
                         <span className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#155044] shadow-lg">
                           Отпустите, чтобы заменить фото
                         </span>
@@ -7288,7 +7057,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                             Как на сайте
                           </span>
                         </div>
-                        <span className="rounded-full bg-[#145142]/12 px-2 py-0.5 text-[10px] font-semibold text-[#145142]/80">
+                        <span className="rounded-full bg-watta-action/12 px-2 py-0.5 text-[10px] font-semibold text-[#145142]/80">
                           16∶9 · cover · все экраны
                         </span>
                       </div>
@@ -7358,8 +7127,8 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                               onClick={() => setBannerPreviewLocale(code)}
                               className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase transition-all duration-200 active:scale-95 ${
                                 bannerPreviewLocale === code
-                                  ? 'bg-[#145142] text-white shadow-md shadow-[#145142]/25 ring-2 ring-[#145142]/30'
-                                  : 'bg-white text-[#145142] ring-1 ring-[#145142]/20 hover:bg-[#145142]/10 hover:ring-[#145142]/35'
+                                  ? 'bg-watta-action text-white shadow-md shadow-[#145142]/25 ring-2 ring-[#145142]/30'
+                                  : 'bg-white text-[#145142] ring-1 ring-[#145142]/20 hover:bg-watta-action/10 hover:ring-[#145142]/35'
                               }`}
                             >
                               {code}
@@ -7429,7 +7198,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </section>
                 ) : null}
 
-                <section className="space-y-4 rounded-2xl border border-[#145142]/10 bg-[#145142]/[0.04] p-4 transition-shadow duration-300 hover:shadow-sm hover:shadow-[#145142]/6 sm:p-5">
+                <section className="space-y-4 rounded-2xl border border-[#145142]/10 bg-watta-action/[0.04] p-4 transition-shadow duration-300 hover:shadow-sm hover:shadow-[#145142]/6 sm:p-5">
                   <div className="flex items-center gap-2">
                     <Globe className="h-4 w-4 text-[#145142]" strokeWidth={2} aria-hidden />
                     <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#145142]/75">
@@ -7438,7 +7207,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   </div>
                   <div>
                     <label className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-[#145142]/85 sm:text-sm">
-                      <span className="rounded-md bg-[#145142] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                      <span className="rounded-md bg-watta-action px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                         RU
                       </span>
                       Основной текст <span className="font-normal text-red-500">*</span>
@@ -7534,7 +7303,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
 
                 <button
                   type="submit"
-                  className="admin-banner-submit-btn relative z-20 flex w-full appearance-none items-center justify-center gap-2 rounded-2xl border-0 bg-[#155044] py-3.5 text-sm font-bold text-white hover:bg-[#103d34] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142] focus-visible:ring-offset-2 sm:py-4 sm:text-base"
+                  className="admin-banner-submit-btn relative z-20 flex w-full appearance-none items-center justify-center gap-2 rounded-2xl border-0 bg-[#155044] py-3.5 text-sm font-bold text-white hover:bg-watta-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#145142] focus-visible:ring-offset-2 sm:py-4 sm:text-base"
                 >
                   <Save className="h-5 w-5 shrink-0 opacity-95" strokeWidth={2} />
                   {editingBannerId ? 'Сохранить изменения' : 'Сохранить баннер'}
@@ -7570,7 +7339,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain sm:space-y-4">
               {/* Загрузка фото */}
               <div className="flex justify-center mb-3 sm:mb-4">
-                <label className="cursor-pointer w-full h-48 sm:h-56 md:h-64 border-2 border-dashed border-[#145142]/30 rounded-[12px] sm:rounded-[15px] flex flex-col items-center justify-center hover:bg-[#145142]/5 transition relative overflow-hidden group p-2 bg-white/40 backdrop-blur-sm">
+                <label className="cursor-pointer w-full h-48 sm:h-56 md:h-64 border-2 border-dashed border-[#145142]/30 rounded-[12px] sm:rounded-[15px] flex flex-col items-center justify-center hover:bg-watta-action/5 transition relative overflow-hidden group p-2 bg-white/40 backdrop-blur-sm">
                   {teamFormData.imageUrl ? (
                     <img 
                       src={teamFormData.imageUrl} 
@@ -7598,13 +7367,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </div>
 
               {/* Имена на разных языках */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-[#145142]/5 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-[#145142]/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-watta-action/5 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-[#145142]/10">
                 <div>
                   <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Имя (RU) *</label>
                   <input name="name_ru" value={teamFormData.name_ru} onChange={(e) => setTeamFormData(prev => ({ ...prev, name_ru: e.target.value }))} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm" placeholder="Иван" required />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Ім'я (UA)</label>
+                  <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Ім&apos;я (UA)</label>
                   <input name="name_ua" value={teamFormData.name_ua} onChange={(e) => setTeamFormData(prev => ({ ...prev, name_ua: e.target.value }))} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm" placeholder="Іван" />
                 </div>
                 <div>
@@ -7618,7 +7387,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </div>
 
               {/* Должности на разных языках */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-[#145142]/5 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-[#145142]/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-watta-action/5 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-[#145142]/10">
                 <div>
                   <label className="text-xs font-bold text-[#145142]/70 mb-1 block">Должность (RU) *</label>
                   <input name="position_ru" value={teamFormData.position_ru} onChange={(e) => setTeamFormData(prev => ({ ...prev, position_ru: e.target.value }))} className="w-full p-2 bg-white/80 backdrop-blur-sm border border-[#145142]/20 rounded-lg outline-none focus:ring-2 focus:ring-[#145142] focus:border-[#145142] text-sm" placeholder="Шеф-повар" required />
@@ -7682,7 +7451,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
               </div>
               <button
                 type="submit"
-                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-[#103d34] sm:rounded-[15px] sm:py-4 sm:text-base"
+                className="relative z-20 mt-3 w-full shrink-0 rounded-[12px] bg-[#155044] py-3 text-sm font-bold text-white shadow-none transition hover:bg-watta-action-hover sm:rounded-[15px] sm:py-4 sm:text-base"
               >
                 {editingTeamId ? 'Сохранить изменения' : 'Сохранить'}
               </button>
@@ -7757,7 +7526,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                   {newsDraft.pendingFiles.map((f, idx) => (
                     <div
                       key={`p-${idx}-${f.name}`}
-                      className="relative aspect-square rounded-xl overflow-hidden border border-dashed border-[#145142]/40 bg-[#145142]/5 flex items-center justify-center p-1"
+                      className="relative aspect-square rounded-xl overflow-hidden border border-dashed border-[#145142]/40 bg-watta-action/5 flex items-center justify-center p-1"
                     >
                       <span className="text-[10px] text-center text-[#145142] font-semibold line-clamp-3">{f.name}</span>
                       <button
@@ -7776,7 +7545,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                     </div>
                   ))}
                 </div>
-                <label className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 rounded-xl bg-[#145142]/10 text-[#145142] font-bold cursor-pointer hover:bg-[#145142]/15 transition border border-[#145142]/20">
+                <label className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 rounded-xl bg-watta-action/10 text-[#145142] font-bold cursor-pointer hover:bg-watta-action/15 transition border border-[#145142]/20">
                   <input
                     type="file"
                     accept="image/*"
@@ -7795,7 +7564,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 </label>
               </div>
 
-              <div className="rounded-xl border border-[#145142]/15 bg-[#145142]/[0.04] p-3 sm:p-4 space-y-3">
+              <div className="rounded-xl border border-[#145142]/15 bg-watta-action/[0.04] p-3 sm:p-4 space-y-3">
                 <p className="text-sm font-bold text-[#145142]">{t.adminPanel.news.dishesBlock}</p>
                 <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
                   <div className="flex-1 min-w-0">
@@ -7841,7 +7610,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                       const pct = Math.min(100, Math.max(0, Math.round(Number(newsPickDiscount) || 0)))
                       setNewsProductOffers((prev) => [...prev, { productId: id, discountPercent: pct }])
                     }}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#145142] text-white font-bold text-sm hover:bg-[#103d34] transition"
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-watta-action text-white font-bold text-sm hover:bg-watta-action-hover transition"
                   >
                     {t.adminPanel.news.addDish}
                   </button>
@@ -7910,7 +7679,7 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
                 <button
                   type="button"
                   onClick={handleSaveNewsModal}
-                  className="flex-1 py-3 bg-[#155044] text-white rounded-xl font-bold shadow-none hover:bg-[#103d34] transition"
+                  className="flex-1 py-3 bg-[#155044] text-white rounded-xl font-bold shadow-none hover:bg-watta-action-hover transition"
                 >
                   {t.adminPanel.actions.save}
                 </button>

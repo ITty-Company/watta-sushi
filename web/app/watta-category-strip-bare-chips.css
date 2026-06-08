@@ -1,0 +1,181 @@
+/**
+ * Стрічка категорій: круглі чіпи (іконка + підпис), без квадратних «плиток».
+ */
+.categories-panel-web .category-button-web,
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-web {
+  box-sizing: border-box !important;
+  flex: 0 0 var(--watta-cat-chip-size, 52px) !important;
+  width: var(--watta-cat-chip-size, 52px) !important;
+  min-width: var(--watta-cat-chip-size, 52px) !important;
+  max-width: var(--watta-cat-chip-size, 52px) !important;
+  height: var(--watta-cat-chip-size, 52px) !important;
+  min-height: var(--watta-cat-chip-size, 52px) !important;
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  padding: 5px 4px !important;
+  gap: 2px !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+.categories-panel-web .category-button-active-web,
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-active-web {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 50% !important;
+  box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+  -webkit-box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+}
+
+.categories-panel-web .category-button-label-web {
+  font-size: 9.5px !important;
+  line-height: 1.1 !important;
+  max-height: 2.2em !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+/* Телефон: іконка + підпис по центру, чіпи вищі — підписи не обрізаються */
+@media (max-width: 767px) {
+  :root {
+    --watta-cat-chip-size: 66px;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 var(--watta-cat-chip-size, 66px) !important;
+    width: var(--watta-cat-chip-size, 66px) !important;
+    min-width: var(--watta-cat-chip-size, 66px) !important;
+    max-width: var(--watta-cat-chip-size, 66px) !important;
+    height: var(--watta-cat-chip-size, 66px) !important;
+    min-height: var(--watta-cat-chip-size, 66px) !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 5px 4px !important;
+    gap: 3px !important;
+    overflow: hidden !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+    max-height: 1.05em !important;
+    flex-shrink: 0 !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web svg,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web svg,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-strip-icon-stack,
+  .watta-public-sticky-chrome .categories-panel-web .category-strip-icon-stack {
+    width: 1.05rem !important;
+    height: 1.05rem !important;
+  }
+
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-label-web,
+  .categories-panel-web .category-button-label-web {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    width: 100% !important;
+    text-align: center !important;
+    align-self: center !important;
+    font-size: 10px !important;
+    line-height: 1.14 !important;
+    font-weight: 700 !important;
+    color: #3d3d3d !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    max-height: 2.4em !important;
+    overflow: hidden !important;
+    white-space: normal !important;
+  }
+}
+
+@media (hover: hover) {
+  .categories-panel-web .category-button-web:hover,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web:hover,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web:hover,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web:hover {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .categories-panel-web .category-button-active-web:hover,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web:hover,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web:hover,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-active-web:hover,
+  html:not(.watta-html-home-hero)
+    body:not(.watta-route-home)
+    .watta-sticky-chrome-portal
+    .categories-panel-web
+    .category-button-active-web:hover {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+  }
+}
+
+/* Не-головні сторінки: перебиваємо квадратні override з chrome-transparent / globals */
+html:not(.watta-html-home-hero)
+  body:not(.watta-route-home)
+  .watta-sticky-chrome-portal
+  .categories-panel-web
+  .category-button-web,
+html:not(.watta-html-home-hero)
+  body:not(.watta-route-home)
+  .watta-sticky-chrome-portal
+  .categories-panel-web
+  .category-button-active-web {
+  flex: 0 0 var(--watta-cat-chip-size, 52px) !important;
+  width: var(--watta-cat-chip-size, 52px) !important;
+  min-width: var(--watta-cat-chip-size, 52px) !important;
+  max-width: var(--watta-cat-chip-size, 52px) !important;
+  height: var(--watta-cat-chip-size, 52px) !important;
+  min-height: var(--watta-cat-chip-size, 52px) !important;
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html:not(.watta-html-home-hero)
+  body:not(.watta-route-home)
+  .watta-sticky-chrome-portal
+  .categories-panel-web
+  .category-button-active-web {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+  -webkit-box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+}

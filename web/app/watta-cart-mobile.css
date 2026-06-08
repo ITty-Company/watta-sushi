@@ -1,0 +1,1117 @@
+/**
+ * Мобільний кошик і checkout — макет у стилі Ninja Sushi, кольори Watta.
+ */
+
+:root {
+  --watta-cart-bar-side: max(14px, env(safe-area-inset-left, 0px));
+  --watta-cart-bar-side-right: max(14px, env(safe-area-inset-right, 0px));
+  --watta-cart-bar-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  --watta-mobile-cart-bar-green: var(--watta-brand-mint);
+  --watta-mobile-cart-bar-green-active: var(--watta-brand-mint-hover);
+  --watta-mobile-cart-bar-green-pressed: var(--watta-brand-mint-active);
+  --watta-mobile-cart-bar-ink: #ffffff;
+  --watta-cart-compact-radius: 16px;
+  --watta-cart-compact-min-h: 3.25rem;
+  --watta-cart-bar-progress: 0;
+}
+
+/* Відкрита бічна панель (сайт + адмін) — ховаємо нижню зелену смугу / checkout CTA.
+   Кошик: при data-watta-cart-drawer-open зелена смуга лишається — це CTA «Оформити». */
+html[data-watta-nav-drawer-open]:not([data-watta-cart-drawer-open])
+  .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay),
+html[data-watta-nav-drawer-open] .watta-cart-checkout-foot,
+html[data-watta-nav-drawer-open] .watta-cart-mobile-sticky {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html[data-watta-nav-drawer-open]::after {
+  opacity: 0 !important;
+}
+
+/* Спільний вигляд зеленої смуги (низ екрана, drawer, overlay на картці) */
+.watta-mobile-cart-bar[data-watta-cart-filled='true'],
+.watta-mobile-cart-bar.watta-mobile-cart-bar--card-overlay,
+.watta-mobile-cart-bar:not([data-watta-cart-filled]) {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: var(--watta-cart-compact-min-h);
+  padding: 0.82rem 1rem 0.82rem 1.05rem;
+  border: none;
+  border-radius: var(--watta-cart-compact-radius);
+  cursor: pointer;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  color: var(--watta-mobile-cart-bar-ink);
+  background: var(--watta-mobile-cart-bar-green);
+  box-shadow:
+    0 4px 14px rgba(15, 48, 28, 0.16),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+@media (hover: hover) {
+  .watta-mobile-cart-bar:hover,
+  .watta-mobile-cart-bar[data-watta-cart-filled='true']:hover {
+    background: var(--watta-mobile-cart-bar-green-active);
+  }
+}
+
+.watta-mobile-cart-bar:active,
+.watta-mobile-cart-bar[data-watta-cart-filled='true']:active {
+  transform: scale(0.99);
+  background: var(--watta-mobile-cart-bar-green-pressed, var(--watta-brand-mint-active));
+  box-shadow:
+    0 3px 10px rgba(15, 48, 28, 0.14),
+    0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.watta-mobile-cart-bar__summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 0.28rem;
+  text-align: left;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watta-mobile-cart-bar__summary-lead {
+  font-weight: 400;
+}
+
+.watta-mobile-cart-bar__summary-amount {
+  font-weight: 700;
+}
+
+.watta-mobile-cart-bar__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  flex-shrink: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.watta-mobile-cart-bar__cta::before {
+  content: '';
+  display: inline-block;
+  align-self: center;
+  width: 1px;
+  height: 1.25rem;
+  margin-right: 0.1rem;
+  background: currentColor;
+  opacity: 0.3;
+}
+
+.watta-mobile-cart-bar__ico {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  color: inherit;
+  stroke: currentColor;
+}
+
+/* —— Плаваюча смуга на меню / каталозі —— */
+.watta-mobile-cart-bar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  /*
+   * Відкритий drawer: зовнішню смугу ховаємо — CTA «Оформити» всередині drawer.
+   */
+  html[data-watta-cart-drawer-open]
+    .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay) {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  html[data-watta-cart-drawer-open] .watta-floating-cart-fab {
+    display: none !important;
+  }
+
+  html[data-watta-cart-drawer-open] .watta-cart-drawer-foot__bar {
+    display: flex !important;
+  }
+
+  /* Бокове меню (сайт / адмін) — пріоритет над кошиком; кошик drawer — ні */
+  html[data-watta-nav-drawer-open]:not([data-watta-cart-drawer-open])
+    .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .floating-contact-ig-fab {
+    display: none !important;
+  }
+
+  .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay) {
+    position: fixed;
+    left: var(--watta-cart-bar-side);
+    right: var(--watta-cart-bar-side-right);
+    bottom: var(--watta-cart-bar-bottom);
+    z-index: 9975;
+    display: flex;
+    width: auto;
+    max-width: none;
+    --watta-cart-slide-offset: calc(
+      (1 - var(--watta-cart-bar-progress, 0)) * (100% + 0.85rem)
+    );
+    opacity: var(--watta-cart-bar-progress, 0);
+    pointer-events: none;
+    transform: translate3d(0, var(--watta-cart-slide-offset), 0);
+    box-shadow:
+      0 calc(4px * var(--watta-cart-bar-progress, 0)) calc(14px * var(--watta-cart-bar-progress, 0))
+        rgba(15, 48, 28, 0.16),
+      0 calc(2px * var(--watta-cart-bar-progress, 0)) calc(6px * var(--watta-cart-bar-progress, 0))
+        rgba(0, 0, 0, 0.08);
+    will-change: transform, opacity;
+  }
+
+  /* Базова м’яка тінь знизу — завжди на місці, не стрибає; зникає коли смуга виїжджає */
+  html:not([data-watta-cart-drawer-open])::after {
+    content: '';
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9970;
+    height: clamp(72px, 13vh, 104px);
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      rgba(15, 48, 28, 0.08) 0%,
+      rgba(15, 48, 28, 0.03) 42%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    opacity: calc(1 - var(--watta-cart-bar-progress, 0) * 0.92);
+  }
+
+  html[data-watta-cart-bar-visible='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
+  html[data-watta-past-hero='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
+  html[data-watta-home-past-hero='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
+  .watta-mobile-cart-bar[data-watta-cart-filled='true']:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar) {
+    opacity: 1 !important;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0);
+    --watta-cart-slide-offset: 0;
+  }
+
+  html:not([data-watta-cart-bar-visible='1']):not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1'])
+    .floating-contact-buttons-root {
+    bottom: calc(
+      max(0.75rem, env(safe-area-inset-bottom, 0px)) + 8px +
+        var(--watta-cart-bar-progress, 0) *
+        (var(--watta-cart-compact-min-h) + 0.55rem)
+    ) !important;
+    transition: bottom 0.08s linear;
+  }
+
+  html:not([data-watta-cart-bar-visible='1']):not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1']) {
+    --watta-floating-fab-clearance: calc(
+      var(--watta-cart-bar-progress, 0) *
+      (var(--watta-cart-compact-min-h) + var(--watta-cart-bar-bottom) + 1.1rem)
+    );
+  }
+
+  /* Смуга замість круглого FAB, коли в кошику є товари */
+  html:has(.watta-mobile-cart-bar) .watta-floating-cart-fab {
+    display: none !important;
+  }
+
+  html[data-watta-cart-bar-visible='1']:has(.watta-mobile-cart-bar) .floating-contact-buttons-root,
+  html[data-watta-past-hero='1']:has(.watta-mobile-cart-bar) .floating-contact-buttons-root,
+  html[data-watta-home-past-hero='1']:has(.watta-mobile-cart-bar) .floating-contact-buttons-root {
+    bottom: calc(var(--watta-cart-bar-bottom) + var(--watta-cart-compact-min-h) + 0.55rem) !important;
+  }
+
+  html[data-watta-cart-bar-visible='1']:has(.watta-mobile-cart-bar),
+  html[data-watta-past-hero='1']:has(.watta-mobile-cart-bar),
+  html[data-watta-home-past-hero='1']:has(.watta-mobile-cart-bar) {
+    --watta-floating-fab-clearance: calc(
+      var(--watta-cart-compact-min-h) + var(--watta-cart-bar-bottom) + 1.1rem
+    );
+  }
+
+  @media (max-width: 380px) {
+    .watta-mobile-cart-bar {
+      min-height: 3rem;
+      padding: 0.72rem 0.88rem 0.72rem 0.92rem;
+    }
+
+    .watta-mobile-cart-bar__summary,
+    .watta-mobile-cart-bar__cta {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+/* —— Сторінка /cart на телефоні —— */
+@media (max-width: 767px) {
+  .watta-cart-checkout-page--v2.watta-cart-page,
+  .watta-cart-checkout-page--v2 .watta-cart-page__content {
+    background: #ffffff !important;
+  }
+}
+
+@media (max-width: 1023px) {
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-lead {
+    margin-bottom: 0.9rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-lead__title {
+    font-size: 1.5rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-lead__toolbar {
+    margin-bottom: 0.7rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-panel {
+    padding: 0 0 1.1rem;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-order-panel__head {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-section,
+  .watta-cart-checkout-page--v2 .watta-cart-form-section {
+    padding-bottom: 1.15rem;
+  }
+
+  .watta-checkout-pay-tiles {
+    grid-template-columns: 1fr;
+  }
+
+  .watta-checkout-pay-tile {
+    padding: 0.8rem 0.85rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-aside-lines {
+    padding: 0;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-order-panel .watta-cart-aside-lines__title {
+    font-size: 1.05rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card {
+    position: relative;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 0.75rem 0;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid rgba(20, 81, 66, 0.07);
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card + .watta-cart-line-card {
+    margin-top: 0.65rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__media-wrap {
+    flex-shrink: 0;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__media {
+    width: 5.5rem;
+    height: 5.5rem;
+    border-radius: 0.85rem;
+    overflow: visible;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__media .relative {
+    height: 100%;
+    width: 100%;
+    border-radius: 0.85rem;
+    overflow: hidden;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__remove {
+    position: absolute;
+    top: -0.35rem;
+    left: -0.35rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    padding: 0;
+    border: none;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.95);
+    color: rgba(15, 23, 42, 0.45);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__remove:hover {
+    color: #dc2626;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__body {
+    padding-top: 0.1rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__name {
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__weight {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ff6b35;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__price-main {
+    margin: 0.35rem 0 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__meta--desktop {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__aside {
+    align-self: stretch;
+    justify-content: flex-end;
+    padding-top: 0.15rem;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__total {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__qty {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    background: #eef1f0;
+    border: 1px solid rgba(20, 81, 66, 0.08);
+    padding: 2px;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__qty-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
+    color: #145142;
+    cursor: pointer;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__qty-btn--plus {
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__qty-val {
+    min-width: 1.35rem;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__trash,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__controls-desktop {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card--subtotal {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding-top: 0.85rem;
+    border: none;
+    border-top: 1px dashed rgba(20, 81, 66, 0.15);
+    background: transparent;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-min-order-warning {
+    color: #ff6b35;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-aside-sticky {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-checkout-field {
+    border: 1px solid rgba(20, 81, 66, 0.12);
+    background: #ffffff;
+    border-radius: 0.75rem;
+    font-size: 16px;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-checkout-field--compact {
+    font-size: 16px;
+  }
+
+  .watta-cart-checkout-page--v2 textarea.watta-checkout-field {
+    font-size: 16px;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-date-chip {
+    font-size: max(14px, 0.72rem);
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-slot-chip {
+    font-size: max(14px, 0.72rem);
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-grid,
+  .watta-cart-checkout-page--v2 .watta-cart-form-section,
+  .watta-cart-checkout-page--v2 .watta-cart-form-section__body,
+  .watta-cart-checkout-page--v2 #cart-delivery-time {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-login-card {
+    margin-top: 0.65rem;
+    margin-bottom: 0;
+    padding: 0.85rem 0.95rem;
+    border-radius: 0.85rem;
+    border: 1px dashed rgba(20, 81, 66, 0.18);
+    background: rgba(255, 255, 255, 0.75);
+    text-align: center;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-login-card__text {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: #64748b;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-login-card__btn {
+    margin-top: 0.65rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 0.75rem;
+    background: transparent;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #145142;
+    cursor: pointer;
+  }
+
+  /* Липкий футер checkout — portal у body, щоб не обрізався overflow батьків */
+  .watta-cart-checkout-foot {
+    position: fixed;
+    left: var(--watta-cart-bar-side);
+    right: var(--watta-cart-bar-side-right);
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    z-index: 99990;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    pointer-events: none;
+  }
+
+  .watta-cart-checkout-foot__warn {
+    margin: 0;
+    padding: 0 0.25rem;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ff6b35;
+    pointer-events: auto;
+  }
+
+  .watta-cart-checkout-foot__submit {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3.25rem;
+    border: 1px solid rgba(20, 81, 66, 0.08);
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    color: #ffffff;
+    background: #50800c;
+    box-shadow:
+      0 -4px 24px rgba(15, 48, 28, 0.12),
+      0 8px 28px rgba(15, 48, 28, 0.14);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      transform 0.12s ease,
+      opacity 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (hover: hover) {
+    .watta-cart-checkout-foot__submit:hover:not(:disabled) {
+      background: #446b0a;
+    }
+  }
+
+  .watta-cart-checkout-foot__submit:active:not(:disabled) {
+    transform: scale(0.99);
+    background: #52800e;
+  }
+
+  .watta-cart-checkout-foot__submit:disabled {
+    opacity: 0.52;
+    cursor: not-allowed;
+  }
+
+  .watta-cart-mobile-sticky {
+    position: fixed;
+    left: var(--watta-cart-bar-side);
+    right: var(--watta-cart-bar-side-right);
+    bottom: var(--watta-cart-bar-bottom);
+    z-index: 9985;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    pointer-events: none;
+  }
+
+  .watta-cart-mobile-sticky__warn {
+    margin: 0;
+    padding: 0 0.25rem;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ff6b35;
+    pointer-events: auto;
+  }
+
+  .watta-cart-mobile-sticky__cash-note {
+    margin: 0;
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.65rem;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #145142;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 2px 10px -6px rgba(20, 81, 66, 0.18);
+    pointer-events: auto;
+  }
+
+  .watta-cart-mobile-sticky__bar.watta-mobile-cart-bar {
+    display: flex;
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    pointer-events: auto;
+    background: #50800c;
+    box-shadow:
+      0 4px 14px rgba(15, 48, 28, 0.2),
+      0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (hover: hover) {
+    .watta-cart-mobile-sticky__bar.watta-mobile-cart-bar:hover {
+      background: #446b0a;
+    }
+  }
+
+  .watta-cart-mobile-sticky__bar.watta-mobile-cart-bar:active {
+    background: #52800e;
+  }
+
+  .watta-cart-mobile-sticky__bar:disabled {
+    opacity: 0.52;
+    cursor: not-allowed;
+  }
+
+  .watta-cart-mobile-sticky__bar:disabled:active {
+    transform: none;
+    background: #50800c;
+  }
+
+  .watta-app-shell-root:has(.watta-cart-page) .floating-contact-buttons-root {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-page__content {
+    padding-bottom: calc(7.25rem + var(--watta-cart-bar-bottom));
+  }
+
+  /* Одна кнопка оформлення — лише нижня смуга, без дубля «Оформити замовлення» у формі */
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-submit {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-total {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.25rem;
+    border: none;
+    background: transparent;
+    padding: 0.5rem 0 0.65rem;
+    box-shadow: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-total__grand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.15rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(20, 81, 66, 0.12);
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #0f2a22;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-total__amount {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--watta-brand-mint, #5c9010);
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__remove,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__weight,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__price-main,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__qty,
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__media-wrap .watta-cart-line-card__remove {
+    display: none;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-line-card__meta--desktop {
+    display: block;
+  }
+
+  .watta-cart-mobile-sticky {
+    display: none !important;
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-login-card {
+    display: none;
+  }
+}
+
+/* —— Бічний кошик (drawer) на телефоні —— */
+@media (max-width: 767px) {
+  /*
+   * Відкритий drawer: вище на екрані (більше dvh), щоб порожній стан і список
+   * повністю вміщались; зверху лишаємо лише safe-area + невеликий зазор під chrome.
+   */
+  html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet,
+  html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet.is-open {
+    top: auto !important;
+    left: var(--watta-cart-bar-side) !important;
+    right: var(--watta-cart-bar-side-right) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    bottom: var(--watta-cart-bar-bottom) !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines],
+  html[data-watta-cart-drawer-open]
+    #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines].is-open {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: min(
+      82dvh,
+      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom))
+    ) !important;
+  }
+
+  html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:not([data-cart-has-lines]),
+  html[data-watta-cart-drawer-open]
+    #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:not([data-cart-has-lines]).is-open {
+    height: min(
+      78dvh,
+      calc(
+        100dvh - max(3rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom) -
+          var(--watta-cart-compact-min-h) - 0.55rem
+      )
+    ) !important;
+    max-height: min(
+      78dvh,
+      calc(
+        100dvh - max(3rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom) -
+          var(--watta-cart-compact-min-h) - 0.55rem
+      )
+    ) !important;
+  }
+
+  #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:not([data-cart-has-lines]):not(:has(.watta-cart-drawer-empty)) {
+    height: min(
+      78dvh,
+      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - 2.75rem)
+    ) !important;
+    max-height: min(
+      78dvh,
+      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - 2.75rem)
+    ) !important;
+  }
+
+  #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines] {
+    --cart-drawer-line-h: 4.5625rem;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: min(
+      78dvh,
+      calc(
+        100dvh - max(3rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom) -
+          var(--watta-cart-compact-min-h) - 0.55rem
+      )
+    ) !important;
+  }
+
+  #watta-cart-drawer.watta-nav-sidebar-drawer--sheet {
+    top: auto !important;
+    left: var(--watta-cart-bar-side) !important;
+    right: var(--watta-cart-bar-side-right) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none;
+    bottom: calc(var(--watta-cart-bar-bottom) + var(--watta-cart-compact-min-h) + 0.55rem);
+    border-radius: 1.15rem;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  #watta-cart-drawer.watta-nav-sidebar-drawer--sheet.is-open {
+    transform: none !important;
+  }
+
+  #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty) {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: min(
+      90dvh,
+      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - 2.5rem)
+    ) !important;
+  }
+
+  html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty),
+  html[data-watta-cart-drawer-open]
+    #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty).is-open {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: min(
+      90dvh,
+      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - 2.5rem)
+    ) !important;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty {
+    flex: 0 0 auto;
+    min-height: 0;
+    justify-content: flex-start;
+    padding: 8px 14px max(20px, env(safe-area-inset-bottom, 0px));
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__art {
+    width: min(100%, 17.5rem);
+    margin-bottom: 6px;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__scene {
+    aspect-ratio: 248 / 200;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__copy {
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__kicker {
+    font-size: 0.625rem;
+    margin-bottom: 0.35rem;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__title {
+    font-size: clamp(1.35rem, 5vw, 1.5rem);
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__hint {
+    font-size: 0.8125rem;
+    line-height: 1.48;
+    margin-top: 0.5rem;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__cta {
+    margin-top: 1.125rem;
+    font-size: 0.875rem;
+  }
+
+  /* Компактніша “дорога” типографіка та більші тап-таргети в drawer */
+  .watta-cart-drawer-head {
+    padding: 12px 14px 8px;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-head__title {
+    font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, 'Times New Roman', serif;
+    font-size: clamp(1.28rem, 5.2vw, 1.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .watta-cart-drawer-head__meta {
+    font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  }
+
+  .watta-cart-drawer-list {
+    padding: 8px 12px 1.35rem;
+    scroll-padding-bottom: 1.35rem;
+  }
+
+  .watta-cart-drawer-list > .watta-cart-drawer-item:last-child {
+    margin-bottom: 0.65rem;
+  }
+
+  .watta-cart-drawer-item {
+    position: relative;
+    /* Фіксуємо праву колонку під qty, щоб не було “порожнечі” */
+    grid-template-columns: 48px minmax(0, 1fr) 112px;
+    align-items: center;
+    gap: 8px 8px;
+    padding: 9px 9px;
+    border-bottom: none;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow:
+      0 10px 26px -18px rgba(15, 42, 34, 0.32),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  }
+
+  .watta-cart-drawer-item__remove {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.12);
+    color: rgba(15, 23, 42, 0.42);
+    margin-top: 0;
+  }
+
+  .watta-cart-drawer-item__remove:active {
+    transform: scale(0.96);
+  }
+
+  .watta-cart-drawer-item__media {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    border: 1px solid rgba(15, 42, 34, 0.08);
+    background: linear-gradient(145deg, #f5faf7 0%, #e9f2ee 100%);
+  }
+
+  .watta-cart-drawer-item__body {
+    padding-top: 1px;
+  }
+
+  .watta-cart-drawer-item__name {
+    font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+    font-size: 13.5px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: #111111;
+  }
+
+  .watta-cart-drawer-item__weight {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .watta-cart-drawer-item__price {
+    font-size: 13.5px;
+    font-weight: 800;
+  }
+
+  .watta-cart-drawer-item__price-old {
+    font-size: 12px;
+  }
+
+  .watta-cart-drawer-item__body {
+    padding-top: 0;
+  }
+
+  /* Правий блок: ціна + qty без зайвих відступів */
+  .watta-cart-drawer-item__aside {
+    width: 112px;
+    gap: 6px;
+  }
+
+  .watta-cart-drawer-item__price {
+    line-height: 1.05;
+  }
+
+  .watta-cart-drawer-qty {
+    padding: 2px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 8%, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--watta-brand-mint, #5c9010) 22%, transparent);
+  }
+
+  .watta-cart-drawer-qty__btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 14%, #ffffff);
+    color: var(--watta-brand-mint, #5c9010);
+  }
+
+  .watta-cart-drawer-qty__btn--plus {
+    background: var(--watta-brand-mint);
+    color: var(--watta-brand-mint-ink, #ffffff);
+  }
+
+  @media (hover: hover) {
+    .watta-cart-drawer-qty__btn--plus:hover {
+      background: var(--watta-brand-mint-hover);
+    }
+  }
+
+  .watta-cart-drawer-qty__btn--plus:active {
+    background: var(--watta-brand-mint-active);
+  }
+
+  .watta-cart-drawer-qty__val {
+    min-width: 1.7rem;
+    font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    color: #111111;
+  }
+
+  /* Відстань між “картками” */
+  .watta-cart-drawer-item + .watta-cart-drawer-item {
+    margin-top: 7px;
+  }
+
+  .watta-cart-drawer-foot__row {
+    /* На телефоні залишаємо тільки нижню зелену смугу-кнопку */
+    display: none;
+  }
+
+  .watta-cart-drawer-foot__total-block {
+    display: none;
+  }
+
+  .watta-cart-drawer-foot__total-label {
+    display: none;
+  }
+
+  .watta-cart-drawer-foot__total-amount {
+    display: none;
+  }
+
+  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-panel {
+    height: auto;
+    max-height: inherit;
+  }
+
+  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    max-height: calc(
+      var(--cart-drawer-line-h, 4.5625rem) * var(--cart-drawer-lines-visible, 6) + 1.35rem
+    );
+  }
+
+  /* Зелена смуга всередині drawer — CTA «Оформити», коли панель відкрита */
+  html[data-watta-cart-drawer-open] .watta-cart-drawer-foot {
+    display: block;
+  }
+
+  .watta-cart-drawer-foot {
+    flex-shrink: 0;
+    margin-top: 0;
+    padding: 0 0 max(10px, env(safe-area-inset-bottom, 0px));
+    border-top: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 28%);
+  }
+
+  .watta-cart-drawer-foot__bar {
+    display: flex;
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    border-radius: 0 0 1.15rem 1.15rem;
+  }
+
+  .watta-cart-drawer-checkout {
+    display: none;
+  }
+
+  .watta-cart-drawer-foot__min-order {
+    margin-bottom: 0.5rem;
+    text-align: center;
+    color: #ff6b35;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-cart-drawer-foot__bar {
+    display: none;
+  }
+}

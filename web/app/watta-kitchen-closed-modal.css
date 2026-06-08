@@ -1,0 +1,158 @@
+/* Модалка «кухня закрита» — як auth / cart: blur, Inter, салатовий CTA */
+
+.watta-kitchen-closed-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.watta-kitchen-closed-overlay__backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.38);
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.watta-kitchen-closed-modal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 22.5rem);
+  max-height: min(
+    calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px),
+    28rem
+  );
+  margin:
+    max(16px, env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 1.75rem 1.35rem 1.35rem;
+  text-align: center;
+  box-shadow:
+    0 20px 50px rgba(17, 24, 39, 0.14),
+    0 4px 14px rgba(17, 24, 39, 0.06);
+  box-sizing: border-box;
+  pointer-events: auto;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.watta-kitchen-closed-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.watta-kitchen-closed-modal__close:hover {
+  background: rgba(17, 24, 39, 0.06);
+  color: #374151;
+}
+
+.watta-kitchen-closed-modal__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0 auto 1rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 14%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--watta-brand-mint, #5c9010) 22%, transparent);
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+.watta-kitchen-closed-modal__title {
+  margin: 0 0 0.65rem;
+  padding: 0 1.5rem;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: 1.3125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--watta-toast-ink, #1a2e28);
+}
+
+.watta-kitchen-closed-modal__text {
+  margin: 0 0 1.35rem;
+  padding: 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--watta-toast-ink-muted, #4a5f58);
+}
+
+.watta-kitchen-closed-modal__cta {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--watta-brand-mint, #5c9010);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--watta-brand-mint, #5c9010) 38%, transparent);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-kitchen-closed-modal__cta:hover {
+  background: var(--watta-brand-mint-hover);
+  box-shadow: 0 3px 14px color-mix(in srgb, var(--watta-brand-mint-hover) 42%, transparent);
+}
+
+.watta-kitchen-closed-modal__cta:active {
+  transform: scale(0.99);
+  background: var(--watta-brand-mint-active);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-kitchen-closed-modal__cta:active {
+    transform: none;
+  }
+}

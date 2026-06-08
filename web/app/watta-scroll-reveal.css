@@ -1,0 +1,20 @@
+/**
+ * Scroll-reveal вимкнено site-wide — текст і секції видимі одразу (швидший LCP, без «зависань» при скролі).
+ * Маркер data-watta-in-view-fade лишається для семантики/тестів; стилі — у watta-site-performance.css.
+ */
+
+[data-watta-in-view-fade] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  will-change: auto;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-watta-in-view-fade] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

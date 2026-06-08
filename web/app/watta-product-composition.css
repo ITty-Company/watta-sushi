@@ -1,0 +1,209 @@
+/* Склад — горизонтальні картки */
+.watta-product-page__composition {
+  overflow: visible;
+  padding: 0.5rem 0 0.65rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.watta-product-page__composition-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.watta-product-page__composition-title {
+  margin: 0;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: #111;
+}
+
+.watta-product-page__composition-nav {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.35rem;
+}
+
+.watta-product-page__composition-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.45rem;
+  background: #e6e6e6;
+  color: #b8b8b8;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.watta-product-page__composition-nav-btn:not(:disabled) {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.watta-product-page__composition-nav-btn:disabled {
+  cursor: default;
+}
+
+.watta-product-page__composition-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 0.65rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-behavior: smooth;
+  scroll-padding-inline: 0.15rem;
+  padding-bottom: 0.2rem;
+}
+
+.watta-product-page__ing-chip {
+  display: flex;
+  flex: 0 0 5.75rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 5.75rem;
+  min-width: 5.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+  box-shadow: none;
+}
+
+.watta-product-page__ing-media {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 4.35rem;
+  height: 4.35rem;
+  border-radius: 0.9rem;
+  background: #f6faf8;
+  border: 1px solid color-mix(in srgb, #145142 12%, transparent);
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(20, 81, 66, 0.06);
+}
+
+.watta-product-page__ing-chip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.35rem;
+  box-sizing: border-box;
+}
+
+.watta-product-page__ing-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.watta-product-page__ing-label {
+  margin: 0;
+  width: 100%;
+  max-width: 5.75rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #145142;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.watta-product-page__ing-chip--skeleton .watta-product-page__ing-media {
+  border-radius: 0.35rem;
+  background: #e8e8e8;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.watta-product-page__ing-label--skeleton {
+  height: 0.55rem;
+  margin-inline: auto;
+  width: 70%;
+  border-radius: 999px;
+  background: #e8e8e8;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@media (min-width: 640px) {
+  .watta-product-page__composition {
+    padding: 0.5rem 0 0.65rem;
+  }
+
+  .watta-product-page__composition-title {
+    font-size: 1rem;
+  }
+
+  .watta-product-page__composition-nav-btn {
+    width: 2.125rem;
+    height: 2.125rem;
+  }
+
+  .watta-product-page__ing-chip {
+    flex-basis: 6.25rem;
+    width: 6.25rem;
+    min-width: 6.25rem;
+  }
+
+  .watta-product-page__ing-media {
+    width: 4.65rem;
+    height: 4.65rem;
+  }
+
+  .watta-product-page__ing-label {
+    font-size: 0.78rem;
+    max-width: 6.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-product-page__ing-chip {
+    flex: 0 0 6.5rem;
+    width: 6.5rem;
+    min-width: 6.5rem;
+    gap: 0.5rem;
+  }
+
+  .watta-product-page__ing-media {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 1rem;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(15, 20, 18, 0.06);
+  }
+
+  .watta-product-page__ing-label {
+    font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #333333;
+    max-width: 6.5rem;
+  }
+}

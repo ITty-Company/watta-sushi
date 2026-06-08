@@ -1,0 +1,578 @@
+/* Порожній стан сторінки «Обране» — SVG-ілюстрація */
+
+.watta-favorites-page--empty .watta-favorites-empty,
+.watta-favorites-page--empty .watta-favorites-empty [data-watta-in-view-fade] {
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
+}
+
+.watta-favorites-page--empty .watta-favorites-empty__brand-wordmark {
+  opacity: 1 !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+.watta-favorites-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 8vw, 4.5rem) 1rem clamp(3rem, 10vw, 5rem);
+  text-align: center;
+  overflow: visible;
+}
+
+.watta-favorites-empty__art {
+  width: min(100%, 22rem);
+  margin-bottom: 1.75rem;
+  padding: 0.35rem 0.5rem;
+  overflow: visible;
+}
+
+.watta-favorites-empty__scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 248 / 228;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.watta-favorites-empty__brand {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  z-index: 5;
+  width: max-content;
+  max-width: none;
+  transform: translateX(-50%);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.watta-favorites-empty__brand-wordmark {
+  display: block;
+  width: auto;
+  height: clamp(2rem, 13vw, 3rem);
+  max-width: min(88vw, 14rem);
+  object-fit: contain;
+  object-position: center center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .watta-favorites-empty__brand-wordmark {
+    opacity: 0;
+    animation: wattaFavBrandWordmarkIn 0.5s ease-out 0.15s forwards;
+  }
+}
+
+@keyframes wattaFavBrandWordmarkIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.watta-favorites-empty__svg--bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/** ♥ — завжди по центру сцени (телефон / планшет / десктоп). */
+.watta-favorites-empty__heart-slot {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  z-index: 8;
+  width: clamp(0.58rem, 3.2vw, 0.78rem);
+  transform: translate(calc(-50% - 0.35rem), -50%);
+  pointer-events: none;
+}
+
+.watta-favorites-empty__heart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.watta-favorites-empty__inside-roll {
+  position: absolute;
+  left: 50%;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 6px 12px color-mix(in srgb, #145142 10%, transparent));
+}
+
+.watta-favorites-empty__inside-roll--nigiri {
+  left: auto;
+  right: 5%;
+  top: 36%;
+  z-index: 2;
+  width: 42%;
+  max-width: 6.5rem;
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.watta-favorites-empty__inside-roll--left {
+  left: 0;
+  top: 30%;
+  z-index: 0;
+  width: 52%;
+  max-width: 8.1rem;
+  transform: translateX(0);
+  opacity: 0.97;
+}
+
+.watta-favorites-empty__inside-roll--rear {
+  top: 30%;
+  z-index: 2;
+  width: 56%;
+  max-width: 9rem;
+  opacity: 0.98;
+}
+
+.watta-favorites-empty__inside-roll--back {
+  top: 38%;
+  z-index: 2;
+  width: 50%;
+  max-width: 8rem;
+}
+
+.watta-favorites-empty__inside-roll--front {
+  left: 4%;
+  top: 42%;
+  z-index: 3;
+  width: 58%;
+  max-width: 9.25rem;
+  transform: translateX(0);
+}
+
+.watta-favorites-empty__inside-roll--bottom {
+  left: 18%;
+  top: 56%;
+  z-index: 4;
+  width: 58%;
+  max-width: 9.25rem;
+  transform: translateX(0);
+}
+
+.watta-favorites-empty__inside-roll--mussel {
+  left: 40%;
+  top: 38%;
+  z-index: 3;
+  width: 74%;
+  max-width: 11.25rem;
+  transform: translateX(0);
+}
+
+/* Нижній ряд (як раніше по місцю): запечений 5 → халапеньо 6 → ікра 7 */
+.watta-favorites-empty__inside-roll--gunkan-baked {
+  z-index: 5;
+  left: auto;
+  right: 14%;
+  top: 64%;
+  width: 28%;
+  max-width: 4.35rem;
+  transform: translateX(0);
+}
+
+.watta-favorites-empty__inside-roll--accent {
+  left: 66%;
+  top: 66%;
+  z-index: 6;
+  width: 28%;
+  max-width: 4.25rem;
+  transform: translateX(-50%);
+}
+
+.watta-favorites-empty__inside-roll--gunkan-ikura {
+  left: 44%;
+  top: 71%;
+  z-index: 7;
+  width: 30%;
+  max-width: 4.5rem;
+  transform: translateX(0);
+}
+
+/* Телефон: канонічна розкладка (як у порожній корзині) */
+@media (max-width: 767px) {
+  .watta-favorites-empty__heart-slot {
+    top: 11%;
+    width: clamp(0.6rem, 3.4vw, 0.82rem);
+  }
+
+  .watta-favorites-empty__inside-roll--nigiri {
+    top: 36%;
+  }
+
+  .watta-favorites-empty__inside-roll--left {
+    top: 30%;
+  }
+
+  .watta-favorites-empty__inside-roll--rear {
+    top: 30%;
+  }
+
+  .watta-favorites-empty__inside-roll--back {
+    top: 38%;
+  }
+
+  .watta-favorites-empty__inside-roll--front {
+    top: 42%;
+  }
+
+  .watta-favorites-empty__inside-roll--bottom {
+    top: 56%;
+  }
+
+  .watta-favorites-empty__inside-roll--mussel {
+    top: 38%;
+  }
+
+  .watta-favorites-empty__inside-roll--gunkan-baked {
+    right: 14%;
+    top: 64%;
+  }
+
+  .watta-favorites-empty__inside-roll--accent {
+    left: 66%;
+    top: 66%;
+  }
+
+  .watta-favorites-empty__inside-roll--gunkan-ikura {
+    left: 44%;
+    top: 71%;
+  }
+}
+
+.watta-favorites-empty__blob {
+  fill: color-mix(in srgb, #145142 6%, #f4f7f5);
+}
+
+.watta-favorites-empty__heart {
+  fill: #ff7a45;
+  stroke: #145142;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.watta-favorites-page.watta-favorites-page--empty {
+  overflow-x: visible;
+}
+
+.watta-favorites-page .watta-favorites-page__content--empty {
+  overflow: visible;
+}
+
+.watta-favorites-page__content--empty .watta-favorites-empty,
+.watta-favorites-page__content--empty [data-watta-in-view-fade] {
+  overflow: visible;
+}
+
+.watta-favorites-empty__copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  text-align: center;
+}
+
+.watta-favorites-empty__title {
+  margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.5rem, 4.2vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #0f241e;
+}
+
+.watta-favorites-empty__subtitle {
+  margin: 0.75rem 0 0;
+  max-width: 20rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: color-mix(in srgb, #145142 62%, #ffffff);
+}
+
+.watta-favorites-empty__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  padding: 0.25rem 0;
+  background: transparent;
+  border: none;
+  color: #145142;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: color 0.15s ease, gap 0.15s ease;
+}
+
+.watta-favorites-empty__cta-arrow {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+@media (hover: hover) {
+  .watta-favorites-empty__cta:hover {
+    color: #0f3d32;
+    gap: 0.55rem;
+  }
+}
+
+.watta-favorites-empty__cta:active {
+  color: #0a3028;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .watta-favorites-empty__heart-svg {
+    animation: wattaFavoritesEmptyHeartFloat 3.2s ease-in-out infinite;
+  }
+
+  .watta-favorites-empty__rolls {
+    animation: wattaFavoritesEmptyRollBob 3.6s ease-in-out infinite;
+  }
+}
+
+@keyframes wattaFavoritesEmptyHeartFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-favorites-empty__heart-svg {
+    animation: none;
+  }
+}
+
+/*
+ * Планшет / ноут / ПК — повна адаптація через CSS-змінні (база сцени 22rem).
+ * --fav-roll-k масштабує всі ролли й логотип пропорційно; overflow: visible.
+ */
+@media (min-width: 768px) {
+  .watta-favorites-page__content--empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: clamp(0.5rem, 2vh, 1.25rem);
+    overflow: visible;
+  }
+
+  .watta-favorites-page--empty [data-watta-in-view-fade] {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+    will-change: auto;
+  }
+
+  .watta-favorites-empty {
+    --fav-empty-art: clamp(28rem, 42vw, 34rem);
+    --fav-roll-k: calc(var(--fav-empty-art) / 22rem);
+    --fav-empty-art-pad-x: clamp(0.75rem, 1.5vw, 1.25rem);
+    --fav-empty-art-pad-y: clamp(0.45rem, 1vw, 0.75rem);
+    --fav-empty-art-gap: clamp(2rem, 4vh, 3rem);
+    --fav-title-size: clamp(1.6rem, 2.15vw, 2.125rem);
+    --fav-subtitle-size: clamp(0.9rem, 1.15vw, 1.0625rem);
+
+    max-width: min(58rem, 96vw);
+    padding: clamp(0.15rem, 0.5vh, 0.35rem) clamp(0.5rem, 2vw, 1.25rem)
+      clamp(0.65rem, 1.5vh, 1rem);
+    overflow: visible;
+  }
+
+  .watta-favorites-empty__art {
+    width: min(100%, var(--fav-empty-art));
+    margin-bottom: var(--fav-empty-art-gap);
+    padding: var(--fav-empty-art-pad-y) var(--fav-empty-art-pad-x);
+  }
+
+  .watta-favorites-empty__heart-slot {
+    top: 12%;
+    width: calc(0.68rem * var(--fav-roll-k, 1));
+  }
+
+  .watta-favorites-empty__brand-wordmark {
+    height: calc(2.75rem * var(--fav-roll-k));
+    max-width: min(92vw, calc(14rem * var(--fav-roll-k)));
+  }
+
+  .watta-favorites-empty__inside-roll--nigiri {
+    max-width: calc(6.5rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--left {
+    max-width: calc(8.1rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--rear {
+    max-width: calc(9rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--back {
+    max-width: calc(8rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--front,
+  .watta-favorites-empty__inside-roll--bottom {
+    max-width: calc(9.25rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--mussel {
+    max-width: calc(11.25rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--gunkan-baked {
+    max-width: calc(4.35rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--accent {
+    max-width: calc(4.25rem * var(--fav-roll-k));
+  }
+
+  .watta-favorites-empty__inside-roll--gunkan-ikura {
+    max-width: calc(4.5rem * var(--fav-roll-k));
+    top: 72.5%;
+  }
+
+  .watta-favorites-empty__copy {
+    position: relative;
+    z-index: 10;
+    width: max-content;
+    max-width: min(96vw, 50rem);
+    margin-top: -0.45rem;
+    transform: translateY(-0.35rem);
+  }
+
+  .watta-favorites-empty__title {
+    font-size: var(--fav-title-size);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+    color: #0a1f18;
+  }
+
+  .watta-favorites-empty__subtitle {
+    max-width: none;
+    margin-top: clamp(0.3rem, 0.65vh, 0.45rem);
+    font-size: var(--fav-subtitle-size);
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    color: color-mix(in srgb, #145142 68%, #64748b);
+  }
+}
+
+/* Ноутбук */
+@media (min-width: 1024px) {
+  .watta-favorites-empty {
+    --fav-empty-art: clamp(32rem, 34vw, 40rem);
+    --fav-empty-art-gap: clamp(2.35rem, 4vh, 3.5rem);
+    --fav-title-size: clamp(1.75rem, 1.95vw, 2.25rem);
+    --fav-subtitle-size: clamp(0.95rem, 1.05vw, 1.125rem);
+
+    max-width: min(62rem, 94vw);
+  }
+}
+
+/* Десктоп */
+@media (min-width: 1280px) {
+  .watta-favorites-empty {
+    --fav-empty-art: clamp(36rem, 30vw, 44rem);
+    --fav-empty-art-gap: clamp(2.5rem, 3.5vh, 4rem);
+    --fav-title-size: clamp(1.9rem, 1.75vw, 2.5rem);
+    --fav-subtitle-size: clamp(1rem, 0.95vw, 1.1875rem);
+
+    max-width: min(68rem, 92vw);
+  }
+}
+
+/* Великий монітор */
+@media (min-width: 1536px) {
+  .watta-favorites-empty {
+    --fav-empty-art: clamp(40rem, 26vw, 46rem);
+  }
+
+  .watta-favorites-empty__heart-slot {
+    width: calc(0.75rem * var(--fav-roll-k, 1));
+  }
+}
+
+/* Низький viewport (ноут 768–900px висоти) — трохи компактніше, без обрізання */
+@media (min-width: 768px) and (max-height: 860px) {
+  .watta-favorites-empty {
+    --fav-empty-art: clamp(25rem, 38vw, 30rem);
+    --fav-empty-art-gap: clamp(1.85rem, 3.25vh, 2.65rem);
+    --fav-title-size: clamp(1.4rem, 1.9vw, 1.75rem);
+    --fav-subtitle-size: clamp(0.8125rem, 1vw, 0.9375rem);
+  }
+}
+
+/* Планшет landscape — ширший екран, трохи більша сцена */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+  .watta-favorites-empty {
+    --fav-empty-art: clamp(30rem, 48vw, 36rem);
+    --fav-empty-art-gap: clamp(1.85rem, 3.5vh, 2.75rem);
+  }
+}
+
+/* Порожнє /favorites — компактніша панель категорій */
+@media (min-width: 768px) {
+  html:has(.watta-favorites-page--empty) {
+    --watta-cat-chip-size: 44px;
+  }
+
+  html:has(.watta-favorites-page--empty) .watta-public-sticky-chrome .categories-panel-web,
+  html:has(.watta-favorites-page--empty) .watta-full-menu-sticky-chrome .categories-panel-web,
+  html:has(.watta-favorites-page--empty) body .watta-sticky-chrome-portal .categories-panel-web {
+    padding: 4px 10px !important;
+  }
+
+  html:has(.watta-favorites-page--empty) .categories-panel-web .category-button-label-web {
+    font-size: 0.625rem !important;
+    line-height: 1.1 !important;
+  }
+
+  html:has(.watta-favorites-page--empty) .categories-panel-web .category-button-icon-web svg {
+    width: 1.05rem !important;
+    height: 1.05rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  html:has(.watta-favorites-page--empty) {
+    --watta-cat-chip-size: 46px;
+  }
+}

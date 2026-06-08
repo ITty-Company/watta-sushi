@@ -1,0 +1,165 @@
+.watta-fav-target-pulse {
+  animation: watta-fav-target-pulse 0.45s ease;
+}
+
+/* Сердечко з картки летить дугою вниз до мобільної FAB (без transition з cart-ghost). */
+.watta-fly-to-fav-ghost {
+  position: fixed;
+  z-index: 99998;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(145deg, #fff5f5 0%, #ffe8ec 100%);
+  border: 1px solid rgba(220, 38, 38, 0.14);
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.18);
+  transform: translate(0, 0) scale(1);
+  opacity: 1;
+  transition: none;
+  will-change: transform, opacity;
+}
+
+.watta-fly-to-fav-ghost svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.watta-fly-to-fav-ghost.is-flying {
+  animation: watta-fly-to-fav-arc 0.82s cubic-bezier(0.38, 0.06, 0.16, 1) forwards;
+}
+
+@keyframes watta-fly-to-fav-arc {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  42% {
+    transform: translate(
+        calc(var(--watta-fly-dx, 0px) * 0.38),
+        calc(var(--watta-fly-dy, 0px) * 0.58 - var(--watta-fly-arc, 24px))
+      )
+      scale(0.72);
+    opacity: 0.96;
+  }
+  72% {
+    transform: translate(
+        calc(var(--watta-fly-dx, 0px) * 0.78),
+        calc(var(--watta-fly-dy, 0px) * 0.9 + 6px)
+      )
+      scale(0.42);
+    opacity: 0.78;
+  }
+  100% {
+    transform: translate(var(--watta-fly-dx, 0px), var(--watta-fly-dy, 0px)) scale(0.14);
+    opacity: 0.08;
+  }
+}
+
+.watta-mobile-fav-fab.watta-fav-target-pulse {
+  animation: watta-fav-fab-catch 0.56s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+@keyframes watta-fav-fab-catch {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes watta-fav-target-pulse {
+  0% {
+    filter: brightness(1);
+  }
+  40% {
+    filter: brightness(0.86);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+/* Mobile floating favorites button (always visible on phone). */
+.watta-mobile-fav-fab {
+  position: fixed;
+  z-index: 9976;
+  right: max(0.65rem, env(safe-area-inset-right, 0px));
+  /*
+   * Keep favorites visible together with the bottom cart bar.
+   * Cart bar bottom is `max(0.55rem, safe-bottom)` and its height is ~2.85rem.
+   */
+  bottom: calc(max(0.55rem, env(safe-area-inset-bottom, 0px)) + 3.15rem);
+  width: 3.05rem;
+  height: 3.05rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 81, 66, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 12px 34px -14px rgba(15, 42, 34, 0.36),
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* If cart bar isn't present, let favorites sit lower. */
+html:not(:has(.watta-mobile-cart-bar)) .watta-mobile-fav-fab {
+  bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+}
+
+.watta-mobile-fav-fab:active {
+  transform: scale(0.98);
+}
+
+.watta-mobile-fav-fab__ico {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #145142;
+}
+
+.watta-mobile-fav-fab__badge {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px 3px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: -0.2px;
+  border: 2.5px solid rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 10px 22px rgba(255, 107, 53, 0.22),
+    0 2px 0 rgba(255, 255, 255, 0.28) inset;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-fly-to-fav-ghost.is-flying {
+    animation: none;
+    opacity: 0;
+  }
+
+  .watta-mobile-fav-fab.watta-fav-target-pulse {
+    animation: watta-fav-target-pulse 0.45s ease;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-mobile-fav-fab {
+    display: none !important;
+  }
+}

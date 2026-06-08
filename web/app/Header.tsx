@@ -2,7 +2,6 @@
 
 import { ShoppingBag, User, Menu as MenuIcon } from 'lucide-react';
 import WattaLink from './components/WattaLink';
-import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useEffect, useState } from 'react';
 
 interface HeaderProps {
@@ -11,7 +10,6 @@ interface HeaderProps {
 }
 
 export function Header({ cartCount, onOpenCart }: HeaderProps) {
-  const router = useInstantRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Проверяем логин только на клиенте (чтобы избежать ошибок гидратации)
@@ -43,7 +41,6 @@ export function Header({ cartCount, onOpenCart }: HeaderProps) {
             type="button"
             data-href={isLoggedIn ? '/profile' : '/login'}
             data-prefetch-href={isLoggedIn ? '/profile' : '/login'}
-            onClick={() => router.push(isLoggedIn ? '/profile' : '/login')}
             className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 hover:text-pink-500"
           >
             <User size={24} />

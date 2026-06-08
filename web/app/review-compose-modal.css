@@ -1,0 +1,234 @@
+/* Модалка «Ваш відгук» — компактна картка як kitchen-closed / cart CTA */
+
+.watta-review-compose-backdrop {
+  background: rgba(8, 22, 18, 0.4);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.watta-review-compose {
+  max-width: min(18.5rem, calc(100vw - 1.75rem));
+  max-height: min(70dvh, 400px);
+  padding: 0.85rem 0.9rem 0.8rem;
+  border-radius: 16px;
+}
+
+.watta-review-compose--glass {
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: #ffffff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    0 16px 40px rgba(17, 24, 39, 0.12),
+    0 2px 8px rgba(17, 24, 39, 0.06);
+}
+
+.watta-review-compose__ambient {
+  display: none;
+}
+
+.watta-review-compose--thanks {
+  max-width: min(17rem, calc(100vw - 1.75rem));
+}
+
+.watta-review-compose__thanks {
+  gap: 0.55rem;
+  padding: 0.15rem 0.1rem 0;
+}
+
+.watta-review-compose__thanks-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.watta-review-compose__thanks-icon svg {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.watta-review-compose__thanks-title {
+  font-size: 1.0625rem;
+}
+
+.watta-review-compose__thanks-text {
+  font-size: 0.8125rem;
+}
+
+.watta-review-compose__head {
+  margin-bottom: 0.55rem;
+}
+
+.watta-review-compose__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: none;
+  background-clip: unset;
+  -webkit-background-clip: unset;
+  color: var(--watta-toast-ink, #1a2e28);
+  -webkit-text-fill-color: unset;
+}
+
+.watta-review-compose__order {
+  margin-top: 0.2rem;
+  font-size: 0.8125rem;
+}
+
+.watta-review-compose__close {
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 8px;
+  color: #9ca3af;
+  background: transparent;
+  box-shadow: none;
+}
+
+.watta-review-compose__close:hover {
+  background: rgba(17, 24, 39, 0.06);
+  color: #374151;
+  transform: none;
+  box-shadow: none;
+}
+
+.watta-review-compose__rating-block {
+  margin-bottom: 0.5rem;
+  padding: 0.4rem 0.35rem 0.35rem;
+  border-radius: 12px;
+  background: #f6f9f7;
+  border-color: rgba(20, 81, 66, 0.08);
+  box-shadow: none;
+}
+
+.watta-review-compose__stars {
+  gap: 0.1rem;
+}
+
+.watta-review-compose__star-btn {
+  padding: 0.08rem;
+}
+
+.watta-review-compose__star {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.watta-review-compose__star--on {
+  transform: none;
+}
+
+.watta-review-compose__rating-hint {
+  margin: 0.28rem 0 0;
+  font-family: var(--font-brand-cormorant, 'Cormorant Garamond'), Georgia, serif;
+  font-size: 0.8125rem;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.watta-review-compose__textarea {
+  min-height: 4.25rem;
+  padding: 0.62rem 0.72rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  background: #fff;
+}
+
+.watta-review-compose__counter {
+  margin-top: 0.22rem;
+  font-size: 0.6875rem;
+}
+
+.watta-review-compose__photos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.watta-review-compose__photos-label {
+  margin: 0;
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+}
+
+.watta-review-compose__upload {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+}
+
+.watta-review-compose__upload svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.watta-review-compose__thumbs {
+  margin-top: 0;
+  gap: 0.35rem;
+}
+
+.watta-review-compose__thumb {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 10px;
+}
+
+.watta-review-compose__submit {
+  margin-top: 0.65rem;
+  min-height: 2.65rem;
+  padding: 0.62rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: var(--watta-brand-mint, #5c9010);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--watta-brand-mint, #5c9010) 38%, transparent);
+}
+
+.watta-review-compose__submit:not(:disabled):hover {
+  background: var(--watta-brand-mint-hover, #50800c);
+  transform: none;
+  box-shadow: 0 3px 14px color-mix(in srgb, var(--watta-brand-mint-hover, #50800c) 42%, transparent);
+}
+
+.watta-review-compose__submit:not(:disabled):active {
+  background: var(--watta-brand-mint-active, #466e0a);
+  transform: scale(0.99);
+}
+
+body.watta-review-compose-open .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .watta-review-compose-backdrop {
+    align-items: flex-end;
+    justify-content: center;
+    padding:
+      max(0.75rem, env(safe-area-inset-top, 0px))
+      max(0.625rem, env(safe-area-inset-right, 0px))
+      max(0.75rem, env(safe-area-inset-bottom, 0px))
+      max(0.625rem, env(safe-area-inset-left, 0px));
+  }
+
+  .watta-review-compose {
+    width: 100%;
+    max-width: min(20rem, calc(100vw - 1.25rem));
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .watta-review-compose {
+    max-width: calc(100vw - 1rem);
+    padding: 0.75rem 0.8rem 0.7rem;
+  }
+
+  .watta-review-compose__star {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+}

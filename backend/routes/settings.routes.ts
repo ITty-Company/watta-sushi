@@ -7,9 +7,16 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { getUploadsDir } from '../lib/uploadsDir.js'
 import { cachePublicGet, PUBLIC_CACHE_SETTINGS_SEC } from '../lib/publicApiCache.js'
+import { clearCachedKey, getCached, setCached } from '../lib/memoryCache.js'
+import { compressHeroVideoOnDisk } from '../lib/compressHeroVideo.js'
+
+const SETTINGS_CACHE_KEY = 'settings:public'
 import {
   cardOnlinePaymentProvider,
-  isCardOnlinePaymentAvailable,
+  cardPaymentSetupHint,
+  hasLiqPayConfigured,
+  hasStripeConfigured,
+  canProcessCardPayment,
 } from '../lib/paymentProviders.js'
 import { clampCashbackPercent, DEFAULT_BONUS_CASHBACK_PERCENT } from '../lib/bonusCashback.js'
 
@@ -19,7 +26,7 @@ const prisma = new PrismaClient()
 const uploadDir = getUploadsDir()
 const DEFAULT_HOME_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const DEFAULT_DELIVERY_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
-const DEFAULT_MENU_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
+const DEFAULT_MENU_HERO_VIDEO = '/menu-hero-keeping-safe-road-ready.mp4'
 const DEFAULT_AUTH_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
 const MAX_VIDEO_URL_LENGTH = 2048
 /** Захист від надто великого JSON у SiteSetting (адмінка без жорсткого ліміту в UI). */
@@ -292,10 +299,15 @@ function effectiveMenuHeroVideoUrls(row: {
   menuHeroVideoUrls?: string | null
   menuHeroVideoUrl?: string | null
 }): string[] {
+  const legacyMenuHero = '/watta-sushi-2-hero.mp4'
+  const remapMenuHero = (url: string) => {
+    const base = url.trim().split('?')[0]
+    return base === legacyMenuHero ? DEFAULT_MENU_HERO_VIDEO : url.trim()
+  }
   const fromJson = filterExistingUploadVideoUrls(parseStoredMenuHeroVideoUrls(row.menuHeroVideoUrls))
-  if (fromJson.length > 0) return fromJson
+  if (fromJson.length > 0) return fromJson.map(remapMenuHero)
   const single = row.menuHeroVideoUrl?.trim()
-  if (single && uploadVideoFileExists(single)) return [single]
+  if (single && uploadVideoFileExists(single)) return [remapMenuHero(single)]
   return [DEFAULT_MENU_HERO_VIDEO]
 }
 
@@ -350,8 +362,17 @@ function enrichSettingsResponse<T extends Record<string, unknown>>(settings: T) 
     authHeroPhone2VideoUrls,
     authHeroPhone1Copy,
     authHeroPhone2Copy,
-    cardOnlineAvailable: isCardOnlinePaymentAvailable(),
+    cardOnlineEnabled: (settings as { cardOnlineEnabled?: boolean }).cardOnlineEnabled !== false,
+    cardOnlineAvailable: canProcessCardPayment(
+      (settings as { cardOnlineEnabled?: boolean }).cardOnlineEnabled,
+    ),
+    cardPaymentReady: canProcessCardPayment(
+      (settings as { cardOnlineEnabled?: boolean }).cardOnlineEnabled,
+    ),
     cardOnlineProvider: cardOnlinePaymentProvider(),
+    hasStripeConfigured: hasStripeConfigured(),
+    hasLiqPayConfigured: hasLiqPayConfigured(),
+    cardOnlineSetupHint: cardPaymentSetupHint(),
     restaurantPickupAddress: effectiveRestaurantPickupAddress(settings),
   }
 }
@@ -383,6 +404,7 @@ const defaultSettings = {
   deliveryTariffStepEur: 1.5,
   bonusCashbackEnabled: true,
   bonusCashbackPercent: DEFAULT_BONUS_CASHBACK_PERCENT,
+  cardOnlineEnabled: true,
 }
 
 async function geocodeKitchenLatLng(address: string): Promise<{ lat: number; lng: number } | null> {
@@ -410,9 +432,9 @@ async function geocodeKitchenLatLng(address: string): Promise<{ lat: number; lng
   return null
 }
 
-/** Адмінка: multipart — файл на диск без base64 (якість 1:1). */
+/** Адмінка: multipart — файл на диск, потім ffmpeg-стиснення для швидкого LCP. */
 router.post('/home-hero-video/upload', checkAdmin, (req, res) => {
-  heroVideoUpload(req, res, (err) => {
+  heroVideoUpload(req, res, async (err) => {
     if (err) {
       const msg = err instanceof Error ? err.message : 'upload_error'
       const status = msg === 'invalid_video_type' ? 400 : 413
@@ -420,18 +442,44 @@ router.post('/home-hero-video/upload', checkAdmin, (req, res) => {
     }
     const file = req.file
     if (!file) return res.status(400).json({ error: 'no_file' })
-    return res.json({ url: `/uploads/${file.filename}` })
+    const fp = path.join(uploadDir, file.filename)
+    try {
+      const result = await compressHeroVideoOnDisk(fp)
+      if (result.beforeBytes && result.afterBytes && result.afterBytes < result.beforeBytes) {
+        console.log(
+          `[hero-upload] compressed ${file.filename}: ${Math.round(result.beforeBytes / 1024 / 1024)}MB → ${Math.round(result.afterBytes / 1024 / 1024)}MB`,
+        )
+      }
+    } catch (e) {
+      console.warn('[hero-upload] compress skipped:', e)
+    }
+    const outName =
+      file.filename.endsWith('.mov') && fs.existsSync(fp.replace(/\.mov$/i, '.mp4'))
+        ? file.filename.replace(/\.mov$/i, '.mp4')
+        : file.filename
+    return res.json({ url: `/uploads/${outName}` })
   })
 })
 
 // Получить настройки
 router.get('/', cachePublicGet(PUBLIC_CACHE_SETTINGS_SEC), async (req, res) => {
   try {
+    const cacheable = !req.headers.authorization
+    if (cacheable) {
+      const hit = getCached<Record<string, unknown>>(SETTINGS_CACHE_KEY)
+      if (hit) {
+        res.json(hit)
+        return
+      }
+    }
+
     let settings = await prisma.siteSetting.findUnique({ where: { id: 1 } })
     if (!settings) {
       settings = await prisma.siteSetting.create({ data: defaultSettings })
     }
-    res.json(enrichSettingsResponse(settings as Record<string, unknown>))
+    const payload = enrichSettingsResponse(settings as Record<string, unknown>)
+    if (cacheable) setCached(SETTINGS_CACHE_KEY, payload, PUBLIC_CACHE_SETTINGS_SEC)
+    res.json(payload)
   } catch (error) {
     console.error('Error fetching settings:', error)
     res.status(500).json({ error: 'Error fetching settings' })
@@ -574,6 +622,9 @@ router.post('/', checkAdmin, async (req, res) => {
     if (bonusCashbackPercent != null && !Number.isNaN(bonusCashbackPercent)) {
       update.bonusCashbackPercent = clampCashbackPercent(bonusCashbackPercent)
     }
+    if (b.cardOnlineEnabled !== undefined) {
+      update.cardOnlineEnabled = Boolean(b.cardOnlineEnabled)
+    }
 
     const cleanUpdate = Object.fromEntries(
       Object.entries(update).filter(([, v]) => v !== undefined)
@@ -595,6 +646,7 @@ router.post('/', checkAdmin, async (req, res) => {
       update: cleanUpdate,
       create: { ...defaultSettings, ...cleanUpdate },
     })
+    clearCachedKey(SETTINGS_CACHE_KEY)
     res.json(enrichSettingsResponse(settings as Record<string, unknown>))
   } catch (error) {
     console.error('Error saving settings:', error)

@@ -21,6 +21,8 @@ const nextConfig = {
   // Меньше нативных file watchers (на macOS часто EMFILE); плюс npm script с WATCHPACK_POLLING
   webpack: (config, { dev }) => {
     if (dev) {
+      // Стабільніше для dev: прибирає eval-source-map, який інколи ламає чанки/HMR (Safari/Chrome).
+      config.devtool = 'cheap-module-source-map';
       // Персистентний (filesystem) кеш Webpack + HMR/concurrently давали зламані чанки:
       // «Cannot find module './vendor-chunks/next.js'», 404 на /_next/static/*.
       // У dev вимикаємо кеш — збірка трохи повільніша, зате стабільна.
@@ -39,6 +41,8 @@ const nextConfig = {
         aggregateTimeout: 300,
         ignored: ['**/node_modules/**', '**/.git/**', '**/.next/**'],
       };
+      // layout.js з 30+ CSS/шрифтами — перша збірка може тривати 10–15 с; дефолтний timeout дає ChunkLoadError.
+      config.output = { ...config.output, chunkLoadTimeout: 300000 };
     }
     return config;
   },
@@ -50,7 +54,7 @@ const nextConfig = {
   // Оптимизация изображений
   images: {
     formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     /** 30 діб кеша оптимізованих варіантів — Next переоптимізує тільки коли джерело змінилось. */
     minimumCacheTTL: 60 * 60 * 24 * 30,
@@ -63,14 +67,27 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
 
   /**
-   * `optimizePackageImports` ВКЛЮЧЕНО ТІЛЬКИ ДЛЯ `lucide-react`:
-   * це безпечний пакет (named exports тільки прості React-компоненти).
-   * Раніше у списку були `react-hot-toast` / `sonner` / `date-fns` — Next 14.2 barrel optimizer
+   * Прибираємо console.* з production-бандла (лишаємо error/warn для діагностики на проді).
+   * У dev нічого не чіпаємо — логи лишаються. Менший JS + менше роботи в main thread у клієнта.
+   */
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+
+  /**
+   * `optimizePackageImports` — тільки безпечні пакети з простими named exports:
+   * `lucide-react` (іконки) та `recharts` (тільки в lazy admin-дешборді — великий пакет,
+   * tree-shaking прибирає невикористані графіки з admin-чанку).
+   * НЕ додавати сюди `react-hot-toast` / `sonner` / `date-fns` — Next 14.2 barrel optimizer
    * для них іноді віддавав `undefined` замість named export (`Toaster`),
    * що валило сторінку через `Unsupported Server Component type: undefined`.
+   * framer-motion не потрібен у списку: публічні сторінки використовують `m` + `LazyMotion`
+   * (рушій анімацій вантажиться окремим async-чанком через lib/framerLazyFeatures).
    */
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    // У dev barrel-optimizer інколи ламає HMR/чанки (ChunkLoadError, cannot find module vendor-chunks/*).
+    // У production залишаємо для меншого бандла; у development вимикаємо заради стабільності.
+    optimizePackageImports: process.env.NODE_ENV === 'production' ? ['lucide-react', 'recharts'] : [],
     /** Довше тримати prefetched RSC у клієнті — повторні переходи майже без затримки. */
     staleTimes: {
       dynamic: 300,
@@ -78,6 +95,16 @@ const nextConfig = {
     },
   },
   
+  async redirects() {
+    return [
+      {
+        source: '/menu/category/:slug',
+        destination: '/menu?cat=:slug',
+        permanent: true,
+      },
+    ];
+  },
+
   async rewrites() {
     // Локальна вёрстка без Express: middleware + route handlers, без проксі на :5000
     if (process.env.USE_LOCAL_MOCK === '1') {
@@ -116,10 +143,20 @@ const nextConfig = {
       { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
     ];
 
-    const heroVideoHeaders = [
-      { key: 'Cache-Control', value: 'public, max-age=604800, immutable' },
-      { key: 'Accept-Ranges', value: 'bytes' },
-    ];
+    const heroVideoHeaders = isDev
+      ? [
+          { key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' },
+          { key: 'Accept-Ranges', value: 'bytes' },
+          { key: 'Content-Type', value: 'video/mp4' },
+        ]
+      : [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable, stale-while-revalidate=86400',
+          },
+          { key: 'Accept-Ranges', value: 'bytes' },
+          { key: 'Content-Type', value: 'video/mp4' },
+        ];
 
     /** 1 рік immutable — стандартний шаблон для /_next/static у prod. Підходить будь-яким assets у /public, які не міняються. */
     const longImmutable = [
@@ -129,7 +166,17 @@ const nextConfig = {
     return [
       // Спочатку явні шляхи — щоб Cache-Control для чанків не «губився» після catch-all
       { source: '/_next/static/:path*', headers: nextStaticCache },
+      // Service worker не кешуємо — інакше браузер не побачить оновлену логіку SW.
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      { source: '/offline.html', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
       { source: '/watta-sushi-2-hero.mp4', headers: heroVideoHeaders },
+      { source: '/menu-hero-keeping-safe-road-ready.mp4', headers: heroVideoHeaders },
       { source: '/watta-home-hero-poster.jpg', headers: longImmutable },
       /* Картинки/іконки — імутабельні. При заміні файлу — оновити ім'я або bust через query. */
       { source: '/logo.png', headers: longImmutable },
@@ -146,7 +193,12 @@ const nextConfig = {
       { source: '/location-picker-mascot.png', headers: longImmutable },
       {
         source: '/uploads/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=300, must-revalidate' }],
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=604800, stale-while-revalidate=86400',
+          },
+        ],
       },
       // Не кешировать API: иначе CDN/edge отдаёт чужие или устаревшие 401/403 и ломает админку.
       {

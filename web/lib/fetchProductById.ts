@@ -83,6 +83,23 @@ function dispatchDetailCached(id: number): void {
   )
 }
 
+/** Скидає кеш сторінки товару після змін у адмінці — щоб не лишались старі фото/текст. */
+export function purgeProductClientCaches(): void {
+  memoryDetailCache.clear()
+  warmupInflight.clear()
+  prefetchingIds.clear()
+  if (typeof sessionStorage === 'undefined') return
+  for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
+    const key = sessionStorage.key(i)
+    if (
+      key?.startsWith(PRODUCT_DETAIL_PREFIX) ||
+      key?.startsWith(PRODUCT_PRIME_PREFIX)
+    ) {
+      sessionStorage.removeItem(key)
+    }
+  }
+}
+
 /** Повний товар з API (інгредієнти, категорія, галерея) — памʼять + sessionStorage. */
 export function writeProductDetailCache(row: Record<string, unknown>): void {
   const id = Number(row.id)
@@ -236,6 +253,56 @@ export function prefetchProductById(id: number): void {
   if (cached && hasIngredients(cached)) return
   prefetchingIds.add(id)
   void warmupProductDetail(id)
+}
+
+function pickMenuRowName(row: Record<string, unknown>): string {
+  for (const key of ['name_ua', 'name_en', 'name_ru', 'name_nl', 'name']) {
+    const v = row[key]
+    if (typeof v === 'string' && v.trim()) return v.trim()
+  }
+  return ''
+}
+
+function pickMenuRowDescription(row: Record<string, unknown>): string {
+  for (const key of ['description_ua', 'description_en', 'description_ru', 'description_nl', 'description']) {
+    const v = row[key]
+    if (typeof v === 'string') return v
+  }
+  return ''
+}
+
+/** RSC + API + snapshot з кешу меню — до кліку по /product/:id. */
+export function warmProductRouteData(id: number): void {
+  if (typeof window === 'undefined' || !Number.isFinite(id) || id <= 0) return
+  prefetchProductById(id)
+  const cached = readProductDetailCache(id)
+  if (cached && hasIngredients(cached)) return
+  const fromMenu = findProductInMenuSessionCaches(id)
+  if (!fromMenu) return
+  const name = pickMenuRowName(fromMenu)
+  if (!name) return
+  primeProductPageCache({
+    id,
+    name,
+    description: pickMenuRowDescription(fromMenu),
+    price: Number(fromMenu.price) || 0,
+    imageUrl: typeof fromMenu.imageUrl === 'string' ? fromMenu.imageUrl : undefined,
+    promoDiscountPercent: Number(fromMenu.promoDiscountPercent) || 0,
+  })
+}
+
+export function parseProductIdFromHref(href: string): number | null {
+  const m = href.match(/^\/product\/(\d+)(?:\/|$|\?)/)
+  if (!m) return null
+  const id = parseInt(m[1]!, 10)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
+
+/** Slug категорії з кешу товару — для підсвітки стрічки категорій без зайвого fetch. */
+export function readProductCategorySlugFromCache(id: number): string | null {
+  const row = readProductFromClientCache(id)
+  const slug = (row?.category as { slug?: string } | undefined)?.slug
+  return typeof slug === 'string' && slug.trim() ? slug.trim() : null
 }
 
 /** Кеш меню, detail з API або snapshot з картки — синхронно. */

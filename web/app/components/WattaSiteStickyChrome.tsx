@@ -1,9 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { getAuthUrl, isUserLoggedIn } from '@/lib/authGate'
+import { openWattaCart } from '@/lib/openWattaCart'
+import { useOptionalCartDrawer } from '../context/CartDrawerContext'
+import WattaChromeCompactBack from './WattaChromeCompactBack'
+import WattaChromeCompactCart from './WattaChromeCompactCart'
 import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
 import WattaStickyChromeLayout from './WattaStickyChromeLayout'
@@ -23,31 +26,16 @@ export default function WattaSiteStickyChrome({
   flowHeightMaxPx = 480,
 }: Props) {
   const router = useInstantRouter()
+  const cartDrawer = useOptionalCartDrawer()
   const pathname = usePathname() || '/'
   const isHome = pathname === '/'
-  /** Hero-відео лише на головній — категорії «над» роликом. Інші сторінки: текст нижче панелі категорій. */
-  const isHeroOverlayPage = isHome
+  const isMenuHeroPage = pathname === '/menu' || pathname.startsWith('/menu/')
+  /** Hero photo-first: головна та /menu — контент під fixed chrome без стрибка anchor. */
+  const isHeroOverlayPage = isHome || isMenuHeroPage
   const isChromeHeroPage = isHeroOverlayPage || pathname === '/contacts'
-  /** ≥768: категорії «над» hero; телефон — повний резерв шапка+чіпи, контент нижче панелі. */
-  const isDesktopViewport = useSyncExternalStore(
-    (onStoreChange) => {
-      if (typeof window === 'undefined') return () => {}
-      const mq = window.matchMedia('(min-width: 768px)')
-      const handler = () => onStoreChange()
-      mq.addEventListener('change', handler)
-      return () => mq.removeEventListener('change', handler)
-    },
-    () =>
-      typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : false,
-    () => false,
-  )
-  /** Головна та hero-сторінки: точний резерв під fixed chrome — відео одразу під категоріями. */
-  const chromeFlowFudgePx =
-    pathname === '/cart'
-      ? Math.max(flowHeightFudgePx, 16)
-      : isChromeHeroPage
-        ? 12
-        : flowHeightFudgePx
+  /** Головна та hero-сторінки: точний резерв під fixed chrome. */
+  const chromeFlowFudgePx = isChromeHeroPage ? 12 : flowHeightFudgePx
+  const chromeFlowSafetyPx = 0
   const [homeDeliveryEmbed, setHomeDeliveryEmbed] = useState(false)
 
   useEffect(() => {
@@ -89,12 +77,18 @@ export default function WattaSiteStickyChrome({
     router.push('/')
   }, [isHome, router])
 
+  const onCartClick = useCallback(
+    () => openWattaCart(router, cartDrawer?.open),
+    [router, cartDrawer],
+  )
+
   return (
     <WattaStickyChromeLayout
       chromeClassName="watta-full-menu-sticky-chrome"
       flowHeightFudgePx={chromeFlowFudgePx}
       flowHeightMaxPx={flowHeightMaxPx}
-      flowAnchorHeaderOnly={isHeroOverlayPage && isDesktopViewport}
+      flowAnchorSafetyPx={chromeFlowSafetyPx}
+      flowAnchorHeaderOnly={false}
     >
       <div className="watta-chrome-top-band-web">
         <WattaGlobalSiteHeader
@@ -102,21 +96,15 @@ export default function WattaSiteStickyChrome({
           onCityChange={onCityChange}
           deliveryEmbeddedActive={isHome && homeDeliveryEmbed}
           onPromotionsClick={onPromotionsClick}
-          onCartClick={() =>
-            router.push(isUserLoggedIn() ? '/cart' : getAuthUrl('/cart'))
-          }
+          onCartClick={onCartClick}
           onMenuClick={onMenuClick}
-          onProfileClick={() =>
-            router.push(isUserLoggedIn() ? '/profile' : getAuthUrl('/profile'))
-          }
-          onFavoritesClick={() =>
-            router.push(isUserLoggedIn() ? '/favorites' : getAuthUrl('/favorites'))
-          }
           onLogoClick={onLogoClick}
         />
       </div>
       <div className="watta-chrome-categories-row-web">
+        <WattaChromeCompactBack />
         <WattaMenuCategoryStrip />
+        <WattaChromeCompactCart />
       </div>
     </WattaStickyChromeLayout>
   )

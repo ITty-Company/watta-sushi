@@ -1,19 +1,34 @@
 /**
- * Локальні шрифти через Fontsource — без запитів до fonts.gstatic.com під час `next build`
- * (на Render / CI мережа до Google інколи падає).
+ * Локальні шрифти через Fontsource — без запитів до fonts.gstatic.com під час `next build`.
+ * Тільки latin + cyrillic (UA/EN UI) — без vietnamese/greek/cyrillic-ext тощо (~60% менше woff2).
  */
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
-import '@fontsource/inter/800.css';
-import '@fontsource/inter/900.css';
-import '@fontsource/cormorant-garamond/300.css';
-import '@fontsource/cormorant-garamond/400.css';
-import '@fontsource/cormorant-garamond/500.css';
-import '@fontsource/cormorant-garamond/600.css';
-import '@fontsource/cormorant-garamond/700.css';
-import '@fontsource/playfair-display/400.css';
-import '@fontsource/playfair-display/600.css';
-import '@fontsource/playfair-display/700.css';
-import '@fontsource/marck-script/400.css';
+import '@fontsource/inter/cyrillic-400.css'
+import '@fontsource/inter/latin-400.css'
+import '@fontsource/inter/cyrillic-500.css'
+import '@fontsource/inter/latin-500.css'
+import '@fontsource/inter/cyrillic-600.css'
+import '@fontsource/inter/latin-600.css'
+import '@fontsource/inter/cyrillic-700.css'
+import '@fontsource/inter/latin-700.css'
+import '@fontsource/inter/cyrillic-800.css'
+import '@fontsource/inter/latin-800.css'
+import '@fontsource/inter/cyrillic-900.css'
+import '@fontsource/inter/latin-900.css'
+import '@fontsource/cormorant-garamond/cyrillic-300.css'
+import '@fontsource/cormorant-garamond/latin-300.css'
+import '@fontsource/cormorant-garamond/cyrillic-400.css'
+import '@fontsource/cormorant-garamond/latin-400.css'
+import '@fontsource/cormorant-garamond/cyrillic-500.css'
+import '@fontsource/cormorant-garamond/latin-500.css'
+import '@fontsource/cormorant-garamond/cyrillic-600.css'
+import '@fontsource/cormorant-garamond/latin-600.css'
+import '@fontsource/cormorant-garamond/cyrillic-700.css'
+import '@fontsource/cormorant-garamond/latin-700.css'
+import '@fontsource/playfair-display/cyrillic-400.css'
+import '@fontsource/playfair-display/latin-400.css'
+import '@fontsource/playfair-display/cyrillic-600.css'
+import '@fontsource/playfair-display/latin-600.css'
+import '@fontsource/playfair-display/cyrillic-700.css'
+import '@fontsource/playfair-display/latin-700.css'
+import '@fontsource/marck-script/cyrillic-400.css'
+import '@fontsource/marck-script/latin-400.css'

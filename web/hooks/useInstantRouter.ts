@@ -4,13 +4,26 @@ import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { startTransition } from 'react'
-import { normalizeInternalHref, prefetchHref } from '@/lib/instantNav'
+import {
+  isInstantNavPath,
+  normalizeInternalHref,
+  prefetchHref,
+} from '@/lib/instantNav'
+import { tryOpenAuthModalFromHref } from '@/lib/openWattaAuth'
 
 type NavigateOptions = Parameters<AppRouterInstance['push']>[1]
 
-/**
- * Drop-in для useRouter: push/replace через startTransition + prefetch.
- */
+function markSkipBootSplashForHome(href: string): void {
+  if (typeof document === 'undefined') return
+  const pathOnly = href.split('?')[0] || href
+  if (pathOnly !== '/' && pathOnly !== '') return
+  try {
+    document.documentElement.setAttribute('data-watta-skip-splash', '1')
+    document.documentElement.removeAttribute('data-watta-boot-splash-pending')
+  } catch {
+    /* ignore */
+  }
+}
 export function useInstantRouter(): AppRouterInstance {
   const router = useRouter()
 
@@ -20,14 +33,22 @@ export function useInstantRouter(): AppRouterInstance {
       push: (href: string, options?: NavigateOptions) => {
         const target = normalizeInternalHref(href)
         if (!target) return
+        if (tryOpenAuthModalFromHref(target)) return
+        markSkipBootSplashForHome(target)
         prefetchHref(router, target)
-        startTransition(() => router.push(target, options))
+        const push = () => router.push(target, options)
+        if (isInstantNavPath(target)) push()
+        else startTransition(push)
       },
       replace: (href: string, options?: NavigateOptions) => {
         const target = normalizeInternalHref(href)
         if (!target) return
+        if (tryOpenAuthModalFromHref(target)) return
+        markSkipBootSplashForHome(target)
         prefetchHref(router, target)
-        startTransition(() => router.replace(target, options))
+        const replace = () => router.replace(target, options)
+        if (isInstantNavPath(target)) replace()
+        else startTransition(replace)
       },
       prefetch: (href: string, options?: Parameters<AppRouterInstance['prefetch']>[1]) => {
         const target = normalizeInternalHref(href)

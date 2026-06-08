@@ -1,0 +1,721 @@
+/* /profile/order/[id]/receipt — чек оплати в стилі профілю та checkout success */
+
+.watta-order-receipt-page {
+  display: flex;
+  min-height: var(--watta-screen-min-h, 100dvh);
+  flex: 1 1 auto;
+  flex-direction: column;
+  background: #ffffff !important;
+}
+
+.watta-order-receipt-page__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-width: 640px;
+  flex-direction: column;
+  margin: 0 auto;
+  padding:
+    clamp(0.65rem, 2vw, 0.85rem)
+    clamp(0.85rem, 3.5vw, 1.25rem)
+    max(1.25rem, env(safe-area-inset-bottom, 0px));
+  gap: clamp(0.85rem, 2.5vw, 1.15rem);
+}
+
+@media (min-width: 640px) {
+  .watta-order-receipt-page__content {
+    max-width: 720px;
+    padding-top: clamp(1rem, 2.5vw, 1.35rem);
+  }
+}
+
+.watta-order-receipt-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: flex-start;
+  padding: 0.45rem 0.75rem 0.45rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 81, 66, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #145142;
+  text-decoration: none;
+  box-shadow: 0 4px 14px -8px rgba(20, 81, 66, 0.18);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.watta-order-receipt-page__back:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .watta-order-receipt-page__back:hover {
+    background: rgba(244, 250, 247, 0.98);
+    border-color: rgba(20, 81, 66, 0.22);
+  }
+}
+
+.watta-order-receipt-page__back svg {
+  flex-shrink: 0;
+}
+
+/* ——— Hero + ілюстрація ——— */
+.watta-order-receipt-page__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.watta-order-receipt-page__hero-title {
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.35rem, 4.5vw, 1.75rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #145142;
+}
+
+.watta-order-receipt-page__hero-order {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: rgba(20, 81, 66, 0.62);
+}
+
+.watta-order-receipt-page__hero-order span {
+  color: #ff6b35;
+  font-weight: 800;
+}
+
+/* Ілюстрація */
+.watta-order-receipt__art {
+  width: min(100%, 16.5rem);
+  margin: 0 auto;
+}
+
+.watta-order-receipt__scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 248 / 180;
+  overflow: visible;
+}
+
+.watta-order-receipt__blob-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.watta-order-receipt__blob {
+  fill: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 12%, #f4faf0);
+}
+
+.watta-order-receipt__card {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 2;
+  width: 52%;
+  min-width: 7.5rem;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  border-radius: 12px;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0.55rem 0.6rem 0.65rem;
+  box-shadow:
+    0 14px 32px -12px rgba(20, 81, 66, 0.22),
+    0 2px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.watta-order-receipt__card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.watta-order-receipt__card-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 7px;
+  color: #ff5c00;
+  background: #fff5ee;
+}
+
+.watta-order-receipt__card-ico svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.watta-order-receipt__card-kicker {
+  display: block;
+  flex: 1 1 auto;
+  height: 0.35rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(20, 81, 66, 0.14), rgba(20, 81, 66, 0.05));
+}
+
+.watta-order-receipt__card-sushi {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.watta-order-receipt__card-sushi img {
+  width: 1.65rem;
+  height: 1.65rem;
+  object-fit: contain;
+}
+
+.watta-order-receipt__card-line {
+  display: block;
+  height: 0.28rem;
+  border-radius: 3px;
+  background: rgba(20, 81, 66, 0.08);
+  margin-bottom: 0.22rem;
+}
+
+.watta-order-receipt__card-line--short {
+  width: 68%;
+}
+
+.watta-order-receipt__card-total {
+  display: block;
+  width: 42%;
+  height: 0.38rem;
+  margin-top: 0.15rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #145142, #1a6b58);
+}
+
+.watta-order-receipt__status-badge {
+  position: absolute;
+  right: 14%;
+  top: 18%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 999px;
+  color: #ffffff;
+  box-shadow:
+    0 8px 22px rgba(20, 81, 66, 0.28),
+    0 0 0 3px rgba(255, 255, 255, 0.92);
+}
+
+.watta-order-receipt__status-badge--paid {
+  background: linear-gradient(145deg, #145142 0%, #1a6b58 100%);
+}
+
+.watta-order-receipt__status-badge--waiting {
+  background: linear-gradient(145deg, #d97706 0%, #f59e0b 100%);
+}
+
+.watta-order-receipt__status-badge--failed {
+  background: linear-gradient(145deg, #b91c1c 0%, #dc2626 100%);
+}
+
+.watta-order-receipt__status-badge svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.watta-order-receipt__roll {
+  position: absolute;
+  z-index: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(20, 81, 66, 0.14));
+}
+
+.watta-order-receipt__roll--left {
+  left: 4%;
+  bottom: 8%;
+  width: 3.25rem;
+  height: 3.25rem;
+  transform: rotate(-18deg);
+}
+
+.watta-order-receipt__roll--right {
+  right: 6%;
+  bottom: 12%;
+  width: 2.85rem;
+  height: 2.85rem;
+  transform: rotate(14deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .watta-order-receipt__status-badge {
+    animation: wattaOrderReceiptBadgeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+  }
+}
+
+@keyframes wattaOrderReceiptBadgeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  70% {
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ——— Основна картка ——— */
+.watta-order-receipt-page__card {
+  border-radius: 1.35rem;
+  border: 1px solid rgba(20, 81, 66, 0.1);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 20px 60px rgba(20, 81, 66, 0.1),
+    0 4px 16px rgba(20, 81, 66, 0.05);
+  overflow: hidden;
+}
+
+.watta-order-receipt-page__status-band {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+@media (min-width: 480px) {
+  .watta-order-receipt-page__status-band {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.35rem;
+  }
+}
+
+.watta-order-receipt-page__status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.watta-order-receipt-page__status-pill--paid {
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.watta-order-receipt-page__status-pill--waiting {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+}
+
+.watta-order-receipt-page__status-pill--failed {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+
+.watta-order-receipt-page__status-pill svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
+.watta-order-receipt-page__status-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(20, 81, 66, 0.68);
+}
+
+.watta-order-receipt-page__status-hint--waiting {
+  color: rgba(146, 64, 14, 0.88);
+}
+
+.watta-order-receipt-page__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.85rem 1.15rem 0;
+}
+
+@media (min-width: 480px) {
+  .watta-order-receipt-page__meta-row {
+    padding: 0.85rem 1.35rem 0;
+  }
+}
+
+.watta-order-receipt-page__meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #145142;
+  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 8%, #ffffff);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+}
+
+.watta-order-receipt-page__meta-chip svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  color: #5c9010;
+}
+
+/* ——— Позиції ——— */
+.watta-order-receipt-page__section {
+  padding: 1rem 1.15rem;
+}
+
+@media (min-width: 480px) {
+  .watta-order-receipt-page__section {
+    padding: 1.1rem 1.35rem;
+  }
+}
+
+.watta-order-receipt-page__section-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.55);
+}
+
+.watta-order-receipt-page__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(20, 81, 66, 0.08);
+  background: #fafcfb;
+  overflow: hidden;
+}
+
+.watta-order-receipt-page__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(20, 81, 66, 0.06);
+}
+
+.watta-order-receipt-page__item:last-child {
+  border-bottom: none;
+}
+
+.watta-order-receipt-page__item-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  background: #f3f5f4;
+  border: 1px solid rgba(20, 81, 66, 0.08);
+}
+
+.watta-order-receipt-page__item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watta-order-receipt-page__item-thumb--emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.watta-order-receipt-page__item-body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.watta-order-receipt-page__item-name {
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #111827;
+}
+
+.watta-order-receipt-page__item-qty {
+  display: inline-flex;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(20, 81, 66, 0.72);
+  background: rgba(20, 81, 66, 0.07);
+  vertical-align: middle;
+}
+
+.watta-order-receipt-page__item-price {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #145142;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ——— Підсумки ——— */
+.watta-order-receipt-page__totals {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  background: linear-gradient(180deg, #f4faf7 0%, #ffffff 100%);
+  border: 1px solid rgba(20, 81, 66, 0.1);
+}
+
+.watta-order-receipt-page__totals-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+  font-size: 0.8125rem;
+  color: rgba(20, 81, 66, 0.72);
+}
+
+.watta-order-receipt-page__totals-row dd {
+  margin: 0;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.watta-order-receipt-page__totals-row--bonus dd {
+  color: #059669;
+}
+
+.watta-order-receipt-page__totals-grand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.45rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed rgba(20, 81, 66, 0.18);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #111827;
+}
+
+.watta-order-receipt-page__totals-grand dd {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #145142;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ——— Деталі замовлення ——— */
+.watta-order-receipt-page__details {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0 1.15rem 1.15rem;
+}
+
+@media (min-width: 480px) {
+  .watta-order-receipt-page__details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0 1.35rem 1.35rem;
+  }
+}
+
+.watta-order-receipt-page__detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.watta-order-receipt-page__detail-ico {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.55rem;
+  color: #145142;
+  background: rgba(20, 81, 66, 0.08);
+}
+
+.watta-order-receipt-page__detail-ico svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.watta-order-receipt-page__detail-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.5);
+  margin-bottom: 0.1rem;
+}
+
+.watta-order-receipt-page__detail-value {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ——— Дії ——— */
+.watta-order-receipt-page__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 1.15rem 1.15rem;
+}
+
+@media (min-width: 480px) {
+  .watta-order-receipt-page__actions {
+    flex-direction: row;
+    padding: 0 1.35rem 1.35rem;
+  }
+}
+
+.watta-order-receipt-page__btn {
+  display: inline-flex;
+  min-height: 2.85rem;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.85rem;
+  padding: 0.7rem 1.15rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    transform 0.12s ease,
+    filter 0.15s ease,
+    background 0.15s ease;
+}
+
+.watta-order-receipt-page__btn:active {
+  transform: scale(0.98);
+}
+
+.watta-order-receipt-page__btn--primary {
+  border: none;
+  color: #ffffff;
+  background: var(--watta-brand-action);
+}
+
+@media (hover: hover) {
+  .watta-order-receipt-page__btn--primary:hover {
+    background: var(--watta-brand-action-hover);
+  }
+}
+
+.watta-order-receipt-page__btn--ghost {
+  border: 2px solid rgba(20, 81, 66, 0.14);
+  color: #145142;
+  background: #ffffff;
+}
+
+/* ——— Стани завантаження / помилки ——— */
+.watta-order-receipt-page__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.watta-order-receipt-page__skeleton-block {
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #f3f5f4 0%, #ecefee 50%, #f3f5f4 100%);
+  background-size: 200% 100%;
+  animation: wattaOrderReceiptShimmer 1.4s ease-in-out infinite;
+}
+
+.watta-order-receipt-page__skeleton-block--hero {
+  height: 9rem;
+}
+
+.watta-order-receipt-page__skeleton-block--card {
+  height: 22rem;
+}
+
+@keyframes wattaOrderReceiptShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.watta-order-receipt-page__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.65rem;
+  padding: 2rem 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.watta-order-receipt-page__error svg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.watta-order-receipt-page__error p {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-order-receipt-page__skeleton-block {
+    animation: none;
+  }
+
+  .watta-order-receipt__status-badge {
+    animation: none;
+  }
+}

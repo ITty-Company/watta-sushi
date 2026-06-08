@@ -1,14 +1,21 @@
 'use client'
 
+import '../promotions-page-theme.css'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import toast from 'react-hot-toast'
 import { addToCartWithAuthGate } from '@/lib/cartStorage'
-import { ArrowLeft } from 'lucide-react'
+import type { MenuAddToCartResult } from '@/hooks/useMenuAddToCart'
+import { ArrowLeft, ArrowRight, ShoppingBag } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { promoGalleryUrls, promoTpl, type PromoListItem } from '@/app/lib/promoDisplay'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
+import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'
+import type { WattaLanguage } from '@/lib/i18n/language'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
+import { WattaInViewFadeDiv, WattaInViewFadeSection } from './WattaInViewFade'
+import WattaPageHeroStagger from './WattaPageHeroStagger'
+import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 
 interface OfferProduct {
   id: number
@@ -52,6 +59,22 @@ function PromoDetailBackButton({ label, onBack, inline }: { label: string; onBac
   )
 }
 
+function formatDetailDate(iso: string | undefined, lang: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  if (lang === 'en') {
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+  if (lang === 'nl') {
+    return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const y = d.getFullYear()
+  return `${day}.${month}.${y}`
+}
+
 function PromoDetailSkeleton() {
   return (
     <article className="watta-promo-detail-card watta-promo-detail-card--skeleton" aria-hidden>
@@ -79,7 +102,7 @@ export default function PromotionsDetailView({
   embedded = false,
   id,
   onBack,
-  onMenuClick: _onMenuClick,
+  onMenuClick,
   onOpenPhone: _onOpenPhone,
   onOpenNotifications: _onOpenNotifications,
   onOpenFavorites: _onOpenFavorites,
@@ -116,7 +139,7 @@ export default function PromotionsDetailView({
   }, [loading, promo, onBack])
 
   const addOfferToCart = useCallback(
-    (product: OfferProduct) => {
+    (product: OfferProduct): MenuAddToCartResult | void => {
       if (typeof window === 'undefined' || !window.localStorage) return
       const pct = Math.min(100, Math.max(0, Math.round(Number(product.offerDiscountPercent) || 0)))
       const base = Number(product.price) || 0
@@ -139,12 +162,12 @@ export default function PromotionsDetailView({
       })
       if (result === 'max') {
         toast.error(t.appToasts.maxCartQty)
-        return
+        return 'max'
       }
-      if (result === 'auth_redirect') return
-      toast.success(t.addToCart)
+      if (result === 'auth_redirect') return 'auth_redirect'
+      return 'ok'
     },
-    [getLocalized, router, t.addToCart, t.appToasts.maxCartQty, t.categories, language],
+    [getLocalized, router, t.appToasts.maxCartQty, t.categories, language],
   )
 
   if (loading) {
@@ -170,6 +193,20 @@ export default function PromotionsDetailView({
 
   const gallery = promoGalleryUrls(promo)
   const offerProducts: OfferProduct[] = Array.isArray(promo.offerProducts) ? promo.offerProducts : []
+  const categoryLabel =
+    typeof promo.categoryLabel === 'string' && promo.categoryLabel ? promo.categoryLabel : p.defaultCategoryTag
+  const dateStr =
+    typeof promo.displayDate === 'string' && promo.displayDate
+      ? promo.displayDate
+      : formatDetailDate(promo.createdAt, language)
+  const proseText = promo.content || promo.description || ''
+  const leadParagraph = proseText.split(/\n\n|\n/).find((line) => line.trim()) ?? proseText
+  const restParagraphs = proseText
+    .split(/\n\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .slice(1)
+    .join('\n\n')
 
   return (
     <div
@@ -183,37 +220,94 @@ export default function PromotionsDetailView({
         <PromoDetailBackButton label={t.auth.back} onBack={onBack} inline={embedded} />
       </div>
 
-      <div className="watta-promotions-page__inner">
+      <div className="watta-promotions-page__inner watta-promotions-page__inner--detail">
         <article className="watta-promo-detail-card">
-          {gallery.length > 0 && (
-            <div className="watta-promo-detail-card__gallery" aria-label={p.galleryAria}>
-              <div className="watta-promo-detail-card__gallery-track">
-                {gallery.map((url, i) => (
-                  <div key={`${url}-${i}`} className="watta-promo-detail-card__slide">
-                    <img src={url} alt="" className="watta-promo-detail-card__slide-img" loading={i === 0 ? 'eager' : 'lazy'} />
-                    {promo.isHit && i === 0 ? (
-                      <span className="watta-promo-card__hit watta-promo-detail-card__hit">{p.hitBadge}</span>
-                    ) : null}
+          {gallery.length > 0 ? (
+            <WattaInViewFadeDiv className="watta-promo-detail-card__hero">
+              <div className="watta-promo-detail-card__hero-frame" aria-label={p.galleryAria}>
+                <img
+                  src={gallery[0]}
+                  alt=""
+                  className="watta-promo-detail-card__hero-img"
+                  loading="eager"
+                />
+                <div className="watta-promo-detail-card__hero-shade" aria-hidden />
+                {promo.isHit ? (
+                  <span className="watta-promo-card__hit watta-promo-detail-card__hero-hit">{p.hitBadge}</span>
+                ) : null}
+                <div className="watta-promo-detail-card__hero-caption">
+                  <div className="watta-promo-detail-card__meta watta-promo-detail-card__meta--hero">
+                    <span className="watta-promo-detail-card__category">{categoryLabel}</span>
+                    {dateStr ? <time className="watta-promo-detail-card__date">{dateStr}</time> : null}
                   </div>
-                ))}
+                  <WattaPageHeroStagger
+                    title={promo.title}
+                    titleClassName="watta-promo-detail-card__title watta-promo-detail-card__title--hero home-after-hero-intro-title-web"
+                  />
+                </div>
               </div>
               {gallery.length > 1 ? (
-                <p className="watta-promo-detail-card__gallery-hint">
-                  {promoTpl(p.morePhotosBadge, { count: gallery.length - 1 })}
-                </p>
+                <div className="watta-promo-detail-card__gallery-strip">
+                  <div className="watta-promo-detail-card__gallery-track">
+                    {gallery.slice(1).map((url, i) => (
+                      <div key={`${url}-${i}`} className="watta-promo-detail-card__slide watta-promo-detail-card__slide--thumb">
+                        <img src={url} alt="" className="watta-promo-detail-card__slide-img" loading="lazy" />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="watta-promo-detail-card__gallery-hint">
+                    {promoTpl(p.morePhotosBadge, { count: gallery.length - 1 })}
+                  </p>
+                </div>
               ) : null}
-            </div>
+            </WattaInViewFadeDiv>
+          ) : (
+            <WattaInViewFadeDiv className="watta-promo-detail-card__content watta-promo-detail-card__content--no-hero">
+              <div className="watta-promo-detail-card__meta">
+                <span className="watta-promo-detail-card__category">{categoryLabel}</span>
+                {dateStr ? <time className="watta-promo-detail-card__date">{dateStr}</time> : null}
+              </div>
+              <WattaPageHeroStagger
+                title={promo.title}
+                titleClassName="watta-promo-detail-card__title home-after-hero-intro-title-web"
+              />
+              <div className="watta-promo-detail-card__title-accent" aria-hidden />
+            </WattaInViewFadeDiv>
           )}
 
-          <div className="watta-promo-detail-card__content">
-            <h1 className="watta-promo-detail-card__title home-after-hero-intro-title-web">{promo.title}</h1>
-            <div className="watta-promo-detail-card__prose home-after-hero-intro-body-web">
-              {promo.content || promo.description}
+          <WattaInViewFadeDiv
+            className={`watta-promo-detail-card__content${gallery.length > 0 ? ' watta-promo-detail-card__content--overlap' : ''}`}
+          >
+            {gallery.length === 0 ? null : (
+              <>
+                <div className="watta-promo-detail-card__title-accent watta-promo-detail-card__title-accent--inset" aria-hidden />
+              </>
+            )}
+
+            {leadParagraph ? (
+              <blockquote className="watta-promo-detail-card__lead">{leadParagraph}</blockquote>
+            ) : null}
+
+            {restParagraphs ? (
+              <div className="watta-promo-detail-card__prose home-after-hero-intro-body-web">{restParagraphs}</div>
+            ) : !leadParagraph && proseText ? (
+              <div className="watta-promo-detail-card__prose home-after-hero-intro-body-web">{proseText}</div>
+            ) : null}
+
+            <div className="watta-promo-detail-card__menu-cta-wrap">
+              <button type="button" className="watta-promo-detail-card__menu-cta" onClick={onMenuClick}>
+                <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden />
+                {p.menuCta}
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+              </button>
             </div>
 
             {offerProducts.length > 0 && (
-              <section className="watta-promo-detail-card__offers">
-                <h2 className="watta-promo-detail-card__offers-title">{p.offersTitle}</h2>
+              <WattaInViewFadeSection className="watta-promo-detail-card__offers">
+                <WattaStaggerSectionTitle
+                  className="watta-promo-detail-card__offers-title"
+                  text={p.offersTitle}
+                />
                 <ul className="watta-promo-detail-card__offers-grid">
                   {offerProducts.map((product) => {
                     const pct = Math.min(100, Math.max(0, Math.round(Number(product.offerDiscountPercent) || 0)))
@@ -234,15 +328,23 @@ export default function PromotionsDetailView({
                             isTop: false,
                             promoDiscountPercent: pct,
                           }}
+                          subtitleLine={
+                            parseProductSpecsFromDescription(
+                              desc,
+                              t.productDetail.weightFallback,
+                              t.productDetail.piecesFallback,
+                              language as WattaLanguage,
+                            ).weightLine
+                          }
                           onAddToCart={() => addOfferToCart(product)}
                         />
                       </li>
                     )
                   })}
                 </ul>
-              </section>
+              </WattaInViewFadeSection>
             )}
-          </div>
+          </WattaInViewFadeDiv>
         </article>
       </div>
     </div>
