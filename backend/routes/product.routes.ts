@@ -449,19 +449,81 @@ router.put('/categories/:id', checkAdmin, async (req: Request, res: Response) =>
   }
 });
 
-// 2.3. Удалить категорию
+// 2.3. Удалить категорию (товары переносятся в moveToCategoryId или в другую активную)
 router.delete('/categories/:id', checkAdmin, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const productsCount = await prisma.product.count({ where: { categoryId: id } });
-    
-    if (productsCount > 0) {
-      return res.status(400).json({ error: 'Нельзя удалить категорию с товарами.' });
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ error: 'Некорректный id категории' });
     }
-    
+
+    const existing = await prisma.category.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Категория не найдена' });
+    }
+
+    const rawMoveTo = req.query.moveToCategoryId ?? (req.body as { moveToCategoryId?: unknown })?.moveToCategoryId;
+    const requestedMoveTo =
+      rawMoveTo != null && String(rawMoveTo).trim() !== ''
+        ? parseInt(String(rawMoveTo), 10)
+        : null;
+
+    const productsCount = await prisma.product.count({ where: { categoryId: id } });
+    let movedToCategoryId: number | null = null;
+    let movedToCategoryName: string | null = null;
+
+    if (productsCount > 0) {
+      let targetId = requestedMoveTo;
+      if (targetId != null && (!Number.isFinite(targetId) || targetId <= 0 || targetId === id)) {
+        targetId = null;
+      }
+
+      if (targetId != null) {
+        const target = await prisma.category.findUnique({ where: { id: targetId } });
+        if (!target) {
+          return res.status(400).json({ error: 'Категория для переноса товаров не найдена' });
+        }
+        movedToCategoryId = target.id;
+        movedToCategoryName = target.name_ru;
+      } else {
+        const fallback = await prisma.category.findFirst({
+          where: { id: { not: id }, isActive: true },
+          orderBy: [{ order: 'asc' }, { id: 'asc' }],
+        });
+        if (!fallback) {
+          const anyOther = await prisma.category.findFirst({
+            where: { id: { not: id } },
+            orderBy: [{ order: 'asc' }, { id: 'asc' }],
+          });
+          if (!anyOther) {
+            return res.status(400).json({
+              error:
+                'Нельзя удалить единственную категорию, пока в ней есть товары. Создайте другую категорию.',
+              productsCount,
+            });
+          }
+          movedToCategoryId = anyOther.id;
+          movedToCategoryName = anyOther.name_ru;
+        } else {
+          movedToCategoryId = fallback.id;
+          movedToCategoryName = fallback.name_ru;
+        }
+      }
+
+      await prisma.product.updateMany({
+        where: { categoryId: id },
+        data: { categoryId: movedToCategoryId },
+      });
+    }
+
     await prisma.category.delete({ where: { id } });
     clearCatalogCache();
-    res.json({ message: 'Категория удалена' });
+    res.json({
+      message: 'Категория удалена',
+      movedProducts: productsCount,
+      movedToCategoryId,
+      movedToCategoryName,
+    });
   } catch (error) {
     console.error('Ошибка удаления категории:', error);
     res.status(500).json({ error: 'Ошибка удаления категории' });

@@ -3650,18 +3650,45 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
   }
   
   const handleDeleteCategory = async (id: number) => {
-    if (!confirm('Вы уверены, что хотите удалить эту категорию? Если в ней есть товары, удаление будет невозможно.')) return
+    const category = menuCategories.find((c) => c.id === id)
+    const productCount = products.filter((p) => p.categoryId === id).length
+    const otherCategories = menuCategories.filter((c) => c.id !== id)
+    const defaultMoveTarget =
+      otherCategories.find((c) => c.slug === 'rolls') ??
+      otherCategories.find((c) => c.isActive) ??
+      otherCategories[0] ??
+      null
+
+    if (productCount > 0 && !defaultMoveTarget) {
+      toast.error('Сначала создайте другую категорию — в этой есть товары.')
+      return
+    }
+
+    const confirmText =
+      productCount > 0 && defaultMoveTarget
+        ? `Удалить категорию «${category?.name_ru ?? id}»?\n\n` +
+          `${productCount} товар(ов) будут перенесены в «${defaultMoveTarget.name_ru}».`
+        : `Удалить категорию «${category?.name_ru ?? id}»?`
+
+    if (!confirm(confirmText)) return
+
     try {
       const token = localStorage.getItem('token')
       if (!token) {
         toast.error('Вы не авторизованы')
         return
       }
-      const res = await fetch(`/api/products/categories/${id}`, {
+      const moveQuery =
+        productCount > 0 && defaultMoveTarget ? `?moveToCategoryId=${defaultMoveTarget.id}` : ''
+      const res = await fetch(`/api/products/categories/${id}${moveQuery}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          movedProducts?: number
+          movedToCategoryName?: string | null
+        }
         await Promise.all([
           fetchTabData('menuCategories', { force: true }),
           fetchTabData('products', { force: true }),
@@ -3672,7 +3699,13 @@ export default function AdminView({ onBack, onSiteMenuClick }: AdminViewProps) {
             broadcastWattaCatalogUpdate('categories')
           }, 100)
         }
-        toast.success('Категория успешно удалена!')
+        if (data.movedProducts && data.movedProducts > 0) {
+          toast.success(
+            `Категория удалена. ${data.movedProducts} товар(ов) перенесено в «${data.movedToCategoryName ?? defaultMoveTarget?.name_ru ?? 'другую категорию'}».`,
+          )
+        } else {
+          toast.success('Категория успешно удалена!')
+        }
       } else {
         let errorMessage = 'Ошибка удаления'
         try {
