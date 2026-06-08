@@ -1122,7 +1122,7 @@ const uk: SiteTranslations = {
         adminLangRu: "РУС",
         adminLangHint: "Мова панелі",
       },
-      sidebar: { selectSection: "Оберіть розділ", dashboard: "📊 Дашборд", dashboardDesc: "Статистика та огляд", orders: "📦 Замовлення", ordersDesc: "Управління замовленнями", products: "🍣 Товари", productsDesc: "Меню та позиції", promos: "🏷️ Промокоди", promosDesc: "Знижки", cities: "🏙️ Міста", citiesDesc: "Міста та країни", banners: "🎨 Банери", bannersDesc: "Банери", categories: "📋 Категорії", categoriesDesc: "Категорії меню", users: "👥 Користувачі", usersDesc: "Список клієнтів", adminPhones: "🛡️ Адмін-номери", adminPhonesDesc: "Доступ до панелі за телефоном", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Співробітники", settings: "⚙️ Налаштування", settingsDesc: "Сайт і банери", ingredients: "🥑 Інгредієнти", newsletter: "📧 Розсилка", cartUpsell: "🛒 Кошик: знижки", cartUpsellDesc: "Пороги спецпропозицій", blog: "📰 Блог / Рекомендації", blogDesc: "Статті та поради", reviews: "⭐ Відгуки", reviewsDesc: "Модерація відгуків", crm: "👥 CRM / База клієнтів", crmDesc: "Клієнти та звернення" },
+      sidebar: { selectSection: "Оберіть розділ", dashboard: "📊 Дашборд", dashboardDesc: "Статистика та огляд", orders: "📦 Замовлення", ordersDesc: "Управління замовленнями", products: "🍣 Товари", productsDesc: "Меню та позиції", promos: "🏷️ Промокоди", promosDesc: "Знижки", cities: "🏙️ Міста", citiesDesc: "Міста та країни", banners: "🎨 Банери", bannersDesc: "Банери", categories: "📋 Категорії", categoriesDesc: "Категорії меню", users: "👥 Користувачі", usersDesc: "Список клієнтів", adminPhones: "🛡️ Адмін-доступ", adminPhonesDesc: "Телефони та email з доступом", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Співробітники", settings: "⚙️ Налаштування", settingsDesc: "Сайт і банери", ingredients: "🥑 Інгредієнти", newsletter: "📧 Розсилка", cartUpsell: "🛒 Кошик: знижки", cartUpsellDesc: "Пороги спецпропозицій", blog: "📰 Блог / Рекомендації", blogDesc: "Статті та поради", reviews: "⭐ Відгуки", reviewsDesc: "Модерація відгуків", crm: "👥 CRM / База клієнтів", crmDesc: "Клієнти та звернення" },
       dashboard: {
         loading: "Завантаження...",
         revenue: "Виручка (виконані)",
@@ -1278,7 +1278,7 @@ const uk: SiteTranslations = {
         deleteConfirm: "Видалити цей поріг і всі привʼязані товари?", deleted: "Видалено", deleteError: "Не вдалося видалити",
       },
       adminPhones: {
-        title: "Номери адміністраторів", description: "Користувачі, які входять за цими номерами, автоматично бачать адмін-панель. Головний номер +380953398039 завжди має доступ.",
+        title: "Доступ до адмін-панелі", description: "Користувачі з цими номерами або email автоматично отримують роль адміна (вхід за телефоном, Google або email).",
         phoneLabel: "Номер телефону", noteLabel: "Примітка (необовʼязково)", notePlaceholder: "Ім'я або роль", addBtn: "Додати",
         loading: "Завантаження…", empty: "Номерів поки немає",
         colPhone: "Номер", colNote: "Примітка", colAdded: "Додано", colActions: "Дії",
@@ -1286,6 +1286,11 @@ const uk: SiteTranslations = {
         loadError: "Не вдалося завантажити номери адмінів", phoneRequired: "Вкажіть номер телефону", addError: "Не вдалося додати номер",
         added: "Номер додано — при вході за ним відкриється адмін-панель", deleteConfirm: "Видалити {{phone}} зі списку адмінів?",
         deleted: "Номер видалено", error: "Помилка",
+        emailsTitle: "Email адміністраторів", emailsDescription: "Вхід через Google або email+пароль з цими адресами також дає доступ до адмін-панелі.",
+        emailLabel: "Email", colEmail: "Email", emailsEmpty: "Email-ів поки немає", emailRequired: "Вкажіть email",
+        emailAddError: "Не вдалося додати email", emailAdded: "Email додано — при вході з ним відкриється адмін-панель",
+        emailDeleteAria: "Видалити {{email}}", emailDeleteConfirm: "Видалити {{email}} зі списку адмінів?",
+        emailDeleted: "Email видалено", emailsLoadError: "Не вдалося завантажити email адмінів",
       },
       crm: {
         customersTab: "База клієнтів", inquiriesTab: "Звернення з сайту", customersTitle: "База клієнтів",

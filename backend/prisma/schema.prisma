@@ -56,6 +56,15 @@ model AdminPhone {
   createdAt DateTime @default(now())
 }
 
+/// Email-адреси з доступом до адмін-панелі (Google / email-вхід).
+model AdminEmail {
+  id        Int      @id @default(autoincrement())
+  /// Нормалізований email (нижній регістр)
+  email     String   @unique
+  label     String?
+  createdAt DateTime @default(now())
+}
+
 /// Збережені адреси доставки користувача (кілька на акаунт)
 model UserAddress {
   id        Int      @id @default(autoincrement())

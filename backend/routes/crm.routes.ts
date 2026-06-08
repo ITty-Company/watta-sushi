@@ -4,10 +4,15 @@ import { sendMassPromo } from '../services/email.service';
 import { checkAdmin } from '../authMiddleware';
 import { parseCashbackPercentInput } from '../lib/bonusCashback.js';
 import {
+  PRIMARY_ADMIN_EMAIL,
   PRIMARY_ADMIN_PHONE,
   formatAdminPhoneOut,
+  isPrimaryAdminEmail,
   isPrimaryAdminPhone,
+  normalizeAdminEmail,
+  parseAdminEmailInput,
   parseAdminPhoneInput,
+  syncUsersForAdminEmail,
   syncUsersForAdminPhone,
 } from '../lib/adminPhones.js';
 
@@ -511,6 +516,89 @@ router.delete('/admin-phones/:id', checkAdmin, async (req: Request, res: Respons
   } catch (error) {
     console.error('CRM admin-phones DELETE error:', error);
     res.status(500).json({ message: 'Не вдалося видалити номер адміна' });
+  }
+});
+
+router.get('/admin-emails', checkAdmin, async (_req: Request, res: Response) => {
+  try {
+    const rows = await prisma.adminEmail.findMany({
+      orderBy: [{ email: 'asc' }],
+    });
+    res.json(
+      rows.map((row) => ({
+        id: row.id,
+        email: row.email,
+        label: row.label,
+        isPrimary: isPrimaryAdminEmail(row.email),
+        createdAt: row.createdAt.toISOString(),
+      })),
+    );
+  } catch (error) {
+    console.error('CRM admin-emails GET error:', error);
+    res.status(500).json({ message: 'Не вдалося завантажити email адмінів' });
+  }
+});
+
+router.post('/admin-emails', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const rawEmail = String(req.body?.email ?? '').trim();
+    const label = String(req.body?.label ?? '').trim() || null;
+    const normalizedEmail = parseAdminEmailInput(rawEmail);
+    if (!normalizedEmail) {
+      res.status(400).json({ message: 'Некорректный email' });
+      return;
+    }
+
+    const existing = await prisma.adminEmail.findUnique({ where: { email: normalizedEmail } });
+    if (existing) {
+      res.status(400).json({ message: 'Этот email уже добавлен в список админов' });
+      return;
+    }
+
+    const created = await prisma.adminEmail.create({
+      data: { email: normalizedEmail, label },
+    });
+    await syncUsersForAdminEmail(prisma, normalizedEmail, true);
+
+    res.status(201).json({
+      id: created.id,
+      email: created.email,
+      label: created.label,
+      isPrimary: isPrimaryAdminEmail(created.email),
+      createdAt: created.createdAt.toISOString(),
+    });
+  } catch (error) {
+    console.error('CRM admin-emails POST error:', error);
+    res.status(500).json({ message: 'Не вдалося додати email адміна' });
+  }
+});
+
+router.delete('/admin-emails/:id', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id)) {
+      res.status(400).json({ message: 'Некорректный id' });
+      return;
+    }
+
+    const row = await prisma.adminEmail.findUnique({ where: { id } });
+    if (!row) {
+      res.status(404).json({ message: 'Email не найден' });
+      return;
+    }
+
+    if (isPrimaryAdminEmail(row.email) || normalizeAdminEmail(row.email) === PRIMARY_ADMIN_EMAIL) {
+      res.status(400).json({ message: 'Головний email адміністратора не можна видалити' });
+      return;
+    }
+
+    await prisma.adminEmail.delete({ where: { id } });
+    await syncUsersForAdminEmail(prisma, row.email, false);
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('CRM admin-emails DELETE error:', error);
+    res.status(500).json({ message: 'Не вдалося видалити email адміна' });
   }
 });
 

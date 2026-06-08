@@ -1280,6 +1280,9 @@ export interface SiteTranslations {
       primaryBadge: string; protectedBadge: string; deleteBtn: string; deleteAria: string;
       loadError: string; phoneRequired: string; addError: string; added: string;
       deleteConfirm: string; deleted: string; error: string;
+      emailsTitle: string; emailsDescription: string; emailLabel: string; colEmail: string;
+      emailsEmpty: string; emailRequired: string; emailAddError: string; emailAdded: string;
+      emailDeleteAria: string; emailDeleteConfirm: string; emailDeleted: string; emailsLoadError: string;
     }
     crm: {
       customersTab: string; inquiriesTab: string; customersTitle: string; searchPlaceholder: string;

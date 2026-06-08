@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { PrismaClient } from '@prisma/client'
 import { getJwtSecret } from './lib/jwtSecret'
-import { isAdminPhone } from './lib/adminPhones.js'
+import { hasAdminAccess } from './lib/adminPhones.js'
 
 const prisma = new PrismaClient()
 
@@ -31,8 +31,8 @@ export const checkAdmin = async (req: AuthRequest, res: Response, next: NextFunc
       return res.status(401).json({ message: 'Пользователь не найден' })
     }
 
-    const hasAdminAccess = await isAdminPhone(prisma, user.phone)
-    if (!hasAdminAccess) {
+    const allowed = await hasAdminAccess(prisma, user.phone, user.email)
+    if (!allowed) {
       return res.status(403).json({ message: 'Доступ запрещен! Вы не админ.' })
     }
 

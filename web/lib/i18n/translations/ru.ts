@@ -1121,7 +1121,7 @@ const ru: SiteTranslations = {
         adminLangRu: "РУС",
         adminLangHint: "Язык панели",
       },
-      sidebar: { selectSection: "Выберите раздел", dashboard: "📊 Дашборд", dashboardDesc: "Статистика и обзор", orders: "📦 Заказы", ordersDesc: "Управление заказами", products: "🍣 Товары", productsDesc: "Меню и позиции", promos: "🏷️ Промокоды", promosDesc: "Скидки", cities: "🏙️ Города", citiesDesc: "Города и страны", banners: "🎨 Баннеры", bannersDesc: "Баннеры", categories: "📋 Категории", categoriesDesc: "Категории меню", users: "👥 Пользователи", usersDesc: "Список клиентов", adminPhones: "🛡️ Админ-номера", adminPhonesDesc: "Доступ к панели по телефону", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Сотрудники", settings: "⚙️ Настройки", settingsDesc: "Сайт и баннеры", ingredients: "🥑 Ингредиенты", newsletter: "📧 Рассылка", cartUpsell: "🛒 Корзина: скидки", cartUpsellDesc: "Пороги спецпредложений", blog: "📰 Блог / Рекомендации", blogDesc: "Статьи и советы", reviews: "⭐ Отзывы", reviewsDesc: "Модерация отзывов", crm: "👥 CRM / База клиентов", crmDesc: "Клиенты и обращения" },
+      sidebar: { selectSection: "Выберите раздел", dashboard: "📊 Дашборд", dashboardDesc: "Статистика и обзор", orders: "📦 Заказы", ordersDesc: "Управление заказами", products: "🍣 Товары", productsDesc: "Меню и позиции", promos: "🏷️ Промокоды", promosDesc: "Скидки", cities: "🏙️ Города", citiesDesc: "Города и страны", banners: "🎨 Баннеры", bannersDesc: "Баннеры", categories: "📋 Категории", categoriesDesc: "Категории меню", users: "👥 Пользователи", usersDesc: "Список клиентов", adminPhones: "🛡️ Админ-доступ", adminPhonesDesc: "Телефоны и email с доступом", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Сотрудники", settings: "⚙️ Настройки", settingsDesc: "Сайт и баннеры", ingredients: "🥑 Ингредиенты", newsletter: "📧 Рассылка", cartUpsell: "🛒 Корзина: скидки", cartUpsellDesc: "Пороги спецпредложений", blog: "📰 Блог / Рекомендации", blogDesc: "Статьи и советы", reviews: "⭐ Отзывы", reviewsDesc: "Модерация отзывов", crm: "👥 CRM / База клиентов", crmDesc: "Клиенты и обращения" },
       dashboard: {
         loading: "Загрузка...",
         revenue: "Выручка (выполнены)",
@@ -1277,7 +1277,7 @@ const ru: SiteTranslations = {
         deleteConfirm: "Удалить этот порог и все привязанные товары?", deleted: "Удалено", deleteError: "Не удалось удалить",
       },
       adminPhones: {
-        title: "Номера администраторов", description: "Пользователи, которые входят по этим номерам, автоматически видят админ-панель. Главный номер +380953398039 всегда имеет доступ.",
+        title: "Доступ к админ-панели", description: "Пользователи с этими номерами или email автоматически получают роль админа (вход по телефону, Google или email).",
         phoneLabel: "Номер телефона", noteLabel: "Примечание (необязательно)", notePlaceholder: "Имя или роль", addBtn: "Добавить",
         loading: "Загрузка…", empty: "Номеров пока нет",
         colPhone: "Номер", colNote: "Примечание", colAdded: "Добавлен", colActions: "Действия",
@@ -1285,6 +1285,11 @@ const ru: SiteTranslations = {
         loadError: "Не удалось загрузить номера админов", phoneRequired: "Укажите номер телефона", addError: "Не удалось добавить номер",
         added: "Номер добавлен — при входе по нему откроется админ-панель", deleteConfirm: "Удалить {{phone}} из списка админов?",
         deleted: "Номер удалён", error: "Ошибка",
+        emailsTitle: "Email администраторов", emailsDescription: "Вход через Google или email+пароль с этими адресами также даёт доступ к админ-панели.",
+        emailLabel: "Email", colEmail: "Email", emailsEmpty: "Email-ов пока нет", emailRequired: "Укажите email",
+        emailAddError: "Не удалось добавить email", emailAdded: "Email добавлен — при входе с ним откроется админ-панель",
+        emailDeleteAria: "Удалить {{email}}", emailDeleteConfirm: "Удалить {{email}} из списка админов?",
+        emailDeleted: "Email удалён", emailsLoadError: "Не удалось загрузить email админов",
       },
       crm: {
         customersTab: "База клиентов", inquiriesTab: "Обращения с сайта", customersTitle: "База клиентов",
