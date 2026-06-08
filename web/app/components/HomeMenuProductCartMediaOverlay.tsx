@@ -18,6 +18,7 @@ type Props = {
 /** Зелена смуга поверх фото картки — зведення кошика та «Оформити», як нижній mobile bar. */
 export function HomeMenuProductCartMediaOverlay({ visible }: Props) {
   const router = useInstantRouter()
+  const cartDrawer = useOptionalCartDrawer()
   const { t } = useLanguage()
   const cs = t.cartSection
   const { pieces, total, hasItems } = useCartBarSnapshot()

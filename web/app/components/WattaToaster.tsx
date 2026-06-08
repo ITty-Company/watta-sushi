@@ -47,7 +47,7 @@ export default function WattaToaster() {
               <button
                 type="button"
                 className="watta-toast-dismiss"
-                aria-label={t.common.ariaClose}
+                aria-label={t.siteAria.close}
                 onClick={(event) => {
                   event.stopPropagation()
                   toast.dismiss(toastItem.id)

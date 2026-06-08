@@ -66,7 +66,7 @@ export default function WattaNotificationWatcher() {
           <button
             type="button"
             className="watta-toast-dismiss watta-toast-dismiss--notification"
-            aria-label={t.common.ariaClose}
+            aria-label={t.siteAria.close}
             onClick={() => toast.dismiss(toastInstance.id)}
           >
             <X size={14} strokeWidth={2.4} aria-hidden />
