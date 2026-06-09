@@ -1,14 +1,16 @@
 #!/bin/sh
-# Remove IDE branding from commit messages before commit completes.
+# Remove IDE / AI branding from commit messages before commit completes.
 msgfile="$1"
 [ -z "$msgfile" ] || [ ! -f "$msgfile" ] && exit 0
-if grep -qE 'Made-with|Made with |Powered by |Co-authored-by: Cursor' "$msgfile" 2>/dev/null; then
+if grep -qiE 'Made-with|Made with |Powered by |Co-authored-by: (Cursor|Claude|Anthropic)' "$msgfile" 2>/dev/null; then
   if sed --version >/dev/null 2>&1; then
     sed -i \
       -e '/Made-with/d' \
       -e '/Made with /d' \
       -e '/Powered by /d' \
       -e '/^Co-authored-by: Cursor/d' \
+      -e '/^Co-authored-by: Claude/d' \
+      -e '/^Co-authored-by:.*[Aa]nthropic/d' \
       "$msgfile"
   else
     sed -i '' \
@@ -16,6 +18,8 @@ if grep -qE 'Made-with|Made with |Powered by |Co-authored-by: Cursor' "$msgfile"
       -e '/Made with /d' \
       -e '/Powered by /d' \
       -e '/^Co-authored-by: Cursor/d' \
+      -e '/^Co-authored-by: Claude/d' \
+      -e '/^Co-authored-by:.*[Aa]nthropic/d' \
       "$msgfile"
   fi
 fi
