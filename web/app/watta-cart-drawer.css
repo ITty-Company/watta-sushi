@@ -713,12 +713,36 @@ html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web.watta-cart
   }
 }
 
-/* Кошик: швидше відкриття/закриття — кнопки одразу клікабельні з is-open */
+/* Кошик: portal поверх усього контенту; data-open — резерв, якщо is-open затримується */
 #watta-cart-drawer-root .watta-nav-sidebar-overlay {
+  z-index: 0;
   transition:
     opacity 0.18s ease,
     visibility 0.18s ease;
 }
+
+#watta-cart-drawer-root #watta-cart-drawer {
+  z-index: 1;
+}
+
+#watta-cart-drawer-root[data-open='1'] .watta-nav-sidebar-overlay {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+@media (min-width: 768px) {
+  #watta-cart-drawer-root[data-open='1'] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet {
+    right: max(14px, env(safe-area-inset-right, 0px));
+    left: auto;
+    transform: translate3d(0, 0, 0) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* Кошик: швидше відкриття/закриття — кнопки одразу клікабельні з is-open */
 
 #watta-cart-drawer.watta-nav-sidebar-drawer--sheet {
   transition:

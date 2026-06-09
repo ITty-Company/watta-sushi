@@ -13136,13 +13136,20 @@ html.watta-html-home-hero
 
 /* ——— WATTA: бокове меню сайту (portal на body) ——— */
 .watta-nav-drawer-portal-root {
-  position: relative;
+  position: fixed;
+  inset: 0;
   z-index: 11050;
   pointer-events: none;
+  isolation: isolate;
 }
 
 .watta-nav-drawer-portal-root[data-open='1'] {
   pointer-events: auto;
+}
+
+/* Кошик — завжди поверх sticky chrome, FAB, інших drawer-ів */
+#watta-cart-drawer-root.watta-nav-drawer-portal-root {
+  z-index: 12000;
 }
 
 /* Бокове меню відкрито — ховаємо FAB і нижню зелену смугу кошика */

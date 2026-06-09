@@ -329,9 +329,9 @@ export default function AppClient({
           </main>
 
           {showPublicNavChrome && <WattaRightNavDrawer />}
-          {showPublicNavChrome && <WattaCartDrawer />}
           {showPublicNavChrome && <WattaNotificationsPanel />}
           {showPublicNavChrome && <WattaNotificationWatcher />}
+          {showPublicNavChrome && <WattaCartDrawer />}
           {!isAuthRoute && !isAdminShellRoute && !hidePublicSiteChromeExtras && (
             <FloatingContactButtons />
           )}
