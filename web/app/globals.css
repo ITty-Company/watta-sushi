@@ -7087,34 +7087,60 @@ html.watta-light-chrome body {
   align-self: start;
 }
 
-/* Сітка: висота фото за зображенням — текст одразу під фото, без сірої смуги letterbox */
+/* Сітка: телефон — висота фото за зображенням; планшет+ — фіксований aspect (без смикання при скролі). */
 .home-menu-product-card--grid-web .home-menu-product-card-inner-web {
   gap: 0.35rem;
   padding-top: 0;
 }
 
-.home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
-  aspect-ratio: auto;
-  height: auto;
-  background: #ffffff;
+@media (max-width: 767px) {
+  .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
+    aspect-ratio: auto;
+    height: auto;
+    background: #ffffff;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-card-media-web--grid-natural {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    background: #ffffff;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-card-img-web--grid-natural {
+    position: static;
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+    object-position: center top;
+  }
 }
 
-.home-menu-product-card--grid-web .home-menu-product-card-media-web--grid-natural {
-  position: relative;
-  inset: auto;
-  width: 100%;
-  height: auto;
-  background: #ffffff;
-}
+@media (min-width: 768px) {
+  .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
+    aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
+    height: auto;
+    background: #ffffff;
+  }
 
-.home-menu-product-card--grid-web .home-menu-product-card-img-web--grid-natural {
-  position: static;
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: none;
-  object-fit: contain;
-  object-position: center top;
+  .home-menu-product-card--grid-web .home-menu-product-card-media-web--grid-natural {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+  }
+
+  .home-menu-product-card--grid-web .home-menu-product-card-img-web--grid-natural {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: contain;
+    object-position: center;
+  }
 }
 
 .home-menu-product-card--grid-web .home-menu-product-card-desc-web.home-menu-product-card-subline-web--placeholder {
@@ -7560,9 +7586,11 @@ html.watta-light-chrome body {
   border-radius: 1.12rem;
 }
 
-.menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
-  aspect-ratio: auto;
-  height: auto;
+@media (max-width: 767px) {
+  .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
+    aspect-ratio: auto;
+    height: auto;
+  }
 }
 
 .menu-highlight-stack-web .home-menu-product-card--grid-web .home-menu-product-card-inner-web {
@@ -30498,9 +30526,11 @@ body .watta-sticky-chrome-portal .categories-panel-wrapper-web,
 
 /* watta-hero-home-match-tablet-desktop.css імпортовано на початку файлу (@import має передувати правилам) */
 
-/* ── Задача 7: FPS — снижаем нагрузку рендера секций меню ───────────────── */
-.home-menu-cat-block-web {
-  contain: layout style;
+/* Телефон: contain для FPS; планшет+ — без contain (інакше repaint «смикає» картки при скролі). */
+@media (max-width: 767px) {
+  .home-menu-cat-block-web {
+    contain: layout style;
+  }
 }
 
 /* Рівна висота карток у сітці — див. блок «Однакова ширина/висота» біля .home-menu-product-card-web */

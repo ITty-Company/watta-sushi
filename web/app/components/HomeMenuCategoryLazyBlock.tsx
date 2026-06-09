@@ -1,7 +1,22 @@
 'use client'
 
 import type { ReactNode, Ref } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useNearViewportMount } from '@/hooks/useNearViewportMount'
+
+const TABLET_UP_MQ = '(min-width: 768px)'
+
+function useTabletUpViewport(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const mq = window.matchMedia(TABLET_UP_MQ)
+      mq.addEventListener('change', onStoreChange)
+      return () => mq.removeEventListener('change', onStoreChange)
+    },
+    () => window.matchMedia(TABLET_UP_MQ).matches,
+    () => true,
+  )
+}
 
 type Props = {
   id: string
@@ -24,9 +39,10 @@ export function HomeMenuCategoryLazyBlock({
   mountIndex,
   eagerCount = 1,
 }: Props) {
+  const tabletUp = useTabletUpViewport()
   const { ref, mounted } = useNearViewportMount({
     rootMargin: '380px 0px 280px 0px',
-    forceMount: mountIndex < eagerCount,
+    forceMount: tabletUp || mountIndex < eagerCount,
     lazyOnPhone: true,
   })
 

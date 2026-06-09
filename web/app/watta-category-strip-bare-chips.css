@@ -48,7 +48,8 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
   :root {
     --watta-cat-peek: 5;
     --cat-gap: 3px;
-    --watta-cat-mobile-chip-aspect: 5 / 4;
+    /* Трохи вище чіп — більше місця під крупнішу іконку + підпис із відступом. */
+    --watta-cat-mobile-chip-aspect: 5 / 4.4;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
@@ -76,7 +77,7 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     min-height: 0 !important;
     aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
     padding: 3px 2px !important;
-    gap: 2px !important;
+    gap: 4px !important;
     overflow: hidden !important;
   }
 
@@ -87,31 +88,31 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     align-items: center !important;
     justify-content: center !important;
     width: 100% !important;
-    font-size: 1.32rem !important;
+    font-size: 1.46rem !important;
     line-height: 1 !important;
-    max-height: 1.35em !important;
+    max-height: 1.5em !important;
     flex-shrink: 0 !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web svg,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web svg,
   .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web svg {
-    width: 15px !important;
-    height: 15px !important;
+    width: 17px !important;
+    height: 17px !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-strip-icon-stack,
   .watta-public-sticky-chrome .categories-panel-web .category-strip-icon-stack {
-    width: 1.1rem !important;
-    height: 1.1rem !important;
+    width: 1.22rem !important;
+    height: 1.22rem !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack--bundled,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled,
   .watta-public-sticky-chrome .categories-panel-web .category-strip-icon-stack--bundled {
-    width: 15px !important;
-    height: 15px !important;
+    width: 17px !important;
+    height: 17px !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
@@ -124,10 +125,10 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     width: 100% !important;
     text-align: center !important;
     align-self: center !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
     line-height: 1.12 !important;
     font-weight: 700 !important;
-    color: #3d3d3d !important;
+    color: #2f2f2f !important;
     opacity: 1 !important;
     visibility: visible !important;
     max-height: 2.3em !important;

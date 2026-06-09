@@ -206,7 +206,7 @@ html[data-watta-nav-drawer-open]::after {
   html[data-watta-cart-bar-visible='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
   html[data-watta-past-hero='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
   html[data-watta-home-past-hero='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
-  .watta-mobile-cart-bar[data-watta-cart-filled='true']:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar) {
+  html:not([data-watta-cart-bar-gated='1']) .watta-mobile-cart-bar[data-watta-cart-filled='true']:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar) {
     opacity: 1 !important;
     pointer-events: auto;
     transform: translate3d(0, 0, 0);
@@ -763,9 +763,14 @@ html[data-watta-nav-drawer-open]::after {
     #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines].is-open {
     height: auto !important;
     min-height: 0 !important;
+    /*
+     * «Ваше замовлення»: до 6 позицій видно повністю, решта — скролом усередині списку.
+     * Розкриваємо drawer майже на всю висоту (лишаємо лише safe-area + малий зазор зверху),
+     * щоб шапка + 6 рядків + підсумок вмістились; раніше cap 82dvh різав до ~4 рядків.
+     */
     max-height: min(
-      82dvh,
-      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom))
+      94dvh,
+      calc(100dvh - max(2.25rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom))
     ) !important;
   }
 

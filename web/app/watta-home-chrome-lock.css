@@ -1450,7 +1450,8 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 
   html.watta-html-home-hero .watta-home-photo-first-screen {
-    --watta-home-roll-content-push: clamp(16px, 2.5vh, 28px);
+    /* Трохи піднімаємо текст і обидва ряди роллів вище на телефоні. */
+    --watta-home-roll-content-push: clamp(6px, 1.4vh, 16px);
     --watta-home-split-stack-lift: var(--watta-home-roll-content-push);
     --watta-home-hero-viewport-h: auto;
     height: auto !important;
@@ -1502,8 +1503,8 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web {
-    font-size: 1.32rem !important;
-    max-height: 1.35em !important;
+    font-size: 1.46rem !important;
+    max-height: 1.5em !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web {
@@ -1511,10 +1512,10 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     -webkit-box-orient: vertical !important;
     -webkit-line-clamp: 2 !important;
     text-align: center !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
     line-height: 1.12 !important;
     font-weight: 700 !important;
-    color: #3d3d3d !important;
+    color: #2f2f2f !important;
     opacity: 1 !important;
     visibility: visible !important;
     max-height: 2.3em !important;

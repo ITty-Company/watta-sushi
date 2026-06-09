@@ -3,19 +3,15 @@
  * Watchdog завжди підстраховує autoplay, поки вкладка видима.
  */
 
-import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
-import { isWattaHomeHeroPathname } from '@/lib/wattaHtmlRouteClass'
 import { retireHomeHeroEntryShell } from '@/lib/wattaHeroVideo'
 import { markScrollGesture } from '@/lib/wattaScrollTapGuard'
 
 const SCROLL_IDLE_MS = 160
-const LAYOUT_SYNC_THROTTLE_MS = 1600
 const PREROLL_DISMISS_MIN_MS = 400
 
 let userScrolling = false
 let scrollIdleTimer = 0
 let bound = false
-let lastLayoutSyncAt = 0
 let prerollDismissAttempted = false
 let lastPrerollDismissAt = 0
 
@@ -126,18 +122,6 @@ function onScrollStart(): void {
 function onScrollIdle(): void {
   userScrolling = false
   setScrollingAttr(false)
-  // Layout sync (вимір sticky chrome) дорогий. На /menu скролять багато секцій — це дає мікрофризи.
-  // Тому синхронізуємо лише на головній hero-сторінці, і не частіше ніж раз на N мс.
-  try {
-    const p = window.location?.pathname || '/'
-    if (!isWattaHomeHeroPathname(p)) return
-    const now = Date.now()
-    if (now - lastLayoutSyncAt < LAYOUT_SYNC_THROTTLE_MS) return
-    lastLayoutSyncAt = now
-    window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
-  } catch {
-    /* ignore */
-  }
 }
 
 /** Підключити один раз на hero-сторінках. */

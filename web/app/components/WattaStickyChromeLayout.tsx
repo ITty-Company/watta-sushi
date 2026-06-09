@@ -45,6 +45,20 @@ type WattaStickyChromeLayoutProps = {
 const defaultFlowHeightFudgePx = 10
 /** Захист від рідких стрибків виміру (ResizeObserver/WebKit), що створювали величезний порожній відступ. */
 const DEFAULT_FLOW_LAYOUT_MAX_PX = 320
+/** Планшет/ПК: квантуємо вимір chrome — інакше ±1px у ResizeObserver смикає flow-anchor і картки. */
+const CHROME_MEASURE_QUANTUM_PX = 4
+const CHROME_FLOW_HYSTERESIS_PX = 8
+
+function quantizeChromeMeasurePx(px: number): number {
+  if (px < 8) return 0
+  return Math.round(px / CHROME_MEASURE_QUANTUM_PX) * CHROME_MEASURE_QUANTUM_PX
+}
+
+function shouldPublishFlowHeight(prev: number, next: number): boolean {
+  if (next < 8) return false
+  if (prev < 8) return true
+  return Math.abs(prev - next) >= CHROME_FLOW_HYSTERESIS_PX
+}
 
 /**
  * Липка верхня зона: fixed у потоці (без portal — однаковий SSR/клієнт, без hydration error).
@@ -126,12 +140,14 @@ export default function WattaStickyChromeLayout({
         isCompact && keepExpanded && expandedHeaderRef.current >= 8
           ? expandedHeaderRef.current
           : headerRaw
-      setRootCssVar('--watta-sticky-chrome-measured-h', effectiveRaw, 'measuredH')
-      setRootCssVar('--watta-chrome-header-measured-h', effectiveHeader, 'headerH')
-      if (effectiveRaw >= 8 && effectiveHeader >= 8) {
+      const measuredH = quantizeChromeMeasurePx(effectiveRaw)
+      const headerH = quantizeChromeMeasurePx(effectiveHeader)
+      setRootCssVar('--watta-sticky-chrome-measured-h', measuredH, 'measuredH')
+      setRootCssVar('--watta-chrome-header-measured-h', headerH, 'headerH')
+      if (measuredH >= 8 && headerH >= 8) {
         setRootCssVar(
           '--watta-chrome-categories-band-h',
-          Math.max(0, effectiveRaw - effectiveHeader),
+          Math.max(0, measuredH - headerH),
           'bandH',
         )
       }
@@ -158,12 +174,13 @@ export default function WattaStickyChromeLayout({
           expandedRawRef.current >= 8
             ? expandedRawRef.current
             : effectiveRaw
-        const h = toFlowLayoutHeight(layoutRaw)
-        if (layoutRaw >= 8) {
-          setRawChromeH((prev) => (Math.abs(prev - layoutRaw) > 1 ? layoutRaw : prev))
+        const quantizedLayoutRaw = quantizeChromeMeasurePx(layoutRaw)
+        const h = toFlowLayoutHeight(quantizedLayoutRaw)
+        if (quantizedLayoutRaw >= 8) {
+          setRawChromeH((prev) => (shouldPublishFlowHeight(prev, quantizedLayoutRaw) ? quantizedLayoutRaw : prev))
         }
         if (h >= 8) {
-          setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
+          setFlowH((prev) => (shouldPublishFlowHeight(prev, h) ? h : prev))
         }
         syncMeasuredCssVars(el)
       }
@@ -199,15 +216,16 @@ export default function WattaStickyChromeLayout({
         expandedRawRef.current >= 8
           ? expandedRawRef.current
           : effectiveRaw
-      const h = toFlowLayoutHeight(layoutRaw)
-      if (layoutRaw >= 8) {
-        setRawChromeH((prev) => (Math.abs(prev - layoutRaw) > 1 ? layoutRaw : prev))
+      const quantizedLayoutRaw = quantizeChromeMeasurePx(layoutRaw)
+      const h = toFlowLayoutHeight(quantizedLayoutRaw)
+      if (quantizedLayoutRaw >= 8) {
+        setRawChromeH((prev) => (shouldPublishFlowHeight(prev, quantizedLayoutRaw) ? quantizedLayoutRaw : prev))
       }
       if (h < 8) return
-      setFlowH((prev) => (Math.abs(prev - h) > 1 ? h : prev))
+      setFlowH((prev) => (shouldPublishFlowHeight(prev, h) ? h : prev))
       if (effectiveHeader >= 8) {
-        const headerFlow = toFlowLayoutHeight(effectiveHeader)
-        setHeaderFlowH((prev) => (Math.abs(prev - headerFlow) > 1 ? headerFlow : prev))
+        const headerFlow = toFlowLayoutHeight(quantizeChromeMeasurePx(effectiveHeader))
+        setHeaderFlowH((prev) => (shouldPublishFlowHeight(prev, headerFlow) ? headerFlow : prev))
       }
       syncMeasuredCssVars(el)
     }

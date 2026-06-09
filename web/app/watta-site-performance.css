@@ -320,3 +320,23 @@ html:not([data-watta-scrolling='true']) .watta-sticky-chrome-portal {
   will-change: auto;
   transform: none;
 }
+
+/* Планшет / ноут / ПК: стабільний compositing шару chrome — без «стрибка» при data-watta-scrolling. */
+@media (min-width: 768px) {
+  .watta-sticky-chrome-portal {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  #home-menu-catalog .home-menu-category-grid-tablet-inner-web,
+  #home-menu-catalog .home-menu-category-rail-outer-web,
+  .watta-full-menu-section__grid,
+  .home-menu-category-rail-web {
+    overflow-anchor: none;
+  }
+
+  .home-menu-product-card-web {
+    overflow-anchor: none;
+  }
+}

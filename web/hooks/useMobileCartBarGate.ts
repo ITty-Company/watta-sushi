@@ -1,21 +1,18 @@
 'use client'
 
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { bindAppVerticalScroll, readAppScrollTop } from '@/lib/menuScroll'
 import { createRafScrollListener } from '@/lib/scrollSync'
 import { isWattaPhoneViewport, isWattaTouchScrollPerfViewport } from '@/lib/wattaTouchViewport'
-import {
-  getCartRevision,
-  readCartFromStorage,
-  subscribeCartStorage,
-} from '@/lib/cartStorage'
 
 export const WATTA_PAST_HERO_ATTR = 'data-watta-past-hero'
 export const WATTA_CART_BAR_VISIBLE_ATTR = 'data-watta-cart-bar-visible'
 export const WATTA_CART_BAR_PROGRESS_VAR = '--watta-cart-bar-progress'
 export const WATTA_CART_DRAWER_LAYOUT_SYNC_EVENT = 'watta-cart-drawer-layout-sync'
 const LEGACY_HOME_PAST_HERO_ATTR = 'data-watta-home-past-hero'
+/** Сторінки, де смуга кошика їде лише після hero (/, /menu) — навіть якщо в кошику є товари. */
+export const WATTA_CART_BAR_GATED_ATTR = 'data-watta-cart-bar-gated'
 
 /** Порядок важливий: перший знайдений intro/hero на сторінці. */
 const HERO_SELECTOR_PRIORITY = [
@@ -116,12 +113,6 @@ function setCartBarReveal(progress: number) {
 /** Телефон: нижня смуга «Оформити» — одразу скрізь, крім / та /menu (там після hero; якщо в кошику є товари — одразу). */
 export function useMobileCartBarGate() {
   const pathname = usePathname() || '/'
-  const cartRevision = useSyncExternalStore(
-    subscribeCartStorage,
-    getCartRevision,
-    () => 0,
-  )
-  const cartHasItems = cartRevision >= 0 && readCartFromStorage().length > 0
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -131,9 +122,14 @@ export function useMobileCartBarGate() {
       pathname.startsWith('/admin') ||
       !isCartBarScrollGatedPath(pathname)
     ) {
+      document.documentElement.removeAttribute(WATTA_CART_BAR_GATED_ATTR)
       setCartBarReveal(1)
       return
     }
+
+    // Головна / меню: смуга кошика з’являється лише після скролу повз hero,
+    // навіть якщо в кошику вже є товари (інакше зелена смуга «стоїть» одразу зверху).
+    document.documentElement.setAttribute(WATTA_CART_BAR_GATED_ATTR, '1')
 
     const mq = window.matchMedia('(max-width: 767px)')
     let unbindScroll: (() => void) | null = null
@@ -155,10 +151,6 @@ export function useMobileCartBarGate() {
         return
       }
       if (document.documentElement.hasAttribute('data-watta-cart-drawer-open')) {
-        setCartBarReveal(1)
-        return
-      }
-      if (cartHasItems) {
         setCartBarReveal(1)
         return
       }
@@ -219,7 +211,8 @@ export function useMobileCartBarGate() {
       document.documentElement.removeAttribute(WATTA_PAST_HERO_ATTR)
       document.documentElement.removeAttribute(LEGACY_HOME_PAST_HERO_ATTR)
       document.documentElement.removeAttribute(WATTA_CART_BAR_VISIBLE_ATTR)
+      document.documentElement.removeAttribute(WATTA_CART_BAR_GATED_ATTR)
       document.documentElement.style.removeProperty(WATTA_CART_BAR_PROGRESS_VAR)
     }
-  }, [pathname, cartHasItems, cartRevision])
+  }, [pathname])
 }
