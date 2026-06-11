@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../../../context/LanguageContext'
 import { getApiUrl } from '@/lib/utils'
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'

@@ -45,17 +45,17 @@ export default function BlogI18nEditor({ value, onChange, onAutoTranslate, trans
   const langLabel = tab.toUpperCase()
 
   return (
-    <div className="md:col-span-2 rounded-xl border border-[#145142]/15 bg-[#f6fbf8]/50 p-4">
+    <div className="md:col-span-2 rounded-xl border border-watta-action/15 bg-[#f6fbf8]/50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-bold text-[#145142]">{b.i18nTitle}</p>
-          <p className="mt-0.5 text-xs text-[#145142]/65">{b.i18nHint}</p>
+          <p className="text-sm font-bold text-watta-action">{b.i18nTitle}</p>
+          <p className="mt-0.5 text-xs text-watta-action/65">{b.i18nHint}</p>
         </div>
         <button
           type="button"
           disabled={translating || (!value.title_ua.trim() && !value.content_ua.trim())}
           onClick={() => void onAutoTranslate()}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#145142]/25 bg-white px-4 py-2 text-sm font-bold text-[#145142] transition hover:bg-watta-action/5 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-watta-action/25 bg-white px-4 py-2 text-sm font-bold text-watta-action transition hover:bg-watta-action/5 disabled:opacity-50"
         >
           <Languages className="h-4 w-4" aria-hidden />
           {translating ? b.translating : b.autoTranslateBtn}
@@ -71,7 +71,7 @@ export default function BlogI18nEditor({ value, onChange, onAutoTranslate, trans
             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               tab === tabItem.id
                 ? 'bg-watta-action text-white'
-                : 'bg-white text-[#145142]/80 border border-[#145142]/15 hover:bg-watta-action/8'
+                : 'bg-white text-watta-action/80 border border-watta-action/15 hover:bg-watta-action/8'
             }`}
           >
             {tabItem.label}
@@ -84,13 +84,13 @@ export default function BlogI18nEditor({ value, onChange, onAutoTranslate, trans
         placeholder={b.titlePlaceholder.replace('{{lang}}', langLabel)}
         value={value[titleKey]}
         onChange={(e) => setField(titleKey, e.target.value)}
-        className="mt-3 w-full p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142]"
+        className="mt-3 w-full p-4 rounded-xl border-2 border-watta-action/20 outline-none focus:border-watta-action"
       />
       <textarea
         placeholder={b.contentPlaceholder.replace('{{lang}}', langLabel)}
         value={value[contentKey]}
         onChange={(e) => setField(contentKey, e.target.value)}
-        className="mt-3 w-full p-4 rounded-xl border-2 border-[#145142]/20 outline-none focus:border-[#145142] min-h-[200px]"
+        className="mt-3 w-full p-4 rounded-xl border-2 border-watta-action/20 outline-none focus:border-watta-action min-h-[200px]"
       />
     </div>
   )

@@ -20,6 +20,17 @@ export function getAmsterdamTodayKey(reference = new Date()): string {
   return ymdInTimeZone(reference, STATS_TIMEZONE);
 }
 
+export function getAmsterdamMonthStartKey(reference = new Date()): string {
+  const today = getAmsterdamTodayKey(reference);
+  return `${today.slice(0, 8)}01`;
+}
+
+export function isDateKeyInRange(dateKey: string, from: string, to: string): boolean {
+  const start = from <= to ? from : to;
+  const end = from <= to ? to : from;
+  return dateKey >= start && dateKey <= end;
+}
+
 export function addDaysToDateKey(key: string, days: number): string {
   const [y, m, d] = key.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d + days));

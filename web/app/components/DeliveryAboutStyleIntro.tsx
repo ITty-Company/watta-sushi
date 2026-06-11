@@ -3,13 +3,8 @@
 import { memo, useMemo } from 'react'
 import { m } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
-import {
-  MapPin,
-  MessagesSquare,
-  Snowflake,
-  Truck,
-  UtensilsCrossed,
-} from 'lucide-react'
+import { MessagesSquare, Snowflake, Truck, UtensilsCrossed } from 'lucide-react'
+import { MapPin } from '@/lib/wattaInlineIcons'
 import {
   WATTA_IN_VIEW_FADE_VIEWPORT,
   useWattaDisableScrollReveal,

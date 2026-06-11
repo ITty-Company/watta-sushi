@@ -14,10 +14,9 @@ import ProfileAddressesFlow from './profile/ProfileAddressesFlow'
 import ProfilePersonalDataForm from './profile/ProfilePersonalDataForm'
 import ProfileLeadHero from './profile/ProfileLeadHero'
 import ProfilePublicPageLayout from './profile/ProfilePublicPageLayout'
-import {
-  Phone, Bell, Heart, ShoppingBag, User, Menu,
-  MapPin, Clock, Settings, LogOut, Shield, Mail, ArrowLeft,
-} from 'lucide-react'
+import { Settings, LogOut, Shield, Mail } from 'lucide-react'
+import { Heart, Menu, Clock } from '@/lib/wattaInlineIcons'
+import { Phone, Bell, ShoppingBag, User, MapPin, ArrowLeft } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { logoutClientSession } from '@/lib/authSession'
@@ -471,6 +470,7 @@ export default function ProfileView({
         onAddFavoriteToCart={handleFavoriteAddToCart}
         onLogout={handleLogout}
         onOpenAdmin={onOpenAdmin}
+        onOpenNotifications={onOpenNotifications}
         onAddressSaved={handleAddressSaved}
         onPersonalDataSaved={handlePersonalDataSaved}
         onPhoneVerified={handlePhoneVerified}

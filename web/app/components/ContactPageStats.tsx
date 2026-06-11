@@ -2,7 +2,8 @@
 
 import { memo, useMemo } from 'react'
 import { m } from 'framer-motion'
-import { BadgeCheck, Clock, MessageCircle, Star } from 'lucide-react'
+import { BadgeCheck, MessageCircle } from 'lucide-react'
+import { Clock, Star } from '@/lib/wattaInlineIcons'
 import { cn } from '@/lib/utils'
 import { useWattaDisableScrollReveal, wattaInViewFadeViewport } from './WattaInViewFade'
 

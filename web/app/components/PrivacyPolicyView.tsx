@@ -13,22 +13,8 @@ import {
 import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
-import {
-  Baby,
-  Cookie,
-  Database,
-  FileText,
-  Globe,
-  Link2,
-  Lock,
-  Mail,
-  Scale,
-  Share2,
-  Shield,
-  ShoppingBag,
-  Sparkles,
-  UserCheck,
-} from 'lucide-react'
+import { Baby, Cookie, Database, FileText, Globe, Link2, Lock, Mail, Scale, Share2, Shield, Sparkles, UserCheck } from 'lucide-react'
+import { ShoppingBag } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import { privacyPageByLang, type PrivacyPolicyBlock } from '@/lib/i18n/privacyPageContent'
 

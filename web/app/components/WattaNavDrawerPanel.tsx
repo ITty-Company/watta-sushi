@@ -17,28 +17,9 @@ import {
   navigateFromNavDrawerToCategory,
   prefetchFullMenuCategory,
 } from '@/lib/fullMenuCategoryNav'
-import {
-  Bell,
-  BookOpen,
-  FileText,
-  Heart,
-  Home,
-  Info,
-  LogIn,
-  LogOut,
-  MapPin,
-  Menu,
-  Send,
-  Shield,
-  ShoppingCart,
-  Sparkles,
-  Star,
-  Tag,
-  Truck,
-  User,
-  UserPlus,
-  X,
-} from 'lucide-react'
+import { BookOpen, FileText, Home, Info, LogIn, LogOut, Send, Shield, ShoppingCart, Sparkles, Tag, Truck, UserPlus } from 'lucide-react'
+import { Heart, Menu, Star } from '@/lib/wattaInlineIcons'
+import { Bell, MapPin, User, X } from '@/lib/wattaInlineIcons'
 import WattaBrandWordmark from './WattaBrandWordmark'
 import { MenuCategorySticker } from './MenuCategorySticker'
 import { useLanguage } from '../context/LanguageContext'

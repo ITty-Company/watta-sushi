@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from 'react'
 import { usePathname } from 'next/navigation'
 import WattaLink from './WattaLink'
-import { ArrowRight, Minus, Plus, ShoppingBag, X } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, X } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
 import { useCartDrawer } from '../context/CartDrawerContext'
@@ -40,6 +41,7 @@ import {
 } from '@/lib/wattaCatalogSync'
 import { WattaMobileCartBarSummary } from './WattaMobileCartBarSummary'
 import CartDrawerEmptyIllustration from './CartDrawerEmptyIllustration'
+import WattaCartSwipeLine from './WattaCartSwipeLine'
 import '../watta-cart-drawer-empty-art.css'
 
 function lineSubtotal(line: CartStorageLine): number {
@@ -59,6 +61,7 @@ export default function WattaCartDrawer() {
 
   const cartItems = useCartLinesSnapshot()
   const [mounted, setMounted] = useState(false)
+  const [openSwipeLineId, setOpenSwipeLineId] = useState<string | null>(null)
 
   useLayoutEffect(() => {
     setMounted(true)
@@ -67,6 +70,10 @@ export default function WattaCartDrawer() {
   useEffect(() => {
     close()
   }, [pathname, close])
+
+  useEffect(() => {
+    if (!isOpen) setOpenSwipeLineId(null)
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -220,8 +227,18 @@ export default function WattaCartDrawer() {
                   language as WattaLanguage,
                 )
 
+                const lineKey = item.cartLineId ?? `${item.id}-line`
+
                 return (
-                  <li key={item.cartLineId ?? `${item.id}-line`} className="watta-cart-drawer-item">
+                  <li key={lineKey} className="watta-cart-swipe-line-wrap">
+                    <WattaCartSwipeLine
+                      lineId={lineKey}
+                      onRemove={() => handleRemove(item.id)}
+                      openLineId={openSwipeLineId}
+                      onOpenChange={setOpenSwipeLineId}
+                      deleteLabel={a.removeLine}
+                    >
+                    <div className="watta-cart-drawer-item">
                     <button
                       type="button"
                       className="watta-cart-drawer-item__remove"
@@ -305,6 +322,8 @@ export default function WattaCartDrawer() {
                         </button>
                       </div>
                     </div>
+                    </div>
+                    </WattaCartSwipeLine>
                   </li>
                 )
               })}

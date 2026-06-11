@@ -4,7 +4,8 @@ import { m } from 'framer-motion'
 import { WATTA_IN_VIEW_FADE_VIEWPORT, useWattaDisableScrollReveal } from './WattaInViewFade'
 import { WattaStaggerRevealText } from './WattaStaggerRevealText'
 import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
-import { ArrowUpRight, Clock, MapPin, ShieldCheck } from 'lucide-react'
+import { ArrowUpRight, ShieldCheck } from 'lucide-react'
+import { Clock, MapPin } from '@/lib/wattaInlineIcons'
 
 export type DeliveryTrustStripLabels = {
   kitchenMapCaption: string

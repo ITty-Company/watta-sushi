@@ -1,0 +1,351 @@
+/* Спільні стилі списку сповіщень — drawer */
+
+.notifications-page-web {
+  --watta-notif-brand-green: #145142;
+  --watta-notif-brand-orange: #ff5c00;
+  --watta-notif-divider: rgba(20, 81, 66, 0.08);
+}
+
+#watta-notifications-drawer .notifications-page-intro {
+  margin-bottom: 0;
+}
+
+#watta-notifications-drawer .notifications-page-intro__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(20, 81, 66, 0.5);
+}
+
+#watta-notifications-drawer .notifications-page-intro__kicker-ico {
+  color: var(--watta-notif-brand-orange);
+  flex-shrink: 0;
+}
+
+#watta-notifications-drawer .notifications-page-intro__title {
+  margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.28rem, 4.2vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: #1f2937;
+}
+
+#watta-notifications-drawer .notifications-page-intro__title::after {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 0.22rem;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--watta-notif-brand-orange), var(--watta-notif-brand-green));
+}
+
+#watta-notifications-drawer .notifications-page-list-wrap {
+  padding: 0;
+  min-width: 0;
+}
+
+#watta-notifications-drawer .notifications-page-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+  min-height: 1.35rem;
+}
+
+#watta-notifications-drawer .notifications-page-list-count {
+  display: inline-flex;
+  min-width: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 92, 0, 0.1);
+  padding: 0.15rem 0.45rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+#watta-notifications-drawer .notifications-page-list-count--muted {
+  display: none;
+}
+
+#watta-notifications-drawer .notifications-page-list-mark-all {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: 72%;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(20, 81, 66, 0.82);
+  cursor: pointer;
+  text-align: right;
+  overflow-wrap: anywhere;
+  transition: color 0.2s ease;
+}
+
+#watta-notifications-drawer .notifications-page-list-mark-all:hover {
+  color: #145142;
+  text-decoration: underline;
+}
+
+#watta-notifications-drawer .notifications-page-list {
+  display: flex;
+  max-height: none;
+  flex-direction: column;
+  gap: 0;
+  overflow: visible;
+  min-width: 0;
+}
+
+#watta-notifications-drawer .notifications-page-list > li {
+  min-width: 0;
+}
+
+#watta-notifications-drawer .notifications-page-card {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  min-width: 0;
+  border: none !important;
+  border-bottom: 1px solid var(--watta-notif-divider) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0.85rem 0;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  transition: background 0.2s ease;
+  outline: none;
+}
+
+#watta-notifications-drawer .notifications-page-card *,
+#watta-notifications-drawer .notifications-page-list-mark-all {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#watta-notifications-drawer .notifications-page-card::selection,
+#watta-notifications-drawer .notifications-page-card *::selection {
+  background: transparent;
+  color: inherit;
+}
+
+#watta-notifications-drawer .notifications-page-card:focus {
+  outline: none;
+}
+
+#watta-notifications-drawer .notifications-page-card:focus-visible {
+  outline: 2px solid rgba(20, 81, 66, 0.22);
+  outline-offset: 3px;
+  border-radius: 0.35rem;
+}
+
+#watta-notifications-drawer .notifications-page-card:active {
+  background: rgba(20, 81, 66, 0.035) !important;
+}
+
+#watta-notifications-drawer .notifications-page-list > li:last-child .notifications-page-card {
+  border-bottom: none !important;
+  padding-bottom: 0.1rem;
+}
+
+#watta-notifications-drawer .notifications-page-card:hover {
+  background: rgba(20, 81, 66, 0.02) !important;
+}
+
+#watta-notifications-drawer .notifications-page-card--unread {
+  padding-right: 0.75rem;
+  background: transparent !important;
+}
+
+#watta-notifications-drawer .notifications-page-card__icon-wrap {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.85rem;
+  height: 2.85rem;
+}
+
+#watta-notifications-drawer .notifications-page-card__blob {
+  position: absolute;
+  height: 2.5rem;
+  width: 2.95rem;
+  rotate: -10deg;
+  border-radius: 45% 55% 50% 50%;
+  opacity: 0.9;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 200, 170, 0.9) 0%,
+    rgba(20, 81, 66, 0.2) 55%,
+    rgba(246, 249, 247, 0.45) 100%
+  );
+}
+
+#watta-notifications-drawer .notifications-page-card--unread .notifications-page-card__blob {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 200, 170, 0.9) 0%,
+    rgba(255, 92, 0, 0.22) 55%,
+    rgba(246, 249, 247, 0.45) 100%
+  );
+}
+
+#watta-notifications-drawer .notifications-page-card__ico {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  border: none !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: #4b5563;
+}
+
+#watta-notifications-drawer .notifications-page-card__ico svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+#watta-notifications-drawer .notifications-page-card__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.28rem;
+  padding-top: 0.05rem;
+  text-align: left;
+}
+
+#watta-notifications-drawer .notifications-page-card__title {
+  width: 100%;
+  margin: 0;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: #374151;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#watta-notifications-drawer .notifications-page-card--unread .notifications-page-card__title {
+  color: #1f2937;
+  font-weight: 650;
+}
+
+#watta-notifications-drawer .notifications-page-card__text {
+  display: block;
+  width: 100%;
+  margin: 0;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #6b7280;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#watta-notifications-drawer .notifications-page-card__time {
+  display: block;
+  width: 100%;
+  margin: 0.1rem 0 0;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: #9ca3af;
+}
+
+#watta-notifications-drawer .notifications-page-card__dot {
+  position: absolute;
+  top: 1rem;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  margin-top: 0;
+  border-radius: 999px;
+  background: var(--watta-notif-brand-orange);
+  box-shadow: 0 0 0 2px rgba(255, 92, 0, 0.12);
+}
+
+#watta-notifications-drawer .notifications-page-status {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.16rem 0.5rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#watta-notifications-drawer .notifications-page-status--pending {
+  background: rgba(255, 237, 213, 0.75);
+  color: #a16207;
+}
+
+#watta-notifications-drawer .notifications-page-status--confirmed {
+  background: rgba(236, 252, 203, 0.8);
+  color: #4d7c0f;
+}
+
+#watta-notifications-drawer .notifications-page-status--cooking {
+  background: rgba(255, 237, 213, 0.85);
+  color: #c2410c;
+}
+
+#watta-notifications-drawer .notifications-page-status--delivering {
+  background: rgba(224, 242, 254, 0.85);
+  color: #0369a1;
+}
+
+#watta-notifications-drawer .notifications-page-status--done {
+  background: rgba(209, 250, 229, 0.85);
+  color: #047857;
+}
+
+#watta-notifications-drawer .notifications-page-status--cancelled {
+  background: rgba(254, 226, 226, 0.85);
+  color: #b91c1c;
+}
+
+#watta-notifications-drawer .notifications-page-status--default {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+#watta-notifications-drawer .notifications-page-loading-call p {
+  font-weight: 500;
+  color: #6b7280;
+}

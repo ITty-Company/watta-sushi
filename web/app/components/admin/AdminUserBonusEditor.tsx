@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+import { X } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -114,27 +114,27 @@ export default function AdminUserBonusEditor({
       <div
         role="dialog"
         aria-labelledby="bonus-editor-title"
-        className="admin-watta-modal-panel relative w-full max-w-md rounded-2xl border-2 border-[#145142]/15 bg-white p-6 shadow-2xl"
+        className="admin-watta-modal-panel relative w-full max-w-md rounded-2xl border-2 border-watta-action/15 bg-white p-6 shadow-2xl"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-2 text-[#145142]/55 hover:bg-watta-action/10"
+          className="absolute right-3 top-3 rounded-full p-2 text-watta-action/55 hover:bg-watta-action/10"
           aria-label={b.closeAria}
         >
           <X size={20} />
         </button>
 
-        <h3 id="bonus-editor-title" className="mb-1 text-lg font-bold text-[#145142]">
+        <h3 id="bonus-editor-title" className="mb-1 text-lg font-bold text-watta-action">
           {b.title}
         </h3>
-        <p className="mb-4 text-sm text-[#145142]/70">
+        <p className="mb-4 text-sm text-watta-action/70">
           {user.name || '—'} · {user.email}
         </p>
 
         <p className="mb-4 rounded-xl bg-watta-action/5 px-3 py-2 text-sm">
           {b.balanceLabel}{' '}
-          <strong className="tabular-nums text-[#145142]">
+          <strong className="tabular-nums text-watta-action">
             {Number(user.bonusBalance).toFixed(2)} €
           </strong>
           <br />
@@ -147,19 +147,19 @@ export default function AdminUserBonusEditor({
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#145142]">
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-watta-action">
             <input
               type="checkbox"
               checked={usePersonalPercent}
               onChange={(e) => setUsePersonalPercent(e.target.checked)}
-              className="h-4 w-4 accent-[#145142]"
+              className="h-4 w-4 accent-[var(--watta-brand-action)]"
             />
             {b.personalPercentCheckbox}
           </label>
 
           {usePersonalPercent ? (
             <div>
-              <label className="mb-1 block text-xs font-bold text-[#145142]">
+              <label className="mb-1 block text-xs font-bold text-watta-action">
                 {b.personalPercentField}
               </label>
               <input
@@ -169,16 +169,16 @@ export default function AdminUserBonusEditor({
                 step={0.5}
                 value={personalPercent}
                 onChange={(e) => setPersonalPercent(e.target.value)}
-                className="w-full rounded-xl border-2 border-[#145142]/20 p-3 font-bold outline-none focus:border-[#145142]"
+                className="w-full rounded-xl border-2 border-watta-action/20 p-3 font-bold outline-none focus:border-watta-action"
                 required
               />
             </div>
           ) : (
-            <p className="text-xs text-[#145142]/55">{b.useGlobalHint}</p>
+            <p className="text-xs text-watta-action/55">{b.useGlobalHint}</p>
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-bold text-[#145142]">
+            <label className="mb-1 block text-xs font-bold text-watta-action">
               {b.adjustmentLabel}
             </label>
             <input
@@ -187,16 +187,16 @@ export default function AdminUserBonusEditor({
               value={balanceDelta}
               onChange={(e) => setBalanceDelta(e.target.value)}
               placeholder={b.adjustmentPlaceholder}
-              className="w-full rounded-xl border-2 border-[#145142]/20 p-3 outline-none focus:border-[#145142]"
+              className="w-full rounded-xl border-2 border-watta-action/20 p-3 outline-none focus:border-watta-action"
             />
-            <p className="mt-1 text-xs text-[#145142]/45">{b.adjustmentHint}</p>
+            <p className="mt-1 text-xs text-watta-action/45">{b.adjustmentHint}</p>
           </div>
 
           <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border-2 border-[#145142]/20 py-3 font-semibold text-[#145142]"
+              className="flex-1 rounded-xl border-2 border-watta-action/20 py-3 font-semibold text-watta-action"
             >
               {b.cancelBtn}
             </button>

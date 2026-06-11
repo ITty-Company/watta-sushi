@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useCanGoBack } from '@/hooks/useCanGoBack'

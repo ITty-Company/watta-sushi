@@ -1,7 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { AlertCircle, Check, Clock, Receipt, XCircle } from 'lucide-react'
+import { AlertCircle, Check, Receipt, XCircle } from 'lucide-react'
+import { Clock } from '@/lib/wattaInlineIcons'
 import { profileEmptyRolls } from './empty/profileEmptyAssets'
 
 type PaymentVisual = 'paid' | 'waiting' | 'failed'

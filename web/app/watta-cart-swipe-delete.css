@@ -1,0 +1,98 @@
+.watta-cart-swipe-line {
+  --watta-cart-swipe-action-w: 76px;
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.watta-cart-swipe-line__actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.watta-cart-swipe-line__delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--watta-cart-swipe-action-w);
+  flex-shrink: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.watta-cart-swipe-line__delete.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.watta-cart-swipe-line__delete:active {
+  transform: scale(0.96);
+}
+
+.watta-cart-swipe-line__delete-ico {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.watta-cart-swipe-line__content {
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.watta-cart-swipe-line__content.is-dragging {
+  transition: none;
+}
+
+@media (max-width: 1023px) {
+  .watta-cart-swipe-line .watta-cart-drawer-item__remove,
+  .watta-cart-swipe-line .watta-cart-line-card__remove {
+    display: none !important;
+  }
+
+  .watta-cart-swipe-line-wrap + .watta-cart-swipe-line-wrap {
+    margin-top: 7px;
+  }
+
+  .watta-cart-drawer-list > .watta-cart-swipe-line-wrap:last-child {
+    margin-bottom: 0.65rem;
+  }
+
+  .watta-cart-swipe-line .watta-cart-drawer-item,
+  .watta-cart-swipe-line .watta-cart-line-card {
+    border-bottom: none;
+  }
+
+  .watta-cart-swipe-line .watta-cart-drawer-item {
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow:
+      0 10px 26px -18px rgba(15, 42, 34, 0.32),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watta-cart-swipe-line__content {
+    transition: none;
+  }
+
+  .watta-cart-swipe-line__delete {
+    transition: none;
+  }
+}

@@ -761,8 +761,16 @@ html[data-watta-nav-drawer-open]::after {
   html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines],
   html[data-watta-cart-drawer-open]
     #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines].is-open {
-    height: auto !important;
-    min-height: 0 !important;
+    height: fit-content !important;
+    /*
+     * Підлога: шапка + зелена смуга + рядки (зі складом ≈ 5.75rem) — панель тягнеться вниз,
+     * поки всі позиції (до 6) не вмістяться над футером.
+     */
+    min-height: min(
+      calc(7.5rem + var(--cart-drawer-lines-visible, 1) * var(--cart-drawer-line-h, 5.75rem)),
+      94dvh,
+      calc(100dvh - max(2.25rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom))
+    ) !important;
     /*
      * «Ваше замовлення»: до 6 позицій видно повністю, решта — скролом усередині списку.
      * Розкриваємо drawer майже на всю висоту (лишаємо лише safe-area + малий зазор зверху),
@@ -774,9 +782,14 @@ html[data-watta-nav-drawer-open]::after {
     ) !important;
   }
 
-  html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:not([data-cart-has-lines]),
   html[data-watta-cart-drawer-open]
-    #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:not([data-cart-has-lines]).is-open {
+    #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:not([data-cart-has-lines]):not(
+      :has(.watta-cart-drawer-empty)
+    ),
+  html[data-watta-cart-drawer-open]
+    #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:not([data-cart-has-lines]):not(
+      :has(.watta-cart-drawer-empty)
+    ).is-open {
     height: min(
       78dvh,
       calc(
@@ -805,9 +818,16 @@ html[data-watta-nav-drawer-open]::after {
   }
 
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines] {
-    --cart-drawer-line-h: 4.5625rem;
-    height: auto !important;
-    min-height: 0 !important;
+    --cart-drawer-line-h: 5.75rem;
+    height: fit-content !important;
+    min-height: min(
+      calc(7.5rem + var(--cart-drawer-lines-visible, 1) * var(--cart-drawer-line-h, 5.75rem)),
+      78dvh,
+      calc(
+        100dvh - max(3rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom) -
+          var(--watta-cart-compact-min-h) - 0.55rem
+      )
+    ) !important;
     max-height: min(
       78dvh,
       calc(
@@ -835,26 +855,29 @@ html[data-watta-nav-drawer-open]::after {
   }
 
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty) {
-    height: auto !important;
+    height: fit-content !important;
     min-height: 0 !important;
     max-height: min(
-      90dvh,
-      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - 2.5rem)
+      94dvh,
+      calc(100dvh - max(2.25rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom))
     ) !important;
   }
 
   html[data-watta-cart-drawer-open] #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty),
   html[data-watta-cart-drawer-open]
     #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty).is-open {
-    height: auto !important;
+    height: fit-content !important;
     min-height: 0 !important;
     max-height: min(
-      90dvh,
-      calc(100dvh - max(3rem, env(safe-area-inset-top, 0px)) - 2.5rem)
+      94dvh,
+      calc(100dvh - max(2.25rem, env(safe-area-inset-top, 0px)) - var(--watta-cart-bar-bottom))
     ) !important;
   }
 
   #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+    flex: 0 0 auto;
+    height: auto;
+    max-height: none;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -1073,12 +1096,9 @@ html[data-watta-nav-drawer-open]::after {
   }
 
   #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-list {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
-    max-height: calc(
-      var(--cart-drawer-line-h, 4.5625rem) * var(--cart-drawer-lines-visible, 6) + 1.35rem
-    );
   }
 
   /* Зелена смуга всередині drawer — CTA «Оформити», коли панель відкрита */

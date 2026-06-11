@@ -1,17 +1,20 @@
 /**
- * Адмін-панель — типографіка, кольори й компоненти як на /contacts та в бічному меню (watta-nav-compact).
+ * Адмін-панель — єдиний шрифт Inter, компактна типографіка.
  */
 .admin-shell-watta-web {
-  --admin-ink: #0f241e;
-  --admin-muted: #2d4a42;
-  --admin-muted-soft: rgba(20, 81, 66, 0.55);
-  --admin-brand: #145142;
+  --admin-ink: #1f2937;
+  --admin-muted: #4b5563;
+  --admin-muted-soft: color-mix(in srgb, var(--admin-brand) 52%, transparent);
+  --admin-brand: var(--watta-brand-action);
+  --admin-brand-mid: var(--watta-brand-action-hover);
+  --admin-brand-mint: var(--watta-brand-action);
   --admin-accent: #ff5c00;
   --admin-surface: #ffffff;
   --admin-surface-soft: #f8fbf9;
-  --admin-border: rgba(20, 81, 66, 0.1);
-  --admin-shadow: 0 6px 24px rgba(20, 81, 66, 0.06);
-  --admin-shadow-hover: 0 10px 32px rgba(20, 81, 66, 0.1);
+  --admin-border: color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  --admin-shadow: 0 8px 28px -12px color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  --admin-shadow-hover: 0 14px 36px -14px color-mix(in srgb, var(--admin-brand) 14%, transparent);
+  background: #fff;
 
   font-family:
     var(--font-inter, 'Inter'),
@@ -19,34 +22,231 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
   color: var(--admin-ink);
   -webkit-font-smoothing: antialiased;
+}
+
+.admin-shell-watta-web,
+.admin-shell-watta-web * {
+  font-family: inherit;
+}
+
+.admin-shell-watta-web .watta-nav-compact__nav-label,
+.admin-shell-watta-web .watta-nav-compact__nav-desc,
+.admin-shell-watta-web .watta-nav-compact__head-title,
+.admin-shell-watta-web .watta-nav-compact__head-sub {
+  font-family: inherit;
 }
 
 .admin-shell-watta-web .admin-watta-page-title,
 .admin-shell-watta-web .admin-watta-header-title,
 .admin-shell-watta-web .admin-watta-section-title {
-  font-size: clamp(1.25rem, 2.8vw, 1.65rem);
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
   font-weight: 700;
   line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.admin-shell-watta-web .admin-watta-page-title--brand::after {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 0.22rem;
+  margin-top: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--admin-accent), var(--admin-brand));
 }
 
 .admin-shell-watta-web .admin-watta-section-title,
 .admin-shell-watta-web .admin-watta-news-toolbar h2,
 .admin-shell-watta-web .admin-watta-dashboard h2,
 .admin-shell-watta-web .admin-watta-dashboard h3 {
-  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
-  font-feature-settings: 'liga' 1, 'kern' 1;
   color: var(--admin-ink);
-  letter-spacing: -0.02em;
 }
 
 .admin-shell-watta-web .admin-watta-header-subtitle,
 .admin-shell-watta-web .admin-watta-section-lead,
-.admin-shell-watta-web .admin-watta-dashboard p,
-.admin-shell-watta-web .admin-watta-drawer-item-desc {
-  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+.admin-shell-watta-web .admin-watta-dashboard p {
   color: var(--admin-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+/* ——— Адмін drawer: той самий drawer, але з акцентами та рядковими плитками ——— */
+#watta-admin-nav-drawer.watta-nav-sidebar-drawer--sheet {
+  width: min(420px, calc(100vw - 24px));
+  max-width: min(440px, calc(100vw - 24px));
+  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 12%, transparent);
+  box-shadow:
+    -20px 0 56px color-mix(in srgb, var(--watta-brand-action, #145142) 14%, transparent),
+    -6px 0 20px rgba(0, 0, 0, 0.06),
+    0 24px 52px color-mix(in srgb, var(--watta-brand-action, #145142) 10%, transparent);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__head--admin {
+  border-bottom-color: color-mix(in srgb, var(--watta-brand-action, #145142) 8%, transparent);
+  background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__admin-kicker {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--watta-brand-action, #145142) 14%, transparent);
+  background: color-mix(in srgb, var(--watta-brand-action, #145142) 8%, #ffffff);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--watta-brand-action, #145142);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__scroll--admin {
+  background:
+    radial-gradient(ellipse 120% 60% at 100% 0%, rgba(10, 186, 181, 0.07), transparent 55%),
+    radial-gradient(ellipse 90% 50% at 0% 100%, color-mix(in srgb, var(--watta-brand-action, #145142) 6%, transparent), transparent 50%),
+    linear-gradient(180deg, #fafcfb 0%, #ffffff 38%);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__section-label--admin {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--watta-brand-action, #145142) 52%, transparent);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__section-label--admin .watta-nav-compact__section-ico {
+  color: var(--watta-brand-mint, #5c9010);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-grid--admin {
+  gap: 9px;
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 3rem;
+  padding: 9px 11px;
+  border-radius: 13px;
+  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 9%, transparent);
+  background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--watta-brand-action, #145142) 5%, transparent);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.14s ease;
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin:hover {
+  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 20%, transparent);
+  background: #ffffff;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--watta-brand-action, #145142) 10%, transparent);
+  transform: translateY(-1px);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin:active {
+  transform: translateY(0) scale(0.99);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin .watta-nav-compact__nav-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1a3d33;
+  -webkit-line-clamp: 2;
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin .watta-nav-compact__nav-ico-wrap {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin.watta-nav-compact__nav-tile--active {
+  border-color: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 38%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--watta-brand-mint, #5c9010) 14%, #ffffff) 0%,
+    #ffffff 72%
+  );
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--watta-brand-mint, #5c9010) 16%, transparent),
+    inset 3px 0 0 var(--watta-brand-mint, #5c9010);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin.watta-nav-compact__nav-tile--active .watta-nav-compact__nav-label {
+  font-weight: 700;
+  color: var(--watta-brand-action, #145142);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__admin-footer {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--watta-brand-action, #145142) 10%, transparent);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__admin-site {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--watta-brand-action, #145142) 14%, transparent);
+  background: linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+  color: var(--watta-brand-action, #145142);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__admin-site:hover {
+  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 24%, transparent);
+  background: #ffffff;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--watta-brand-action, #145142) 10%, transparent);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__admin-site:active {
+  transform: scale(0.99);
+}
+
+#watta-admin-nav-drawer .watta-nav-compact__admin-site-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--watta-brand-action, #145142) 10%, transparent);
+  color: var(--watta-brand-action, #145142);
+}
+
+@media (max-width: 767px) {
+  #watta-admin-nav-drawer .watta-nav-compact__nav-tile--admin {
+    min-height: 2.85rem;
+  }
 }
 
 /* ——— Шапка (як watta-nav-compact__head) ——— */
@@ -68,9 +268,9 @@
   margin: 0 auto;
   min-height: 3.5rem;
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(20, 81, 66, 0.06);
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-brand) 6%, transparent);
   background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
-  box-shadow: 0 1px 0 rgba(20, 81, 66, 0.04);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--admin-brand) 4%, transparent);
 }
 
 @media (min-width: 640px) {
@@ -115,9 +315,10 @@
 
 .admin-watta-header-title {
   margin: 0;
-  font-size: clamp(1rem, 2.8vw, 1.35rem) !important;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif !important;
+  font-size: clamp(1rem, 2.8vw, 1.3rem) !important;
   font-weight: 700 !important;
-  line-height: 1.15 !important;
+  line-height: 1.12 !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -125,7 +326,7 @@
   -webkit-background-clip: unset !important;
   background-clip: unset !important;
   -webkit-text-fill-color: unset !important;
-  color: var(--admin-ink) !important;
+  color: #111827 !important;
 }
 
 .admin-watta-header-subtitle {
@@ -140,33 +341,37 @@
 .admin-watta-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .admin-watta-icon-btn {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(20, 81, 66, 0.1);
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
   border-radius: 12px;
-  background: rgba(20, 81, 66, 0.05);
+  background: #fff;
   color: var(--admin-brand);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--admin-brand) 6%, transparent);
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease,
+    box-shadow 0.15s ease,
     transform 0.12s ease;
 }
 
 .admin-watta-icon-btn:hover {
-  background: rgba(20, 81, 66, 0.1);
-  border-color: rgba(20, 81, 66, 0.18);
-  color: #0f3d32;
+  background: color-mix(in srgb, var(--admin-brand) 6%, transparent);
+  border-color: color-mix(in srgb, var(--admin-brand) 20%, transparent);
+  color: var(--watta-brand-action-active);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--admin-brand) 10%, transparent);
 }
 
 .admin-watta-icon-btn:active {
@@ -174,75 +379,63 @@
 }
 
 .admin-watta-icon-btn--primary {
-  background: var(--watta-brand-action);
-  border-color: rgba(20, 81, 66, 0.2);
+  background: var(--admin-brand);
+  border-color: color-mix(in srgb, var(--admin-brand) 28%, transparent);
   color: #fff;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--watta-brand-action) 28%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--admin-brand) 22%, transparent);
 }
 
 .admin-watta-icon-btn--primary:hover {
-  background: var(--watta-brand-action-hover);
+  background: var(--watta-brand-action-active);
+  border-color: color-mix(in srgb, var(--admin-brand) 34%, transparent);
   color: #fff;
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--watta-brand-action) 32%, transparent);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--admin-brand) 26%, transparent);
 }
 
 .admin-watta-lang-switch {
+  box-sizing: border-box;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 2px;
+  height: 40px;
   padding: 3px;
   border-radius: 12px;
-  border: 1px solid rgba(20, 81, 66, 0.12);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
   background: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--admin-brand) 6%, transparent);
 }
 
 .admin-watta-lang-switch button {
-  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.35rem;
+  padding: 0 10px;
+  border: none;
   border-radius: 9px;
+  background: var(--admin-brand);
+  font-family: inherit;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: rgba(20, 81, 66, 0.72);
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
   transition:
     background 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .admin-watta-lang-switch button.is-active {
-  background: var(--admin-brand);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(20, 81, 66, 0.2);
+  background: #fff;
+  color: var(--admin-brand);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--admin-brand) 12%, transparent);
 }
 
 .admin-watta-lang-switch button:not(.is-active):hover {
-  background: rgba(20, 81, 66, 0.08);
-  color: var(--admin-brand);
-}
-
-/* ——— Активний пункт меню адмінки (як contact-watta-topic-chip--active) ——— */
-.admin-watta-nav-tile.watta-nav-compact__nav-tile--active {
-  border-color: rgba(255, 92, 0, 0.35);
-  background: linear-gradient(135deg, #fff7f2 0%, #fff 55%, #fffaf6 100%);
-  color: var(--admin-ink);
-  box-shadow: 0 10px 32px rgba(255, 92, 0, 0.12);
-}
-
-.admin-watta-nav-tile.watta-nav-compact__nav-tile--active .watta-nav-compact__nav-label {
-  font-weight: 700;
-  color: var(--admin-ink);
-}
-
-.admin-watta-nav-tile.watta-nav-compact__nav-tile--active .watta-nav-compact__nav-ico-wrap {
-  background: rgba(255, 92, 0, 0.14) !important;
-  color: var(--admin-accent) !important;
-}
-
-.admin-watta-nav-grid {
-  max-height: none;
-}
-
-#watta-admin-nav-drawer .watta-nav-compact__inner {
-  padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  background: var(--watta-brand-action-active);
+  color: #fff;
 }
 
 /* ——— Картки, панелі, таблиці ——— */
@@ -256,14 +449,30 @@
 }
 
 .admin-shell-watta-web .admin-watta-hover-lift:hover {
-  border-color: rgba(20, 81, 66, 0.18) !important;
+  border-color: color-mix(in srgb, var(--admin-brand) 18%, transparent) !important;
   box-shadow: var(--admin-shadow-hover) !important;
 }
 
 .admin-shell-watta-web .admin-watta-tab-toolbar {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
-  border: 1px solid rgba(20, 81, 66, 0.08);
-  box-shadow: 0 1px 3px rgba(20, 81, 66, 0.04);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 52%, #f3faf6 100%);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 1.15rem;
+  box-shadow: 0 10px 32px -16px color-mix(in srgb, var(--admin-brand) 14%, transparent);
+}
+
+.admin-shell-watta-web .admin-watta-tab-toolbar .admin-watta-tab-toolbar-menu {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent) !important;
+  background: #fff !important;
+  color: var(--admin-brand) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--admin-brand) 6%, transparent);
+  --tw-ring-color: color-mix(in srgb, var(--admin-brand) 12%, transparent) !important;
+}
+
+.admin-shell-watta-web .admin-watta-tab-toolbar .admin-watta-tab-toolbar-menu:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 20%, transparent) !important;
+  background: #f8fbf9 !important;
+  --tw-ring-color: color-mix(in srgb, var(--admin-brand) 18%, transparent) !important;
 }
 
 .admin-shell-watta-web .admin-watta-tab-toolbar-menu,
@@ -274,18 +483,18 @@
 
 .admin-shell-watta-web .admin-watta-products-add-btn,
 .admin-shell-watta-web .admin-watta-add-btn,
-.admin-shell-watta-web button[class*='bg-[#145142]'],
+.admin-shell-watta-web button[class*='bg-watta-action'],
 .admin-shell-watta-web button[class*='bg-[#155044]'] {
   font-family: inherit;
 }
 
 .admin-shell-watta-web .admin-watta-news-toolbar {
   background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
-  border: 1px solid rgba(20, 81, 66, 0.08);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 8%, transparent);
 }
 
 .admin-shell-watta-web .admin-watta-news-toolbar .admin-watta-add-btn {
-  background: linear-gradient(145deg, #0f3d32 0%, #145142 48%, #155044 100%);
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--watta-brand-action) 48%, #155044 100%);
 }
 
 .admin-shell-watta-web .admin-watta-crm-table th {
@@ -302,40 +511,286 @@
 }
 
 .admin-shell-watta-web .admin-watta-crm-table tbody tr:hover {
-  background: rgba(20, 81, 66, 0.04);
+  background: color-mix(in srgb, var(--admin-brand) 4%, transparent);
 }
 
 .admin-shell-watta-web .admin-watta-dashboard .admin-watta-page-title {
-  font-size: clamp(1.5rem, 3.5vw, 2.15rem);
+  font-size: clamp(1.2rem, 2.6vw, 1.55rem);
   font-weight: 700;
-  line-height: 1.12;
+  line-height: 1.15;
 }
 
 .admin-shell-watta-web .admin-watta-dashboard .admin-watta-section-lead {
-  font-size: clamp(1rem, 2.2vw, 1.1rem);
-  line-height: 1.55;
+  font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--admin-muted);
 }
 
 .admin-shell-watta-web .admin-watta-kicker {
   font-family: inherit;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--admin-muted-soft);
 }
 
+/* ——— Єдиний стиль дашборду (як на головній: біло-зелений Watta) ——— */
+.admin-watta-dashboard .admin-watta-section-head {
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-brand) 8%, transparent);
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  color: #111827;
+  text-transform: none;
+  white-space: normal;
+}
+
+.admin-watta-dash-card {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  text-align: left;
+  box-shadow: var(--admin-shadow);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.admin-watta-dash-card:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 20%, transparent);
+  box-shadow: var(--admin-shadow-hover);
+}
+
+.admin-watta-dash-card:active {
+  transform: scale(0.99);
+}
+
+.admin-watta-dash-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-brand) 35%, transparent);
+}
+
+.admin-watta-dash-card--accent {
+  border-color: rgba(255, 92, 0, 0.22);
+  background: linear-gradient(180deg, #fffaf6 0%, #ffffff 55%, #f8fbf9 100%);
+}
+
+.admin-watta-dash-card__icon {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0;
+  background: transparent;
+  color: #111827;
+  box-shadow: none;
+}
+
+.admin-watta-dash-card__icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 2.35rem;
+  height: 2.1rem;
+  rotate: -10deg;
+  border-radius: 45% 55% 50% 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 200, 170, 0.92) 0%,
+    color-mix(in srgb, var(--admin-brand) 22%, transparent) 55%,
+    rgba(246, 249, 247, 0.45) 100%
+  );
+}
+
+.admin-watta-dash-card__icon--accent::before {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 200, 170, 0.92) 0%,
+    rgba(255, 92, 0, 0.28) 55%,
+    rgba(246, 249, 247, 0.45) 100%
+  );
+}
+
+.admin-watta-dash-card__icon svg {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-watta-dash-card__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--admin-muted-soft);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.admin-watta-dash-card__value {
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+  word-break: break-word;
+}
+
+.admin-watta-dash-panel {
+  min-width: 0;
+  border-radius: 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--admin-shadow);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.admin-watta-dash-panel:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 18%, transparent);
+  box-shadow: var(--admin-shadow-hover);
+}
+
+.admin-watta-dash-panel:active {
+  transform: scale(0.995);
+}
+
+.admin-watta-dash-status {
+  position: relative;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: #fff;
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-watta-dash-status::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 1rem 0 0 1rem;
+  background: var(--admin-brand);
+}
+
+.admin-watta-dash-status--accent::before {
+  background: var(--admin-accent);
+}
+
+.admin-watta-dash-status--mint::before {
+  background: var(--admin-brand-mint);
+}
+
+.admin-watta-dash-status--muted::before {
+  background: color-mix(in srgb, var(--admin-brand) 35%, transparent);
+}
+
+.admin-watta-dash-status--danger::before {
+  background: #c45c4a;
+}
+
+.admin-watta-dash-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 48%, #f3faf6 100%);
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 16px 40px -24px color-mix(in srgb, var(--admin-brand) 22%, transparent);
+}
+
+.admin-watta-dash-hero::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -10%;
+  width: 55%;
+  height: 80%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 92, 0, 0.08), transparent 68%);
+}
+
+.admin-watta-dash-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -35%;
+  left: -8%;
+  width: 50%;
+  height: 75%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--admin-brand) 7%, transparent), transparent 70%);
+}
+
+.admin-watta-dash-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-watta-dash-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 92, 0, 0.18);
+  background: linear-gradient(135deg, #fffaf6 0%, #ffffff 100%);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-brand);
+}
+
+.admin-watta-dash-hero__hint {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--admin-muted);
+  backdrop-filter: blur(6px);
+}
+
+@media (min-width: 640px) {
+  .admin-watta-dash-hero__hint {
+    max-width: 20rem;
+    font-size: 0.8125rem;
+  }
+}
+
 .admin-shell-watta-web .admin-watta-modal-panel {
-  border: 1px solid rgba(20, 81, 66, 0.12);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
   box-shadow:
-    0 24px 64px -12px rgba(20, 81, 66, 0.2),
+    0 24px 64px -12px color-mix(in srgb, var(--admin-brand) 20%, transparent),
     0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .admin-shell-watta-web .admin-watta-modal-panel h2,
 .admin-shell-watta-web .admin-watta-modal-panel h3 {
-  font-family: var(--font-brand-playfair), 'Playfair Display', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--admin-ink);
 }
 
@@ -348,7 +803,7 @@
 
 .admin-shell-watta-web input::placeholder,
 .admin-shell-watta-web textarea::placeholder {
-  color: rgba(20, 81, 66, 0.4);
+  color: color-mix(in srgb, var(--admin-brand) 40%, transparent);
 }
 
 .admin-shell-watta-web label {
@@ -370,16 +825,161 @@
 
 .admin-orders-by-day {
   border-radius: 20px;
-  border: 1px solid rgba(20, 81, 66, 0.12);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
   background: rgba(255, 255, 255, 0.92);
   padding: 1rem 1rem 1.1rem;
-  box-shadow: 0 16px 40px -28px rgba(20, 81, 66, 0.28);
+  box-shadow: 0 16px 40px -28px color-mix(in srgb, var(--admin-brand) 28%, transparent);
 }
 
 .admin-orders-by-day__head {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.admin-orders-by-day__period-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+}
+
+.admin-orders-by-day__period-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--admin-brand) 55%, transparent);
+}
+
+.admin-orders-by-day__period-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.admin-orders-by-day__period-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--admin-brand) 78%, transparent);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-orders-by-day__period-chip--active {
+  border-color: transparent;
+  background: var(--admin-brand);
+  color: #fff;
+}
+
+.admin-orders-by-day__period-chip:hover:not(.admin-orders-by-day__period-chip--active) {
+  border-color: color-mix(in srgb, var(--admin-brand) 22%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 5%, transparent);
+}
+
+.admin-orders-by-day__range-heading--preset {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--admin-brand) 72%, transparent);
+}
+
+.admin-orders-by-day__range-heading--preset strong {
+  color: var(--watta-brand-action);
+  font-weight: 800;
+}
+
+.admin-orders-by-day__mode-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
+  background: #fff;
+}
+
+.admin-orders-by-day__mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--admin-brand) 72%, transparent);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-orders-by-day__mode-btn--active {
+  background: var(--admin-brand);
+  color: #fff;
+}
+
+.admin-orders-by-day__nav-wrap {
+  margin-top: 0.25rem;
+}
+
+.admin-orders-by-day__range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.admin-orders-by-day__range-heading {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--watta-brand-action);
+}
+
+.admin-orders-by-day__range-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.admin-orders-by-day__range-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--watta-brand-action);
+}
+
+.admin-orders-by-day__range-field input {
+  min-height: 2.35rem;
+  padding: 0 0.65rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 18%, transparent);
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--watta-brand-action);
+}
+
+.admin-orders-crm-wrap {
+  width: 100%;
+}
+
+.admin-orders-crm-panel {
+  margin-bottom: 0;
 }
 
 @media (min-width: 768px) {
@@ -392,9 +992,11 @@
 
 .admin-orders-by-day__title {
   margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
   font-size: 1.05rem;
-  font-weight: 800;
-  color: #145142;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #111827;
 }
 
 .admin-orders-by-day__nav {
@@ -411,9 +1013,9 @@
   justify-content: center;
   min-height: 2.35rem;
   border-radius: 9999px;
-  border: 1px solid rgba(20, 81, 66, 0.14);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 14%, transparent);
   background: #fff;
-  color: #145142;
+  color: var(--watta-brand-action);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -431,8 +1033,8 @@
 
 .admin-orders-by-day__nav-btn:hover,
 .admin-orders-by-day__today-btn:hover {
-  border-color: rgba(122, 181, 21, 0.35);
-  background: rgba(122, 181, 21, 0.08);
+  border-color: color-mix(in srgb, var(--admin-brand) 35%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 8%, transparent);
 }
 
 .admin-orders-by-day__date-pill {
@@ -443,9 +1045,9 @@
   min-height: 2.35rem;
   padding: 0 0.85rem;
   border-radius: 9999px;
-  border: 1px solid rgba(122, 181, 21, 0.28);
-  background: rgba(122, 181, 21, 0.1);
-  color: #145142;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 28%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  color: var(--admin-brand);
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
@@ -472,8 +1074,8 @@
   gap: 0.15rem;
   padding: 0.65rem 0.75rem;
   border-radius: 14px;
-  background: rgba(20, 81, 66, 0.04);
-  border: 1px solid rgba(20, 81, 66, 0.08);
+  background: color-mix(in srgb, var(--admin-brand) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 8%, transparent);
 }
 
 .admin-orders-by-day__stat-k {
@@ -481,13 +1083,13 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(20, 81, 66, 0.62);
+  color: color-mix(in srgb, var(--admin-brand) 62%, transparent);
 }
 
 .admin-orders-by-day__stat-v {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #145142;
+  color: var(--watta-brand-action);
 }
 
 .admin-orders-by-day__chips-wrap {
@@ -498,7 +1100,7 @@
   margin: 0 0 0.45rem;
   font-size: 0.72rem;
   font-weight: 700;
-  color: rgba(20, 81, 66, 0.65);
+  color: color-mix(in srgb, var(--admin-brand) 65%, transparent);
 }
 
 .admin-orders-by-day__chips {
@@ -515,7 +1117,7 @@
   gap: 0.35rem;
   padding: 0.35rem 0.6rem;
   border-radius: 9999px;
-  border: 1px solid rgba(20, 81, 66, 0.12);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
   background: #fff;
   font-size: 0.72rem;
   color: #475569;
@@ -523,17 +1125,188 @@
 }
 
 .admin-orders-by-day__chip strong {
-  color: #145142;
+  color: var(--watta-brand-action);
 }
 
 .admin-orders-by-day__chip--active {
   border-color: transparent;
-  background: var(--watta-brand-mint, #5c9010);
+  background: var(--watta-brand-mint, var(--watta-brand-action));
   color: #fff;
 }
 
+.admin-orders-by-day__hint {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 92, 0, 0.22);
+  background: linear-gradient(135deg, #fff8f3 0%, #fff 100%);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #7a4518;
+}
+
+.admin-orders-quick-stats__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 100%);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.admin-orders-quick-stats__card:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 18%, transparent);
+  box-shadow: 0 8px 24px -12px color-mix(in srgb, var(--admin-brand) 18%, transparent);
+}
+
+.admin-orders-quick-stats__card:active {
+  transform: scale(0.98);
+}
+
+.admin-orders-quick-stats__card span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--admin-brand) 62%, transparent);
+}
+
+.admin-orders-quick-stats__card strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--admin-brand);
+}
+
+.admin-orders-quick-stats__card--accent {
+  border-color: rgba(255, 92, 0, 0.18);
+  background: linear-gradient(135deg, #fff7f2 0%, #fff 100%);
+}
+
+.admin-orders-quick-stats__card--accent span {
+  color: rgba(180, 78, 12, 0.72);
+}
+
+.admin-orders-quick-stats__card--accent strong {
+  color: #c44e00;
+}
+
+/* ——— Таблиця замовлень ——— */
+.admin-orders-table-panel {
+  margin-top: 0;
+}
+
+.admin-orders-table__row--open {
+  background: color-mix(in srgb, var(--admin-brand) 4%, transparent);
+}
+
+.admin-orders-table__detail-row td {
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: linear-gradient(180deg, rgba(248, 251, 249, 0.98) 0%, #ffffff 100%);
+}
+
+.admin-orders-table__detail {
+  padding: 0.85rem 0.75rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .admin-orders-table__detail {
+    padding: 1rem 1.1rem 1.15rem;
+  }
+}
+
+.admin-orders-table__detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+@media (min-width: 768px) {
+  .admin-orders-table__detail-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.admin-orders-table__detail-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--admin-brand) 55%, transparent);
+}
+
+.admin-orders-table__detail-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #1f2937;
+}
+
+.admin-orders-table__comment {
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--admin-brand) 5%, transparent);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #374151;
+}
+
+.admin-orders-table__comment--empty {
+  color: color-mix(in srgb, var(--admin-brand) 45%, transparent);
+  font-style: italic;
+}
+
+.admin-orders-table__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-orders-table__items li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  color: #374151;
+}
+
+.admin-orders-table__items li strong {
+  font-weight: 800;
+  color: var(--watta-brand-action);
+}
+
+.admin-orders-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+}
+
 .admin-shell-watta-web .admin-watta-empty-state {
-  border-color: rgba(20, 81, 66, 0.15);
+  border-color: color-mix(in srgb, var(--admin-brand) 15%, transparent);
   color: var(--admin-muted-soft);
 }
 
@@ -546,8 +1319,13 @@
     sans-serif;
 }
 
-.admin-shell-watta-web .admin-watta-section-lead {
-  font-family: var(--font-brand-cormorant), 'Cormorant Garamond', Georgia, serif;
+.admin-shell-watta-web h2.admin-watta-section-title,
+.admin-shell-watta-web h3.admin-watta-section-title {
+  color: #111827 !important;
+}
+
+.admin-watta-page-inner {
+  padding-top: clamp(0.5rem, 1.5vh, 0.85rem);
 }
 
 .admin-hero-video-preview-missing {
@@ -560,9 +1338,1501 @@
   text-align: center;
   font-size: 0.75rem;
   line-height: 1.45;
-  color: rgba(20, 81, 66, 0.72);
-  background: rgba(20, 81, 66, 0.04);
-  border: 1px dashed rgba(20, 81, 66, 0.18);
+  color: color-mix(in srgb, var(--admin-brand) 72%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 4%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--admin-brand) 18%, transparent);
   border-radius: 12px;
+}
+
+/* ——— Вкладка «Товари» ——— */
+.admin-watta-tab-toolbar--products {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 52%, #f3faf6 100%);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 1.15rem;
+  box-shadow: 0 10px 32px -16px color-mix(in srgb, var(--admin-brand) 14%, transparent);
+}
+
+.admin-watta-tab-toolbar--products .admin-watta-tab-toolbar-menu {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent) !important;
+  background: #fff !important;
+  color: var(--admin-brand) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--admin-brand) 6%, transparent);
+  --tw-ring-color: color-mix(in srgb, var(--admin-brand) 12%, transparent) !important;
+}
+
+.admin-watta-tab-toolbar--products .admin-watta-tab-toolbar-menu:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 20%, transparent) !important;
+  background: #f8fbf9 !important;
+  --tw-ring-color: color-mix(in srgb, var(--admin-brand) 18%, transparent) !important;
+}
+
+.admin-watta-tab-toolbar--products .admin-watta-products-add-btn {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 20%, transparent);
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--admin-brand) 48%, var(--admin-brand-mid) 100%) !important;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--admin-brand) 22%, transparent);
+  font-weight: 600;
+  color: #fff !important;
+}
+
+.admin-watta-tab-toolbar--products .admin-watta-products-add-btn:hover {
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--watta-brand-action-hover) 48%, var(--admin-brand) 100%) !important;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--admin-brand) 26%, transparent);
+}
+
+.admin-watta-products-toolbar-meta {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.admin-watta-products-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
+  background: #fff;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-brand);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--admin-brand) 6%, transparent);
+}
+
+.admin-watta-products-tab {
+  position: relative;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(92, 144, 16, 0.06), transparent 55%),
+    linear-gradient(180deg, #f8fbf9 0%, #ffffff 38%, #fafcfb 100%);
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 8%, transparent);
+  padding: 0.65rem 0.55rem 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+@media (min-width: 640px) {
+  .admin-watta-products-tab {
+    padding: 0.85rem 0.75rem 1rem;
+    border-radius: 1.35rem;
+  }
+}
+
+.admin-watta-products-grid {
+  padding-top: 0.15rem;
+}
+
+.admin-watta-products-grid-inner {
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-products-grid-inner {
+    gap: 0.85rem;
+  }
+}
+
+.admin-shell-watta-web .admin-watta-product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 1.25rem !important;
+  background: #ffffff !important;
+  padding: 0 !important;
+  box-shadow: 0 1px 4px rgba(15, 30, 25, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-shell-watta-web .admin-watta-product-card:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 14%, transparent) !important;
+  box-shadow: 0 8px 24px rgba(15, 30, 25, 0.1) !important;
+}
+
+.admin-watta-product-card__media {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-watta-product-card__cover {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-watta-product-card__cover--grid {
+  aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
+}
+
+.admin-watta-product-card__cover--modal {
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+}
+
+.admin-watta-product-card__cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.admin-watta-product-card__cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(145deg, #f0f7f3 0%, #e8f2ec 48%, #f5faf7 100%);
+}
+
+.admin-watta-product-card__cover-emoji {
+  font-size: clamp(1.75rem, 5vw, 2.35rem);
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--admin-brand) 12%, transparent));
+  opacity: 0.88;
+}
+
+.admin-watta-product-card__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.45rem;
+  padding-bottom: 0.55rem;
+  background: linear-gradient(180deg, transparent 42%, rgba(10, 18, 16, 0.42) 100%);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  pointer-events: none;
+}
+
+.admin-watta-product-card:hover .admin-watta-product-card__overlay,
+.admin-watta-product-card:focus-within .admin-watta-product-card__overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.admin-watta-product-card__overlay-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--admin-brand);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 30, 25, 0.18);
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+  touch-action: manipulation;
+}
+
+.admin-watta-product-card__overlay-btn:hover {
+  transform: translateY(-1px) scale(1.04);
+  background: #fff;
+  color: var(--watta-brand-action-active);
+}
+
+.admin-watta-product-card__overlay-btn--danger {
+  color: #dc2626;
+}
+
+.admin-watta-product-card__overlay-btn--danger:hover {
+  background: #fff5f5;
+  color: #b91c1c;
+}
+
+.admin-watta-product-card__badges {
+  pointer-events: none;
+  position: absolute;
+  left: 0.45rem;
+  top: 0.45rem;
+  z-index: 2;
+  display: flex;
+  max-width: calc(100% - 0.9rem);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.admin-watta-product-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.25rem;
+  border-radius: 999px;
+  padding: 0.22rem 0.5rem;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-watta-product-card__badge--hit {
+  color: #fff;
+  background: var(--admin-brand-mint);
+  border: none;
+  box-shadow: 0 2px 10px rgba(86, 194, 67, 0.28);
+}
+
+.admin-watta-product-card__badge--cart {
+  color: #fff;
+  background: var(--admin-brand);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--admin-brand) 22%, transparent);
+}
+
+.admin-watta-product-card__badge--promo {
+  color: #c95a1a;
+  background: rgba(255, 249, 244, 0.97);
+  border: 1px solid rgba(201, 90, 26, 0.16);
+  box-shadow: 0 2px 8px rgba(201, 90, 26, 0.12);
+}
+
+.admin-watta-product-card__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.72rem 0.72rem;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-product-card__body {
+    padding: 0.72rem 0.82rem 0.82rem;
+    gap: 0.4rem;
+  }
+}
+
+.admin-watta-product-card__title {
+  margin: 0;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--font-inter, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.015em;
+  color: #111827;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-product-card__title {
+    font-size: 0.875rem;
+  }
+}
+
+.admin-watta-product-card__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.admin-watta-product-card__meta {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.admin-watta-product-card__meta-id {
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--admin-brand) 45%, transparent);
+}
+
+.admin-watta-product-card__category {
+  display: inline-flex;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-brand) 6%, transparent);
+  padding: 0.12rem 0.42rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--admin-brand);
+}
+
+.admin-watta-product-card__price {
+  flex-shrink: 0;
+  font-family: var(--font-inter, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--admin-brand);
+}
+
+@media (min-width: 640px) {
+  .admin-watta-product-card__price {
+    font-size: 1rem;
+  }
+}
+
+.admin-watta-product-card__actions-mobile {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.15rem;
+  margin-top: 0.15rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--admin-brand) 8%, transparent);
+}
+
+@media (min-width: 768px) {
+  .admin-watta-product-card__actions-mobile {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-watta-product-card__overlay {
+    display: none;
+  }
+}
+
+.admin-watta-product-card__action {
+  display: flex;
+  border: none;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--admin-brand) 6%, transparent);
+  padding: 0.35rem 0.45rem;
+  color: color-mix(in srgb, var(--admin-brand) 55%, transparent);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+  touch-action: manipulation;
+}
+
+.admin-watta-product-card__action:hover {
+  background: color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  color: var(--admin-brand);
+}
+
+.admin-watta-product-card__action--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.admin-watta-products-skeleton {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 30, 25, 0.06);
+}
+
+.admin-watta-products-skeleton__img,
+.admin-watta-products-skeleton__line {
+  border-radius: 0;
+  background: color-mix(in srgb, var(--admin-brand) 7%, transparent);
+  animation: adminWattaProductsPulse 1.4s ease-in-out infinite;
+}
+
+.admin-watta-products-skeleton__img {
+  aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
+  width: 100%;
+}
+
+.admin-watta-products-skeleton__line {
+  height: 0.65rem;
+  margin: 0.72rem 0.82rem 0;
+  border-radius: 0.4rem;
+}
+
+.admin-watta-products-skeleton__line--short {
+  width: 42%;
+  margin-bottom: 0.82rem;
+}
+
+.admin-watta-products-skeleton__line--mid {
+  width: 72%;
+}
+
+@keyframes adminWattaProductsPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.admin-watta-products-empty {
+  border: 1px dashed color-mix(in srgb, var(--admin-brand) 18%, transparent);
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-muted);
+}
+
+.admin-watta-modal-panel .admin-watta-modal-title {
+  margin: 0;
+  flex: 1;
+  padding: 0 0.25rem;
+  text-align: center;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.1rem, 3vw, 1.35rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+/* Модалки в portal (document.body) — той самий брендовий зелений */
+.admin-watta-modal-root.admin-shell-watta-web {
+  display: contents;
+}
+
+.admin-watta-modal-root .admin-watta-modal-panel {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
+  box-shadow:
+    0 24px 64px -12px color-mix(in srgb, var(--admin-brand) 20%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.admin-watta-primary-btn {
+  border: none;
+  background: linear-gradient(
+    145deg,
+    var(--watta-brand-action-active) 0%,
+    var(--watta-brand-action) 50%,
+    color-mix(in srgb, var(--watta-brand-action) 88%, #000) 100%
+  );
+  color: #fff;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--watta-brand-action) 28%, transparent);
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.12s ease,
+    opacity 0.18s ease;
+}
+
+.admin-watta-primary-btn:hover:not(:disabled) {
+  background: linear-gradient(
+    145deg,
+    var(--watta-brand-action-hover) 0%,
+    var(--watta-brand-action) 52%,
+    color-mix(in srgb, var(--watta-brand-action-hover) 90%, #000) 100%
+  );
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--watta-brand-action) 34%, transparent);
+}
+
+.admin-watta-primary-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.admin-watta-primary-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-watta-editor-lang {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--watta-brand-action) 12%, transparent);
+  background: color-mix(in srgb, var(--watta-brand-action) 5%, #f3f4f6);
+}
+
+.admin-watta-editor-lang__btn {
+  flex: 1 1 0;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.35rem;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: color-mix(in srgb, var(--watta-brand-action) 45%, #6b7280);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-watta-editor-lang__btn:hover:not(.is-active) {
+  color: var(--watta-brand-action);
+  background: color-mix(in srgb, var(--watta-brand-action) 8%, #ffffff);
+}
+
+.admin-watta-editor-lang__btn.is-active {
+  background: var(--watta-brand-action);
+  color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--watta-brand-action) 32%, transparent);
+}
+
+/* ——— Спільні стилі вкладок адмінки ——— */
+.admin-watta-tab-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-tab-page {
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-watta-tab-page {
+    gap: 1.5rem;
+  }
+}
+
+.admin-watta-glass-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 48%, #f3faf6 100%);
+  padding: 1rem;
+  box-shadow: 0 12px 32px -18px color-mix(in srgb, var(--admin-brand) 16%, transparent);
+}
+
+@media (min-width: 640px) {
+  .admin-watta-glass-panel {
+    padding: 1.25rem 1.5rem;
+    border-radius: 1.35rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-watta-glass-panel {
+    padding: 1.5rem 2rem;
+  }
+}
+
+.admin-watta-glass-panel::before {
+  content: '';
+  position: absolute;
+  top: -35%;
+  right: -8%;
+  width: 50%;
+  height: 70%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 92, 0, 0.06), transparent 68%);
+}
+
+.admin-watta-glass-panel::after {
+  content: '';
+  position: absolute;
+  bottom: -40%;
+  left: -6%;
+  width: 45%;
+  height: 65%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--admin-brand) 6%, transparent), transparent 70%);
+}
+
+.admin-watta-glass-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-watta-glass-panel .absolute[class*='blur-'] {
+  display: none;
+}
+
+.admin-watta-section-title--brand::after {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 0.22rem;
+  margin-top: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--admin-accent), var(--admin-brand));
+}
+
+.admin-watta-section-title.flex.admin-watta-section-title--brand::after,
+.admin-watta-section-title--brand.flex::after {
+  display: none;
+}
+
+.admin-watta-section-title__line::after {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 0.22rem;
+  margin-top: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--admin-accent), var(--admin-brand));
+}
+
+.admin-watta-tab-intro__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(255, 92, 0, 0.18);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fffaf6 0%, #ffffff 100%);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-brand);
+}
+
+.admin-watta-subsection-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted-soft);
+}
+
+.admin-watta-entity-card {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent) !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%) !important;
+  box-shadow: var(--admin-shadow) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.admin-watta-entity-card h3 {
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.admin-watta-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 20%, transparent);
+  border-radius: 0.85rem;
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--admin-brand) 48%, var(--admin-brand-mid) 100%) !important;
+  padding: 0.65rem 1.25rem;
+  font-weight: 600;
+  color: #fff !important;
+  cursor: pointer;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--admin-brand) 22%, transparent);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.admin-watta-btn-primary:hover {
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--watta-brand-action-hover) 48%, var(--admin-brand) 100%) !important;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--admin-brand) 26%, transparent);
+}
+
+.admin-watta-btn-primary:active {
+  transform: scale(0.99);
+}
+
+.admin-watta-btn-primary--wide {
+  width: 100%;
+  min-height: 3.25rem;
+  font-size: 1rem;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-btn-primary--wide {
+    min-height: 3.75rem;
+    font-size: 1.125rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-watta-btn-primary--wide {
+    min-height: 4rem;
+    font-size: 1.25rem;
+  }
+}
+
+.admin-watta-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 20%, transparent);
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--admin-brand);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-watta-btn-secondary:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 30%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 4%, transparent);
+}
+
+.admin-watta-form-control {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 14%, transparent) !important;
+  border-radius: 0.85rem !important;
+  background: #fff !important;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-ink);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-watta-form-control:focus {
+  border-color: color-mix(in srgb, var(--admin-brand) 35%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--admin-brand) 10%, transparent);
+}
+
+.admin-watta-form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--admin-muted);
+}
+
+.admin-watta-empty-inline {
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-muted-soft);
+}
+
+.admin-watta-promo-highlight {
+  border: 1px solid rgba(255, 92, 0, 0.18);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #fffaf6 0%, #ffffff 100%);
+  padding: 1.25rem;
+}
+
+.admin-watta-promo-highlight .admin-watta-form-label {
+  color: #c2410c;
+}
+
+.admin-watta-promo-highlight .admin-watta-form-control {
+  border-color: rgba(255, 92, 0, 0.22) !important;
+}
+
+.admin-watta-promo-highlight .admin-watta-form-control:focus {
+  border-color: rgba(255, 92, 0, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(255, 92, 0, 0.1);
+}
+
+.admin-shell-watta-web .admin-watta-news-toolbar h2 {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  letter-spacing: -0.02em;
+}
+
+.admin-watta-news-card h3 {
+  margin: 0;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.admin-watta-news-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.admin-watta-news-card__edit {
+  flex: 1;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 14%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--admin-brand) 5%, transparent);
+  padding: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--admin-brand);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-watta-news-card__edit:hover {
+  background: color-mix(in srgb, var(--admin-brand) 10%, transparent);
+}
+
+.admin-watta-news-card__delete {
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 0.65rem;
+  background: rgba(239, 68, 68, 0.06);
+  padding: 0.5rem 0.75rem;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-watta-news-card__delete:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.admin-banners-tab-hero {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent) !important;
+  border-radius: 1.35rem !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 48%, #f3faf6 100%) !important;
+  box-shadow: 0 12px 32px -18px color-mix(in srgb, var(--admin-brand) 16%, transparent) !important;
+}
+
+.admin-banners-tab-hero h2 {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+.admin-banners-tab-hero p {
+  color: var(--admin-muted) !important;
+}
+
+.admin-banners-tab-cta {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 20%, transparent) !important;
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--admin-brand) 48%, var(--admin-brand-mid) 100%) !important;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--admin-brand) 22%, transparent);
+  font-weight: 600 !important;
+}
+
+.admin-banner-card-web {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent) !important;
+  border-radius: 1.15rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%) !important;
+  backdrop-filter: none !important;
+  box-shadow: var(--admin-shadow) !important;
+}
+
+.admin-banner-card-web h3 {
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-weight: 700;
+  color: #111827 !important;
+}
+
+.admin-watta-ingredient-form-panel {
+  margin-bottom: 2rem;
+}
+
+.admin-watta-ingredient-grid-card {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  padding: 0.75rem;
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-watta-ingredient-grid-card--active {
+  border-color: color-mix(in srgb, var(--admin-brand) 28%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-brand) 12%, transparent);
+}
+
+.admin-watta-tab-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-tab-head-row {
+    margin-bottom: 1.25rem;
+  }
+}
+
+.admin-watta-settings-divider {
+  border-top: 1px solid color-mix(in srgb, var(--admin-brand) 8%, transparent);
+  padding-top: 1.5rem;
+}
+
+.admin-shell-watta-web .admin-watta-page-inner .admin-watta-settings-divider h3 {
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted-soft);
+}
+
+.admin-watta-glass-panel input:not([type='checkbox']):not([type='radio']):not([type='file']):not(.sr-only),
+.admin-watta-glass-panel select,
+.admin-watta-glass-panel textarea,
+.admin-watta-tab-page input:not([type='checkbox']):not([type='radio']):not([type='file']):not(.sr-only),
+.admin-watta-tab-page select,
+.admin-watta-tab-page textarea {
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 14%, transparent) !important;
+  border-radius: 0.85rem !important;
+  background: #fff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.admin-watta-glass-panel input:focus,
+.admin-watta-glass-panel select:focus,
+.admin-watta-glass-panel textarea:focus,
+.admin-watta-tab-page input:focus,
+.admin-watta-tab-page select:focus,
+.admin-watta-tab-page textarea:focus {
+  border-color: color-mix(in srgb, var(--admin-brand) 32%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--admin-brand) 8%, transparent);
+  outline: none;
+}
+
+/* ——— Шапка: wordmark як у головному меню ——— */
+.admin-watta-header-brand .admin-watta-header-wordmark {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .admin-watta-header-brand .admin-watta-header-wordmark {
+    display: flex;
+    height: 22px;
+    flex-shrink: 0;
+  }
+
+  .admin-watta-header-brand .admin-watta-header-wordmark .logo-text-image-web {
+    max-width: 88px;
+    max-height: 100%;
+  }
+}
+
+@media (min-width: 640px) {
+  .admin-watta-header-brand .admin-watta-header-wordmark {
+    height: 26px;
+  }
+
+  .admin-watta-header-brand .admin-watta-header-wordmark .logo-text-image-web {
+    max-width: 104px;
+  }
+}
+
+/* ——— Замовлення: картки, чіпи, кнопки статусів ——— */
+.admin-watta-order-card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  padding: 1rem;
+  box-shadow: var(--admin-shadow);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-order-card {
+    gap: 1.15rem;
+    border-radius: 1.25rem;
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-watta-order-card {
+    gap: 1.35rem;
+    border-radius: 1.35rem;
+    padding: 1.5rem 2rem;
+  }
+}
+
+.admin-watta-order-card:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 18%, transparent);
+  box-shadow: var(--admin-shadow-hover);
+}
+
+.admin-watta-order-card__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .admin-watta-order-card__head {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.admin-watta-order-card__id {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-order-card__id {
+    font-size: 1.15rem;
+  }
+}
+
+.admin-watta-order-card__date {
+  margin-left: 0;
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--admin-muted-soft);
+}
+
+@media (min-width: 640px) {
+  .admin-watta-order-card__date {
+    margin-left: 0.65rem;
+    display: inline;
+    font-size: 0.8125rem;
+  }
+}
+
+.admin-watta-order-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-watta-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 5%, transparent);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--admin-brand);
+}
+
+.admin-watta-chip--pending {
+  border-color: rgba(255, 92, 0, 0.22);
+  background: linear-gradient(135deg, #fffaf6 0%, #fff5ee 100%);
+  color: #c2410c;
+}
+
+.admin-watta-chip--confirmed {
+  border-color: rgba(92, 144, 16, 0.28);
+  background: rgba(92, 144, 16, 0.1);
+  color: #3d6b0a;
+}
+
+.admin-watta-chip--cooking {
+  border-color: rgba(255, 92, 0, 0.28);
+  background: rgba(255, 92, 0, 0.1);
+  color: #c2410c;
+}
+
+.admin-watta-chip--delivering {
+  border-color: rgba(26, 107, 88, 0.28);
+  background: rgba(26, 107, 88, 0.1);
+  color: var(--watta-brand-action);
+}
+
+.admin-watta-chip--completed {
+  border-color: color-mix(in srgb, var(--admin-brand) 28%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  color: var(--watta-brand-action-active);
+}
+
+.admin-watta-chip--cancelled {
+  border-color: rgba(196, 92, 74, 0.28);
+  background: rgba(196, 92, 74, 0.1);
+  color: #9f3d2f;
+}
+
+.admin-watta-chip--pickup {
+  border-color: color-mix(in srgb, var(--admin-brand) 20%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 6%, transparent);
+  color: var(--watta-brand-action);
+}
+
+.admin-watta-chip--delivery {
+  border-color: rgba(92, 144, 16, 0.25);
+  background: rgba(92, 144, 16, 0.08);
+  color: #3d6b0a;
+}
+
+.admin-watta-chip--scheduled {
+  border-color: rgba(92, 144, 16, 0.3);
+  background: rgba(92, 144, 16, 0.1);
+  color: var(--watta-brand-action);
+}
+
+.admin-watta-chip--ready {
+  border-color: rgba(224, 122, 58, 0.28);
+  background: rgba(255, 92, 0, 0.08);
+  color: #b45309;
+}
+
+.admin-watta-chip--paid {
+  border-color: color-mix(in srgb, var(--admin-brand) 28%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  color: var(--watta-brand-action-active);
+}
+
+.admin-watta-chip--failed {
+  border-color: rgba(196, 92, 74, 0.28);
+  background: rgba(196, 92, 74, 0.1);
+  color: #9f3d2f;
+}
+
+.admin-watta-chip--waiting {
+  border-color: rgba(255, 92, 0, 0.22);
+  background: rgba(255, 92, 0, 0.08);
+  color: #c2410c;
+}
+
+.admin-watta-order-card__customer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, rgba(248, 251, 249, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+  padding: 0.85rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .admin-watta-order-card__customer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+  }
+}
+
+.admin-watta-order-card__customer-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--admin-muted);
+}
+
+.admin-watta-order-card__customer-line--name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.admin-watta-order-card__comment {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 92, 0, 0.18);
+  background: linear-gradient(135deg, #fffaf6 0%, #ffffff 100%);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #c2410c;
+}
+
+.admin-watta-order-card__comment-empty {
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: var(--admin-muted-soft);
+}
+
+.admin-watta-order-card__payment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 0.85rem;
+  background: #fff;
+  padding: 0.65rem 0.85rem;
+}
+
+.admin-watta-order-card__payment-icon {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 4%, transparent);
+  font-size: 1rem;
+}
+
+.admin-watta-order-card__payment-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-muted-soft);
+}
+
+.admin-watta-order-card__payment-method {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--admin-brand);
+}
+
+.admin-watta-order-card__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  border-radius: 0.85rem;
+  background: #fff;
+  padding: 0.75rem 1rem;
+  min-height: 3.25rem;
+}
+
+.admin-watta-order-card__item-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.admin-watta-order-card__item-qty {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-brand);
+}
+
+.admin-watta-order-card__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--admin-brand) 10%, transparent);
+  padding-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .admin-watta-order-card__footer {
+    flex-direction: row;
+  }
+}
+
+.admin-watta-order-card__total {
+  font-size: 1.65rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-brand);
+}
+
+.admin-watta-status-btn {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 14%, transparent);
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--admin-brand);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+@media (min-width: 640px) {
+  .admin-watta-status-btn {
+    font-size: 0.8125rem;
+  }
+}
+
+.admin-watta-status-btn:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 24%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 5%, transparent);
+}
+
+.admin-watta-status-btn:active {
+  transform: scale(0.98);
+}
+
+.admin-watta-status-btn--confirmed {
+  border-color: rgba(92, 144, 16, 0.28);
+  background: rgba(92, 144, 16, 0.08);
+  color: #3d6b0a;
+}
+
+.admin-watta-status-btn--confirmed:hover {
+  border-color: rgba(92, 144, 16, 0.4);
+  background: rgba(92, 144, 16, 0.14);
+}
+
+.admin-watta-status-btn--cooking {
+  border-color: rgba(255, 92, 0, 0.28);
+  background: rgba(255, 92, 0, 0.08);
+  color: #c2410c;
+}
+
+.admin-watta-status-btn--cooking:hover {
+  border-color: rgba(255, 92, 0, 0.4);
+  background: rgba(255, 92, 0, 0.14);
+}
+
+.admin-watta-status-btn--delivering {
+  border-color: rgba(26, 107, 88, 0.28);
+  background: rgba(26, 107, 88, 0.08);
+  color: var(--watta-brand-action);
+}
+
+.admin-watta-status-btn--delivering:hover {
+  border-color: rgba(26, 107, 88, 0.4);
+  background: rgba(26, 107, 88, 0.14);
+}
+
+.admin-watta-status-btn--completed {
+  border-color: color-mix(in srgb, var(--admin-brand) 28%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 8%, transparent);
+  color: var(--watta-brand-action-active);
+}
+
+.admin-watta-status-btn--completed:hover {
+  border-color: color-mix(in srgb, var(--admin-brand) 40%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 14%, transparent);
+}
+
+.admin-watta-status-btn--cancelled {
+  border-color: rgba(196, 92, 74, 0.28);
+  background: rgba(196, 92, 74, 0.08);
+  color: #9f3d2f;
+}
+
+.admin-watta-status-btn--cancelled:hover {
+  border-color: rgba(196, 92, 74, 0.4);
+  background: rgba(196, 92, 74, 0.14);
+}
+
+.admin-watta-filter-bar {
+  display: flex;
+  width: 100%;
+  max-width: 48rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 12%, transparent);
+  border-radius: 0.85rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 16px -8px color-mix(in srgb, var(--admin-brand) 12%, transparent);
+}
+
+.admin-watta-filter-bar__label {
+  font-weight: 700;
+  color: var(--admin-brand);
+}
+
+.admin-watta-filter-bar__hint {
+  font-size: 0.75rem;
+  color: var(--admin-muted-soft);
+}
+
+.admin-watta-filter-bar__clear {
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 14%, transparent);
+  background: color-mix(in srgb, var(--admin-brand) 6%, transparent);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--admin-brand);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-watta-filter-bar__clear:hover {
+  background: color-mix(in srgb, var(--admin-brand) 10%, transparent);
+}
+
+.admin-watta-empty-msg {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--admin-muted-soft);
+}
+
+@media (min-width: 640px) {
+  .admin-watta-empty-msg {
+    margin-top: 2rem;
+    font-size: 1.125rem;
+  }
+}
+
+.admin-watta-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--admin-brand) 20%, transparent);
+  border-radius: 0.85rem;
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--admin-brand) 48%, var(--admin-brand-mid) 100%);
+  padding: 0.55rem 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--admin-brand) 22%, transparent);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.admin-watta-add-btn:hover {
+  background: linear-gradient(145deg, var(--watta-brand-action-active) 0%, var(--watta-brand-action-hover) 48%, var(--admin-brand) 100%);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--admin-brand) 26%, transparent);
+}
+
+.admin-watta-add-btn:active {
+  transform: scale(0.99);
 }
 

@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { AlertCircle, ArrowRight, CheckCircle2, Loader2, MapPin } from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
+import { MapPin } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import type { Translations } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
@@ -213,7 +214,7 @@ export default function ProfileDeliveryAddressCard(props: ProfileDeliveryAddress
   }
 
   return (
-    <div className="watta-profile-address-form mt-4">
+    <div className="watta-profile-address-form">
       <label className="watta-profile-address-form__label" htmlFor={inputId}>
         <MapPin size={14} aria-hidden />
         {cp.addrInputLabel}

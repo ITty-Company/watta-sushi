@@ -42,7 +42,7 @@ export default function AdminDeliveryZoneEditor({
   const [draftPoints, setDraftPoints] = useState<{ lat: number; lng: number }[]>([])
   const [drawMode, setDrawMode] = useState(false)
   const [newZoneName, setNewZoneName] = useState('')
-  const [newZoneColor, setNewZoneColor] = useState('#145142')
+  const [newZoneColor, setNewZoneColor] = useState('var(--watta-brand-action)')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -118,8 +118,8 @@ export default function AdminDeliveryZoneEditor({
       if (coords.length < 3) continue
       const latlngs = coords.map((p) => [p.lat, p.lng] as [number, number])
       const poly = m.L.polygon(latlngs, {
-        color: z.color || '#145142',
-        fillColor: z.color || '#145142',
+        color: z.color || 'var(--watta-brand-action)',
+        fillColor: z.color || 'var(--watta-brand-action)',
         fillOpacity: 0.22,
         weight: 2,
       })
@@ -140,7 +140,7 @@ export default function AdminDeliveryZoneEditor({
     draftPoints.forEach((p) => {
       m.L.circleMarker([p.lat, p.lng], {
         radius: 6,
-        color: '#145142',
+        color: 'var(--watta-brand-action)',
         fillColor: '#fff',
         fillOpacity: 1,
         weight: 2,
@@ -148,8 +148,8 @@ export default function AdminDeliveryZoneEditor({
     })
     if (draftPoints.length >= 3) {
       m.L.polygon(latlngs, {
-        color: '#145142',
-        fillColor: '#145142',
+        color: 'var(--watta-brand-action)',
+        fillColor: 'var(--watta-brand-action)',
         fillOpacity: 0.12,
         weight: 2,
       }).addTo(m.draftG)
@@ -228,8 +228,8 @@ export default function AdminDeliveryZoneEditor({
   }
 
   return (
-    <div className="mt-6 rounded-[16px] border-2 border-[#145142]/20 bg-white/90 p-4 sm:p-5">
-      <h3 className="text-base font-bold text-[#145142]">Зони доставки на карті</h3>
+    <div className="mt-6 rounded-[16px] border-2 border-watta-action/20 bg-white/90 p-4 sm:p-5">
+      <h3 className="text-base font-bold text-watta-action">Зони доставки на карті</h3>
       <p className="mt-1 text-xs text-gray-600">
         Увімкніть «Малювати зону», клікніть по карті мінімум 3 рази по периметру району, введіть назву й натисніть
         «Зберегти зону». Тариф (безкоштовно / фікс €) задається в блоці нижче для кожної зони.
@@ -239,7 +239,7 @@ export default function AdminDeliveryZoneEditor({
       ) : null}
       <div
         ref={containerRef}
-        className="mt-3 h-[min(420px,55vh)] w-full rounded-[12px] border border-[#145142]/20"
+        className="mt-3 h-[min(420px,55vh)] w-full rounded-[12px] border border-watta-action/20"
         aria-label="Карта зон доставки"
       />
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -250,7 +250,7 @@ export default function AdminDeliveryZoneEditor({
             if (drawMode) setDraftPoints([])
           }}
           className={`rounded-[10px] px-3 py-2 text-xs font-bold sm:text-sm ${
-            drawMode ? 'bg-[#c2410c] text-white' : 'bg-watta-action/15 text-[#145142]'
+            drawMode ? 'bg-[#c2410c] text-white' : 'bg-watta-action/15 text-watta-action'
           }`}
         >
           {drawMode ? 'Вимкнути малювання' : 'Малювати зону'}
@@ -258,28 +258,28 @@ export default function AdminDeliveryZoneEditor({
         <button
           type="button"
           onClick={() => setDraftPoints([])}
-          className="rounded-[10px] border border-[#145142]/25 px-3 py-2 text-xs font-semibold text-[#145142] sm:text-sm"
+          className="rounded-[10px] border border-watta-action/25 px-3 py-2 text-xs font-semibold text-watta-action sm:text-sm"
         >
           Скинути точки ({draftPoints.length})
         </button>
       </div>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="flex-1 min-w-[140px]">
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-[#145142]/80">Назва зони</label>
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-watta-action/80">Назва зони</label>
           <input
             value={newZoneName}
             onChange={(e) => setNewZoneName(e.target.value)}
-            className="mt-1 w-full rounded-[10px] border border-[#145142]/25 p-2 text-sm"
+            className="mt-1 w-full rounded-[10px] border border-watta-action/25 p-2 text-sm"
             placeholder="Напр. Центр"
           />
         </div>
         <div className="w-28">
-          <label className="block text-[10px] font-bold uppercase tracking-wide text-[#145142]/80">Колір</label>
+          <label className="block text-[10px] font-bold uppercase tracking-wide text-watta-action/80">Колір</label>
           <input
             type="color"
             value={newZoneColor}
             onChange={(e) => setNewZoneColor(e.target.value)}
-            className="mt-1 h-9 w-full cursor-pointer rounded border border-[#145142]/25"
+            className="mt-1 h-9 w-full cursor-pointer rounded border border-watta-action/25"
           />
         </div>
         <button
@@ -292,7 +292,7 @@ export default function AdminDeliveryZoneEditor({
         </button>
       </div>
       {zones.length > 0 && (
-        <ul className="mt-4 space-y-2 border-t border-[#145142]/10 pt-3">
+        <ul className="mt-4 space-y-2 border-t border-watta-action/10 pt-3">
           {zones.map((z) => (
             <li
               key={z.id}

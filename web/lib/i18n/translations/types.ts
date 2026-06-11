@@ -1060,22 +1060,40 @@ export interface SiteTranslations {
       accessDenied: string
       adminOnly: string
       accessCheckError: string
+      loginRequired: string
+      serverDenied: string
+      reLogin: string
     }
     common: {
       error: string
       networkError: string
       connectionError: string
+      connectionErrorWithDetail: string
       deleteConfirm: string
       saveSuccess: string
       deleteSuccess: string
       statusUpdated: string
       updateError: string
+      dataLoadError: string
+      photoUploaded: string
+      photoUploadError: string
+      selectImageFiles: string
+      maxPhotos: string
+      uploadingPhotos: string
+      uploadingIcon: string
+      uploadingHoverIcon: string
+      photosUploadedCount: string
+      uploadBeforeSaveError: string
     }
     products: {
       deleteConfirm: string
       deleted: string
       saved: string
       saveError: string
+      softDeleted: string
+      nameRequired: string
+      categoryRequired: string
+      priceRequired: string
     }
     orders: {
       changeStatusConfirm: string
@@ -1085,15 +1103,66 @@ export interface SiteTranslations {
       chooseFromMap: string
       created: string
       createError: string
+      updated: string
+      deleted: string
+      deleteConfirm: string
+      nameOneLang: string
+      chooseFromSearch: string
+      locationRequired: string
+      zoneTariffSaved: string
+      zoneTariffSaveError: string
     }
     countries: {
       required: string
       created: string
       createError: string
+      updated: string
+      deleted: string
+      deleteConfirm: string
     }
     news: {
       saved: string
       deleteConfirm: string
+    }
+    promos: {
+      created: string
+      deleted: string
+      deleteConfirm: string
+    }
+    banners: {
+      saved: string
+      deleted: string
+      deleteConfirm: string
+      imageRequired: string
+      fileMissing: string
+    }
+    team: {
+      saved: string
+      deleted: string
+      deleteConfirm: string
+    }
+    categories: {
+      saved: string
+      deleted: string
+      deleteConfirm: string
+      hasProducts: string
+      orderLabel: string
+    }
+    blog: {
+      deleted: string
+      deleteConfirm: string
+      slugRequired: string
+      titleUaFirst: string
+      autoTranslating: string
+      translateDone: string
+    }
+    newsletter: {
+      messageRequired: string
+      subjectRequired: string
+      started: string
+    }
+    settings: {
+      saveError: string
     }
   }
   adminPanel: {
@@ -1101,6 +1170,7 @@ export interface SiteTranslations {
       title: string
       subtitle: string
       siteMenu: string
+      adminHome: string
       backAria: string
       refreshTitle: string
       openMenuTitle: string
@@ -1139,6 +1209,10 @@ export interface SiteTranslations {
       chartNoData: string;
       avgOrderValue: string;
       studioBadge: string;
+      openSectionAria: string;
+      statusFilterActive: string;
+      statusFilterAllDays: string;
+      clearStatusFilter: string;
     }
     actions: {
       add: string; edit: string; editShort: string; delete: string; save: string; saveChanges: string; cancel: string;
@@ -1163,8 +1237,14 @@ export interface SiteTranslations {
       readyTimeSubmitAccept: string; readyTimeSubmitCooking: string; readyAtPickup: string; readyAtDelivery: string;
       fulfillmentDelivery: string; fulfillmentPickup: string; deliveryFeeAdmin: string;
       ordersByDayTitle: string; ordersByDayToday: string; ordersByDayPrev: string; ordersByDayNext: string;
-      ordersByDayEmpty: string; ordersByDayCount: string; ordersByDayRevenue: string;
+      ordersByDayEmpty: string; ordersByDayEmptyHint: string; ordersByDayPickHint: string;
+      ordersViewDay: string; ordersViewWeek: string; ordersViewRange: string; ordersRangeFrom: string; ordersRangeTo: string;
+      daysWithOrdersInRange: string; ordersByRangeEmpty: string; ordersByRangeEmptyHint: string;
+      ordersByAllEmpty: string; ordersByAllEmptyHint: string;
+      ordersTableSectionTitle: string;
+      ordersByDayCount: string; ordersByDayRevenue: string;
       scheduledForLabel: string; scheduledSlotLabel: string; daysWithOrders: string;
+      colFulfillment: string; tableRowHint: string;
     }
     news: {
       title: string; addBtn: string; editTitle: string; newTitle: string;
@@ -1184,7 +1264,8 @@ export interface SiteTranslations {
       nameLabel: string; namePlaceholder: string; descLabel: string; descPlaceholder: string;
       priceLabel: string; categoryLabel: string; selectCategory: string;
       deliveryCities: string; addCitiesFirst: string; descComposition: string; ingComposition: string;
-      empty: string;
+      empty: string; cartBadge: string; uploadHint: string; uploadMultiHint: string; addPhoto: string;
+      hitsLabel: string;
     }
     ingredients: {
       title: string; addNew: string; editTitle: string; nameRu: string; namePlaceholder: string;
@@ -1199,6 +1280,8 @@ export interface SiteTranslations {
       searchMapDesc: string; searchMapPlaceholder: string; searchMapBtn: string;
       countryLabel: string; selectCountry: string; activeCity: string; saveChanges: string;
       addCityBtn: string; cancelEdit: string; citiesTitle: string; deliveryZones: string;
+      zonesTitle: string; zonesDesc: string; zonesLoading: string; zonesEmpty: string;
+      zoneFreeDelivery: string; zoneFlatFee: string; zoneSaveTariff: string;
     }
     banners: {
       addBtn: string; tabSubtitle: string; editTitle: string; newTitle: string; titleRu: string; titlePlaceholder: string;
@@ -1219,6 +1302,10 @@ export interface SiteTranslations {
     categories: {
       addBtn: string; slug: string; editTitle: string; newTitle: string;
       emojiLabel: string; nameRu: string; namePlaceholder: string; slugLabel: string; slugAuto: string;
+      orderLabel: string; activeLabel: string; activeYes: string; activeNo: string;
+      recommendAllowed: string; recommendDenied: string;
+      mainIcon: string; hoverIcon: string; upload: string; change: string; orderHint: string;
+      visibleYes: string; visibleNo: string;
     }
     users: {
       title: string; noName: string; admin: string; user: string; ordersCount: string; registration: string;
@@ -1232,6 +1319,8 @@ export interface SiteTranslations {
     team: {
       title: string; addBtn: string; editTitle: string; newTitle: string;
       nameRu: string; posRu: string; bioRu: string;
+      nameUa: string; posUa: string; bioUa: string;
+      orderLabel: string; activeLabel: string; uploadHint: string; changePhoto: string;
       inactiveBadge: string;
     }
     promos: {
@@ -1240,6 +1329,13 @@ export interface SiteTranslations {
     settings: {
       title: string; intervalLabel: string; sec: string; intervalDesc: string; saving: string; saveBtn: string;
       saved: string;
+      socialTitle: string; telegramLabel: string; whatsappLabel: string; instagramLabel: string;
+      pickupAddressLabel: string; pickupAddressPlaceholder: string;
+      bonusTitle: string; bonusEnabled: string; bonusPercentLabel: string; bonusHint: string;
+      cardTitle: string; cardEnabled: string; stripeConnected: string; stripeMissing: string;
+      liqpayConnected: string; liqpayMissing: string;       cartTileLabel: string; cartTileEnabled: string; cartTileDisabled: string;
+      paymentStatusLabel: string; paymentWorks: string; paymentNeedsKeys: string;
+      deliveryTitle: string; freeDeliveryFrom: string; fixedDeliveryFee: string; deliveryHint: string;
     }
     reviews: {
       title: string; subtitle: string; empty: string; pendingBanner: string;
@@ -1285,13 +1381,30 @@ export interface SiteTranslations {
       emailDeleteAria: string; emailDeleteConfirm: string; emailDeleted: string; emailsLoadError: string;
     }
     crm: {
-      customersTab: string; inquiriesTab: string; customersTitle: string; searchPlaceholder: string;
+      customersTab: string; reportsTab: string; inquiriesTab: string; customersTitle: string; usersTableTitle: string;
+      searchPlaceholder: string;
       colName: string; colPhone: string; colEmail: string; colOrders: string; colTotal: string;
-      colConsent: string; colLastOrder: string; rowHint: string; empty: string; loading: string;
+      colConsent: string; colLastOrder: string; colBonuses: string; colCashbackPercent: string;
+      rowHint: string; empty: string; loading: string;
       cardTitle: string; fieldName: string; fieldPhone: string; fieldEmail: string; fieldAccount: string;
       fieldOrders: string; fieldTotal: string; fieldBonuses: string; fieldConsent: string;
       orderHistory: string; orderStatus: string; orderAddress: string; orderPayment: string;
       orderComment: string; noOrders: string; createMailing: string;
+      sheetsSyncBtn: string; sheetsOpenBtn: string; sheetsNotConfigured: string;
+      sheetsSyncing: string; sheetsSyncSuccess: string; sheetsSyncError: string; sheetsHint: string;
+    }
+    crmReports: {
+      title: string; embeddedTitle: string; linkedRangeHint: string;
+      productsTab: string; ordersTab: string; customersTab: string;
+      periodLabel: string; periodAll: string; periodMonth: string; periodLastMonth: string;
+      periodYear: string; periodCustom: string; fromLabel: string; toLabel: string;
+      selectedPeriod: string; summaryOrders: string; summaryRevenue: string;
+      summaryItems: string; summaryClients: string;
+      sheetsSyncBtn: string; sheetsSyncSuccess: string; sheetsSyncError: string; sheetsHint: string;
+      colProduct: string; colCategory: string; colQty: string; colRevenue: string;
+      colOrders: string; colDate: string; colCustomer: string; colPhone: string;
+      colEmail: string; colStatus: string; colTotal: string; colItems: string; colLastOrder: string;
+      empty: string; loading: string; footerHint: string;
     }
     contactInquiries: {
       title: string; totalLabel: string; unreadLabel: string;

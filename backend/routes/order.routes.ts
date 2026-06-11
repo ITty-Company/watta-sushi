@@ -4,7 +4,7 @@ import { checkAdmin } from '../authMiddleware';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../lib/jwtSecret';
 import { sendTelegramNotification } from '../services/telegram.service';
-import { addOrderToSheet } from '../services/sheets.service';
+import { addOrderToSheet, scheduleCrmSheetsSync } from '../services/sheets.service';
 import { sendOrderReceipt } from '../services/email.service';
 import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service.js';
 import crypto from 'crypto';
@@ -769,7 +769,10 @@ router.post('/', async (req: Request, res: Response) => {
       Promise.allSettled([
         sendTelegramNotification(order, order.items),
         addOrderToSheet(order, order.items),
-      ]).then(() => console.log('Notifications processed'));
+      ]).then(() => {
+        console.log('Notifications processed');
+        scheduleCrmSheetsSync(prisma);
+      });
 
       if (effectiveUserId) {
         const user = await prisma.user.findUnique({

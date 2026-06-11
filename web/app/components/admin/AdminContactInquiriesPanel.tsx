@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Mail, MessageSquare, Phone, RefreshCw, Trash2, User, X } from 'lucide-react'
+import { Mail, MessageSquare, RefreshCw, Trash2 } from 'lucide-react'
+import { Phone, User, X } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -174,14 +175,14 @@ export default function AdminContactInquiriesPanel({
 
   return (
     <>
-      <section className="admin-watta-scroll-x admin-watta-scroll-hint rounded-[24px] border-2 border-white/70 bg-white/80 p-4 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl sm:p-6 md:p-8">
+      <section className="admin-watta-glass-panel admin-watta-scroll-x admin-watta-scroll-hint">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h3 className="admin-watta-section-title flex items-center gap-2 text-xl font-bold text-[#145142]">
+            <h3 className="admin-watta-section-title flex items-center gap-2">
               <MessageSquare className="h-5 w-5" aria-hidden />
               {c.title}
             </h3>
-            <p className="mt-1 text-sm text-[#145142]/70">
+            <p className="mt-1 text-sm text-watta-action/70">
               {c.totalLabel} {totalCount}
               {unreadCount > 0 ? (
                 <span className="ml-2 font-semibold text-amber-700">
@@ -199,7 +200,7 @@ export default function AdminContactInquiriesPanel({
                 className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
                   filter === f
                     ? 'bg-watta-action text-white'
-                    : 'bg-watta-action/10 text-[#145142] hover:bg-watta-action/15'
+                    : 'bg-watta-action/10 text-watta-action hover:bg-watta-action/15'
                 }`}
               >
                 {filterLabel(f)}
@@ -208,7 +209,7 @@ export default function AdminContactInquiriesPanel({
             <button
               type="button"
               onClick={() => void load()}
-              className="inline-flex items-center gap-1.5 rounded-xl border-2 border-[#145142]/20 px-3 py-2 text-sm font-semibold text-[#145142] hover:bg-watta-action/5"
+              className="inline-flex items-center gap-1.5 rounded-xl border-2 border-watta-action/20 px-3 py-2 text-sm font-semibold text-watta-action hover:bg-watta-action/5"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
               {c.refreshBtn}
@@ -217,7 +218,7 @@ export default function AdminContactInquiriesPanel({
               <button
                 type="button"
                 onClick={() => void markAllRead()}
-                className="rounded-xl bg-watta-action/10 px-3 py-2 text-sm font-semibold text-[#145142] hover:bg-watta-action/15"
+                className="rounded-xl bg-watta-action/10 px-3 py-2 text-sm font-semibold text-watta-action hover:bg-watta-action/15"
               >
                 {c.markAllReadBtn}
               </button>
@@ -227,7 +228,7 @@ export default function AdminContactInquiriesPanel({
 
         <table className="admin-watta-crm-table min-w-full text-sm">
           <thead>
-            <tr className="border-b border-[#145142]/15 text-left text-[#145142]/80">
+            <tr className="border-b border-watta-action/15 text-left text-watta-action/80">
               <th className="py-3 pr-3">{c.colDate}</th>
               <th className="py-3 pr-3">{c.colName}</th>
               <th className="py-3 pr-3">{c.colContacts}</th>
@@ -239,7 +240,7 @@ export default function AdminContactInquiriesPanel({
             {items.map((row) => (
               <tr
                 key={row.id}
-                className={`cursor-pointer border-b border-[#145142]/10 transition hover:bg-watta-action/5 ${
+                className={`cursor-pointer border-b border-watta-action/10 transition hover:bg-watta-action/5 ${
                   !row.isRead ? 'bg-amber-50/80 font-medium' : 'text-[#0f241e]/80'
                 }`}
                 onClick={() => void openDetail(row)}
@@ -255,7 +256,7 @@ export default function AdminContactInquiriesPanel({
                 <td className="py-3 pr-3">{row.name}</td>
                 <td className="py-3 pr-3 text-xs">
                   <div>{row.email}</div>
-                  {row.phone ? <div className="text-[#145142]/70">{row.phone}</div> : null}
+                  {row.phone ? <div className="text-watta-action/70">{row.phone}</div> : null}
                 </td>
                 <td className="py-3 pr-3 max-w-xs truncate">{row.message}</td>
                 <td className="py-3 pr-3">
@@ -276,21 +277,21 @@ export default function AdminContactInquiriesPanel({
             ))}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-[#145142]/45">
+                <td colSpan={5} className="py-10 text-center text-watta-action/45">
                   {c.empty}
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={5} className="py-10 text-center text-[#145142]/60">
+                <td colSpan={5} className="py-10 text-center text-watta-action/60">
                   {c.loading}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-[#145142]/60">{c.footerHint}</p>
+        <p className="mt-3 text-xs text-watta-action/60">{c.footerHint}</p>
       </section>
 
       {selected && (
@@ -301,49 +302,49 @@ export default function AdminContactInquiriesPanel({
           aria-labelledby="contact-inquiry-detail-title"
         >
           <div className="admin-watta-modal-panel flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">
-            <div className="flex items-center justify-between border-b border-[#145142]/10 px-4 py-3 sm:px-6">
-              <h4 id="contact-inquiry-detail-title" className="text-lg font-bold text-[#145142]">
+            <div className="flex items-center justify-between border-b border-watta-action/10 px-4 py-3 sm:px-6">
+              <h4 id="contact-inquiry-detail-title" className="text-lg font-bold text-watta-action">
                 {c.detailTitle.replace('{{id}}', String(selected.id))}
               </h4>
               <button
                 type="button"
                 onClick={() => setSelected(null)}
-                className="rounded-lg p-2 text-[#145142] hover:bg-watta-action/10"
+                className="rounded-lg p-2 text-watta-action hover:bg-watta-action/10"
                 aria-label={c.closeAria}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4">
-              <p className="text-xs text-[#145142]/60">{formatDate(selected.createdAt)}</p>
+              <p className="text-xs text-watta-action/60">{formatDate(selected.createdAt)}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <p className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-[#145142]/50" aria-hidden />
-                  <span className="font-semibold text-[#145142]">{selected.name}</span>
+                  <User className="h-4 w-4 text-watta-action/50" aria-hidden />
+                  <span className="font-semibold text-watta-action">{selected.name}</span>
                 </p>
                 <p className="flex items-center gap-2 text-sm break-all">
-                  <Mail className="h-4 w-4 shrink-0 text-[#145142]/50" aria-hidden />
-                  <a href={`mailto:${selected.email}`} className="text-[#145142] underline">
+                  <Mail className="h-4 w-4 shrink-0 text-watta-action/50" aria-hidden />
+                  <a href={`mailto:${selected.email}`} className="text-watta-action underline">
                     {selected.email}
                   </a>
                 </p>
                 {selected.phone ? (
                   <p className="flex items-center gap-2 text-sm sm:col-span-2">
-                    <Phone className="h-4 w-4 text-[#145142]/50" aria-hidden />
-                    <a href={`tel:${selected.phone}`} className="text-[#145142]">
+                    <Phone className="h-4 w-4 text-watta-action/50" aria-hidden />
+                    <a href={`tel:${selected.phone}`} className="text-watta-action">
                       {selected.phone}
                     </a>
                   </p>
                 ) : null}
               </div>
-              <div className="rounded-xl border border-[#145142]/15 bg-watta-action/5 p-4">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#145142]/70">
+              <div className="rounded-xl border border-watta-action/15 bg-watta-action/5 p-4">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-watta-action/70">
                   {c.messageLabel}
                 </p>
                 <p className="whitespace-pre-wrap text-sm text-[#0f241e]/85">{selected.message}</p>
               </div>
             </div>
-            <div className="flex justify-end gap-2 border-t border-[#145142]/10 px-4 py-3 sm:px-6">
+            <div className="flex justify-end gap-2 border-t border-watta-action/10 px-4 py-3 sm:px-6">
               <button
                 type="button"
                 onClick={() => void deleteInquiry(selected.id)}

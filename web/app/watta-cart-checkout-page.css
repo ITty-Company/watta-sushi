@@ -1,5 +1,5 @@
 /**
- * /cart — оформлення замовлення (форма зліва, кошик + CTA справа, стиль Watta).
+ * /cart — оформлення замовлення (кошик зліва, форма + CTA справа, стиль Watta).
  */
 
 .watta-cart-checkout-page--v2 .watta-cart-checkout-body {
@@ -628,26 +628,27 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
 
 @media (min-width: 1024px) {
   .watta-cart-checkout-layout--v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
     gap: 1.5rem 2rem;
   }
 
-  /* DOM: aside → main; візуально форма зліва, кошик справа (як Ninja). */
-  .watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
+  /* DOM: aside → main; візуально кошик зліва, форма справа. */
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
     order: 1;
     grid-column: 1;
-  }
-
-  .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
-    order: 2;
-    grid-column: 2;
     position: sticky;
     top: calc(var(--watta-sticky-chrome-flow-h, 132px) + 10px);
     align-self: start;
     max-height: none;
     overflow: visible;
     overscroll-behavior: auto;
-    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
+    order: 2;
+    grid-column: 2;
+    min-width: 0;
   }
 }
 
@@ -1950,27 +1951,28 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
     padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
   }
 
-  /* Планшет: форма зліва, кошик справа */
+  /* Планшет: кошик зліва, форма справа */
   .watta-cart-checkout-layout--v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(228px, 300px);
+    grid-template-columns: minmax(228px, 300px) minmax(0, 1fr);
     gap: 1.35rem 1.5rem;
   }
 
-  .watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
     order: 1;
     grid-column: 1;
-  }
-
-  .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
-    order: 2;
-    grid-column: 2;
     position: sticky;
     top: calc(var(--watta-sticky-chrome-flow-h, 132px) + 8px);
     align-self: start;
     max-height: none;
     overflow: visible;
     overscroll-behavior: auto;
-    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
+    order: 2;
+    grid-column: 2;
+    min-width: 0;
   }
 
   .watta-cart-checkout-page--v2 .watta-cart-order-panel {
@@ -2114,7 +2116,7 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
 
 @media (min-width: 1024px) {
   .watta-cart-checkout-layout--v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
     gap: 1.5rem 2rem;
   }
 
@@ -2150,7 +2152,7 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
 
 @media (min-width: 1280px) {
   .watta-cart-checkout-layout--v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
     gap: 2rem 2.75rem;
   }
 
@@ -2363,14 +2365,14 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
   }
 
   .watta-cart-checkout-layout--v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+    grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
     gap: 1.35rem 1.75rem;
   }
 }
 
 @media (min-width: 1024px) {
   .watta-cart-checkout-layout--v2 {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
     gap: 1.5rem 2rem;
   }
 

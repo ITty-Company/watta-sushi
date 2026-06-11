@@ -138,14 +138,7 @@ function cinematicWeightSubtitle(
   return formatProductWeightSubtitle(desc, weightFallback, piecesFallback, lang)
 }
 
-import { 
-  Menu,       
-  Heart,      
-  User,       
-  ArrowLeft,
-  ChevronLeft, 
-  ChevronRight,
-} from 'lucide-react'
+import { User, ArrowLeft, Menu, Heart, ChevronLeft, ChevronRight } from '@/lib/wattaInlineIcons'
 // --- ТИПЫ ДАННЫХ ---
 interface City {
   id: string

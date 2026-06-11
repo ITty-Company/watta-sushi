@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { sendMassPromo } from '../services/email.service';
 import { checkAdmin } from '../authMiddleware';
 import { parseCashbackPercentInput } from '../lib/bonusCashback.js';
+import { fetchCrmCustomers } from '../lib/crmCustomers.js';
 import {
   PRIMARY_ADMIN_EMAIL,
   PRIMARY_ADMIN_PHONE,
@@ -15,129 +16,26 @@ import {
   syncUsersForAdminEmail,
   syncUsersForAdminPhone,
 } from '../lib/adminPhones.js';
+import { resolveReportDateRange } from '../lib/crmReportPeriod.js';
+import {
+  fetchCustomersReport,
+  fetchOrdersReport,
+  fetchProductSalesReport,
+} from '../lib/crmReports.js';
+import {
+  getCrmSheetTitle,
+  getGoogleSpreadsheetUrl,
+  isGoogleSheetsConfigured,
+  syncCrmCustomersToSheet,
+  syncCrmReportToSheet,
+  type CrmReportSheetType,
+} from '../services/sheets.service.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 function phoneDigits(raw: string): string {
   return String(raw || '').replace(/\D/g, '');
-}
-
-function matchesSearch(
-  q: string,
-  fields: (string | null | undefined)[],
-): boolean {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return true;
-  return fields.some((f) => String(f || '').toLowerCase().includes(needle));
-}
-
-type CustomerAggregate = {
-  phoneKey: string;
-  displayPhone: string;
-  customerName: string;
-  email: string | null;
-  userId: number | null;
-  orderCount: number;
-  totalSpent: number;
-  lastOrderAt: string | null;
-  dataProcessingConsentAt: string | null;
-  bonusBalance: number;
-  registered: boolean;
-};
-
-function buildCustomerDirectory(
-  orders: {
-    id: number;
-    phone: string;
-    customerName: string;
-    totalPrice: number;
-    createdAt: Date;
-    dataProcessingConsentAt: Date | null;
-    userId: number | null;
-    user: { id: number; name: string | null; email: string; phone: string | null; bonusBalance: number } | null;
-  }[],
-  users: {
-    id: number;
-    name: string | null;
-    email: string;
-    phone: string | null;
-    bonusBalance: number;
-    createdAt: Date;
-  }[],
-): Map<string, CustomerAggregate> {
-  const map = new Map<string, CustomerAggregate>();
-
-  for (const order of orders) {
-    const key = phoneDigits(order.phone);
-    if (!key) continue;
-    const existing = map.get(key);
-    const consentIso = order.dataProcessingConsentAt?.toISOString() ?? null;
-    const orderAt = order.createdAt.toISOString();
-    if (!existing) {
-      map.set(key, {
-        phoneKey: key,
-        displayPhone: order.phone.trim() || order.phone,
-        customerName: order.customerName || order.user?.name || '—',
-        email: order.user?.email ?? null,
-        userId: order.userId ?? order.user?.id ?? null,
-        orderCount: 1,
-        totalSpent: order.totalPrice,
-        lastOrderAt: orderAt,
-        dataProcessingConsentAt: consentIso,
-        bonusBalance: Number(order.user?.bonusBalance ?? 0),
-        registered: Boolean(order.userId ?? order.user),
-      });
-      continue;
-    }
-    existing.orderCount += 1;
-    existing.totalSpent += order.totalPrice;
-    if (orderAt > (existing.lastOrderAt || '')) {
-      existing.lastOrderAt = orderAt;
-      existing.displayPhone = order.phone.trim() || order.phone;
-      existing.customerName = order.customerName || existing.customerName;
-      if (consentIso) existing.dataProcessingConsentAt = consentIso;
-    }
-    if (!existing.email && order.user?.email) existing.email = order.user.email;
-    if (!existing.userId && (order.userId ?? order.user?.id)) {
-      existing.userId = order.userId ?? order.user?.id ?? null;
-      existing.registered = true;
-      existing.bonusBalance = Number(order.user?.bonusBalance ?? existing.bonusBalance);
-    }
-  }
-
-  for (const user of users) {
-    const key = phoneDigits(user.phone || '');
-    if (!key) continue;
-    const existing = map.get(key);
-    if (existing) {
-      if (!existing.email) existing.email = user.email;
-      if (!existing.userId) {
-        existing.userId = user.id;
-        existing.registered = true;
-        existing.bonusBalance = Number(user.bonusBalance ?? 0);
-      }
-      if (!existing.customerName || existing.customerName === '—') {
-        existing.customerName = user.name || existing.customerName;
-      }
-      continue;
-    }
-    map.set(key, {
-      phoneKey: key,
-      displayPhone: String(user.phone || '').trim(),
-      customerName: user.name || '—',
-      email: user.email,
-      userId: user.id,
-      orderCount: 0,
-      totalSpent: 0,
-      lastOrderAt: null,
-      dataProcessingConsentAt: null,
-      bonusBalance: Number(user.bonusBalance ?? 0),
-      registered: true,
-    });
-  }
-
-  return map;
 }
 
 router.get('/users', checkAdmin, async (_req: Request, res: Response) => {
@@ -234,63 +132,158 @@ router.patch('/users/:id/bonus', checkAdmin, async (req: Request, res: Response)
   }
 });
 
+router.get('/customers/sheets-status', checkAdmin, async (_req: Request, res: Response) => {
+  res.json({
+    configured: isGoogleSheetsConfigured(),
+    spreadsheetUrl: getGoogleSpreadsheetUrl(),
+    crmSheetTitle: getCrmSheetTitle(),
+  });
+});
+
+router.post('/customers/sync-sheets', checkAdmin, async (_req: Request, res: Response) => {
+  try {
+    if (!isGoogleSheetsConfigured()) {
+      res.status(503).json({
+        message:
+          'Google Таблицы не настроены. Задайте GOOGLE_CREDS и GOOGLE_SHEET_ID на сервере и дайте сервисному аккаунту доступ к таблице.',
+      });
+      return;
+    }
+
+    const customers = await fetchCrmCustomers(prisma);
+    const result = await syncCrmCustomersToSheet(customers);
+    if (!result) {
+      res.status(500).json({ message: 'Не удалось синхронизировать с Google Таблицей' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      count: result.count,
+      sheetTitle: result.sheetTitle,
+      spreadsheetUrl: getGoogleSpreadsheetUrl(),
+    });
+  } catch (error) {
+    console.error('CRM customers sync-sheets error:', error);
+    res.status(500).json({ message: 'Ошибка синхронизации с Google Таблицей' });
+  }
+});
+
+function reportQueryParams(req: Request) {
+  const period = String(req.query.period || 'all');
+  const from = String(req.query.from || '');
+  const to = String(req.query.to || '');
+  const range = resolveReportDateRange(period, from, to);
+  return { period, from, to, range };
+}
+
+function parseReportType(raw: string): CrmReportSheetType | null {
+  if (raw === 'products' || raw === 'orders' || raw === 'customers') return raw;
+  return null;
+}
+
+router.get('/reports/products', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const { range } = reportQueryParams(req);
+    const report = await fetchProductSalesReport(prisma, range);
+    res.json({ ...report, period: range });
+  } catch (error) {
+    console.error('CRM products report error:', error);
+    res.status(500).json({ message: 'Ошибка отчёта по товарам' });
+  }
+});
+
+router.get('/reports/orders', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const { range } = reportQueryParams(req);
+    const report = await fetchOrdersReport(prisma, range);
+    res.json({ ...report, period: range });
+  } catch (error) {
+    console.error('CRM orders report error:', error);
+    res.status(500).json({ message: 'Ошибка отчёта по заказам' });
+  }
+});
+
+router.get('/reports/customers', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const { range } = reportQueryParams(req);
+    const q = String(req.query.q || '');
+    const report = await fetchCustomersReport(prisma, range, q);
+    res.json({ ...report, period: range });
+  } catch (error) {
+    console.error('CRM customers report error:', error);
+    res.status(500).json({ message: 'Ошибка отчёта по клиентам' });
+  }
+});
+
+router.post('/reports/sync-sheets', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    if (!isGoogleSheetsConfigured()) {
+      res.status(503).json({
+        message:
+          'Google Таблицы не настроены. Задайте GOOGLE_CREDS и GOOGLE_SHEET_ID на сервере и дайте сервисному аккаунту доступ к таблице.',
+      });
+      return;
+    }
+
+    const body = req.body || {};
+    const type = parseReportType(String(body.type || ''));
+    if (!type) {
+      res.status(400).json({ message: 'Укажите type: products | orders | customers' });
+      return;
+    }
+
+    const range = resolveReportDateRange(
+      String(body.period || 'all'),
+      body.from ? String(body.from) : undefined,
+      body.to ? String(body.to) : undefined,
+    );
+
+    let result: { count: number; sheetTitle: string } | null = null;
+
+    if (type === 'products') {
+      const report = await fetchProductSalesReport(prisma, range);
+      result = await syncCrmReportToSheet(type, range, {
+        products: report.rows,
+        summary: report.summary,
+      });
+    } else if (type === 'orders') {
+      const report = await fetchOrdersReport(prisma, range);
+      result = await syncCrmReportToSheet(type, range, {
+        orders: report.rows,
+        summary: report.summary,
+      });
+    } else {
+      const q = body.q ? String(body.q) : '';
+      const report = await fetchCustomersReport(prisma, range, q);
+      result = await syncCrmReportToSheet(type, range, {
+        customers: report.rows,
+        summary: report.summary,
+      });
+    }
+
+    if (!result) {
+      res.status(500).json({ message: 'Не удалось синхронизировать с Google Таблицей' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      count: result.count,
+      sheetTitle: result.sheetTitle,
+      spreadsheetUrl: getGoogleSpreadsheetUrl(),
+      period: range,
+    });
+  } catch (error) {
+    console.error('CRM reports sync-sheets error:', error);
+    res.status(500).json({ message: 'Ошибка синхронизации отчёта с Google Таблицей' });
+  }
+});
+
 router.get('/customers', checkAdmin, async (req: Request, res: Response) => {
   try {
     const q = String(req.query.q || '');
-
-    const [orders, users] = await Promise.all([
-      prisma.order.findMany({
-        where: { phone: { not: '' } },
-        select: {
-          id: true,
-          phone: true,
-          customerName: true,
-          totalPrice: true,
-          createdAt: true,
-          dataProcessingConsentAt: true,
-          userId: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              bonusBalance: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.user.findMany({
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          bonusBalance: true,
-          createdAt: true,
-        },
-      }),
-    ]);
-
-    const directory = buildCustomerDirectory(orders, users);
-    let customers = [...directory.values()].sort((a, b) => {
-      const aT = a.lastOrderAt || '';
-      const bT = b.lastOrderAt || '';
-      return bT.localeCompare(aT);
-    });
-
-    if (q.trim()) {
-      customers = customers.filter((c) =>
-        matchesSearch(q, [
-          c.customerName,
-          c.displayPhone,
-          c.phoneKey,
-          c.email,
-        ]),
-      );
-    }
-
+    const customers = await fetchCrmCustomers(prisma, q);
     res.json(customers);
   } catch (error) {
     console.error('CRM customers error:', error);

@@ -5,24 +5,8 @@ import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { m } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
-import {
-  ArrowLeft,
-  Award,
-  ChefHat,
-  CircleDot,
-  Fish,
-  HandMetal,
-  Heart,
-  Layers,
-  Menu,
-  Milk,
-  Rocket,
-  Salad,
-  Sparkles,
-  Users,
-  Wheat,
-  Zap,
-} from 'lucide-react'
+import { Award, ChefHat, CircleDot, Fish, HandMetal, Layers, Milk, Rocket, Salad, Sparkles, Users, Wheat, Zap } from 'lucide-react'
+import { ArrowLeft, Heart, Menu } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import DeliveryHeroCopy from './DeliveryHeroCopy'
 import WattaStellarHeroSection from './WattaStellarHeroSection'

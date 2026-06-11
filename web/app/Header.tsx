@@ -1,6 +1,6 @@
 'use client'; // <--- ВАЖНО для Next.js (компонент с интерактивностью)
 
-import { ShoppingBag, User, Menu as MenuIcon } from 'lucide-react';
+import { Menu as MenuIcon, ShoppingBag, User } from '@/lib/wattaInlineIcons'
 import WattaLink from './components/WattaLink';
 import { useEffect, useState } from 'react';
 

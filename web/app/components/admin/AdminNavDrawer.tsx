@@ -1,28 +1,25 @@
 'use client'
 
-import { useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import Image from 'next/image'
 import {
   BarChart2,
   BookOpen,
   ChefHat,
+  Home,
   Image as ImageIcon,
   Layers,
   ListOrdered,
+  LucideIcon,
   Mail,
-  MapPin,
   Package,
   Settings,
   Shield,
-  ShoppingBag,
   Sparkles,
-  Star,
   Tag,
-  User,
   Users,
-  X,
-  type LucideIcon,
 } from 'lucide-react'
+import { MapPin, ShoppingBag, Star, User, X } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../../context/LanguageContext'
 import WattaNavDrawerShell from '../WattaNavDrawerShell'
 import WattaBrandWordmark from '../WattaBrandWordmark'
@@ -55,18 +52,11 @@ type NavItem = {
   Icon: LucideIcon
 }
 
-const NAV_ICON_TONE_COUNT = 4
-
-function navIconToneForIndex(index: number): number {
-  const row = Math.floor(index / 2)
-  const col = index % 2
-  return (row + col) % NAV_ICON_TONE_COUNT
-}
-
-function NavIconWrap({ index, children }: { index: number; children: ReactNode }) {
-  const tone = navIconToneForIndex(index)
+function NavIconWrap({ tone, children }: { tone: number; children: ReactNode }) {
   return (
-    <span className={`watta-nav-compact__nav-ico-wrap watta-nav-compact__nav-ico-wrap--tone-${tone}`}>
+    <span
+      className={`watta-nav-compact__nav-ico-wrap watta-nav-compact__nav-ico-wrap--tone-${tone % 4}`}
+    >
       {children}
     </span>
   )
@@ -75,15 +65,36 @@ function NavIconWrap({ index, children }: { index: number; children: ReactNode }
 type Props = {
   isOpen: boolean
   onClose: () => void
+  onBackToSite: () => void
   activeTab: AdminNavTabId
   onSelectTab: (tab: AdminNavTabId) => void
 }
 
-export default function AdminNavDrawer({ isOpen, onClose, activeTab, onSelectTab }: Props) {
+export default function AdminNavDrawer({
+  isOpen,
+  onClose,
+  onBackToSite,
+  activeTab,
+  onSelectTab,
+}: Props) {
   const { t } = useLanguage()
   const nav = t.navigation
   const closeSwipe = useNavDrawerCloseSwipeHandlers(isOpen, onClose)
   useWattaNavDrawerOpenSync(isOpen)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [isOpen, onClose])
 
   const items = useMemo<NavItem[]>(
     () => [
@@ -109,6 +120,11 @@ export default function AdminNavDrawer({ isOpen, onClose, activeTab, onSelectTab
     [t],
   )
 
+  const handleBackToSite = () => {
+    onClose()
+    onBackToSite()
+  }
+
   return (
     <WattaNavDrawerShell
       isOpen={isOpen}
@@ -117,75 +133,87 @@ export default function AdminNavDrawer({ isOpen, onClose, activeTab, onSelectTab
       ariaLabel={t.adminPanel.sidebar.selectSection}
       closeSwipeHandlers={closeSwipe}
     >
-      <div className="watta-nav-compact flex h-full min-h-0 flex-col">
-        <header className="watta-nav-compact__head">
-          <div className="watta-nav-compact__head-brand">
-            <div className="logo-icon-web watta-nav-compact__logo-icon">
-              <Image
-                src="/logo.png"
-                alt={t.common.brandName}
-                width={40}
-                height={40}
-                className="logo-image-web"
-              />
-            </div>
-            <div className="watta-nav-compact__head-text">
-              <div className="logo-text-images-web watta-nav-compact__logo-wordmark">
-                <WattaBrandWordmark
-                  active={isOpen}
-                  mdUpOnly={false}
-                  deferUntilSplashEnd={false}
+      {isOpen ? (
+        <div className="watta-nav-compact watta-nav-compact--drawer watta-nav-compact--admin flex h-full min-h-0 flex-col">
+          <header className="watta-nav-compact__head watta-nav-compact__head--admin">
+            <div className="watta-nav-compact__head-brand">
+              <div className="logo-icon-web watta-nav-compact__logo-icon">
+                <Image
+                  src="/logo.png"
+                  alt={t.common.brandName}
+                  width={40}
+                  height={40}
+                  className="logo-image-web"
+                  priority
                 />
               </div>
-              <p className="watta-nav-compact__tagline">{nav.drawerBrandLine}</p>
+              <div className="watta-nav-compact__head-text">
+                <div className="logo-text-images-web watta-nav-compact__logo-wordmark">
+                  <WattaBrandWordmark active={isOpen} mdUpOnly={false} deferUntilSplashEnd={false} />
+                </div>
+                <p className="watta-nav-compact__tagline">{nav.drawerBrandLine}</p>
+                <span className="watta-nav-compact__admin-kicker">{t.adminPanel.header.title}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="watta-nav-compact__close"
+              onClick={onClose}
+              aria-label={t.adminPanel.header.closeDrawerAria}
+            >
+              <X size={18} strokeWidth={2.2} aria-hidden />
+            </button>
+          </header>
+
+          <div className="watta-nav-compact__scroll watta-nav-compact__scroll--admin">
+            <div className="watta-nav-compact__inner watta-nav-compact__inner--animate">
+              <p className="watta-nav-compact__section-label watta-nav-compact__section-label--admin">
+                <span className="watta-nav-compact__section-ico" aria-hidden>
+                  ◆
+                </span>
+                {t.adminPanel.sidebar.selectSection}
+              </p>
+
+              <nav
+                className="watta-nav-compact__nav-grid watta-nav-compact__nav-grid--admin"
+                aria-label={t.adminPanel.sidebar.selectSection}
+              >
+                {items.map((item, i) => {
+                  const isActive = activeTab === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`watta-nav-compact__nav-tile watta-nav-compact__nav-tile--admin watta-nav-compact__pop${
+                        isActive ? ' watta-nav-compact__nav-tile--active' : ''
+                      }`}
+                      style={{ animationDelay: `${80 + i * 18}ms` }}
+                      onClick={() => onSelectTab(item.id)}
+                    >
+                      <NavIconWrap tone={i}>
+                        <item.Icon size={14} strokeWidth={2} className="watta-nav-compact__nav-ico" />
+                      </NavIconWrap>
+                      <span className="watta-nav-compact__nav-label">{item.label}</span>
+                    </button>
+                  )
+                })}
+              </nav>
+
+              <div
+                className="watta-nav-compact__admin-footer watta-nav-compact__pop"
+                style={{ animationDelay: `${80 + items.length * 18 + 40}ms` }}
+              >
+                <button type="button" className="watta-nav-compact__admin-site" onClick={handleBackToSite}>
+                  <span className="watta-nav-compact__admin-site-ico" aria-hidden>
+                    <Home size={15} strokeWidth={2.2} />
+                  </span>
+                  <span>{t.adminPanel.header.siteMenu}</span>
+                </button>
+              </div>
             </div>
           </div>
-          <button
-            type="button"
-            className="watta-nav-compact__close"
-            onClick={onClose}
-            aria-label={t.adminPanel.header.closeDrawerAria}
-          >
-            <X size={18} strokeWidth={2.2} aria-hidden />
-          </button>
-        </header>
-
-        <div className="watta-nav-compact__scroll">
-          <div className="watta-nav-compact__inner watta-nav-compact__inner--animate">
-            <p className="watta-nav-compact__section-label">
-              <span className="watta-nav-compact__section-ico" aria-hidden>
-                ◆
-              </span>
-              {t.adminPanel.sidebar.selectSection}
-            </p>
-
-            <nav
-              className="watta-nav-compact__nav-grid admin-watta-nav-grid"
-              aria-label={t.adminPanel.sidebar.selectSection}
-            >
-              {items.map((item, i) => {
-                const isActive = activeTab === item.id
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`watta-nav-compact__nav-tile admin-watta-nav-tile watta-nav-compact__pop${
-                      isActive ? ' watta-nav-compact__nav-tile--active' : ''
-                    }`}
-                    style={{ animationDelay: `${120 + i * 24}ms` }}
-                    onClick={() => onSelectTab(item.id)}
-                  >
-                    <NavIconWrap index={i}>
-                      <item.Icon size={14} strokeWidth={2} className="watta-nav-compact__nav-ico" />
-                    </NavIconWrap>
-                    <span className="watta-nav-compact__nav-label">{item.label}</span>
-                  </button>
-                )
-              })}
-            </nav>
-          </div>
         </div>
-      </div>
+      ) : null}
     </WattaNavDrawerShell>
   )
 }

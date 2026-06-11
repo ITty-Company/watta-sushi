@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Camera, CheckCircle2, Star, X } from 'lucide-react'
+import { Camera, CheckCircle2 } from 'lucide-react'
+import { Star, X } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'

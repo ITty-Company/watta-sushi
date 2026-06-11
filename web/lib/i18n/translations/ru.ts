@@ -1071,23 +1071,41 @@ const ru: SiteTranslations = {
         notAuthorized: "Вы не авторизованы",
         accessDenied: "Доступ запрещен",
         adminOnly: "Доступ запрещен. Только администраторы могут использовать админ панель.",
-        accessCheckError: "Ошибка проверки прав доступа"
+        accessCheckError: "Ошибка проверки прав доступа",
+        loginRequired: "Вы не авторизованы. Пожалуйста, войдите в систему.",
+        serverDenied: "Сервер отклонил доступ (401/403). Войдите снова как администратор или проверьте, что backend запущен и NEXT_PUBLIC_API_URL указывает на него.",
+        reLogin: "Войдите снова в админку"
       },
       common: {
         error: "Ошибка",
         networkError: "Ошибка сети",
         connectionError: "Не удалось подключиться к серверу. Проверьте, запущен ли backend сервер.",
+        connectionErrorWithDetail: "Ошибка соединения: {{detail}}",
         deleteConfirm: "Удалить?",
         saveSuccess: "Сохранено",
         deleteSuccess: "Успешно удалено",
         statusUpdated: "Статус успешно обновлен!",
-        updateError: "Ошибка обновления"
+        updateError: "Ошибка обновления",
+        dataLoadError: "Ошибка при загрузке данных",
+        photoUploaded: "Фото загружено",
+        photoUploadError: "Ошибка загрузки",
+        selectImageFiles: "Выберите файлы изображений (JPG, PNG, WebP…)",
+        maxPhotos: "Максимум 24 фото",
+        uploadingPhotos: "Загрузка фото на сервер…",
+        uploadingIcon: "Загрузка иконки…",
+        uploadingHoverIcon: "Загрузка hover-иконки…",
+        photosUploadedCount: "Загружено фото: {{count}}",
+        uploadBeforeSaveError: "Не удалось загрузить фото перед сохранением"
       },
       products: {
         deleteConfirm: "Вы уверены, что хотите удалить этот товар?",
         deleted: "Товар успешно удален!",
         saved: "Товар успешно сохранен!",
-        saveError: "Ошибка при сохранении"
+        saveError: "Ошибка при сохранении",
+        softDeleted: "Товар убран из меню (есть в заказах)",
+        nameRequired: "Введите название товара хотя бы на одном языке (вкладки RU / UA / EN / NL).",
+        categoryRequired: "Выберите категорию.",
+        priceRequired: "Укажите корректную цену (число ≥ 0)."
       },
       orders: {
         changeStatusConfirm: "Сменить статус на"
@@ -1096,16 +1114,67 @@ const ru: SiteTranslations = {
         required: "Название города и страна обязательны",
         chooseFromMap: "Сначала выберите город на карте",
         created: "Город успешно создан!",
-        createError: "Ошибка создания города"
+        createError: "Ошибка создания города",
+        updated: "Город успешно обновлен!",
+        deleted: "Город успешно удален!",
+        deleteConfirm: "Вы уверены, что хотите удалить этот город? Это также удалит все связи с товарами.",
+        nameOneLang: "Введите название города хотя бы на одном языке (RU, UA, EN или NL).",
+        chooseFromSearch: "Сначала выберите город из поиска на карте (введите название и нажмите «Выбрать»)",
+        locationRequired: "Сначала выберите локацию на карте (поиск → Выбрать или клик по маркеру)",
+        zoneTariffSaved: "Тариф зоны сохранен",
+        zoneTariffSaveError: "Ошибка сохранения"
       },
       countries: {
         required: "Название страны обязательно",
         created: "Страна успешно создана!",
-        createError: "Ошибка создания страны"
+        createError: "Ошибка создания страны",
+        updated: "Страна успешно обновлена!",
+        deleted: "Страна успешно удалена!",
+        deleteConfirm: "Удалить эту страну? Будут удалены и все её города с зонами доставки."
       },
       news: {
         saved: "Сохранено",
         deleteConfirm: "Удалить?"
+      },
+      promos: {
+        created: "Промокод успешно создан!",
+        deleted: "Промокод успешно удален!",
+        deleteConfirm: "Удалить этот код?"
+      },
+      banners: {
+        saved: "Баннер успешно сохранен!",
+        deleted: "Баннер успешно удален!",
+        deleteConfirm: "Вы уверены, что хотите удалить этот баннер?",
+        imageRequired: "Загрузите изображение баннера (блок «Обложка слайда» сверху формы)",
+        fileMissing: "Файл картинки пропал — перезалейте"
+      },
+      team: {
+        saved: "Член команды успешно сохранен!",
+        deleted: "Член команды успешно удален!",
+        deleteConfirm: "Удалить этого члена команды?"
+      },
+      categories: {
+        saved: "Категория успешно сохранена!",
+        deleted: "Категория успешно удалена!",
+        deleteConfirm: "Удалить эту категорию?",
+        hasProducts: "Сначала создайте другую категорию — в этой есть товары.",
+        orderLabel: "Порядок"
+      },
+      blog: {
+        deleted: "Статья удалена",
+        deleteConfirm: "Удалить эту статью?",
+        slugRequired: "Заполните slug и текст хотя бы на одном языке",
+        titleUaFirst: "Сначала напишите заголовок или текст на украинском (вкладка UA)",
+        autoTranslating: "Автоперевод… (это может занять минуту)",
+        translateDone: "Перевод готов — проверьте RU, EN, NL"
+      },
+      newsletter: {
+        messageRequired: "Введите текст сообщения",
+        subjectRequired: "Введите тему письма",
+        started: "Рассылка успешно запущена!"
+      },
+      settings: {
+        saveError: "Ошибка сохранения настроек"
       }
     },
     adminPanel: {
@@ -1113,6 +1182,7 @@ const ru: SiteTranslations = {
         title: "Админ-панель",
         subtitle: "Статистика заказов, товаров и доставок в одном месте.",
         siteMenu: "Меню сайта",
+        adminHome: "Главная админ-панели",
         backAria: "Назад",
         refreshTitle: "Обновить данные",
         openMenuTitle: "Открыть меню",
@@ -1121,7 +1191,7 @@ const ru: SiteTranslations = {
         adminLangRu: "РУС",
         adminLangHint: "Язык панели",
       },
-      sidebar: { selectSection: "Выберите раздел", dashboard: "📊 Дашборд", dashboardDesc: "Статистика и обзор", orders: "📦 Заказы", ordersDesc: "Управление заказами", products: "🍣 Товары", productsDesc: "Меню и позиции", promos: "🏷️ Промокоды", promosDesc: "Скидки", cities: "🏙️ Города", citiesDesc: "Города и страны", banners: "🎨 Баннеры", bannersDesc: "Баннеры", categories: "📋 Категории", categoriesDesc: "Категории меню", users: "👥 Пользователи", usersDesc: "Список клиентов", adminPhones: "🛡️ Админ-доступ", adminPhonesDesc: "Телефоны и email с доступом", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Сотрудники", settings: "⚙️ Настройки", settingsDesc: "Сайт и баннеры", ingredients: "🥑 Ингредиенты", newsletter: "📧 Рассылка", cartUpsell: "🛒 Корзина: скидки", cartUpsellDesc: "Пороги спецпредложений", blog: "📰 Блог / Рекомендации", blogDesc: "Статьи и советы", reviews: "⭐ Отзывы", reviewsDesc: "Модерация отзывов", crm: "👥 CRM / База клиентов", crmDesc: "Клиенты и обращения" },
+      sidebar: { selectSection: "Выберите раздел", dashboard: "Дашборд", dashboardDesc: "Статистика и обзор", orders: "Заказы", ordersDesc: "Управление заказами", products: "Товары", productsDesc: "Меню и позиции", promos: "Промокоды", promosDesc: "Скидки", cities: "Города", citiesDesc: "Города и страны", banners: "Баннеры", bannersDesc: "Карусель на главной", categories: "Категории", categoriesDesc: "Категории меню", users: "Пользователи", usersDesc: "Список клиентов", adminPhones: "Админ-доступ", adminPhonesDesc: "Телефоны и email", team: "Команда", teamDesc: "Сотрудники", settings: "Настройки", settingsDesc: "Сайт и баннеры", ingredients: "Ингредиенты", newsletter: "Рассылка", cartUpsell: "Корзина: скидки", cartUpsellDesc: "Пороги спецпредложений", blog: "Блог", blogDesc: "Статьи и советы", reviews: "Отзывы", reviewsDesc: "Модерация отзывов", crm: "CRM / Клиенты", crmDesc: "База и обращения" },
       dashboard: {
         loading: "Загрузка...",
         revenue: "Выручка (выполнены)",
@@ -1157,12 +1227,16 @@ const ru: SiteTranslations = {
         chartNoData: "Пока недостаточно данных для графика",
         avgOrderValue: "Средний чек (выполнены)",
         studioBadge: "Studio",
+        openSectionAria: "Открыть: {{section}}",
+        statusFilterActive: "Фильтр по статусу: {{status}}",
+        statusFilterAllDays: "Показаны за все дни",
+        clearStatusFilter: "Сбросить фильтр",
       },
       actions: { add: "+ Добавить", edit: "Редактировать", editShort: "Изменить", delete: "Удалить", save: "Сохранить", saveChanges: "Сохранить изменения", cancel: "Отмена", closeAria: "Закрыть" },
       common: { menuChangeSection: "Меню / изменить раздел", emptyOrders: "Нет активных заказов", emptyCities: "Городов пока нет", emptyBanners: "Баннеров пока нет", emptyCategories: "Категорий пока нет", emptyUsers: "Пользователей пока нет", emptyTeam: "Членов команды пока нет", emptyPromos: "Промокодов пока нет", clickToUpload: "Нажмите, чтобы загрузить фото", changeFile: "Изменить", selectFromList: "Выбрать из списка", activeLabel: "Активен", inactiveLabel: "Неактивен", yes: "Да", no: "Нет", orderIndex: "Порядок отображения", choose: "Выбрать", notFound: "Ничего не найдено. Попробуйте другой запрос.", searching: "поиск...", bannerDragHint: "Перетащите карточку на другую, чтобы изменить порядок на сайте", bannerOrderSaved: "Порядок баннеров сохранён", bannerOrderSaveError: "Не удалось сохранить порядок баннеров", loading: "Загрузка…", savingEllipsis: "Сохранение…", guest: "Гость", noRecord: "Нет записи" },
-      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintConfirmed: "Подтверждён", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить", btnConfirmed: "Принять заказ", btnCooking: "Готовим", btnDelivering: "В доставке", btnCompleted: "Выполнен", btnCancel: "Отменить", readyTimeTitleAccept: "Принять заказ", readyTimeTitleCooking: "Время готовности", readyTimePickupHint: "Клиент получит уведомление: заказ будет готов к указанному времени (самовывоз).", readyTimeDeliveryHint: "Клиент получит уведомление: доставка ориентировочно к указанному времени.", readyTimeNotifyHint: "Время отправляется клиенту в уведомлениях в профиле.", readyTimeLabel: "Готово / доставка к", readyTimeMinutes: "мин", readyTimeRequired: "Укажите время", readyTimeSubmitAccept: "Принять и отправить", readyTimeSubmitCooking: "Сохранить и отправить", readyAtPickup: "Готово к:", readyAtDelivery: "Доставка к:", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовывоз", deliveryFeeAdmin: "Доставка:", ordersByDayTitle: "Заказы по дням", ordersByDayToday: "Сегодня", ordersByDayPrev: "Предыдущий день", ordersByDayNext: "Следующий день", ordersByDayEmpty: "На этот день заказов нет", ordersByDayCount: "Заказов", ordersByDayRevenue: "Выручка (выполненные)", scheduledForLabel: "На дату", scheduledSlotLabel: "Слот", daysWithOrders: "Дни с заказами" },
+      orders: { orderNum: "Заказ №", noComment: "Без комментария", payment: "Оплата", cash: "Наличные", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ОШИБКА", waiting: "ОЖИДАЕТ", hintConfirmed: "Подтверждён", hintCooking: "Готовится", hintDelivering: "В доставке", hintCompleted: "Выполнен", hintCancel: "Отменить", btnConfirmed: "Принять заказ", btnCooking: "Готовим", btnDelivering: "В доставке", btnCompleted: "Выполнен", btnCancel: "Отменить", readyTimeTitleAccept: "Принять заказ", readyTimeTitleCooking: "Время готовности", readyTimePickupHint: "Клиент получит уведомление: заказ будет готов к указанному времени (самовывоз).", readyTimeDeliveryHint: "Клиент получит уведомление: доставка ориентировочно к указанному времени.", readyTimeNotifyHint: "Время отправляется клиенту в уведомлениях в профиле.", readyTimeLabel: "Готово / доставка к", readyTimeMinutes: "мин", readyTimeRequired: "Укажите время", readyTimeSubmitAccept: "Принять и отправить", readyTimeSubmitCooking: "Сохранить и отправить", readyAtPickup: "Готово к:", readyAtDelivery: "Доставка к:", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовывоз", deliveryFeeAdmin: "Доставка:", ordersByDayTitle: "Заказы по дням", ordersByDayToday: "Сегодня", ordersByDayPrev: "Предыдущий день", ordersByDayNext: "Следующий день", ordersByDayEmpty: "На этот день заказов нет", ordersByDayEmptyHint: "Выберите дату из блока «Дни с заказами» выше — в таблице появятся заказы и состав (товары).", ordersByDayPickHint: "На выбранную дату заказов нет. Нажмите дату из списка ниже — таблица покажет детали и товары.", ordersViewWeek: "Неделя", ordersViewDay: "Один день", ordersViewRange: "Диапазон", ordersRangeFrom: "От", ordersRangeTo: "До", daysWithOrdersInRange: "Дни с заказами в диапазоне", ordersByRangeEmpty: "В этом диапазоне заказов нет", ordersByRangeEmptyHint: "Измените даты «От» и «До» выше или смотрите CRM-отчёты.", ordersByAllEmpty: "Заказов пока нет", ordersByAllEmptyHint: "Когда появятся заказы — они будут здесь и в CRM-отчётах.", ordersTableSectionTitle: "Управление заказами", ordersByDayCount: "Заказов", ordersByDayRevenue: "Выручка (выполненные)", scheduledForLabel: "На дату", scheduledSlotLabel: "Слот", daysWithOrders: "Дни с заказами", colFulfillment: "Тип", tableRowHint: "Нажмите строку — детали заказа и смена статуса" },
       news: { title: "Новости", addBtn: "+ Добавить", editTitle: "Редактировать", newTitle: "Новая новость", titlePlaceholder: "Заголовок", descPlaceholder: "Краткое описание", textPlaceholder: "Полный текст", isHit: "Хит продаж", galleryLabel: "Галерея фото", uploadPhotos: "Добавить фото (несколько)", removePhotoAria: "Убрать фото", dishesBlock: "Блюда со скидкой в этой новости", selectProduct: "Выберите блюдо", discountShort: "Скидка %", addDish: "Добавить блюдо", dishDuplicate: "Это блюдо уже добавлено", pickProductFirst: "Сначала выберите блюдо" },
-      products: { addBtn: "+ Добавить товар", hit: "ХИТ", editTitle: "Редактировать блюдо", newTitle: "Новое блюдо", nameLabel: "Название товара", namePlaceholder: "Например: Филадельфия", descLabel: "Описание", descPlaceholder: "Состав, вес, особенности...", priceLabel: "Цена (€)", categoryLabel: "Категория", selectCategory: "Выберите...", deliveryCities: "Города доставки *", addCitiesFirst: "Сначала добавьте города во вкладке 'Города'", descComposition: "Описания (Состав)", ingComposition: "Ингредиенты (Состав)", empty: "Товаров не найдено" },
+      products: { addBtn: "+ Добавить товар", hit: "ХИТ", editTitle: "Редактировать блюдо", newTitle: "Новое блюдо", nameLabel: "Название товара", namePlaceholder: "Например: Филадельфия", descLabel: "Описание", descPlaceholder: "Состав, вес, особенности...", priceLabel: "Цена (€)", categoryLabel: "Категория", selectCategory: "Выберите...", deliveryCities: "Города доставки *", addCitiesFirst: "Сначала добавьте города во вкладке 'Города'", descComposition: "Описания (Состав)", ingComposition: "Ингредиенты (Состав)", empty: "Товаров не найдено", cartBadge: "Корзина", uploadHint: "Нажмите или перетащите фото сюда", uploadMultiHint: "Несколько файлов сразу (до 24)", addPhoto: "Добавить", hitsLabel: "Наши хиты / хит продаж" },
       ingredients: {
         title: "Библиотека ингредиентов",
         addNew: "Добавить новый",
@@ -1189,7 +1263,7 @@ const ru: SiteTranslations = {
         selectedCount: "Выбрано",
         emptyLibrary: "Сначала добавьте ингредиенты во вкладке «Ингредиенты».",
       },
-      cities: { addCountry: "Добавить новую страну", nameRu: "Название *", sticker: "Стикер страны (флаг)", addCountryBtn: "✨ Добавить страну", countriesTitle: "Страны", editCity: "Редактировать город", addCity: "Добавить новый город", cityNameRu: "Название города *", searchMapLabel: "📍 Поиск города на карте", searchMapDesc: "Ищите по адресу, индексу или коду.", searchMapPlaceholder: "Название, адрес, индекс...", searchMapBtn: "Искать по названиям", countryLabel: "Страна *", selectCountry: "Выберите страну", activeCity: "Активный город", saveChanges: "💾 Сохранить изменения", addCityBtn: "✨ Добавить город", cancelEdit: "Отменить редактирование", citiesTitle: "Города", deliveryZones: "Зон доставки:" },
+      cities: { addCountry: "Добавить новую страну", nameRu: "Название *", sticker: "Стикер страны (флаг)", addCountryBtn: "Добавить страну", countriesTitle: "Страны", editCity: "Редактировать город", addCity: "Добавить новый город", cityNameRu: "Название города *", searchMapLabel: "Поиск города на карте", searchMapDesc: "Ищите по адресу, индексу или коду.", searchMapPlaceholder: "Название, адрес, индекс...", searchMapBtn: "Искать по названиям", countryLabel: "Страна *", selectCountry: "Выберите страну", activeCity: "Активный город", saveChanges: "Сохранить изменения", addCityBtn: "Добавить город", cancelEdit: "Отменить редактирование", citiesTitle: "Города", deliveryZones: "Зон доставки:", zonesTitle: "Тарифы зон доставки", zonesDesc: "Полигоны рисуете на карте в блоке ниже; здесь задаёте бесплатно или фикс € для каждой зоны. Если оба выключены — на сайте действует стандарт (база из настроек сайта + €/км города × расстояние от точки кухни).", zonesLoading: "Загрузка зон…", zonesEmpty: "Зон пока нет — нарисуйте полигон на карте под этим блоком и сохраните название зоны.", zoneFreeDelivery: "Бесплатная доставка в зоне", zoneFlatFee: "Фиксированная доставка (€)", zoneSaveTariff: "Сохранить тариф" },
       banners: {
         addBtn: "+ Добавить баннер",
         tabSubtitle: "Карусель на главной: фото, кадр и переводы.",
@@ -1234,12 +1308,12 @@ const ru: SiteTranslations = {
         heroVideoUnavailableTitle: "Видео на сервере недоступно",
         heroVideoUnavailableHint: "Файл отсутствует (часто после redeploy на Render). Нажмите «Загрузить» и «Сохранить» снова; на проде включите Persistent Disk и UPLOAD_DIR.",
       },
-      categories: { addBtn: "+ Добавить категорию", slug: "Slug:", editTitle: "Редактировать категорию", newTitle: "Новая категория", emojiLabel: "Эмодзи (стикер) *", nameRu: "Название *", namePlaceholder: "Например: Десерты", slugLabel: "Slug (URL)", slugAuto: "Автоматически" },
-      users: { title: "👥 Зарегистрированные пользователи", noName: "Без имени", admin: "👑 Админ", user: "👤 Пользователь", ordersCount: "Заказов:", registration: "Регистрация:", bonusesLabel: "Бонусы:", cashbackLabel: "кешбэк", configureBonuses: "Настроить бонусы" },
-      newsletter: { title: "Email Рассылка", desc: "Отправка писем всем зарегистрированным пользователям", confirmSend: "Отправить это письмо всем пользователям?", subject: "Тема письма", subjectPlaceholder: "Например: Скидки на роллы!", message: "Текст сообщения", messagePlaceholder: "Введите текст рассылки...", promoOptional: "🎁 Промокод (опционально)", promoPlaceholder: "Например: PROMO2025", promoHint: "Будет выделен в письме крупным шрифтом", sendBtn: "Отправить рассылку", successSend: "Успешно отправлено", errorPrefix: "Ошибка: ", errorNetwork: "Ошибка сети" },
-      team: { title: "👨‍👩‍👧‍👦 Команда", addBtn: "+ Добавить члена команды", editTitle: "Редактировать члена команды", newTitle: "Новый член команды", nameRu: "Имя *", posRu: "Должность *", bioRu: "Биография", inactiveBadge: "Неактивен" },
+      categories: { addBtn: "+ Добавить категорию", slug: "Slug:", editTitle: "Редактировать категорию", newTitle: "Новая категория", emojiLabel: "Эмодзи (стикер) *", nameRu: "Название *", namePlaceholder: "Например: Десерты", slugLabel: "Slug (URL)", slugAuto: "Автоматически", orderLabel: "Порядок отображения", activeLabel: "Активна", activeYes: "Да", activeNo: "Нет", recommendAllowed: "Разрешено — товары с «рекомендуем» могут показываться", recommendDenied: "Нет — ни один товар из этой категории не в рекомендациях", mainIcon: "Основная иконка", hoverIcon: "При наведении", upload: "Загрузить", change: "Изменить", orderHint: "Меньше число — раньше в списке", visibleYes: "Виден посетителям", visibleNo: "Скрыт (черновик)" },
+      users: { title: "Зарегистрированные пользователи", noName: "Без имени", admin: "Админ", user: "Пользователь", ordersCount: "Заказов:", registration: "Регистрация:", bonusesLabel: "Бонусы:", cashbackLabel: "кешбэк", configureBonuses: "Настроить бонусы" },
+      newsletter: { title: "Email Рассылка", desc: "Отправка писем всем зарегистрированным пользователям", confirmSend: "Отправить это письмо всем пользователям?", subject: "Тема письма", subjectPlaceholder: "Например: Скидки на роллы!", message: "Текст сообщения", messagePlaceholder: "Введите текст рассылки...", promoOptional: "Промокод (опционально)", promoPlaceholder: "Например: PROMO2025", promoHint: "Будет выделен в письме крупным шрифтом", sendBtn: "Отправить рассылку", successSend: "Успешно отправлено", errorPrefix: "Ошибка: ", errorNetwork: "Ошибка сети" },
+      team: { title: "Команда", addBtn: "+ Добавить члена команды", editTitle: "Редактировать члена команды", newTitle: "Новый член команды", nameRu: "Имя (RU) *", posRu: "Должность (RU) *", bioRu: "Биография (RU)", nameUa: "Имя (UA)", posUa: "Должность (UA)", bioUa: "Биография (UA)", orderLabel: "Порядок отображения", activeLabel: "Активен", uploadHint: "Нажмите, чтобы загрузить фото", changePhoto: "Изменить", inactiveBadge: "Неактивен" },
       promos: { createTitle: "Создать новый промокод", codePlaceholder: "Код (например, NEW2025)", discountPlaceholder: "Скидка %", createBtn: "Создать", discountText: "скидка" },
-      settings: { title: "Настройки сайта", intervalLabel: "Интервал смены баннеров (секунды)", sec: "сек.", intervalDesc: "Укажите время, через которое слайды будут автоматически переключаться.", saving: "Сохранение...", saveBtn: "Сохранить настройки", saved: "Настройки сохранены!" },
+      settings: { title: "Настройки сайта", intervalLabel: "Интервал смены баннеров (секунды)", sec: "сек.", intervalDesc: "Укажите время, через которое слайды будут автоматически переключаться.", saving: "Сохранение...", saveBtn: "Сохранить настройки", saved: "Настройки сохранены!", socialTitle: "Соцсети и адрес", telegramLabel: "Telegram (полная ссылка)", whatsappLabel: "WhatsApp (полная ссылка)", instagramLabel: "Instagram (полная ссылка)", pickupAddressLabel: "Адрес самовывоза", pickupAddressPlaceholder: "Показывается клиентам при выборе самовывоза", bonusTitle: "Бонусы и кешбэк", bonusEnabled: "Начислять кешбэк зарегистрированным клиентам", bonusPercentLabel: "Кешбэк для всех, % от суммы товаров", bonusHint: "Начисление при статусе заказа «Доставлено» или «Завершено». Только для клиентов с аккаунтом. Персональный % — во вкладках «Пользователи» и CRM.", cardTitle: "Оплата картой онлайн", cardEnabled: "Показывать «Картой онлайн» в корзине (Stripe / LiqPay)", stripeConnected: "подключено", stripeMissing: "нет STRIPE_SECRET_KEY на сервере", liqpayConnected: "подключено", liqpayMissing: "нет LIQPAY_* на сервере", cartTileLabel: "Плитка в корзине", cartTileEnabled: "включено", cartTileDisabled: "выключено в админке", paymentStatusLabel: "Оплата работает", paymentWorks: "да (Stripe / LiqPay)", paymentNeedsKeys: "нужны ключи на сервере", deliveryTitle: "Доставка (фиксированная)", freeDeliveryFrom: "Бесплатная доставка от (€)", fixedDeliveryFee: "Фиксированная стоимость доставки (€)", deliveryHint: "Если сумма товаров (с учётом скидки) ниже порога — добавляется эта сумма. Самовывоз без доставки." },
       reviews: {
         title: "Отзывы клиентов", subtitle: "Отзывы клиентов на /reviews: редактирование текста и удаление.",
         empty: "Пока нет отзывов от клиентов.", pendingBanner: "На модерации: {{count}}. Опубликуйте отзыв — он появится на странице /reviews.",
@@ -1292,14 +1366,37 @@ const ru: SiteTranslations = {
         emailDeleted: "Email удалён", emailsLoadError: "Не удалось загрузить email админов",
       },
       crm: {
-        customersTab: "База клиентов", inquiriesTab: "Обращения с сайта", customersTitle: "База клиентов",
+        customersTab: "База клиентов", reportsTab: "Отчёты", inquiriesTab: "Обращения с сайта", customersTitle: "База клиентов", usersTableTitle: "Пользователи CRM",
         searchPlaceholder: "Поиск: имя, телефон, email…",
-        colName: "Имя", colPhone: "Телефон", colEmail: "Email", colOrders: "Заказы", colTotal: "Сумма", colConsent: "Согласие", colLastOrder: "Последний заказ",
+        colName: "Имя", colPhone: "Телефон", colEmail: "Email", colOrders: "Заказы", colTotal: "Сумма", colConsent: "Согласие", colLastOrder: "Последний заказ", colBonuses: "Бонусы", colCashbackPercent: "Кешбэк %",
         rowHint: "Нажмите на строку, чтобы открыть полную карточку клиента и историю заказов.", empty: "Клиентов не найдено", loading: "Загрузка…",
         cardTitle: "Карточка клиента", fieldName: "Имя:", fieldPhone: "Телефон:", fieldEmail: "Email:", fieldAccount: "Аккаунт:",
         fieldOrders: "Заказов:", fieldTotal: "Сумма:", fieldBonuses: "Бонусы:", fieldConsent: "Согласие на данные:",
         orderHistory: "История заказов", orderStatus: "Статус:", orderAddress: "Адрес:", orderPayment: "Оплата:", orderComment: "Комментарий:",
         noOrders: "Заказов пока нет", createMailing: "Создать рассылку",
+        sheetsSyncBtn: "Выгрузить в Google Таблицу",
+        sheetsOpenBtn: "Открыть Google Таблицу",
+        sheetsNotConfigured: "Google Таблицы не настроены на сервере (GOOGLE_CREDS + GOOGLE_SHEET_ID).",
+        sheetsSyncing: "Синхронизация…",
+        sheetsSyncSuccess: "Выгружено {{count}} клиентов во вкладку «{{sheet}}»",
+        sheetsSyncError: "Не удалось синхронизировать с Google Таблицей",
+        sheetsHint: "База клиентов дублируется во вкладку «{{sheet}}» в той же таблице, что и заказы. После нового заказа список обновляется автоматически.",
+      },
+      crmReports: {
+        title: "Отчёты за период", embeddedTitle: "CRM-отчёты (товары, заказы, клиенты)", linkedRangeHint: "Период синхронизирован с фильтром дат выше. Переключайте вкладки — таблица обновится автоматически.", productsTab: "Товары", ordersTab: "Заказы", customersTab: "Клиенты",
+        periodLabel: "Период", periodAll: "Всё время", periodMonth: "Этот месяц", periodLastMonth: "Прошлый месяц",
+        periodYear: "Этот год", periodCustom: "Свой диапазон", fromLabel: "С", toLabel: "По",
+        selectedPeriod: "Выбранный период", summaryOrders: "Заказов", summaryRevenue: "Выручка",
+        summaryItems: "Позиций / шт.", summaryClients: "Клиентов",
+        sheetsSyncBtn: "Выгрузить отчёт в Google Таблицу",
+        sheetsSyncSuccess: "Выгружено {{count}} строк во вкладку «{{sheet}}»",
+        sheetsSyncError: "Не удалось выгрузить отчёт в Google Таблицу",
+        sheetsHint: "Для каждого периода создаётся отдельная вкладка в той же Google Таблице, что и заказы.",
+        colProduct: "Товар", colCategory: "Категория", colQty: "Количество", colRevenue: "Выручка",
+        colOrders: "Заказов", colDate: "Дата", colCustomer: "Клиент", colPhone: "Телефон",
+        colEmail: "Email", colStatus: "Статус", colTotal: "Сумма", colItems: "Состав", colLastOrder: "Последний заказ",
+        empty: "За выбранный период данных нет", loading: "Загрузка…",
+        footerHint: "Выберите тип отчёта и период — таблица обновится автоматически. Выгрузка в Google создаёт отдельную вкладку с названием периода.",
       },
       contactInquiries: {
         title: "Обращения с сайта", totalLabel: "Всего:", unreadLabel: "· новых:",

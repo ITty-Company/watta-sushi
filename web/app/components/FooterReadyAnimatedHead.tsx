@@ -1,12 +1,7 @@
 'use client'
 
-import { useLayoutEffect, useState } from 'react'
-import { useWattaStaggerRevealCycle } from '@/lib/useWattaStaggerRevealCycle'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { WATTA_PHONE_VIEWPORT_MQ } from '@/lib/wattaTouchViewport'
-import {
-  renderWattaStaggerRevealChars,
-  WATTA_STAGGER_CHAR_DELAY,
-} from './WattaStaggerRevealChars'
 
 type FooterReadyAnimatedHeadProps = {
   kicker: string
@@ -28,81 +23,89 @@ function usePhoneViewport(): boolean {
   return phone
 }
 
+function useFooterReadyRevealActive(waitForInView: boolean) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(!waitForInView)
+
+  useEffect(() => {
+    if (!waitForInView) return
+    const node = ref.current
+    if (!node) {
+      setActive(true)
+      return
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setActive(true)
+      return
+    }
+    if (typeof IntersectionObserver === 'undefined') {
+      setActive(true)
+      return
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setActive(true)
+          io.disconnect()
+        }
+      },
+      { rootMargin: '0px 0px -6% 0px', threshold: 0.12 },
+    )
+    io.observe(node)
+    return () => io.disconnect()
+  }, [waitForInView])
+
+  return { ref, active }
+}
+
+function revealLineClass(active: boolean) {
+  return active
+    ? 'footer-ready-reveal-line-block footer-ready-reveal-line-block--active'
+    : 'footer-ready-reveal-line-block'
+}
+
 export function FooterReadyAnimatedHead({ kicker, sub, eyebrow }: FooterReadyAnimatedHeadProps) {
   const isPhone = usePhoneViewport()
-  const cycle = useWattaStaggerRevealCycle(0, !isPhone)
-  const charIndex = { value: 0 }
+  const { ref, active } = useFooterReadyRevealActive(!isPhone)
 
-  if (isPhone) {
-    return (
-      <div className="footer-ready-head footer-ready-head--mobile" key={cycle}>
-        <div className="footer-ready-title-stack">
-          <h2 className="footer-ready-heading w-full min-w-0 text-center">
-            <span
-              className="footer-ready-display footer-ready-mobile-reveal-line"
-              style={{ animationDelay: '0s' }}
-            >
-              {kicker}
-            </span>
-          </h2>
-          <blockquote className="footer-ready-quote">
-            <p
-              className="footer-ready-lede footer-ready-mobile-reveal-line"
-              style={{ animationDelay: '0.1s' }}
-            >
-              {sub}
-            </p>
-          </blockquote>
-        </div>
-        <p
-          className="footer-ready-eyebrow footer-ready-mobile-reveal-line"
-          style={{ animationDelay: '0.2s' }}
-        >
-          <span className="footer-ready-eyebrow-line footer-ready-reveal-line" aria-hidden />
-          <span className="footer-ready-eyebrow-label">{eyebrow}</span>
-          <span
-            className="footer-ready-eyebrow-line footer-ready-eyebrow-line--end footer-ready-reveal-line"
-            aria-hidden
-          />
-        </p>
-      </div>
-    )
-  }
-
-  const kickerChars = renderWattaStaggerRevealChars(kicker, 'footer-ready-reveal-char', charIndex)
-  const subChars = renderWattaStaggerRevealChars(
-    sub,
-    'footer-ready-reveal-char footer-ready-reveal-char--lede',
-    charIndex,
-  )
-  const eyebrowLineDelay = charIndex.value * WATTA_STAGGER_CHAR_DELAY
-  const eyebrowChars = renderWattaStaggerRevealChars(
-    eyebrow,
-    'footer-ready-reveal-char footer-ready-reveal-char--eyebrow',
-    charIndex,
-  )
+  const headClass = isPhone
+    ? 'footer-ready-head footer-ready-head--mobile'
+    : 'footer-ready-head footer-ready-head--wide'
 
   return (
-    <div className="footer-ready-head" key={cycle}>
+    <div ref={ref} className={headClass}>
       <div className="footer-ready-title-stack">
         <h2 className="footer-ready-heading w-full min-w-0 text-center">
-          <span className="footer-ready-display">{kickerChars}</span>
+          <span
+            className={`footer-ready-display ${revealLineClass(active)}`}
+            style={active ? { animationDelay: '0s' } : undefined}
+          >
+            {kicker}
+          </span>
         </h2>
         <blockquote className="footer-ready-quote">
-          <p className="footer-ready-lede">{subChars}</p>
+          <p
+            className={`footer-ready-lede ${revealLineClass(active)}`}
+            style={active ? { animationDelay: '0.1s' } : undefined}
+          >
+            {sub}
+          </p>
         </blockquote>
       </div>
-      <p className="footer-ready-eyebrow">
+      <p
+        className={`footer-ready-eyebrow ${revealLineClass(active)}`}
+        style={active ? { animationDelay: '0.2s' } : undefined}
+      >
         <span
-          className="footer-ready-eyebrow-line footer-ready-reveal-line"
+          className={`footer-ready-eyebrow-line footer-ready-reveal-line${active ? ' footer-ready-reveal-line--active' : ''}`}
           aria-hidden
-          style={{ animationDelay: `${eyebrowLineDelay}s` }}
+          style={active ? { animationDelay: '0.22s' } : undefined}
         />
-        <span className="footer-ready-eyebrow-label">{eyebrowChars}</span>
+        <span className="footer-ready-eyebrow-label">{eyebrow}</span>
         <span
-          className="footer-ready-eyebrow-line footer-ready-eyebrow-line--end footer-ready-reveal-line"
+          className={`footer-ready-eyebrow-line footer-ready-eyebrow-line--end footer-ready-reveal-line${active ? ' footer-ready-reveal-line--active' : ''}`}
           aria-hidden
-          style={{ animationDelay: `${eyebrowLineDelay}s` }}
+          style={active ? { animationDelay: '0.22s' } : undefined}
         />
       </p>
     </div>

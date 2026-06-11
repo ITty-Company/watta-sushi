@@ -436,6 +436,9 @@
 }
 
 #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+  flex: 0 0 auto;
+  height: auto;
+  max-height: none;
   overflow-x: visible;
   overflow-y: auto;
 }

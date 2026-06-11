@@ -2,7 +2,8 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Bell, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
+import { Bell } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../../context/LanguageContext'
 import { useOptionalNotificationsDrawer } from '../../context/NotificationsDrawerContext'
 import LogoBackground from '../../components/LogoBackground'

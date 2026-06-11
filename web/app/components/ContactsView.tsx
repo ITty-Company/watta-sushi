@@ -7,23 +7,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 import { m } from 'framer-motion'
 import toast from 'react-hot-toast'
 import type { LucideIcon } from 'lucide-react'
-import {
-  ArrowLeft,
-  Phone,
-  Mail,
-  MapPin,
-  Clock,
-  Send,
-  ChevronDown,
-  Instagram,
-  Truck,
-  UtensilsCrossed,
-  Building2,
-  Handshake,
-  Star,
-  BadgeCheck,
-  ArrowRight,
-} from 'lucide-react'
+import { Mail, Send, ChevronDown, Instagram, Truck, UtensilsCrossed, Building2, Handshake, BadgeCheck, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Phone, MapPin, Clock, Star } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import {
   wattaRestaurantEmbedUrl,

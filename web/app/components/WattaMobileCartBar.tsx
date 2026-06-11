@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useCartBarSnapshot } from '@/hooks/useCartBarSnapshot'

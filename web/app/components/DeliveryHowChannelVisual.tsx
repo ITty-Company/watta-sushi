@@ -1,7 +1,8 @@
 'use client'
 
 import { memo } from 'react'
-import { Globe2, Phone } from 'lucide-react'
+import { Globe2 } from 'lucide-react'
+import { Phone } from '@/lib/wattaInlineIcons'
 
 export type DeliveryHowChannelId = 'web' | 'instagram' | 'phone'
 

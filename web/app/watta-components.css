@@ -1,0 +1,27 @@
+/* ═══════════════════════════════════════════════════
+   watta-components.css — UI-компоненти, кошик, модалки, меню
+   Агрегований файл: замінює 13 окремих CSS-імпортів
+   в layout.tsx. Порядок @import збережено.
+   ═══════════════════════════════════════════════════ */
+
+/* Cart & feedback */
+@import './watta-cart-add-feedback.css';
+@import './watta-toast-theme.css';
+@import './watta-nav-drawer-mobile.css';
+@import './watta-cart-drawer.css';
+@import './watta-favorites-add-feedback.css';
+
+/* Modals */
+@import './auth-ninja-modal.css';
+@import './watta-kitchen-closed-modal.css';
+@import './review-compose-modal.css';
+
+/* Checkout & cart mobile */
+@import './watta-cart-checkout-page.css';
+@import './watta-cart-mobile.css';
+@import './watta-cart-swipe-delete.css';
+
+/* Notifications + menu sections */
+@import './watta-notifications-drawer.css';
+@import './watta-full-menu-section-transition.css';
+@import './menu-stellar-hero-background.css';

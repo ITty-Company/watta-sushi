@@ -2,7 +2,7 @@ import Stripe from 'stripe'
 import { PrismaClient } from '@prisma/client'
 import { sendOrderReceipt } from '../services/email.service.js'
 import { sendTelegramNotification } from '../services/telegram.service.js'
-import { addOrderToSheet } from '../services/sheets.service.js'
+import { addOrderToSheet, scheduleCrmSheetsSync } from '../services/sheets.service.js'
 import { awardOrderCashbackIfEligible } from './bonusCashback.js'
 import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service.js'
 
@@ -99,6 +99,7 @@ export async function fulfillStripeCheckoutSession(
       console.error('[Stripe] addOrderToSheet failed:', e),
     ),
   ])
+  scheduleCrmSheetsSync(prisma)
 
   return { ok: true, orderId }
 }

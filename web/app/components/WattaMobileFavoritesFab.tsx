@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Heart } from 'lucide-react'
+import { Heart } from '@/lib/wattaInlineIcons'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useFavoriteCount } from '@/hooks/useFavoriteCount'
 import { cn } from '@/lib/utils'

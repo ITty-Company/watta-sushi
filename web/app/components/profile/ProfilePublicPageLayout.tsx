@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
-import { Clock, Heart, MapPin, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { Clock, Heart } from '@/lib/wattaInlineIcons'
+import { MapPin } from '@/lib/wattaInlineIcons'
 import type { LucideIcon } from 'lucide-react'
 import ProfileUserCard from './ProfileUserCard'
 import ClientProfileOrders from './ClientProfileOrders'
 import ProfileAddressesFlow from './ProfileAddressesFlow'
 import ProfilePersonalDataForm from './ProfilePersonalDataForm'
+import { ProfileSectionBody, ProfileSectionPanel } from './ProfileSectionPanel'
 import FavoritesEmptyState from '../FavoritesEmptyState'
 import { MenuHighlightStack, type MenuHighlightStackItem } from '../MenuHighlightStack'
 import { HERO_COPY_EASE } from '../heroCopyMotion'
@@ -57,6 +60,7 @@ export type ProfilePublicPageLayoutProps = {
   onAddFavoriteToCart: (item: MenuHighlightStackItem) => void
   onLogout: () => void
   onOpenAdmin: () => void
+  onOpenNotifications: () => void
   onAddressSaved: (address: string) => void
   onPersonalDataSaved: (payload: { name: string; phone: string }) => void
   onPhoneVerified?: () => void
@@ -99,6 +103,7 @@ export default function ProfilePublicPageLayout({
   onAddFavoriteToCart,
   onLogout,
   onOpenAdmin,
+  onOpenNotifications,
   onAddressSaved,
   onPersonalDataSaved,
   onPhoneVerified,
@@ -200,19 +205,22 @@ export default function ProfilePublicPageLayout({
         )
       case 'data':
         return (
-          <>
-            <p className="watta-profile-stage__lead">{cp.dataSub}</p>
-            <ProfilePersonalDataForm
-              initialName={user?.name ?? ''}
-              initialPhone={user?.phone ?? ''}
-              email={user?.email ?? ''}
-              isPhoneVerified={user?.isPhoneVerified === true}
-              cp={cp}
-              invalidPhoneMessage={t.cartSection.invalidPhone}
-              onSaved={onPersonalDataSaved}
-              onPhoneVerified={onPhoneVerified}
-            />
-          </>
+          <div className="watta-profile-data-flow">
+            <ProfileSectionPanel>
+              <ProfileSectionBody>
+              <ProfilePersonalDataForm
+                initialName={user?.name ?? ''}
+                initialPhone={user?.phone ?? ''}
+                email={user?.email ?? ''}
+                isPhoneVerified={user?.isPhoneVerified === true}
+                cp={cp}
+                invalidPhoneMessage={t.cartSection.invalidPhone}
+                onSaved={onPersonalDataSaved}
+                onPhoneVerified={onPhoneVerified}
+              />
+              </ProfileSectionBody>
+            </ProfileSectionPanel>
+          </div>
         )
       default:
         return null
@@ -268,6 +276,7 @@ export default function ProfilePublicPageLayout({
               onLogout={onLogout}
               onOpenAdmin={onOpenAdmin}
               onOpenData={() => setActiveTab('data')}
+              onOpenNotifications={onOpenNotifications}
             />
 
             <nav className="watta-profile-sidebar-nav" aria-label={t.siteAria.profileNav}>

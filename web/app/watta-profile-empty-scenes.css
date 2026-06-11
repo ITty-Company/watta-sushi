@@ -22,9 +22,6 @@
   margin-bottom: 0.1rem;
 }
 
-.watta-profile-empty--address .watta-profile-empty__glow {
-  display: none;
-}
 
 .watta-profile-empty--data {
   max-width: 100%;
@@ -56,16 +53,6 @@
   top: 14%;
 }
 
-.watta-profile-empty__glow--address {
-  top: 28%;
-  background: radial-gradient(
-    ellipse at center,
-    color-mix(in srgb, #ff5c00 10%, transparent) 0%,
-    color-mix(in srgb, var(--profile-accent) 8%, transparent) 48%,
-    transparent 76%
-  );
-}
-
 .watta-profile-empty__glow--data {
   top: 12%;
   width: min(100%, 14rem);
@@ -90,18 +77,6 @@
 .watta-profile-empty__stage--orders-story {
   aspect-ratio: 280 / 178;
   min-height: 10.5rem;
-}
-
-.watta-profile-empty__stage--address {
-  aspect-ratio: 240 / 160;
-  min-height: 0;
-  max-height: none;
-  margin-bottom: 0.3rem;
-  overflow: hidden;
-  border-radius: 16px;
-  box-shadow:
-    0 4px 14px color-mix(in srgb, var(--profile-accent) 9%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--profile-accent) 7%, transparent);
 }
 
 .watta-profile-empty__stage--data {
@@ -503,153 +478,6 @@
   opacity: 0.5;
 }
 
-/* —— Address story —— */
-.watta-profile-empty__stage--address-story {
-  --addr-story-dur: 8s;
-  position: relative;
-}
-
-.watta-profile-empty__stage--address-story .watta-profile-empty__addr-map-svg {
-  position: absolute;
-  inset: 0;
-}
-
-.watta-profile-empty__addr-map-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.watta-profile-empty__addr-block {
-  fill: color-mix(in srgb, #c8d2cd 48%, #fff);
-  opacity: 0.82;
-}
-
-.watta-profile-empty__addr-block--2 {
-  opacity: 0.68;
-}
-
-.watta-profile-empty__addr-block--3 {
-  opacity: 0.58;
-}
-
-.watta-profile-empty__addr-park {
-  fill: color-mix(in srgb, var(--profile-accent) 20%, #d5ebe2);
-  opacity: 0.72;
-}
-
-.watta-profile-empty__addr-park--2 {
-  opacity: 0.5;
-}
-
-.watta-profile-empty__addr-route {
-  stroke-dasharray: 7 8;
-  fill: none;
-  filter: drop-shadow(0 1px 6px color-mix(in srgb, #ff5c00 35%, transparent));
-}
-
-.watta-profile-empty__addr-node {
-  stroke-width: 2.2;
-}
-
-.watta-profile-empty__addr-node--from {
-  fill: #fff;
-  stroke: var(--profile-accent);
-}
-
-.watta-profile-empty__addr-node--to {
-  fill: #fff8f3;
-  stroke: #ff5c00;
-}
-
-.watta-profile-empty__addr-marker {
-  position: absolute;
-  z-index: 5;
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-.watta-profile-empty__addr-marker--from {
-  left: 20%;
-  top: 52%;
-}
-
-.watta-profile-empty__addr-marker--to {
-  left: 80%;
-  top: 52%;
-}
-
-.watta-profile-empty__addr-marker-emojis {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-}
-
-.watta-profile-empty__addr-marker-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.watta-profile-empty__addr-marker-icon--shop {
-  color: var(--profile-accent);
-}
-
-.watta-profile-empty__addr-marker-icon--home {
-  color: #ff5c00;
-}
-
-.watta-profile-empty__addr-marker-icon svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--profile-accent) 22%, transparent));
-}
-
-.watta-profile-empty__addr-marker-icon--home svg {
-  filter: drop-shadow(0 1px 3px color-mix(in srgb, #ff5c00 28%, transparent));
-}
-
-.watta-profile-empty__addr-marker-roll {
-  width: 2.15rem;
-  height: auto;
-  transform: rotate(-6deg);
-  filter: drop-shadow(0 4px 8px color-mix(in srgb, #ff5c00 16%, transparent));
-}
-
-.watta-profile-empty__addr-marker-roll--door {
-  transform: rotate(5deg);
-  opacity: 0;
-}
-
-.watta-profile-empty__addr-courier {
-  position: absolute;
-  left: 20%;
-  top: 42.5%;
-  z-index: 7;
-  width: 2.35rem;
-  height: 3.55rem;
-  transform: translate(-50%, -100%);
-  pointer-events: none;
-}
-
-.watta-profile-empty__addr-courier-fig {
-  display: block;
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--profile-accent) 14%, transparent));
-}
-
-.watta-profile-empty__addr-courier-bag {
-  position: absolute;
-  left: 72%;
-  bottom: 18%;
-  width: 1.45rem;
-  height: auto;
-  transform: rotate(10deg);
-  filter: drop-shadow(0 3px 7px color-mix(in srgb, #ff5c00 18%, transparent));
-}
-
 .watta-profile-empty__ring {
   position: absolute;
   inset: 0;
@@ -918,22 +746,6 @@
 
   .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--2 {
     animation: wattaProfOrdersStoryPlateSushi2 var(--orders-story-dur) cubic-bezier(0.34, 1.25, 0.48, 1) infinite both;
-  }
-
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-route {
-    animation: wattaProfAddrRouteDash 3.4s linear infinite;
-  }
-
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-courier {
-    animation: wattaProfAddrCourierRide var(--addr-story-dur) ease-in-out infinite both;
-  }
-
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-courier-bag {
-    animation: wattaProfAddrCourierBag var(--addr-story-dur) ease-in-out infinite both;
-  }
-
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-marker-roll--door {
-    animation: wattaProfAddrDoorSushi var(--addr-story-dur) ease-in-out infinite both;
   }
 
   .watta-profile-empty__id-card {
@@ -1217,92 +1029,6 @@
   }
 }
 
-@keyframes wattaProfAddrCourierRide {
-  0%,
-  6% {
-    left: 20%;
-    top: 42.5%;
-    opacity: 1;
-    transform: translate(-50%, -100%) scale(1);
-  }
-  10%,
-  12% {
-    left: 20%;
-    top: 42.5%;
-    opacity: 1;
-    transform: translate(-50%, -100%) scale(1);
-  }
-  48%,
-  54% {
-    left: 80%;
-    top: 42.5%;
-    opacity: 1;
-    transform: translate(-50%, -100%) scale(1);
-  }
-  58% {
-    left: 80%;
-    top: 44%;
-    opacity: 1;
-    transform: translate(-50%, -100%) scale(0.96);
-  }
-  64% {
-    left: 78%;
-    top: 48%;
-    opacity: 0.45;
-    transform: translate(-50%, -100%) scale(0.92);
-  }
-  70%,
-  100% {
-    left: 76%;
-    top: 52%;
-    opacity: 0;
-    transform: translate(-50%, -100%) scale(0.88);
-  }
-}
-
-@keyframes wattaProfAddrRouteDash {
-  to {
-    stroke-dashoffset: -30;
-  }
-}
-
-@keyframes wattaProfAddrCourierBag {
-  0%,
-  52% {
-    opacity: 1;
-    transform: rotate(10deg) scale(1);
-  }
-  56% {
-    opacity: 0;
-    transform: rotate(10deg) scale(0.75);
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes wattaProfAddrDoorSushi {
-  0%,
-  54% {
-    opacity: 0;
-    transform: rotate(5deg) scale(0.55);
-  }
-  58% {
-    opacity: 1;
-    transform: rotate(5deg) scale(0.9);
-  }
-  62%,
-  86% {
-    opacity: 1;
-    transform: rotate(5deg) scale(1);
-  }
-  94%,
-  100% {
-    opacity: 0;
-    transform: rotate(5deg) scale(0.7);
-  }
-}
-
 @keyframes wattaProfOrdersStoryPlateSushi1 {
   0%,
   65% {
@@ -1354,21 +1080,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-courier,
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-courier-bag {
-    opacity: 0;
-  }
-
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-marker-roll--door {
-    opacity: 1;
-    transform: rotate(5deg) scale(1);
-  }
-
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-route,
-  .watta-profile-empty__stage--address-story .watta-profile-empty__addr-marker-roll--door {
-    animation: none !important;
-  }
-
   .watta-profile-empty__stage--orders-story .watta-profile-empty__order-card--story {
     display: none;
   }
@@ -1389,9 +1100,19 @@
   .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--2 {
     transform: translate(-12%, -52%) rotate(7deg) scale(1.04);
   }
+
+  @media (min-width: 768px) {
+    .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--1 {
+      transform: translate(-50%, -50%) rotate(-11deg) scale(1.04);
+    }
+
+    .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--2 {
+      transform: translate(-50%, -50%) rotate(9deg) scale(1.04);
+    }
+  }
 }
 
-/* Планшет / ноут / ПК — більші суші по центру кола */
+/* Планшет / ноут / ПК — суші поруч на тарілці, без накладання */
 @media (min-width: 768px) {
   .watta-profile-empty__stage--orders-story {
     min-height: 12.75rem;
@@ -1399,18 +1120,32 @@
   }
 
   .watta-profile-empty__plate-scene {
-    width: 94%;
-    max-width: 24rem;
+    width: 96%;
+    max-width: 26rem;
   }
 
   .watta-profile-empty__plate-sushi--1 {
-    width: 62%;
-    max-width: 13.5rem;
+    left: 27%;
+    top: 52%;
+    width: 42%;
+    max-width: 9.25rem;
+    transform: translate(-50%, -50%) rotate(-11deg);
   }
 
   .watta-profile-empty__plate-sushi--2 {
-    width: 60%;
-    max-width: 12.75rem;
+    left: 73%;
+    top: 48%;
+    width: 42%;
+    max-width: 9.25rem;
+    transform: translate(-50%, -50%) rotate(9deg);
+  }
+
+  .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--1 {
+    animation-name: wattaProfOrdersStoryPlateSushi1Wide;
+  }
+
+  .watta-profile-empty__stage--orders-story .watta-profile-empty__plate-sushi--2 {
+    animation-name: wattaProfOrdersStoryPlateSushi2Wide;
   }
 }
 
@@ -1421,17 +1156,70 @@
   }
 
   .watta-profile-empty__plate-scene {
-    max-width: 28rem;
+    max-width: 30rem;
   }
 
   .watta-profile-empty__plate-sushi--1 {
-    width: 64%;
-    max-width: 15.5rem;
+    left: 28%;
+    width: 44%;
+    max-width: 10.5rem;
   }
 
   .watta-profile-empty__plate-sushi--2 {
-    width: 62%;
-    max-width: 14.5rem;
+    left: 72%;
+    width: 44%;
+    max-width: 10.5rem;
+  }
+}
+
+/* Анімація тарілки на широких екранах — окремі позиції, щоб ролли не перекривались */
+@keyframes wattaProfOrdersStoryPlateSushi1Wide {
+  0%,
+  65% {
+    opacity: 0;
+    transform: translate(-50%, -38%) rotate(-11deg) scale(0.45);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-11deg) scale(1.08);
+  }
+  78%,
+  88% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-11deg) scale(1.04);
+  }
+  96% {
+    opacity: 0;
+    transform: translate(-50%, -44%) rotate(-11deg) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -38%) rotate(-11deg) scale(0.45);
+  }
+}
+
+@keyframes wattaProfOrdersStoryPlateSushi2Wide {
+  0%,
+  70% {
+    opacity: 0;
+    transform: translate(-50%, -40%) rotate(9deg) scale(0.45);
+  }
+  75% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(9deg) scale(1.08);
+  }
+  78%,
+  88% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(9deg) scale(1.04);
+  }
+  96% {
+    opacity: 0;
+    transform: translate(-50%, -44%) rotate(9deg) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -40%) rotate(9deg) scale(0.45);
   }
 }
 
@@ -1540,22 +1328,6 @@
   padding-bottom: 0.65rem;
 }
 
-.watta-profile-stage__inner:has(.watta-profile-address-flow__empty) {
-  padding-top: 0;
-  padding-inline: clamp(1rem, 3.5vw, 1.25rem);
-}
-
-@media (min-width: 768px) {
-  .watta-profile-stage__inner:has(.watta-profile-address-flow__empty) {
-    padding-inline: clamp(1.15rem, 2.5vw, 1.5rem);
-  }
-}
-
-@media (min-width: 1024px) {
-  .watta-profile-stage__inner:has(.watta-profile-address-flow__empty) {
-    padding-inline: clamp(1.25rem, 2vw, 1.75rem);
-  }
-}
 
 .watta-profile-stage__data-hero .watta-profile-empty--data {
   padding-bottom: 0.15rem;

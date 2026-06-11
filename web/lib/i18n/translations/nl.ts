@@ -1071,23 +1071,41 @@ const nl: SiteTranslations = {
         notAuthorized: "U bent niet ingelogd",
         accessDenied: "Toegang geweigerd",
         adminOnly: "Toegang geweigerd. Alleen beheerders kunnen het adminpaneel gebruiken.",
-        accessCheckError: "Fout bij controleren toegangsrechten"
+        accessCheckError: "Fout bij controleren toegangsrechten",
+        loginRequired: "U bent niet ingelogd. Log alstublieft in.",
+        serverDenied: "Server weigerde toegang (401/403). Log opnieuw in als beheerder of controleer of de backend draait en NEXT_PUBLIC_API_URL correct is.",
+        reLogin: "Log opnieuw in bij admin"
       },
       common: {
         error: "Fout",
         networkError: "Netwerkfout",
         connectionError: "Kan geen verbinding maken met de server. Controleer of de backend server draait.",
+        connectionErrorWithDetail: "Verbindingsfout: {{detail}}",
         deleteConfirm: "Verwijderen?",
         saveSuccess: "Opgeslagen",
         deleteSuccess: "Succesvol verwijderd",
         statusUpdated: "Status succesvol bijgewerkt!",
-        updateError: "Updatefout"
+        updateError: "Updatefout",
+        dataLoadError: "Fout bij laden van gegevens",
+        photoUploaded: "Foto geüpload",
+        photoUploadError: "Uploadfout",
+        selectImageFiles: "Selecteer afbeeldingsbestanden (JPG, PNG, WebP…)",
+        maxPhotos: "Maximaal 24 foto's",
+        uploadingPhotos: "Foto's uploaden naar server…",
+        uploadingIcon: "Pictogram uploaden…",
+        uploadingHoverIcon: "Hover-pictogram uploaden…",
+        photosUploadedCount: "Foto's geüpload: {{count}}",
+        uploadBeforeSaveError: "Kon foto's niet uploaden vóór opslaan"
       },
       products: {
         deleteConfirm: "Weet u zeker dat u dit product wilt verwijderen?",
         deleted: "Product succesvol verwijderd!",
         saved: "Product succesvol opgeslagen!",
-        saveError: "Fout bij opslaan"
+        saveError: "Fout bij opslaan",
+        softDeleted: "Product uit menu gehaald (staat in bestellingen)",
+        nameRequired: "Voer een productnaam in minstens één taal in (RU / UA / EN / NL).",
+        categoryRequired: "Selecteer een categorie.",
+        priceRequired: "Voer een geldige prijs in (getal ≥ 0)."
       },
       orders: {
         changeStatusConfirm: "Status wijzigen naar"
@@ -1096,16 +1114,67 @@ const nl: SiteTranslations = {
         required: "Stadsnaam en land zijn verplicht",
         chooseFromMap: "Selecteer eerst een stad op de kaart",
         created: "Stad succesvol aangemaakt!",
-        createError: "Fout bij aanmaken stad"
+        createError: "Fout bij aanmaken stad",
+        updated: "Stad succesvol bijgewerkt!",
+        deleted: "Stad succesvol verwijderd!",
+        deleteConfirm: "Deze stad verwijderen? Alle koppelingen met producten worden ook verwijderd.",
+        nameOneLang: "Voer een stadsnaam in minstens één taal in (RU, UA, EN of NL).",
+        chooseFromSearch: "Selecteer eerst een stad via kaartzoekopdracht",
+        locationRequired: "Selecteer eerst een locatie op de kaart",
+        zoneTariffSaved: "Zonetarief opgeslagen",
+        zoneTariffSaveError: "Opslagfout"
       },
       countries: {
         required: "Landsnaam is verplicht",
         created: "Land succesvol aangemaakt!",
-        createError: "Fout bij aanmaken land"
+        createError: "Fout bij aanmaken land",
+        updated: "Land succesvol bijgewerkt!",
+        deleted: "Land succesvol verwijderd!",
+        deleteConfirm: "Dit land verwijderen? Alle steden en bezorgzones worden ook verwijderd."
       },
       news: {
         saved: "Opgeslagen",
         deleteConfirm: "Verwijderen?"
+      },
+      promos: {
+        created: "Promocode aangemaakt!",
+        deleted: "Promocode verwijderd!",
+        deleteConfirm: "Deze code verwijderen?"
+      },
+      banners: {
+        saved: "Banner opgeslagen!",
+        deleted: "Banner verwijderd!",
+        deleteConfirm: "Deze banner verwijderen?",
+        imageRequired: "Upload een bannerafbeelding",
+        fileMissing: "Afbeeldingsbestand ontbreekt — upload opnieuw"
+      },
+      team: {
+        saved: "Teamlid opgeslagen!",
+        deleted: "Teamlid verwijderd!",
+        deleteConfirm: "Dit teamlid verwijderen?"
+      },
+      categories: {
+        saved: "Categorie opgeslagen!",
+        deleted: "Categorie verwijderd!",
+        deleteConfirm: "Deze categorie verwijderen?",
+        hasProducts: "Maak eerst een andere categorie — deze heeft producten.",
+        orderLabel: "Volgorde"
+      },
+      blog: {
+        deleted: "Artikel verwijderd",
+        deleteConfirm: "Dit artikel verwijderen?",
+        slugRequired: "Vul slug en tekst in minstens één taal in",
+        titleUaFirst: "Schrijf eerst titel of tekst in het Oekraïens (UA-tab)",
+        autoTranslating: "Automatisch vertalen… (kan een minuut duren)",
+        translateDone: "Vertaling klaar — controleer RU, EN, NL"
+      },
+      newsletter: {
+        messageRequired: "Voer berichttekst in",
+        subjectRequired: "Voer e-mailonderwerp in",
+        started: "Nieuwsbrief gestart!"
+      },
+      settings: {
+        saveError: "Kon instellingen niet opslaan"
       }
     },
     adminPanel: {
@@ -1113,6 +1182,7 @@ const nl: SiteTranslations = {
         title: "Adminpaneel",
         subtitle: "Bestelstatistieken, producten en leveringen op één plek.",
         siteMenu: "Sitemenu",
+        adminHome: "Start adminpaneel",
         backAria: "Terug",
         refreshTitle: "Gegevens vernieuwen",
         openMenuTitle: "Menu openen",
@@ -1121,7 +1191,7 @@ const nl: SiteTranslations = {
         adminLangRu: "RUS",
         adminLangHint: "Paneeltaal",
       },
-      sidebar: { selectSection: "Selecteer sectie", dashboard: "📊 Dashboard", dashboardDesc: "Statistieken & overzicht", orders: "📦 Bestellingen", ordersDesc: "Beheer bestellingen", products: "🍣 Producten", productsDesc: "Menu-items", promos: "🏷️ Promocodes", promosDesc: "Kortingen", cities: "🏙️ Steden", citiesDesc: "Steden & landen", banners: "🎨 Banners", bannersDesc: "Banners", categories: "📋 Categorieën", categoriesDesc: "Menucategorieën", users: "👥 Gebruikers", usersDesc: "Klantenlijst", adminPhones: "🛡️ Admin-toegang", adminPhonesDesc: "Telefoons en e-mails met toegang", team: "👨‍👩‍👧‍👦 Team", teamDesc: "Medewerkers", settings: "⚙️ Instellingen", settingsDesc: "Site & banners", ingredients: "🥑 Ingrediënten", newsletter: "📧 Nieuwsbrief", cartUpsell: "🛒 Winkelwagen: kortingen", cartUpsellDesc: "Upsell-drempels", blog: "📰 Blog / Tips", blogDesc: "Artikelen & tips", reviews: "⭐ Reviews", reviewsDesc: "Reviewmoderatie", crm: "👥 CRM / Klanten", crmDesc: "Klanten & vragen" },
+      sidebar: { selectSection: "Selecteer sectie", dashboard: "Dashboard", dashboardDesc: "Statistieken & overzicht", orders: "Bestellingen", ordersDesc: "Beheer bestellingen", products: "Producten", productsDesc: "Menu-items", promos: "Promocodes", promosDesc: "Kortingen", cities: "Steden", citiesDesc: "Steden & landen", banners: "Banners", bannersDesc: "Home-carrousel", categories: "Categorieën", categoriesDesc: "Menucategorieën", users: "Gebruikers", usersDesc: "Klantenlijst", adminPhones: "Admin-toegang", adminPhonesDesc: "Telefoons en e-mails", team: "Team", teamDesc: "Medewerkers", settings: "Instellingen", settingsDesc: "Site & banners", ingredients: "Ingrediënten", newsletter: "Nieuwsbrief", cartUpsell: "Winkelwagenkortingen", cartUpsellDesc: "Upsell-drempels", blog: "Blog", blogDesc: "Artikelen & tips", reviews: "Reviews", reviewsDesc: "Reviewmoderatie", crm: "CRM / Klanten", crmDesc: "Database & vragen" },
       dashboard: {
         loading: "Laden...",
         revenue: "Omzet (voltooid)",
@@ -1157,12 +1227,16 @@ const nl: SiteTranslations = {
         chartNoData: "Nog onvoldoende gegevens voor deze grafiek",
         avgOrderValue: "Gem. bestelwaarde (voltooid)",
         studioBadge: "Studio",
+        openSectionAria: "Openen: {{section}}",
+        statusFilterActive: "Filter op status: {{status}}",
+        statusFilterAllDays: "Alle dagen getoond",
+        clearStatusFilter: "Filter wissen",
       },
       actions: { add: "+ Toevoegen", edit: "Bewerken", editShort: "Wijzig", delete: "Verwijderen", save: "Opslaan", saveChanges: "Wijzigingen opslaan", cancel: "Annuleren", closeAria: "Sluiten" },
       common: { menuChangeSection: "Menu / sectie wijzigen", emptyOrders: "Geen actieve bestellingen", emptyCities: "Nog geen steden", emptyBanners: "Nog geen banners", emptyCategories: "Nog geen categorieën", emptyUsers: "Nog geen gebruikers", emptyTeam: "Nog geen teamleden", emptyPromos: "Nog geen promo's", clickToUpload: "Klik om foto te uploaden", changeFile: "Wijzig", selectFromList: "Selecteer uit lijst", activeLabel: "Actief", inactiveLabel: "Inactief", yes: "Ja", no: "Nee", orderIndex: "Weergavevolgorde", choose: "Kiezen", notFound: "Niets gevonden. Probeer een andere zoekopdracht.", searching: "zoeken...", bannerDragHint: "Sleep een kaart op een andere om de volgorde op de site te wijzigen", bannerOrderSaved: "Bannervolgorde opgeslagen", bannerOrderSaveError: "Kon bannervolgorde niet opslaan", loading: "Laden…", savingEllipsis: "Opslaan…", guest: "Gast", noRecord: "Geen record" },
-      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintConfirmed: "Bevestigd", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren", btnConfirmed: "Bestelling accepteren", btnCooking: "Bereiden", btnDelivering: "Onderweg", btnCompleted: "Voltooid", btnCancel: "Annuleren", readyTimeTitleAccept: "Bestelling accepteren", readyTimeTitleCooking: "Klaar om", readyTimePickupHint: "Klant krijgt melding: bestelling klaar voor afhalen op dit tijdstip.", readyTimeDeliveryHint: "Klant krijgt melding: bezorging rond dit tijdstip.", readyTimeNotifyHint: "Tijd wordt naar de klant gestuurd in profielmeldingen.", readyTimeLabel: "Klaar / bezorging om", readyTimeMinutes: "min", readyTimeRequired: "Stel een tijd in", readyTimeSubmitAccept: "Accepteren & melden", readyTimeSubmitCooking: "Opslaan & melden", readyAtPickup: "Klaar om:", readyAtDelivery: "Bezorging om:", fulfillmentDelivery: "Bezorging", fulfillmentPickup: "Afhalen", deliveryFeeAdmin: "Bezorgkosten:", ordersByDayTitle: "Bestellingen per dag", ordersByDayToday: "Vandaag", ordersByDayPrev: "Vorige dag", ordersByDayNext: "Volgende dag", ordersByDayEmpty: "Geen bestellingen op deze dag", ordersByDayCount: "Bestellingen", ordersByDayRevenue: "Omzet (voltooid)", scheduledForLabel: "Gepland op", scheduledSlotLabel: "Tijdslot", daysWithOrders: "Dagen met bestellingen" },
+      orders: { orderNum: "Bestelling #", noComment: "Geen opmerking", payment: "Betaling", cash: "Contant", online: "Online", paid: "BETAALD", error: "FOUT", waiting: "WACHTEN", hintConfirmed: "Bevestigd", hintCooking: "Wordt bereid", hintDelivering: "Onderweg", hintCompleted: "Voltooid", hintCancel: "Annuleren", btnConfirmed: "Bestelling accepteren", btnCooking: "Bereiden", btnDelivering: "Onderweg", btnCompleted: "Voltooid", btnCancel: "Annuleren", readyTimeTitleAccept: "Bestelling accepteren", readyTimeTitleCooking: "Klaar om", readyTimePickupHint: "Klant krijgt melding: bestelling klaar voor afhalen op dit tijdstip.", readyTimeDeliveryHint: "Klant krijgt melding: bezorging rond dit tijdstip.", readyTimeNotifyHint: "Tijd wordt naar de klant gestuurd in profielmeldingen.", readyTimeLabel: "Klaar / bezorging om", readyTimeMinutes: "min", readyTimeRequired: "Stel een tijd in", readyTimeSubmitAccept: "Accepteren & melden", readyTimeSubmitCooking: "Opslaan & melden", readyAtPickup: "Klaar om:", readyAtDelivery: "Bezorging om:", fulfillmentDelivery: "Bezorging", fulfillmentPickup: "Afhalen", deliveryFeeAdmin: "Bezorgkosten:", ordersByDayTitle: "Bestellingen per dag", ordersByDayToday: "Vandaag", ordersByDayPrev: "Vorige dag", ordersByDayNext: "Volgende dag", ordersByDayEmpty: "Geen bestellingen op deze dag", ordersByDayEmptyHint: "Kies een datum uit «Dagen met bestellingen» hierboven — de tabel toont bestellingen en producten.", ordersByDayPickHint: "Geen bestellingen op de gekozen dag. Tik op een datum hieronder — details en producten verschijnen in de tabel.", ordersViewWeek: "Week", ordersViewDay: "Eén dag", ordersViewRange: "Datumbereik", ordersRangeFrom: "Van", ordersRangeTo: "Tot", daysWithOrdersInRange: "Dagen met bestellingen in bereik", ordersByRangeEmpty: "Geen bestellingen in dit bereik", ordersByRangeEmptyHint: "Wijzig de datums Van/Tot hierboven of bekijk de CRM-rapporten.", ordersByAllEmpty: "Nog geen bestellingen", ordersByAllEmptyHint: "Zodra er bestellingen zijn, verschijnen ze hier en in CRM-rapporten.", ordersTableSectionTitle: "Bestellingen beheren", ordersByDayCount: "Bestellingen", ordersByDayRevenue: "Omzet (voltooid)", scheduledForLabel: "Gepland op", scheduledSlotLabel: "Tijdslot", daysWithOrders: "Dagen met bestellingen", colFulfillment: "Type", tableRowHint: "Klik op een rij voor details en status" },
       news: { title: "Nieuws", addBtn: "+ Toevoegen", editTitle: "Bewerken", newTitle: "Nieuw nieuws", titlePlaceholder: "Titel", descPlaceholder: "Korte beschrijving", textPlaceholder: "Volledige tekst", isHit: "Bestseller", galleryLabel: "Fotogalerij", uploadPhotos: "Foto’s toevoegen (meerdere)", removePhotoAria: "Foto verwijderen", dishesBlock: "Gerechten met korting in dit bericht", selectProduct: "Kies een gerecht", discountShort: "Korting %", addDish: "Gerecht toevoegen", dishDuplicate: "Dit gerecht staat al in de lijst", pickProductFirst: "Kies eerst een gerecht" },
-      products: { addBtn: "+ Product toevoegen", hit: "HOT", editTitle: "Gerecht bewerken", newTitle: "Nieuw gerecht", nameLabel: "Productnaam", namePlaceholder: "bijv.: Philadelphia", descLabel: "Beschrijving", descPlaceholder: "Ingrediënten, gewicht, kenmerken...", priceLabel: "Prijs (€)", categoryLabel: "Categorie", selectCategory: "Selecteer...", deliveryCities: "Bezorgsteden *", addCitiesFirst: "Voeg eerst steden toe op het tabblad 'Steden'", descComposition: "Beschrijvingen (Samenstelling)", ingComposition: "Ingrediënten (Samenstelling)", empty: "Geen producten gevonden" },
+      products: { addBtn: "+ Product toevoegen", hit: "HOT", editTitle: "Gerecht bewerken", newTitle: "Nieuw gerecht", nameLabel: "Productnaam", namePlaceholder: "bijv.: Philadelphia", descLabel: "Beschrijving", descPlaceholder: "Ingrediënten, gewicht, kenmerken...", priceLabel: "Prijs (€)", categoryLabel: "Categorie", selectCategory: "Selecteer...", deliveryCities: "Bezorgsteden *", addCitiesFirst: "Voeg eerst steden toe op het tabblad 'Steden'", descComposition: "Beschrijvingen (Samenstelling)", ingComposition: "Ingrediënten (Samenstelling)", empty: "Geen producten gevonden", cartBadge: "Winkelwagen", uploadHint: "Klik of sleep foto's hierheen", uploadMultiHint: "Meerdere bestanden tegelijk (max. 24)", addPhoto: "Toevoegen", hitsLabel: "Onze hits / bestsellers" },
       ingredients: {
         title: "Ingrediëntenbibliotheek",
         addNew: "Nieuwe toevoegen",
@@ -1189,7 +1263,7 @@ const nl: SiteTranslations = {
         selectedCount: "Geselecteerd",
         emptyLibrary: "Voeg eerst ingrediënten toe op het tabblad «Ingrediënten».",
       },
-      cities: { addCountry: "Nieuw land toevoegen", nameRu: "Naam *", sticker: "Landsticker (vlag)", addCountryBtn: "✨ Land toevoegen", countriesTitle: "Landen", editCity: "Stad bewerken", addCity: "Nieuwe stad toevoegen", cityNameRu: "Stadsnaam *", searchMapLabel: "📍 Zoek stad op kaart", searchMapDesc: "Zoek op adres, postcode of naam.", searchMapPlaceholder: "Naam, adres, index...", searchMapBtn: "Zoeken op naam", countryLabel: "Land *", selectCountry: "Selecteer land", activeCity: "Actieve stad", saveChanges: "💾 Wijzigingen opslaan", addCityBtn: "✨ Stad toevoegen", cancelEdit: "Bewerken annuleren", citiesTitle: "Steden", deliveryZones: "Bezorgzones:" },
+      cities: { addCountry: "Nieuw land toevoegen", nameRu: "Naam *", sticker: "Landsticker (vlag)", addCountryBtn: "Land toevoegen", countriesTitle: "Landen", editCity: "Stad bewerken", addCity: "Nieuwe stad toevoegen", cityNameRu: "Stadsnaam *", searchMapLabel: "Zoek stad op kaart", searchMapDesc: "Zoek op adres, postcode of naam.", searchMapPlaceholder: "Naam, adres, index...", searchMapBtn: "Zoeken op naam", countryLabel: "Land *", selectCountry: "Selecteer land", activeCity: "Actieve stad", saveChanges: "Wijzigingen opslaan", addCityBtn: "Stad toevoegen", cancelEdit: "Bewerken annuleren", citiesTitle: "Steden", deliveryZones: "Bezorgzones:", zonesTitle: "Bezorgzone-tarieven", zonesDesc: "Teken polygonen op de kaart hieronder; stel hier gratis of vast € per zone in.", zonesLoading: "Zones laden…", zonesEmpty: "Nog geen zones — teken een polygoon op de kaart en sla de zonenaam op.", zoneFreeDelivery: "Gratis bezorging in zone", zoneFlatFee: "Vaste bezorging (€)", zoneSaveTariff: "Tarief opslaan" },
       banners: {
         addBtn: "+ Banner toevoegen",
         tabSubtitle: "Startcarrousel: foto, uitsnede en vertalingen.",
@@ -1234,17 +1308,18 @@ const nl: SiteTranslations = {
         heroVideoUnavailableTitle: "Video niet beschikbaar op server",
         heroVideoUnavailableHint: "Bestand ontbreekt (vaak na Render redeploy). Klik Uploaden en Opslaan opnieuw.",
       },
-      categories: { addBtn: "+ Categorie toevoegen", slug: "Slug:", editTitle: "Categorie bewerken", newTitle: "Nieuwe categorie", emojiLabel: "Emoji (sticker) *", nameRu: "Naam *", namePlaceholder: "bijv.: Desserts", slugLabel: "Slug (URL)", slugAuto: "Automatisch" },
-      users: { title: "👥 Geregistreerde gebruikers", noName: "Geen naam", admin: "👑 Admin", user: "👤 Gebruiker", ordersCount: "Bestellingen:", registration: "Geregistreerd:", bonusesLabel: "Bonussen:", cashbackLabel: "cashback", configureBonuses: "Bonussen instellen" },
-      newsletter: { title: "E-mail Nieuwsbrief", desc: "Stuur e-mails naar alle geregistreerde gebruikers", confirmSend: "Deze e-mail naar alle gebruikers sturen?", subject: "Onderwerp e-mail", subjectPlaceholder: "bijv.: Korting op rollen!", message: "Berichttekst", messagePlaceholder: "Voer nieuwsbrieftekst in...", promoOptional: "🎁 Promocode (optioneel)", promoPlaceholder: "bijv.: PROMO2025", promoHint: "Wordt in groot lettertype in de e-mail gemarkeerd", sendBtn: "Nieuwsbrief versturen", successSend: "Succesvol verzonden", errorPrefix: "Fout: ", errorNetwork: "Netwerkfout" },
-      team: { title: "👨‍👩‍👧‍👦 Team", addBtn: "+ Teamlid toevoegen", editTitle: "Teamlid bewerken", newTitle: "Nieuw teamlid", nameRu: "Naam *", posRu: "Positie *", bioRu: "Biografie", inactiveBadge: "Inactief" },
+      categories: { addBtn: "+ Categorie toevoegen", slug: "Slug:", editTitle: "Categorie bewerken", newTitle: "Nieuwe categorie", emojiLabel: "Emoji (sticker) *", nameRu: "Naam *", namePlaceholder: "bijv.: Desserts", slugLabel: "Slug (URL)", slugAuto: "Automatisch", orderLabel: "Weergavevolgorde", activeLabel: "Actief", activeYes: "Ja", activeNo: "Nee", recommendAllowed: "Toegestaan — aanbevolen producten mogen verschijnen", recommendDenied: "Nee — geen producten uit deze categorie in aanbevelingen", mainIcon: "Hoofdpictogram", hoverIcon: "Bij hover", upload: "Uploaden", change: "Wijzigen", orderHint: "Lager getal — eerder in lijst", visibleYes: "Zichtbaar voor bezoekers", visibleNo: "Verborgen (concept)" },
+      users: { title: "Geregistreerde gebruikers", noName: "Geen naam", admin: "Admin", user: "Gebruiker", ordersCount: "Bestellingen:", registration: "Geregistreerd:", bonusesLabel: "Bonussen:", cashbackLabel: "cashback", configureBonuses: "Bonussen instellen" },
+      newsletter: { title: "E-mail Nieuwsbrief", desc: "Stuur e-mails naar alle geregistreerde gebruikers", confirmSend: "Deze e-mail naar alle gebruikers sturen?", subject: "Onderwerp e-mail", subjectPlaceholder: "bijv.: Korting op rollen!", message: "Berichttekst", messagePlaceholder: "Voer nieuwsbrieftekst in...", promoOptional: "Promocode (optioneel)", promoPlaceholder: "bijv.: PROMO2025", promoHint: "Wordt in groot lettertype in de e-mail gemarkeerd", sendBtn: "Nieuwsbrief versturen", successSend: "Succesvol verzonden", errorPrefix: "Fout: ", errorNetwork: "Netwerkfout" },
+      team: { title: "Team", addBtn: "+ Teamlid toevoegen", editTitle: "Teamlid bewerken", newTitle: "Nieuw teamlid", nameRu: "Naam (RU) *", posRu: "Positie (RU) *", bioRu: "Bio (RU)", nameUa: "Naam (UA)", posUa: "Positie (UA)", bioUa: "Bio (UA)", orderLabel: "Weergavevolgorde", activeLabel: "Actief", uploadHint: "Klik om foto te uploaden", changePhoto: "Wijzigen", inactiveBadge: "Inactief" },
       promos: { createTitle: "Nieuwe promocode aanmaken", codePlaceholder: "Code (bijv. NEW2025)", discountPlaceholder: "Korting %", createBtn: "Aanmaken", discountText: "korting" },
-      settings: { title: "Site-instellingen", intervalLabel: "Interval bannerwissel (seconden)", sec: "sec.", intervalDesc: "Geef de tijd op waarna de dia's automatisch wisselen.", saving: "Opslaan...", saveBtn: "Instellingen opslaan", saved: "Instellingen opgeslagen!" },
+      settings: { title: "Site-instellingen", intervalLabel: "Interval bannerwissel (seconden)", sec: "sec.", intervalDesc: "Geef de tijd op waarna de dia's automatisch wisselen.", saving: "Opslaan...", saveBtn: "Instellingen opslaan", saved: "Instellingen opgeslagen!", socialTitle: "Social media & adres", telegramLabel: "Telegram (volledige URL)", whatsappLabel: "WhatsApp (volledige URL)", instagramLabel: "Instagram (volledige URL)", pickupAddressLabel: "Afhaaladres", pickupAddressPlaceholder: "Getoond bij afhalen", bonusTitle: "Bonussen & cashback", bonusEnabled: "Cashback voor geregistreerde klanten", bonusPercentLabel: "Cashback voor iedereen, % van totaal", bonusHint: "Toegekend bij status Bezorgd of Voltooid. Alleen met account.", cardTitle: "Online kaartbetaling", cardEnabled: "Toon «Online betalen» in winkelwagen (Stripe / LiqPay)", stripeConnected: "verbonden", stripeMissing: "geen STRIPE_SECRET_KEY op server", liqpayConnected: "verbonden", liqpayMissing: "geen LIQPAY_* op server", cartTileLabel: "Winkelwagentegel", cartTileEnabled: "ingeschakeld", cartTileDisabled: "uitgeschakeld in admin", paymentStatusLabel: "Betaling werkt", paymentWorks: "ja (Stripe / LiqPay)", paymentNeedsKeys: "serversleutels vereist", deliveryTitle: "Bezorging (vast)", freeDeliveryFrom: "Gratis bezorging vanaf (€)", fixedDeliveryFee: "Vaste bezorgkosten (€)", deliveryHint: "Als het totaal onder de drempel is, wordt dit bedrag toegevoegd. Afhalen zonder bezorgkosten." },
       reviews: { title: "Klantreviews", subtitle: "Reviews op /reviews: tekst bewerken en verwijderen.", empty: "Nog geen klantreviews.", pendingBanner: "In moderatie: {{count}}. Publiceer een review om deze op /reviews te tonen.", noOrder: "geen bestelling", statusPublished: "Live", statusModeration: "Moderatie", publishBtn: "Publiceren", unpublishBtn: "Depubliceren", editBtn: "Bewerken", saveBtn: "Opslaan", cancelBtn: "Annuleren", deleteAria: "Verwijderen", deleteConfirm: "Deze review verwijderen?", deleted: "Review verwijderd", saved: "Review bijgewerkt", published: "Review gepubliceerd", unpublished: "Review gedepubliceerd", textTooShort: "Tekst te kort", saveError: "Opslaan mislukt", updateError: "Bijwerken mislukt", deleteError: "Verwijderen mislukt" },
       blog: { title: "Blog / Tips", subtitle: "Artikelen voor gasten: wat te bestellen bij Watta.", slugPlaceholder: "Slug (bijv. first-order-watta)", coverTitle: "Omslagfoto", coverHint: "Horizontale foto van rollen of een set.", removeCover: "Foto verwijderen", uploadCover: "Foto uploaden", uploadingCover: "Uploaden…", coverUrlPlaceholder: "Of foto-URL (https://…)", youtubePlaceholder: "YouTube (optioneel)", authorPlaceholder: "Auteur (bijv. Watta Sushi Team)", defaultAuthor: "Watta Sushi Team", isPublished: "Gepubliceerd", createBtn: "Aanmaken", updateBtn: "Bijwerken", publishedBadge: "Gepubliceerd", draftBadge: "Concept", linksSummary: "Links: {{products}} gerechten, {{categories}} cat., {{ingredients}} ingr.", emptyPosts: "Nog geen posts", i18nTitle: "Artikeltekst (4 talen)", i18nHint: "Handmatig invullen of eerst Oekraïens, dan automatisch vertalen.", autoTranslateBtn: "Automatisch vertalen vanuit UA", translating: "Vertalen…", titlePlaceholder: "Titel ({{lang}})", contentPlaceholder: "Artikeltekst ({{lang}})", linksTitle: "Menulinks", linksHint: "Selecteer gerechten, categorieën of ingrediënten voor de artikelpagina.", linksSelectedTotal: " Geselecteerd: {{count}}.", linksProductsTitle: "Gerechten", linksProductsHint: "Menuproducten — link naar gerecht", linksCategoriesTitle: "Categorieën", linksCategoriesHint: "Menusecties — link naar categorie", linksIngredientsTitle: "Ingrediënten", linksIngredientsHint: "Zalm, rijst, nori — voor vertrouwen", searchPlaceholder: "Zoeken…", searchEmpty: "Niets gevonden", selectedCount: "Geselecteerd: {{count}}" },
       cartUpsell: { title: "Winkelwagen-upsell", subtitle: "Bestelbedrag-drempels (€) en vaste korting op geselecteerde producten.", newTierBtn: "Nieuwe drempel", loading: "Laden…", empty: "Nog geen drempels.", editTierTitle: "Drempel bewerken #{{id}}", newTierTitle: "Nieuwe kortingsdrempel", fromAmount: "Van bedrag (€) *", toAmount: "Tot bedrag (€)", discount: "Korting (€ / stuk) *", sortOrder: "Volgorde", activeTier: "Actieve drempel", discountedProducts: "Producten met korting ({{count}})", noLimitPlaceholder: "geen limiet", disabledSuffix: " · uitgeschakeld", productCount: "{{count}} product(en)", perItemSuffix: " / stuk", saving: "Opslaan…", saveChanges: "Wijzigingen opslaan", createTier: "Drempel aanmaken", cancel: "Annuleren", editAria: "Bewerken", deleteAria: "Verwijderen", addProductsFirst: "Voeg eerst producten toe aan de catalogus.", loadError: "Kon winkelwagen-drempels niet laden", authRequired: "Log in als administrator", tierUpdated: "Drempel bijgewerkt", tierCreated: "Drempel aangemaakt", saveError: "Opslagfout", deleteConfirm: "Deze drempel en alle gekoppelde producten verwijderen?", deleted: "Verwijderd", deleteError: "Verwijderen mislukt" },
       adminPhones: { title: "Toegang tot adminpaneel", description: "Gebruikers met deze nummers of e-mails krijgen automatisch adminrechten (telefoon, Google of e-mail).", phoneLabel: "Telefoonnummer", noteLabel: "Notitie (optioneel)", notePlaceholder: "Naam of rol", addBtn: "Toevoegen", loading: "Laden…", empty: "Nog geen nummers", colPhone: "Nummer", colNote: "Notitie", colAdded: "Toegevoegd", colActions: "Acties", primaryBadge: "Primair", protectedBadge: "Beschermd", deleteBtn: "Verwijderen", deleteAria: "Verwijder {{phone}}", loadError: "Kon admin-nummers niet laden", phoneRequired: "Voer een telefoonnummer in", addError: "Kon nummer niet toevoegen", added: "Nummer toegevoegd", deleteConfirm: "{{phone}} uit adminlijst verwijderen?", deleted: "Nummer verwijderd", error: "Fout", emailsTitle: "Administrator-e-mails", emailsDescription: "Inloggen via Google of e-mail+wachtwoord met deze adressen geeft ook toegang tot het adminpaneel.", emailLabel: "E-mail", colEmail: "E-mail", emailsEmpty: "Nog geen e-mails", emailRequired: "Voer een e-mail in", emailAddError: "Kon e-mail niet toevoegen", emailAdded: "E-mail toegevoegd", emailDeleteAria: "Verwijder {{email}}", emailDeleteConfirm: "{{email}} uit adminlijst verwijderen?", emailDeleted: "E-mail verwijderd", emailsLoadError: "Kon admin-e-mails niet laden" },
-      crm: { customersTab: "Klantendatabase", inquiriesTab: "Sitevragen", customersTitle: "Klantendatabase", searchPlaceholder: "Zoeken: naam, telefoon, e-mail…", colName: "Naam", colPhone: "Telefoon", colEmail: "E-mail", colOrders: "Bestellingen", colTotal: "Totaal", colConsent: "Toestemming", colLastOrder: "Laatste bestelling", rowHint: "Klik op een rij voor het volledige klantprofiel en bestelgeschiedenis.", empty: "Geen klanten gevonden", loading: "Laden…", cardTitle: "Klantkaart", fieldName: "Naam:", fieldPhone: "Telefoon:", fieldEmail: "E-mail:", fieldAccount: "Account:", fieldOrders: "Bestellingen:", fieldTotal: "Totaal:", fieldBonuses: "Bonussen:", fieldConsent: "Gegevenstoestemming:", orderHistory: "Bestelgeschiedenis", orderStatus: "Status:", orderAddress: "Adres:", orderPayment: "Betaling:", orderComment: "Opmerking:", noOrders: "Nog geen bestellingen", createMailing: "Mailing aanmaken" },
+      crm: { customersTab: "Klantendatabase", reportsTab: "Rapporten", inquiriesTab: "Sitevragen", customersTitle: "Klantendatabase", usersTableTitle: "CRM-gebruikers", searchPlaceholder: "Zoeken: naam, telefoon, e-mail…", colName: "Naam", colPhone: "Telefoon", colEmail: "E-mail", colOrders: "Bestellingen", colTotal: "Totaal", colConsent: "Toestemming", colLastOrder: "Laatste bestelling", colBonuses: "Bonussen", colCashbackPercent: "Cashback %", rowHint: "Klik op een rij voor het volledige klantprofiel en bestelgeschiedenis.", empty: "Geen klanten gevonden", loading: "Laden…", cardTitle: "Klantkaart", fieldName: "Naam:", fieldPhone: "Telefoon:", fieldEmail: "E-mail:", fieldAccount: "Account:", fieldOrders: "Bestellingen:", fieldTotal: "Totaal:", fieldBonuses: "Bonussen:", fieldConsent: "Gegevenstoestemming:", orderHistory: "Bestelgeschiedenis", orderStatus: "Status:", orderAddress: "Adres:", orderPayment: "Betaling:", orderComment: "Opmerking:", noOrders: "Nog geen bestellingen", createMailing: "Mailing aanmaken", sheetsSyncBtn: "Exporteren naar Google Sheets", sheetsOpenBtn: "Google Sheet openen", sheetsNotConfigured: "Google Sheets is niet geconfigureerd op de server (GOOGLE_CREDS + GOOGLE_SHEET_ID).", sheetsSyncing: "Synchroniseren…", sheetsSyncSuccess: "{{count}} klanten geëxporteerd naar tabblad “{{sheet}}”", sheetsSyncError: "Synchroniseren met Google Sheets mislukt", sheetsHint: "De klantendatabase wordt gespiegeld naar tabblad “{{sheet}}” in dezelfde spreadsheet als bestellingen. De lijst wordt automatisch vernieuwd na een nieuwe bestelling." },
+      crmReports: { title: "Periode-rapporten", embeddedTitle: "CRM-rapporten (producten, bestellingen, klanten)", linkedRangeHint: "Periode is gesynchroniseerd met het datumfilter hierboven. Wissel van tab — de tabel wordt bijgewerkt.", productsTab: "Producten", ordersTab: "Bestellingen", customersTab: "Klanten", periodLabel: "Periode", periodAll: "Alle tijd", periodMonth: "Deze maand", periodLastMonth: "Vorige maand", periodYear: "Dit jaar", periodCustom: "Eigen bereik", fromLabel: "Van", toLabel: "Tot", selectedPeriod: "Gekozen periode", summaryOrders: "Bestellingen", summaryRevenue: "Omzet", summaryItems: "Items / st.", summaryClients: "Klanten", sheetsSyncBtn: "Rapport exporteren naar Google Sheets", sheetsSyncSuccess: "{{count}} rijen geëxporteerd naar tabblad “{{sheet}}”", sheetsSyncError: "Kon rapport niet exporteren naar Google Sheets", sheetsHint: "Elke periode krijgt een apart tabblad in dezelfde Google-spreadsheet als bestellingen.", colProduct: "Product", colCategory: "Categorie", colQty: "Aantal", colRevenue: "Omzet", colOrders: "Bestellingen", colDate: "Datum", colCustomer: "Klant", colPhone: "Telefoon", colEmail: "E-mail", colStatus: "Status", colTotal: "Totaal", colItems: "Inhoud", colLastOrder: "Laatste bestelling", empty: "Geen gegevens voor de gekozen periode", loading: "Laden…", footerHint: "Kies rapporttype en periode — de tabel wordt automatisch bijgewerkt. Google-export maakt een apart tabblad met de periodenaam." },
       contactInquiries: { title: "Sitevragen", totalLabel: "Totaal:", unreadLabel: "· nieuw:", filterAll: "Alle", filterUnread: "Nieuw", filterRead: "Gelezen", refreshBtn: "Vernieuwen", markAllReadBtn: "Alles als gelezen", colDate: "Datum", colName: "Naam", colContacts: "Contacten", colMessage: "Bericht", empty: "Nog geen vragen", loading: "Laden…", footerHint: "Klik op een rij voor de volledige tekst.", detailTitle: "Vraag #{{id}}", messageLabel: "Bericht", deleteBtn: "Verwijderen", closeBtn: "Sluiten", deleteAria: "Verwijderen", closeAria: "Sluiten", deleteConfirm: "Deze vraag uit de database verwijderen?", loadError: "Kon vragen niet laden", markReadError: "Kon niet als gelezen markeren", markAllReadSuccess: "Alle vragen als gelezen gemarkeerd", deleted: "Verwijderd", deleteError: "Verwijderen mislukt" },
       userBonus: { title: "Klantbonussen", balanceLabel: "Saldo:", globalCashbackLabel: "Site-cashback:", effectivePercentLabel: "Effectief % voor klant:", disabled: "uitgeschakeld", personalPercentLabel: "Cashback voor deze klant, %", personalPercentCheckbox: "Persoonlijk cashback % (boven globaal)", personalPercentField: "Cashback voor deze klant, %", useGlobalHint: "Gebruikt het globale percentage uit site-instellingen.", adjustmentLabel: "Saldo-aanpassing (± €), optioneel", adjustmentPlaceholder: "bijv.: 5 of -2.5", adjustmentHint: "Bonussen handmatig toevoegen of aftrekken.", cancelBtn: "Annuleren", saveBtn: "Opslaan", closeAria: "Sluiten", saveError: "Opslaan mislukt", saved: "Opgeslagen", networkError: "Netwerkfout" },
     }

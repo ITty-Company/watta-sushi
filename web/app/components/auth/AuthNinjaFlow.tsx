@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import WattaLink from '../WattaLink'
-import { X } from 'lucide-react'
+import { X } from '@/lib/wattaInlineIcons'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useLanguage } from '../../context/LanguageContext'
 import AuthPhoneField, { buildAuthPhoneE164 } from './AuthPhoneField'

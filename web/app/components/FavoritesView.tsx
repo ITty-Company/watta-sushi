@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  ArrowLeft, Heart, ShoppingBag, Plus, Trash2
-} from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { ArrowLeft, Heart, Plus, ShoppingBag } from '@/lib/wattaInlineIcons'
 import LogoBackground from './LogoBackground'
 import toast from 'react-hot-toast'
 import { useLanguage } from '@/app/context/LanguageContext'

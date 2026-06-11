@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import TeamMemberPhoto from '@/app/components/TeamMemberPhoto'
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { teamMembersWithPhotos, type PublicTeamMember } from '@/lib/teamMembers'
 import { WattaInViewFadeDiv, WattaInViewFadeHeader } from '@/app/components/WattaInViewFade'

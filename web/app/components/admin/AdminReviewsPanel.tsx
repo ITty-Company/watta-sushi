@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { Star, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { Star } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -137,7 +138,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
 
   if (reviews.length === 0) {
     return (
-      <p className="admin-watta-empty-state rounded-xl border border-dashed border-[#145142]/20 bg-white/80 p-8 text-center text-[#145142]/60">
+      <p className="admin-watta-empty-state rounded-xl border border-dashed border-watta-action/20 bg-white/80 p-8 text-center text-watta-action/60">
         {r.empty}
       </p>
     )
@@ -156,7 +157,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
         <article
           key={row.id}
           className={`admin-watta-hover-lift rounded-xl border bg-white p-4 shadow-sm sm:p-5 ${
-            row.published ? 'border-[#145142]/12' : 'border-amber-300 ring-1 ring-amber-100'
+            row.published ? 'border-watta-action/12' : 'border-amber-300 ring-1 ring-amber-100'
           }`}
         >
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -164,13 +165,13 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
               <p className="font-semibold text-[#0f241e]">
                 {row.authorName}
                 {row.orderId != null ? (
-                  <span className="ml-2 text-sm font-normal text-[#145142]/55">#{row.orderId}</span>
+                  <span className="ml-2 text-sm font-normal text-watta-action/55">#{row.orderId}</span>
                 ) : (
-                  <span className="ml-2 text-sm font-normal text-[#145142]/55">{r.noOrder}</span>
+                  <span className="ml-2 text-sm font-normal text-watta-action/55">{r.noOrder}</span>
                 )}
               </p>
-              <p className="text-xs text-[#145142]/55">{row.authorEmail}</p>
-              <p className="text-xs text-[#145142]/45">
+              <p className="text-xs text-watta-action/55">{row.authorEmail}</p>
+              <p className="text-xs text-watta-action/45">
                 {new Date(row.createdAt).toLocaleString(locale)}
               </p>
               <span
@@ -206,7 +207,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
                   type="button"
                   disabled={publishingId === row.id}
                   onClick={() => void setPublished(row.id, false)}
-                  className="rounded-lg border border-[#145142]/15 px-3 py-1.5 text-xs font-semibold text-[#145142] hover:bg-watta-action/5 disabled:opacity-60"
+                  className="rounded-lg border border-watta-action/15 px-3 py-1.5 text-xs font-semibold text-watta-action hover:bg-watta-action/5 disabled:opacity-60"
                 >
                   {r.unpublishBtn}
                 </button>
@@ -223,7 +224,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
           </div>
 
           {editingId === row.id ? (
-            <div className="space-y-3 border-t border-[#145142]/10 pt-3">
+            <div className="space-y-3 border-t border-watta-action/10 pt-3">
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} type="button" onClick={() => setRating(n)} className="p-0.5">
@@ -237,7 +238,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={4}
-                className="w-full rounded-lg border border-[#145142]/15 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-watta-action/15 px-3 py-2 text-sm"
               />
               <div className="flex flex-wrap gap-2">
                 <button
@@ -251,7 +252,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="rounded-lg border border-[#145142]/15 px-4 py-2 text-sm font-semibold text-[#145142]"
+                  className="rounded-lg border border-watta-action/15 px-4 py-2 text-sm font-semibold text-watta-action"
                 >
                   {r.cancelBtn}
                 </button>
@@ -263,7 +264,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
               {row.images?.length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {row.images.map((src, i) => (
-                    <div key={i} className="h-16 w-16 overflow-hidden rounded-lg border border-[#145142]/10">
+                    <div key={i} className="h-16 w-16 overflow-hidden rounded-lg border border-watta-action/10">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={src} alt="" className="h-full w-full object-cover" />
                     </div>
@@ -273,7 +274,7 @@ export default function AdminReviewsPanel({ reviews, onReload, getAuthHeaders }:
               <button
                 type="button"
                 onClick={() => startEdit(row)}
-                className="mt-3 text-sm font-semibold text-[#145142] hover:underline"
+                className="mt-3 text-sm font-semibold text-watta-action hover:underline"
               >
                 {r.editBtn}
               </button>

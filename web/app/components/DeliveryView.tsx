@@ -32,7 +32,8 @@ import {
 import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { readCitiesCacheRaw, writeCitiesCache } from '@/lib/wattaCitiesCache'
 import { readSiteSettingsCache } from '@/lib/publicRouteWarmCache'
-import { ArrowUpRight, MapPin, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { ArrowUpRight, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { MapPin } from '@/lib/wattaInlineIcons'
 import { cn } from '@/lib/utils'
 import DeliveryUnavailableCityNotice from './delivery/DeliveryUnavailableCityNotice'
 import {

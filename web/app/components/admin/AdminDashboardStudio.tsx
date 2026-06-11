@@ -16,26 +16,23 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import {
-  BookOpen,
-  CalendarDays,
-  Globe,
-  Image as ImageIcon,
-  Layers,
-  ListOrdered,
-  MapPin,
-  Package,
-  Receipt,
-  RefreshCw,
-  ShoppingBag,
-  Sparkles,
-  Tag,
-  TrendingUp,
-  User,
-  Users,
-} from 'lucide-react'
+import { BookOpen, CalendarDays, ChevronRight, Globe, Image as ImageIcon, Layers, ListOrdered, Package, Receipt, RefreshCw, Sparkles, Tag, TrendingUp, Users } from 'lucide-react'
+import { MapPin, ShoppingBag, User } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../../context/LanguageContext'
 import type { AdminDailySeriesPoint } from '@/lib/orderAdminStats'
+import type { AdminNavTabId } from './AdminNavDrawer'
+
+export type DashboardOrderStatusFilter =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'COOKING'
+  | 'DELIVERING'
+  | 'COMPLETED'
+  | 'CANCELLED'
+
+export type DashboardNavigateOpts = {
+  orderStatus?: DashboardOrderStatusFilter
+}
 
 export type DashboardMetricsStudio = {
   revenue: number
@@ -70,16 +67,31 @@ type Props = {
   isLoading: boolean
   dashboardMetrics: DashboardMetricsStudio
   counts: ContentCounts
+  onNavigate: (tab: AdminNavTabId, opts?: DashboardNavigateOpts) => void
 }
+
+const BRAND = {
+  green: 'var(--watta-brand-action)',
+  greenMid: 'var(--watta-brand-action-hover)',
+  mint: 'var(--watta-brand-action)',
+  accent: '#ff5c00',
+  danger: '#c45c4a',
+  warm: '#e07a3a',
+} as const
+
+type StatusTone = 'default' | 'accent' | 'mint' | 'muted' | 'danger'
 
 export default function AdminDashboardStudio({
   isLoading,
   dashboardMetrics,
   counts,
+  onNavigate,
 }: Props) {
   const { t } = useLanguage()
   const reduceMotion = useReducedMotion()
   const d = t.adminPanel.dashboard
+
+  const openAria = (section: string) => d.openSectionAria.replace('{{section}}', section)
 
   const fadeUp = reduceMotion
     ? { initial: false, animate: {} }
@@ -102,12 +114,12 @@ export default function AdminDashboardStudio({
 
   const pieData = useMemo(
     () => [
-      { name: d.statusPending, value: dashboardMetrics.pending, color: '#f59e0b' },
-      { name: d.statusConfirmed, value: dashboardMetrics.confirmed, color: '#84cc16' },
-      { name: d.statusCooking, value: dashboardMetrics.cooking, color: '#fb923c' },
-      { name: d.statusDelivering, value: dashboardMetrics.delivering, color: '#38bdf8' },
-      { name: d.statusCompleted, value: dashboardMetrics.completed, color: '#10b981' },
-      { name: d.statusCancelled, value: dashboardMetrics.cancelled, color: '#f87171' },
+      { name: d.statusPending, value: dashboardMetrics.pending, color: BRAND.warm, status: 'PENDING' as const },
+      { name: d.statusConfirmed, value: dashboardMetrics.confirmed, color: BRAND.mint, status: 'CONFIRMED' as const },
+      { name: d.statusCooking, value: dashboardMetrics.cooking, color: BRAND.accent, status: 'COOKING' as const },
+      { name: d.statusDelivering, value: dashboardMetrics.delivering, color: BRAND.greenMid, status: 'DELIVERING' as const },
+      { name: d.statusCompleted, value: dashboardMetrics.completed, color: BRAND.green, status: 'COMPLETED' as const },
+      { name: d.statusCancelled, value: dashboardMetrics.cancelled, color: BRAND.danger, status: 'CANCELLED' as const },
     ],
     [d, dashboardMetrics],
   )
@@ -121,8 +133,8 @@ export default function AdminDashboardStudio({
 
   const tooltipStyle = {
     borderRadius: 12,
-    border: '1px solid rgba(20,81,66,0.15)',
-    boxShadow: '0 12px 40px -12px rgba(20,81,66,0.25)',
+    border: '1px solid color-mix(in srgb, var(--watta-brand-action) 15%, transparent)',
+    boxShadow: '0 12px 40px -12px color-mix(in srgb, var(--watta-brand-action) 25%, transparent)',
     fontSize: 12,
     fontWeight: 600,
   }
@@ -130,6 +142,90 @@ export default function AdminDashboardStudio({
   const chartHeight = 220
   const pieChartHeight = 180
   const chartInitialDimension = { width: 480, height: chartHeight }
+
+  const metricCards = [
+    {
+      key: 'today-rev',
+      label: d.todayRevenue,
+      value: `${dashboardMetrics.todayRevenue.toFixed(2)} €`,
+      icon: CalendarDays,
+      accent: true,
+      tab: 'orders' as const,
+    },
+    {
+      key: 'today-ord',
+      label: d.todayOrders,
+      value: String(dashboardMetrics.todayOrders),
+      icon: Package,
+      accent: false,
+      tab: 'orders' as const,
+    },
+    {
+      key: 'rev',
+      label: d.revenue,
+      value: `${dashboardMetrics.revenue.toFixed(2)} €`,
+      icon: TrendingUp,
+      accent: false,
+      tab: 'orders' as const,
+    },
+    {
+      key: 'ord',
+      label: d.orders,
+      value: String(dashboardMetrics.totalOrders),
+      icon: Receipt,
+      accent: false,
+      tab: 'orders' as const,
+    },
+    {
+      key: 'paid',
+      label: d.paidOrders,
+      value: String(dashboardMetrics.paidOrders),
+      icon: Receipt,
+      accent: false,
+      tab: 'orders' as const,
+    },
+    {
+      key: 'avg',
+      label: d.avgOrderValue,
+      value: `${avgTicket.toFixed(2)} €`,
+      icon: Sparkles,
+      accent: true,
+      tab: 'orders' as const,
+    },
+    {
+      key: 'prod',
+      label: d.products,
+      value: String(counts.products),
+      icon: ShoppingBag,
+      accent: false,
+      tab: 'products' as const,
+    },
+    {
+      key: 'city',
+      label: d.cities,
+      value: String(counts.cities),
+      icon: MapPin,
+      accent: false,
+      tab: 'cities' as const,
+    },
+    {
+      key: 'ctr',
+      label: d.countries,
+      value: String(counts.countries),
+      icon: Globe,
+      accent: false,
+      tab: 'cities' as const,
+    },
+  ]
+
+  const statusRows: { label: string; count: number; status: DashboardOrderStatusFilter; tone: StatusTone }[] = [
+    { label: d.statusPending, count: dashboardMetrics.pending, status: 'PENDING', tone: 'accent' },
+    { label: d.statusConfirmed, count: dashboardMetrics.confirmed, status: 'CONFIRMED', tone: 'mint' },
+    { label: d.statusCooking, count: dashboardMetrics.cooking, status: 'COOKING', tone: 'accent' },
+    { label: d.statusDelivering, count: dashboardMetrics.delivering, status: 'DELIVERING', tone: 'default' },
+    { label: d.statusCompleted, count: dashboardMetrics.completed, status: 'COMPLETED', tone: 'mint' },
+    { label: d.statusCancelled, count: dashboardMetrics.cancelled, status: 'CANCELLED', tone: 'danger' },
+  ]
 
   if (isLoading) {
     return (
@@ -139,8 +235,8 @@ export default function AdminDashboardStudio({
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <RefreshCw size={36} className="text-[#145142]/50 animate-spin" strokeWidth={2.25} />
-          <p className="text-sm font-semibold text-[#145142]/65">{d.loading}</p>
+          <RefreshCw size={36} className="text-watta-action/50 animate-spin" strokeWidth={2.25} />
+          <p className="text-sm font-semibold text-watta-action/65">{d.loading}</p>
         </motion.div>
       </div>
     )
@@ -151,44 +247,32 @@ export default function AdminDashboardStudio({
       <motion.section
         {...fadeUp}
         transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-[1.35rem] border border-[#145142]/14 bg-white p-5 shadow-[0_20px_50px_-24px_rgba(20,81,66,0.35)] sm:p-7 md:p-8"
+        className="admin-watta-dash-hero"
       >
-        <div
-          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#ff6b35]/12 blur-3xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-watta-action/10 blur-3xl"
-          aria-hidden
-        />
-        <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="admin-watta-kicker mb-2 inline-flex items-center gap-2 rounded-full border border-[#145142]/12 bg-white px-3 py-1 shadow-sm">
-              <Sparkles size={12} className="text-[#ff5c00]" strokeWidth={2.5} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="admin-watta-dash-hero__badge">
+              <Sparkles size={12} className="text-[#ff5c00]" strokeWidth={2.5} aria-hidden />
               {d.studioBadge}
             </div>
-            <h2 className="admin-watta-page-title text-2xl font-bold sm:text-3xl md:text-4xl">
+            <h2 className="admin-watta-page-title admin-watta-page-title--brand">
               {d.studioHeadline}
             </h2>
             <p className="admin-watta-section-lead mt-1 max-w-xl">{d.studioSub}</p>
           </div>
-          <div className="mt-3 rounded-2xl border border-[#145142]/12 bg-white/70 px-4 py-3 text-xs font-medium text-[#145142]/70 shadow-inner sm:mt-0 sm:max-w-sm sm:text-sm">
+          <div className="admin-watta-dash-hero__hint">
             {d.statsHint}
             {dashboardMetrics.fromDb ? (
-              <span className="ml-1.5 font-mono text-[10px] font-bold uppercase tracking-wide text-[#145142]/45">
-                · orders/stats
-              </span>
+              <span className="ml-1 font-semibold text-watta-action/45">· DB</span>
             ) : (
-              <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-800/90">
-                · {d.statsFallback}
-              </span>
+              <span className="ml-1 font-semibold text-[#e07a3a]">· {d.statsFallback}</span>
             )}
           </div>
         </div>
       </motion.section>
 
       <motion.div
-        className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-9"
+        className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5"
         initial={reduceMotion ? false : 'hidden'}
         animate="show"
         variants={{
@@ -198,71 +282,7 @@ export default function AdminDashboardStudio({
           },
         }}
       >
-        {[
-          {
-            key: 'today-rev',
-            label: d.todayRevenue,
-            value: `${dashboardMetrics.todayRevenue.toFixed(2)} €`,
-            icon: CalendarDays,
-            gradient: 'from-[#ff6b35] to-[#ea580c]',
-          },
-          {
-            key: 'today-ord',
-            label: d.todayOrders,
-            value: String(dashboardMetrics.todayOrders),
-            icon: Package,
-            gradient: 'from-[#176b57] to-[#1a6b58]',
-          },
-          {
-            key: 'rev',
-            label: d.revenue,
-            value: `${dashboardMetrics.revenue.toFixed(2)} €`,
-            icon: TrendingUp,
-            gradient: 'from-[#145142] to-[#1a6b58]',
-          },
-          {
-            key: 'ord',
-            label: d.orders,
-            value: String(dashboardMetrics.totalOrders),
-            icon: Receipt,
-            gradient: 'from-[#176b57] to-[#145142]',
-          },
-          {
-            key: 'paid',
-            label: d.paidOrders,
-            value: String(dashboardMetrics.paidOrders),
-            icon: Receipt,
-            gradient: 'from-[#0f3d32] to-[#1a6b58]',
-          },
-          {
-            key: 'avg',
-            label: d.avgOrderValue,
-            value: `${avgTicket.toFixed(2)} €`,
-            icon: Sparkles,
-            gradient: 'from-[#ff6b35]/90 to-[#ea580c]',
-          },
-          {
-            key: 'prod',
-            label: d.products,
-            value: String(counts.products),
-            icon: ShoppingBag,
-            gradient: 'from-[#145142]/90 to-[#2d8f6f]',
-          },
-          {
-            key: 'city',
-            label: d.cities,
-            value: String(counts.cities),
-            icon: MapPin,
-            gradient: 'from-[#1a6b58] to-[#145142]',
-          },
-          {
-            key: 'ctr',
-            label: d.countries,
-            value: String(counts.countries),
-            icon: Globe,
-            gradient: 'from-[#134a3d] to-[#176b57]',
-          },
-        ].map((card) => (
+        {metricCards.map((card) => (
           <motion.div
             key={card.key}
             variants={{
@@ -270,25 +290,31 @@ export default function AdminDashboardStudio({
               show: reduceMotion ? {} : { opacity: 1, y: 0, scale: 1 },
             }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg shadow-[#145142]/[0.08] backdrop-blur-md sm:p-4"
           >
-            <div
-              className={`pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-[0.12] blur-2xl`}
-              aria-hidden
-            />
-            <div className="relative flex items-center gap-2.5">
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} text-white shadow-md shadow-[#145142]/20`}
-              >
-                <card.icon size={18} strokeWidth={2.4} />
+            <button
+              type="button"
+              className={`admin-watta-dash-card group p-3 sm:p-4${card.accent ? ' admin-watta-dash-card--accent' : ''}`}
+              aria-label={openAria(card.label)}
+              title={`${card.label}: ${card.value}`}
+              onClick={() => onNavigate(card.tab)}
+            >
+              <div className="relative flex items-start gap-2.5">
+                <div
+                  className={`admin-watta-dash-card__icon${card.accent ? ' admin-watta-dash-card__icon--accent' : ''}`}
+                >
+                  <card.icon size={18} strokeWidth={2.4} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="admin-watta-dash-card__label">{card.label}</p>
+                  <p className="admin-watta-dash-card__value">{card.value}</p>
+                </div>
+                <ChevronRight
+                  size={16}
+                  className="mt-1 shrink-0 text-watta-action/25 transition group-hover:translate-x-0.5 group-hover:text-watta-action/55"
+                  aria-hidden
+                />
               </div>
-              <div className="min-w-0">
-                <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#145142]/55 sm:text-[10px]">
-                  {card.label}
-                </p>
-                <p className="truncate text-base font-black tabular-nums text-[#0d3d34] sm:text-lg">{card.value}</p>
-              </div>
-            </div>
+            </button>
           </motion.div>
         ))}
       </motion.div>
@@ -298,14 +324,20 @@ export default function AdminDashboardStudio({
         transition={{ delay: reduceMotion ? 0 : 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3"
       >
-        <motion.div className="min-w-0 rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5">
-          <h3 className="admin-watta-kicker mb-1">
-            {d.chartRevenue14d}
+        <button
+          type="button"
+          className="admin-watta-dash-panel group text-left"
+          aria-label={openAria(d.chartRevenue14d)}
+          onClick={() => onNavigate('orders')}
+        >
+          <h3 className="admin-watta-section-head flex items-center justify-between gap-2">
+            <span className="min-w-0">{d.chartRevenue14d}</span>
+            <ChevronRight size={14} className="shrink-0 text-watta-action/35" aria-hidden />
           </h3>
           {!hasChartData ? (
-            <p className="py-12 text-center text-sm font-medium text-[#145142]/45">{d.chartNoData}</p>
+            <p className="py-12 text-center text-sm font-medium text-watta-action/45">{d.chartNoData}</p>
           ) : (
-            <div className="w-full pt-2" style={{ height: chartHeight }}>
+            <div className="w-full pt-2 pointer-events-none" style={{ height: chartHeight }}>
               <ResponsiveContainer
                 width="100%"
                 height={chartHeight}
@@ -315,14 +347,14 @@ export default function AdminDashboardStudio({
                 <AreaChart data={series14} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                   <defs>
                     <linearGradient id="adminRevFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#145142" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#1a6b58" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor={BRAND.green} stopOpacity={0.35} />
+                      <stop offset="100%" stopColor={BRAND.greenMid} stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="4 8" stroke="rgba(20,81,66,0.08)" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: '#145142', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="4 8" stroke="color-mix(in srgb, var(--watta-brand-action) 8%, transparent)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: BRAND.green, fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} />
                   <YAxis
-                    tick={{ fill: '#145142', fontSize: 10, fontWeight: 600 }}
+                    tick={{ fill: BRAND.green, fontSize: 10, fontWeight: 600 }}
                     axisLine={false}
                     tickLine={false}
                     width={36}
@@ -335,7 +367,7 @@ export default function AdminDashboardStudio({
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#145142"
+                    stroke={BRAND.green}
                     strokeWidth={2.5}
                     fill="url(#adminRevFill)"
                     animationDuration={reduceMotion ? 0 : 900}
@@ -344,16 +376,22 @@ export default function AdminDashboardStudio({
               </ResponsiveContainer>
             </div>
           )}
-        </motion.div>
+        </button>
 
-        <motion.div className="min-w-0 rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5">
-          <h3 className="admin-watta-kicker mb-1">
-            {d.chartOrders14d}
+        <button
+          type="button"
+          className="admin-watta-dash-panel group text-left"
+          aria-label={openAria(d.chartOrders14d)}
+          onClick={() => onNavigate('orders')}
+        >
+          <h3 className="admin-watta-section-head flex items-center justify-between gap-2">
+            <span className="min-w-0">{d.chartOrders14d}</span>
+            <ChevronRight size={14} className="shrink-0 text-watta-action/35" aria-hidden />
           </h3>
           {!hasChartData ? (
-            <p className="py-12 text-center text-sm font-medium text-[#145142]/45">{d.chartNoData}</p>
+            <p className="py-12 text-center text-sm font-medium text-watta-action/45">{d.chartNoData}</p>
           ) : (
-            <div className="w-full pt-2" style={{ height: chartHeight }}>
+            <div className="w-full pt-2 pointer-events-none" style={{ height: chartHeight }}>
               <ResponsiveContainer
                 width="100%"
                 height={chartHeight}
@@ -361,11 +399,11 @@ export default function AdminDashboardStudio({
                 initialDimension={chartInitialDimension}
               >
                 <BarChart data={series14} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="4 8" stroke="rgba(20,81,66,0.08)" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: '#145142', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="4 8" stroke="color-mix(in srgb, var(--watta-brand-action) 8%, transparent)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: BRAND.green, fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fill: '#145142', fontSize: 10, fontWeight: 600 }}
+                    tick={{ fill: BRAND.green, fontSize: 10, fontWeight: 600 }}
                     axisLine={false}
                     tickLine={false}
                     width={28}
@@ -373,7 +411,7 @@ export default function AdminDashboardStudio({
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar
                     dataKey="orders"
-                    fill="#ff6b35"
+                    fill={BRAND.accent}
                     radius={[8, 8, 4, 4]}
                     animationDuration={reduceMotion ? 0 : 800}
                   />
@@ -381,16 +419,22 @@ export default function AdminDashboardStudio({
               </ResponsiveContainer>
             </div>
           )}
-        </motion.div>
+        </button>
 
-        <motion.div className="min-w-0 rounded-[1.25rem] border border-[#145142]/12 bg-gradient-to-b from-white/95 to-[#f4faf7]/95 p-4 shadow-[0_16px_40px_-20px_rgba(20,81,66,0.2)] sm:p-5 lg:col-span-2 xl:col-span-1">
-          <h3 className="admin-watta-kicker mb-1">
-            {d.chartStatusPie}
+        <button
+          type="button"
+          className="admin-watta-dash-panel group text-left lg:col-span-2 xl:col-span-1"
+          aria-label={openAria(d.chartStatusPie)}
+          onClick={() => onNavigate('orders')}
+        >
+          <h3 className="admin-watta-section-head flex items-center justify-between gap-2">
+            <span className="min-w-0">{d.chartStatusPie}</span>
+            <ChevronRight size={14} className="shrink-0 text-watta-action/35" aria-hidden />
           </h3>
           {pieTotal === 0 ? (
-            <p className="py-12 text-center text-sm font-medium text-[#145142]/45">{d.chartNoData}</p>
+            <p className="py-12 text-center text-sm font-medium text-watta-action/45">{d.chartNoData}</p>
           ) : (
-            <div className="flex h-[240px] flex-col items-center justify-center sm:h-[220px] sm:flex-row sm:gap-4">
+            <div className="pointer-events-none flex min-h-[220px] flex-col items-center justify-center sm:flex-row sm:gap-4">
               <div className="w-full max-w-[200px]" style={{ height: pieChartHeight }}>
                 <ResponsiveContainer
                   width="100%"
@@ -418,49 +462,55 @@ export default function AdminDashboardStudio({
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <ul className="mt-2 grid w-full max-w-xs grid-cols-2 gap-2 text-[11px] font-bold sm:mt-0 sm:flex-1">
+              <ul className="mt-2 grid w-full min-w-0 grid-cols-1 gap-1.5 text-xs font-semibold sm:mt-0 sm:flex-1 lg:grid-cols-2 xl:grid-cols-1">
                 {pieData.map((s) => (
-                  <li key={s.name} className="flex items-center gap-2 rounded-xl bg-white/60 px-2 py-1.5 ring-1 ring-[#145142]/10">
+                  <li
+                    key={s.name}
+                    className="flex min-w-0 items-center gap-2 rounded-xl border border-watta-action/10 bg-white px-2.5 py-1.5"
+                  >
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
-                    <span className="min-w-0 truncate text-[#145142]/85">{s.name}</span>
-                    <span className="ml-auto tabular-nums text-[#0d3d34]">{s.value}</span>
+                    <span className="min-w-0 flex-1 truncate leading-snug text-watta-action/85" title={s.name}>
+                      {s.name}
+                    </span>
+                    <span className="ml-auto shrink-0 pl-2 tabular-nums text-[#0d3d34]">{s.value}</span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-        </motion.div>
+        </button>
       </motion.div>
 
       <motion.section
         {...fadeUp}
         transition={{ delay: reduceMotion ? 0 : 0.18, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       >
-        <h3 className="admin-watta-kicker mb-3">
-          {d.statusTitle}
-        </h3>
+        <h3 className="admin-watta-section-head mb-3">{d.statusTitle}</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
-          {[
-            { label: d.statusPending, count: dashboardMetrics.pending, accent: 'from-amber-400 to-amber-500' },
-            { label: d.statusConfirmed, count: dashboardMetrics.confirmed, accent: 'from-lime-400 to-lime-600' },
-            { label: d.statusCooking, count: dashboardMetrics.cooking, accent: 'from-orange-400 to-orange-500' },
-            { label: d.statusDelivering, count: dashboardMetrics.delivering, accent: 'from-sky-400 to-sky-500' },
-            { label: d.statusCompleted, count: dashboardMetrics.completed, accent: 'from-emerald-400 to-emerald-600' },
-            { label: d.statusCancelled, count: dashboardMetrics.cancelled, accent: 'from-red-400 to-red-500' },
-          ].map((row, idx) => (
+          {statusRows.map((row, idx) => (
             <motion.div
-              key={row.label}
+              key={row.status}
               initial={reduceMotion ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: reduceMotion ? 0 : 0.04 * idx, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-              className="relative overflow-hidden rounded-2xl border border-[#145142]/10 bg-white/90 p-4 shadow-md shadow-[#145142]/[0.07]"
             >
-              <div
-                className={`absolute left-0 top-0 h-full w-1 bg-gradient-to-b ${row.accent}`}
-                aria-hidden
-              />
-              <p className="pl-2 text-[10px] font-extrabold uppercase tracking-wide text-[#145142]/50">{row.label}</p>
-              <p className="pl-2 text-2xl font-black tabular-nums text-[#0d3d34] sm:text-3xl">{row.count}</p>
+              <button
+                type="button"
+                className={`admin-watta-dash-status group w-full text-left${
+                  row.tone !== 'default' ? ` admin-watta-dash-status--${row.tone}` : ''
+                }`}
+                aria-label={openAria(row.label)}
+                title={`${row.label}: ${row.count}`}
+                onClick={() => onNavigate('orders', { orderStatus: row.status })}
+              >
+                <p className="admin-watta-dash-card__label">{row.label}</p>
+                <p className="admin-watta-dash-card__value text-2xl sm:text-3xl">{row.count}</p>
+                <ChevronRight
+                  size={14}
+                  className="absolute bottom-3 right-3 text-watta-action/20 transition group-hover:text-watta-action/50"
+                  aria-hidden
+                />
+              </button>
             </motion.div>
           ))}
         </div>
@@ -470,34 +520,39 @@ export default function AdminDashboardStudio({
         {...fadeUp}
         transition={{ delay: reduceMotion ? 0 : 0.22, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       >
-        <h3 className="admin-watta-kicker mb-3">
-          {d.contentSection}
-        </h3>
+        <h3 className="admin-watta-section-head mb-3">{d.contentSection}</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-7">
           {[
-            { icon: Tag, label: d.promos, value: counts.promos },
-            { icon: Layers, label: d.categories, value: counts.categories },
-            { icon: User, label: d.users, value: counts.users },
-            { icon: ImageIcon, label: d.banners, value: counts.banners },
-            { icon: BookOpen, label: d.blog, value: counts.blog },
-            { icon: ListOrdered, label: d.ingredients, value: counts.ingredients },
-            { icon: Users, label: d.team, value: counts.team },
-          ].map(({ icon: Icon, label, value }, idx) => (
+            { icon: Tag, label: d.promos, value: counts.promos, tab: 'promos' as const },
+            { icon: Layers, label: d.categories, value: counts.categories, tab: 'menuCategories' as const },
+            { icon: User, label: d.users, value: counts.users, tab: 'users' as const },
+            { icon: ImageIcon, label: d.banners, value: counts.banners, tab: 'banners' as const },
+            { icon: BookOpen, label: d.blog, value: counts.blog, tab: 'blog' as const },
+            { icon: ListOrdered, label: d.ingredients, value: counts.ingredients, tab: 'ingredients' as const },
+            { icon: Users, label: d.team, value: counts.team, tab: 'team' as const },
+          ].map(({ icon: Icon, label, value, tab }, idx) => (
             <motion.div
-              key={label}
+              key={tab}
               initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: reduceMotion ? 0 : 0.035 * idx, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={reduceMotion ? undefined : { y: -3, transition: { duration: 0.22 } }}
-              className="flex items-center gap-2.5 rounded-2xl border border-[#145142]/11 bg-gradient-to-br from-white to-[#f6fbf8] p-3 shadow-md shadow-[#145142]/[0.06]"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-watta-action/10 text-[#145142]">
-                <Icon size={16} strokeWidth={2.4} />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-[10px] font-extrabold uppercase tracking-wide text-[#145142]/50">{label}</p>
-                <p className="text-lg font-black tabular-nums text-[#0d3d34]">{value}</p>
-              </div>
+              <button
+                type="button"
+                className="admin-watta-dash-card group flex items-center gap-2.5 p-3"
+                aria-label={openAria(label)}
+                title={`${label}: ${value}`}
+                onClick={() => onNavigate(tab)}
+              >
+                <div className="admin-watta-dash-card__icon">
+                  <Icon size={16} strokeWidth={2.4} />
+                </div>
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="admin-watta-dash-card__label">{label}</p>
+                  <p className="admin-watta-dash-card__value text-lg">{value}</p>
+                </div>
+                <ChevronRight size={14} className="shrink-0 text-watta-action/20 group-hover:text-watta-action/50" aria-hidden />
+              </button>
             </motion.div>
           ))}
         </div>

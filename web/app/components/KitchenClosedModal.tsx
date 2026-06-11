@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Clock, X } from 'lucide-react'
+import { Clock, X } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import { formatKitchenHoursRange } from '@/lib/deliverySlotsAmsterdam'
 import { dismissKitchenClosedModal } from '@/lib/kitchenClosedModal'

@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell } from 'lucide-react'
+import { Bell } from '@/lib/wattaInlineIcons'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { WattaInViewFadeDiv } from '@/app/components/WattaInViewFade'

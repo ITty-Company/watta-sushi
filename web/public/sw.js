@@ -16,7 +16,7 @@
  * Версію кешу піднімай при зміні логіки SW — старі кеші чистяться в activate.
  */
 
-const CACHE_VERSION = 'watta-805ec0c';
+const CACHE_VERSION = 'watta-cfa6dad';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGES_CACHE = `${CACHE_VERSION}-pages`;
 const ASSETS_CACHE = `${CACHE_VERSION}-assets`;
@@ -66,15 +66,19 @@ if (IS_LOCAL) {
 }
 
 const OFFLINE_URL = '/offline.html';
-const NAV_TIMEOUT_MS = 3500;
+const NAV_TIMEOUT_MS = 2500;
 
 /** App-shell: те, що має бути офлайн одразу після встановлення. */
 const PRECACHE_URLS = [
   OFFLINE_URL,
   '/logo.webp',
   '/logo-splash-1x.webp',
+  '/logo-splash.webp',
   '/favicon.ico',
   '/site.webmanifest',
+  '/logo.png',
+  '/sushi.webp',
+  '/watta-page-texture.png',
 ];
 
 if (!IS_LOCAL) {
@@ -206,7 +210,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isImage(url)) {
-    event.respondWith(staleWhileRevalidate(request, ASSETS_CACHE));
+    event.respondWith(cacheFirst(request, ASSETS_CACHE));
   }
 });
 } // end if (!IS_LOCAL)

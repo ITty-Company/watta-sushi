@@ -14,6 +14,9 @@ import {
 } from '@/lib/wattaSiteDefaults'
 import { usePublicBlogNav } from '@/hooks/usePublicBlogNav'
 import { usePublicPromotionsNav } from '@/hooks/usePublicPromotionsNav'
+import { useInstantRouter } from '@/hooks/useInstantRouter'
+import { openWattaNotifications } from '@/lib/openWattaNotifications'
+import { useOptionalNotificationsDrawer } from '../context/NotificationsDrawerContext'
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -75,6 +78,8 @@ export default function Footer({ className }: FooterProps) {
   const [locationLines, setLocationLines] = useState<string[]>([])
   const { showPromotionsNav } = usePublicPromotionsNav()
   const { showBlogNav } = usePublicBlogNav()
+  const router = useInstantRouter()
+  const notificationsDrawer = useOptionalNotificationsDrawer()
 
   const phones = [{ label: sf.phone1, href: `tel:${WATTA_PHONE_E164}` }]
 
@@ -209,18 +214,38 @@ export default function Footer({ className }: FooterProps) {
               <ul className="site-footer-watta__list">
                 {navLinksCol1.map(({ href, label }) => (
                   <li key={`${href}:${label}`}>
-                    <WattaLink href={href} className="site-footer-watta__text-link">
-                      {label}
-                    </WattaLink>
+                    {href === '/notifications' ? (
+                      <button
+                        type="button"
+                        className="site-footer-watta__text-link cursor-pointer border-0 bg-transparent p-0 text-left"
+                        onClick={() => openWattaNotifications(router, notificationsDrawer?.open ?? null)}
+                      >
+                        {label}
+                      </button>
+                    ) : (
+                      <WattaLink href={href} className="site-footer-watta__text-link">
+                        {label}
+                      </WattaLink>
+                    )}
                   </li>
                 ))}
               </ul>
               <ul className="site-footer-watta__list">
                 {navLinksCol2.map(({ href, label }) => (
                   <li key={`${href}:${label}`}>
-                    <WattaLink href={href} className="site-footer-watta__text-link">
-                      {label}
-                    </WattaLink>
+                    {href === '/notifications' ? (
+                      <button
+                        type="button"
+                        className="site-footer-watta__text-link cursor-pointer border-0 bg-transparent p-0 text-left"
+                        onClick={() => openWattaNotifications(router, notificationsDrawer?.open ?? null)}
+                      >
+                        {label}
+                      </button>
+                    ) : (
+                      <WattaLink href={href} className="site-footer-watta__text-link">
+                        {label}
+                      </WattaLink>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -173,6 +173,17 @@
     background: var(--watta-drawer-mint-soft);
   }
 
+  .watta-nav-compact--drawer .watta-nav-compact__nav-tile--active {
+    border-color: color-mix(in srgb, var(--watta-drawer-mint) 35%, var(--watta-drawer-forest-border));
+    background: var(--watta-drawer-mint-soft);
+    box-shadow: none;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__nav-tile--active .watta-nav-compact__nav-label {
+    color: var(--watta-drawer-forest);
+    font-weight: 700;
+  }
+
   .watta-nav-compact--drawer .watta-nav-compact__nav-label {
     flex: 1 1 auto;
     min-width: 0;

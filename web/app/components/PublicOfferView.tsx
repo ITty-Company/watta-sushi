@@ -13,18 +13,8 @@ import {
 import { WattaStaggerSectionTitle } from './WattaStaggerSectionTitle'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
-import {
-  CreditCard,
-  FileText,
-  Gavel,
-  Mail,
-  Package,
-  Scale,
-  Shield,
-  ShoppingBag,
-  Truck,
-  Undo2,
-} from 'lucide-react'
+import { CreditCard, FileText, Gavel, Mail, Package, Scale, Shield, Truck, Undo2 } from 'lucide-react'
+import { ShoppingBag } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import { publicOfferPageByLang, type PublicOfferBlock } from '@/lib/i18n/publicOfferPageContent'
 

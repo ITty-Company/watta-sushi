@@ -2,7 +2,8 @@
 
 import { memo } from 'react'
 import { m, useReducedMotion } from 'framer-motion'
-import { MapPin, Navigation, type LucideIcon } from 'lucide-react'
+import { Navigation, LucideIcon } from 'lucide-react'
+import { MapPin } from '@/lib/wattaInlineIcons'
 import { HERO_COPY_EASE } from './heroCopyMotion'
 
 const ACCENT = '#FF5C00'

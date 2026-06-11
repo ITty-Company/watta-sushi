@@ -43,14 +43,14 @@ export default function AdminPage() {
         aria-busy="true"
         aria-label={t.siteAria.loading}
       >
-        <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#145142]/20 border-t-[#145142]" />
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-watta-action/20 border-t-[var(--watta-brand-action)]" />
       </div>
     )
   }
 
   return (
     <div className="admin-page-root watta-page-bg flex w-full max-w-[100vw] min-h-0 flex-1 flex-col">
-      <AdminView onBack={() => router.push('/')} onSiteMenuClick={() => router.push('/')} />
+      <AdminView onBack={() => router.push('/')} />
     </div>
   )
 }

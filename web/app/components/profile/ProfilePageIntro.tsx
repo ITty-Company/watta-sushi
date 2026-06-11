@@ -1,7 +1,8 @@
 'use client'
 
 import { m, useReducedMotion } from 'framer-motion'
-import { Mail, Phone, Sparkles, type LucideIcon } from 'lucide-react'
+import { Mail, Sparkles, LucideIcon } from 'lucide-react'
+import { Phone } from '@/lib/wattaInlineIcons'
 import AnimatedHeroIntroBlock from '../AnimatedHeroIntroBlock'
 import { HERO_COPY_EASE } from '../heroCopyMotion'
 

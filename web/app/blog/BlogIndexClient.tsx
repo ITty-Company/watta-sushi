@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
+import { ArrowLeft } from '@/lib/wattaInlineIcons'
 import {
   WattaInViewFadeArticle,
   WattaInViewFadeDiv,

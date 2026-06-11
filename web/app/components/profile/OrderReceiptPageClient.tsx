@@ -3,17 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { m } from 'framer-motion'
-import {
-  ArrowLeft,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  CreditCard,
-  MapPin,
-  Package,
-  Phone,
-  Truck,
-} from 'lucide-react'
+import { AlertCircle, CheckCircle2, CreditCard, Package, Truck } from 'lucide-react'
+import { Clock } from '@/lib/wattaInlineIcons'
+import { ArrowLeft, MapPin, Phone } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '@/app/context/LanguageContext'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import type { WattaLanguage } from '@/lib/i18n/language'

@@ -1071,23 +1071,41 @@ const en: SiteTranslations = {
         notAuthorized: "You are not authorized",
         accessDenied: "Access denied",
         adminOnly: "Access denied. Only administrators can use the admin panel.",
-        accessCheckError: "Access rights check error"
+        accessCheckError: "Access rights check error",
+        loginRequired: "You are not authorized. Please sign in.",
+        serverDenied: "Server denied access (401/403). Sign in again as admin or check that the backend is running and NEXT_PUBLIC_API_URL points to it.",
+        reLogin: "Sign in to admin again"
       },
       common: {
         error: "Error",
         networkError: "Network error",
         connectionError: "Failed to connect to the server. Check if the backend server is running.",
+        connectionErrorWithDetail: "Connection error: {{detail}}",
         deleteConfirm: "Delete?",
         saveSuccess: "Saved",
         deleteSuccess: "Successfully deleted",
         statusUpdated: "Status successfully updated!",
-        updateError: "Update error"
+        updateError: "Update error",
+        dataLoadError: "Error loading data",
+        photoUploaded: "Photo uploaded",
+        photoUploadError: "Upload error",
+        selectImageFiles: "Select image files (JPG, PNG, WebP…)",
+        maxPhotos: "Maximum 24 photos",
+        uploadingPhotos: "Uploading photos to server…",
+        uploadingIcon: "Uploading icon…",
+        uploadingHoverIcon: "Uploading hover icon…",
+        photosUploadedCount: "Photos uploaded: {{count}}",
+        uploadBeforeSaveError: "Could not upload photos before saving"
       },
       products: {
         deleteConfirm: "Are you sure you want to delete this product?",
         deleted: "Product successfully deleted!",
         saved: "Product successfully saved!",
-        saveError: "Error while saving"
+        saveError: "Error while saving",
+        softDeleted: "Product removed from menu (used in orders)",
+        nameRequired: "Enter a product name in at least one language (RU / UA / EN / NL tabs).",
+        categoryRequired: "Select a category.",
+        priceRequired: "Enter a valid price (number ≥ 0)."
       },
       orders: {
         changeStatusConfirm: "Change status to"
@@ -1096,16 +1114,67 @@ const en: SiteTranslations = {
         required: "City name and country are required",
         chooseFromMap: "Select a city on the map first",
         created: "City successfully created!",
-        createError: "Error creating city"
+        createError: "Error creating city",
+        updated: "City successfully updated!",
+        deleted: "City successfully deleted!",
+        deleteConfirm: "Delete this city? This will also remove all product links.",
+        nameOneLang: "Enter a city name in at least one language (RU, UA, EN, or NL).",
+        chooseFromSearch: "Select a city from map search first (enter name and click Choose)",
+        locationRequired: "Select a location on the map first (search → Choose or click marker)",
+        zoneTariffSaved: "Zone tariff saved",
+        zoneTariffSaveError: "Save error"
       },
       countries: {
         required: "Country name is required",
         created: "Country successfully created!",
-        createError: "Error creating country"
+        createError: "Error creating country",
+        updated: "Country successfully updated!",
+        deleted: "Country successfully deleted!",
+        deleteConfirm: "Delete this country? All its cities and delivery zones will be removed."
       },
       news: {
         saved: "Saved",
         deleteConfirm: "Delete?"
+      },
+      promos: {
+        created: "Promo code created!",
+        deleted: "Promo code deleted!",
+        deleteConfirm: "Delete this code?"
+      },
+      banners: {
+        saved: "Banner saved!",
+        deleted: "Banner deleted!",
+        deleteConfirm: "Delete this banner?",
+        imageRequired: "Upload a banner image (cover block at the top of the form)",
+        fileMissing: "Image file missing — re-upload"
+      },
+      team: {
+        saved: "Team member saved!",
+        deleted: "Team member deleted!",
+        deleteConfirm: "Delete this team member?"
+      },
+      categories: {
+        saved: "Category saved!",
+        deleted: "Category deleted!",
+        deleteConfirm: "Delete this category?",
+        hasProducts: "Create another category first — this one has products.",
+        orderLabel: "Order"
+      },
+      blog: {
+        deleted: "Article deleted",
+        deleteConfirm: "Delete this article?",
+        slugRequired: "Fill slug and text in at least one language",
+        titleUaFirst: "Write title or text in Ukrainian first (UA tab)",
+        autoTranslating: "Auto-translating… (may take a minute)",
+        translateDone: "Translation ready — check RU, EN, NL"
+      },
+      newsletter: {
+        messageRequired: "Enter message text",
+        subjectRequired: "Enter email subject",
+        started: "Newsletter started!"
+      },
+      settings: {
+        saveError: "Could not save settings"
       }
     },
     adminPanel: {
@@ -1113,6 +1182,7 @@ const en: SiteTranslations = {
         title: "Admin Panel",
         subtitle: "Order statistics, products, and deliveries in one place.",
         siteMenu: "Site menu",
+        adminHome: "Admin panel home",
         backAria: "Back",
         refreshTitle: "Refresh data",
         openMenuTitle: "Open menu",
@@ -1121,7 +1191,7 @@ const en: SiteTranslations = {
         adminLangRu: "RUS",
         adminLangHint: "Panel language",
       },
-      sidebar: { selectSection: "Select section", dashboard: "📊 Dashboard", dashboardDesc: "Stats & overview", orders: "📦 Orders", ordersDesc: "Manage orders", products: "🍣 Products", productsDesc: "Menu items", promos: "🏷️ Promo codes", promosDesc: "Discounts", cities: "🏙️ Cities", citiesDesc: "Cities & countries", banners: "🎨 Banners", bannersDesc: "Banners", categories: "📋 Categories", categoriesDesc: "Menu categories", users: "👥 Users", usersDesc: "Client list", adminPhones: "🛡️ Admin access", adminPhonesDesc: "Phones and emails with access", team: "👨‍👩‍👧‍👦 Team", teamDesc: "Employees", settings: "⚙️ Settings", settingsDesc: "Site & banners", ingredients: "🥑 Ingredients", newsletter: "📧 Newsletter", cartUpsell: "🛒 Cart: discounts", cartUpsellDesc: "Upsell tiers", blog: "📰 Blog / Tips", blogDesc: "Articles & tips", reviews: "⭐ Reviews", reviewsDesc: "Review moderation", crm: "👥 CRM / Clients", crmDesc: "Clients & inquiries" },
+      sidebar: { selectSection: "Select section", dashboard: "Dashboard", dashboardDesc: "Stats & overview", orders: "Orders", ordersDesc: "Manage orders", products: "Products", productsDesc: "Menu items", promos: "Promo codes", promosDesc: "Discounts", cities: "Cities", citiesDesc: "Cities & countries", banners: "Banners", bannersDesc: "Home carousel", categories: "Categories", categoriesDesc: "Menu categories", users: "Users", usersDesc: "Client list", adminPhones: "Admin access", adminPhonesDesc: "Phones and emails", team: "Team", teamDesc: "Employees", settings: "Settings", settingsDesc: "Site & banners", ingredients: "Ingredients", newsletter: "Newsletter", cartUpsell: "Cart discounts", cartUpsellDesc: "Upsell tiers", blog: "Blog", blogDesc: "Articles & tips", reviews: "Reviews", reviewsDesc: "Review moderation", crm: "CRM / Clients", crmDesc: "Database & inquiries" },
       dashboard: {
         loading: "Loading...",
         revenue: "Revenue (completed)",
@@ -1157,12 +1227,16 @@ const en: SiteTranslations = {
         chartNoData: "Not enough data for this chart yet",
         avgOrderValue: "Avg. ticket (completed)",
         studioBadge: "Studio",
+        openSectionAria: "Open: {{section}}",
+        statusFilterActive: "Filtered by status: {{status}}",
+        statusFilterAllDays: "Showing all days",
+        clearStatusFilter: "Clear filter",
       },
       actions: { add: "+ Add", edit: "Edit", editShort: "Edit", delete: "Delete", save: "Save", saveChanges: "Save changes", cancel: "Cancel", closeAria: "Close" },
       common: { menuChangeSection: "Menu / change section", emptyOrders: "No active orders", emptyCities: "No cities yet", emptyBanners: "No banners yet", emptyCategories: "No categories yet", emptyUsers: "No users yet", emptyTeam: "No team members yet", emptyPromos: "No promos yet", clickToUpload: "Click to upload photo", changeFile: "Change", selectFromList: "Select from list", activeLabel: "Active", inactiveLabel: "Inactive", yes: "Yes", no: "No", orderIndex: "Display order", choose: "Choose", notFound: "Nothing found. Try another query.", searching: "searching...", bannerDragHint: "Drag a card onto another to change the order on the site", bannerOrderSaved: "Banner order saved", bannerOrderSaveError: "Could not save banner order", loading: "Loading…", savingEllipsis: "Saving…", guest: "Guest", noRecord: "No record" },
-      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintConfirmed: "Confirmed", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel", btnConfirmed: "Accept order", btnCooking: "Preparing", btnDelivering: "Out for delivery", btnCompleted: "Completed", btnCancel: "Cancel", readyTimeTitleAccept: "Accept order", readyTimeTitleCooking: "Ready time", readyTimePickupHint: "Customer will be notified: order ready for pickup by this time.", readyTimeDeliveryHint: "Customer will be notified: delivery expected by this time.", readyTimeNotifyHint: "Time is sent to the customer in profile notifications.", readyTimeLabel: "Ready / delivery by", readyTimeMinutes: "min", readyTimeRequired: "Set a time", readyTimeSubmitAccept: "Accept & notify", readyTimeSubmitCooking: "Save & notify", readyAtPickup: "Ready by:", readyAtDelivery: "Delivery by:", fulfillmentDelivery: "Delivery", fulfillmentPickup: "Pickup", deliveryFeeAdmin: "Delivery fee:", ordersByDayTitle: "Orders by day", ordersByDayToday: "Today", ordersByDayPrev: "Previous day", ordersByDayNext: "Next day", ordersByDayEmpty: "No orders for this day", ordersByDayCount: "Orders", ordersByDayRevenue: "Revenue (completed)", scheduledForLabel: "Scheduled for", scheduledSlotLabel: "Slot", daysWithOrders: "Days with orders" },
+      orders: { orderNum: "Order #", noComment: "No comment", payment: "Payment", cash: "Cash", online: "Online", paid: "PAID", error: "ERROR", waiting: "WAITING", hintConfirmed: "Confirmed", hintCooking: "Cooking", hintDelivering: "Delivering", hintCompleted: "Completed", hintCancel: "Cancel", btnConfirmed: "Accept order", btnCooking: "Preparing", btnDelivering: "Out for delivery", btnCompleted: "Completed", btnCancel: "Cancel", readyTimeTitleAccept: "Accept order", readyTimeTitleCooking: "Ready time", readyTimePickupHint: "Customer will be notified: order ready for pickup by this time.", readyTimeDeliveryHint: "Customer will be notified: delivery expected by this time.", readyTimeNotifyHint: "Time is sent to the customer in profile notifications.", readyTimeLabel: "Ready / delivery by", readyTimeMinutes: "min", readyTimeRequired: "Set a time", readyTimeSubmitAccept: "Accept & notify", readyTimeSubmitCooking: "Save & notify", readyAtPickup: "Ready by:", readyAtDelivery: "Delivery by:", fulfillmentDelivery: "Delivery", fulfillmentPickup: "Pickup", deliveryFeeAdmin: "Delivery fee:", ordersByDayTitle: "Orders by day", ordersByDayToday: "Today", ordersByDayPrev: "Previous day", ordersByDayNext: "Next day", ordersByDayEmpty: "No orders for this day", ordersByDayEmptyHint: "Pick a date from “Days with orders” above — the table will show orders and line items.", ordersByDayPickHint: "No orders on the selected day. Tap a date below — the table will show details and products.", ordersViewWeek: "Week", ordersViewDay: "Single day", ordersViewRange: "Date range", ordersRangeFrom: "From", ordersRangeTo: "To", daysWithOrdersInRange: "Days with orders in range", ordersByRangeEmpty: "No orders in this range", ordersByRangeEmptyHint: "Change the From/To dates above or check the CRM reports.", ordersByAllEmpty: "No orders yet", ordersByAllEmptyHint: "When orders appear they will show here and in CRM reports.", ordersTableSectionTitle: "Order management", ordersByDayCount: "Orders", ordersByDayRevenue: "Revenue (completed)", scheduledForLabel: "Scheduled for", scheduledSlotLabel: "Slot", daysWithOrders: "Days with orders", colFulfillment: "Type", tableRowHint: "Click a row for order details and status actions" },
       news: { title: "News", addBtn: "+ Add", editTitle: "Edit", newTitle: "New news", titlePlaceholder: "Title", descPlaceholder: "Short description", textPlaceholder: "Full text", isHit: "Bestseller", galleryLabel: "Photo gallery", uploadPhotos: "Add photos (multiple)", removePhotoAria: "Remove photo", dishesBlock: "Discounted dishes in this story", selectProduct: "Pick a dish", discountShort: "Discount %", addDish: "Add dish", dishDuplicate: "This dish is already added", pickProductFirst: "Select a dish first" },
-      products: { addBtn: "+ Add product", hit: "HOT", editTitle: "Edit dish", newTitle: "New dish", nameLabel: "Product name", namePlaceholder: "e.g.: Philadelphia", descLabel: "Description", descPlaceholder: "Ingredients, weight, features...", priceLabel: "Price (€)", categoryLabel: "Category", selectCategory: "Select...", deliveryCities: "Delivery cities *", addCitiesFirst: "Add cities in the 'Cities' tab first", descComposition: "Descriptions (Composition)", ingComposition: "Ingredients (Composition)", empty: "No products found" },
+      products: { addBtn: "+ Add product", hit: "HOT", editTitle: "Edit dish", newTitle: "New dish", nameLabel: "Product name", namePlaceholder: "e.g.: Philadelphia", descLabel: "Description", descPlaceholder: "Ingredients, weight, features...", priceLabel: "Price (€)", categoryLabel: "Category", selectCategory: "Select...", deliveryCities: "Delivery cities *", addCitiesFirst: "Add cities in the 'Cities' tab first", descComposition: "Descriptions (Composition)", ingComposition: "Ingredients (Composition)", empty: "No products found", cartBadge: "Cart", uploadHint: "Click or drag photos here", uploadMultiHint: "Multiple files at once (up to 24)", addPhoto: "Add", hitsLabel: "Our hits / bestsellers" },
       ingredients: {
         title: "Ingredients Library",
         addNew: "Add new",
@@ -1189,7 +1263,7 @@ const en: SiteTranslations = {
         selectedCount: "Selected",
         emptyLibrary: "Add ingredients in the «Ingredients» tab first.",
       },
-      cities: { addCountry: "Add new country", nameRu: "Name *", sticker: "Country sticker (flag)", addCountryBtn: "✨ Add country", countriesTitle: "Countries", editCity: "Edit city", addCity: "Add new city", cityNameRu: "City name *", searchMapLabel: "📍 Search city on map", searchMapDesc: "Search by address, zip code, or name.", searchMapPlaceholder: "Name, address, index...", searchMapBtn: "Search by names", countryLabel: "Country *", selectCountry: "Select country", activeCity: "Active city", saveChanges: "💾 Save changes", addCityBtn: "✨ Add city", cancelEdit: "Cancel edit", citiesTitle: "Cities", deliveryZones: "Delivery zones:" },
+      cities: { addCountry: "Add new country", nameRu: "Name *", sticker: "Country sticker (flag)", addCountryBtn: "Add country", countriesTitle: "Countries", editCity: "Edit city", addCity: "Add new city", cityNameRu: "City name *", searchMapLabel: "Search city on map", searchMapDesc: "Search by address, zip code, or name.", searchMapPlaceholder: "Name, address, index...", searchMapBtn: "Search by names", countryLabel: "Country *", selectCountry: "Select country", activeCity: "Active city", saveChanges: "Save changes", addCityBtn: "Add city", cancelEdit: "Cancel edit", citiesTitle: "Cities", deliveryZones: "Delivery zones:", zonesTitle: "Delivery zone tariffs", zonesDesc: "Draw polygons on the map below; set free or fixed € per zone here. If both are off, site uses default (settings base + city €/km × distance from kitchen).", zonesLoading: "Loading zones…", zonesEmpty: "No zones yet — draw a polygon on the map below and save the zone name.", zoneFreeDelivery: "Free delivery in zone", zoneFlatFee: "Fixed delivery (€)", zoneSaveTariff: "Save tariff" },
       banners: {
         addBtn: "+ Add banner",
         tabSubtitle: "Home carousel: photo, crop, and translations.",
@@ -1234,17 +1308,18 @@ const en: SiteTranslations = {
         heroVideoUnavailableTitle: "Video unavailable on server",
         heroVideoUnavailableHint: "File missing (often after Render redeploy). Click Upload and Save again; enable Persistent Disk and UPLOAD_DIR in production.",
       },
-      categories: { addBtn: "+ Add category", slug: "Slug:", editTitle: "Edit category", newTitle: "New category", emojiLabel: "Emoji (sticker) *", nameRu: "Name *", namePlaceholder: "e.g.: Desserts", slugLabel: "Slug (URL)", slugAuto: "Automatically" },
-      users: { title: "👥 Registered users", noName: "No name", admin: "👑 Admin", user: "👤 User", ordersCount: "Orders:", registration: "Registered:", bonusesLabel: "Bonuses:", cashbackLabel: "cashback", configureBonuses: "Configure bonuses" },
-      newsletter: { title: "Email Newsletter", desc: "Send emails to all registered users", confirmSend: "Send this email to all users?", subject: "Email subject", subjectPlaceholder: "e.g.: Discounts on rolls!", message: "Message text", messagePlaceholder: "Enter newsletter text...", promoOptional: "🎁 Promo code (optional)", promoPlaceholder: "e.g.: PROMO2025", promoHint: "Will be highlighted in large font in the email", sendBtn: "Send newsletter", successSend: "Successfully sent", errorPrefix: "Error: ", errorNetwork: "Network error" },
-      team: { title: "👨‍👩‍👧‍👦 Team", addBtn: "+ Add team member", editTitle: "Edit team member", newTitle: "New team member", nameRu: "Name *", posRu: "Position *", bioRu: "Biography", inactiveBadge: "Inactive" },
+      categories: { addBtn: "+ Add category", slug: "Slug:", editTitle: "Edit category", newTitle: "New category", emojiLabel: "Emoji (sticker) *", nameRu: "Name *", namePlaceholder: "e.g.: Desserts", slugLabel: "Slug (URL)", slugAuto: "Automatically", orderLabel: "Display order", activeLabel: "Active", activeYes: "Yes", activeNo: "No", recommendAllowed: "Allowed — recommended products may show", recommendDenied: "No — no products from this category in recommendations", mainIcon: "Main icon", hoverIcon: "On hover", upload: "Upload", change: "Change", orderHint: "Lower number — earlier in list", visibleYes: "Visible to visitors", visibleNo: "Hidden (draft)" },
+      users: { title: "Registered users", noName: "No name", admin: "Admin", user: "User", ordersCount: "Orders:", registration: "Registered:", bonusesLabel: "Bonuses:", cashbackLabel: "cashback", configureBonuses: "Configure bonuses" },
+      newsletter: { title: "Email Newsletter", desc: "Send emails to all registered users", confirmSend: "Send this email to all users?", subject: "Email subject", subjectPlaceholder: "e.g.: Discounts on rolls!", message: "Message text", messagePlaceholder: "Enter newsletter text...", promoOptional: "Promo code (optional)", promoPlaceholder: "e.g.: PROMO2025", promoHint: "Will be highlighted in large font in the email", sendBtn: "Send newsletter", successSend: "Successfully sent", errorPrefix: "Error: ", errorNetwork: "Network error" },
+      team: { title: "Team", addBtn: "+ Add team member", editTitle: "Edit team member", newTitle: "New team member", nameRu: "Name (RU) *", posRu: "Position (RU) *", bioRu: "Bio (RU)", nameUa: "Name (UA)", posUa: "Position (UA)", bioUa: "Bio (UA)", orderLabel: "Display order", activeLabel: "Active", uploadHint: "Click to upload photo", changePhoto: "Change", inactiveBadge: "Inactive" },
       promos: { createTitle: "Create new promo code", codePlaceholder: "Code (e.g. NEW2025)", discountPlaceholder: "Discount %", createBtn: "Create", discountText: "discount" },
-      settings: { title: "Site Settings", intervalLabel: "Banner change interval (seconds)", sec: "sec.", intervalDesc: "Specify the time after which the slides will automatically switch.", saving: "Saving...", saveBtn: "Save settings", saved: "Settings saved!" },
+      settings: { title: "Site Settings", intervalLabel: "Banner change interval (seconds)", sec: "sec.", intervalDesc: "Specify the time after which the slides will automatically switch.", saving: "Saving...", saveBtn: "Save settings", saved: "Settings saved!", socialTitle: "Social & address", telegramLabel: "Telegram (full URL)", whatsappLabel: "WhatsApp (full URL)", instagramLabel: "Instagram (full URL)", pickupAddressLabel: "Pickup address", pickupAddressPlaceholder: "Shown to customers when pickup is selected", bonusTitle: "Bonuses & cashback", bonusEnabled: "Accrue cashback for registered customers", bonusPercentLabel: "Cashback for everyone, % of items total", bonusHint: "Accrued when order status is Delivered or Completed. Account holders only. Personal % — in Users and CRM tabs.", cardTitle: "Card payment online", cardEnabled: "Show «Pay by card» in cart (Stripe / LiqPay)", stripeConnected: "connected", stripeMissing: "no STRIPE_SECRET_KEY on server", liqpayConnected: "connected", liqpayMissing: "no LIQPAY_* on server", cartTileLabel: "Cart tile", cartTileEnabled: "enabled", cartTileDisabled: "disabled in admin", paymentStatusLabel: "Payment works", paymentWorks: "yes (Stripe / LiqPay)", paymentNeedsKeys: "server keys required", deliveryTitle: "Delivery (fixed)", freeDeliveryFrom: "Free delivery from (€)", fixedDeliveryFee: "Fixed delivery fee (€)", deliveryHint: "If items total (after discount) is below threshold, this fee is added. Pickup has no delivery fee." },
       reviews: { title: "Customer reviews", subtitle: "Reviews on /reviews: edit text and delete.", empty: "No customer reviews yet.", pendingBanner: "Pending moderation: {{count}}. Publish a review to show it on /reviews.", noOrder: "no order", statusPublished: "Live", statusModeration: "Moderation", publishBtn: "Publish", unpublishBtn: "Unpublish", editBtn: "Edit", saveBtn: "Save", cancelBtn: "Cancel", deleteAria: "Delete", deleteConfirm: "Delete this review?", deleted: "Review deleted", saved: "Review updated", published: "Review published on site", unpublished: "Review unpublished", textTooShort: "Text too short", saveError: "Could not save", updateError: "Could not update", deleteError: "Could not delete" },
       blog: { title: "Blog / Tips", subtitle: "Articles for guests: what to order at Watta, menu and delivery tips.", slugPlaceholder: "Slug (e.g. first-order-watta)", coverTitle: "Cover photo", coverHint: "Horizontal photo of rolls or a set.", removeCover: "Remove photo", uploadCover: "Upload photo", uploadingCover: "Uploading…", coverUrlPlaceholder: "Or photo URL (https://…)", youtubePlaceholder: "YouTube (optional)", authorPlaceholder: "Author (e.g. Watta Sushi Team)", defaultAuthor: "Watta Sushi Team", isPublished: "Published", createBtn: "Create", updateBtn: "Update", publishedBadge: "Published", draftBadge: "Draft", linksSummary: "Links: {{products}} dishes, {{categories}} cat., {{ingredients}} ingr.", emptyPosts: "No posts yet", i18nTitle: "Article text (4 languages)", i18nHint: "Fill manually or in Ukrainian first, then auto-translate.", autoTranslateBtn: "Auto-translate from UA", translating: "Translating…", titlePlaceholder: "Title ({{lang}})", contentPlaceholder: "Article text ({{lang}})", linksTitle: "Menu links", linksHint: "Select dishes, categories or ingredients for the article page.", linksSelectedTotal: " Selected: {{count}}.", linksProductsTitle: "Dishes", linksProductsHint: "Menu products — link to dish page", linksCategoriesTitle: "Categories", linksCategoriesHint: "Menu sections — link to category", linksIngredientsTitle: "Ingredients", linksIngredientsHint: "Salmon, rice, nori — for trust and transparency", searchPlaceholder: "Search…", searchEmpty: "Nothing found", selectedCount: "Selected: {{count}}" },
       cartUpsell: { title: "Cart upsell offers", subtitle: "Order total tiers (€) and fixed discount on selected products.", newTierBtn: "New tier", loading: "Loading…", empty: "No tiers yet.", editTierTitle: "Edit tier #{{id}}", newTierTitle: "New discount tier", fromAmount: "From amount (€) *", toAmount: "To amount (€)", discount: "Discount (€ / item) *", sortOrder: "Order", activeTier: "Active tier", discountedProducts: "Discounted products ({{count}})", noLimitPlaceholder: "no limit", disabledSuffix: " · disabled", productCount: "{{count}} product(s)", perItemSuffix: " / item", saving: "Saving…", saveChanges: "Save changes", createTier: "Create tier", cancel: "Cancel", editAria: "Edit", deleteAria: "Delete", addProductsFirst: "Add products to the catalog first.", loadError: "Could not load cart tiers", authRequired: "Sign in as administrator", tierUpdated: "Tier updated", tierCreated: "Tier created", saveError: "Save error", deleteConfirm: "Delete this tier and all linked products?", deleted: "Deleted", deleteError: "Could not delete" },
       adminPhones: { title: "Admin panel access", description: "Users with these phone numbers or emails automatically get admin role (phone, Google, or email sign-in).", phoneLabel: "Phone number", noteLabel: "Note (optional)", notePlaceholder: "Name or role", addBtn: "Add", loading: "Loading…", empty: "No numbers yet", colPhone: "Number", colNote: "Note", colAdded: "Added", colActions: "Actions", primaryBadge: "Primary", protectedBadge: "Protected", deleteBtn: "Delete", deleteAria: "Delete {{phone}}", loadError: "Could not load admin numbers", phoneRequired: "Enter a phone number", addError: "Could not add number", added: "Number added", deleteConfirm: "Remove {{phone}} from admin list?", deleted: "Number removed", error: "Error", emailsTitle: "Administrator emails", emailsDescription: "Google or email+password sign-in with these addresses also grants admin panel access.", emailLabel: "Email", colEmail: "Email", emailsEmpty: "No emails yet", emailRequired: "Enter an email", emailAddError: "Could not add email", emailAdded: "Email added — sign-in with it opens the admin panel", emailDeleteAria: "Delete {{email}}", emailDeleteConfirm: "Remove {{email}} from admin list?", emailDeleted: "Email removed", emailsLoadError: "Could not load admin emails" },
-      crm: { customersTab: "Client database", inquiriesTab: "Site inquiries", customersTitle: "Client database", searchPlaceholder: "Search: name, phone, email…", colName: "Name", colPhone: "Phone", colEmail: "Email", colOrders: "Orders", colTotal: "Total", colConsent: "Consent", colLastOrder: "Last order", rowHint: "Click a row to open the full client card and order history.", empty: "No clients found", loading: "Loading…", cardTitle: "Client card", fieldName: "Name:", fieldPhone: "Phone:", fieldEmail: "Email:", fieldAccount: "Account:", fieldOrders: "Orders:", fieldTotal: "Total:", fieldBonuses: "Bonuses:", fieldConsent: "Data consent:", orderHistory: "Order history", orderStatus: "Status:", orderAddress: "Address:", orderPayment: "Payment:", orderComment: "Comment:", noOrders: "No orders yet", createMailing: "Create mailing" },
+      crm: { customersTab: "Client database", reportsTab: "Reports", inquiriesTab: "Site inquiries", customersTitle: "Client database", usersTableTitle: "CRM users", searchPlaceholder: "Search: name, phone, email…", colName: "Name", colPhone: "Phone", colEmail: "Email", colOrders: "Orders", colTotal: "Total", colConsent: "Consent", colLastOrder: "Last order", colBonuses: "Bonuses", colCashbackPercent: "Cashback %", rowHint: "Click a row to open the full client card and order history.", empty: "No clients found", loading: "Loading…", cardTitle: "Client card", fieldName: "Name:", fieldPhone: "Phone:", fieldEmail: "Email:", fieldAccount: "Account:", fieldOrders: "Orders:", fieldTotal: "Total:", fieldBonuses: "Bonuses:", fieldConsent: "Data consent:", orderHistory: "Order history", orderStatus: "Status:", orderAddress: "Address:", orderPayment: "Payment:", orderComment: "Comment:", noOrders: "No orders yet", createMailing: "Create mailing", sheetsSyncBtn: "Export to Google Sheets", sheetsOpenBtn: "Open Google Sheet", sheetsNotConfigured: "Google Sheets is not configured on the server (GOOGLE_CREDS + GOOGLE_SHEET_ID).", sheetsSyncing: "Syncing…", sheetsSyncSuccess: "Exported {{count}} clients to the “{{sheet}}” tab", sheetsSyncError: "Could not sync to Google Sheets", sheetsHint: "The client database is mirrored to the “{{sheet}}” tab in the same spreadsheet as orders. The list refreshes automatically after a new order." },
+      crmReports: { title: "Period reports", embeddedTitle: "CRM reports (products, orders, customers)", linkedRangeHint: "Period is synced with the date filter above. Switch tabs to update the table.", productsTab: "Products", ordersTab: "Orders", customersTab: "Clients", periodLabel: "Period", periodAll: "All time", periodMonth: "This month", periodLastMonth: "Last month", periodYear: "This year", periodCustom: "Custom range", fromLabel: "From", toLabel: "To", selectedPeriod: "Selected period", summaryOrders: "Orders", summaryRevenue: "Revenue", summaryItems: "Items / qty", summaryClients: "Clients", sheetsSyncBtn: "Export report to Google Sheets", sheetsSyncSuccess: "Exported {{count}} rows to tab “{{sheet}}”", sheetsSyncError: "Could not export report to Google Sheets", sheetsHint: "Each period creates a separate tab in the same Google spreadsheet as orders.", colProduct: "Product", colCategory: "Category", colQty: "Quantity", colRevenue: "Revenue", colOrders: "Orders", colDate: "Date", colCustomer: "Client", colPhone: "Phone", colEmail: "Email", colStatus: "Status", colTotal: "Total", colItems: "Items", colLastOrder: "Last order", empty: "No data for the selected period", loading: "Loading…", footerHint: "Choose report type and period — the table updates automatically. Google export creates a separate tab named after the period." },
       contactInquiries: { title: "Site inquiries", totalLabel: "Total:", unreadLabel: "· new:", filterAll: "All", filterUnread: "New", filterRead: "Read", refreshBtn: "Refresh", markAllReadBtn: "Mark all read", colDate: "Date", colName: "Name", colContacts: "Contacts", colMessage: "Message", empty: "No inquiries yet", loading: "Loading…", footerHint: "Click a row to open the full message.", detailTitle: "Inquiry #{{id}}", messageLabel: "Message", deleteBtn: "Delete", closeBtn: "Close", deleteAria: "Delete", closeAria: "Close", deleteConfirm: "Delete this inquiry from the database?", loadError: "Could not load inquiries", markReadError: "Could not mark as read", markAllReadSuccess: "All inquiries marked read", deleted: "Deleted", deleteError: "Could not delete" },
       userBonus: { title: "Client bonuses", balanceLabel: "Balance:", globalCashbackLabel: "Site cashback:", effectivePercentLabel: "Effective % for client:", disabled: "disabled", personalPercentLabel: "Cashback for this client, %", personalPercentCheckbox: "Personal cashback % (overrides global)", personalPercentField: "Cashback for this client, %", useGlobalHint: "Uses the global percentage from site settings.", adjustmentLabel: "Balance adjustment (± €), optional", adjustmentPlaceholder: "e.g.: 5 or -2.5", adjustmentHint: "Add or remove bonuses manually.", cancelBtn: "Cancel", saveBtn: "Save", closeAria: "Close", saveError: "Could not save", saved: "Saved", networkError: "Network error" },
     }

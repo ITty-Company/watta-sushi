@@ -8,7 +8,7 @@ import React, {
   useMemo,
   useState,
 } from 'react'
-import { usePathname } from 'next/navigation'
+import { WATTA_NOTIFICATIONS_OPEN_EVENT } from '@/lib/openWattaNotifications'
 export type NotificationsDrawerContextValue = {
   open: () => void
   close: () => void
@@ -25,9 +25,7 @@ export function NotificationsDrawerProvider({
   enabled: boolean
   children: React.ReactNode
 }) {
-  const pathname = usePathname() || '/'
   const [manualOpen, setManualOpen] = useState(false)
-  const isNotificationsRoute = pathname === '/notifications'
   const isOpen = enabled && manualOpen
 
   const open = useCallback(() => {
@@ -43,9 +41,11 @@ export function NotificationsDrawerProvider({
   }, [enabled])
 
   useEffect(() => {
-    if (isNotificationsRoute) return
-    setManualOpen(false)
-  }, [pathname, isNotificationsRoute])
+    if (!enabled) return
+    const onOpen = () => setManualOpen(true)
+    window.addEventListener(WATTA_NOTIFICATIONS_OPEN_EVENT, onOpen)
+    return () => window.removeEventListener(WATTA_NOTIFICATIONS_OPEN_EVENT, onOpen)
+  }, [enabled])
 
   useEffect(() => {
     if (typeof document === 'undefined') return

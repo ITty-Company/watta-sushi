@@ -3,38 +3,11 @@ import AppClient from './AppClient'
 import DevNoiseCleanup from './components/DevNoiseCleanup'
 import './fonts.local'
 import './globals.css'
-/* Після globals — fixed chrome: лише шапка + капсула чіпів (перебиває правила в globals) */
-import './watta-chrome-stable-layout.css'
-import './watta-chrome-categories-transparent.css'
-import './watta-mobile-viewport-lock.css'
-import './watta-tablet-viewport-lock.css'
-import './watta-mobile-touch-scroll.css'
-import './home-after-hero-intro-tablet-desktop.css'
-import './watta-no-backdrop-blur.css'
-import './watta-category-strip-bare-chips.css'
-import './watta-chrome-scroll-compact.css'
-import './watta-cart-add-feedback.css'
-import './watta-toast-theme.css'
-import './watta-nav-drawer-mobile.css'
-import './watta-cart-drawer.css'
-import './watta-favorites-add-feedback.css'
-import './auth-ninja-modal.css'
-import './watta-kitchen-closed-modal.css'
-import './review-compose-modal.css'
-import './watta-cart-checkout-page.css'
-import './watta-cart-mobile.css'
-import './watta-boot-splash.css'
-import './watta-site-performance.css'
-import './watta-notifications-drawer.css'
-import './watta-scroll-reveal.css'
-import './watta-full-menu-section-transition.css'
-import './menu-stellar-hero-background.css'
-import './watta-instant-tap-feedback.css'
-import './watta-product-page-theme.css'
-import './watta-product-composition.css'
-import './watta-category-pill.css'
-/* Останній шар chrome головної — після всіх override категорій */
-import './watta-home-chrome-lock.css'
+/* Агреговані CSS-файли — 28 окремих файлів об'єднано у 2 для зменшення числа запитів.
+   Порядок імпортів збережено: спочатку база (chrome + layout), потім компоненти (UI + модалки).
+   Продуктові стилі → product/[id]/layout.tsx (watta-product-page-theme.css + watta-product-composition.css). */
+import './watta-base.css'
+import './watta-components.css'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildRootMetadata, getJsonLdDescription } from '@/lib/i18n/seo'
 import { wattaToHtmlLang } from '@/lib/i18n/language'
@@ -49,11 +22,9 @@ import {
   WATTA_ROUTE_NOTIFICATIONS_CLASS,
   wattaHtmlRouteClassNames,
 } from '@/lib/wattaHtmlRouteClass'
-import { WATTA_HERO_PRIMARY_MP4 } from '@/lib/wattaHeroVideo'
 import {
-  WATTA_HERO_ROLL_HEAD_PRELOAD_COUNT,
-  WATTA_HERO_ROLL_IMAGE_URLS,
-} from '@/lib/wattaHeroRollPreload'
+  WATTA_HERO_PRIMARY_MP4,
+} from '@/lib/wattaHeroVideo'
 import { WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT } from '@/lib/lockMobileViewportHeight'
 import { bootSplashLoadingLabel } from '@/lib/wattaBootSplashLabel'
 
@@ -138,22 +109,22 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Preconnect к API бэкенду — экономит ~150-300ms на первом API-запросе */}
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050'} />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050'} crossOrigin="anonymous" />
+        {/* DNS-prefetch для CDN изображений — экономит DNS lookup при загрузке фото каталога */}
+        <link rel="dns-prefetch" href="//wattasushi.com.ua" />
+        <link rel="preconnect" href="//wattasushi.com.ua" crossOrigin="anonymous" />
+        {/* Preload Open Graph изображения — используется на всех страницах как соц-превью */}
+        <link rel="preload" href="/watta-sushi.jpg" as="image" fetchPriority="high" />
+        {/* Preload hero poster — первый кадр hero секции */}
+        <link rel="preload" href="/watta-home-hero-poster.jpg" as="image" fetchPriority="high" />
+
         <script dangerouslySetInnerHTML={{ __html: WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: WATTA_HTML_ROUTE_BOOT_SCRIPT }} />
         <style dangerouslySetInnerHTML={{ __html: WATTA_BOOT_SPLASH_CRITICAL_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: WATTA_HOME_HERO_CRITICAL_CSS }} />
-        {isHomeRollHeroRoute
-          ? WATTA_HERO_ROLL_IMAGE_URLS.slice(0, WATTA_HERO_ROLL_HEAD_PRELOAD_COUNT).map((url, index) => (
-              <link
-                key={url}
-                rel="preload"
-                href={url}
-                as="image"
-                type="image/webp"
-                {...(index < 4 ? { fetchPriority: 'high' as const } : {})}
-              />
-            ))
-          : null}
+
         {isHeroVideoRoute && !isHomeRollHeroRoute ? (
           <>
             <link rel="preload" href={WATTA_HERO_PRIMARY_MP4} as="video" type="video/mp4" fetchPriority="high" />

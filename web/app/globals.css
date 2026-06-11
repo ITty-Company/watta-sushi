@@ -4179,8 +4179,9 @@ html.watta-light-chrome body {
   .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
     .delivery-page-home-flow:has(.watta-home-photo-first-screen)
     > #menu-cinematic-block {
-    margin-top: clamp(-48px, -7vh, -36px) !important;
-    padding-top: clamp(4px, 0.8vh, 10px) !important;
+    margin-top: clamp(-112px, -13vh, -76px) !important;
+    padding-top: 0 !important;
+    min-height: 0 !important;
   }
 }
 
@@ -13819,6 +13820,17 @@ html[data-watta-nav-drawer-instant-close]
   transform: scale(0.98);
 }
 
+.watta-nav-compact__nav-tile--active {
+  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 28%, transparent);
+  background: color-mix(in srgb, var(--watta-brand-action, #145142) 10%, #ffffff);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--watta-brand-action, #145142) 12%, transparent);
+}
+
+.watta-nav-compact__nav-tile--active .watta-nav-compact__nav-label {
+  font-weight: 700;
+  color: var(--watta-brand-action, #145142);
+}
+
 .watta-nav-compact__nav-label {
   display: -webkit-box;
   width: 100%;
@@ -17761,7 +17773,10 @@ html[data-watta-boot-splash='1']:has(.watta-boot-splash-viewport--react) .watta-
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse 90% 55% at 50% 0%, rgba(20, 81, 66, 0.05), transparent 55%);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(20, 81, 66, 0.07), transparent 55%),
+    radial-gradient(ellipse 65% 45% at 96% 12%, rgba(255, 92, 0, 0.06), transparent 52%),
+    radial-gradient(ellipse 55% 42% at 4% 88%, rgba(20, 81, 66, 0.05), transparent 58%);
 }
 
 .admin-shell-watta-web > .admin-watta-stack {
@@ -17821,6 +17836,7 @@ html[data-watta-boot-splash='1']:has(.watta-boot-splash-viewport--react) .watta-
 
 .admin-watta-drawer-scroll {
   background:
+    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(255, 92, 0, 0.06), transparent 55%),
     radial-gradient(ellipse 120% 80% at 100% 0%, rgba(20, 81, 66, 0.06), transparent 55%),
     linear-gradient(180deg, rgba(248, 252, 250, 0.95) 0%, rgba(255, 255, 255, 0.5) 100%);
 }
@@ -17865,7 +17881,11 @@ html[data-watta-boot-splash='1']:has(.watta-boot-splash-viewport--react) .watta-
 }
 
 .admin-watta-tab-toolbar--products .admin-watta-tab-toolbar-menu {
-  max-width: min(48%, 14rem);
+  max-width: min(42%, 13rem);
+}
+
+.admin-watta-tab-toolbar--products .admin-watta-products-toolbar-meta {
+  flex: 0 0 auto;
 }
 
 .admin-watta-tab-toolbar--products .admin-watta-products-add-btn {
@@ -17898,10 +17918,21 @@ html[data-watta-boot-splash='1']:has(.watta-boot-splash-viewport--react) .watta-
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 81, 66, 0.22) transparent;
+}
+
+.admin-watta-products-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-watta-products-grid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(20, 81, 66, 0.18);
 }
 
 .admin-watta-product-card.admin-watta-hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
 @media (max-width: 639px) {

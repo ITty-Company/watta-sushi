@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown, MapPin, X } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
+import { MapPin, X } from '@/lib/wattaInlineIcons'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'

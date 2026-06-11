@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart } from 'lucide-react'
+import { Heart } from '@/lib/wattaInlineIcons'
 import { useRef } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import { useProductFavorite } from '@/hooks/useProductFavorite'

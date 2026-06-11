@@ -85,9 +85,11 @@ type MarqueeRowProps = {
   rowClass: string
   scrollSpeed: number
   reverse?: boolean
+  /** Первые N слотов рендерить с loading=eager (LCP). Для нижнего ряда — 0. */
+  maxEagerSlots?: number
 }
 
-function MarqueeRow({ rolls, rowClass, scrollSpeed, reverse }: MarqueeRowProps) {
+function MarqueeRow({ rolls, rowClass, scrollSpeed, reverse, maxEagerSlots = 6 }: MarqueeRowProps) {
   const repeated = useMemo(() => [...rolls, ...rolls], [rolls])
 
   return (
@@ -111,8 +113,8 @@ function MarqueeRow({ rolls, rowClass, scrollSpeed, reverse }: MarqueeRowProps) 
               >
                 <WattaSushiRoll
                   roll={roll}
-                  eager={isFirstPass && slot < 6}
-                  priority={isFirstPass && slot < 2}
+                  eager={isFirstPass && slot < maxEagerSlots}
+                  priority={isFirstPass && slot < Math.min(2, maxEagerSlots)}
                 />
               </div>
             )
@@ -165,6 +167,7 @@ export default function WattaSushiRollMarquee({
           rolls={bottomRolls}
           rowClass="watta-roll-marquee-row--front"
           scrollSpeed={frontSpeed}
+          maxEagerSlots={0}
         />
       </div>
     )
@@ -183,6 +186,7 @@ export default function WattaSushiRollMarquee({
           rolls={bottomRolls}
           rowClass="watta-roll-marquee-row--front"
           scrollSpeed={frontSpeed}
+          maxEagerSlots={0}
         />
       </div>
     </div>

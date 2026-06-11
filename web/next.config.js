@@ -1,5 +1,16 @@
 const path = require('path');
 
+/** Bundle analyzer — запускается только при ANALYZE=true */
+const withBundleAnalyzer =
+  process.env.ANALYZE === 'true'
+    ? require('@next/bundle-analyzer')({
+        enabled: true,
+        openAnalyzer: false,
+        analyzerMode: 'static',
+        reportFilename: 'bundle-analysis.html',
+      })
+    : (config) => config;
+
 /** База для rewrites — та сама нормалізація, що web/lib/backendBaseUrl.ts (BACKEND_URL для Render без перезбірки фронту). */
 function backendProxyBaseUrl() {
   const raw =
@@ -18,6 +29,9 @@ function backendProxyBaseUrl() {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // При ANALYZE=true — отдельная папка сборки, чтобы не ломать dev-сервер (.next)
+  distDir: process.env.ANALYZE === 'true' ? '.next-analyze' : '.next',
+
   // Меньше нативных file watchers (на macOS часто EMFILE); плюс npm script с WATCHPACK_POLLING
   webpack: (config, { dev }) => {
     if (dev) {
@@ -63,6 +77,18 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30,
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    /** Швидше віддавати оптимізовані зображення без додаткових запитів.
+     *  Обмежуємо тільки доменами, з яких реально тягнемо фото. */
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'wattasushi.com.ua',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.onrender.com',
+      },
+    ],
   },
   
   // Оптимизация компиляции
@@ -94,8 +120,11 @@ const nextConfig = {
     /** Довше тримати prefetched RSC у клієнті — повторні переходи майже без затримки. */
     staleTimes: {
       dynamic: 300,
-      static: 300,
+      static: 600,
     },
+    /** CSS-оптимізація: критический CSS инлайнится, остальное откладывается.
+     *  УВАГА: з 1.6MB CSS це може збільшити HTML payload. Тестуйте на проді. */
+    optimizeCss: process.env.NODE_ENV === 'production',
   },
   
   async redirects() {
@@ -200,7 +229,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=604800, stale-while-revalidate=86400',
+            value: 'public, max-age=2592000, stale-while-revalidate=2592000, immutable',
           },
         ],
       },
@@ -214,4 +243,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

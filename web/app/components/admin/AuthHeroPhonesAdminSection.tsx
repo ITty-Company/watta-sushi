@@ -2,7 +2,8 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Save, Trash2, Upload } from 'lucide-react'
+import { Save, Trash2, Upload } from 'lucide-react'
+import { Plus } from '@/lib/wattaInlineIcons'
 import type { Translations } from '@/app/context/LanguageContext'
 import AdminHeroVideoPreview from '@/app/components/admin/AdminHeroVideoPreview'
 
@@ -67,10 +68,10 @@ function VideoSlotGrid({
               initial={reduceMotion ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: slotIndex * 0.05 }}
-              className="flex flex-col rounded-[14px] border border-[#145142]/12 bg-[#f6fbf8]/80 p-3"
+              className="flex flex-col rounded-[14px] border border-watta-action/12 bg-[#f6fbf8]/80 p-3"
             >
-              <p className="text-xs font-bold uppercase tracking-wide text-[#145142]/70">{slotLabel}</p>
-              <motion.div className="mt-2 overflow-hidden rounded-[12px] border border-[#145142]/10 bg-[#0d2a22]/5">
+              <p className="text-xs font-bold uppercase tracking-wide text-watta-action/70">{slotLabel}</p>
+              <motion.div className="mt-2 overflow-hidden rounded-[12px] border border-watta-action/10 bg-[#0d2a22]/5">
                 <AdminHeroVideoPreview
                   previewSrc={previewSrc}
                   savedUrl={slot.savedUrl}
@@ -79,7 +80,7 @@ function VideoSlotGrid({
                 />
               </motion.div>
               {previewSrc && !slot.pendingFile ? (
-                <p className="mt-1.5 truncate font-mono text-[10px] text-[#145142]/55" title={slot.savedUrl ?? ''}>
+                <p className="mt-1.5 truncate font-mono text-[10px] text-watta-action/55" title={slot.savedUrl ?? ''}>
                   {slot.savedUrl}
                 </p>
               ) : null}
@@ -96,7 +97,7 @@ function VideoSlotGrid({
                 <button
                   type="button"
                   onClick={() => fileInputRefs.current[slot.id]?.click()}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-[#145142]/25 bg-white px-3 py-2 text-xs font-bold text-[#145142] transition hover:border-[#145142]/45 hover:bg-watta-action/5"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border-2 border-watta-action/25 bg-white px-3 py-2 text-xs font-bold text-watta-action transition hover:border-watta-action/45 hover:bg-watta-action/5"
                 >
                   <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   {t.heroVideoUpload}
@@ -105,7 +106,7 @@ function VideoSlotGrid({
                   <button
                     type="button"
                     onClick={() => onRemoveSlot(slot.id)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-[#145142]/20 bg-white px-3 py-2 text-xs font-semibold text-[#145142]/80 transition hover:bg-red-50 hover:text-red-700"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-watta-action/20 bg-white px-3 py-2 text-xs font-semibold text-watta-action/80 transition hover:bg-red-50 hover:text-red-700"
                   >
                     <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                     {t.heroVideoRemove}
@@ -119,7 +120,7 @@ function VideoSlotGrid({
       <button
         type="button"
         onClick={onAddSlot}
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#145142]/30 bg-watta-action/[0.04] px-4 py-3 text-sm font-bold text-[#145142] transition hover:border-[#145142]/50 hover:bg-watta-action/10 sm:w-auto"
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-watta-action/30 bg-watta-action/[0.04] px-4 py-3 text-sm font-bold text-watta-action transition hover:border-watta-action/50 hover:bg-watta-action/10 sm:w-auto"
       >
         <Plus className="h-4 w-4 shrink-0" aria-hidden />
         {t.heroVideoAddBtn}
@@ -146,7 +147,7 @@ export default function AuthHeroPhonesAdminSection({
   onRemovePhone2Slot,
 }: Props) {
   return (
-    <div className="rounded-[20px] border border-[#145142]/14 bg-white p-5 shadow-lg shadow-[#145142]/10 sm:rounded-[24px] sm:p-7">
+    <div className="rounded-[20px] border border-watta-action/14 bg-white p-5 shadow-lg shadow-watta-action/10 sm:rounded-[24px] sm:p-7">
       <VideoSlotGrid
         t={t}
         reduceMotion={reduceMotion}
@@ -158,7 +159,7 @@ export default function AuthHeroPhonesAdminSection({
       />
 
       <motion.div
-        className="my-6 border-t border-[#145142]/10"
+        className="my-6 border-t border-watta-action/10"
         aria-hidden
         initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}

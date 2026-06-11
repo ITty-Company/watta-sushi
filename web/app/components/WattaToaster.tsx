@@ -1,7 +1,7 @@
 'use client'
 
 import toast, { Toaster, ToastBar, type Toast } from 'react-hot-toast'
-import { X } from 'lucide-react'
+import { X } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '@/app/context/LanguageContext'
 
 export default function WattaToaster() {

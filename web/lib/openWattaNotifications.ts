@@ -1,14 +1,18 @@
 type RouterPush = { push: (href: string) => void }
 type OpenNotificationsDrawer = () => void
 
-/** Відкриває панель сповіщень поверх поточної сторінки (без повноекранного маршруту). */
+export const WATTA_NOTIFICATIONS_OPEN_EVENT = 'wattaNotificationsOpen'
+
+/** Відкриває бічну панель сповіщень поверх поточної сторінки. */
 export function openWattaNotifications(
-  router: RouterPush,
+  _router: RouterPush,
   openDrawer?: OpenNotificationsDrawer | null,
 ): void {
   if (openDrawer) {
     openDrawer()
     return
   }
-  router.push('/notifications')
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(WATTA_NOTIFICATIONS_OPEN_EVENT))
+  }
 }

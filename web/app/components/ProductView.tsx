@@ -2,18 +2,8 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, startTransition, useState } from 'react'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
-import {
-  ArrowLeft,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Heart,
-  Home,
-  Minus,
-  Plus,
-  ShoppingBag,
-} from 'lucide-react'
+import { ArrowRight, Home } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Heart, Minus, Plus, ShoppingBag } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
 import { parseProductSpecsFromDescription } from '@/lib/i18n/parseProductSpecsFromDescription'

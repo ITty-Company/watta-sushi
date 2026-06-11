@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from '@/lib/wattaInlineIcons'
 import { cn } from '@/lib/utils'
 import { preloadImageUrls } from '@/lib/preloadImages'
 
@@ -36,23 +36,30 @@ function GalleryNavButton({
   onClick,
   className,
   variant = 'inline',
+  disabled = false,
 }: {
   direction: 'prev' | 'next'
   label: string
   onClick: () => void
   className?: string
   variant?: 'inline' | 'lightbox'
+  disabled?: boolean
 }) {
   const Icon = direction === 'prev' ? ChevronLeft : ChevronRight
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (!disabled) onClick()
+      }}
+      disabled={disabled}
       className={cn(
         variant === 'inline' &&
           'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#145142]/12 bg-white text-[#145142] shadow-sm transition hover:border-[#145142]/25 hover:bg-[#f6faf8] active:bg-[#e8f0ec] sm:h-8 sm:w-8',
         variant === 'lightbox' &&
           'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20 active:bg-white/25',
+        disabled && 'pointer-events-none opacity-40',
         className,
       )}
       aria-label={label}
@@ -91,7 +98,10 @@ function GalleryDots({
           <button
             key={i}
             type="button"
-            onClick={() => onGoTo(i)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onGoTo(i)
+            }}
             className={cn(
               'h-1.5 w-1.5 rounded-full transition sm:h-2 sm:w-2',
               variant === 'inline' &&
@@ -171,6 +181,273 @@ function useGalleryScroller(len: number, images: string[]) {
   return { scrollerRef, index, setIndex, goTo, syncTo }
 }
 
+type ZoomTransform = { scale: number; x: number; y: number }
+
+const ZOOM_MIN = 1
+const ZOOM_MAX = 4
+const ZOOM_DOUBLE = 2.5
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function clampZoomTransform(
+  transform: ZoomTransform,
+  container: HTMLDivElement | null,
+  img: HTMLImageElement | null,
+): ZoomTransform {
+  if (!container || !img || transform.scale <= 1) {
+    return { scale: 1, x: 0, y: 0 }
+  }
+
+  const { width: cw, height: ch } = container.getBoundingClientRect()
+  const baseW = img.offsetWidth
+  const baseH = img.offsetHeight
+  if (baseW <= 0 || baseH <= 0) return transform
+
+  const scaledW = baseW * transform.scale
+  const scaledH = baseH * transform.scale
+  const maxX = Math.max(0, (scaledW - cw) / 2)
+  const maxY = Math.max(0, (scaledH - ch) / 2)
+
+  return {
+    scale: transform.scale,
+    x: clamp(transform.x, -maxX, maxX),
+    y: clamp(transform.y, -maxY, maxY),
+  }
+}
+
+function pointerDistance(a: { x: number; y: number }, b: { x: number; y: number }) {
+  const dx = a.x - b.x
+  const dy = a.y - b.y
+  return Math.hypot(dx, dy)
+}
+
+function ZoomableLightboxImage({
+  src,
+  alt,
+  isActive,
+  onZoomedChange,
+}: {
+  src: string
+  alt: string
+  isActive: boolean
+  onZoomedChange: (zoomed: boolean) => void
+}) {
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const transformRef = useRef<ZoomTransform>({ scale: 1, x: 0, y: 0 })
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>())
+  const pinchRef = useRef<{ dist: number; scale: number } | null>(null)
+  const panRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null)
+  const lastTapRef = useRef(0)
+  const [transform, setTransform] = useState<ZoomTransform>({ scale: 1, x: 0, y: 0 })
+  const [animating, setAnimating] = useState(false)
+
+  const applyTransform = useCallback((next: ZoomTransform, animate = false) => {
+    const clamped = clampZoomTransform(next, viewportRef.current, imgRef.current)
+    transformRef.current = clamped
+    setAnimating(animate)
+    setTransform(clamped)
+    onZoomedChange(clamped.scale > 1.02)
+  }, [onZoomedChange])
+
+  const zoomAtPoint = useCallback(
+    (scale: number, clientX: number, clientY: number, animate = false) => {
+      const viewport = viewportRef.current
+      if (!viewport) return
+
+      const rect = viewport.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+      const current = transformRef.current
+      const ratio = scale / current.scale
+      const x = current.x - (clientX - cx) * (ratio - 1)
+      const y = current.y - (clientY - cy) * (ratio - 1)
+      applyTransform({ scale, x, y }, animate)
+    },
+    [applyTransform],
+  )
+
+  useEffect(() => {
+    if (!isActive) {
+      transformRef.current = { scale: 1, x: 0, y: 0 }
+      setAnimating(false)
+      setTransform({ scale: 1, x: 0, y: 0 })
+      onZoomedChange(false)
+      pointersRef.current.clear()
+      pinchRef.current = null
+      panRef.current = null
+    }
+  }, [isActive, onZoomedChange])
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+
+    const onWheel = (e: WheelEvent) => {
+      if (!isActive) return
+      e.preventDefault()
+      e.stopPropagation()
+
+      const current = transformRef.current
+      const delta = -e.deltaY * 0.0025
+      const nextScale = clamp(current.scale * (1 + delta), ZOOM_MIN, ZOOM_MAX)
+
+      if (nextScale <= 1.02) {
+        applyTransform({ scale: 1, x: 0, y: 0 })
+        return
+      }
+
+      zoomAtPoint(nextScale, e.clientX, e.clientY)
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [applyTransform, isActive, zoomAtPoint])
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+
+    e.currentTarget.setPointerCapture(e.pointerId)
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    if (pointersRef.current.size === 1) {
+      const current = transformRef.current
+      panRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        tx: current.x,
+        ty: current.y,
+      }
+    } else if (pointersRef.current.size === 2) {
+      const pts = [...pointersRef.current.values()]
+      pinchRef.current = {
+        dist: pointerDistance(pts[0], pts[1]),
+        scale: transformRef.current.scale,
+      }
+      panRef.current = null
+    }
+  }
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointersRef.current.has(e.pointerId)) return
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    if (pointersRef.current.size === 2 && pinchRef.current) {
+      const pts = [...pointersRef.current.values()]
+      const dist = pointerDistance(pts[0], pts[1])
+      const nextScale = clamp(
+        pinchRef.current.scale * (dist / pinchRef.current.dist),
+        ZOOM_MIN,
+        ZOOM_MAX,
+      )
+      applyTransform({ ...transformRef.current, scale: nextScale })
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+
+    if (pointersRef.current.size === 1 && panRef.current && transformRef.current.scale > 1) {
+      const dx = e.clientX - panRef.current.x
+      const dy = e.clientY - panRef.current.y
+      applyTransform({
+        scale: transformRef.current.scale,
+        x: panRef.current.tx + dx,
+        y: panRef.current.ty + dy,
+      })
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  const finishPointer = (e: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(e.pointerId)
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* already released */
+    }
+
+    if (pointersRef.current.size < 2) pinchRef.current = null
+    if (pointersRef.current.size === 0) panRef.current = null
+
+    if (transformRef.current.scale < 1.05) {
+      applyTransform({ scale: 1, x: 0, y: 0 }, true)
+    }
+  }
+
+  const toggleZoomAt = (clientX: number, clientY: number) => {
+    if (transformRef.current.scale > 1.02) {
+      applyTransform({ scale: 1, x: 0, y: 0 }, true)
+    } else {
+      zoomAtPoint(ZOOM_DOUBLE, clientX, clientY, true)
+    }
+  }
+
+  const onDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    toggleZoomAt(e.clientX, e.clientY)
+  }
+
+  const onTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length > 0 || pointersRef.current.size > 0) return
+
+    const touch = e.changedTouches[0]
+    if (!touch) return
+
+    const now = Date.now()
+    if (now - lastTapRef.current < 300) {
+      e.preventDefault()
+      toggleZoomAt(touch.clientX, touch.clientY)
+      lastTapRef.current = 0
+    } else {
+      lastTapRef.current = now
+    }
+  }
+
+  const isZoomed = transform.scale > 1.02
+
+  return (
+    <div ref={viewportRef} className="flex h-full w-full items-center justify-center">
+      <div
+        className={cn(
+          'inline-flex max-h-[min(78dvh,720px)] max-w-full items-center justify-center overflow-visible',
+          isZoomed ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-zoom-in touch-manipulation',
+        )}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={finishPointer}
+        onPointerCancel={finishPointer}
+        onDoubleClick={onDoubleClick}
+        onTouchEnd={onTouchEnd}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          className="max-h-[min(78dvh,720px)] max-w-full select-none object-contain"
+          style={{
+            transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
+            transformOrigin: 'center center',
+            transition: animating ? 'transform 0.22s ease-out' : 'none',
+          }}
+          decoding="async"
+          draggable={false}
+          onLoad={() => {
+            if (transformRef.current.scale > 1) {
+              applyTransform(transformRef.current)
+            }
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function ProductGalleryLightbox({
   images,
   alt,
@@ -187,10 +464,15 @@ function ProductGalleryLightbox({
   const len = images.length
   const { scrollerRef, index, goTo, syncTo } = useGalleryScroller(len, images)
   const hasNav = len > 1
+  const [isZoomed, setIsZoomed] = useState(false)
 
   useEffect(() => {
     syncTo(startIndex)
   }, [startIndex, syncTo])
+
+  useEffect(() => {
+    setIsZoomed(false)
+  }, [index])
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -203,12 +485,13 @@ function ProductGalleryLightbox({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose(index)
+      if (isZoomed) return
       if (e.key === 'ArrowLeft') goTo(index - 1)
       if (e.key === 'ArrowRight') goTo(index + 1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, goTo, index])
+  }, [onClose, goTo, index, isZoomed])
 
   return (
     <div
@@ -239,10 +522,7 @@ function ProductGalleryLightbox({
         </button>
       </div>
 
-      <div
-        className="flex min-h-0 flex-1 items-center justify-center gap-2 px-2 sm:gap-4 sm:px-4"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex min-h-0 flex-1 items-center justify-center gap-2 px-2 sm:gap-4 sm:px-4">
         {hasNav && (
           <GalleryNavButton
             direction="prev"
@@ -250,6 +530,7 @@ function ProductGalleryLightbox({
             onClick={() => goTo(index - 1)}
             variant="lightbox"
             className="hidden sm:flex"
+            disabled={isZoomed}
           />
         )}
 
@@ -257,8 +538,10 @@ function ProductGalleryLightbox({
           <div
             ref={scrollerRef}
             className={cn(
-              'flex h-full w-full snap-x snap-mandatory overflow-x-auto scroll-smooth overscroll-x-contain',
-              '[touch-action:pan-x] [-webkit-overflow-scrolling:touch]',
+              'flex h-full w-full snap-x snap-mandatory scroll-smooth overscroll-x-contain',
+              isZoomed
+                ? 'overflow-x-hidden touch-none'
+                : 'overflow-x-auto [touch-action:pan-x] [-webkit-overflow-scrolling:touch]',
               '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
             )}
           >
@@ -268,13 +551,11 @@ function ProductGalleryLightbox({
                 className="flex h-full w-full shrink-0 snap-center snap-always items-center justify-center px-1"
                 aria-hidden={i !== index}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <ZoomableLightboxImage
                   src={src}
                   alt={i === 0 ? alt : `${alt} · ${i + 1}`}
-                  className="max-h-[min(78dvh,720px)] max-w-full object-contain"
-                  decoding="async"
-                  draggable={false}
+                  isActive={i === index}
+                  onZoomedChange={i === index ? setIsZoomed : () => {}}
                 />
               </div>
             ))}
@@ -288,18 +569,16 @@ function ProductGalleryLightbox({
             onClick={() => goTo(index + 1)}
             variant="lightbox"
             className="hidden sm:flex"
+            disabled={isZoomed}
           />
         )}
       </div>
 
       {hasNav && (
-        <div
-          className="flex shrink-0 flex-col items-center gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex shrink-0 flex-col items-center gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
           <div className="flex w-full max-w-xs items-center justify-between gap-3 sm:hidden">
-            <GalleryNavButton direction="prev" label={labels.prev} onClick={() => goTo(index - 1)} variant="lightbox" />
-            <GalleryNavButton direction="next" label={labels.next} onClick={() => goTo(index + 1)} variant="lightbox" />
+            <GalleryNavButton direction="prev" label={labels.prev} onClick={() => goTo(index - 1)} variant="lightbox" disabled={isZoomed} />
+            <GalleryNavButton direction="next" label={labels.next} onClick={() => goTo(index + 1)} variant="lightbox" disabled={isZoomed} />
           </div>
           <GalleryDots
             len={len}

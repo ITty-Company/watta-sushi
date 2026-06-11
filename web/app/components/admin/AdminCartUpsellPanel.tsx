@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, Pencil, Sparkles } from 'lucide-react'
+import { Trash2, Pencil, Sparkles } from 'lucide-react'
+import { Plus } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { formatTierRangeLabel, type CartUpsellTierDto } from '@/lib/cartUpsell'
 import { broadcastWattaCatalogUpdate } from '@/lib/wattaCatalogSync'
@@ -174,7 +175,7 @@ export default function AdminCartUpsellPanel({ products }: Props) {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-2xl border border-[#145142]/15 bg-white p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-watta-action/15 bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="admin-watta-section-title flex items-center gap-2 text-lg sm:text-xl">
@@ -193,9 +194,9 @@ export default function AdminCartUpsellPanel({ products }: Props) {
           </button>
         </div>
         {loading ? (
-          <p className="text-sm text-[#145142]/55">{u.loading}</p>
+          <p className="text-sm text-watta-action/55">{u.loading}</p>
         ) : tiers.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[#145142]/20 bg-[#f8fbf9] px-4 py-8 text-center text-sm text-[#145142]/55">
+          <p className="rounded-xl border border-dashed border-watta-action/20 bg-[#f8fbf9] px-4 py-8 text-center text-sm text-watta-action/55">
             {u.empty}
           </p>
         ) : (
@@ -203,14 +204,14 @@ export default function AdminCartUpsellPanel({ products }: Props) {
             {tiers.map((tier) => (
               <li
                 key={tier.id}
-                className="admin-watta-hover-lift flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#145142]/12 bg-[#f8fbf9]/80 px-4 py-3"
+                className="admin-watta-hover-lift flex flex-wrap items-center justify-between gap-3 rounded-xl border border-watta-action/12 bg-[#f8fbf9]/80 px-4 py-3"
               >
                 <div className="min-w-0">
                   <p className="font-semibold text-[#0f241e]">
                     {formatTierRangeLabel(tier)} · −{Number(tier.discountEur).toFixed(2)} €
                     {u.perItemSuffix}
                   </p>
-                  <p className="text-xs text-[#145142]/55">
+                  <p className="text-xs text-watta-action/55">
                     {u.productCount.replace('{{count}}', String(tier.products?.length ?? 0))}
                     {!tier.isActive ? u.disabledSuffix : ''}
                   </p>
@@ -219,7 +220,7 @@ export default function AdminCartUpsellPanel({ products }: Props) {
                   <button
                     type="button"
                     onClick={() => startEdit(tier)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#145142]/12 bg-white text-[#145142] hover:bg-watta-action/5"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-watta-action/12 bg-white text-watta-action hover:bg-watta-action/5"
                     aria-label={u.editAria}
                   >
                     <Pencil className="h-4 w-4" />
@@ -240,16 +241,16 @@ export default function AdminCartUpsellPanel({ products }: Props) {
       </div>
       <form
         onSubmit={(e) => void handleSave(e)}
-        className="rounded-2xl border border-[#145142]/15 bg-white p-4 shadow-sm sm:p-6"
+        className="rounded-2xl border border-watta-action/15 bg-white p-4 shadow-sm sm:p-6"
       >
-        <h3 className="mb-4 text-base font-bold text-[#145142]">
+        <h3 className="mb-4 text-base font-bold text-watta-action">
           {editingId
             ? u.editTierTitle.replace('{{id}}', String(editingId))
             : u.newTierTitle}
         </h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[#145142]/80">{u.fromAmount}</span>
+            <span className="mb-1 block font-medium text-watta-action/80">{u.fromAmount}</span>
             <input
               type="number"
               min={0}
@@ -257,11 +258,11 @@ export default function AdminCartUpsellPanel({ products }: Props) {
               required
               value={form.minOrderTotal}
               onChange={(e) => setForm((f) => ({ ...f, minOrderTotal: e.target.value }))}
-              className="w-full rounded-lg border border-[#145142]/15 px-3 py-2"
+              className="w-full rounded-lg border border-watta-action/15 px-3 py-2"
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[#145142]/80">{u.toAmount}</span>
+            <span className="mb-1 block font-medium text-watta-action/80">{u.toAmount}</span>
             <input
               type="number"
               min={0}
@@ -269,11 +270,11 @@ export default function AdminCartUpsellPanel({ products }: Props) {
               placeholder={u.noLimitPlaceholder}
               value={form.maxOrderTotal}
               onChange={(e) => setForm((f) => ({ ...f, maxOrderTotal: e.target.value }))}
-              className="w-full rounded-lg border border-[#145142]/15 px-3 py-2"
+              className="w-full rounded-lg border border-watta-action/15 px-3 py-2"
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[#145142]/80">{u.discount}</span>
+            <span className="mb-1 block font-medium text-watta-action/80">{u.discount}</span>
             <input
               type="number"
               min={0.01}
@@ -281,25 +282,25 @@ export default function AdminCartUpsellPanel({ products }: Props) {
               required
               value={form.discountEur}
               onChange={(e) => setForm((f) => ({ ...f, discountEur: e.target.value }))}
-              className="w-full rounded-lg border border-[#145142]/15 px-3 py-2"
+              className="w-full rounded-lg border border-watta-action/15 px-3 py-2"
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[#145142]/80">{u.sortOrder}</span>
+            <span className="mb-1 block font-medium text-watta-action/80">{u.sortOrder}</span>
             <input
               type="number"
               value={form.sortOrder}
               onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
-              className="w-full rounded-lg border border-[#145142]/15 px-3 py-2"
+              className="w-full rounded-lg border border-watta-action/15 px-3 py-2"
             />
           </label>
         </div>
-        <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium text-[#145142]/80">
+        <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium text-watta-action/80">
           <input
             type="checkbox"
             checked={form.isActive}
             onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-            className="h-4 w-4 accent-[#145142]"
+            className="h-4 w-4 accent-[var(--watta-brand-action)]"
           />
           {u.activeTier}
         </label>
@@ -307,9 +308,9 @@ export default function AdminCartUpsellPanel({ products }: Props) {
           <p className="mb-2 text-sm font-semibold text-[#0f241e]">
             {u.discountedProducts.replace('{{count}}', String(form.productIds.length))}
           </p>
-          <div className="max-h-64 overflow-y-auto rounded-xl border border-[#145142]/12 p-2">
+          <div className="max-h-64 overflow-y-auto rounded-xl border border-watta-action/12 p-2">
             {productOptions.length === 0 ? (
-              <p className="px-2 py-4 text-sm text-[#145142]/55">{u.addProductsFirst}</p>
+              <p className="px-2 py-4 text-sm text-watta-action/55">{u.addProductsFirst}</p>
             ) : (
               <ul className="space-y-1">
                 {productOptions.map((p) => (
@@ -319,10 +320,10 @@ export default function AdminCartUpsellPanel({ products }: Props) {
                         type="checkbox"
                         checked={form.productIds.includes(p.id)}
                         onChange={() => toggleProduct(p.id)}
-                        className="h-4 w-4 accent-[#145142]"
+                        className="h-4 w-4 accent-[var(--watta-brand-action)]"
                       />
                       <span className="min-w-0 flex-1 truncate text-sm text-[#0f241e]">{p.name_ru}</span>
-                      <span className="shrink-0 text-xs text-[#145142]/55">{p.price} €</span>
+                      <span className="shrink-0 text-xs text-watta-action/55">{p.price} €</span>
                     </label>
                   </li>
                 ))}
@@ -345,7 +346,7 @@ export default function AdminCartUpsellPanel({ products }: Props) {
                 setEditingId(null)
                 setForm(emptyForm())
               }}
-              className="rounded-xl border border-[#145142]/15 px-5 py-2.5 text-sm font-semibold text-[#145142] hover:bg-watta-action/5"
+              className="rounded-xl border border-watta-action/15 px-5 py-2.5 text-sm font-semibold text-watta-action hover:bg-watta-action/5"
             >
               {u.cancel}
             </button>

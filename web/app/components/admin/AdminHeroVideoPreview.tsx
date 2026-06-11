@@ -68,7 +68,7 @@ export default function AdminHeroVideoPreview({
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className={`flex ${aspectClassName} items-center justify-center bg-watta-action/5 text-xs text-[#145142]/45`}
+        className={`flex ${aspectClassName} items-center justify-center bg-watta-action/5 text-xs text-watta-action/45`}
       >
         —
       </motion.div>
@@ -82,7 +82,7 @@ export default function AdminHeroVideoPreview({
         animate={{ opacity: 1, y: 0 }}
         className={`admin-hero-video-preview-missing ${aspectClassName}`}
       >
-        <span className="font-semibold text-[#145142]/85">{banners.heroVideoUnavailableTitle}</span>
+        <span className="font-semibold text-watta-action/85">{banners.heroVideoUnavailableTitle}</span>
         <span>{banners.heroVideoUnavailableHint}</span>
         {savedUrl ? (
           <span className="max-w-full truncate font-mono opacity-80" title={savedUrl}>

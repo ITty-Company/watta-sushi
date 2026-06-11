@@ -1072,23 +1072,41 @@ const uk: SiteTranslations = {
         notAuthorized: "Ви не авторизовані",
         accessDenied: "Доступ заборонено",
         adminOnly: "Доступ заборонено. Тільки адміністратори можуть використовувати адмін-панель.",
-        accessCheckError: "Помилка перевірки прав доступу"
+        accessCheckError: "Помилка перевірки прав доступу",
+        loginRequired: "Ви не авторизовані. Будь ласка, увійдіть у систему.",
+        serverDenied: "Сервер відхилив доступ (401/403). Увійдіть знову як адміністратор або перевірте, що backend запущено і NEXT_PUBLIC_API_URL вказує на нього.",
+        reLogin: "Увійдіть знову в адмінку"
       },
       common: {
         error: "Помилка",
         networkError: "Помилка мережі",
         connectionError: "Не вдалося підключитися до сервера. Перевірте, чи запущено backend сервер.",
+        connectionErrorWithDetail: "Помилка з'єднання: {{detail}}",
         deleteConfirm: "Видалити?",
         saveSuccess: "Збережено",
         deleteSuccess: "Успішно видалено",
         statusUpdated: "Статус успішно оновлено!",
-        updateError: "Помилка оновлення"
+        updateError: "Помилка оновлення",
+        dataLoadError: "Помилка при завантаженні даних",
+        photoUploaded: "Фото завантажено",
+        photoUploadError: "Помилка завантаження",
+        selectImageFiles: "Оберіть файли зображень (JPG, PNG, WebP…)",
+        maxPhotos: "Максимум 24 фото",
+        uploadingPhotos: "Завантаження фото на сервер…",
+        uploadingIcon: "Завантаження іконки…",
+        uploadingHoverIcon: "Завантаження hover-іконки…",
+        photosUploadedCount: "Завантажено фото: {{count}}",
+        uploadBeforeSaveError: "Не вдалося завантажити фото перед збереженням"
       },
       products: {
         deleteConfirm: "Ви впевнені, що хочете видалити цей товар?",
         deleted: "Товар успішно видалено!",
         saved: "Товар успішно збережено!",
-        saveError: "Помилка при збереженні"
+        saveError: "Помилка при збереженні",
+        softDeleted: "Товар прибрано з меню (є в замовленнях)",
+        nameRequired: "Введіть назву товару хоча б однією мовою (вкладки RU / UA / EN / NL).",
+        categoryRequired: "Оберіть категорію.",
+        priceRequired: "Вкажіть коректну ціну (число ≥ 0)."
       },
       orders: {
         changeStatusConfirm: "Змінити статус на"
@@ -1097,16 +1115,67 @@ const uk: SiteTranslations = {
         required: "Назва міста та країна є обов'язковими",
         chooseFromMap: "Спочатку виберіть місто на мапі",
         created: "Місто успішно створено!",
-        createError: "Помилка створення міста"
+        createError: "Помилка створення міста",
+        updated: "Місто успішно оновлено!",
+        deleted: "Місто успішно видалено!",
+        deleteConfirm: "Ви впевнені, що хочете видалити це місто? Це також видалить усі зв'язки з товарами.",
+        nameOneLang: "Введіть назву міста хоча б однією мовою (RU, UA, EN або NL).",
+        chooseFromSearch: "Спочатку оберіть місто з пошуку на карті (введіть назву й натисніть «Вибрати»)",
+        locationRequired: "Спочатку оберіть локацію на карті (пошук → Вибрати або клік по маркеру)",
+        zoneTariffSaved: "Тариф зони збережено",
+        zoneTariffSaveError: "Помилка збереження"
       },
       countries: {
         required: "Назва країни є обов'язковою",
         created: "Країна успішно створена!",
-        createError: "Помилка створення країни"
+        createError: "Помилка створення країни",
+        updated: "Країну успішно оновлено!",
+        deleted: "Країну успішно видалено!",
+        deleteConfirm: "Видалити цю країну? Будуть видалені всі її міста з зонами доставки."
       },
       news: {
         saved: "Збережено",
         deleteConfirm: "Видалити?"
+      },
+      promos: {
+        created: "Промокод успішно створено!",
+        deleted: "Промокод успішно видалено!",
+        deleteConfirm: "Видалити цей код?"
+      },
+      banners: {
+        saved: "Банер успішно збережено!",
+        deleted: "Банер успішно видалено!",
+        deleteConfirm: "Ви впевнені, що хочете видалити цей банер?",
+        imageRequired: "Завантажте зображення банера (блок «Обкладинка слайда» зверху форми)",
+        fileMissing: "Файл картинки пропав — перезалийте"
+      },
+      team: {
+        saved: "Члена команди успішно збережено!",
+        deleted: "Члена команди успішно видалено!",
+        deleteConfirm: "Видалити цього члена команди?"
+      },
+      categories: {
+        saved: "Категорію успішно збережено!",
+        deleted: "Категорію успішно видалено!",
+        deleteConfirm: "Видалити цю категорію?",
+        hasProducts: "Спочатку створіть іншу категорію — у цій є товари.",
+        orderLabel: "Порядок"
+      },
+      blog: {
+        deleted: "Статтю видалено",
+        deleteConfirm: "Видалити цю статтю?",
+        slugRequired: "Заповніть slug і текст хоча б однією мовою",
+        titleUaFirst: "Спочатку напишіть заголовок або текст українською (вкладка UA)",
+        autoTranslating: "Автопереклад… (це може зайняти хвилину)",
+        translateDone: "Переклад готово — перевірте RU, EN, NL"
+      },
+      newsletter: {
+        messageRequired: "Введіть текст повідомлення",
+        subjectRequired: "Введіть тему листа",
+        started: "Розсилку успішно запущено!"
+      },
+      settings: {
+        saveError: "Помилка збереження налаштувань"
       }
     },
     adminPanel: {
@@ -1114,6 +1183,7 @@ const uk: SiteTranslations = {
         title: "Адмін-панель",
         subtitle: "Статистика замовлень, товарів і доставок у одному місці.",
         siteMenu: "Меню сайту",
+        adminHome: "Головна адмін-панелі",
         backAria: "Назад",
         refreshTitle: "Оновити дані",
         openMenuTitle: "Відкрити меню",
@@ -1122,7 +1192,7 @@ const uk: SiteTranslations = {
         adminLangRu: "РУС",
         adminLangHint: "Мова панелі",
       },
-      sidebar: { selectSection: "Оберіть розділ", dashboard: "📊 Дашборд", dashboardDesc: "Статистика та огляд", orders: "📦 Замовлення", ordersDesc: "Управління замовленнями", products: "🍣 Товари", productsDesc: "Меню та позиції", promos: "🏷️ Промокоди", promosDesc: "Знижки", cities: "🏙️ Міста", citiesDesc: "Міста та країни", banners: "🎨 Банери", bannersDesc: "Банери", categories: "📋 Категорії", categoriesDesc: "Категорії меню", users: "👥 Користувачі", usersDesc: "Список клієнтів", adminPhones: "🛡️ Адмін-доступ", adminPhonesDesc: "Телефони та email з доступом", team: "👨‍👩‍👧‍👦 Команда", teamDesc: "Співробітники", settings: "⚙️ Налаштування", settingsDesc: "Сайт і банери", ingredients: "🥑 Інгредієнти", newsletter: "📧 Розсилка", cartUpsell: "🛒 Кошик: знижки", cartUpsellDesc: "Пороги спецпропозицій", blog: "📰 Блог / Рекомендації", blogDesc: "Статті та поради", reviews: "⭐ Відгуки", reviewsDesc: "Модерація відгуків", crm: "👥 CRM / База клієнтів", crmDesc: "Клієнти та звернення" },
+      sidebar: { selectSection: "Оберіть розділ", dashboard: "Дашборд", dashboardDesc: "Статистика та огляд", orders: "Замовлення", ordersDesc: "Управління замовленнями", products: "Товари", productsDesc: "Меню та позиції", promos: "Промокоди", promosDesc: "Знижки", cities: "Міста", citiesDesc: "Міста та країни", banners: "Банери", bannersDesc: "Карусель на головній", categories: "Категорії", categoriesDesc: "Категорії меню", users: "Користувачі", usersDesc: "Список клієнтів", adminPhones: "Адмін-доступ", adminPhonesDesc: "Телефони та email", team: "Команда", teamDesc: "Співробітники", settings: "Налаштування", settingsDesc: "Сайт і банери", ingredients: "Інгредієнти", newsletter: "Розсилка", cartUpsell: "Кошик: знижки", cartUpsellDesc: "Пороги спецпропозицій", blog: "Блог", blogDesc: "Статті та поради", reviews: "Відгуки", reviewsDesc: "Модерація відгуків", crm: "CRM / Клієнти", crmDesc: "База та звернення" },
       dashboard: {
         loading: "Завантаження...",
         revenue: "Виручка (виконані)",
@@ -1158,12 +1228,16 @@ const uk: SiteTranslations = {
         chartNoData: "Ще немає даних для графіка",
         avgOrderValue: "Середній чек (виконані)",
         studioBadge: "Studio",
+        openSectionAria: "Відкрити: {{section}}",
+        statusFilterActive: "Фільтр за статусом: {{status}}",
+        statusFilterAllDays: "Показано за всі дні",
+        clearStatusFilter: "Скинути фільтр",
       },
       actions: { add: "+ Додати", edit: "Редагувати", editShort: "Змінити", delete: "Видалити", save: "Зберегти", saveChanges: "Зберегти зміни", cancel: "Скасувати", closeAria: "Закрити" },
       common: { menuChangeSection: "Меню / змінити розділ", emptyOrders: "Немає активних замовлень", emptyCities: "Міст поки немає", emptyBanners: "Банерів поки немає", emptyCategories: "Категорій поки немає", emptyUsers: "Користувачів поки немає", emptyTeam: "Членів команди поки немає", emptyPromos: "Промокодів поки немає", clickToUpload: "Натисніть, щоб завантажити фото", changeFile: "Змінити", selectFromList: "Вибрати зі списку", activeLabel: "Активно", inactiveLabel: "Неактивно", yes: "Так", no: "Ні", orderIndex: "Порядок відображення", choose: "Вибрати", notFound: "Нічого не знайдено. Спробуйте інший запит.", searching: "пошук...", bannerDragHint: "Перетягніть картку на іншу, щоб змінити порядок на сайті", bannerOrderSaved: "Порядок банерів збережено", bannerOrderSaveError: "Не вдалося зберегти порядок банерів", loading: "Завантаження…", savingEllipsis: "Збереження…", guest: "Гість", noRecord: "Немає запису" },
-      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintConfirmed: "Підтверджено", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати", btnConfirmed: "Прийняти замовлення", btnCooking: "Готуємо", btnDelivering: "В доставці", btnCompleted: "Виконано", btnCancel: "Скасувати", readyTimeTitleAccept: "Прийняти замовлення", readyTimeTitleCooking: "Час готовності", readyTimePickupHint: "Клієнт отримає сповіщення: замовлення буде готове до вказаного часу (самовивіз).", readyTimeDeliveryHint: "Клієнт отримає сповіщення: доставка орієнтовно до вказаного часу.", readyTimeNotifyHint: "Час надсилається в сповіщення клієнту в профілі.", readyTimeLabel: "Готово / доставка до", readyTimeMinutes: "хв", readyTimeRequired: "Вкажіть час", readyTimeSubmitAccept: "Прийняти та надіслати", readyTimeSubmitCooking: "Зберегти та надіслати", readyAtPickup: "Готово до:", readyAtDelivery: "Доставка до:", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовивіз", deliveryFeeAdmin: "Доставка:", ordersByDayTitle: "Замовлення по днях", ordersByDayToday: "Сьогодні", ordersByDayPrev: "Попередній день", ordersByDayNext: "Наступний день", ordersByDayEmpty: "На цей день замовлень немає", ordersByDayCount: "Замовлень", ordersByDayRevenue: "Виручка (виконані)", scheduledForLabel: "На дату", scheduledSlotLabel: "Слот", daysWithOrders: "Дні з замовленнями" },
+      orders: { orderNum: "Замовлення №", noComment: "Без коментаря", payment: "Оплата", cash: "Готівка", online: "Онлайн", paid: "ОПЛАЧЕНО", error: "ПОМИЛКА", waiting: "ОЧІКУЄ", hintConfirmed: "Підтверджено", hintCooking: "Готується", hintDelivering: "В доставці", hintCompleted: "Виконано", hintCancel: "Скасувати", btnConfirmed: "Прийняти замовлення", btnCooking: "Готуємо", btnDelivering: "В доставці", btnCompleted: "Виконано", btnCancel: "Скасувати", readyTimeTitleAccept: "Прийняти замовлення", readyTimeTitleCooking: "Час готовності", readyTimePickupHint: "Клієнт отримає сповіщення: замовлення буде готове до вказаного часу (самовивіз).", readyTimeDeliveryHint: "Клієнт отримає сповіщення: доставка орієнтовно до вказаного часу.", readyTimeNotifyHint: "Час надсилається в сповіщення клієнту в профілі.", readyTimeLabel: "Готово / доставка до", readyTimeMinutes: "хв", readyTimeRequired: "Вкажіть час", readyTimeSubmitAccept: "Прийняти та надіслати", readyTimeSubmitCooking: "Зберегти та надіслати", readyAtPickup: "Готово до:", readyAtDelivery: "Доставка до:", fulfillmentDelivery: "Доставка", fulfillmentPickup: "Самовивіз", deliveryFeeAdmin: "Доставка:", ordersByDayTitle: "Замовлення по днях", ordersByDayToday: "Сьогодні", ordersByDayPrev: "Попередній день", ordersByDayNext: "Наступний день", ordersByDayEmpty: "На цей день замовлень немає", ordersByDayEmptyHint: "Оберіть дату з блоку «Дні з замовленнями» вище — у таблиці зʼявляться замовлення та склад (товари).", ordersByDayPickHint: "На обрану дату замовлень немає. Натисніть дату зі списку нижче — таблиця покаже деталі та товари.", ordersViewWeek: "Тиждень", ordersViewDay: "Один день", ordersViewRange: "Діапазон", ordersRangeFrom: "Від", ordersRangeTo: "До", daysWithOrdersInRange: "Дні з замовленнями в діапазоні", ordersByRangeEmpty: "У цьому діапазоні замовлень немає", ordersByRangeEmptyHint: "Змініть дати «Від» і «До» вище або перегляньте CRM-звіти.", ordersByAllEmpty: "Замовлень поки немає", ordersByAllEmptyHint: "Як тільки зʼявляться замовлення — вони будуть тут і в CRM-звітах.", ordersTableSectionTitle: "Управління замовленнями", ordersByDayCount: "Замовлень", ordersByDayRevenue: "Виручка (виконані)", scheduledForLabel: "На дату", scheduledSlotLabel: "Слот", daysWithOrders: "Дні з замовленнями", colFulfillment: "Тип", tableRowHint: "Натисніть рядок — деталі замовлення та зміна статусу" },
       news: { title: "Новини", addBtn: "+ Додати", editTitle: "Редагувати", newTitle: "Нова новина", titlePlaceholder: "Заголовок", descPlaceholder: "Короткий опис", textPlaceholder: "Повний текст", isHit: "Хіт продажу", galleryLabel: "Галерея фото", uploadPhotos: "Додати фото (кілька)", removePhotoAria: "Прибрати фото", dishesBlock: "Страви зі знижкою в цій новині", selectProduct: "Оберіть страву", discountShort: "Знижка %", addDish: "Додати страву", dishDuplicate: "Ця страва вже додана", pickProductFirst: "Спочатку оберіть страву" },
-      products: { addBtn: "+ Додати товар", hit: "ХІТ", editTitle: "Редагувати страву", newTitle: "Нова страва", nameLabel: "Назва товару", namePlaceholder: "Наприклад: Філадельфія", descLabel: "Опис", descPlaceholder: "Склад, вага, особливості...", priceLabel: "Ціна (€)", categoryLabel: "Категорія", selectCategory: "Оберіть...", deliveryCities: "Міста доставки *", addCitiesFirst: "Спочатку додайте міста у вкладці 'Міста'", descComposition: "Описи (Склад)", ingComposition: "Інгредієнти (Склад)", empty: "Товарів не знайдено" },
+      products: { addBtn: "+ Додати товар", hit: "ХІТ", editTitle: "Редагувати страву", newTitle: "Нова страва", nameLabel: "Назва товару", namePlaceholder: "Наприклад: Філадельфія", descLabel: "Опис", descPlaceholder: "Склад, вага, особливості...", priceLabel: "Ціна (€)", categoryLabel: "Категорія", selectCategory: "Оберіть...", deliveryCities: "Міста доставки *", addCitiesFirst: "Спочатку додайте міста у вкладці 'Міста'", descComposition: "Описи (Склад)", ingComposition: "Інгредієнти (Склад)", empty: "Товарів не знайдено", cartBadge: "Кошик", uploadHint: "Натисніть або перетягніть фото сюди", uploadMultiHint: "Кілька файлів — одразу (до 24)", addPhoto: "Додати", hitsLabel: "Наші хіти / хіт продажів" },
       ingredients: {
         title: "Бібліотека інгредієнтів",
         addNew: "Додати новий",
@@ -1190,7 +1264,7 @@ const uk: SiteTranslations = {
         selectedCount: "Обрано",
         emptyLibrary: "Спочатку додайте інгредієнти у вкладці «Інгредієнти».",
       },
-      cities: { addCountry: "Додати нову країну", nameRu: "Назва *", sticker: "Стікер країни (прапор)", addCountryBtn: "✨ Додати країну", countriesTitle: "Країни", editCity: "Редагувати місто", addCity: "Додати нове місто", cityNameRu: "Назва міста *", searchMapLabel: "📍 Пошук міста на карті", searchMapDesc: "Шукайте за адресою, індексом або кодом.", searchMapPlaceholder: "Назва, адреса, індекс...", searchMapBtn: "Шукати за назвами", countryLabel: "Країна *", selectCountry: "Оберіть країну", activeCity: "Активне місто", saveChanges: "💾 Зберегти зміни", addCityBtn: "✨ Додати місто", cancelEdit: "Скасувати редагування", citiesTitle: "Міста", deliveryZones: "Зон доставки:" },
+      cities: { addCountry: "Додати нову країну", nameRu: "Назва *", sticker: "Стікер країни (прапор)", addCountryBtn: "Додати країну", countriesTitle: "Країни", editCity: "Редагувати місто", addCity: "Додати нове місто", cityNameRu: "Назва міста *", searchMapLabel: "Пошук міста на карті", searchMapDesc: "Шукайте за адресою, індексом або кодом.", searchMapPlaceholder: "Назва, адреса, індекс...", searchMapBtn: "Шукати за назвами", countryLabel: "Країна *", selectCountry: "Оберіть країну", activeCity: "Активне місто", saveChanges: "Зберегти зміни", addCityBtn: "Додати місто", cancelEdit: "Скасувати редагування", citiesTitle: "Міста", deliveryZones: "Зон доставки:", zonesTitle: "Тарифи зон доставки", zonesDesc: "Полігони накреслюєте на карті в блоці нижче; тут задаєте безкоштовно або фікс € для кожної зони. Якщо обидва вимкнені — на сайті діє стандарт (база з налаштувань сайту + €/км міста × відстань від точки кухні).", zonesLoading: "Завантаження зон…", zonesEmpty: "Зон ще немає — накресліть полігон на карті під цим блоком і збережіть назву зони.", zoneFreeDelivery: "Безкоштовна доставка в зоні", zoneFlatFee: "Фіксована доставка (€)", zoneSaveTariff: "Зберегти тариф" },
       banners: {
         addBtn: "+ Додати банер",
         tabSubtitle: "Карусель на головній: фото, кадр і переклади.",
@@ -1235,12 +1309,12 @@ const uk: SiteTranslations = {
         heroVideoUnavailableTitle: "Відео на сервері недоступне",
         heroVideoUnavailableHint: "Файл відсутній (часто після redeploy на Render). Натисніть «Завантажити» і «Зберегти» знову; на проді увімкніть Persistent Disk і UPLOAD_DIR.",
       },
-      categories: { addBtn: "+ Додати категорію", slug: "Slug:", editTitle: "Редагувати категорію", newTitle: "Нова категорія", emojiLabel: "Емодзі (стікер) *", nameRu: "Назва *", namePlaceholder: "Наприклад: Десерти", slugLabel: "Slug (URL)", slugAuto: "Автоматично" },
-      users: { title: "👥 Зареєстровані користувачі", noName: "Без імені", admin: "👑 Адмін", user: "👤 Користувач", ordersCount: "Замовлень:", registration: "Реєстрація:", bonusesLabel: "Бонуси:", cashbackLabel: "кешбэк", configureBonuses: "Налаштувати бонуси" },
-      newsletter: { title: "Email Розсилка", desc: "Відправка листів усім зареєстрованим користувачам", confirmSend: "Відправити цей лист усім користувачам?", subject: "Тема листа", subjectPlaceholder: "Наприклад: Знижки на роли!", message: "Текст повідомлення", messagePlaceholder: "Введіть текст розсилки...", promoOptional: "🎁 Промокод (опціонально)", promoPlaceholder: "Наприклад: PROMO2025", promoHint: "Буде виділений у листі великим шрифтом", sendBtn: "Відправити розсилку", successSend: "Успішно відправлено", errorPrefix: "Помилка: ", errorNetwork: "Помилка мережі" },
-      team: { title: "👨‍👩‍👧‍👦 Команда", addBtn: "+ Додати члена команди", editTitle: "Редагувати члена команди", newTitle: "Новий член команди", nameRu: "Ім'я *", posRu: "Посада *", bioRu: "Біографія", inactiveBadge: "Неактивний" },
+      categories: { addBtn: "+ Додати категорію", slug: "Slug:", editTitle: "Редагувати категорію", newTitle: "Нова категорія", emojiLabel: "Емодзі (стікер) *", nameRu: "Назва *", namePlaceholder: "Наприклад: Десерти", slugLabel: "Slug (URL)", slugAuto: "Автоматично", orderLabel: "Порядок відображення", activeLabel: "Активна", activeYes: "Так", activeNo: "Ні", recommendAllowed: "Дозволено — товари з «рекомендуємо» можуть показуватись", recommendDenied: "Ні — жоден товар з цієї категорії не в рекомендаціях", mainIcon: "Основна іконка", hoverIcon: "При наведенні", upload: "Завантажити", change: "Змінити", orderHint: "Менше число — раніше в списку", visibleYes: "Видно відвідувачам", visibleNo: "Приховано (чернетка)" },
+      users: { title: "Зареєстровані користувачі", noName: "Без імені", admin: "Адмін", user: "Користувач", ordersCount: "Замовлень:", registration: "Реєстрація:", bonusesLabel: "Бонуси:", cashbackLabel: "кешбэк", configureBonuses: "Налаштувати бонуси" },
+      newsletter: { title: "Email Розсилка", desc: "Відправка листів усім зареєстрованим користувачам", confirmSend: "Відправити цей лист усім користувачам?", subject: "Тема листа", subjectPlaceholder: "Наприклад: Знижки на роли!", message: "Текст повідомлення", messagePlaceholder: "Введіть текст розсилки...", promoOptional: "Промокод (опціонально)", promoPlaceholder: "Наприклад: PROMO2025", promoHint: "Буде виділений у листі великим шрифтом", sendBtn: "Відправити розсилку", successSend: "Успішно відправлено", errorPrefix: "Помилка: ", errorNetwork: "Помилка мережі" },
+      team: { title: "Команда", addBtn: "+ Додати члена команди", editTitle: "Редагувати члена команди", newTitle: "Новий член команди", nameRu: "Ім'я (RU) *", posRu: "Посада (RU) *", bioRu: "Біографія (RU)", nameUa: "Ім'я (UA)", posUa: "Посада (UA)", bioUa: "Біографія (UA)", orderLabel: "Порядок відображення", activeLabel: "Активний", uploadHint: "Натисніть, щоб завантажити фото", changePhoto: "Змінити", inactiveBadge: "Неактивний" },
       promos: { createTitle: "Створити новий промокод", codePlaceholder: "Код (наприклад, NEW2025)", discountPlaceholder: "Знижка %", createBtn: "Створити", discountText: "знижка" },
-      settings: { title: "Налаштування сайту", intervalLabel: "Інтервал зміни банерів (секунди)", sec: "сек.", intervalDesc: "Вкажіть час, через який слайди будуть автоматично перемикатися.", saving: "Збереження...", saveBtn: "Зберегти налаштування", saved: "Налаштування збережено!" },
+      settings: { title: "Налаштування сайту", intervalLabel: "Інтервал зміни банерів (секунди)", sec: "сек.", intervalDesc: "Вкажіть час, через який слайди будуть автоматично перемикатися.", saving: "Збереження...", saveBtn: "Зберегти налаштування", saved: "Налаштування збережено!", socialTitle: "Соцмережі та адреса", telegramLabel: "Telegram (повне посилання)", whatsappLabel: "WhatsApp (повне посилання)", instagramLabel: "Instagram (повне посилання)", pickupAddressLabel: "Адреса самовивозу", pickupAddressPlaceholder: "Показується клієнтам при виборі самовивозу", bonusTitle: "Бонуси та кешбэк", bonusEnabled: "Нараховувати кешбэк зареєстрованим клієнтам", bonusPercentLabel: "Кешбэк для всіх, % від суми товарів", bonusHint: "Нарахування при статусі замовлення «Доставлено» або «Завершено». Тільки для клієнтів з акаунтом. Персональний % — у вкладках «Користувачі» та CRM.", cardTitle: "Оплата карткою онлайн", cardEnabled: "Показувати «Карткою онлайн» у кошику (Stripe / LiqPay)", stripeConnected: "підключено", stripeMissing: "немає STRIPE_SECRET_KEY на сервері", liqpayConnected: "підключено", liqpayMissing: "немає LIQPAY_* на сервері", cartTileLabel: "Плитка в кошику", cartTileEnabled: "увімкнено", cartTileDisabled: "вимкнено в адмінці", paymentStatusLabel: "Оплата працює", paymentWorks: "так (Stripe / LiqPay)", paymentNeedsKeys: "потрібні ключі на сервері", deliveryTitle: "Доставка (фіксована)", freeDeliveryFrom: "Безкоштовна доставка від (€)", fixedDeliveryFee: "Фіксована вартість доставки (€)", deliveryHint: "Якщо сума товарів (з урахуванням знижки) нижче порогу — додається ця сума. Самовивіз без доставки." },
       reviews: {
         title: "Відгуки клієнтів", subtitle: "Відгуки клієнтів на /reviews: редагування тексту та видалення.",
         empty: "Поки немає відгуків від клієнтів.", pendingBanner: "На модерації: {{count}}. Опублікуйте відгук — він зʼявиться на сторінці /reviews.",
@@ -1293,14 +1367,37 @@ const uk: SiteTranslations = {
         emailDeleted: "Email видалено", emailsLoadError: "Не вдалося завантажити email адмінів",
       },
       crm: {
-        customersTab: "База клієнтів", inquiriesTab: "Звернення з сайту", customersTitle: "База клієнтів",
+        customersTab: "База клієнтів", reportsTab: "Звіти", inquiriesTab: "Звернення з сайту", customersTitle: "База клієнтів", usersTableTitle: "Користувачі CRM",
         searchPlaceholder: "Пошук: імʼя, телефон, email…",
-        colName: "Імʼя", colPhone: "Телефон", colEmail: "Email", colOrders: "Замовлення", colTotal: "Сума", colConsent: "Згода", colLastOrder: "Останнє замовлення",
+        colName: "Імʼя", colPhone: "Телефон", colEmail: "Email", colOrders: "Замовлення", colTotal: "Сума", colConsent: "Згода", colLastOrder: "Останнє замовлення", colBonuses: "Бонуси", colCashbackPercent: "Кешбэк %",
         rowHint: "Натисніть на рядок, щоб відкрити повну картку клієнта та історію замовлень.", empty: "Клієнтів не знайдено", loading: "Завантаження…",
         cardTitle: "Картка клієнта", fieldName: "Імʼя:", fieldPhone: "Телефон:", fieldEmail: "Email:", fieldAccount: "Акаунт:",
         fieldOrders: "Замовлень:", fieldTotal: "Сума:", fieldBonuses: "Бонуси:", fieldConsent: "Згода на дані:",
         orderHistory: "Історія замовлень", orderStatus: "Статус:", orderAddress: "Адреса:", orderPayment: "Оплата:", orderComment: "Коментар:",
         noOrders: "Замовлень поки немає", createMailing: "Створити розсилку",
+        sheetsSyncBtn: "Вивантажити в Google Таблицю",
+        sheetsOpenBtn: "Відкрити Google Таблицю",
+        sheetsNotConfigured: "Google Таблиці не налаштовані на сервері (GOOGLE_CREDS + GOOGLE_SHEET_ID).",
+        sheetsSyncing: "Синхронізація…",
+        sheetsSyncSuccess: "Вивантажено {{count}} клієнтів на вкладку «{{sheet}}»",
+        sheetsSyncError: "Не вдалося синхронізувати з Google Таблицею",
+        sheetsHint: "База клієнтів дублюється на вкладку «{{sheet}}» у тій самій таблиці, що й замовлення. Після нового замовлення список оновлюється автоматично.",
+      },
+      crmReports: {
+        title: "Звіти за період", embeddedTitle: "CRM-звіти (товари, замовлення, клієнти)", linkedRangeHint: "Період синхронізовано з фільтром дат вище. Перемикайте вкладки — таблиця оновлюється автоматично.", productsTab: "Товари", ordersTab: "Замовлення", customersTab: "Клієнти",
+        periodLabel: "Період", periodAll: "Увесь час", periodMonth: "Цей місяць", periodLastMonth: "Минулий місяць",
+        periodYear: "Цей рік", periodCustom: "Свій діапазон", fromLabel: "Від", toLabel: "До",
+        selectedPeriod: "Обраний період", summaryOrders: "Замовлень", summaryRevenue: "Виручка",
+        summaryItems: "Позицій / шт.", summaryClients: "Клієнтів",
+        sheetsSyncBtn: "Вивантажити звіт у Google Таблицю",
+        sheetsSyncSuccess: "Вивантажено {{count}} рядків на вкладку «{{sheet}}»",
+        sheetsSyncError: "Не вдалося вивантажити звіт у Google Таблицю",
+        sheetsHint: "Для кожного періоду створюється окрема вкладка в тій самій Google Таблиці, що й замовлення.",
+        colProduct: "Товар", colCategory: "Категорія", colQty: "Кількість", colRevenue: "Виручка",
+        colOrders: "Замовлень", colDate: "Дата", colCustomer: "Клієнт", colPhone: "Телефон",
+        colEmail: "Email", colStatus: "Статус", colTotal: "Сума", colItems: "Склад", colLastOrder: "Останнє замовлення",
+        empty: "За обраний період даних немає", loading: "Завантаження…",
+        footerHint: "Оберіть тип звіту та період — таблиця оновиться автоматично. Вивантаження в Google створює окрему вкладку з назвою періоду.",
       },
       contactInquiries: {
         title: "Звернення з сайту", totalLabel: "Всього:", unreadLabel: "· нових:",

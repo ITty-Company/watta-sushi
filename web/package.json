@@ -21,6 +21,7 @@
     "dev:mock": "node ../scripts/kill-port.cjs 3000 && USE_LOCAL_MOCK=1 NEXT_PUBLIC_API_URL= NODE_OPTIONS='--max-old-space-size=8192' next dev -H 0.0.0.0 -p 3000",
     "local:all": "cd .. && npm run local:all",
     "build": "node scripts/inject-sw-cache-version.cjs && next build",
+    "analyze": "ANALYZE=true npm run build",
     "start": "next start",
     "lint": "next lint",
     "compress:hero": "bash scripts/compress-hero-video.sh",
@@ -35,6 +36,7 @@
     "autoprefixer": "^10.4.22",
     "balloons-js": "^0.0.3",
     "clsx": "^2.1.1",
+    "critters": "^0.0.23",
     "framer-motion": "^12.23.25",
     "gsap": "^3.14.2",
     "leaflet": "^1.9.4",
@@ -51,9 +53,11 @@
     "typescript": "^5.0.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.9",
     "@types/leaflet": "^1.9.21",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",
+    "cssnano": "^7.1.9",
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.0.0",
     "playwright": "^1.60.0"

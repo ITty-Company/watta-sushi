@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Mail, Phone, ShieldCheck, User } from 'lucide-react'
+import { Mail, ShieldCheck } from 'lucide-react'
+import { Phone, User } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import type { Translations } from '@/app/context/LanguageContext'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
@@ -224,7 +225,7 @@ export default function ProfilePersonalDataForm({
   }
 
   return (
-    <div className="watta-profile-data-form mt-4">
+    <div className="watta-profile-data-form">
       {!isPhoneVerified && isValidCheckoutPhone(phone) && phoneVerifyStep === 'idle' ? (
         <div
           className="mb-4 rounded-xl border border-amber-200/90 bg-amber-50/95 px-3 py-3 text-sm text-amber-950 sm:px-4"
@@ -317,7 +318,7 @@ export default function ProfilePersonalDataForm({
           />
           <button
             type="button"
-            className="watta-profile-address-form__save w-full"
+            className="watta-profile-address-form__save watta-profile-address-form__save--brand w-full"
             disabled={!canConfirmPhone}
             onClick={() => void handleConfirmPhone()}
           >
@@ -342,7 +343,7 @@ export default function ProfilePersonalDataForm({
       ) : (
         <button
           type="button"
-          className="watta-profile-address-form__save mt-4"
+          className="watta-profile-address-form__save watta-profile-address-form__save--brand"
           disabled={saving || !canSave}
           onClick={() => void handleSave()}
         >

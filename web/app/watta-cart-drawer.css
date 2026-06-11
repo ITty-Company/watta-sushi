@@ -97,8 +97,8 @@
 }
 
 #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines] {
-  --cart-drawer-line-h: 4.5rem;
-  height: auto;
+  --cart-drawer-line-h: 5.75rem;
+  height: fit-content;
   max-height: min(
     520px,
     calc(100dvh - max(56px, env(safe-area-inset-bottom, 0px)) - 56px),
@@ -107,7 +107,7 @@
 }
 
 #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty) {
-  height: auto;
+  height: fit-content;
 }
 
 @media (max-width: 767px) {
@@ -155,15 +155,16 @@
   }
 
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines] {
-    --cart-drawer-line-h: 5rem;
+    --cart-drawer-line-h: 6.5rem;
     height: fit-content;
     /*
-     * Підлога висоти ≈ реальна висота контенту (шапка+підвал ≈ 10rem + рядки).
+     * Підлога висоти ≈ реальна висота контенту (шапка+підвал ≈ 11.5rem + рядки).
+     * Рядок зі складом вищий за 5rem — 6.5rem, щоб остання позиція не ховалась під футером.
      * Safari «схлопує» fit-content зі скрол-списком майже до 0 — min-height не дає
      * панелі зникнути на БУДЬ-ЯКІЙ висоті вікна. Обмежено max-height (640 / dvh).
      */
     min-height: min(
-      calc(10rem + var(--cart-drawer-lines-visible, 1) * var(--cart-drawer-line-h, 5rem)),
+      calc(11.5rem + var(--cart-drawer-lines-visible, 1) * var(--cart-drawer-line-h, 6.5rem)),
       640px,
       calc(100dvh - 28px)
     );
@@ -175,8 +176,14 @@
 
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty) {
     height: fit-content;
-    /* Та сама підлога, що й для списку: Safari не схлопне порожній стан з ілюстрацією. */
-    min-height: min(420px, calc(100dvh - 28px));
+    /*
+     * Підлога ≈ шапка + ілюстрація + текст + CTA; панель тягнеться вниз під контент,
+     * але не вище за viewport (Safari не схлопне fit-content зі скролом усередині).
+     */
+    min-height: min(
+      calc(4.5rem + 28rem * (228 / 248) + 12.5rem),
+      calc(100dvh - 28px)
+    );
     max-height: calc(100dvh - 28px);
   }
 
@@ -195,8 +202,10 @@
   #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
+    height: auto;
     min-height: 0;
+    max-height: none;
     /* Якщо ілюстрація вища за вікно — скролимо, щоб CTA «Меню» лишався доступним. */
     overflow-y: auto;
   }
@@ -279,17 +288,45 @@
     max-height: none !important;
   }
 
-  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-panel,
-  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-panel {
     flex: 1 1 auto;
     min-height: 0;
     height: auto;
     max-height: 100%;
   }
 
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+    flex: 0 0 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+  }
+
   #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-list {
     flex: 1 1 auto;
     max-height: none;
+  }
+
+  /* Низьке вікно: компактні шапка й футер — більше товарів влазить у список */
+  #watta-cart-drawer .watta-cart-drawer-head {
+    padding: 10px 16px 8px;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-head__title {
+    font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+  }
+
+  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-list {
+    padding-top: 4px;
+    padding-bottom: 0.5rem;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-foot {
+    padding: 8px 14px max(10px, env(safe-area-inset-bottom, 0px));
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-foot__total-amount {
+    font-size: 1.3rem;
   }
 }
 
@@ -454,9 +491,6 @@ html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web.watta-cart
 .watta-cart-drawer-list {
   flex: 0 1 auto;
   min-height: 0;
-  max-height: calc(
-    var(--cart-drawer-line-h, 4.5rem) * var(--cart-drawer-lines-visible, 6) + 1rem
-  );
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0;

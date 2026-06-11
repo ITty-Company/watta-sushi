@@ -4,20 +4,9 @@ import { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import { m, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
-import {
-  Package,
-  Clock,
-  Check,
-  ChefHat,
-  Truck,
-  Star,
-  X,
-  Sparkles,
-  ChevronDown,
-  MapPin,
-  CreditCard,
-  Receipt,
-} from 'lucide-react'
+import { Package, Check, ChefHat, Truck, Sparkles, ChevronDown, CreditCard, Receipt } from 'lucide-react'
+import { Clock, Star } from '@/lib/wattaInlineIcons'
+import { X, MapPin } from '@/lib/wattaInlineIcons'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { useLanguage, type Language } from '@/app/context/LanguageContext'

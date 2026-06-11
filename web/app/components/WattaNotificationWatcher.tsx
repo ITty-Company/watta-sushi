@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Bell, X } from 'lucide-react'
+import { Bell, X } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useLiveNotificationCount } from '@/hooks/useLiveNotificationCount'

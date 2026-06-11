@@ -1,0 +1,29 @@
+/* ═══════════════════════════════════════════════════
+   watta-base.css — Chrome, layout, viewport, performance
+   Агрегований файл: замінює 15 окремих CSS-імпортів
+   в layout.tsx. Порядок @import збережено.
+   ═══════════════════════════════════════════════════ */
+
+/* Після globals — fixed chrome: шапка + капсула чіпів */
+@import './watta-chrome-stable-layout.css';
+@import './watta-chrome-categories-transparent.css';
+@import './watta-mobile-viewport-lock.css';
+@import './watta-tablet-viewport-lock.css';
+@import './watta-mobile-touch-scroll.css';
+@import './home-after-hero-intro-tablet-desktop.css';
+@import './watta-no-backdrop-blur.css';
+@import './watta-category-strip-bare-chips.css';
+@import './watta-chrome-scroll-compact.css';
+
+/* Boot splash + performance */
+@import './watta-boot-splash.css';
+@import './watta-site-performance.css';
+
+/* Scroll reveal + touch feedback */
+@import './watta-scroll-reveal.css';
+@import './watta-instant-tap-feedback.css';
+
+/* Категорії + останній шар chrome */
+@import './watta-category-pill.css';
+/* Останній — перебиває всі override категорій */
+@import './watta-home-chrome-lock.css';

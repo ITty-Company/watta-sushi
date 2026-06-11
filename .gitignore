@@ -80,6 +80,7 @@ ios/*.xcodeproj/xcuserdata/
 *.temp
 
 
+google-service-account.json
 google-service-account.json.json
 watta-sushi/
 

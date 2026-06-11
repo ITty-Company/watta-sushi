@@ -1,14 +1,25 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// .env має завантажитись ДО імпорту роутів (Google Sheets, Stripe тощо читають process.env при старті).
+dotenv.config({
+  path: path.join(__dirname, '.env'),
+  override: false,
+  quiet: true,
+});
+
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
-import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import shopRoutes from './routes/shop.routes.ts';
 import orderRoutes from './routes/order.routes.ts';
 import authRoutes from './routes/auth.routes.ts';
@@ -37,21 +48,19 @@ import { getUploadsDir } from './lib/uploadsDir.js';
 import { getStorageHealthSnapshot } from './lib/storageHealth.js';
 import cookieParser from 'cookie-parser'
 ;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const uploadsPublicDir = getUploadsDir();
 
-
 // --- КОНФИГУРАЦИЯ ОКРУЖЕНИЯ ---
-// Явный путь: при запуске не з каталога backend (../) dotenv знайшов б 0 змін
 const envPath = path.join(__dirname, '.env');
-const dotenvResult = dotenv.config({ path: envPath, override: false, quiet: true });
-if (dotenvResult.error && process.env.NODE_ENV !== 'production') {
-  console.warn('⚠️  Не удалось загрузить .env файл:', dotenvResult.error.message, `(чекайте: ${envPath})`);
-} else if (!dotenvResult.error) {
-  const n = dotenvResult.parsed ? Object.keys(dotenvResult.parsed).length : 0;
-  if (n > 0) {
-    console.log(`📦 Загружено ${n} переменных из ${path.basename(envPath)}`);
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    const parsed = dotenv.parse(fs.readFileSync(envPath));
+    const n = Object.keys(parsed).length;
+    if (n > 0) {
+      console.log(`📦 Загружено ${n} переменных из ${path.basename(envPath)}`);
+    }
+  } catch {
+    console.warn(`⚠️  Не удалось прочитать .env (${envPath})`);
   }
 }
 

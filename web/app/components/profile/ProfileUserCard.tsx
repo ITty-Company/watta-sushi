@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { m, useReducedMotion } from 'framer-motion'
-import { Bell, LogOut, Mail, Phone, Shield, Sparkles, Star, User } from 'lucide-react'
+import { LogOut, Mail, Shield, Sparkles } from 'lucide-react'
+import { Star } from '@/lib/wattaInlineIcons'
+import { Bell, Phone, User } from '@/lib/wattaInlineIcons'
 import { HERO_COPY_EASE } from '../heroCopyMotion'
 import type { Translations } from '@/app/context/LanguageContext'
 
@@ -17,6 +19,7 @@ export type ProfileUserCardProps = {
   onLogout: () => void
   onOpenAdmin: () => void
   onOpenData: () => void
+  onOpenNotifications: () => void
 }
 
 export default function ProfileUserCard({
@@ -30,6 +33,7 @@ export default function ProfileUserCard({
   onLogout,
   onOpenAdmin,
   onOpenData,
+  onOpenNotifications,
 }: ProfileUserCardProps) {
   const cp = t.clientProfile
   const reduceMotion = useReducedMotion() ?? false
@@ -73,10 +77,10 @@ export default function ProfileUserCard({
         <button type="button" className="watta-profile-user-card__link-btn" onClick={onOpenData}>
           {cp.tabData}
         </button>
-        <Link href="/notifications" className="watta-profile-user-card__link-btn">
+        <button type="button" className="watta-profile-user-card__link-btn" onClick={onOpenNotifications}>
           <Bell size={15} strokeWidth={2.1} aria-hidden />
           {t.notifications.title}
-        </Link>
+        </button>
         <Link href="/reviews" className="watta-profile-user-card__link-btn">
           <Star size={15} strokeWidth={2.1} aria-hidden />
           {t.reviewsPublic.title}

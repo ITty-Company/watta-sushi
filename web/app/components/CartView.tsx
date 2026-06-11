@@ -14,26 +14,8 @@ import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import Link from 'next/link'
 import WattaLink from './WattaLink'
-import {
-  ArrowLeft,
-  MapPin,
-  Truck,
-  Store,
-  Minus,
-  Plus,
-  Trash2,
-  X,
-  ArrowRight,
-  Clock,
-  User,
-  ShoppingBag,
-  Banknote,
-  CreditCard,
-  ClipboardList,
-  CalendarDays,
-  ChevronRight,
-  type LucideIcon,
-} from 'lucide-react'
+import { Truck, Store, Trash2, ArrowRight, Banknote, CreditCard, ClipboardList, CalendarDays, LucideIcon } from 'lucide-react'
+import { ArrowLeft, MapPin, Minus, Plus, Clock, ChevronRight, X, User, ShoppingBag } from '@/lib/wattaInlineIcons'
 import { HERO_COPY_EASE } from './heroCopyMotion'
 import { useLanguage } from '../context/LanguageContext'
 import { getLocalizedField } from '@/lib/i18n/getLocalizedField'
@@ -61,6 +43,7 @@ import {
 } from '@/lib/kitchenClosedModal'
 import KitchenClosedModal from './KitchenClosedModal'
 import CartDrawerEmptyIllustration from './CartDrawerEmptyIllustration'
+import WattaCartSwipeLine from './WattaCartSwipeLine'
 import '../watta-cart-drawer-empty-art.css'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
@@ -279,6 +262,7 @@ export default function CartView({
   const a = t.siteAria
 
   const [cartItems, setCartItems] = useState<MenuItem[]>([])
+  const [openSwipeLineId, setOpenSwipeLineId] = useState<string | null>(null)
   const [emptySceneKey, setEmptySceneKey] = useState(0)
   const cartWasNonEmptyRef = useRef(false)
   const [cartUpsellTiers, setCartUpsellTiers] = useState<CartUpsellTierDto[]>([])
@@ -1832,11 +1816,18 @@ export default function CartView({
                         pd.piecesFallback,
                         language as WattaLanguage,
                       ).weightLine
+                      const lineKey = item.cartLineId ?? `${item.id}-fallback`
+
                       return (
-                      <article
-                        key={item.cartLineId ?? `${item.id}-fallback`}
-                        className="watta-cart-line-card"
+                      <WattaCartSwipeLine
+                        key={lineKey}
+                        lineId={lineKey}
+                        onRemove={() => removeAllItem(item.id)}
+                        openLineId={openSwipeLineId}
+                        onOpenChange={setOpenSwipeLineId}
+                        deleteLabel={a.removeLine}
                       >
+                      <article className="watta-cart-line-card">
                         <div className="watta-cart-line-card__media-wrap relative shrink-0">
                           <button
                             type="button"
@@ -1958,6 +1949,7 @@ export default function CartView({
                           </p>
                         </div>
                       </article>
+                      </WattaCartSwipeLine>
                     )})}
                   </div>
                   <div className="watta-cart-line-card watta-cart-line-card--subtotal watta-cart-checkout-pay-desktop-hidden">

@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { Package } from 'lucide-react'
-import { Bell } from 'lucide-react'
+import { Bell } from '@/lib/wattaInlineIcons'
 import NotificationsEmptyCallScene from '@/app/components/notifications/NotificationsEmptyCallScene'
 import NotificationsGuestPrompt from '@/app/components/notifications/NotificationsGuestPrompt'
 import {
@@ -18,7 +18,7 @@ import {
   refreshLiveNotifications,
   subscribeLiveNotifications,
 } from '@/lib/liveNotificationsStore'
-import { useLanguage } from '@/app/context/LanguageContext'
+import { useLanguage, type Language, type Translations } from '@/app/context/LanguageContext'
 import { cn } from '@/lib/utils'
 import '@/app/watta-notifications-empty.css'
 
@@ -51,7 +51,21 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: 'notifications-page-status--cancelled',
 }
 
-function formatWhen(iso: string, lang: string): string {
+function orderStatusLabel(status: string, cp: Translations['clientProfile']): string {
+  const key = status.toUpperCase()
+  const map: Record<string, string> = {
+    PENDING: cp.stepPending,
+    CONFIRMED: cp.stepConfirmed,
+    COOKING: cp.stepCooking,
+    DELIVERING: cp.stepDelivering,
+    DELIVERED: cp.stepReceived,
+    COMPLETED: cp.stepReceived,
+    CANCELLED: cp.orderCancelled,
+  }
+  return map[key] ?? status
+}
+
+function formatWhen(iso: string, lang: Language): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
   if (lang === 'en') {
@@ -83,9 +97,16 @@ function hasAuthToken(): boolean {
   return Boolean(localStorage.getItem('token')?.trim())
 }
 
-export default function UserNotificationsPanel({ compact }: { compact?: boolean }) {
+export default function UserNotificationsPanel({
+  compact,
+  onItemNavigate,
+}: {
+  compact?: boolean
+  onItemNavigate?: () => void
+}) {
   const { t, language } = useLanguage()
   const n = t.notifications
+  const cp = t.clientProfile
   const reduceMotion = useReducedMotion()
   const snapshot = useSyncExternalStore(
     subscribeLiveNotifications,
@@ -147,20 +168,16 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
 
   return (
     <div className={cn('notifications-page-list-wrap', compact && 'notifications-page-list-wrap--compact')}>
-      <div className="notifications-page-list-toolbar">
-        {unreadCount > 0 ? (
+      {unreadCount > 0 ? (
+        <div className="notifications-page-list-toolbar">
           <span className="notifications-page-list-count" aria-live="polite">
             {unreadCount}
           </span>
-        ) : (
-          <span className="notifications-page-list-count notifications-page-list-count--muted" aria-live="polite">
-            —
-          </span>
-        )}
-        <button type="button" onClick={() => void onReadAll()} className="notifications-page-list-mark-all">
-          {n.markAllRead}
-        </button>
-      </div>
+          <button type="button" onClick={() => void onReadAll()} className="notifications-page-list-mark-all">
+            {n.markAllRead}
+          </button>
+        </div>
+      ) : null}
       <ul className="notifications-page-list">
         <AnimatePresence initial={false}>
           {items.map((item, i) => {
@@ -176,27 +193,33 @@ export default function UserNotificationsPanel({ compact }: { compact?: boolean 
               >
                 <Link
                   href={item.orderId ? `/profile?tab=history&order=${item.orderId}` : '/profile'}
-                  onClick={() => void onRead(item)}
+                  draggable={false}
+                  onMouseDown={(e) => {
+                    if (e.button === 0) e.preventDefault()
+                  }}
+                  onClick={() => {
+                    window.getSelection?.()?.removeAllRanges?.()
+                    void onRead(item)
+                    onItemNavigate?.()
+                  }}
                   className={cn(
                     'notifications-page-card',
                     !item.isRead && 'notifications-page-card--unread',
                   )}
                 >
-                  <span
-                    className={cn(
-                      'notifications-page-card__ico',
-                      !item.isRead && 'notifications-page-card__ico--unread',
-                    )}
-                  >
-                    <Package className="h-5 w-5" strokeWidth={2} aria-hidden />
+                  <span className="notifications-page-card__icon-wrap" aria-hidden>
+                    <span className="notifications-page-card__blob" />
+                    <span className="notifications-page-card__ico">
+                      <Package strokeWidth={1.35} aria-hidden />
+                    </span>
                   </span>
                   <span className="notifications-page-card__body">
-                    <span className="notifications-page-card__row">
-                      <span className="notifications-page-card__title">{item.title}</span>
-                      {status ? (
-                        <span className={cn('notifications-page-status', statusClass)}>{status}</span>
-                      ) : null}
-                    </span>
+                    <span className="notifications-page-card__title">{item.title}</span>
+                    {status ? (
+                      <span className={cn('notifications-page-status', statusClass)}>
+                        {orderStatusLabel(status, cp)}
+                      </span>
+                    ) : null}
                     <span className="notifications-page-card__text">{item.body}</span>
                     <span className="notifications-page-card__time">
                       {formatWhen(item.createdAt, language)}

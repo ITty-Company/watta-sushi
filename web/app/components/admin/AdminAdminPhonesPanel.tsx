@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Mail, Phone, Plus, Shield, Trash2 } from 'lucide-react'
+import { Mail, Shield, Trash2 } from 'lucide-react'
+import { Phone, Plus } from '@/lib/wattaInlineIcons'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -188,53 +189,53 @@ export default function AdminAdminPhonesPanel({
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      <div className="rounded-[20px] border-2 border-white/70 bg-white/85 p-4 shadow-2xl shadow-[#145142]/15 backdrop-blur-2xl sm:rounded-[24px] sm:p-6 md:p-8">
+      <div className="admin-watta-glass-panel">
         <div className="mb-4 flex items-start gap-3 sm:mb-6">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#145142]/10 text-[#145142]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-watta-action/10 text-watta-action">
             <Shield size={22} aria-hidden />
           </div>
           <div>
-            <h2 className="admin-watta-section-title text-xl font-bold text-[#145142] sm:text-2xl">
+            <h2 className="admin-watta-section-title admin-watta-section-title--brand">
               {p.title}
             </h2>
             <p className="admin-watta-section-lead mt-1 text-sm">{p.description}</p>
           </div>
         </div>
 
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#145142]/70">
+        <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-watta-action/70">
           {p.colPhone}
         </h3>
 
         <form onSubmit={handleAdd} className="mb-6 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-semibold text-[#145142]">{p.phoneLabel}</span>
+            <span className="font-semibold text-watta-action">{p.phoneLabel}</span>
             <div className="relative">
-              <Phone size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#145142]/40" />
+              <Phone size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-watta-action/40" />
               <input
                 type="tel"
                 value={phoneInput}
                 onChange={(e) => setPhoneInput(e.target.value)}
                 placeholder="+380..."
-                className="w-full rounded-xl border border-[#145142]/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#145142]/50"
+                className="w-full rounded-xl border border-watta-action/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-watta-action/50"
                 autoComplete="tel"
               />
             </div>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-semibold text-[#145142]">{p.noteLabel}</span>
+            <span className="font-semibold text-watta-action">{p.noteLabel}</span>
             <input
               type="text"
               value={labelInput}
               onChange={(e) => setLabelInput(e.target.value)}
               placeholder={p.notePlaceholder}
-              className="w-full rounded-xl border border-[#145142]/20 px-3 py-2.5 text-sm outline-none focus:border-[#145142]/50"
+              className="w-full rounded-xl border border-watta-action/20 px-3 py-2.5 text-sm outline-none focus:border-watta-action/50"
             />
           </label>
           <div className="flex items-end">
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#145142] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1a6b58] disabled:opacity-60 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-watta-action px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--watta-brand-action-hover)] disabled:opacity-60 sm:w-auto"
             >
               <Plus size={16} aria-hidden />
               {p.addBtn}
@@ -243,14 +244,14 @@ export default function AdminAdminPhonesPanel({
         </form>
 
         {loading ? (
-          <p className="py-8 text-center text-sm text-[#145142]/55">{p.loading}</p>
+          <p className="py-8 text-center text-sm text-watta-action/55">{p.loading}</p>
         ) : rows.length === 0 ? (
-          <p className="py-4 text-center text-sm text-[#145142]/55">{p.empty}</p>
+          <p className="py-4 text-center text-sm text-watta-action/55">{p.empty}</p>
         ) : (
           <div className="mb-8 overflow-x-auto">
             <table className="admin-watta-crm-table min-w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#145142]/10 text-xs uppercase tracking-wide text-[#145142]/55">
+                <tr className="border-b border-watta-action/10 text-xs uppercase tracking-wide text-watta-action/55">
                   <th className="px-3 py-2 font-semibold">{p.colPhone}</th>
                   <th className="px-3 py-2 font-semibold">{p.colNote}</th>
                   <th className="px-3 py-2 font-semibold">{p.colAdded}</th>
@@ -259,8 +260,8 @@ export default function AdminAdminPhonesPanel({
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className="border-b border-[#145142]/5 last:border-0">
-                    <td className="px-3 py-3 font-medium text-[#145142]">
+                  <tr key={row.id} className="border-b border-watta-action/5 last:border-0">
+                    <td className="px-3 py-3 font-medium text-watta-action">
                       {row.phone}
                       {row.isPrimary ? (
                         <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800">
@@ -268,13 +269,13 @@ export default function AdminAdminPhonesPanel({
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-3 text-[#145142]/70">{row.label || '—'}</td>
-                    <td className="px-3 py-3 text-[#145142]/55">
+                    <td className="px-3 py-3 text-watta-action/70">{row.label || '—'}</td>
+                    <td className="px-3 py-3 text-watta-action/55">
                       {new Date(row.createdAt).toLocaleDateString(locale)}
                     </td>
                     <td className="px-3 py-3 text-right">
                       {row.isPrimary ? (
-                        <span className="text-xs text-[#145142]/45">{p.protectedBadge}</span>
+                        <span className="text-xs text-watta-action/45">{p.protectedBadge}</span>
                       ) : (
                         <button
                           type="button"
@@ -294,40 +295,40 @@ export default function AdminAdminPhonesPanel({
           </div>
         )}
 
-        <div className="border-t border-[#145142]/10 pt-6">
-          <h3 className="mb-1 text-base font-bold text-[#145142]">{p.emailsTitle}</h3>
+        <div className="border-t border-watta-action/10 pt-6">
+          <h3 className="mb-1 text-base font-bold text-watta-action">{p.emailsTitle}</h3>
           <p className="admin-watta-section-lead mb-4 text-sm">{p.emailsDescription}</p>
 
           <form onSubmit={handleAddEmail} className="mb-6 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-semibold text-[#145142]">{p.emailLabel}</span>
+              <span className="font-semibold text-watta-action">{p.emailLabel}</span>
               <div className="relative">
-                <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#145142]/40" />
+                <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-watta-action/40" />
                 <input
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="admin@example.com"
-                  className="w-full rounded-xl border border-[#145142]/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#145142]/50"
+                  className="w-full rounded-xl border border-watta-action/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-watta-action/50"
                   autoComplete="email"
                 />
               </div>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-semibold text-[#145142]">{p.noteLabel}</span>
+              <span className="font-semibold text-watta-action">{p.noteLabel}</span>
               <input
                 type="text"
                 value={emailLabelInput}
                 onChange={(e) => setEmailLabelInput(e.target.value)}
                 placeholder={p.notePlaceholder}
-                className="w-full rounded-xl border border-[#145142]/20 px-3 py-2.5 text-sm outline-none focus:border-[#145142]/50"
+                className="w-full rounded-xl border border-watta-action/20 px-3 py-2.5 text-sm outline-none focus:border-watta-action/50"
               />
             </label>
             <div className="flex items-end">
               <button
                 type="submit"
                 disabled={emailSaving}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#145142] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1a6b58] disabled:opacity-60 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-watta-action px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--watta-brand-action-hover)] disabled:opacity-60 sm:w-auto"
               >
                 <Plus size={16} aria-hidden />
                 {p.addBtn}
@@ -336,14 +337,14 @@ export default function AdminAdminPhonesPanel({
           </form>
 
           {emailsLoading ? (
-            <p className="py-8 text-center text-sm text-[#145142]/55">{p.loading}</p>
+            <p className="py-8 text-center text-sm text-watta-action/55">{p.loading}</p>
           ) : emailRows.length === 0 ? (
-            <p className="py-4 text-center text-sm text-[#145142]/55">{p.emailsEmpty}</p>
+            <p className="py-4 text-center text-sm text-watta-action/55">{p.emailsEmpty}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="admin-watta-crm-table min-w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-[#145142]/10 text-xs uppercase tracking-wide text-[#145142]/55">
+                  <tr className="border-b border-watta-action/10 text-xs uppercase tracking-wide text-watta-action/55">
                     <th className="px-3 py-2 font-semibold">{p.colEmail}</th>
                     <th className="px-3 py-2 font-semibold">{p.colNote}</th>
                     <th className="px-3 py-2 font-semibold">{p.colAdded}</th>
@@ -352,8 +353,8 @@ export default function AdminAdminPhonesPanel({
                 </thead>
                 <tbody>
                   {emailRows.map((row) => (
-                    <tr key={row.id} className="border-b border-[#145142]/5 last:border-0">
-                      <td className="px-3 py-3 font-medium text-[#145142]">
+                    <tr key={row.id} className="border-b border-watta-action/5 last:border-0">
+                      <td className="px-3 py-3 font-medium text-watta-action">
                         {row.email}
                         {row.isPrimary ? (
                           <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800">
@@ -361,13 +362,13 @@ export default function AdminAdminPhonesPanel({
                           </span>
                         ) : null}
                       </td>
-                      <td className="px-3 py-3 text-[#145142]/70">{row.label || '—'}</td>
-                      <td className="px-3 py-3 text-[#145142]/55">
+                      <td className="px-3 py-3 text-watta-action/70">{row.label || '—'}</td>
+                      <td className="px-3 py-3 text-watta-action/55">
                         {new Date(row.createdAt).toLocaleDateString(locale)}
                       </td>
                       <td className="px-3 py-3 text-right">
                         {row.isPrimary ? (
-                          <span className="text-xs text-[#145142]/45">{p.protectedBadge}</span>
+                          <span className="text-xs text-watta-action/45">{p.protectedBadge}</span>
                         ) : (
                           <button
                             type="button"

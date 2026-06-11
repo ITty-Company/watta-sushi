@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '@/app/context/LanguageContext'
 
 export default function BlogBackToIndex() {

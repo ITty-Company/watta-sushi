@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Bell } from 'lucide-react'; // Или твои иконки
+import { X, Bell } from '@/lib/wattaInlineIcons' // Или твои иконки
 
 interface NotificationsSidebarProps {
   isOpen: boolean;

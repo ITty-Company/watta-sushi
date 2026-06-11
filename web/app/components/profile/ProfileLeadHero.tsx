@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { User } from 'lucide-react'
+import { User } from '@/lib/wattaInlineIcons'
 
 export type ProfileLeadHeroProps = {
   sectionId?: string

@@ -55,19 +55,19 @@ function LinkSection({
   }, [q, rows, getLabel])
 
   return (
-    <div className="rounded-xl border border-[#145142]/15 bg-white/90 p-3">
-      <p className="text-sm font-bold text-[#145142]">{title}</p>
-      <p className="mt-0.5 text-xs text-[#145142]/65">{hint}</p>
+    <div className="rounded-xl border border-watta-action/15 bg-white/90 p-3">
+      <p className="text-sm font-bold text-watta-action">{title}</p>
+      <p className="mt-0.5 text-xs text-watta-action/65">{hint}</p>
       <input
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={searchPlaceholder}
-        className="mt-2 w-full rounded-lg border border-[#145142]/20 px-3 py-2 text-sm outline-none focus:border-[#145142]"
+        className="mt-2 w-full rounded-lg border border-watta-action/20 px-3 py-2 text-sm outline-none focus:border-watta-action"
       />
       <div className="mt-2 max-h-40 overflow-y-auto space-y-1 admin-watta-scroll-y">
         {filtered.length === 0 ? (
-          <p className="py-2 text-xs text-[#145142]/45">{searchEmpty}</p>
+          <p className="py-2 text-xs text-watta-action/45">{searchEmpty}</p>
         ) : (
           filtered.map((row) => {
             const checked = selectedIds.includes(row.id)
@@ -75,14 +75,14 @@ function LinkSection({
               <label
                 key={row.id}
                 className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
-                  checked ? 'bg-watta-action/12 text-[#145142]' : 'hover:bg-watta-action/5 text-[#0f241e]/80'
+                  checked ? 'bg-watta-action/12 text-watta-action' : 'hover:bg-watta-action/5 text-[#0f241e]/80'
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() => onToggle(row.id)}
-                  className="h-4 w-4 accent-[#145142]"
+                  className="h-4 w-4 accent-[var(--watta-brand-action)]"
                 />
                 {row.emoji ? <span aria-hidden>{row.emoji}</span> : null}
                 <span className="min-w-0 flex-1 truncate">{getLabel(row)}</span>
@@ -92,7 +92,7 @@ function LinkSection({
         )}
       </div>
       {selectedIds.length > 0 ? (
-        <p className="mt-2 text-xs font-semibold text-[#145142]/80">
+        <p className="mt-2 text-xs font-semibold text-watta-action/80">
           {selectedCountLabel(selectedIds.length)}
         </p>
       ) : null}
@@ -138,8 +138,8 @@ export default function BlogLinksPicker({
   return (
     <div className="md:col-span-2 space-y-3">
       <div>
-        <p className="text-sm font-bold text-[#145142]">{b.linksTitle}</p>
-        <p className="mt-1 text-xs text-[#145142]/65">
+        <p className="text-sm font-bold text-watta-action">{b.linksTitle}</p>
+        <p className="mt-1 text-xs text-watta-action/65">
           {b.linksHint}
           {total > 0 ? b.linksSelectedTotal.replace('{{count}}', String(total)) : ''}
         </p>

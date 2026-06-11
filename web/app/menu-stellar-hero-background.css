@@ -1279,8 +1279,9 @@ html:not([data-watta-home-past-hero='1'])
   .menu-page-web.watta-site-hero-page-web
     .delivery-page-home-flow:has(.watta-home-photo-first-screen)
     > #menu-cinematic-block {
-    margin-top: clamp(-48px, -7vh, -36px) !important;
-    padding-top: clamp(4px, 0.8vh, 10px) !important;
+    margin-top: clamp(-112px, -13vh, -76px) !important;
+    padding-top: 0 !important;
+    min-height: 0 !important;
     position: relative;
     z-index: 12;
   }

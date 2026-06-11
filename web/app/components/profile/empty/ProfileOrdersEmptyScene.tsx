@@ -1,7 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { ArrowRight, ChefHat, Clock, Receipt, Truck } from 'lucide-react'
+import { ArrowRight, ChefHat, Receipt, Truck } from 'lucide-react'
+import { Clock } from '@/lib/wattaInlineIcons'
 import { WattaInViewFadeDiv } from '@/app/components/WattaInViewFade'
 import { PROFILE_EMPTY_ROLL_SIZES, profileEmptyRolls } from './profileEmptyAssets'
 
