@@ -175,8 +175,9 @@
 
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty) {
     height: fit-content;
+    /* Та сама підлога, що й для списку: Safari не схлопне порожній стан з ілюстрацією. */
+    min-height: min(420px, calc(100dvh - 28px));
     max-height: calc(100dvh - 28px);
-    min-height: 0;
   }
 
   /* Панель і список РОЗТЯГУЮТЬСЯ під висоту aside, список скролиться — інакше
@@ -194,6 +195,10 @@
   #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    /* Якщо ілюстрація вища за вікно — скролимо, щоб CTA «Меню» лишався доступним. */
+    overflow-y: auto;
   }
 
   #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-head {

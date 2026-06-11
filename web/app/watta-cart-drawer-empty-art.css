@@ -440,6 +440,53 @@
   overflow-y: auto;
 }
 
+/*
+ * Порожній кошик у drawer: вертикально центруємо, а на низькому вікні стискаємо
+ * ілюстрацію й відступи/шрифти, щоб усе (картинка + текст + кнопка) було видно без
+ * обрізання по висоті. Базова сцена лишається width-driven (не схлопується).
+ */
+#watta-cart-drawer .watta-cart-drawer-empty {
+  justify-content: center;
+}
+
+#watta-cart-drawer .watta-cart-drawer-empty__art {
+  width: min(100%, 26rem, 46dvh);
+}
+
+/* Низьке вікно — компактний порожній стан, щоб вмістити все без скролу */
+@media (max-height: 680px) {
+  #watta-cart-drawer .watta-cart-drawer-empty {
+    padding-top: 6px;
+    padding-bottom: 14px;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__art {
+    width: min(100%, 18rem, 34dvh);
+    margin-bottom: 4px;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__copy {
+    margin-top: 4px;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__kicker {
+    margin-bottom: 0.3rem;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__title {
+    font-size: clamp(1.2rem, 2.4vw, 1.5rem);
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__hint {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-empty__cta {
+    margin-top: 0.85rem;
+  }
+}
+
 /* Планшет / ноут / ПК — крупніша ілюстрація порожнього кошика */
 @media (min-width: 768px) {
   .watta-cart-drawer-empty {
