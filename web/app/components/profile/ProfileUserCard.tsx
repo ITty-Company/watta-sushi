@@ -8,6 +8,15 @@ import { Bell, Phone, User } from '@/lib/wattaInlineIcons'
 import { HERO_COPY_EASE } from '../heroCopyMotion'
 import type { Translations } from '@/app/context/LanguageContext'
 
+function preventClickSelection(e: React.MouseEvent) {
+  if (e.button === 0) e.preventDefault()
+}
+
+function clearTextSelection() {
+  if (typeof window === 'undefined') return
+  window.getSelection?.()?.removeAllRanges?.()
+}
+
 export type ProfileUserCardProps = {
   t: Translations
   displayName: string
@@ -74,31 +83,75 @@ export default function ProfileUserCard({
       </div>
 
       <div className="watta-profile-user-card__links">
-        <button type="button" className="watta-profile-user-card__link-btn" onClick={onOpenData}>
+        <button
+          type="button"
+          className="watta-profile-user-card__link-btn"
+          onMouseDown={preventClickSelection}
+          onClick={() => {
+            clearTextSelection()
+            onOpenData()
+          }}
+        >
           {cp.tabData}
         </button>
-        <button type="button" className="watta-profile-user-card__link-btn" onClick={onOpenNotifications}>
+        <button
+          type="button"
+          className="watta-profile-user-card__link-btn"
+          onMouseDown={preventClickSelection}
+          onClick={() => {
+            clearTextSelection()
+            onOpenNotifications()
+          }}
+        >
           <Bell size={15} strokeWidth={2.1} aria-hidden />
           {t.notifications.title}
         </button>
-        <Link href="/reviews" className="watta-profile-user-card__link-btn">
+        <Link
+          href="/reviews"
+          className="watta-profile-user-card__link-btn"
+          draggable={false}
+          onMouseDown={preventClickSelection}
+          onClick={clearTextSelection}
+        >
           <Star size={15} strokeWidth={2.1} aria-hidden />
           {t.reviewsPublic.title}
         </Link>
         {showBlogNav ? (
-          <Link href="/blog" className="watta-profile-user-card__link-btn">
+          <Link
+            href="/blog"
+            className="watta-profile-user-card__link-btn"
+            draggable={false}
+            onMouseDown={preventClickSelection}
+            onClick={clearTextSelection}
+          >
             {t.blogPublic.title}
           </Link>
         ) : null}
         {isAdmin ? (
-          <button type="button" className="watta-profile-user-card__link-btn" onClick={onOpenAdmin}>
+          <button
+            type="button"
+            className="watta-profile-user-card__link-btn"
+            onMouseDown={preventClickSelection}
+            onClick={() => {
+              clearTextSelection()
+              onOpenAdmin()
+            }}
+          >
             <Shield size={15} strokeWidth={2.1} aria-hidden />
             {cp.tabAdmin}
           </button>
         ) : null}
       </div>
 
-      <button type="button" className="watta-profile-user-card__logout" onClick={onLogout}>
+      <button
+        type="button"
+        className="watta-profile-user-card__logout"
+        onMouseDown={preventClickSelection}
+        onClick={() => {
+          clearTextSelection()
+          onLogout()
+        }}
+      >
         <LogOut size={18} strokeWidth={2.15} aria-hidden />
         {cp.logout}
       </button>

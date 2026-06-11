@@ -72,6 +72,15 @@ const STAGE_MOTION = {
   exit: { opacity: 0, y: -8 },
 }
 
+function preventClickSelection(e: React.MouseEvent) {
+  if (e.button === 0) e.preventDefault()
+}
+
+function clearTextSelection() {
+  if (typeof window === 'undefined') return
+  window.getSelection?.()?.removeAllRanges?.()
+}
+
 const profileTabs: {
   id: TabId
   icon: LucideIcon
@@ -115,6 +124,15 @@ export default function ProfilePublicPageLayout({
   useEffect(() => {
     setActiveTab(initialTab)
   }, [initialTab])
+
+  useEffect(() => {
+    clearTextSelection()
+  }, [activeTab])
+
+  const selectTab = (id: TabId) => {
+    clearTextSelection()
+    setActiveTab(id)
+  }
 
   const favoriteStackItems: MenuHighlightStackItem[] = useMemo(
     () =>
@@ -242,7 +260,8 @@ export default function ProfilePublicPageLayout({
         key={`${variant}-${id}`}
         type="button"
         className={className}
-        onClick={() => setActiveTab(id)}
+        onMouseDown={preventClickSelection}
+        onClick={() => selectTab(id)}
         aria-current={on ? 'page' : undefined}
         whileTap={reduceMotion ? undefined : { scale: 0.97 }}
         transition={{ duration: 0.16 }}
@@ -275,7 +294,7 @@ export default function ProfilePublicPageLayout({
               showBlogNav={showBlogNav}
               onLogout={onLogout}
               onOpenAdmin={onOpenAdmin}
-              onOpenData={() => setActiveTab('data')}
+              onOpenData={() => selectTab('data')}
               onOpenNotifications={onOpenNotifications}
             />
 
@@ -301,7 +320,13 @@ export default function ProfilePublicPageLayout({
                 {sectionTitle}
               </m.h2>
               {activeTab === 'history' ? (
-                <Link href="/reviews" className="watta-profile-stage-head__extra">
+                <Link
+                  href="/reviews"
+                  className="watta-profile-stage-head__extra"
+                  draggable={false}
+                  onMouseDown={preventClickSelection}
+                  onClick={clearTextSelection}
+                >
                   {t.reviewsPublic.title}
                 </Link>
               ) : null}

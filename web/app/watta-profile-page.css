@@ -22,6 +22,24 @@
   background: #ffffff !important;
 }
 
+/* Safari/macOS: клік по вкладках не повинен підсвічувати текст синім */
+#profile-page-root .watta-profile-tab-tile,
+#profile-page-root .watta-profile-sidebar-nav__btn,
+#profile-page-root .watta-profile-user-card__link-btn,
+#profile-page-root .watta-profile-user-card__logout,
+#profile-page-root .watta-profile-stage-head__title,
+#profile-page-root .watta-profile-stage-head__extra,
+.watta-profile-inapp .watta-profile-quick-nav__btn {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#profile-page-root .watta-profile-user-card__field-value {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .watta-profile-page--soft.menu-page-web {
   flex: 1 1 auto;
   min-height: 0;
