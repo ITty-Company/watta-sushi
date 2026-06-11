@@ -101,10 +101,10 @@
   width: 4.35rem;
   height: 4.35rem;
   border-radius: 0.9rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
-  border: 1px solid color-mix(in srgb, var(--watta-brand-action, #145142) 10%, transparent);
+  background: linear-gradient(165deg, #1a4a3d 0%, #145142 100%);
+  border: 1px solid color-mix(in srgb, var(--watta-brand-action, #145142) 28%, transparent);
   overflow: hidden;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--watta-brand-action, #145142) 6%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--watta-brand-action, #145142) 14%, transparent);
   isolation: isolate;
 }
 
@@ -119,8 +119,8 @@
   border: none;
   border-radius: 0;
   box-shadow: none;
-  /* PNG інгредієнтів часто з чорним фоном — прибираємо на світлій тарілці */
-  mix-blend-mode: lighten;
+  /* PNG з чорним фоном: screen на темній тарілці прибирає фон, колір інгредієнта лишається */
+  mix-blend-mode: screen;
   filter: none;
 }
 
@@ -150,8 +150,8 @@
 
 .watta-product-page__ing-chip--skeleton .watta-product-page__ing-media {
   border-radius: 0.9rem;
-  background: #eef3f1;
-  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 8%, transparent);
+  background: linear-gradient(165deg, #d8e8e2 0%, #c5ddd4 100%);
+  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 12%, transparent);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
