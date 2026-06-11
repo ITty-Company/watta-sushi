@@ -75,6 +75,7 @@
   scroll-behavior: smooth;
   scroll-padding-inline: 0.15rem;
   padding-bottom: 0.2rem;
+  background: #ffffff;
 }
 
 .watta-product-page__ing-chip {
@@ -102,9 +103,9 @@
   height: 4.35rem;
   border-radius: 0.9rem;
   background: #ffffff;
-  border: 1px solid color-mix(in srgb, var(--watta-brand-action, #145142) 8%, #e8ecea);
+  border: none;
   overflow: visible;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
 }
 
 .watta-product-page__ing-chip img {
@@ -114,11 +115,11 @@
   object-fit: contain;
   padding: 0.28rem;
   box-sizing: border-box;
-  background: transparent;
+  background: #ffffff;
   border: none;
   border-radius: 0;
   box-shadow: none;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.18));
 }
 
 .watta-product-page__ing-fallback {
@@ -147,8 +148,8 @@
 
 .watta-product-page__ing-chip--skeleton .watta-product-page__ing-media {
   border-radius: 0.9rem;
-  background: #f4f6f5;
-  border-color: color-mix(in srgb, var(--watta-brand-action, #145142) 8%, transparent);
+  background: #ffffff;
+  border: none;
   animation: pulse 1.5s ease-in-out infinite;
 }
 
