@@ -2,7 +2,7 @@
 export const PROFILE_EMPTY_WORDMARK = '/favorites-empty/watta-wordmark.webp'
 
 export const PROFILE_EMPTY_ROLL_SIZES =
-  '(max-width: 480px) 28vw, (max-width: 767px) 23vw, 8.25rem'
+  '(max-width: 480px) 42vw, (max-width: 767px) 36vw, 13.5rem'
 
 export const profileEmptyRolls = {
   front: '/favorites-empty/inside-roll-front.webp',

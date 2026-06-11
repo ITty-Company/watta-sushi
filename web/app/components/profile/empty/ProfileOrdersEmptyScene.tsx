@@ -56,8 +56,8 @@ export default function ProfileOrdersEmptyScene({ title, subtitle, ctaLabel, onC
               key={mod}
               src={src}
               alt=""
-              width={256}
-              height={256}
+              width={320}
+              height={320}
               className={`watta-profile-empty__plate-sushi watta-profile-empty__plate-sushi--${mod}`}
               sizes={PROFILE_EMPTY_ROLL_SIZES}
             />
