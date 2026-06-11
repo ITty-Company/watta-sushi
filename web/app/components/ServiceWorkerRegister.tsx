@@ -19,21 +19,52 @@ import { useEffect } from 'react'
  * і «Clear site data» в iOS Safari не завжди знімає сам SW. Тому в dev активно
  * розреєстровуємо всі SW та чистимо їхні кеші.
  */
+const SW_PURGE_RELOAD_KEY = 'watta-sw-purge-reloaded'
+
 function purgeServiceWorkers() {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
-  // Знімаємо будь-які SW і чистимо їхні кеші. БЕЗ авто-reload: перезавантаження
-  // звідси (чи з самого SW) створює петлю. Сторінка оживе на наступному ручному
-  // оновленні, коли SW уже не контролює навігацію.
-  navigator.serviceWorker
-    .getRegistrations()
-    .then((regs) => regs.forEach((reg) => void reg.unregister()))
-    .catch(() => {})
+  // Сторінку ще контролює зомбі-SW (віддає СТАРІ чанки)? Тоді після розреєстрації
+  // треба один раз перезавантажитись, щоб вийти з-під його контролю — інакше
+  // оболонка лишається на старому JS (кнопки/кошик не реагують, без помилок).
+  const controlledByZombieSW = Boolean(navigator.serviceWorker.controller)
+
+  // Сторінка вже чиста (без SW) — скидаємо guard, щоб майбутній зомбі-SW
+  // у цій же вкладці теж міг самовідновитись одним reload.
+  if (!controlledByZombieSW) {
+    try {
+      sessionStorage.removeItem(SW_PURGE_RELOAD_KEY)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Чистимо кеші SW (старі app-shell чанки).
   if (typeof caches !== 'undefined') {
     caches
       .keys()
-      .then((keys) => keys.filter((k) => k.startsWith('watta-')).map((k) => caches.delete(k)))
+      .then((keys) =>
+        Promise.all(
+          keys.filter((k) => k.startsWith('watta-')).map((k) => caches.delete(k)),
+        ),
+      )
       .catch(() => {})
   }
+
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((regs) => Promise.all(regs.map((reg) => reg.unregister())))
+    .then(() => {
+      if (!controlledByZombieSW) return
+      // Один guard-reload на вкладку: прапорець у sessionStorage захищає від петлі.
+      try {
+        if (sessionStorage.getItem(SW_PURGE_RELOAD_KEY) === '1') return
+        sessionStorage.setItem(SW_PURGE_RELOAD_KEY, '1')
+      } catch {
+        return
+      }
+      window.location.reload()
+    })
+    .catch(() => {})
 }
 
 export default function ServiceWorkerRegister() {

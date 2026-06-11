@@ -157,7 +157,16 @@
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines] {
     --cart-drawer-line-h: 5rem;
     height: fit-content;
-    min-height: 0;
+    /*
+     * Підлога висоти ≈ реальна висота контенту (шапка+підвал ≈ 10rem + рядки).
+     * Safari «схлопує» fit-content зі скрол-списком майже до 0 — min-height не дає
+     * панелі зникнути на БУДЬ-ЯКІЙ висоті вікна. Обмежено max-height (640 / dvh).
+     */
+    min-height: min(
+      calc(10rem + var(--cart-drawer-lines-visible, 1) * var(--cart-drawer-line-h, 5rem)),
+      640px,
+      calc(100dvh - 28px)
+    );
     max-height: min(
       640px,
       calc(100dvh - 28px)
@@ -170,9 +179,16 @@
     min-height: 0;
   }
 
+  /* Панель і список РОЗТЯГУЮТЬСЯ під висоту aside, список скролиться — інакше
+     при примусовій min-height вони лишались би 0 і товари не було б видно. */
   #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-panel {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    min-height: 0;
     height: auto;
+  }
+
+  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-list {
+    flex: 1 1 auto;
   }
 
   #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
@@ -233,6 +249,42 @@
 @media (min-width: 1280px) {
   #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines] {
     max-height: min(720px, calc(100dvh - 36px));
+  }
+}
+
+/*
+ * Короткий екран на десктопі (мале вікно або відкритий веб-інспектор унизу):
+ * `height: fit-content` у Safari «схлопує» панель зі скрол-списком майже до 0
+ * (видно лише 2px смужку зверху — кошик ніби «не відкривається»). Тут задаємо
+ * ЯВНУ висоту під доступний простір: список скролиться всередині, а панель
+ * ніколи не зникає. Лише для стану з товарами — порожній стан не має скрол-списку
+ * і не схлопується.
+ */
+@media (min-width: 768px) and (max-height: 600px) {
+  #watta-cart-drawer.watta-nav-sidebar-drawer--sheet[data-cart-has-lines],
+  #watta-cart-drawer.watta-nav-sidebar-drawer--sheet:has(.watta-cart-drawer-empty) {
+    /*
+     * Якоримо панель top+bottom — висота = реальний layout-viewport мінус відступи,
+     * без залежності від dvh / fit-content. Так Safari не може «схлопнути» панель.
+     */
+    top: max(14px, env(safe-area-inset-top, 0px)) !important;
+    bottom: max(14px, env(safe-area-inset-bottom, 0px)) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-panel,
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: 100%;
+  }
+
+  #watta-cart-drawer[data-cart-has-lines] .watta-cart-drawer-list {
+    flex: 1 1 auto;
+    max-height: none;
   }
 }
 
