@@ -1103,53 +1103,82 @@
   }
 }
 
-/* Планшет / ноут / ПК — суші поруч на тарілці, без накладання */
+/* Планшет / ноут / ПК — овал компактніший, суші поруч без накладання */
 @media (min-width: 768px) {
   .watta-profile-empty__stage--orders-story {
-    min-height: 14.5rem;
-    aspect-ratio: 280 / 208;
+    min-height: 11.5rem;
+    max-width: 26rem;
+    aspect-ratio: 280 / 186;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .watta-profile-empty__glow--orders {
+    width: min(100%, 14.5rem);
+    height: 7.5rem;
+    top: 20%;
+  }
+
+  .watta-profile-empty__svg-bg {
+    transform: scale(0.86);
+    transform-origin: 50% 68%;
   }
 
   .watta-profile-empty__plate-scene {
-    width: 100%;
-    max-width: 28rem;
+    width: 92%;
+    max-width: 21rem;
+    top: 64%;
+    transform: translate(-50%, -50%) scale(0.94);
   }
 
   .watta-profile-empty__plate-sushi--1 {
     left: 21%;
     top: 52%;
-    width: 48%;
-    max-width: 12.5rem;
+    width: 46%;
+    max-width: 11rem;
   }
 
   .watta-profile-empty__plate-sushi--2 {
     left: 79%;
     top: 48%;
-    width: 48%;
-    max-width: 12.5rem;
+    width: 46%;
+    max-width: 11rem;
   }
 }
 
 @media (min-width: 1024px) {
   .watta-profile-empty__stage--orders-story {
-    min-height: 16rem;
-    aspect-ratio: 280 / 214;
+    min-height: 10.75rem;
+    max-width: 24rem;
+    aspect-ratio: 280 / 178;
+  }
+
+  .watta-profile-empty__glow--orders {
+    width: min(100%, 13rem);
+    height: 6.75rem;
+    top: 22%;
+  }
+
+  .watta-profile-empty__svg-bg {
+    transform: scale(0.78);
+    transform-origin: 50% 66%;
   }
 
   .watta-profile-empty__plate-scene {
-    max-width: 32rem;
+    max-width: 19rem;
+    transform: translate(-50%, -50%) scale(0.88);
   }
 
   .watta-profile-empty__plate-sushi--1 {
     left: 20%;
-    width: 50%;
-    max-width: 13.5rem;
+    width: 44%;
+    max-width: 10rem;
   }
 
   .watta-profile-empty__plate-sushi--2 {
     left: 80%;
-    width: 50%;
-    max-width: 13.5rem;
+    width: 44%;
+    max-width: 10rem;
   }
 }
 
