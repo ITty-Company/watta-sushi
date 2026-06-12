@@ -1855,9 +1855,9 @@ function AdminProductStrip({
   /** Головна «Наші хіти»: ті самі картки й сітка, що в #home-menu-catalog */
   useHomeCatalogCardLayout?: boolean
 }) {
+  const phoneOneCol = usePhoneMenuOneColumn()
   if (items.length === 0) return null
   const isRec = stripKind === 'recommended'
-  const phoneOneCol = usePhoneMenuOneColumn()
 
   const stripHeading =
     title.trim().length > 0 ? (
