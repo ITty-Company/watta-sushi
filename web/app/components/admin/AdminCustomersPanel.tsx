@@ -85,6 +85,7 @@ export default function AdminCustomersPanel() {
   const [sheetsStatusLoaded, setSheetsStatusLoaded] = useState(false)
   const [spreadsheetUrl, setSpreadsheetUrl] = useState<string | null>(null)
   const [crmSheetTitle, setCrmSheetTitle] = useState('Клиенты')
+  const [serviceAccountEmail, setServiceAccountEmail] = useState<string | null>(null)
   const [sheetsSyncing, setSheetsSyncing] = useState(false)
 
   useEffect(() => {
@@ -120,7 +121,7 @@ export default function AdminCustomersPanel() {
 
   const loadSheetsStatus = useCallback(async () => {
     try {
-      const res = await fetch('/api/crm/customers/sheets-status', {
+      const res = await fetch('/api/crm/customers/sheets-status?probe=1', {
         headers: adminAuthHeaders(),
       })
       if (!res.ok) return
@@ -128,11 +129,17 @@ export default function AdminCustomersPanel() {
         configured?: boolean
         spreadsheetUrl?: string | null
         crmSheetTitle?: string
+        serviceAccountEmail?: string | null
+        writeAccess?: { ok?: boolean; error?: string } | null
       }
       setSheetsStatusLoaded(true)
       setSheetsConfigured(Boolean(data.configured))
       setSpreadsheetUrl(data.spreadsheetUrl ?? null)
       if (data.crmSheetTitle) setCrmSheetTitle(data.crmSheetTitle)
+      setServiceAccountEmail(data.serviceAccountEmail ?? null)
+      if (data.configured && data.writeAccess && !data.writeAccess.ok && data.writeAccess.error) {
+        toast.error(data.writeAccess.error, { duration: 8000 })
+      }
     } catch {
       // Не скидаємо configured — інакше показується хибне «не налаштовано».
     }
@@ -160,7 +167,7 @@ export default function AdminCustomersPanel() {
         spreadsheetUrl?: string | null
       }
       if (!res.ok) {
-        toast.error(data.message || c.sheetsSyncError)
+        toast.error(data.message || c.sheetsSyncError, { duration: 8000 })
         return
       }
       if (data.spreadsheetUrl) setSpreadsheetUrl(data.spreadsheetUrl)
@@ -234,11 +241,18 @@ export default function AdminCustomersPanel() {
               </a>
             )}
             {sheetsStatusLoaded && (
-              <p className="text-xs text-watta-action/60 sm:ml-1">
-                {sheetsConfigured
-                  ? c.sheetsHint.replace('{{sheet}}', crmSheetTitle)
-                  : c.sheetsNotConfigured}
-              </p>
+              <div className="text-xs text-watta-action/60 sm:ml-1 space-y-1">
+                <p>
+                  {sheetsConfigured
+                    ? c.sheetsHint.replace('{{sheet}}', crmSheetTitle)
+                    : c.sheetsNotConfigured}
+                </p>
+                {sheetsConfigured && serviceAccountEmail ? (
+                  <p className="break-all">
+                    Service account: <span className="font-medium">{serviceAccountEmail}</span>
+                  </p>
+                ) : null}
+              </div>
             )}
           </div>
         </div>

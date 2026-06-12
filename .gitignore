@@ -79,6 +79,10 @@ ios/*.xcodeproj/xcuserdata/
 *.tmp
 *.temp
 
+# Local / build artifacts — never commit
+web/.next-analyze/
+backend/uploads/
+.media-backups/
 
 google-service-account.json
 google-service-account.json.json

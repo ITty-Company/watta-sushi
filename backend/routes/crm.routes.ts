@@ -23,9 +23,12 @@ import {
   fetchProductSalesReport,
 } from '../lib/crmReports.js';
 import {
+  formatGoogleSheetsSyncError,
   getCrmSheetTitle,
+  getGoogleServiceAccountEmail,
   getGoogleSpreadsheetUrl,
   isGoogleSheetsConfigured,
+  probeGoogleSheetsWriteAccess,
   syncCrmCustomersToSheet,
   syncCrmReportToSheet,
   type CrmReportSheetType,
@@ -132,11 +135,16 @@ router.patch('/users/:id/bonus', checkAdmin, async (req: Request, res: Response)
   }
 });
 
-router.get('/customers/sheets-status', checkAdmin, async (_req: Request, res: Response) => {
+router.get('/customers/sheets-status', checkAdmin, async (req: Request, res: Response) => {
+  const probe = req.query.probe === '1';
+  const writeAccess = probe ? await probeGoogleSheetsWriteAccess() : null;
+
   res.json({
     configured: isGoogleSheetsConfigured(),
     spreadsheetUrl: getGoogleSpreadsheetUrl(),
     crmSheetTitle: getCrmSheetTitle(),
+    serviceAccountEmail: getGoogleServiceAccountEmail(),
+    writeAccess,
   });
 });
 
@@ -165,7 +173,10 @@ router.post('/customers/sync-sheets', checkAdmin, async (_req: Request, res: Res
     });
   } catch (error) {
     console.error('CRM customers sync-sheets error:', error);
-    res.status(500).json({ message: 'Ошибка синхронизации с Google Таблицей' });
+    res.status(500).json({
+      message: formatGoogleSheetsSyncError(error),
+      serviceAccountEmail: getGoogleServiceAccountEmail(),
+    });
   }
 });
 
@@ -276,7 +287,10 @@ router.post('/reports/sync-sheets', checkAdmin, async (req: Request, res: Respon
     });
   } catch (error) {
     console.error('CRM reports sync-sheets error:', error);
-    res.status(500).json({ message: 'Ошибка синхронизации отчёта с Google Таблицей' });
+    res.status(500).json({
+      message: formatGoogleSheetsSyncError(error),
+      serviceAccountEmail: getGoogleServiceAccountEmail(),
+    });
   }
 });
 

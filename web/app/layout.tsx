@@ -24,9 +24,11 @@ import {
 } from '@/lib/wattaHtmlRouteClass'
 import {
   WATTA_HERO_PRIMARY_MP4,
+  WATTA_HOME_HERO_POSTER,
 } from '@/lib/wattaHeroVideo'
 import { WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT } from '@/lib/lockMobileViewportHeight'
 import { bootSplashLoadingLabel } from '@/lib/wattaBootSplashLabel'
+import { getPublicSiteOrigin, getPublicSiteUrl } from '@/lib/siteUrl'
 
 const WATTA_BOOT_SPLASH_CRITICAL_CSS = `
 /* Critical: prevent unstyled boot-splash flash (FOUC) from shifting layout. */
@@ -83,12 +85,15 @@ export default async function RootLayout({
     .join(' ') || undefined
 
   const bootSplashLabel = bootSplashLoadingLabel(htmlLang)
+  const publicSiteOrigin = getPublicSiteOrigin()
+  const publicSiteUrl = getPublicSiteUrl()
+  const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050'
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Restaurant',
     name: 'Watta Sushi',
-    image: 'https://wattasushi.com.ua/watta-sushi.jpg',
+    image: publicSiteUrl ? `${publicSiteUrl}/watta-sushi.jpg` : '/watta-sushi.jpg',
     description: jsonLdDescription,
     address: {
       '@type': 'PostalAddress',
@@ -110,15 +115,19 @@ export default async function RootLayout({
     >
       <head>
         {/* Preconnect к API бэкенду — экономит ~150-300ms на первом API-запросе */}
-        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050'} />
-        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050'} crossOrigin="anonymous" />
-        {/* DNS-prefetch для CDN изображений — экономит DNS lookup при загрузке фото каталога */}
-        <link rel="dns-prefetch" href="//wattasushi.com.ua" />
-        <link rel="preconnect" href="//wattasushi.com.ua" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={apiOrigin} />
+        <link rel="preconnect" href={apiOrigin} crossOrigin="anonymous" />
+        {publicSiteOrigin && publicSiteOrigin !== apiOrigin ? (
+          <>
+            <link rel="dns-prefetch" href={publicSiteOrigin} />
+            <link rel="preconnect" href={publicSiteOrigin} crossOrigin="anonymous" />
+          </>
+        ) : null}
         {/* Preload Open Graph изображения — используется на всех страницах как соц-превью */}
         <link rel="preload" href="/watta-sushi.jpg" as="image" fetchPriority="high" />
-        {/* Preload hero poster — первый кадр hero секции */}
-        <link rel="preload" href="/watta-home-hero-poster.jpg" as="image" fetchPriority="high" />
+        {isHeroVideoRoute ? (
+          <link rel="preload" href={WATTA_HOME_HERO_POSTER} as="image" fetchPriority="high" />
+        ) : null}
 
         <script dangerouslySetInnerHTML={{ __html: WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: WATTA_HTML_ROUTE_BOOT_SCRIPT }} />

@@ -102,6 +102,9 @@ services:
       # Той самий Client ID, що GOOGLE_OAUTH_CLIENT_ID на бекенді (вшивається в білд)
       - key: NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
         sync: false
-      # Публічний URL сайту (SEO, preconnect). На Render: https://watta-sushi-web.onrender.com
+      # Публічний URL сайту (SEO, без preconnect на wattasushi.com.ua).
       - key: NEXT_PUBLIC_SITE_URL
-        sync: false
+        fromService:
+          name: watta-sushi-web
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL

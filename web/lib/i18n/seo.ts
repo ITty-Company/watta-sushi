@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import type { WattaLanguage } from './language'
 import { wattaToOgLocale } from './language'
+import { getPublicSiteUrl } from '@/lib/siteUrl'
 
-const SITE_URL = 'https://wattasushi.com.ua'
 const BRAND = 'Watta Sushi'
 
 type PageKey =
@@ -324,8 +324,9 @@ export function getBlogNotFoundTitle(lang: WattaLanguage) {
  */
 export function buildRootMetadata(lang: WattaLanguage): Metadata {
   const home = SEO[lang].home
+  const siteUrl = getPublicSiteUrl()
   return {
-    metadataBase: new URL(SITE_URL),
+    ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
     title: {
       default: home.title,
       template: `%s | ${BRAND}`,
@@ -335,7 +336,7 @@ export function buildRootMetadata(lang: WattaLanguage): Metadata {
     openGraph: {
       type: 'website',
       siteName: BRAND,
-      url: SITE_URL,
+      ...(siteUrl ? { url: siteUrl } : {}),
       title: home.title,
       description: home.description,
       locale: wattaToOgLocale(lang),
