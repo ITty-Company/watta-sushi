@@ -30,6 +30,7 @@ export default function WattaSiteStickyChrome({
   const pathname = usePathname() || '/'
   const isHome = pathname === '/'
   const isMenuHeroPage = pathname === '/menu' || pathname.startsWith('/menu/')
+  const isCartCheckout = pathname === '/cart'
   /** Hero photo-first: головна та /menu — контент під fixed chrome без стрибка anchor. */
   const isHeroOverlayPage = isHome || isMenuHeroPage
   const isChromeHeroPage = isHeroOverlayPage || pathname === '/contacts'
@@ -101,11 +102,13 @@ export default function WattaSiteStickyChrome({
           onLogoClick={onLogoClick}
         />
       </div>
-      <div className="watta-chrome-categories-row-web">
-        <WattaChromeCompactBack />
-        <WattaMenuCategoryStrip />
-        <WattaChromeCompactCart />
-      </div>
+      {!isCartCheckout ? (
+        <div className="watta-chrome-categories-row-web">
+          <WattaChromeCompactBack />
+          <WattaMenuCategoryStrip />
+          <WattaChromeCompactCart />
+        </div>
+      ) : null}
     </WattaStickyChromeLayout>
   )
 }

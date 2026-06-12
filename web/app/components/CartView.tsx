@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom'
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
+import { useCheckoutRailPin } from '@/hooks/useCheckoutRailPin'
 import Link from 'next/link'
 import WattaLink from './WattaLink'
 import { Truck, Store, Trash2, ArrowRight, Banknote, CreditCard, ClipboardList, CalendarDays, LucideIcon } from 'lucide-react'
@@ -964,9 +965,10 @@ export default function CartView({
   const renderCartUpsell = (placement: 'sidebar' | 'bottom') => {
     if (!isUpsellQualified) return null
     const isBottom = placement === 'bottom'
-    // На телефоні показуємо стек повноширинних карток (одна під одною),
-    // не більше 5 — коли товар додано, він зникає зі списку й «підтягується» наступний.
-    const visibleOffers = upsellItems.slice(0, CART_UPSELL_VISIBLE_LIMIT)
+    const visibleOffers = upsellItems.slice(
+      0,
+      isBottom ? CART_UPSELL_VISIBLE_LIMIT : Math.min(CART_UPSELL_VISIBLE_LIMIT, 3),
+    )
     const headingId = isBottom ? 'cart-upsell-heading-bottom' : 'cart-upsell-heading'
     return (
       <section
@@ -997,11 +999,15 @@ export default function CartView({
           className={
             isBottom
               ? 'cart-upsell-rail-outer relative min-w-0'
-              : 'cart-upsell-rail-outer relative min-w-0 md:block'
+              : 'cart-upsell-rail-outer cart-upsell-rail-outer--stack relative min-w-0'
           }
         >
           <div
-            className="cart-upsell-rail-scroll home-menu-category-rail-web flex flex-nowrap gap-2.5 overflow-x-auto scroll-smooth pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-3 [&::-webkit-scrollbar]:hidden"
+            className={
+              isBottom
+                ? 'cart-upsell-rail-scroll home-menu-category-rail-web flex flex-nowrap gap-2.5 overflow-x-auto scroll-smooth pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-3 [&::-webkit-scrollbar]:hidden'
+                : 'watta-cart-upsell-stack flex flex-col gap-2'
+            }
             role="list"
           >
             {visibleOffers.map((item, index) => {
@@ -1037,7 +1043,7 @@ export default function CartView({
                     onAddToCart={() => {
                       handleAddUpsell(item)
                     }}
-                    variant="rail"
+                    variant={isBottom ? 'rail' : 'grid'}
                     subtitleLine={weightLine || undefined}
                     discountNearPrice
                     imagePriority={index === 0}
@@ -1469,7 +1475,7 @@ export default function CartView({
   const renderCheckoutPayBlock = () => (
     <CheckoutFormSection
       id="cart-checkout-pay"
-      className="watta-cart-checkout-section--pay scroll-mt-28"
+      className="watta-cart-checkout-section--pay watta-cart-checkout-grid__span2 scroll-mt-28"
       sectionIndex={3}
     >
       <CheckoutSectionHead icon={CreditCard} title={cs.paymentMethodTitle} />
@@ -1688,10 +1694,22 @@ export default function CartView({
 
   const isEmpty = cartItems.length === 0
   const [checkoutFootMounted, setCheckoutFootMounted] = useState(false)
+  const checkoutLayoutRef = useRef<HTMLDivElement>(null)
+  const checkoutAsideRef = useRef<HTMLDivElement>(null)
+  const checkoutRailRef = useRef<HTMLDivElement>(null)
+  const checkoutRailSpacerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setCheckoutFootMounted(true)
   }, [])
+
+  useCheckoutRailPin(
+    checkoutLayoutRef,
+    checkoutAsideRef,
+    checkoutRailRef,
+    checkoutRailSpacerRef,
+    !isEmpty,
+  )
 
   const checkoutMobileFoot =
     !isEmpty && checkoutFootMounted ? (
@@ -1718,7 +1736,7 @@ export default function CartView({
     ) : null
 
   return (
-    <div className="watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col overflow-x-clip font-sans">
+    <div className="watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col max-md:overflow-x-clip font-sans">
       <div className="watta-cart-page__content relative z-10 mx-auto flex w-full min-w-0 max-w-[1180px] flex-col pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pb-8 md:pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))]">
         <WattaInViewFadeHeader className="watta-cart-checkout-lead">
           <div className="watta-cart-checkout-lead__toolbar">
@@ -1790,183 +1808,10 @@ export default function CartView({
             </WattaInViewFadeDiv>
           ) : (
             <>
-            <div className="watta-cart-checkout-layout watta-cart-checkout-layout--v2 w-full min-w-0 pb-2 sm:pb-4">
-              <WattaInViewFadeDiv className="watta-cart-checkout-aside flex min-w-0 flex-col gap-2.5 sm:gap-3">
-                <div className="watta-cart-checkout-rail">
-                <div id="cart-checkout-order" className={`${CHECKOUT_PANEL_CLASS} watta-cart-order-panel scroll-mt-28`}>
-                <div className="watta-cart-aside-lines">
-                  <div className="watta-cart-order-panel__head">
-                    <h2 className="watta-cart-aside-lines__title">{cs.yourOrderTitle}</h2>
-                    <span className="watta-cart-order-panel__meta">{cartMetaText}</span>
-                  </div>
-                  <div className="flex flex-col gap-2.5">
-                    {cartItems.map((item) => {
-                      const unitCharge = cartLineChargeUnitPrice(item)
-                      const promo = clampPromoPercent(item.promoDiscountPercent)
-                      const hasUpsellOff =
-                        Number(item.cartUpsellDiscountEur) > 0 && unitCharge < item.price - 0.004
-                      const catalogUnit = effectiveUnitPrice(item.price, item.promoDiscountPercent)
-                      const weightLine = parseProductSpecsFromDescription(
-                        item.description,
-                        pd.weightFallback,
-                        pd.piecesFallback,
-                        language as WattaLanguage,
-                      ).weightLine
-                      const lineKey = item.cartLineId ?? `${item.id}-fallback`
-
-                      return (
-                      <WattaCartSwipeLine
-                        key={lineKey}
-                        lineId={lineKey}
-                        onRemove={() => removeAllItem(item.id)}
-                        openLineId={openSwipeLineId}
-                        onOpenChange={setOpenSwipeLineId}
-                        deleteLabel={a.removeLine}
-                      >
-                      <article className="watta-cart-line-card">
-                        <div className="watta-cart-line-card__media-wrap relative shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => removeAllItem(item.id)}
-                            className="watta-cart-line-card__remove"
-                            aria-label={a.removeLine}
-                          >
-                            <X className="h-3 w-3" strokeWidth={2.5} aria-hidden />
-                          </button>
-                          <Link
-                            href={`/product/${item.id}`}
-                            className="watta-cart-line-card__media block outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/30"
-                          >
-                            <div className="relative h-full w-full overflow-hidden bg-neutral-100">
-                              {item.imageUrl ? (
-                                <img
-                                  src={resolveCatalogMediaUrl(item.imageUrl) ?? undefined}
-                                  className="h-full w-full object-cover"
-                                  alt=""
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-xl sm:text-2xl">
-                                  {item.emoji}
-                                </div>
-                              )}
-                            </div>
-                          </Link>
-                        </div>
-                        <div className="watta-cart-line-card__body min-w-0">
-                          <Link
-                            href={`/product/${item.id}`}
-                            className="outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/25"
-                          >
-                            <p className="watta-cart-line-card__name line-clamp-2">{item.name}</p>
-                          </Link>
-                          {weightLine ? (
-                            <p className="watta-cart-line-card__weight">{weightLine}</p>
-                          ) : null}
-                          <p className="watta-cart-line-card__price-main">
-                            {(unitCharge * lineQuantity(item)).toFixed(2)} €
-                          </p>
-                          <p className="watta-cart-line-card__meta watta-cart-line-card__meta--desktop">
-                            {weightLine ? <span>{weightLine} · </span> : null}
-                            {hasUpsellOff && unitCharge < catalogUnit - 0.004 ? (
-                              <>
-                                <span className="line-through opacity-60">{catalogUnit} €</span>{' '}
-                                <span className="font-semibold text-[#145142]">{unitCharge} €</span>
-                              </>
-                            ) : !hasUpsellOff && promo > 0 ? (
-                              <>
-                                <span className="line-through opacity-60">{item.price} €</span>{' '}
-                                <span className="font-semibold text-[#145142]">{unitCharge} €</span>
-                              </>
-                            ) : (
-                              <span className="font-semibold">{unitCharge} €</span>
-                            )}
-                            <span className="opacity-70"> / {cs.perPiece}</span>
-                          </p>
-                        </div>
-                        <div className="watta-cart-line-card__aside">
-                          <div
-                            className="watta-cart-line-card__qty"
-                            role="group"
-                            aria-label={item.name}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => decrementItem(item.id)}
-                              className="watta-cart-line-card__qty-btn"
-                              aria-label="-1"
-                            >
-                              <Minus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
-                            </button>
-                            <span className="watta-cart-line-card__qty-val">
-                              {lineQuantity(item)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => addItem(item)}
-                              className="watta-cart-line-card__qty-btn watta-cart-line-card__qty-btn--plus"
-                              aria-label="+1"
-                            >
-                              <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
-                            </button>
-                          </div>
-                          <div className="watta-cart-line-card__controls-desktop flex items-center gap-1">
-                            <div className="flex items-center rounded-md border border-neutral-200 bg-neutral-50 p-px sm:rounded-lg sm:p-0.5">
-                              <button
-                                type="button"
-                                onClick={() => decrementItem(item.id)}
-                                className="flex h-7 w-7 items-center justify-center rounded text-[#145142] transition hover:bg-white sm:h-8 sm:w-8 sm:rounded-md"
-                                aria-label="-1"
-                              >
-                                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
-                              </button>
-                              <span className="min-w-[1.25rem] text-center text-xs font-semibold tabular-nums text-neutral-900 sm:min-w-[1.75rem] sm:text-sm">
-                                {lineQuantity(item)}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => addItem(item)}
-                                className="flex h-7 w-7 items-center justify-center rounded bg-watta-action text-white transition hover:bg-watta-action-hover sm:h-8 sm:w-8 sm:rounded-md"
-                                aria-label="+1"
-                              >
-                                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
-                              </button>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeAllItem(item.id)}
-                              className="watta-cart-line-card__trash flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 transition hover:bg-red-50 hover:text-red-600 sm:h-8 sm:w-8"
-                              aria-label={a.removeLine}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.2} />
-                            </button>
-                          </div>
-                          <p className="watta-cart-line-card__total">
-                            {(unitCharge * lineQuantity(item)).toFixed(2)} €
-                          </p>
-                        </div>
-                      </article>
-                      </WattaCartSwipeLine>
-                    )})}
-                  </div>
-                  <div className="watta-cart-line-card watta-cart-line-card--subtotal watta-cart-checkout-pay-desktop-hidden">
-                    <span className="text-sm font-semibold text-neutral-600">{cs.subtotalLabel}</span>
-                    <span className="text-lg font-extrabold tabular-nums text-[#145142]">
-                      {finalPrice.toFixed(2)} €
-                    </span>
-                  </div>
-                  {belowMinimumOrder ? (
-                    <p className="watta-cart-min-order-warning mt-1 md:hidden" role="status">
-                      {minOrderWarningText}
-                    </p>
-                  ) : null}
-                </div>
-
-                {renderCartUpsell('sidebar')}
-                {renderCheckoutAsideFoot()}
-                </div>
-                </div>
-              </WattaInViewFadeDiv>
-
+            <div
+              ref={checkoutLayoutRef}
+              className="watta-cart-checkout-layout watta-cart-checkout-layout--v2 w-full min-w-0 pb-2 sm:pb-4"
+            >
               <WattaInViewFadeDiv className="watta-cart-checkout-main min-w-0">
                 <form
                   id={CART_CHECKOUT_FORM_ID}
@@ -1986,7 +1831,11 @@ export default function CartView({
                   </div>
                 ) : null}
                 {/* 1. Контактные данные */}
-                <CheckoutFormSection id="cart-checkout-contact" className="scroll-mt-28" sectionIndex={0}>
+                <CheckoutFormSection
+                  id="cart-checkout-contact"
+                  className="watta-cart-checkout-grid__span2 scroll-mt-28"
+                  sectionIndex={0}
+                >
                    <CheckoutSectionHead icon={User} title={cs.contactDetails} />
                    <div className="watta-cart-form-fields watta-cart-form-fields--contact">
                       <div className="watta-cart-form-fields__field">
@@ -2545,13 +2394,19 @@ export default function CartView({
                 </CheckoutFormSection>
 
                 {/* 3. Комментарий и приборы */}
-                <CheckoutFormSection sectionIndex={2}>
+                <CheckoutFormSection
+                  id="cart-checkout-details"
+                  className="watta-cart-checkout-grid__span2 scroll-mt-28"
+                  sectionIndex={2}
+                >
                    <CheckoutSectionHead icon={ClipboardList} title={cs.orderDetailsTitle} />
-                   <div className="watta-cart-form-section__body">
-                   <div className="grid grid-cols-2 gap-3">
-                      <div>
-                         <label className={CHECKOUT_FIELD_LABEL_CLASS}>{cs.partySizeLabel}</label>
+                   <div className="watta-cart-form-fields watta-cart-form-fields--details">
+                      <div className="watta-cart-form-fields__field">
+                         <label htmlFor="cart-checkout-persons" className={CHECKOUT_FIELD_LABEL_CLASS}>
+                           {cs.partySizeLabel}
+                         </label>
                          <input
+                           id="cart-checkout-persons"
                            type="number"
                            min={1}
                            max={99}
@@ -2568,9 +2423,12 @@ export default function CartView({
                            }}
                          />
                       </div>
-                      <div>
-                         <label className={CHECKOUT_FIELD_LABEL_CLASS}>{cs.chopsticksLabel}</label>
+                      <div className="watta-cart-form-fields__field">
+                         <label htmlFor="cart-checkout-sticks" className={CHECKOUT_FIELD_LABEL_CLASS}>
+                           {cs.chopsticksLabel}
+                         </label>
                          <select
+                           id="cart-checkout-sticks"
                            className={`${CHECKOUT_INPUT_CLASS} cursor-pointer font-semibold`}
                            value={formData.sticks}
                            onChange={(e) =>
@@ -2582,56 +2440,64 @@ export default function CartView({
                             ))}
                          </select>
                       </div>
-                   </div>
-                   <div className="mb-2">
-                      <label className={CHECKOUT_FIELD_LABEL_CLASS}>{cs.condimentSetsLabel}</label>
-                      <select
-                        className={`${CHECKOUT_INPUT_CLASS} cursor-pointer font-semibold`}
-                        value={formData.condimentSets}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            condimentSets: Number(e.target.value),
-                          })
-                        }
-                      >
-                        {Array.from({ length: 21 }, (_, i) => (
-                          <option key={i} value={i}>
-                            {i}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-[10px] leading-snug text-neutral-500 md:text-[11px]">
-                        {cs.condimentSetsHint
-                          .replace('{{free}}', String(FREE_CONDIMENT_SETS))
-                          .replace('{{price}}', EXTRA_CONDIMENT_SET_PRICE_EUR.toFixed(2))}
-                        {extraCondimentCount > 0 ? (
-                          <span className="mt-0.5 block font-medium text-[#145142]">
-                            {cs.condimentSetsExtraLine
-                              .replace('{{count}}', String(extraCondimentCount))
-                              .replace('{{price}}', EXTRA_CONDIMENT_SET_PRICE_EUR.toFixed(2))}
-                            {' '}
-                            — +{condimentExtraFee.toFixed(2)} €
-                          </span>
-                        ) : null}
-                      </p>
-                   </div>
-                   <textarea
-                      placeholder={cs.commentPlaceholder}
-                      className={`${CHECKOUT_INPUT_CLASS} min-h-[3.5rem] resize-none`}
-                      rows={2}
-                      maxLength={COMMENT_MAX}
-                      value={formData.comment}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          comment: e.target.value.slice(0, COMMENT_MAX),
-                        })
-                      }
-                   />
-                   <p className="mt-0.5 text-right text-[10px] text-neutral-400">
-                     {formData.comment.length}/{COMMENT_MAX}
-                   </p>
+                      <div className="watta-cart-form-fields__field watta-cart-form-fields__field--full">
+                         <label htmlFor="cart-checkout-condiments" className={CHECKOUT_FIELD_LABEL_CLASS}>
+                           {cs.condimentSetsLabel}
+                         </label>
+                         <select
+                           id="cart-checkout-condiments"
+                           className={`${CHECKOUT_INPUT_CLASS} cursor-pointer font-semibold`}
+                           value={formData.condimentSets}
+                           onChange={(e) =>
+                             setFormData({
+                               ...formData,
+                               condimentSets: Number(e.target.value),
+                             })
+                           }
+                         >
+                           {Array.from({ length: 21 }, (_, i) => (
+                             <option key={i} value={i}>
+                               {i}
+                             </option>
+                           ))}
+                         </select>
+                         <p className="mt-1 text-[10px] leading-snug text-neutral-500 md:text-[11px]">
+                           {cs.condimentSetsHint
+                             .replace('{{free}}', String(FREE_CONDIMENT_SETS))
+                             .replace('{{price}}', EXTRA_CONDIMENT_SET_PRICE_EUR.toFixed(2))}
+                           {extraCondimentCount > 0 ? (
+                             <span className="mt-0.5 block font-medium text-[#145142]">
+                               {cs.condimentSetsExtraLine
+                                 .replace('{{count}}', String(extraCondimentCount))
+                                 .replace('{{price}}', EXTRA_CONDIMENT_SET_PRICE_EUR.toFixed(2))}
+                               {' '}
+                               — +{condimentExtraFee.toFixed(2)} €
+                             </span>
+                           ) : null}
+                         </p>
+                      </div>
+                      <div className="watta-cart-form-fields__field watta-cart-form-fields__field--full">
+                         <label htmlFor="cart-checkout-comment" className={CHECKOUT_FIELD_LABEL_CLASS}>
+                           {cs.commentPlaceholder}
+                         </label>
+                         <textarea
+                           id="cart-checkout-comment"
+                           placeholder={cs.commentPlaceholder}
+                           className={`${CHECKOUT_INPUT_CLASS} min-h-[3.5rem] resize-none`}
+                           rows={2}
+                           maxLength={COMMENT_MAX}
+                           value={formData.comment}
+                           onChange={(e) =>
+                             setFormData({
+                               ...formData,
+                               comment: e.target.value.slice(0, COMMENT_MAX),
+                             })
+                           }
+                         />
+                         <p className="mt-0.5 text-right text-[10px] text-neutral-400">
+                           {formData.comment.length}/{COMMENT_MAX}
+                         </p>
+                      </div>
                    </div>
                 </CheckoutFormSection>
 
@@ -2639,6 +2505,192 @@ export default function CartView({
 
                   </form>
               </WattaInViewFadeDiv>
+              <div
+                ref={checkoutAsideRef}
+                className="watta-cart-checkout-aside flex min-w-0 flex-col gap-2.5 sm:gap-3"
+                data-watta-in-view-fade=""
+              >
+                <div
+                  ref={checkoutRailSpacerRef}
+                  className="watta-cart-checkout-rail-spacer"
+                  aria-hidden="true"
+                />
+                <div ref={checkoutRailRef} className="watta-cart-checkout-rail">
+                <div className="watta-cart-checkout-rail__body">
+                <div id="cart-checkout-order" className={`${CHECKOUT_PANEL_CLASS} watta-cart-order-panel scroll-mt-28`}>
+                <div className="watta-cart-aside-lines">
+                  <div className="watta-cart-order-panel__head">
+                    <h2 className="watta-cart-aside-lines__title">{cs.yourOrderTitle}</h2>
+                    <span className="watta-cart-order-panel__meta">{cartMetaText}</span>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    {cartItems.map((item) => {
+                      const unitCharge = cartLineChargeUnitPrice(item)
+                      const promo = clampPromoPercent(item.promoDiscountPercent)
+                      const hasUpsellOff =
+                        Number(item.cartUpsellDiscountEur) > 0 && unitCharge < item.price - 0.004
+                      const catalogUnit = effectiveUnitPrice(item.price, item.promoDiscountPercent)
+                      const weightLine = parseProductSpecsFromDescription(
+                        item.description,
+                        pd.weightFallback,
+                        pd.piecesFallback,
+                        language as WattaLanguage,
+                      ).weightLine
+                      const lineKey = item.cartLineId ?? `${item.id}-fallback`
+
+                      return (
+                      <WattaCartSwipeLine
+                        key={lineKey}
+                        lineId={lineKey}
+                        onRemove={() => removeAllItem(item.id)}
+                        openLineId={openSwipeLineId}
+                        onOpenChange={setOpenSwipeLineId}
+                        deleteLabel={a.removeLine}
+                      >
+                      <article className="watta-cart-line-card">
+                        <div className="watta-cart-line-card__media-wrap relative shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => removeAllItem(item.id)}
+                            className="watta-cart-line-card__remove"
+                            aria-label={a.removeLine}
+                          >
+                            <X className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+                          </button>
+                          <Link
+                            href={`/product/${item.id}`}
+                            className="watta-cart-line-card__media block outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/30"
+                          >
+                            <div className="relative h-full w-full overflow-hidden bg-neutral-100">
+                              {item.imageUrl ? (
+                                <img
+                                  src={resolveCatalogMediaUrl(item.imageUrl) ?? undefined}
+                                  className="h-full w-full object-cover"
+                                  alt=""
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-xl sm:text-2xl">
+                                  {item.emoji}
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+                        </div>
+                        <div className="watta-cart-line-card__body min-w-0">
+                          <Link
+                            href={`/product/${item.id}`}
+                            className="outline-none focus-visible:ring-2 focus-visible:ring-[#145142]/25"
+                          >
+                            <p className="watta-cart-line-card__name line-clamp-2">{item.name}</p>
+                          </Link>
+                          {weightLine ? (
+                            <p className="watta-cart-line-card__weight">{weightLine}</p>
+                          ) : null}
+                          <p className="watta-cart-line-card__price-main">
+                            {(unitCharge * lineQuantity(item)).toFixed(2)} €
+                          </p>
+                          <p className="watta-cart-line-card__meta watta-cart-line-card__meta--desktop">
+                            {weightLine ? <span>{weightLine} · </span> : null}
+                            {hasUpsellOff && unitCharge < catalogUnit - 0.004 ? (
+                              <>
+                                <span className="line-through opacity-60">{catalogUnit} €</span>{' '}
+                                <span className="font-semibold text-[#145142]">{unitCharge} €</span>
+                              </>
+                            ) : !hasUpsellOff && promo > 0 ? (
+                              <>
+                                <span className="line-through opacity-60">{item.price} €</span>{' '}
+                                <span className="font-semibold text-[#145142]">{unitCharge} €</span>
+                              </>
+                            ) : (
+                              <span className="font-semibold">{unitCharge} €</span>
+                            )}
+                            <span className="opacity-70"> / {cs.perPiece}</span>
+                          </p>
+                        </div>
+                        <div className="watta-cart-line-card__aside">
+                          <div
+                            className="watta-cart-line-card__qty"
+                            role="group"
+                            aria-label={item.name}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => decrementItem(item.id)}
+                              className="watta-cart-line-card__qty-btn"
+                              aria-label="-1"
+                            >
+                              <Minus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+                            </button>
+                            <span className="watta-cart-line-card__qty-val">
+                              {lineQuantity(item)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => addItem(item)}
+                              className="watta-cart-line-card__qty-btn watta-cart-line-card__qty-btn--plus"
+                              aria-label="+1"
+                            >
+                              <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+                            </button>
+                          </div>
+                          <div className="watta-cart-line-card__controls-desktop flex items-center gap-1">
+                            <div className="flex items-center rounded-md border border-neutral-200 bg-neutral-50 p-px sm:rounded-lg sm:p-0.5">
+                              <button
+                                type="button"
+                                onClick={() => decrementItem(item.id)}
+                                className="flex h-7 w-7 items-center justify-center rounded text-[#145142] transition hover:bg-white sm:h-8 sm:w-8 sm:rounded-md"
+                                aria-label="-1"
+                              >
+                                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+                              </button>
+                              <span className="min-w-[1.25rem] text-center text-xs font-semibold tabular-nums text-neutral-900 sm:min-w-[1.75rem] sm:text-sm">
+                                {lineQuantity(item)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => addItem(item)}
+                                className="flex h-7 w-7 items-center justify-center rounded bg-watta-action text-white transition hover:bg-watta-action-hover sm:h-8 sm:w-8 sm:rounded-md"
+                                aria-label="+1"
+                              >
+                                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeAllItem(item.id)}
+                              className="watta-cart-line-card__trash flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 transition hover:bg-red-50 hover:text-red-600 sm:h-8 sm:w-8"
+                              aria-label={a.removeLine}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.2} />
+                            </button>
+                          </div>
+                          <p className="watta-cart-line-card__total">
+                            {(unitCharge * lineQuantity(item)).toFixed(2)} €
+                          </p>
+                        </div>
+                      </article>
+                      </WattaCartSwipeLine>
+                    )})}
+                  </div>
+                  <div className="watta-cart-line-card watta-cart-line-card--subtotal watta-cart-checkout-pay-desktop-hidden">
+                    <span className="text-sm font-semibold text-neutral-600">{cs.subtotalLabel}</span>
+                    <span className="text-lg font-extrabold tabular-nums text-[#145142]">
+                      {finalPrice.toFixed(2)} €
+                    </span>
+                  </div>
+                  {belowMinimumOrder ? (
+                    <p className="watta-cart-min-order-warning mt-1 md:hidden" role="status">
+                      {minOrderWarningText}
+                    </p>
+                  ) : null}
+                </div>
+                </div>
+
+                {renderCartUpsell('sidebar')}
+                </div>
+                {renderCheckoutAsideFoot()}
+                </div>
+              </div>
             </div>
             {renderCartUpsell('bottom')}
             </>

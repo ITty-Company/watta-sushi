@@ -25253,21 +25253,17 @@ body.admin-watta-overlay-open .site-footer-watta {
 }
 
 /*
- * /cart — зазор під fixed chrome; sticky-резерв тримає контент нижче категорій при скролі body.
+ * /cart — зазор під fixed chrome (лише шапка, без категорій).
  */
 .watta-cart-page .watta-cart-page__content {
   padding-top: clamp(10px, 2vh, 18px) !important;
 }
 
-.watta-app-shell-root:has(.watta-cart-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
-  margin-bottom: clamp(6px, 1.25vh, 12px);
+.watta-app-shell-root:has(.watta-cart-page) .watta-chrome-categories-row-web {
+  display: none !important;
 }
 
 @media (max-width: 767px) {
-  .watta-app-shell-root:has(.watta-cart-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
-    margin-bottom: clamp(10px, 2.5vh, 16px);
-  }
-
   .watta-cart-page .watta-cart-page__content {
     padding-top: clamp(14px, 3vh, 22px) !important;
   }
@@ -25280,7 +25276,7 @@ body.admin-watta-overlay-open .site-footer-watta {
 @media (min-width: 768px) {
   html.watta-light-chrome:has(.watta-cart-page) {
     scroll-padding-top: calc(
-      var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 150px)) +
+      var(--watta-chrome-header-measured-h, var(--watta-sticky-chrome-flow-h, 90px)) +
         env(safe-area-inset-top, 0px) + 14px
     );
   }
@@ -25292,15 +25288,9 @@ body.admin-watta-overlay-open .site-footer-watta {
   .watta-cart-page .watta-cart-checkout-card,
   .watta-cart-page .watta-cart-page__content > header {
     scroll-margin-top: calc(
-      var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 150px)) +
+      var(--watta-chrome-header-measured-h, var(--watta-sticky-chrome-flow-h, 90px)) +
         env(safe-area-inset-top, 0px) + 10px
     );
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1279px) {
-  .watta-app-shell-root:has(.watta-cart-page) .watta-full-menu-sticky-chrome .categories-panel-web {
-    --watta-cat-peek: 7.75 !important;
   }
 }
 
@@ -25368,6 +25358,20 @@ html.watta-light-chrome:has(.watta-cart-page) body {
 .watta-cart-page {
   overflow: visible;
   overflow-x: clip;
+}
+
+@media (min-width: 768px) {
+  html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
+    overflow-x: visible !important;
+  }
+
+  body:not(.watta-route-home) .watta-app-shell-root:has(.watta-cart-checkout-page--v2) {
+    overflow-x: visible;
+  }
+
+  .watta-cart-page.watta-cart-checkout-page--v2 {
+    overflow-x: visible !important;
+  }
 }
 
 @media (max-width: 767px) {

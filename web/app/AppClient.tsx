@@ -123,6 +123,12 @@ export default function AppClient({
     window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
   }, [isAuthRoute])
 
+  /** /cart — без стрічки категорій; перерахувати резерв fixed chrome. */
+  useLayoutEffect(() => {
+    if (!isCartCheckoutRoute || typeof document === 'undefined') return
+    window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
+  }, [isCartCheckoutRoute])
+
   /** Клік по чіпу категорії — перехід на /menu?cat= і скрол до секції. */
   useEffect(() => {
     const lastRef = { slug: '', at: 0 }
