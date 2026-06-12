@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
-import { bindAppVerticalScroll, readAppScrollTop, readScrollTop, getVerticalScrollTarget } from '@/lib/menuScroll'
+import { bindAppVerticalScroll, readScrollTop, getVerticalScrollTarget } from '@/lib/menuScroll'
 import { consumeRestoreChromeCompact, isWattaChromeCompactLocked } from '@/lib/wattaChromeScroll'
 import { createRafScrollListener } from '@/lib/scrollSync'
 import {
@@ -329,11 +329,10 @@ export function useWattaChromeScrollCompact(enabled = true) {
     const syncInitial = () => {
       lastY = readCachedScrollTop()
       resetPendingScroll()
-      if (lastY <= TOP_ALWAYS_EXPAND_PX) {
-        if (!isProductPhoneChrome()) syncCompact(false)
-        return
-      }
-      if (!isProductPhoneChrome()) syncCompact(true)
+      // Після SPA-переходу завжди показувати шапку — scrollToTopOnRouteChange
+      // (або scroll-подія) сховає її, якщо scrollTop > 64px.
+      // Без цього хук читає scrollTop СТАРОЇ сторінки → невірно ховає шапку.
+      if (!isProductPhoneChrome()) syncCompact(false)
     }
 
     const unbindScroll = bindAppVerticalScroll(onScroll)
