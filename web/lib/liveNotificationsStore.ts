@@ -1,5 +1,6 @@
 'use client'
 
+import { readIsLoggedInFromStorage } from '@/lib/isAdminRole'
 import {
   fetchMyNotifications,
   WATTA_NOTIFICATIONS_CHANGED_EVENT,
@@ -62,7 +63,13 @@ function schedulePoll() {
 async function refreshInternal(): Promise<void> {
   if (inflight) return inflight
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token')?.trim() : null
+  if (typeof window === 'undefined' || !readIsLoggedInFromStorage()) {
+    snapshot = EMPTY
+    emit()
+    return
+  }
+
+  const token = localStorage.getItem('token')?.trim()
   if (!token) {
     snapshot = EMPTY
     emit()

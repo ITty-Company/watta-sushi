@@ -1,20 +1,50 @@
 /* Порожній стан «Повідомлення» — дзвінок + SMS */
 
+.watta-notif-empty-stage {
+  width: 100%;
+  min-width: 0;
+}
+
+.watta-notif-empty-stage--compact {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .watta-notif-empty {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 20rem;
+  width: 100%;
+  max-width: 22rem;
   margin: 0 auto;
-  padding: 0.35rem 0.25rem 0.5rem;
+  padding: 0.15rem 0.05rem 0.35rem;
   text-align: center;
   overflow: visible;
 }
 
 .watta-notif-empty--compact {
   max-width: 100%;
-  padding: 0.5rem 0.35rem 0.75rem;
+  padding: 0.25rem 0.05rem 0.45rem;
+}
+
+.watta-notif-empty-shell {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, #145142 16%, transparent);
+  background: linear-gradient(
+    165deg,
+    #fff 0%,
+    color-mix(in srgb, #f8faf9 90%, #145142 10%) 100%
+  );
+  padding: 1.15rem 0.95rem 1rem;
+  box-shadow:
+    0 18px 42px -26px color-mix(in srgb, #145142 34%, transparent),
+    0 1px 0 color-mix(in srgb, #fff 80%, transparent) inset;
 }
 
 .watta-notif-empty__glow {
@@ -38,14 +68,14 @@
 .watta-notif-empty__stage {
   position: relative;
   z-index: 1;
-  width: min(100%, 16rem);
+  width: min(100%, 17rem);
   aspect-ratio: 1 / 0.88;
-  margin-bottom: 0.65rem;
+  margin: 0 auto 0.7rem;
 }
 
 .watta-notif-empty--compact .watta-notif-empty__stage {
-  width: min(100%, 13rem);
-  margin-bottom: 0.5rem;
+  width: min(100%, 15.5rem);
+  margin-bottom: 0.6rem;
 }
 
 .watta-notif-empty__hub {
@@ -113,7 +143,7 @@
   background: #fff;
   padding: 0.38rem 0.62rem;
   box-shadow: 0 4px 14px color-mix(in srgb, #145142 7%, transparent);
-  opacity: 0;
+  opacity: 0.18;
 }
 
 .watta-notif-empty__sms-text {
@@ -189,6 +219,17 @@
   text-align: center;
 }
 
+.watta-notif-empty__kicker {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #145142 58%, #64748b);
+}
+
 .watta-notif-empty__title {
   margin: 0;
   font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
@@ -204,9 +245,8 @@
 }
 
 .watta-notif-empty__subtitle {
-  margin: 0.6rem 0 0;
-  max-width: 100%;
-  white-space: nowrap;
+  margin: 0.55rem 0 0;
+  max-width: 18rem;
   font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
   font-size: 0.875rem;
   font-weight: 500;
@@ -215,7 +255,48 @@
 }
 
 .watta-notif-empty--compact .watta-notif-empty__subtitle {
-  font-size: clamp(0.6875rem, 3.4vw, 0.8125rem);
+  font-size: clamp(0.75rem, 3.4vw, 0.875rem);
+}
+
+.watta-notif-empty__ghost-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  margin: 0.95rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.watta-notif-empty__ghost {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, #145142 9%, transparent);
+  background: color-mix(in srgb, #fff 88%, #145142 12%);
+  padding: 0.48rem 0.62rem;
+  opacity: 0.55;
+  transform: translateY(4px);
+}
+
+.watta-notif-empty__ghost-dot {
+  flex-shrink: 0;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: #ff5c00;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #ff5c00 18%, transparent);
+}
+
+.watta-notif-empty__ghost-text {
+  min-width: 0;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: color-mix(in srgb, #0f241e 82%, #64748b);
+  text-align: left;
 }
 
 /* ——— Анімації ——— */
@@ -250,6 +331,18 @@
 
   .watta-notif-empty__glow {
     animation: wattaNotifGlowBreath 3.5s ease-in-out infinite alternate;
+  }
+
+  .watta-notif-empty__ghost--1 {
+    animation: wattaNotifGhostFloat 4.8s ease-in-out infinite;
+  }
+
+  .watta-notif-empty__ghost--2 {
+    animation: wattaNotifGhostFloat 5.2s ease-in-out 0.8s infinite;
+  }
+
+  .watta-notif-empty__ghost--3 {
+    animation: wattaNotifGhostFloat 5.6s ease-in-out 1.6s infinite;
   }
 }
 
@@ -352,6 +445,18 @@
   }
 }
 
+@keyframes wattaNotifGhostFloat {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translateY(4px);
+  }
+  50% {
+    opacity: 0.72;
+    transform: translateY(0);
+  }
+}
+
 .notifications-page-panel {
   margin-top: 0;
 }
@@ -396,10 +501,180 @@
   }
 
   .watta-notif-empty {
-    max-width: 21rem;
+    max-width: 23rem;
   }
 
   .watta-notif-empty__stage {
-    width: min(100%, 17rem);
+    width: min(100%, 18rem);
+  }
+
+  .watta-notif-empty-shell {
+    padding: 1.25rem 1.1rem 1.05rem;
+    border-radius: 22px;
   }
 }
+
+/* Drawer / compact — завжди видно, по центру панелі */
+#watta-notifications-drawer .watta-notif-empty-stage--compact,
+#watta-notifications-drawer .watta-notif-empty-stage {
+  min-height: min(52dvh, 28rem);
+}
+
+#watta-notifications-drawer .watta-notif-empty-stage [data-watta-in-view-fade],
+#watta-notifications-drawer .watta-notif-empty[data-watta-in-view-fade] {
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
+}
+
+#watta-notifications-drawer .watta-notif-empty-shell {
+  padding: 1.2rem 1rem 1.05rem;
+}
+
+#watta-notifications-drawer .watta-notif-empty--compact .watta-notif-empty__stage {
+  width: min(100%, 16.5rem);
+}
+
+#watta-notifications-drawer .watta-notif-empty__ghost-text {
+  font-size: 0.7rem;
+}
+
+/* Гість у панелі сповіщень */
+.watta-notif-guest {
+  width: 100%;
+  min-width: 0;
+}
+
+.watta-notif-guest--compact {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.watta-notif-guest__shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  overflow: visible;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, #145142 16%, transparent);
+  background: linear-gradient(
+    165deg,
+    #fff 0%,
+    color-mix(in srgb, #f8faf9 90%, #145142 10%) 100%
+  );
+  padding: 1.2rem 1rem 1.05rem;
+  text-align: center;
+  box-shadow:
+    0 18px 42px -26px color-mix(in srgb, #145142 34%, transparent),
+    0 1px 0 color-mix(in srgb, #fff 80%, transparent) inset;
+}
+
+.watta-notif-guest__icon-wrap {
+  display: flex;
+  width: 3.35rem;
+  height: 3.35rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1.5px solid color-mix(in srgb, var(--watta-brand-action, #145142) 18%, transparent);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--watta-brand-action, #145142) 12%, transparent);
+  color: var(--watta-brand-action, #145142);
+}
+
+.watta-notif-guest__icon {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.watta-notif-guest__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.watta-notif-guest__kicker {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #145142 58%, #64748b);
+}
+
+.watta-notif-guest__title {
+  margin: 0;
+  font-family: var(--font-brand-playfair, 'Playfair Display'), Georgia, serif;
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #0f241e;
+}
+
+.watta-notif-guest__sub {
+  margin: 0.55rem 0 0;
+  max-width: 18rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: color-mix(in srgb, #145142 62%, #64748b);
+}
+
+.watta-notif-guest__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.watta-notif-guest__cta {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: none;
+  border-radius: 14px;
+  background: var(--watta-brand-action, #145142);
+  padding: 0.72rem 1rem;
+  font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--watta-brand-action, #145142) 42%, transparent);
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.watta-notif-guest__cta:hover {
+  background: var(--watta-brand-action-hover, #0f3d32);
+}
+
+.watta-notif-guest__cta:active {
+  transform: scale(0.98);
+}
+
+.watta-notif-guest__cta--ghost {
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--watta-brand-action, #145142) 18%, transparent);
+  color: var(--watta-brand-action, #145142);
+}
+
+.watta-notif-guest__cta--ghost:hover {
+  background: color-mix(in srgb, var(--watta-brand-action, #145142) 8%, #fff 92%);
+}
+

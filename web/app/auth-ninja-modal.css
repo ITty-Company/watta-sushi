@@ -603,6 +603,7 @@
 html[data-watta-auth-modal-open] .auth-ninja-overlay,
 body.watta-auth-route .auth-ninja-overlay {
   position: fixed;
+  z-index: 13100;
 }
 
 html[data-watta-auth-modal-open] .auth-ninja-overlay__backdrop,

@@ -1051,6 +1051,7 @@ const nl: SiteTranslations = {
       title: "Meldingen",
       pageSubtext: "Je bestelstatussen in realtime",
       empty: "Nog geen meldingen",
+      emptyKicker: "Voorlopig rustig",
       emptySubtext: "Bestelstatusupdates verschijnen hier",
       emptySms: [
         "Bestelling geaccepteerd ✓",

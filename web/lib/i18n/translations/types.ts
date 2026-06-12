@@ -1430,6 +1430,7 @@ export interface SiteTranslations {
     title: string
     pageSubtext: string
     empty: string
+    emptyKicker: string
     emptySubtext: string
     emptySms: [string, string, string]
     markAllRead: string

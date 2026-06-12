@@ -19,6 +19,7 @@ import {
   subscribeLiveNotifications,
 } from '@/lib/liveNotificationsStore'
 import { useLanguage, type Language, type Translations } from '@/app/context/LanguageContext'
+import { readIsLoggedInFromStorage } from '@/lib/isAdminRole'
 import { cn } from '@/lib/utils'
 import '@/app/watta-notifications-empty.css'
 
@@ -92,9 +93,9 @@ function formatWhen(iso: string, lang: Language): string {
   })
 }
 
-function hasAuthToken(): boolean {
+function isNotificationsSessionActive(): boolean {
   if (typeof window === 'undefined') return false
-  return Boolean(localStorage.getItem('token')?.trim())
+  return readIsLoggedInFromStorage()
 }
 
 export default function UserNotificationsPanel({
@@ -114,10 +115,10 @@ export default function UserNotificationsPanel({
     () => getLiveNotificationsSnapshot(),
   )
   const [guestMode, setGuestMode] = useState(() =>
-    typeof window === 'undefined' ? false : !hasAuthToken(),
+    typeof window === 'undefined' ? false : !isNotificationsSessionActive(),
   )
   useEffect(() => {
-    const syncGuest = () => setGuestMode(!hasAuthToken())
+    const syncGuest = () => setGuestMode(!isNotificationsSessionActive())
     syncGuest()
     window.addEventListener('userChanged', syncGuest)
     window.addEventListener('storage', syncGuest)
@@ -143,10 +144,12 @@ export default function UserNotificationsPanel({
 
   const items = snapshot.items
   const unreadCount = snapshot.unreadCount
-  const loading = hasAuthToken() && snapshot.status === 'loading'
+  const loading = isNotificationsSessionActive() && snapshot.status === 'loading'
 
-  if (!hasAuthToken() || guestMode) {
-    return <NotificationsGuestPrompt compact={compact} />
+  if (!isNotificationsSessionActive() || guestMode) {
+    return (
+      <NotificationsGuestPrompt compact={compact} onAuthNavigate={onItemNavigate} />
+    )
   }
 
   if (loading) {

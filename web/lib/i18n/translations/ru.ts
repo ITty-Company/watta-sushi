@@ -1051,6 +1051,7 @@ const ru: SiteTranslations = {
       title: "Уведомления",
       pageSubtext: "Статусы ваших заказов в реальном времени",
       empty: "Уведомлений нет",
+      emptyKicker: "Пока тихо",
       emptySubtext: "Обновления статуса заказа появятся здесь",
       emptySms: [
         "Заказ принят ✓",

@@ -1051,6 +1051,7 @@ const en: SiteTranslations = {
       title: "Notifications",
       pageSubtext: "Your order statuses in real time",
       empty: "No notifications yet",
+      emptyKicker: "All quiet for now",
       emptySubtext: "Order status updates will appear here",
       emptySms: [
         "Order accepted ✓",
