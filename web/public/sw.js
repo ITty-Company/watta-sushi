@@ -16,7 +16,7 @@
  * Версію кешу піднімай при зміні логіки SW — старі кеші чистяться в activate.
  */
 
-const CACHE_VERSION = 'watta-cfa6dad';
+const CACHE_VERSION = 'watta-8f570b5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGES_CACHE = `${CACHE_VERSION}-pages`;
 const ASSETS_CACHE = `${CACHE_VERSION}-assets`;
