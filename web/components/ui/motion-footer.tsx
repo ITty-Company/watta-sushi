@@ -1799,7 +1799,7 @@ export type CinematicFooterProps = {
    * compact — компактна стрічка (заголовок і стрічки товарів) одразу над баннерами.
    */
   layout?: 'fullscreen' | 'compact'
-  /** Головна (compact): прев’ю хітів вертикально + кнопка «усе меню» */
+  /** Головна (compact): прев’ю хітів; maxItems — лише на телефоні (карусель) */
   homeRecommendedStack?: {
     maxItems: number
     seeAllHref: string
@@ -1830,6 +1830,7 @@ function AdminProductStrip({
   layoutMode = 'rail',
   seeAllLink,
   useHomeCatalogCardLayout = false,
+  maxMobilePreview,
 }: {
   title: string
   ariaLabel: string
@@ -1854,6 +1855,8 @@ function AdminProductStrip({
   seeAllLink?: { href: string; label: string }
   /** Головна «Наші хіти»: ті самі картки й сітка, що в #home-menu-catalog */
   useHomeCatalogCardLayout?: boolean
+  /** Телефон: скільки карток у каруселі перед «усе меню» */
+  maxMobilePreview?: number
 }) {
   const phoneOneCol = usePhoneMenuOneColumn()
   if (items.length === 0) return null
@@ -1909,28 +1912,21 @@ function AdminProductStrip({
   }
 
   if (useHomeCatalogCardLayout && isRec) {
-    const homeCatalogGrid = phoneOneCol ? (
-      <div className="home-menu-category-grid-phone-web">
-        <div className="home-menu-category-grid-phone-inner-web" role="region" aria-label={ariaLabel}>
-          {items.map((p, index) => (
-            <div key={p.id}>{renderProductCard(p, index)}</div>
-          ))}
-        </div>
-      </div>
-    ) : (
-      <div className="home-menu-category-grid-tablet-web">
-        <div className="home-menu-category-grid-tablet-inner-web" role="region" aria-label={ariaLabel}>
-          {items.map((p, index) => (
-            <div key={p.id}>{renderProductCard(p, index)}</div>
-          ))}
-        </div>
-      </div>
-    )
+    const mobileMax = maxMobilePreview ?? 4
+    const railItems = phoneOneCol ? items.slice(0, mobileMax) : items
 
     return (
-      <div className="footer-cinematic-rail--recommended w-full" role="region" aria-label={ariaLabel}>
+      <div className="footer-cinematic-rail--recommended home-hits-product-strip-web w-full" role="region" aria-label={ariaLabel}>
         {stripHeading}
-        {homeCatalogGrid}
+        <div className="home-menu-category-rail-outer-web home-hits-rail-outer-web">
+          <div className="home-hits-rail-web home-menu-category-rail-web" role="list">
+            {railItems.map((p, index) => (
+              <div key={p.id} role="listitem">
+                {renderProductCard(p, index)}
+              </div>
+            ))}
+          </div>
+        </div>
         {seeAllLink ? (
           <div className="home-menu-cat-view-all-wrap-web">
             <Link href={seeAllLink.href} className="home-menu-cat-view-all-btn-web">
@@ -2052,11 +2048,13 @@ export function CinematicFooter({
   const { t } = useLanguage()
   const cf = t.cinematicFooter
   const isCompact = layout === 'compact'
+  const phoneOneCol = usePhoneMenuOneColumn()
 
   const compactRecItems = useMemo(() => {
     if (!isCompact || !homeRecommendedStack) return adminRecommendedProducts
-    return adminRecommendedProducts.slice(0, homeRecommendedStack.maxItems)
-  }, [adminRecommendedProducts, homeRecommendedStack, isCompact])
+    if (phoneOneCol) return adminRecommendedProducts.slice(0, homeRecommendedStack.maxItems)
+    return adminRecommendedProducts
+  }, [adminRecommendedProducts, homeRecommendedStack, isCompact, phoneOneCol])
 
   /** Головна compact: вертикальний стовпчик на телефоні — лише CSS (max-width 767px), без hydration flip. */
   const recLayoutMode: 'rail' | 'stack' = 'rail'
@@ -2318,6 +2316,7 @@ export function CinematicFooter({
                         layoutMode={recLayoutMode}
                         seeAllLink={recSeeAll}
                         useHomeCatalogCardLayout={Boolean(homeRecommendedStack)}
+                        maxMobilePreview={homeRecommendedStack?.maxItems}
                       />
                     </WattaInViewFadeDiv>
                   ) : (
@@ -2336,6 +2335,7 @@ export function CinematicFooter({
                       layoutMode={recLayoutMode}
                       seeAllLink={recSeeAll}
                       useHomeCatalogCardLayout={Boolean(homeRecommendedStack)}
+                      maxMobilePreview={homeRecommendedStack?.maxItems}
                     />
                   )}
 
