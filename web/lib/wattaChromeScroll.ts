@@ -110,14 +110,10 @@ export function readStickyChromeScrollOffset(): number {
 export function markMenuCategoryNavigation(opts?: { restoreCompact?: boolean }) {
   if (typeof window === 'undefined') return
   cancelRouteScrollToTopOnNavigation()
-  const restoreCompact = opts?.restoreCompact !== false
+  void opts?.restoreCompact
   try {
     sessionStorage.setItem(WATTA_SKIP_SCROLL_RESET_KEY, '1')
-    if (restoreCompact && isWattaChromeCompact()) {
-      sessionStorage.setItem(WATTA_RESTORE_CHROME_COMPACT_KEY, '1')
-    } else {
-      sessionStorage.removeItem(WATTA_RESTORE_CHROME_COMPACT_KEY)
-    }
+    sessionStorage.removeItem(WATTA_RESTORE_CHROME_COMPACT_KEY)
   } catch {
     /* ignore */
   }
@@ -164,6 +160,8 @@ export function shouldPreserveMenuCategoryScroll(): boolean {
   try {
     if (sessionStorage.getItem(WATTA_SKIP_SCROLL_RESET_KEY) === '1') return true
     if (sessionStorage.getItem(WATTA_PENDING_MENU_CAT_KEY)) return true
+    const cat = new URLSearchParams(window.location.search).get('cat')?.trim()
+    if (cat && cat !== '__all__') return true
   } catch {
     /* ignore */
   }
@@ -183,14 +181,21 @@ export function clearMenuScrollNavigationFlags(): void {
 }
 
 export function applyRestoreChromeCompactIfNeeded(): void {
+  ensureWattaChromeExpanded()
+}
+
+/** Повна шапка + панель категорій (без compact) — головна та /menu при вході. */
+export function ensureWattaChromeExpanded(): void {
   if (typeof document === 'undefined') return
+  const root = document.documentElement
+  delete root.dataset.wattaChromeCompact
+  delete root.dataset.wattaProductHeaderExpanded
   try {
-    if (sessionStorage.getItem(WATTA_RESTORE_CHROME_COMPACT_KEY) === '1') {
-      document.documentElement.dataset.wattaChromeCompact = 'true'
-    }
+    sessionStorage.removeItem(WATTA_RESTORE_CHROME_COMPACT_KEY)
   } catch {
     /* ignore */
   }
+  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
 }
 
 export function consumeRestoreChromeCompact(): boolean {
@@ -225,31 +230,31 @@ export function lockWattaChromeCompactMutation(ms = 720): void {
 }
 
 /**
+ * Перед скролом до hero /menu («Всё меню в одном месте»): завжди повна шапка,
+ * без compact — інакше intro ховається під капсулою категорій.
+ */
+export function beginFullMenuHeroScrollChromeLock(ms = 720): void {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  root.dataset.wattaChromeCompactLock = 'true'
+  delete root.dataset.wattaChromeCompact
+  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
+  window.clearTimeout(compactLockTimer)
+  compactLockTimer = window.setTimeout(() => {
+    delete root.dataset.wattaChromeCompactLock
+  }, ms)
+}
+
+/**
  * Перед скролом до категорії на /menu: повна шапка + блок compact,
  * щоб заголовок секції не «стрибав» і не ховався під різні висоти chrome.
  */
 export function beginMenuCategoryScrollChromeLock(ms = 1400): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
-  const wasCompact = isWattaChromeCompact()
-  let restoreCompactFromNav = false
-  if (isWattaCompactChromeViewport() && typeof window !== 'undefined') {
-    try {
-      restoreCompactFromNav = sessionStorage.getItem(WATTA_RESTORE_CHROME_COMPACT_KEY) === '1'
-    } catch {
-      restoreCompactFromNav = false
-    }
-  }
   root.dataset.wattaChromeCompactLock = 'true'
-  // Якщо користувач уже в «лише категорії» (compact), зберігаємо під час програмного скролу.
-  // Повна шапка — лише після ручного скролу вгору.
-  if (!(isWattaCompactChromeViewport() && (wasCompact || restoreCompactFromNav))) {
-    delete root.dataset.wattaChromeCompact
-    window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
-  } else {
-    root.dataset.wattaChromeCompact = 'true'
-    window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: true } }))
-  }
+  delete root.dataset.wattaChromeCompact
+  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
   window.clearTimeout(compactLockTimer)
   compactLockTimer = window.setTimeout(() => {
     delete root.dataset.wattaChromeCompactLock

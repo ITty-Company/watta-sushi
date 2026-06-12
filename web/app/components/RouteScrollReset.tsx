@@ -10,17 +10,20 @@ import {
 } from '@/lib/wattaScrollMemory'
 import {
   consumeSkipScrollReset,
-  applyRestoreChromeCompactIfNeeded,
+  ensureWattaChromeExpanded,
   shouldPreserveMenuCategoryScroll,
   clearMenuScrollNavigationFlags,
 } from '@/lib/wattaChromeScroll'
 import { markInternalNavBackAvailable } from '@/lib/wattaInternalNavBack'
-import { isWattaProductPathname, syncWattaHtmlRouteClass } from '@/lib/wattaHtmlRouteClass'
+import { isWattaHomeOrMenuPathname, isWattaProductPathname, syncWattaHtmlRouteClass } from '@/lib/wattaHtmlRouteClass'
 import { applyWattaProductChromeEntry } from '@/lib/wattaProductChrome'
 
 function runRouteScrollReset(pathname: string, wasPopNavigation: boolean): void {
-  const isHomeRoute = pathname === '/'
+  const isHomeOrMenu = isWattaHomeOrMenuPathname(pathname)
   ensureDocumentScrollUnlocked()
+  if (isHomeOrMenu) {
+    ensureWattaChromeExpanded()
+  }
   if (pathname !== '/menu') {
     clearMenuScrollNavigationFlags()
   }
@@ -28,7 +31,7 @@ function runRouteScrollReset(pathname: string, wasPopNavigation: boolean): void 
   const preserveMenuScroll = shouldPreserveMenuCategoryScroll()
   if (preserveMenuScroll) {
     consumeSkipScrollReset()
-    applyRestoreChromeCompactIfNeeded()
+    ensureWattaChromeExpanded()
     return
   }
   consumeSkipScrollReset()
@@ -36,7 +39,7 @@ function runRouteScrollReset(pathname: string, wasPopNavigation: boolean): void 
   if (isWattaProductPathname(pathname)) {
     applyWattaProductChromeEntry()
   }
-  if (wasPopNavigation && !isHomeRoute && restoreScrollForCurrentLocation()) {
+  if (wasPopNavigation && !isHomeOrMenu && restoreScrollForCurrentLocation()) {
     return
   }
   scrollToTopOnRouteChange()

@@ -47,7 +47,8 @@ import { resetHomepageLikeLogoClick, WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/li
 import { bindHeroScrollPerf } from '@/lib/heroScrollPerf'
 import { bindHeroVideoKeepAlive } from '@/lib/heroVideoKeepAlive'
 import { warmHeroVideoCache } from '@/lib/warmHeroVideoCache'
-import { isWattaHomeHeroPathname, isWattaHomeHeroVideoPathname, isWattaProfilePathname } from '@/lib/wattaHtmlRouteClass'
+import { isWattaHomeHeroPathname, isWattaHomeHeroVideoPathname, isWattaHomeOrMenuPathname, isWattaProfilePathname } from '@/lib/wattaHtmlRouteClass'
+import { ensureWattaChromeExpanded } from '@/lib/wattaChromeScroll'
 import RouteScrollReset from './components/RouteScrollReset'
 import {
   navigateToFullMenuCategory,
@@ -65,6 +66,7 @@ export default function AppClient({
   useInstantNavBoot()
   useScrollReveal(pathname)
   const isHomeRoute = pathname === '/'
+  const isHomeOrMenuRoute = isWattaHomeOrMenuPathname(pathname ?? '/')
   const isHomeRollHero = isWattaHomeHeroPathname(pathname ?? '/')
   const isHeroVideoRoute = isWattaHomeHeroVideoPathname(pathname ?? '/') && !isHomeRollHero
   const isAuthRoute = pathname === '/login' || pathname === '/register'
@@ -114,6 +116,13 @@ export default function AppClient({
     delete document.documentElement.dataset.wattaChromeCompact
     window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
   }, [isAuthRoute])
+
+  /** Головна та /menu — завжди повна шапка + категорії при вході на сторінку. */
+  useLayoutEffect(() => {
+    if (!isHomeOrMenuRoute || typeof document === 'undefined') return
+    ensureWattaChromeExpanded()
+    window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
+  }, [isHomeOrMenuRoute])
 
   /** /cart і /profile — повна шапка без compact; перерахувати резерв fixed chrome. */
   useLayoutEffect(() => {

@@ -51,6 +51,12 @@ export function isWattaHomeHeroPathname(pathname: string): boolean {
   return p === '/' || p === ''
 }
 
+/** Головна та повне меню — при вході завжди повна шапка + категорії. */
+export function isWattaHomeOrMenuPathname(pathname: string): boolean {
+  const p = pathname || '/'
+  return p === '/' || p === '' || p === '/menu'
+}
+
 export function isWattaAuthPathname(pathname: string): boolean {
   const p = pathname || '/'
   return p === '/login' || p === '/register'

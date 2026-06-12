@@ -11,7 +11,7 @@ import { fetchPublicApi, fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { useWattaCatalogSync } from '@/hooks/useWattaCatalogSync'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { MENU_CATEGORY_EMOJI, MENU_CATEGORY_FALLBACK_SLUGS } from '@/lib/menuCategoryFallback'
-import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG } from '@/lib/fullMenuCategoryNav'
+import { WATTA_MENU_REQUEST_SCROLL_TO_CAT, FULL_MENU_ALL_SLUG, FULL_MENU_HERO_INTRO_ID } from '@/lib/fullMenuCategoryNav'
 import { WattaInViewFadeSection } from './WattaInViewFade'
 import { filterNonAggregateCategoryRows } from '@/lib/menuCategoryFilters'
 import { readCityIdForProductApi } from '@/lib/wattaSiteLocalePrefs'
@@ -29,12 +29,16 @@ import {
   runUntilScrollSuccess,
   scrollFullMenuCategoryHeading,
   scrollFullMenuCategoryHeadingEased,
+  scrollFullMenuHeroIntro,
+  scrollFullMenuHeroIntroEased,
   cancelMenuScrollAnimation,
+  cancelRouteScrollToTopOnNavigation,
   isMenuCatalogScrollLocked,
   setMenuCatalogScrollLock,
 } from '@/lib/menuScroll'
 import {
   beginMenuCategoryScrollChromeLock,
+  beginFullMenuHeroScrollChromeLock,
   consumePendingMenuCatScroll,
   FULL_MENU_SECTION_SCROLL_MARGIN,
 } from '@/lib/wattaChromeScroll'
@@ -465,6 +469,11 @@ export default function FullMenuPageClient() {
     [],
   )
 
+  /** Скасувати відкладений scroll-to-top SPA — інакше /menu «зависає» після переходу з /product. */
+  useLayoutEffect(() => {
+    cancelRouteScrollToTopOnNavigation()
+  }, [])
+
   const getFullMenuScrollSections = useCallback(() => menuSectionsRef.current, [])
 
   useMenuCategoryScrollSpy({
@@ -472,6 +481,8 @@ export default function FullMenuPageClient() {
     getSections: getFullMenuScrollSections,
     isScrollLocked: isMenuCatalogScrollLocked,
     beforeFirstSectionSlug: FULL_MENU_ALL_SLUG,
+    beforeCatalogSlug: FULL_MENU_ALL_SLUG,
+    getCatalogEl: () => document.getElementById('full-menu-page-start'),
   })
 
   useLayoutEffect(() => {
@@ -484,7 +495,10 @@ export default function FullMenuPageClient() {
 
   const findCategoryScrollTarget = useCallback((slug: string): HTMLElement | null => {
     if (slug === FULL_MENU_ALL_SLUG) {
-      return document.getElementById('full-menu-page-start')
+      return (
+        document.getElementById(FULL_MENU_HERO_INTRO_ID) ??
+        document.querySelector<HTMLElement>('.menu-page-web')
+      )
     }
     const norm = normMenuSlug(slug)
     const keys = new Set<string>([slug.trim(), norm])
@@ -548,6 +562,19 @@ export default function FullMenuPageClient() {
       if (!trimmed) return false
       const normalized = trimmed === FULL_MENU_ALL_SLUG ? FULL_MENU_ALL_SLUG : normMenuSlug(trimmed)
 
+      if (normalized === FULL_MENU_ALL_SLUG) {
+        window.dispatchEvent(
+          new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug: normalized } }),
+        )
+        if (useEasedScroll) {
+          void scrollFullMenuHeroIntroEased()
+        } else {
+          scrollFullMenuHeroIntro('auto')
+        }
+        catScrollSettledRef.current = true
+        return true
+      }
+
       if (normalized !== FULL_MENU_ALL_SLUG) {
         if (useEasedScroll) {
           pinSectionMountCluster(normalized)
@@ -591,7 +618,11 @@ export default function FullMenuPageClient() {
       cancelMenuScrollAnimation()
       catScrollSettledRef.current = false
       armCategoryScrollGrace(useEasedScroll ? 900 : 520)
-      beginMenuCategoryScrollChromeLock(useEasedScroll ? 900 : 380)
+      if (trimmed === FULL_MENU_ALL_SLUG) {
+        beginFullMenuHeroScrollChromeLock(useEasedScroll ? 900 : 380)
+      } else {
+        beginMenuCategoryScrollChromeLock(useEasedScroll ? 900 : 380)
+      }
       const generation = ++catScrollGenerationRef.current
       runUntilScrollSuccess(
         () => scrollToCategoryOnce(trimmed, generation, useEasedScroll),
@@ -677,10 +708,11 @@ export default function FullMenuPageClient() {
     pinSectionMountCluster(targetCategorySlug)
   }, [targetCategorySlug, pinSectionMountCluster])
 
-  /** Під час автоскролу до ?cat= — зупинити ретраї, якщо користувач уже крутить сторінку. */
+  /** Під час автоскролу до ?cat= — зупинити ретраї; будь-який свайп скасовує «залипання». */
   useEffect(() => {
-    if (!targetCategorySlug || typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
     const cancelPendingCatScroll = () => {
+      cancelRouteScrollToTopOnNavigation()
       if (catScrollSettledRef.current) return
       if (isMenuCatalogScrollLocked()) return
       if (performance.now() < categoryScrollGraceUntilRef.current) return
@@ -693,7 +725,7 @@ export default function FullMenuPageClient() {
       window.removeEventListener('wheel', cancelPendingCatScroll, opts as EventListenerOptions)
       window.removeEventListener('touchmove', cancelPendingCatScroll, opts as EventListenerOptions)
     }
-  }, [targetCategorySlug])
+  }, [])
 
   const addToCart = useMenuAddToCart()
   const addToCartFromCard = useCallback(
@@ -757,6 +789,7 @@ export default function FullMenuPageClient() {
             <div className="watta-home-roll-hero-slot-web relative z-[20] w-full shrink-0">
               <div className="menu-home-narrow-strip-hero-web w-full max-w-[100vw] shrink-0">
                 <section
+                  id={FULL_MENU_HERO_INTRO_ID}
                   className="watta-sushi-roll-hero watta-menu-photo-hero watta-menu-photo-hero--no-marquee"
                   aria-labelledby="menu-page-after-hero-intro-title"
                 >

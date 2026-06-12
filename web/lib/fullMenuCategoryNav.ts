@@ -9,6 +9,9 @@ import { isWattaCompactChromeViewport } from '@/lib/wattaTouchViewport'
 /** Псевдо-категорія «Усі» на `/menu` — збігається в `WattaMenuCategoryStrip` та `FullMenuPageClient`. */
 export const FULL_MENU_ALL_SLUG = '__all__' as const
 
+/** Hero-блок «Всё меню в одном месте» — ціль скролу при кліку на кнопку меню в стрічці. */
+export const FULL_MENU_HERO_INTRO_ID = 'full-menu-hero-intro' as const
+
 type MenuNavRouter = Pick<AppRouterInstance, 'push' | 'replace' | 'prefetch'>
 
 /** Префетч RSC + JS-чанк меню для категорії — на pointerdown, до кліку. */
@@ -36,7 +39,10 @@ export function menuCategoryScrollSlug(slug: string): string {
 function isMenuCategorySectionMounted(slug: string): boolean {
   if (typeof document === 'undefined') return false
   if (slug === FULL_MENU_ALL_SLUG) {
-    return Boolean(document.getElementById('full-menu-page-start'))
+    return Boolean(
+      document.getElementById(FULL_MENU_HERO_INTRO_ID) ??
+        document.querySelector('.menu-page-web'),
+    )
   }
   const norm = canonicalMenuCategorySlug(slug)
   return Boolean(
@@ -82,8 +88,11 @@ function navigateStripToMenuCategory(router: MenuNavRouter, pathname: string, sl
   const scrollSlug = menuCategoryScrollSlug(slug)
   const loc = currentMenuLocationHref()
 
+  const preserveCompact =
+    scrollSlug !== FULL_MENU_ALL_SLUG && isWattaCompactChromeViewport()
+
   if (isOnFullMenuPage(pathname, loc)) {
-    markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
+    markMenuCategoryNavigation({ restoreCompact: preserveCompact })
     if (loc !== href) {
       navigateInstant(router as AppRouterInstance, href, { replace: true, scroll: false, immediate: true })
     }
@@ -91,7 +100,7 @@ function navigateStripToMenuCategory(router: MenuNavRouter, pathname: string, sl
     return
   }
 
-  markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
+  markMenuCategoryNavigation({ restoreCompact: preserveCompact })
   if (scrollSlug !== FULL_MENU_ALL_SLUG) {
     markPendingMenuCatScroll(scrollSlug)
   }

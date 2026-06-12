@@ -136,6 +136,68 @@ export function computeElementScrollTop(
   return Math.max(0, elTopInContainer - headerOffset)
 }
 
+/** Скрол на початок /menu — hero «Всё меню в одном месте» (викликати після beginFullMenuHeroScrollChromeLock). */
+export function scrollFullMenuHeroIntro(behavior: ScrollBehavior = 'auto'): void {
+  writeScrollTop(getVerticalScrollTarget(), 0, behavior)
+}
+
+/** Плавний eased-скрол до hero /menu. */
+export function scrollFullMenuHeroIntroEased(options?: { durationMs?: number }): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve()
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reduceMotion) {
+    scrollFullMenuHeroIntro('auto')
+    return Promise.resolve()
+  }
+
+  cancelMenuScrollAnimation()
+
+  const target = getVerticalScrollTarget()
+  const startY = readScrollTop(target)
+  const endY = 0
+  const delta = endY - startY
+  const durationMs = options?.durationMs ?? 420
+
+  if (Math.abs(delta) < 4) return Promise.resolve()
+
+  return new Promise((resolve) => {
+    let cancelled = false
+    const t0 = performance.now()
+
+    const finish = () => {
+      menuScrollAnimationFrame = null
+      resolve()
+    }
+
+    const cancel = () => {
+      if (cancelled) return
+      cancelled = true
+      cancelMenuScrollAnimation()
+      finish()
+    }
+
+    const onUserScroll = () => cancel()
+    window.addEventListener('wheel', onUserScroll, { passive: true, once: true })
+    window.addEventListener('touchmove', onUserScroll, { passive: true, once: true })
+
+    const tick = (now: number) => {
+      if (cancelled) return
+      const progress = Math.min(1, (now - t0) / durationMs)
+      writeScrollTop(target, startY + delta * easeInOutCubic(progress), 'auto')
+      if (progress < 1) {
+        menuScrollAnimationFrame = requestAnimationFrame(tick)
+        return
+      }
+      window.removeEventListener('wheel', onUserScroll)
+      window.removeEventListener('touchmove', onUserScroll)
+      finish()
+    }
+
+    menuScrollAnimationFrame = requestAnimationFrame(tick)
+  })
+}
+
 /** Скрол до заголовка секції /menu — заголовок одразу під повною шапкою (викликати після beginMenuCategoryScrollChromeLock). */
 export function scrollFullMenuCategoryHeading(
   el: HTMLElement,
@@ -445,19 +507,28 @@ export function scrollToTopOnRouteChange(): void {
   if (typeof window === 'undefined') return
   cancelRouteScrollTopRetries()
   const generation = routeScrollTopGeneration
+  const isMenuRoute = window.location.pathname === '/menu'
 
   let userMoved = false
+  const cancelOnUserIntent = () => {
+    if (generation !== routeScrollTopGeneration) return
+    userMoved = true
+    cancelRouteScrollTopRetries()
+  }
   const onUserScroll = () => {
     if (generation !== routeScrollTopGeneration) return
     if (readAppScrollTop() > USER_SCROLL_GUARD_PX) {
-      userMoved = true
-      cancelRouteScrollTopRetries()
+      cancelOnUserIntent()
     }
   }
   const scrollOpts: AddEventListenerOptions = { passive: true, capture: true }
   document.addEventListener('scroll', onUserScroll, scrollOpts)
+  document.addEventListener('wheel', cancelOnUserIntent, scrollOpts)
+  document.addEventListener('touchmove', cancelOnUserIntent, scrollOpts)
   routeScrollUserListener = () => {
     document.removeEventListener('scroll', onUserScroll, scrollOpts)
+    document.removeEventListener('wheel', cancelOnUserIntent, scrollOpts)
+    document.removeEventListener('touchmove', cancelOnUserIntent, scrollOpts)
   }
 
   const tryReset = () => {
@@ -467,11 +538,12 @@ export function scrollToTopOnRouteChange(): void {
   }
 
   tryReset()
+  const retryDelays = isMenuRoute ? ([80] as const) : ROUTE_CHANGE_SCROLL_RETRY_MS
   const timers: number[] = []
-  for (const ms of ROUTE_CHANGE_SCROLL_RETRY_MS) {
+  for (const ms of retryDelays) {
     timers.push(window.setTimeout(tryReset, ms))
   }
-  const lastMs = ROUTE_CHANGE_SCROLL_RETRY_MS[ROUTE_CHANGE_SCROLL_RETRY_MS.length - 1] ?? 200
+  const lastMs = retryDelays[retryDelays.length - 1] ?? 200
   timers.push(
     window.setTimeout(() => {
       if (generation === routeScrollTopGeneration) cancelRouteScrollTopRetries()

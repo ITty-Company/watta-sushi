@@ -9,6 +9,7 @@ import {
 } from '@/lib/menuScroll'
 import {
   consumeRestoreChromeCompact,
+  ensureWattaChromeExpanded,
   isWattaChromeCompactLocked,
 } from '@/lib/wattaChromeScroll'
 import { createRafScrollListener } from '@/lib/scrollSync'
@@ -17,7 +18,7 @@ import {
   isWattaTouchScrollPerfViewport,
   WATTA_PHONE_VIEWPORT_MQ,
 } from '@/lib/wattaTouchViewport'
-import { isWattaCartCheckoutPathname, isWattaProductPathname, isWattaProfilePathname } from '@/lib/wattaHtmlRouteClass'
+import { isWattaCartCheckoutPathname, isWattaHomeOrMenuPathname, isWattaProductPathname, isWattaProfilePathname } from '@/lib/wattaHtmlRouteClass'
 import {
   applyWattaProductChromeEntry,
   clearWattaProductChromeEntry,
@@ -130,6 +131,7 @@ function ensureDesktopFullChrome(isProductPage: boolean): void {
 export function useWattaChromeScrollCompact(enabled = true) {
   const pathname = usePathname() || '/'
   const isProductPage = isWattaProductPathname(pathname)
+  const isHomeOrMenuPage = isWattaHomeOrMenuPathname(pathname)
   const isCartCheckoutPage = isWattaCartCheckoutPathname(pathname)
   const isProfilePage = isWattaProfilePathname(pathname)
   const isPhone = useSyncExternalStore(subscribePhoneViewport, readPhoneViewport, () => false)
@@ -152,6 +154,10 @@ export function useWattaChromeScrollCompact(enabled = true) {
           clearWattaProductChromeEntry()
         }
       }
+    }
+
+    if (isHomeOrMenuPage) {
+      ensureWattaChromeExpanded()
     }
 
     const isProductPhoneChrome = () => isProductPage && isWattaPhoneViewport()
@@ -352,37 +358,18 @@ export function useWattaChromeScrollCompact(enabled = true) {
 
     /**
      * Після першого паінта (rAF) синхронізувати lastY з реальною позицією скролу.
-     * Це виправляє ситуації, коли:
-     * - навігація зберегла scroll-position (поп, категорії) — lastY=0, реально 400px
-     * - програмний скрол до секції (/menu?cat=) змінив позицію після ініціалізації
+     * Не ховаємо шапку тут — інакше stale scrollTop попередньої сторінки ламає /menu.
      */
     const syncScrollBaselineAfterPaint = () => {
       requestAnimationFrame(() => {
-        const actualY = readCachedScrollTop()
-        if (actualY === lastY) {
-          // lastY вже було оновлено через rAF всередині syncCompact(false).
-          // Але це означає, що логіка «сховати шапку при >64px» не виконалась —
-          // виправляємо це додатковою перевіркою.
-          if (actualY > TOP_ALWAYS_EXPAND_PX && !compact && !isProductPhoneChrome()) {
-            syncCompact(true)
-          }
-          return
-        }
-        lastY = actualY
-        if (actualY > TOP_ALWAYS_EXPAND_PX && !compact && !isProductPhoneChrome()) {
-          syncCompact(true)
-        }
+        lastY = readCachedScrollTop()
       })
     }
 
     const syncInitial = () => {
-      lastY = readCachedScrollTop()
       resetPendingScroll()
-      // Після SPA-переходу завжди показувати шапку — scrollToTopOnRouteChange
-      // (або scroll-подія) сховає її, якщо scrollTop > 64px.
-      // Без цього хук читає scrollTop СТАРОЇ сторінки → невірно ховає шапку.
       if (!isProductPhoneChrome()) syncCompact(false)
-      // На наступному кадрі підправити lastY — якщо скрол вже на >64, сховати шапку
+      lastY = 0
       syncScrollBaselineAfterPaint()
     }
 
@@ -396,7 +383,9 @@ export function useWattaChromeScrollCompact(enabled = true) {
       suppressUntil = performance.now() + COMPACT_TOGGLE_COOLDOWN_MS
     }
 
-    if (consumeRestoreChromeCompact()) {
+    if (isHomeOrMenuPage) {
+      syncInitial()
+    } else if (consumeRestoreChromeCompact()) {
       lastY = readCachedScrollTop()
       if (isProductPhoneChrome()) {
         // /product на телефоні: завжди compact при вході
@@ -572,5 +561,5 @@ export function useWattaChromeScrollCompact(enabled = true) {
         clearWattaProductChromeEntry()
       }
     }
-  }, [enabled, isCartCheckoutPage, isProductPage, isProfilePage, isPhone, pathname])
+  }, [enabled, isCartCheckoutPage, isHomeOrMenuPage, isProductPage, isProfilePage, isPhone, pathname])
 }
