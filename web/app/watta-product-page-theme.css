@@ -181,12 +181,13 @@
 .watta-product-page__buy-mobile-lead {
   display: flex;
   flex: 0 0 auto;
-  align-items: baseline;
+  align-items: center;
   min-width: 0;
 }
 
 .watta-product-page__buy-mobile .watta-product-page__spec-price-col .watta-product-page__price--mobile {
   font-size: clamp(1.75rem, 7vw, 2.05rem);
+  color: #111111;
 }
 
 .watta-product-page__buy-mobile .watta-product-page__price-currency {
@@ -194,7 +195,7 @@
   font-size: 0.72em;
   font-weight: 600;
   font-style: normal;
-  color: #94a3b8;
+  color: #111111;
   letter-spacing: 0;
 }
 
@@ -363,6 +364,66 @@
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--watta-cart-mint-deep, #1a2e14);
+}
+
+/* Телефон: ціна зліва, кількість + лайк справа — по центру висоти кнопок */
+@media (max-width: 767px) {
+  .watta-product-page__buy-mobile {
+    --watta-product-buy-action-h: 2.65rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .watta-product-page__buy-mobile-lead {
+    display: flex;
+    align-items: center;
+    align-self: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: var(--watta-product-buy-action-h);
+  }
+
+  .watta-product-page__buy-mobile .watta-product-page__spec-price-col {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    min-height: var(--watta-product-buy-action-h);
+  }
+
+  .watta-product-page__buy-mobile .watta-product-page__price-old--strike-red {
+    align-self: center;
+  }
+
+  .watta-product-page__buy-mobile-actions {
+    display: flex;
+    align-items: center;
+    align-self: center;
+    flex-shrink: 0;
+    min-height: var(--watta-product-buy-action-h);
+  }
+
+  .watta-product-page__buy-mobile .watta-product-page__cta--cart-mobile,
+  .watta-product-page__buy-mobile .watta-product-page__favorite-btn,
+  .watta-product-page__buy-mobile .watta-product-page__qty-pill {
+    min-height: var(--watta-product-buy-action-h);
+    height: var(--watta-product-buy-action-h);
+  }
+
+  .watta-product-page__buy-mobile .watta-product-page__spec-price-col .watta-product-page__price--mobile {
+    display: inline-flex;
+    align-items: center;
+    height: var(--watta-product-buy-action-h);
+    line-height: 1;
+    font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;
+    font-weight: 800;
+    color: #111111;
+  }
+
+  .watta-product-page__buy-mobile .watta-product-page__spec-price-col .watta-product-page__price-currency {
+    color: #111111;
+  }
 }
 
 /* ——— Десктоп: панель ціни + кошик ——— */
