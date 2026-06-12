@@ -110,4 +110,46 @@
   html[data-watta-scrolling='true']::after {
     transition: none !important;
   }
+
+  /*
+   * Усі публічні сторінки: свайп не «записує» / не підсвічує текст (iOS Safari).
+   * Поля вводу й явно дозволені блоки — можна виділяти.
+   */
+  html.watta-light-chrome .watta-app-shell-root:not(:has(.admin-shell-watta-web)),
+  html.watta-light-chrome .watta-app-shell-root:not(:has(.admin-shell-watta-web)) * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  html.watta-light-chrome input,
+  html.watta-light-chrome textarea,
+  html.watta-light-chrome select,
+  html.watta-light-chrome [contenteditable='true'],
+  html.watta-light-chrome [data-watta-allow-select],
+  html.watta-light-chrome #profile-page-root .watta-profile-user-card__field-value,
+  html.watta-light-chrome .admin-shell-watta-web,
+  html.watta-light-chrome .admin-shell-watta-web * {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+
+  html.watta-light-chrome ::selection,
+  html.watta-light-chrome *::selection {
+    background: transparent;
+    color: inherit;
+  }
+
+  /* overflow-anchor — на всіх основних сторінках, не лише /menu */
+  .watta-product-page,
+  .watta-cart-page,
+  .watta-profile-page,
+  .watta-delivery-page,
+  .watta-about-page,
+  .contact-page-web,
+  .content-web,
+  .app-web {
+    overflow-anchor: none;
+  }
 }

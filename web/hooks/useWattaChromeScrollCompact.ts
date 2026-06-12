@@ -6,12 +6,10 @@ import {
   bindAppVerticalScroll,
   readScrollTop,
   getVerticalScrollTarget,
-  writeScrollTop,
 } from '@/lib/menuScroll'
 import {
   consumeRestoreChromeCompact,
   isWattaChromeCompactLocked,
-  readChromeCompactScrollDeltaPx,
 } from '@/lib/wattaChromeScroll'
 import { createRafScrollListener } from '@/lib/scrollSync'
 import {
@@ -36,7 +34,8 @@ const SCROLL_DOWN_THRESHOLD_PX = 18
 const SCROLL_UP_THRESHOLD_PX = 1
 /** Телефон: накопичений зсув (iOS дає дрібні scroll-події). */
 const PHONE_SCROLL_DOWN_THRESHOLD_PX = 24
-const PHONE_SCROLL_UP_THRESHOLD_PX = 1
+/** Телефон /menu: невеликий гістерезис — інакше інерція iOS смикає compact ↔ expand. */
+const PHONE_SCROLL_UP_THRESHOLD_PX = 10
 /** Тач: рідше вимірюємо scrollTop — менше layout під час свайпу вниз. */
 const TOUCH_SCROLL_EVAL_MIN_MS = 16
 /** /product (телефон): накопичений зсув вгору перед розгортанням шапки (гістерезис). */
@@ -195,19 +194,6 @@ export function useWattaChromeScrollCompact(enabled = true) {
       } else {
         applyCompactAttr(next)
       }
-      /*
-       * Без компенсації scrollTop контент «стрибає» при зміні висоти chrome на /menu.
-       * /product (телефон): flow-anchor фіксований — лише show/hide fixed-шапки, без writeScrollTop.
-       */
-      if (!isProductPhoneChrome()) {
-        const y = readCachedScrollTop()
-        const delta = readChromeCompactScrollDeltaPx()
-        if (delta >= 8) {
-          const compensated = Math.max(0, y + (next ? delta : -delta))
-          writeScrollTop(cachedScrollTarget, compensated, 'auto')
-          lastY = compensated
-        }
-      }
       const cooldown = next
         ? isProductPhoneChrome()
           ? PRODUCT_COMPACT_TOGGLE_COOLDOWN_MS
@@ -253,12 +239,9 @@ export function useWattaChromeScrollCompact(enabled = true) {
       return SCROLL_DOWN_THRESHOLD_PX
     }
 
-    /** Телефон (не /product): будь-який скрол вгору — повна шапка + категорії. */
-    const shouldRevealFullChromeOnScrollUp = () =>
-      isWattaPhoneViewport() && !isProductPhoneChrome()
-
-    const shouldExpandChromeImmediately = () =>
-      shouldRevealFullChromeOnScrollUp() || (compact && !isProductPhoneChrome())
+    /** Телефон (не /product): скрол вгору в compact — повна шапка + категорії. */
+    const shouldExpandChromeOnScrollUp = () =>
+      compact && isWattaPhoneViewport() && !isProductPhoneChrome()
 
     const applyScrollDelta = (delta: number, downThreshold: number, upThreshold: number) => {
       if (delta > 0) {
@@ -271,13 +254,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
         return
       }
       if (delta < 0) {
-        if (shouldExpandChromeImmediately()) {
-          resetPendingScroll()
-          syncCompact(false)
-          return
-        }
-        const upDelta = -delta
-        pendingUpPx += upDelta
+        pendingUpPx += -delta
         pendingDownPx = 0
         if (pendingUpPx >= upThreshold) {
           pendingUpPx = 0
@@ -303,9 +280,13 @@ export function useWattaChromeScrollCompact(enabled = true) {
       if (isWattaChromeCompactLocked()) {
         const deltaDuringLock = y - lastY
         lastY = y
-        if (deltaDuringLock < 0 && shouldExpandChromeImmediately()) {
-          resetPendingScroll()
-          syncCompact(false)
+        if (deltaDuringLock < 0 && shouldExpandChromeOnScrollUp()) {
+          pendingUpPx += -deltaDuringLock
+          pendingDownPx = 0
+          if (pendingUpPx >= readUpThreshold(isPhone)) {
+            pendingUpPx = 0
+            syncCompact(false)
+          }
           return
         }
         if (expandChromeAtPageTop(y)) {
@@ -320,9 +301,13 @@ export function useWattaChromeScrollCompact(enabled = true) {
       if (performance.now() < suppressUntil) {
         const deltaDuringSuppress = y - lastY
         lastY = y
-        if (deltaDuringSuppress < 0 && shouldExpandChromeImmediately()) {
-          resetPendingScroll()
-          syncCompact(false)
+        if (deltaDuringSuppress < 0 && shouldExpandChromeOnScrollUp()) {
+          pendingUpPx += -deltaDuringSuppress
+          pendingDownPx = 0
+          if (pendingUpPx >= readUpThreshold(isPhone)) {
+            pendingUpPx = 0
+            syncCompact(false)
+          }
           return
         }
         if (deltaDuringSuppress > 0) {
