@@ -27,6 +27,28 @@ function backendProxyBaseUrl() {
   }
 }
 
+/** Запобігає 508 Loop Detected: /api на web не повинен проксуватись на той самий web-сервіс. */
+function assertBackendProxyNotFrontendLoop() {
+  if (process.env.USE_LOCAL_MOCK === '1') return;
+  const apiOrigin = backendProxyBaseUrl();
+  const siteRaw = process.env.NEXT_PUBLIC_SITE_URL?.trim()?.replace(/\/$/, '');
+  if (!siteRaw) return;
+  try {
+    const siteOrigin = new URL(siteRaw).origin;
+    if (siteOrigin === apiOrigin) {
+      throw new Error(
+        `[next.config] BACKEND_URL / NEXT_PUBLIC_API_URL must point to Express backend, not the Next.js frontend. ` +
+          `Both are "${apiOrigin}". On Render: API → watta-sushi-backend (e.g. watta-sushi-9qfh.onrender.com), ` +
+          `SITE → watta-sushi-web.onrender.com.`,
+      );
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('[next.config]')) throw e;
+  }
+}
+
+assertBackendProxyNotFrontendLoop();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // При ANALYZE=true — отдельная папка сборки, чтобы не ломать dev-сервер (.next)

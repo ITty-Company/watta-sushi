@@ -1981,8 +1981,8 @@ export default function CartView({
                 {/* 1. Контактные данные */}
                 <CheckoutFormSection id="cart-checkout-contact" className="scroll-mt-28" sectionIndex={0}>
                    <CheckoutSectionHead icon={User} title={cs.contactDetails} />
-                   <div className="watta-cart-form-fields grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div className="min-w-0">
+                   <div className="watta-cart-form-fields">
+                      <div className="watta-cart-form-fields__field">
                         <label htmlFor="cart-checkout-name" className={CHECKOUT_FIELD_LABEL_CLASS}>
                           {t.auth.name} *
                         </label>
@@ -2000,7 +2000,7 @@ export default function CartView({
                           required
                         />
                       </div>
-                      <div className="flex min-w-0 flex-col gap-1 md:col-span-2">
+                      <div className="watta-cart-form-fields__field flex flex-col gap-1">
                         <label htmlFor="cart-checkout-phone" className={CHECKOUT_FIELD_LABEL_CLASS}>
                           {t.auth.phone} *
                         </label>
@@ -2043,7 +2043,7 @@ export default function CartView({
                         )}
                       </div>
                       <div
-                        className={`watta-cart-consent mt-0.5 flex items-start gap-2 md:col-span-2${
+                        className={`watta-cart-consent mt-0.5 flex items-start gap-2${
                           consentHighlight ? ' watta-cart-consent--error' : ''
                         }`}
                       >
@@ -2062,7 +2062,7 @@ export default function CartView({
                         />
                         <p
                           id="cart-data-processing-consent-label"
-                          className="text-[10px] leading-snug text-[#145142]/90 md:text-[11px]"
+                          className="min-w-0 flex-1 text-[10px] leading-snug text-[#145142]/90 md:text-[11px]"
                         >
                           <label
                             htmlFor="cart-data-processing-consent"

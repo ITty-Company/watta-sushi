@@ -224,7 +224,37 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
 }
 
 .watta-cart-form-fields {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.85rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.watta-cart-form-fields > * {
+  width: 100%;
+  min-width: 0;
+}
+
+/* v2: globals.css давав 2-col grid на форму — «Контактні дані» стискались у половину ширини. */
+.watta-cart-checkout-page--v2 form.watta-cart-checkout-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-form-fields .watta-checkout-field {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.watta-cart-checkout-page--v2 .watta-cart-consent p {
+  min-width: 0;
+  flex: 1;
 }
 
 .watta-cart-delivery-time-block {
