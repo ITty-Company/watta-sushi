@@ -1667,7 +1667,8 @@ const STYLES = `
     padding: 0 !important;
   }
 
-  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .home-menu-cat-view-all-wrap-web {
+  #menu-cinematic-block .cinematic-footer-wrap--compact .footer-cinematic-rail--recommended .home-menu-cat-view-all-wrap-web,
+  #menu-cinematic-block .home-hits-product-strip-web .home-menu-cat-view-all-wrap-web {
     padding-left: 0 !important;
     padding-right: 0 !important;
     box-sizing: border-box;
@@ -1880,7 +1881,7 @@ function AdminProductStrip({
       <WattaMenuProductCard
         variant="grid"
         imagePriority={index < 4}
-        className="min-w-0 w-full shadow-sm"
+        className="min-w-0 w-full shadow-sm home-hits-catalog-card-web"
         product={{
           id: p.id,
           name: (p.label || '').trim() || '—',
@@ -1913,20 +1914,32 @@ function AdminProductStrip({
 
   if (useHomeCatalogCardLayout && isRec) {
     const mobileMax = maxMobilePreview ?? 4
-    const railItems = phoneOneCol ? items.slice(0, mobileMax) : items
+    const visibleItems = phoneOneCol ? items.slice(0, mobileMax) : items
 
     return (
-      <div className="footer-cinematic-rail--recommended home-hits-product-strip-web w-full" role="region" aria-label={ariaLabel}>
+      <div className="home-hits-product-strip-web w-full" role="region" aria-label={ariaLabel}>
         {stripHeading}
-        <div className="home-menu-category-rail-outer-web home-hits-rail-outer-web">
-          <div className="home-hits-rail-web home-menu-category-rail-web" role="list">
-            {railItems.map((p, index) => (
-              <div key={p.id} role="listitem">
-                {renderProductCard(p, index)}
-              </div>
-            ))}
+        {phoneOneCol ? (
+          <div className="home-menu-category-grid-phone-web home-hits-phone-stack-web">
+            <div className="home-menu-category-grid-phone-inner-web" role="list">
+              {visibleItems.map((p, index) => (
+                <div key={p.id} role="listitem">
+                  {renderProductCard(p, index)}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="home-menu-category-rail-outer-web home-hits-rail-outer-web">
+            <div className="home-hits-rail-web home-menu-category-rail-web" role="list">
+              {visibleItems.map((p, index) => (
+                <div key={p.id} role="listitem">
+                  {renderProductCard(p, index)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {seeAllLink ? (
           <div className="home-menu-cat-view-all-wrap-web">
             <Link href={seeAllLink.href} className="home-menu-cat-view-all-btn-web">
