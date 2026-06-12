@@ -997,15 +997,11 @@ export default function CartView({
           className={
             isBottom
               ? 'cart-upsell-rail-outer relative min-w-0'
-              : 'watta-cart-upsell-stack-outer relative min-w-0'
+              : 'cart-upsell-rail-outer relative min-w-0 md:block'
           }
         >
           <div
-            className={
-              isBottom
-                ? 'cart-upsell-rail-scroll home-menu-category-rail-web flex flex-nowrap gap-2.5 overflow-x-auto scroll-smooth pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-3 [&::-webkit-scrollbar]:hidden'
-                : 'watta-cart-upsell-stack flex flex-col gap-2.5'
-            }
+            className="cart-upsell-rail-scroll home-menu-category-rail-web flex flex-nowrap gap-2.5 overflow-x-auto scroll-smooth pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-3 [&::-webkit-scrollbar]:hidden"
             role="list"
           >
             {visibleOffers.map((item, index) => {
@@ -1041,9 +1037,9 @@ export default function CartView({
                     onAddToCart={() => {
                       handleAddUpsell(item)
                     }}
-                    variant={isBottom ? 'rail' : 'grid'}
+                    variant="rail"
                     subtitleLine={weightLine || undefined}
-                    discountNearPrice={!isBottom}
+                    discountNearPrice
                     imagePriority={index === 0}
                   />
                 </div>
@@ -1722,8 +1718,8 @@ export default function CartView({
     ) : null
 
   return (
-    <div className="watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col overflow-x-clip bg-white font-sans">
-      <div className="watta-cart-page__content relative z-10 mx-auto flex w-full min-w-0 max-w-[1180px] flex-col bg-white pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pb-8 md:pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))]">
+    <div className="watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col overflow-x-clip font-sans">
+      <div className="watta-cart-page__content relative z-10 mx-auto flex w-full min-w-0 max-w-[1180px] flex-col pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pb-8 md:pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))]">
         <WattaInViewFadeHeader className="watta-cart-checkout-lead">
           <div className="watta-cart-checkout-lead__toolbar">
             <button type="button" onClick={onBack} className={backButtonClass}>
@@ -1745,7 +1741,7 @@ export default function CartView({
             {!isUserLoggedIn() ? (
               <button
                 type="button"
-                className="watta-cart-checkout-lead__login"
+                className="watta-cart-checkout-lead__login watta-cart-checkout-lead__login--hero"
                 onClick={() => openCartAuth()}
               >
                 {cs.checkoutLoginLink}
@@ -1978,10 +1974,21 @@ export default function CartView({
                   onSubmit={handleCheckoutSubmit}
                   noValidate
                 >
+                {!isUserLoggedIn() ? (
+                  <div className="watta-cart-checkout-login-card">
+                    <button
+                      type="button"
+                      className="watta-cart-checkout-login-card__btn"
+                      onClick={() => openCartAuth()}
+                    >
+                      {cs.checkoutLoginHint}
+                    </button>
+                  </div>
+                ) : null}
                 {/* 1. Контактные данные */}
                 <CheckoutFormSection id="cart-checkout-contact" className="scroll-mt-28" sectionIndex={0}>
                    <CheckoutSectionHead icon={User} title={cs.contactDetails} />
-                   <div className="watta-cart-form-fields">
+                   <div className="watta-cart-form-fields watta-cart-form-fields--contact">
                       <div className="watta-cart-form-fields__field">
                         <label htmlFor="cart-checkout-name" className={CHECKOUT_FIELD_LABEL_CLASS}>
                           {t.auth.name} *
@@ -2043,7 +2050,7 @@ export default function CartView({
                         )}
                       </div>
                       <div
-                        className={`watta-cart-consent mt-0.5 flex items-start gap-2${
+                        className={`watta-cart-form-fields__field watta-cart-form-fields__field--full watta-cart-consent mt-0.5 flex items-start gap-2${
                           consentHighlight ? ' watta-cart-consent--error' : ''
                         }`}
                       >
