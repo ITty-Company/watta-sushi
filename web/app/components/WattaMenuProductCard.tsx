@@ -7,6 +7,7 @@ import WattaLink from './WattaLink'
 import { Minus, Plus } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '../context/LanguageContext'
 import { cn } from '@/lib/utils'
+import { isGenericPlaceholderImage } from '@/lib/adminProductMedia'
 import { isNextImageOptimizableCatalogUrl, resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { preloadImageUrls } from '@/lib/preloadImages'
 import { prefetchHref } from '@/lib/instantNav'
@@ -139,7 +140,11 @@ export function WattaMenuProductCardInner({
     onBeforeNavigateToProduct?.()
   }, [product.id, onBeforeNavigateToProduct])
   const [imageError, setImageError] = useState(false)
-  const photoSrc = useMemo(() => resolveCatalogMediaUrl(product.imageUrl), [product.imageUrl])
+  const photoSrc = useMemo(() => {
+    const resolved = resolveCatalogMediaUrl(product.imageUrl)
+    if (!resolved || isGenericPlaceholderImage(resolved)) return null
+    return resolved
+  }, [product.imageUrl])
   useEffect(() => {
     setImageError(false)
   }, [product.id, product.imageUrl])

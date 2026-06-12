@@ -20,7 +20,11 @@
 html[data-watta-nav-drawer-open]:not([data-watta-cart-drawer-open])
   .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay),
 html[data-watta-nav-drawer-open] .watta-cart-checkout-foot,
-html[data-watta-nav-drawer-open] .watta-cart-mobile-sticky {
+html[data-watta-nav-drawer-open] .watta-cart-mobile-sticky,
+html[data-watta-notifications-open]
+  .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay),
+html[data-watta-notifications-open] .watta-cart-checkout-foot,
+html[data-watta-notifications-open] .watta-cart-mobile-sticky {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -137,6 +141,8 @@ html[data-watta-nav-drawer-open]::after {
   html[data-watta-cart-drawer-open]
     .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay) {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
     pointer-events: none !important;
   }
 
@@ -144,8 +150,18 @@ html[data-watta-nav-drawer-open]::after {
     display: none !important;
   }
 
-  html[data-watta-cart-drawer-open] .watta-cart-drawer-foot__bar {
+  html[data-watta-cart-drawer-open] #watta-cart-drawer.is-open .watta-cart-drawer-foot__bar {
     display: flex !important;
+    pointer-events: auto !important;
+    position: relative !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    z-index: 2;
+  }
+
+  #watta-cart-drawer .watta-cart-drawer-foot__bar {
+    display: none !important;
   }
 
   /* Бокове меню (сайт / адмін) — пріоритет над кошиком; кошик drawer — ні */
@@ -161,7 +177,13 @@ html[data-watta-nav-drawer-open]::after {
     display: none !important;
   }
 
-  .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay) {
+  /* Головна /menu: смуга прихована, доки користувач не проскролив (data-watta-cart-bar-gated). */
+  html[data-watta-cart-bar-gated='1']:not([data-watta-cart-bar-visible='1']):not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1'])
+    .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar) {
+    visibility: hidden !important;
+  }
+
+  .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar) {
     position: fixed;
     left: var(--watta-cart-bar-side);
     right: var(--watta-cart-bar-side-right);
@@ -185,7 +207,7 @@ html[data-watta-nav-drawer-open]::after {
   }
 
   /* Базова м’яка тінь знизу — завжди на місці, не стрибає; зникає коли смуга виїжджає */
-  html:not([data-watta-cart-drawer-open])::after {
+  html:not([data-watta-cart-drawer-open]):not([data-watta-auth-modal-open])::after {
     content: '';
     position: fixed;
     left: 0;
@@ -207,10 +229,27 @@ html[data-watta-nav-drawer-open]::after {
   html[data-watta-past-hero='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
   html[data-watta-home-past-hero='1'] .watta-mobile-cart-bar:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar),
   html:not([data-watta-cart-bar-gated='1']) .watta-mobile-cart-bar[data-watta-cart-filled='true']:not(.watta-mobile-cart-bar--card-overlay):not(.watta-cart-drawer-foot__bar) {
+    visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto;
     transform: translate3d(0, 0, 0);
     --watta-cart-slide-offset: 0;
+  }
+
+  html[data-watta-notifications-open]
+    .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar):not(.watta-mobile-cart-bar--card-overlay),
+  html[data-watta-notifications-open] .watta-cart-checkout-foot {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: none !important;
+  }
+
+  /* Hero головної /menu: поки смуга ще не виїхала — круглий FAB лишається входом у кошик. */
+  html[data-watta-cart-bar-gated='1']:not([data-watta-cart-bar-visible='1']):not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1']):not([data-watta-cart-drawer-open])
+    .watta-floating-cart-fab {
+    display: flex !important;
   }
 
   html:not([data-watta-cart-bar-visible='1']):not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1'])
@@ -575,7 +614,7 @@ html[data-watta-nav-drawer-open]::after {
     letter-spacing: 0.01em;
     line-height: 1.2;
     color: #ffffff;
-    background: #50800c;
+    background: var(--watta-brand-action);
     box-shadow:
       0 -4px 24px rgba(15, 48, 28, 0.12),
       0 8px 28px rgba(15, 48, 28, 0.14);
@@ -589,13 +628,13 @@ html[data-watta-nav-drawer-open]::after {
 
   @media (hover: hover) {
     .watta-cart-checkout-foot__submit:hover:not(:disabled) {
-      background: #446b0a;
+      background: var(--watta-brand-action-hover);
     }
   }
 
   .watta-cart-checkout-foot__submit:active:not(:disabled) {
     transform: scale(0.99);
-    background: #52800e;
+    background: var(--watta-brand-action-active);
   }
 
   .watta-cart-checkout-foot__submit:disabled {
@@ -647,7 +686,7 @@ html[data-watta-nav-drawer-open]::after {
     bottom: auto;
     width: 100%;
     pointer-events: auto;
-    background: #50800c;
+    background: var(--watta-brand-action);
     box-shadow:
       0 4px 14px rgba(15, 48, 28, 0.2),
       0 2px 6px rgba(0, 0, 0, 0.1);
@@ -655,12 +694,12 @@ html[data-watta-nav-drawer-open]::after {
 
   @media (hover: hover) {
     .watta-cart-mobile-sticky__bar.watta-mobile-cart-bar:hover {
-      background: #446b0a;
+      background: var(--watta-brand-action-hover);
     }
   }
 
   .watta-cart-mobile-sticky__bar.watta-mobile-cart-bar:active {
-    background: #52800e;
+    background: var(--watta-brand-action-active);
   }
 
   .watta-cart-mobile-sticky__bar:disabled {
@@ -670,7 +709,7 @@ html[data-watta-nav-drawer-open]::after {
 
   .watta-cart-mobile-sticky__bar:disabled:active {
     transform: none;
-    background: #50800c;
+    background: var(--watta-brand-action);
   }
 
   .watta-app-shell-root:has(.watta-cart-page) .floating-contact-buttons-root {
@@ -678,7 +717,7 @@ html[data-watta-nav-drawer-open]::after {
   }
 
   .watta-cart-checkout-page--v2 .watta-cart-page__content {
-    padding-bottom: calc(7.25rem + var(--watta-cart-bar-bottom));
+    padding-bottom: calc(3.75rem + max(12px, env(safe-area-inset-bottom, 0px)) + 0.35rem);
   }
 
   /* Одна кнопка оформлення — лише нижня смуга, без дубля «Оформити замовлення» у формі */
@@ -713,7 +752,7 @@ html[data-watta-nav-drawer-open]::after {
   .watta-cart-checkout-page--v2 .watta-cart-checkout-total__amount {
     font-size: 1.15rem;
     font-weight: 800;
-    color: var(--watta-brand-mint, #5c9010);
+    color: var(--watta-brand-action);
   }
 }
 
@@ -1033,16 +1072,16 @@ html[data-watta-nav-drawer-open]::after {
   .watta-cart-drawer-qty {
     padding: 2px;
     border-radius: 12px;
-    background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 8%, #ffffff);
-    border: 1px solid color-mix(in srgb, var(--watta-brand-mint, #5c9010) 22%, transparent);
+    background: color-mix(in srgb, var(--watta-brand-action) 8%, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--watta-brand-action) 22%, transparent);
   }
 
   .watta-cart-drawer-qty__btn {
     width: 28px;
     height: 28px;
     border-radius: 9px;
-    background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 14%, #ffffff);
-    color: var(--watta-brand-mint, #5c9010);
+    background: color-mix(in srgb, var(--watta-brand-action) 14%, #ffffff);
+    color: var(--watta-brand-action);
   }
 
   .watta-cart-drawer-qty__btn--plus {
@@ -1106,22 +1145,46 @@ html[data-watta-nav-drawer-open]::after {
     display: block;
   }
 
+  #watta-cart-drawer .watta-cart-drawer-foot {
+    padding: 0 0 max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    border-top: none;
+    background: transparent;
+  }
+
   .watta-cart-drawer-foot {
     flex-shrink: 0;
     margin-top: 0;
-    padding: 0 0 max(10px, env(safe-area-inset-bottom, 0px));
+    padding: 0;
     border-top: none;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 28%);
+    background: transparent;
   }
 
-  .watta-cart-drawer-foot__bar {
-    display: flex;
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    width: 100%;
-    border-radius: 0 0 1.15rem 1.15rem;
+  #watta-cart-drawer.is-open .watta-cart-drawer-foot__bar {
+    display: flex !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    box-sizing: border-box;
+    /*
+     * Ширина як у рядка товару: padding списку (12px) + padding картки (9px)
+     * — від лівого краю фото до правого краю «+».
+     */
+    width: calc(100% - 42px) !important;
+    max-width: none !important;
+    margin-inline: 21px;
+    min-height: 3.65rem;
+    padding: 1rem 1.05rem max(1rem, env(safe-area-inset-bottom, 0px));
+    border-radius: var(--watta-cart-compact-radius, 16px);
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow:
+      0 4px 14px rgba(15, 48, 28, 0.16),
+      0 2px 6px rgba(0, 0, 0, 0.08);
   }
 
   .watta-cart-drawer-checkout {
@@ -1129,9 +1192,19 @@ html[data-watta-nav-drawer-open]::after {
   }
 
   .watta-cart-drawer-foot__min-order {
-    margin-bottom: 0.5rem;
+    margin: 0 1rem 0.5rem;
     text-align: center;
     color: #ff6b35;
+  }
+
+  .watta-cart-drawer-foot__bar .watta-mobile-cart-bar__summary {
+    flex: 1 1 auto;
+    font-size: 1rem;
+  }
+
+  .watta-cart-drawer-foot__bar .watta-mobile-cart-bar__cta {
+    font-size: 1rem;
+    font-weight: 700;
   }
 }
 

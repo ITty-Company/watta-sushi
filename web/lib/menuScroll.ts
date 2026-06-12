@@ -242,8 +242,11 @@ export function scrollHomeCatalogToCategory(slug: string): boolean {
   if (typeof document === 'undefined') return false
   const norm = normCategorySlug(slug)
   const el =
-    document.getElementById(`home-menu-cat-${norm}`) ??
-    document.getElementById(`home-menu-cat-${slug.trim()}`)
+    norm === '__all__'
+      ? (document.getElementById('home-menu-cat--all') ??
+        document.getElementById('home-menu-catalog'))
+      : (document.getElementById(`home-menu-cat-${norm}`) ??
+        document.getElementById(`home-menu-cat-${slug.trim()}`))
   if (!el) return false
   const w = typeof window !== 'undefined' ? window.innerWidth : 1200
   const headerOffset = w <= 768 ? 148 : w <= 1024 ? 118 : 168
@@ -333,6 +336,69 @@ export type ScrollEntireAppToTopOptions = {
   force?: boolean
 }
 
+const SCROLL_ROOT_SELECTORS = [
+  'html',
+  'body',
+  'main',
+  '.watta-app-main-grow',
+  '.app-web',
+  '.content-web',
+  '.content-web--watta-craft',
+] as const
+
+/** Поточний URL для порівняння навігацій (pathname + search). */
+export function readAppLocationKey(): string {
+  if (typeof window === 'undefined') return '/'
+  return `${window.location.pathname}${window.location.search}`
+}
+
+/** Кешовані селектори scroll-контейнерів — без querySelectorAll('*') щоразу. */
+const SCROLL_ROOT_SELECTORS_FULL = [...SCROLL_ROOT_SELECTORS, '.watta-cart-drawer', '.watta-nav-drawer', '.watta-right-nav-drawer', '.notifications-panel-web', '.auth-ninja-modal-content']
+
+let cachedScrollContainers: HTMLElement[] | null = null
+let scrollContainersGeneration = 0
+
+function invalidateScrollContainersCache(): void {
+  cachedScrollContainers = null
+  scrollContainersGeneration += 1
+}
+
+function collectScrollContainers(): HTMLElement[] {
+  if (cachedScrollContainers) return cachedScrollContainers
+  const seen = new Set<HTMLElement>()
+  const result: HTMLElement[] = []
+  for (const sel of SCROLL_ROOT_SELECTORS_FULL) {
+    for (const el of document.querySelectorAll<HTMLElement>(sel)) {
+      if (!seen.has(el)) {
+        seen.add(el)
+        result.push(el)
+      }
+    }
+  }
+  cachedScrollContainers = result
+  return result
+}
+
+function resetAllScrollRoots(): void {
+  writeScrollTop(getVerticalScrollTarget(), 0, 'auto')
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  const roots = collectScrollContainers()
+  for (const el of roots) {
+    if (el.scrollTop !== 0 || el.scrollLeft !== 0) {
+      el.scrollTop = 0
+      el.scrollLeft = 0
+    }
+  }
+  // document.documentElement + body — один раз, без querySelectorAll.
+  const doc = document.documentElement
+  if (doc.scrollTop !== 0) doc.scrollTop = 0
+  if (doc.scrollLeft !== 0) doc.scrollLeft = 0
+  const bd = document.body
+  if (bd.scrollTop !== 0) bd.scrollTop = 0
+  if (bd.scrollLeft !== 0) bd.scrollLeft = 0
+  invalidateScrollContainersCache()
+}
+
 export function scrollEntireAppToTop(options?: ScrollEntireAppToTopOptions) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
   if (shouldPreserveMenuCategoryScroll() || isMenuCatalogScrollLocked()) return
@@ -343,12 +409,7 @@ export function scrollEntireAppToTop(options?: ScrollEntireAppToTopOptions) {
       if (isHomeRouteDocument()) markHomeScrollReady()
       return
     }
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-    document.documentElement.scrollTop = 0
-    document.body.scrollTop = 0
-    document.querySelectorAll<HTMLElement>('.content-web').forEach((el) => {
-      el.scrollTop = 0
-    })
+    resetAllScrollRoots()
     if (isHomeRouteDocument() && readAppScrollTop() <= USER_SCROLL_GUARD_PX) {
       markHomeScrollReady()
     }
@@ -359,6 +420,64 @@ export function scrollEntireAppToTop(options?: ScrollEntireAppToTopOptions) {
     requestAnimationFrame(reset)
   })
   setTimeout(reset, 0)
+}
+
+/** Короткі retry лише одразу після навігації — не чіпати скрол, якщо користувач уже свайпнув.
+ *  80ms — після paint, 200ms — після hydration, 400ms — cover slow devices де контент сідає пізніше. */
+const ROUTE_CHANGE_SCROLL_RETRY_MS = [80, 200, 400] as const
+
+let routeScrollTopGeneration = 0
+let routeScrollUserListener: (() => void) | null = null
+
+function cancelRouteScrollTopRetries(): void {
+  routeScrollTopGeneration += 1
+  routeScrollUserListener?.()
+  routeScrollUserListener = null
+}
+
+/** Скасувати відкладений scroll-to-top після навігації (клік по категорії в стрічці). */
+export function cancelRouteScrollToTopOnNavigation(): void {
+  cancelRouteScrollTopRetries()
+}
+
+/** SPA-перехід: на верх сторінки + короткі retry; скасовується при ручному скролі. */
+export function scrollToTopOnRouteChange(): void {
+  if (typeof window === 'undefined') return
+  cancelRouteScrollTopRetries()
+  const generation = routeScrollTopGeneration
+
+  let userMoved = false
+  const onUserScroll = () => {
+    if (generation !== routeScrollTopGeneration) return
+    if (readAppScrollTop() > USER_SCROLL_GUARD_PX) {
+      userMoved = true
+      cancelRouteScrollTopRetries()
+    }
+  }
+  const scrollOpts: AddEventListenerOptions = { passive: true, capture: true }
+  document.addEventListener('scroll', onUserScroll, scrollOpts)
+  routeScrollUserListener = () => {
+    document.removeEventListener('scroll', onUserScroll, scrollOpts)
+  }
+
+  const tryReset = () => {
+    if (generation !== routeScrollTopGeneration || userMoved) return
+    if (shouldPreserveMenuCategoryScroll() || isMenuCatalogScrollLocked()) return
+    scrollEntireAppToTop({ force: true })
+  }
+
+  tryReset()
+  const timers: number[] = []
+  for (const ms of ROUTE_CHANGE_SCROLL_RETRY_MS) {
+    timers.push(window.setTimeout(tryReset, ms))
+  }
+  const lastMs = ROUTE_CHANGE_SCROLL_RETRY_MS[ROUTE_CHANGE_SCROLL_RETRY_MS.length - 1] ?? 200
+  timers.push(
+    window.setTimeout(() => {
+      if (generation === routeScrollTopGeneration) cancelRouteScrollTopRetries()
+    }, lastMs + 80),
+  )
+  void timers
 }
 
 /** Вимкнути автовідновлення скролу браузером після Reload / bfcache. */

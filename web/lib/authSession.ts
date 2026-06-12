@@ -60,6 +60,15 @@
 // }
 import { clearUserOrdersCache } from '@/lib/userOrdersCache'
 
+function clearClientFavoritesOnLogout(): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem('favorites')
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Очистка локальных данных сессии (без токена!) */
 export function purgeAuthStorage(): void {
   if (typeof window === 'undefined') return
@@ -68,6 +77,7 @@ export function purgeAuthStorage(): void {
     localStorage.removeItem('currentUser')
     localStorage.removeItem('userId')
     clearUserOrdersCache()
+    clearClientFavoritesOnLogout()
   } catch {
     /* ignore */
   }
@@ -101,6 +111,12 @@ export function sanitizeAuthStorage(): void {
   if (!isLoggedIn) {
     const user = localStorage.getItem('currentUser')
     const orphanUserId = localStorage.getItem('userId')
-    if (user || orphanUserId) purgeAuthStorage()
+    if (user || orphanUserId) {
+      purgeAuthStorage()
+      // Поза render / getSnapshot — оновити бейджі після санітизації.
+      queueMicrotask(() => {
+        window.dispatchEvent(new Event('userChanged'))
+      })
+    }
   }
 }

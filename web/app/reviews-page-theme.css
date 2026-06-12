@@ -332,3 +332,42 @@ html:has(#reviews-page-container) .watta-sticky-chrome-flow-anchor {
     grid-column: 1 / -1;
   }
 }
+
+/* Телефон: коротка сторінка без відгуків — без розтягування на весь екран і зайвих відступів */
+@media (max-width: 767px) {
+  html:has(#reviews-page-container.watta-reviews-page--empty) .watta-app-shell-root,
+  html:has(#reviews-page-container.watta-reviews-page--empty) .watta-app-shell-root > main,
+  html:has(#reviews-page-container.watta-reviews-page--empty) .watta-app-main-grow {
+    min-height: 0 !important;
+  }
+
+  .watta-reviews-page--empty .watta-reviews-page__flow {
+    flex: 0 0 auto;
+  }
+
+  .watta-reviews-page--empty .watta-reviews-page__inner {
+    padding-top: 0.35rem;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .watta-reviews-page--empty .watta-reviews-page__cta-row {
+    margin-bottom: 0.5rem;
+  }
+
+  #reviews-page-container.watta-reviews-page--empty
+    .watta-stellar-hero-stack
+    #reviews-page-lead-intro
+    .home-after-hero-intro-inner-web--headroom,
+  #reviews-page-container.watta-reviews-page--empty
+    .watta-stellar-hero-stack
+    #reviews-page-lead-intro
+    .home-after-hero-intro-inner-web--home-menu {
+    padding-top: clamp(20px, 5vh, 36px) !important;
+    padding-bottom: clamp(6px, 1vh, 12px) !important;
+  }
+
+  #reviews-page-container.watta-reviews-page--empty .watta-stellar-hero-intro .watta-reviews-hero-empty-hint {
+    margin-top: 0.35rem;
+    font-size: 0.8125rem;
+  }
+}

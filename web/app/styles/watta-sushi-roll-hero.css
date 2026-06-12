@@ -854,7 +854,7 @@
   .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__mobile-intro-title,
   .watta-home-photo-first-screen .watta-roll-marquee-mask--split .watta-sushi-roll-hero__mobile-intro-body {
     width: 100%;
-    max-width: min(22rem, 92vw);
+    max-width: min(26rem, 94vw);
     margin-inline: auto;
     text-align: center;
   }
@@ -886,9 +886,9 @@
 
   .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-title {
     margin: 0;
-    font-size: 22px;
+    font-size: clamp(23px, 5vw, 28px);
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.18;
     letter-spacing: -0.02em;
     color: #0a2018;
     text-shadow:
@@ -905,16 +905,16 @@
     margin-top: calc(0.12em + clamp(7px, 0.85vh, 9px));
     font-family: var(--font-brand-marck, 'Marck Script'), cursive;
     font-weight: 400;
-    font-size: 25px;
+    font-size: clamp(26px, 6.2vw, 32px);
     color: #145142;
     letter-spacing: 0.03em;
   }
 
   .watta-home-photo-first-screen .watta-sushi-roll-hero__mobile-intro-body {
     margin: 10px auto 0;
-    max-width: 22rem;
-    font-size: 14px;
-    line-height: 1.45;
+    max-width: min(26rem, 94vw);
+    font-size: clamp(14px, 3.75vw, 17px);
+    line-height: 1.48;
     color: #124a3c;
     text-shadow:
       0 1px 0 rgba(255, 255, 255, 0.92),

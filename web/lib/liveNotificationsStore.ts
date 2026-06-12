@@ -108,6 +108,10 @@ async function refreshInternal(): Promise<void> {
 }
 
 function onExternalChange() {
+  if (!readIsLoggedInFromStorage()) {
+    resetLiveNotifications()
+    return
+  }
   failureStreak = 0
   void refreshInternal()
 }
@@ -152,4 +156,12 @@ export function subscribeLiveNotifications(listener: Listener): () => void {
 export function refreshLiveNotifications(): Promise<void> {
   failureStreak = 0
   return refreshInternal()
+}
+
+/** Скидає лічильник одразу після виходу (без очікування наступного poll). */
+export function resetLiveNotifications(): void {
+  failureStreak = 0
+  inflight = null
+  snapshot = EMPTY
+  emit()
 }

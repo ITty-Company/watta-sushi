@@ -195,10 +195,9 @@ export function navigateInstant(
   if (tryOpenAuthModalFromHref(target)) return
   markSkipBootSplashForHome(target)
   prefetchHref(router, target)
-  const scroll = options?.scroll ?? true
   const runNav = () => {
-    if (options?.replace) router.replace(target, { scroll })
-    else router.push(target, { scroll })
+    if (options?.replace) router.replace(target, { scroll: false })
+    else router.push(target, { scroll: false })
   }
   if (options?.immediate || isInstantNavPath(target)) {
     markRecentPointerNav(target)

@@ -6,6 +6,7 @@ import { X } from '@/lib/wattaInlineIcons'
 import { useLanguage } from '@/app/context/LanguageContext'
 import UserNotificationsPanel from '@/app/components/notifications/UserNotificationsPanel'
 import WattaNavDrawerShell from './WattaNavDrawerShell'
+import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
 import '@/app/watta-notifications-drawer.css'
 import '@/app/watta-notifications-page.css'
 
@@ -19,6 +20,8 @@ export const NotificationsView = ({
   const { t } = useLanguage()
   const n = t.notifications
   const [mounted, setMounted] = useState(false)
+
+  useWattaNavDrawerOpenSync(isOpen)
 
   useLayoutEffect(() => {
     setMounted(true)

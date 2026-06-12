@@ -16,6 +16,9 @@ import {
   type PhoneCountry,
 } from '@/lib/phoneCountries'
 
+/** Поверх auth-ninja-overlay (13100) — інакше список країн під backdrop. */
+const AUTH_PHONE_DROPDOWN_Z_INDEX = 13250
+
 type Props = {
   id?: string
   value: string
@@ -90,44 +93,67 @@ export default function AuthPhoneField({
     if (!btn) return
 
     const rect = btn.getBoundingClientRect()
-    const width = Math.min(296, window.innerWidth - 40)
-    const gap = 6
-    const estimatedHeight = 248
-    const spaceBelow = window.innerHeight - rect.bottom - gap
-    const spaceAbove = rect.top - gap
-    const openUp = spaceBelow < estimatedHeight && spaceAbove > spaceBelow
+    const vv = window.visualViewport
+    const viewportTop = vv?.offsetTop ?? 0
+    const viewportHeight = vv?.height ?? window.innerHeight
+    const viewportBottom = viewportTop + viewportHeight
+    const width = Math.min(296, window.innerWidth - 24)
+    const gap = 8
+    const estimatedHeight = Math.min(280, Math.max(168, viewportHeight * 0.44))
+    const spaceBelow = viewportBottom - rect.bottom - gap
+    const spaceAbove = rect.top - viewportTop - gap
+    const openUp = spaceBelow < Math.min(estimatedHeight, 168) && spaceAbove > spaceBelow
+    const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))
+
+    if (openUp) {
+      const top = Math.max(viewportTop + gap, rect.top - estimatedHeight - gap)
+      setDropdownStyle({
+        position: 'fixed',
+        left,
+        width,
+        top,
+        maxHeight: rect.top - gap - top,
+        zIndex: AUTH_PHONE_DROPDOWN_Z_INDEX,
+      })
+      return
+    }
 
     setDropdownStyle({
       position: 'fixed',
-      left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+      left,
       width,
-      top: openUp ? undefined : rect.bottom + gap,
-      bottom: openUp ? window.innerHeight - rect.top + gap : undefined,
-      zIndex: 9999,
+      top: rect.bottom + gap,
+      maxHeight: Math.max(120, Math.min(estimatedHeight, spaceBelow)),
+      zIndex: AUTH_PHONE_DROPDOWN_Z_INDEX,
     })
   }, [])
 
   useLayoutEffect(() => {
     if (!dropdownOpen) return
     updateDropdownPosition()
+    const vv = window.visualViewport
     window.addEventListener('resize', updateDropdownPosition)
     window.addEventListener('scroll', updateDropdownPosition, true)
+    vv?.addEventListener('resize', updateDropdownPosition)
+    vv?.addEventListener('scroll', updateDropdownPosition)
     return () => {
       window.removeEventListener('resize', updateDropdownPosition)
       window.removeEventListener('scroll', updateDropdownPosition, true)
+      vv?.removeEventListener('resize', updateDropdownPosition)
+      vv?.removeEventListener('scroll', updateDropdownPosition)
     }
   }, [dropdownOpen, updateDropdownPosition])
 
   useEffect(() => {
     if (!dropdownOpen) return
-    const onDocClick = (e: MouseEvent) => {
+    const onDocPointer = (e: PointerEvent) => {
       const target = e.target as Node
       if (rootRef.current?.contains(target) || dropdownRef.current?.contains(target)) return
       setDropdownOpen(false)
       setSearch('')
     }
-    document.addEventListener('mousedown', onDocClick)
-    return () => document.removeEventListener('mousedown', onDocClick)
+    document.addEventListener('pointerdown', onDocPointer, true)
+    return () => document.removeEventListener('pointerdown', onDocPointer, true)
   }, [dropdownOpen])
 
   useEffect(() => {
@@ -172,7 +198,9 @@ export default function AuthPhoneField({
           aria-expanded={dropdownOpen}
           aria-label={`+${selectedCountry.dial}`}
           disabled={disabled}
-          onClick={() => {
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
             setDropdownOpen((open) => {
               const next = !open
               if (next) requestAnimationFrame(updateDropdownPosition)

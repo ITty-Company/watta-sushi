@@ -205,7 +205,7 @@ body.watta-review-compose-open .watta-mobile-cart-bar:not(.watta-cart-drawer-foo
 
 @media (max-width: 767px) {
   .watta-review-compose-backdrop {
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
     padding:
       max(0.75rem, env(safe-area-inset-top, 0px))

@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { mergeServerFavoritesIntoLocal, readFavoriteIds } from '@/lib/favoritesStorage'
+import { readIsLoggedInFromStorage } from '@/lib/isAdminRole'
 
 export function useFavoriteCount() {
   const [count, setCount] = useState(0)
 
   const refresh = useCallback(() => {
-    setCount(readFavoriteIds().length)
+    setCount(readIsLoggedInFromStorage() ? readFavoriteIds().length : 0)
   }, [])
 
   useEffect(() => {

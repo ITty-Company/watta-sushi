@@ -57,7 +57,7 @@ export function HomeMenuProductCartMediaOverlay({ visible }: Props) {
         amountTemplate={cs.mobileBarSummaryAmount}
       />
       <span className="watta-mobile-cart-bar__cta">
-        {t.siteAria.cart}
+        {cs.drawerTitle}
         <ShoppingBag className="watta-mobile-cart-bar__ico" strokeWidth={2.25} aria-hidden />
       </span>
     </button>

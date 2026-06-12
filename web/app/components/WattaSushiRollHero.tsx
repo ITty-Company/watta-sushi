@@ -9,6 +9,7 @@ import {
   type WattaSushiRollData,
 } from '@/lib/wattaSushiRolls'
 import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
+import { useBootSplashDone } from '@/hooks/useBootSplashDone'
 
 type WattaSushiRollHeroProps = {
   mobileIntro?: WattaHeroRollMobileIntroContent
@@ -16,6 +17,7 @@ type WattaSushiRollHeroProps = {
 
 export default function WattaSushiRollHero({ mobileIntro }: WattaSushiRollHeroProps) {
   const heroRef = useRef<HTMLElement>(null)
+  const splashDone = useBootSplashDone(false)
   const displayRolls = useMemo<WattaSushiRollData[]>(() => WATTA_HERO_ROLL_IMAGES, [])
 
   useEffect(() => {
@@ -39,12 +41,14 @@ export default function WattaSushiRollHero({ mobileIntro }: WattaSushiRollHeroPr
       aria-label="WATTA SUSHI"
       data-watta-roll-hero=""
     >
-      <WattaSushiRollMarquee
-        rolls={displayRolls}
-        speed={getHeroRollMarqueeSpeed(displayRolls.length)}
-        tilt={-4}
-        middleSlot={<WattaHeroRollTitle mobileIntro={mobileIntro} />}
-      />
+      {splashDone ? (
+        <WattaSushiRollMarquee
+          rolls={displayRolls}
+          speed={getHeroRollMarqueeSpeed(displayRolls.length)}
+          tilt={-4}
+          middleSlot={<WattaHeroRollTitle mobileIntro={mobileIntro} />}
+        />
+      ) : null}
     </section>
   )
 }

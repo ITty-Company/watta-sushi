@@ -151,10 +151,16 @@ export default function WattaCartDrawer() {
     removeCartProduct(productId)
   }, [])
 
-  const handleCheckout = useCallback(() => {
-    close()
-    openWattaCheckout(router)
-  }, [close, router])
+  const handleCheckout = useCallback(
+    (e?: React.MouseEvent | React.PointerEvent) => {
+      e?.preventDefault()
+      e?.stopPropagation()
+      if (cartItems.length === 0) return
+      close()
+      openWattaCheckout(router)
+    },
+    [cartItems.length, close, router],
+  )
 
   const handleOpenMenu = useCallback(() => {
     close()
@@ -346,25 +352,29 @@ export default function WattaCartDrawer() {
                   {cs.order}
                 </button>
               </div>
-              <button
-                type="button"
-                className="watta-mobile-cart-bar watta-cart-drawer-foot__bar"
-                data-watta-cart-filled="true"
-                onClick={handleCheckout}
-              >
-                <WattaMobileCartBarSummary
-                  pieces={getCartTotalPieceCount(cartItems)}
-                  totalFormatted={subtotal.toFixed(2)}
-                  hasItems={cartItems.length > 0}
-                  emptyLabel={t.cart}
-                  leadTemplate={cs.mobileBarSummaryLead}
-                  amountTemplate={cs.mobileBarSummaryAmount}
-                />
-                <span className="watta-mobile-cart-bar__cta">
-                  {cs.mobileCheckoutShort}
-                  <ShoppingBag className="watta-mobile-cart-bar__ico" strokeWidth={2.25} aria-hidden />
-                </span>
-              </button>
+              {isOpen ? (
+                <button
+                  type="button"
+                  className="watta-mobile-cart-bar watta-cart-drawer-foot__bar"
+                  data-watta-cart-filled="true"
+                  data-watta-skip-instant-nav=""
+                  aria-label={cs.order}
+                  onClick={handleCheckout}
+                >
+                  <WattaMobileCartBarSummary
+                    pieces={getCartTotalPieceCount(cartItems)}
+                    totalFormatted={subtotal.toFixed(2)}
+                    hasItems={cartItems.length > 0}
+                    emptyLabel={t.cart}
+                    leadTemplate={cs.mobileBarSummaryLead}
+                    amountTemplate={cs.mobileBarSummaryAmount}
+                  />
+                  <span className="watta-mobile-cart-bar__cta">
+                    {cs.mobileCheckoutShort}
+                    <ShoppingBag className="watta-mobile-cart-bar__ico" strokeWidth={2.25} aria-hidden />
+                  </span>
+                </button>
+              ) : null}
             </footer>
           </>
         )}

@@ -1,0 +1,113 @@
+/**
+ * Телефон: без «тряски» при вертикальному скролі на всіх публічних сторінках.
+ * — locked vh замість 100svh/100dvh (адресний рядок Safari не змінює layout)
+ * — стабільний compositing chrome (без toggle transform при data-watta-scrolling)
+ * — overflow-anchor вимкнено на важких блоках
+ *
+ * Підключається останнім у layout.tsx — після globals / watta-components.
+ */
+@media (max-width: 767px) {
+  html.watta-light-chrome,
+  html.watta-light-chrome body {
+    overflow-anchor: none;
+  }
+
+  body:not(.watta-auth-route) .watta-app-shell-root {
+    min-height: var(--watta-screen-min-h) !important;
+  }
+
+  body:not(.watta-route-home):not(.watta-auth-route) .watta-app-shell-root {
+    min-height: var(--watta-screen-min-h) !important;
+    height: auto !important;
+  }
+
+  body:not(.watta-auth-route) .watta-app-shell-root,
+  body:not(.watta-auth-route) .watta-app-shell-root > main,
+  body:not(.watta-auth-route) .watta-app-main-grow {
+    min-height: var(--watta-screen-min-h) !important;
+  }
+
+  /* Hero photo-first: locked vh на головній і /menu */
+  html.watta-html-home-hero
+    .watta-home-photo-first-screen:not(:has(.watta-menu-photo-hero--no-marquee)),
+  .menu-page-web.watta-site-hero-page-web .watta-home-photo-first-screen {
+    --watta-home-hero-viewport-h: var(--watta-screen-min-h, 100vh) !important;
+    height: var(--watta-home-hero-viewport-h) !important;
+    min-height: var(--watta-home-hero-viewport-h) !important;
+    max-height: var(--watta-home-hero-viewport-h) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:has(> .watta-full-menu-page)
+    .delivery-page-intro-web--video:has(.watta-home-photo-first-screen) {
+    min-height: var(--watta-screen-min-h, 100vh) !important;
+  }
+
+  /* Chrome: один compositing-шар — без перемикання transform при scroll start/stop. */
+  .watta-sticky-chrome-portal {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  html[data-watta-scrolling='true'] .watta-sticky-chrome-portal,
+  html:not([data-watta-scrolling='true']) .watta-sticky-chrome-portal {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /*
+   * Без overflow-anchor на всіх блоках, які можуть «плисти» при скролі.
+   * На телефоні overflow-anchor змушує браузер перераховувати layout при кожній
+   * зміні висоти (ресайз зображень, lazy-load, дозавантаження).
+   */
+  .menu-page-web,
+  .watta-full-menu-page,
+  #home-menu-catalog,
+  #menu-cinematic-block,
+  .home-menu-product-card-web,
+  .watta-menu-product-card,
+  .home-menu-category-rail-web,
+  .watta-full-menu-page .watta-menu-category-section,
+  .watta-full-menu-page .watta-full-menu-section,
+  .site-footer-watta,
+  .delivery-page-home-flow,
+  .delivery-page-intro-web,
+  .watta-home-photo-first-screen,
+  .watta-home-hero-flow,
+  .watta-roll-marquee-track {
+    overflow-anchor: none;
+  }
+
+  /*
+   * Категорії /menu: contain щоб браузер знав, що ці блоки не впливають на layout
+   * сусідів. Без content-visibility (були білі дірки), лише contain.
+   */
+  .watta-full-menu-page .watta-menu-category-section {
+    contain: layout style paint;
+  }
+
+  .watta-full-menu-page .watta-full-menu-section {
+    contain: layout style;
+  }
+
+  /*
+   * Картки товарів: isloated layers — при скролі змінюється лише scrollTop,
+   * перекомпоновка layout не потрібна.
+   */
+  .home-menu-product-card-web,
+  .watta-menu-product-card {
+    contain: layout style paint;
+  }
+
+  /* Нижні fixed-елементи — без transition під час скролу (менше repaint). */
+  html[data-watta-scrolling='true'] .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar),
+  html[data-watta-scrolling='true'] .floating-contact-buttons-root,
+  html[data-watta-scrolling='true'] .watta-floating-cart-fab {
+    transition: none !important;
+  }
+
+  html[data-watta-scrolling='true']::after {
+    transition: none !important;
+  }
+}

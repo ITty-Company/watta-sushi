@@ -576,3 +576,43 @@
     --watta-cat-chip-size: 46px;
   }
 }
+
+/* Телефон: порожнє /favorites — без «лабіринту» (великий зазор + смуга кошика внизу) */
+@media (max-width: 767px) {
+  html:has(.watta-favorites-page--empty) .watta-app-shell-root,
+  html:has(.watta-favorites-page--empty) .watta-app-shell-root > main,
+  html:has(.watta-favorites-page--empty) .watta-app-main-grow {
+    min-height: 0 !important;
+  }
+
+  html:has(.watta-favorites-page--empty) main > .site-footer-watta {
+    margin-top: 0 !important;
+  }
+
+  .watta-favorites-page--empty.menu-page-web {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+  }
+
+  .watta-favorites-page--empty .watta-favorites-page__content {
+    flex: 0 0 auto !important;
+    padding-top: 0 !important;
+    padding-bottom: 0.25rem !important;
+  }
+
+  .watta-favorites-page--empty .watta-favorites-empty {
+    padding: clamp(0.85rem, 3.5vw, 1.35rem) 1rem clamp(0.75rem, 2.5vw, 1.15rem);
+  }
+
+  .watta-favorites-page--empty .watta-favorites-empty__art {
+    margin-bottom: 0.85rem;
+  }
+
+  .watta-favorites-page--empty .watta-favorites-empty__subtitle {
+    margin-top: 0.5rem;
+  }
+
+  .watta-favorites-page--empty .watta-favorites-empty__cta {
+    margin-top: 0.85rem;
+  }
+}

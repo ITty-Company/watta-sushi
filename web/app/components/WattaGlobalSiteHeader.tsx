@@ -109,7 +109,7 @@ export default function WattaGlobalSiteHeader({
   const loggedIn = useIsLoggedIn()
   const visibleNotificationUnread = loggedIn ? notificationUnreadCount : 0
   const visibleCartCount = cartCount
-  const visibleFavoritesCount = favoritesCount
+  const visibleFavoritesCount = loggedIn ? favoritesCount : 0
   const { showPromotionsNav } = usePublicPromotionsNav()
 
   const profileHref = loggedIn ? '/profile' : getAuthUrl('/profile')

@@ -43,13 +43,13 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
   -webkit-line-clamp: 2 !important;
 }
 
-/* Телефон: рівно 5 чіпів у видимій зоні, решта — свайп */
+/* Телефон: рівно 6 чіпів у видимій зоні, решта — свайп */
 @media (max-width: 767px) {
   :root {
-    --watta-cat-peek: 5;
+    --watta-cat-peek: 6;
     --cat-gap: 3px;
     /* Трохи вище чіп — більше місця під крупнішу іконку + підпис із відступом. */
-    --watta-cat-mobile-chip-aspect: 5 / 4.4;
+    --watta-cat-mobile-chip-aspect: 5 / 4.85;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
@@ -62,16 +62,16 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     justify-content: center !important;
     flex: 0 0
       calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
       ) !important;
     width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
     ) !important;
     min-width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
     ) !important;
     max-width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
     ) !important;
     height: auto !important;
     min-height: 0 !important;

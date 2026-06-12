@@ -1,4 +1,4 @@
-import { isUserLoggedIn, purgeAuthStorage } from '@/lib/authSession'
+import { isUserLoggedIn } from '@/lib/authSession'
 
 /** True if stored/API user payload marks site administrator (case-insensitive). */
 export function isAdminRole(role: unknown): boolean {
@@ -37,20 +37,12 @@ export function readIsAdminFromCurrentUserJson(raw: string | null): boolean {
   return isAdminRole(user.role)
 }
 
-/** Користувач увійшов: валідний token + currentUser з id/email. */
+/** Користувач увійшов: cookie + currentUser з id/email. Лише читання — без purge (викликається з render / useSyncExternalStore). */
 export function readIsLoggedInFromStorage(): boolean {
   if (typeof window === 'undefined') return false
-  const token = localStorage.getItem('token')
-  if (typeof token !== 'string' || !token.trim() || !isUserLoggedIn()) {
-    if (token || localStorage.getItem('currentUser')) purgeAuthStorage()
-    return false
-  }
+  if (!isUserLoggedIn()) return false
   const user = parseStoredUser(localStorage.getItem('currentUser'))
-  if (!user || !hasLoggedInUserIdentity(user)) {
-    purgeAuthStorage()
-    return false
-  }
-  return true
+  return Boolean(user && hasLoggedInUserIdentity(user))
 }
 
 /** Адмін: активна сесія + role === ADMIN. */

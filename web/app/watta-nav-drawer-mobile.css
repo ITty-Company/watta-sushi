@@ -13,7 +13,7 @@
 }
 
 /* Телефон, планшет, ноут, ПК — однакова панель меню */
-.watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer)::before {
+.watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer):not(#watta-notifications-drawer)::before {
   display: none;
 }
 
@@ -67,7 +67,7 @@
     padding:
       12px
       max(16px, env(safe-area-inset-right, 0px))
-      max(28px, calc(env(safe-area-inset-bottom, 0px) + 20px))
+      max(12px, env(safe-area-inset-bottom, 0px))
       max(16px, env(safe-area-inset-left, 0px));
     min-height: min-content;
     background: #ffffff;
@@ -267,36 +267,6 @@
     background: var(--watta-brand-mint-active);
   }
 
-  .watta-nav-compact--drawer .watta-nav-compact__contact {
-    padding: 10px 12px;
-    border-radius: 12px;
-    border-color: var(--watta-drawer-forest-border);
-    background: var(--watta-drawer-forest-soft);
-  }
-
-  .watta-nav-compact--drawer .watta-nav-compact__contact-title {
-    margin: 0 0 2px;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--watta-drawer-ink-muted);
-  }
-
-  .watta-nav-compact--drawer .watta-nav-compact__phone {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--watta-drawer-forest);
-  }
-
-  .watta-nav-compact--drawer .watta-nav-compact__hours {
-    display: block;
-    margin: 4px 0 0;
-    font-size: 10px;
-    color: var(--watta-drawer-ink-muted);
-    line-height: 1.35;
-  }
-
   .watta-nav-compact--drawer .watta-nav-compact__logout {
     min-height: 2.25rem;
     border-radius: 11px;
@@ -352,5 +322,16 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
+}
+
+/* Телефон: блок «Оформить заказ» з футера — дубль і зайва «біла» зона внизу */
+@media (max-width: 767px) {
+  .watta-nav-compact--drawer .watta-nav-compact__contact {
+    display: none;
+  }
+
+  .watta-nav-compact--drawer .watta-nav-compact__scroll {
+    padding-bottom: 0;
+  }
 }
 

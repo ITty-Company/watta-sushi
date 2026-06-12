@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
+import { ReactNode, Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import { LazyMotion } from 'framer-motion'
 import { loadFramerFeatures } from '@/lib/framerLazyFeatures'
@@ -23,18 +23,10 @@ import { NotificationsDrawerProvider } from './context/NotificationsDrawerContex
 import { sanitizeAuthStorage } from '@/lib/authSession'
 import { syncFavoritesAfterAuth } from '@/lib/favoritesStorage'
 import { ensureDocumentScrollUnlocked } from '@/lib/ensureDocumentScroll'
+import { bindMobileInputFocusStable } from '@/lib/bindMobileInputFocusStable'
 import { bindMobileViewportHeightLock, lockMobileViewportHeight } from '@/lib/lockMobileViewportHeight'
-import { scrollEntireAppToTop, disableBrowserScrollRestoration } from '@/lib/menuScroll'
-import {
-  bindWattaScrollMemory,
-  consumePopNavigation,
-  restoreScrollForCurrentLocation,
-} from '@/lib/wattaScrollMemory'
-import {
-  consumeSkipScrollReset,
-  applyRestoreChromeCompactIfNeeded,
-  shouldPreserveMenuCategoryScroll,
-} from '@/lib/wattaChromeScroll'
+import { disableBrowserScrollRestoration } from '@/lib/menuScroll'
+import { bindWattaScrollMemory } from '@/lib/wattaScrollMemory'
 import { subscribeWattaCatalogCrossTab } from '@/lib/wattaCatalogSync'
 import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
 import {
@@ -50,13 +42,13 @@ import { useInstantNavBoot } from '@/hooks/useInstantNavBoot'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { isDocumentReloadNavigation } from '@/lib/menuBrowseRestore'
-import { markInternalNavBackAvailable, resetInternalNavBack } from '@/lib/wattaInternalNavBack'
+import { resetInternalNavBack } from '@/lib/wattaInternalNavBack'
 import { resetHomepageLikeLogoClick, WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { bindHeroScrollPerf } from '@/lib/heroScrollPerf'
 import { bindHeroVideoKeepAlive } from '@/lib/heroVideoKeepAlive'
 import { warmHeroVideoCache } from '@/lib/warmHeroVideoCache'
-import { isWattaHomeHeroPathname, isWattaHomeHeroVideoPathname, isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
-import { applyWattaProductChromeEntry } from '@/lib/wattaProductChrome'
+import { isWattaHomeHeroPathname, isWattaHomeHeroVideoPathname } from '@/lib/wattaHtmlRouteClass'
+import RouteScrollReset from './components/RouteScrollReset'
 import {
   navigateToFullMenuCategory,
   WATTA_CATEGORY_STRIP_SELECT,
@@ -72,7 +64,6 @@ export default function AppClient({
   const router = useInstantRouter()
   useInstantNavBoot()
   useScrollReveal(pathname)
-  const prevPathnameForScrollRef = useRef<string | null>(null)
   const isHomeRoute = pathname === '/'
   const isHomeRollHero = isWattaHomeHeroPathname(pathname ?? '/')
   const isHeroVideoRoute = isWattaHomeHeroVideoPathname(pathname ?? '/') && !isHomeRollHero
@@ -150,34 +141,6 @@ export default function AppClient({
     resetInternalNavBack()
   }, [])
 
-  useLayoutEffect(() => {
-    const path = pathname ?? '/'
-    const prev = prevPathnameForScrollRef.current
-    prevPathnameForScrollRef.current = path
-    ensureDocumentScrollUnlocked()
-    // Завжди споживаємо прапорець back/forward на кожну зміну pathname — інакше він «протікає»
-    // на наступну (push) навігацію і та помилково відновлює скрол замість scroll-to-top.
-    const wasPopNavigation = consumePopNavigation()
-    if (prev !== null && prev !== path) {
-      markInternalNavBackAvailable()
-    }
-    if (prev === path) return
-    if (path === '/menu' && prev === '/menu') return
-    if (consumeSkipScrollReset() || shouldPreserveMenuCategoryScroll()) {
-      applyRestoreChromeCompactIfNeeded()
-      return
-    }
-    if (isWattaProductPathname(path)) {
-      applyWattaProductChromeEntry()
-    }
-    // Back/forward: повертаємо збережену позицію (як на звичайних сайтах). Головну не чіпаємо —
-    // там окрема hero-логіка (reset на верх). Якщо збереженої позиції нема — звичайний scroll-to-top.
-    if (wasPopNavigation && !isHomeRoute && restoreScrollForCurrentLocation()) {
-      return
-    }
-    scrollEntireAppToTop({ force: true })
-  }, [pathname, isHomeRoute])
-
   /** F5 на головній (або reload з іншої публічної → /) — reset як клік по логотипу. */
   useLayoutEffect(() => {
     if (!isDocumentReloadNavigation()) return
@@ -237,7 +200,7 @@ export default function AppClient({
   useEffect(() => {
     const onPageShow = () => {
       ensureDocumentScrollUnlocked()
-      lockMobileViewportHeight()
+      lockMobileViewportHeight(true)
     }
     window.addEventListener('pageshow', onPageShow)
     return () => window.removeEventListener('pageshow', onPageShow)
@@ -245,6 +208,9 @@ export default function AppClient({
 
   /** Телефон: «заморожена» висота вікна — не стискається від клавіатури. */
   useEffect(() => bindMobileViewportHeightLock(), [])
+
+  /** Телефон: фокус у полі — без зсуву сторінки / панелей. */
+  useEffect(() => bindMobileInputFocusStable(), [])
 
   /** Hero mp4: /menu, /delivery — на головній roll hero без відео. */
   useEffect(() => {
@@ -316,6 +282,9 @@ export default function AppClient({
         <CartDrawerProvider enabled={showPublicNavChrome}>
         {/* Мінімум висоти вікна: футер лишається внизу; фон сторінки — як у шапки контенту */}
         <div className="watta-app-shell-root watta-page-bg flex min-h-[var(--watta-screen-min-h,100dvh)] flex-col">
+          <Suspense fallback={null}>
+            <RouteScrollReset />
+          </Suspense>
           <ServiceWorkerRegister />
           <WattaHtmlRouteClass />
           {/* flex-1: основний блок забирає вільну висоту до min-h екрана — інакше «повітря» лишалось під футером */}

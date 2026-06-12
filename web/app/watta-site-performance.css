@@ -321,6 +321,8 @@ html:not([data-watta-scrolling='true']) .watta-sticky-chrome-portal {
   transform: none;
 }
 
+/* Телефон: compositing chrome не перемикається — override у watta-mobile-scroll-stable.css */
+
 /* Планшет / ноут / ПК: стабільний compositing шару chrome — без «стрибка» при data-watta-scrolling. */
 @media (min-width: 768px) {
   .watta-sticky-chrome-portal {

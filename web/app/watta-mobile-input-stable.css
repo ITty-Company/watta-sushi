@@ -1,0 +1,179 @@
+/**
+ * Телефон: поля вводу — без zoom, без зсуву layout / fixed-панелей при клавіатурі.
+ * Підключається останнім у layout.tsx.
+ */
+@media (max-width: 767px) {
+  html.watta-light-chrome {
+    touch-action: manipulation;
+  }
+
+  /* iOS Safari: font-size < 16px → auto-zoom; дублюємо для модалок і checkout */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']):not([type='hidden']):not([type='color']),
+  textarea,
+  select,
+  .auth-ninja-field__input,
+  .auth-ninja-phone__input,
+  .auth-ninja-phone__search,
+  .auth-ninja-code-input,
+  .auth-watta-input,
+  .delivery-watta-postal-input,
+  .watta-profile-data-field__input,
+  .watta-profile-address-form__input {
+    font-size: max(16px, 1rem) !important;
+  }
+
+  html[data-watta-input-focused] .watta-sticky-chrome-portal,
+  html[data-watta-auth-modal-open] .watta-sticky-chrome-portal,
+  html[data-watta-input-focused] .watta-mobile-cart-bar,
+  html[data-watta-input-focused] .floating-contact-buttons-root,
+  html[data-watta-input-focused] .watta-floating-cart-fab {
+    transition: none !important;
+  }
+
+  /* Модалка входу: backdrop на всю «заморожену» висоту — blur і зверху, і знизу */
+  html[data-watta-auth-modal-open] .auth-ninja-overlay,
+  body.watta-auth-modal-open .auth-ninja-overlay,
+  body.watta-auth-route .auth-ninja-overlay {
+    position: fixed;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+    min-height: 100dvh;
+    min-height: 100svh;
+    max-height: none;
+    overflow: hidden;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      max(10px, env(safe-area-inset-right, 0px))
+      max(10px, env(safe-area-inset-bottom, 0px))
+      max(10px, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+  }
+
+  html[data-watta-auth-modal-open] .auth-ninja-overlay__backdrop,
+  body.watta-auth-modal-open .auth-ninja-overlay__backdrop {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    /* 100lvh + safe-area — backdrop до самого низу, без білої смуги над toolbar Safari */
+    height: 100% !important;
+    min-height: 100% !important;
+    min-height: 100lvh !important;
+    min-height: 100dvh !important;
+    min-height: 100svh !important;
+    min-height: -webkit-fill-available !important;
+    max-height: none !important;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.44) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.04) !important;
+    backdrop-filter: blur(16px) saturate(1.04) !important;
+  }
+
+  html[data-watta-auth-modal-open].watta-light-chrome,
+  html[data-watta-auth-modal-open].watta-light-chrome body,
+  html[data-watta-auth-modal-open],
+  body.watta-auth-modal-open {
+    min-height: 100lvh !important;
+    min-height: 100dvh !important;
+    min-height: -webkit-fill-available !important;
+    background: #0f172a !important;
+    background-color: #0f172a !important;
+  }
+
+  /* Замість cart-gradient — затемнення safe-area / home indicator */
+  html[data-watta-auth-modal-open]::after {
+    content: '' !important;
+    display: block !important;
+    opacity: 1 !important;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 13099;
+    height: calc(env(safe-area-inset-bottom, 0px) + 2px);
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.44);
+    -webkit-backdrop-filter: blur(16px) saturate(1.04);
+    backdrop-filter: blur(16px) saturate(1.04);
+  }
+
+  body.watta-auth-modal-open::after {
+    display: none !important;
+    content: none !important;
+    opacity: 0 !important;
+  }
+
+  html[data-watta-auth-modal-open][data-watta-input-focused].watta-light-chrome,
+  html[data-watta-auth-modal-open][data-watta-input-focused].watta-light-chrome body {
+    background: #0f172a !important;
+  }
+
+  /*
+   * iOS Safari: під visual viewport лишається «біла» смуга — затемнюємо зону над клавіатурою
+   * (висота з --watta-auth-keyboard-shade-h у bindMobileInputFocusStable).
+   */
+  html[data-watta-auth-modal-open][data-watta-input-focused]::before {
+    content: '';
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 13098;
+    height: var(--watta-auth-keyboard-shade-h, 0px);
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.58) 0%,
+      rgba(15, 23, 42, 0.82) 48%,
+      rgba(15, 23, 42, 0.28) 100%
+    );
+    -webkit-backdrop-filter: blur(14px) saturate(1.02);
+    backdrop-filter: blur(14px) saturate(1.02);
+  }
+
+  html[data-watta-auth-modal-open][data-watta-input-focused] .auth-ninja-overlay {
+    min-height: 100lvh;
+    min-height: 100svh;
+    background: rgba(0, 0, 0, 0.38);
+  }
+
+  html[data-watta-auth-modal-open][data-watta-input-focused] .auth-ninja-overlay__backdrop {
+    min-height: 100lvh !important;
+    min-height: 100svh !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.04) !important;
+    backdrop-filter: blur(18px) saturate(1.04) !important;
+  }
+
+  html[data-watta-auth-modal-open] .watta-mobile-cart-bar:not(.watta-cart-drawer-foot__bar),
+  html[data-watta-auth-modal-open] .floating-contact-buttons-root,
+  html[data-watta-auth-modal-open] .watta-floating-cart-fab {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  html[data-watta-auth-modal-open] .auth-ninja-modal,
+  body.watta-auth-modal-open .auth-ninja-modal,
+  body.watta-auth-route .auth-ninja-modal {
+    margin: 0 auto;
+    max-height: min(
+      calc(var(--watta-app-height, 100vh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 20px),
+      640px
+    );
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.watta-auth-modal-open,
+  html[data-watta-auth-modal-open] {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+}

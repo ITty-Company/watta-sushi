@@ -31,7 +31,7 @@ export function useUnreadNotificationCount() {
   )
 
   return {
-    unread: snapshot.unreadCount,
+    unread: isNotificationsSessionActive() ? snapshot.unreadCount : 0,
     refresh: refreshLiveNotifications,
   }
 }

@@ -8,6 +8,8 @@ import './globals.css'
    Продуктові стилі → product/[id]/layout.tsx (watta-product-page-theme.css + watta-product-composition.css). */
 import './watta-base.css'
 import './watta-components.css'
+import './watta-mobile-scroll-stable.css'
+import './watta-mobile-input-stable.css'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildRootMetadata, getJsonLdDescription } from '@/lib/i18n/seo'
 import { wattaToHtmlLang } from '@/lib/i18n/language'
@@ -46,6 +48,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
   /** Світлий chrome зверху/знизу (Safari, Android), навіть при системній темній темі */
   themeColor: [

@@ -1,3 +1,4 @@
+import { cancelRouteScrollToTopOnNavigation } from '@/lib/menuScroll'
 import { isWattaCompactChromeViewport, isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR, WATTA_ROUTE_PRODUCT_CLASS } from '@/lib/wattaProductChrome'
 
@@ -98,6 +99,7 @@ export function readStickyChromeScrollOffset(): number {
 
 export function markMenuCategoryNavigation(opts?: { restoreCompact?: boolean }) {
   if (typeof window === 'undefined') return
+  cancelRouteScrollToTopOnNavigation()
   const restoreCompact = opts?.restoreCompact !== false
   try {
     sessionStorage.setItem(WATTA_SKIP_SCROLL_RESET_KEY, '1')
@@ -145,20 +147,29 @@ export function consumeSkipScrollReset(): boolean {
   }
 }
 
-/** Не скидати scroll наверх — перехід на /menu?cat= або скрол до секції в процесі. */
+/** Не скидати scroll наверх — лише під час скролу до секції на `/menu` (чіп у стрічці). */
 export function shouldPreserveMenuCategoryScroll(): boolean {
   if (typeof window === 'undefined') return false
+  if (window.location.pathname !== '/menu') return false
   try {
     if (sessionStorage.getItem(WATTA_SKIP_SCROLL_RESET_KEY) === '1') return true
     if (sessionStorage.getItem(WATTA_PENDING_MENU_CAT_KEY)) return true
   } catch {
     /* ignore */
   }
-  if (window.location.pathname === '/menu') {
-    const cat = new URLSearchParams(window.location.search).get('cat')?.trim()
-    if (cat) return true
-  }
   return false
+}
+
+/** Залишки прапорців меню не повинні блокувати scroll-to-top на інших маршрутах. */
+export function clearMenuScrollNavigationFlags(): void {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.removeItem(WATTA_SKIP_SCROLL_RESET_KEY)
+    sessionStorage.removeItem(WATTA_PENDING_MENU_CAT_KEY)
+    sessionStorage.removeItem(WATTA_RESTORE_CHROME_COMPACT_KEY)
+  } catch {
+    /* ignore */
+  }
 }
 
 export function applyRestoreChromeCompactIfNeeded(): void {

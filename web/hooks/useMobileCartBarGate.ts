@@ -50,6 +50,17 @@ function isCartBarScrollGatedPath(pathname: string): boolean {
   return p === '/' || p === '/menu'
 }
 
+/** Сторінки без нижньої смуги «Ваше замовлення» (інфо / відгуки / обране). */
+export function isMobileCartBarHiddenPath(pathname: string): boolean {
+  const p = normalizePath(pathname)
+  return (
+    p === '/cart' ||
+    p.startsWith('/admin') ||
+    p === '/reviews' ||
+    p === '/favorites'
+  )
+}
+
 function findPageHero(): HTMLElement | null {
   if (typeof document === 'undefined') return null
   for (const selector of HERO_SELECTOR_PRIORITY) {
@@ -64,15 +75,16 @@ function clamp01(value: number): number {
 }
 
 function resolveCartBarProgress(hero: HTMLElement | null, scrollTop: number): number {
+  // Головна /menu: не показувати смугу на «верху» сторінки — навіть якщо hero компактний
+  // і його низ потрапляє в перехідну зону між revealEnd і revealStart.
+  if (scrollTop <= SCROLL_SHOW_PX) return 0
+
   if (hero) {
     const rect = hero.getBoundingClientRect()
     const vh = window.innerHeight
     const revealEnd = vh * HERO_BAR_REVEAL_RATIO
     const revealStart = vh * HERO_BAR_REVEAL_START_RATIO
-    if (rect.bottom <= revealEnd) {
-      if (scrollTop <= SCROLL_SHOW_PX) return 0
-      return 1
-    }
+    if (rect.bottom <= revealEnd) return 1
     if (rect.bottom >= revealStart) return 0
     return clamp01(1 - (rect.bottom - revealEnd) / (revealStart - revealEnd))
   }
@@ -110,25 +122,29 @@ function setCartBarReveal(progress: number) {
   }
 }
 
-/** Телефон: нижня смуга «Оформити» — одразу скрізь, крім / та /menu (там після hero; якщо в кошику є товари — одразу). */
+/** Телефон: нижня смуга «Оформити» — одразу скрізь, крім / та /menu (там лише після скролу повз hero). */
 export function useMobileCartBarGate() {
   const pathname = usePathname() || '/'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    if (
-      pathname === '/cart' ||
-      pathname.startsWith('/admin') ||
-      !isCartBarScrollGatedPath(pathname)
-    ) {
+    if (isMobileCartBarHiddenPath(pathname)) {
+      document.documentElement.removeAttribute(WATTA_CART_BAR_GATED_ATTR)
+      document.documentElement.removeAttribute(WATTA_CART_BAR_VISIBLE_ATTR)
+      document.documentElement.removeAttribute(WATTA_PAST_HERO_ATTR)
+      document.documentElement.removeAttribute(LEGACY_HOME_PAST_HERO_ATTR)
+      document.documentElement.style.removeProperty(WATTA_CART_BAR_PROGRESS_VAR)
+      return
+    }
+
+    if (!isCartBarScrollGatedPath(pathname)) {
       document.documentElement.removeAttribute(WATTA_CART_BAR_GATED_ATTR)
       setCartBarReveal(1)
       return
     }
 
-    // Головна / меню: смуга кошика з’являється лише після скролу повз hero,
-    // навіть якщо в кошику вже є товари (інакше зелена смуга «стоїть» одразу зверху).
+    // Головна / меню: смуга кошика з’являється лише після скролу повз hero.
     document.documentElement.setAttribute(WATTA_CART_BAR_GATED_ATTR, '1')
 
     const mq = window.matchMedia('(max-width: 767px)')
@@ -151,7 +167,7 @@ export function useMobileCartBarGate() {
         return
       }
       if (document.documentElement.hasAttribute('data-watta-cart-drawer-open')) {
-        setCartBarReveal(1)
+        setCartBarReveal(0)
         return
       }
       const hero = findPageHero()

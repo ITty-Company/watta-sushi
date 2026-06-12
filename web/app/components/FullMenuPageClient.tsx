@@ -100,6 +100,8 @@ export default function FullMenuPageClient() {
   const [deepLinkCat, setDeepLinkCat] = useState('')
   /** Один автоскрол на цільову категорію за навігацію. */
   const initialCatScrollDoneRef = useRef<string | null>(null)
+  /** Скрол до секції після переходу з іншої сторінки по категорії (drawer / стрічка). */
+  const catScrollAfterLoadRef = useRef<string | null>(null)
   const catScrollGenerationRef = useRef(0)
   const catScrollSettledRef = useRef(false)
   const itemsRef = useRef<MenuItem[]>([])
@@ -634,14 +636,28 @@ export default function FullMenuPageClient() {
       }
     }
     if (loading || visibleCategories.length === 0) return
+
+    const pendingScrollSlug = catScrollAfterLoadRef.current
+    if (pendingScrollSlug) {
+      const norm = normMenuSlug(pendingScrollSlug)
+      if (initialCatScrollDoneRef.current === norm) {
+        catScrollAfterLoadRef.current = null
+        return
+      }
+      initialCatScrollDoneRef.current = norm
+      catScrollAfterLoadRef.current = null
+      pinSectionMountCluster(norm)
+      requestAnimationFrame(() => {
+        requestScrollToCategory(norm)
+      })
+      return
+    }
+
     const slug = targetCategorySlug
     if (!slug) return
     if (initialCatScrollDoneRef.current === slug) return
     initialCatScrollDoneRef.current = slug
     pinSectionMountCluster(slug)
-    requestAnimationFrame(() => {
-      requestScrollToCategory(slug)
-    })
   }, [
     catFromUrl,
     loading,

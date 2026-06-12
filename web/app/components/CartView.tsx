@@ -50,7 +50,6 @@ import '../watta-cart-drawer-empty-art.css'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { isUserLoggedIn } from '@/lib/authGate'
-import { openWattaAuth } from '@/lib/openWattaAuth'
 import { defaultMinimumOrderEur } from '@/lib/deliveryMinOrder'
 import { getApiUrl } from '@/lib/utils'
 import { cityIdPreferAmsterdam } from '@/lib/wattaPreferredDefaultCity'
@@ -635,18 +634,6 @@ export default function CartView({
     window.addEventListener('userChanged', onUser)
     return () => window.removeEventListener('userChanged', onUser)
   }, [loadBonusBalance])
-
-  const openCartAuth = useCallback(() => {
-    openWattaAuth({
-      returnUrl: '/cart',
-      onSuccess: () => {
-        prefillFromUser()
-        void loadSavedAddresses()
-        loadBonusBalance()
-        router.refresh()
-      },
-    })
-  }, [prefillFromUser, loadSavedAddresses, loadBonusBalance, router])
 
   // --- ВЫЧИСЛЕНИЯ ---
   const uniqueItems = useMemo(
@@ -1243,10 +1230,6 @@ export default function CartView({
   ])
 
  const handleOrder = async () => {
-    if (!isUserLoggedIn()) {
-      openCartAuth()
-      return
-    }
     if (!kitchenAcceptsOrderNow) {
       promptKitchenClosedModal()
       return
@@ -1254,11 +1237,6 @@ export default function CartView({
     setIsLoading(true)
     try {
       const authHeaders = getBearerAuthHeaders()
-      if (Object.keys(authHeaders as Record<string, string>).length === 0) {
-        openCartAuth()
-        setIsLoading(false)
-        return
-      }
       const promoPart = appliedPromo
         ? cs.orderCommentPromo
             .replace('{{code}}', appliedPromo.code)
@@ -1459,19 +1437,14 @@ export default function CartView({
 
   const reduceMotion = useReducedMotion() ?? false
 
-  const checkoutSubmitLabel = isUserLoggedIn()
-    ? paymentMethod === 'CARD' && checkoutSettings.cardPaymentReady
+  const checkoutSubmitLabel =
+    paymentMethod === 'CARD' && checkoutSettings.cardPaymentReady
       ? cs.payCard
       : paymentMethod === 'CASH'
         ? cs.checkoutSubmitCash
         : cs.order
-    : cs.checkoutOrderLogin
 
-  const mobileCheckoutFootLabel = isLoading
-    ? cs.processing
-    : !isUserLoggedIn()
-      ? cs.checkoutOrderLogin
-      : cs.checkoutSubmitShort
+  const mobileCheckoutFootLabel = isLoading ? cs.processing : cs.checkoutSubmitShort
 
   const renderCheckoutPayBlock = () => (
     <CheckoutFormSection
@@ -1764,15 +1737,6 @@ export default function CartView({
                   subtitle={isUserLoggedIn() ? cs.checkoutProfileHint : cs.checkoutGuestHint}
                   subtitleClassName="watta-cart-checkout-lead__sub"
                 />
-                {!isUserLoggedIn() ? (
-                  <button
-                    type="button"
-                    className="watta-cart-checkout-lead__login watta-cart-checkout-lead__login--hero"
-                    onClick={() => openCartAuth()}
-                  >
-                    {cs.checkoutLoginLink}
-                  </button>
-                ) : null}
               </>
             ) : null}
           </div>
@@ -1829,17 +1793,6 @@ export default function CartView({
                   onSubmit={handleCheckoutSubmit}
                   noValidate
                 >
-                {!isUserLoggedIn() ? (
-                  <div className="watta-cart-checkout-login-card">
-                    <button
-                      type="button"
-                      className="watta-cart-checkout-login-card__btn"
-                      onClick={() => openCartAuth()}
-                    >
-                      {cs.checkoutLoginHint}
-                    </button>
-                  </div>
-                ) : null}
                 {/* 1. Контактные данные */}
                 <CheckoutFormSection
                   id="cart-checkout-contact"

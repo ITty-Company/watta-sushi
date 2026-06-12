@@ -4,12 +4,15 @@ import { usePathname } from 'next/navigation'
 import { Heart } from '@/lib/wattaInlineIcons'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useFavoriteCount } from '@/hooks/useFavoriteCount'
+import { useIsLoggedIn } from '@/hooks/useIsLoggedIn'
 import { cn } from '@/lib/utils'
 
 export default function WattaMobileFavoritesFab({ className }: { className?: string }) {
   const pathname = usePathname() || '/'
   const router = useInstantRouter()
-  const count = useFavoriteCount()
+  const loggedIn = useIsLoggedIn()
+  const favoritesCount = useFavoriteCount()
+  const count = loggedIn ? favoritesCount : 0
   if (pathname.startsWith('/admin')) return null
   if (pathname === '/favorites') return null
 

@@ -3,6 +3,11 @@ import { navigateInstant, prefetchHref } from '@/lib/instantNav'
 import { prefetchRouteChunk } from '@/lib/prefetchRouteChunks'
 import { canonicalMenuCategorySlug } from '@/lib/menuCategoryCanonical'
 import { markMenuCategoryNavigation, markPendingMenuCatScroll } from '@/lib/wattaChromeScroll'
+import {
+  cancelRouteScrollToTopOnNavigation,
+  runUntilScrollSuccess,
+  scrollHomeCatalogToCategory,
+} from '@/lib/menuScroll'
 import { isWattaCompactChromeViewport } from '@/lib/wattaTouchViewport'
 
 /** Псевдо-категорія «Усі» на `/menu` — збігається в `WattaMenuCategoryStrip` та `FullMenuPageClient`. */
@@ -32,6 +37,37 @@ export function menuCategoryScrollSlug(slug: string): string {
   return trimmed
 }
 
+function isMenuCategorySectionMounted(slug: string): boolean {
+  if (typeof document === 'undefined') return false
+  if (slug === FULL_MENU_ALL_SLUG) {
+    return Boolean(document.getElementById('full-menu-page-start'))
+  }
+  const norm = canonicalMenuCategorySlug(slug)
+  return Boolean(
+    document.getElementById(`full-menu-heading-${norm}`) ??
+      document.getElementById(`full-menu-heading-${slug}`) ??
+      document.getElementById(`full-menu-section-${norm}`),
+  )
+}
+
+/** Після переходу на `/menu` — скрол до секції, коли каталог уже змонтований. */
+function scheduleMenuCategoryScrollAfterNav(slug: string): void {
+  if (typeof window === 'undefined') return
+  const trimmed = slug.trim()
+  if (!trimmed || trimmed === FULL_MENU_ALL_SLUG) return
+  runUntilScrollSuccess(() => {
+    if (window.location.pathname !== '/menu') return false
+    if (!isMenuCategorySectionMounted(trimmed)) return false
+    dispatchFullMenuScrollToCategory(trimmed)
+    return true
+  }, [0, 32, 80, 160, 320, 560, 900])
+}
+
+function isHomePathname(pathname: string): boolean {
+  const p = pathname.trim()
+  return p === '/' || p === ''
+}
+
 /** Ліва панель (бургер-меню): завжди відкриває `/menu?cat=` і скролить до секції. */
 function currentMenuLocationHref(): string {
   if (typeof window === 'undefined') return '/menu'
@@ -46,13 +82,12 @@ export function navigateFromNavDrawerToCategory(
   const href = buildMenuCategoryHref(slug)
   prefetchFullMenuCategory(router, slug)
   const scrollSlug = menuCategoryScrollSlug(slug)
-  markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
-  markPendingMenuCatScroll(scrollSlug)
 
   const loc = currentMenuLocationHref()
   const onMenu = pathname === '/menu' || loc === '/menu' || loc.startsWith('/menu?')
 
   if (onMenu) {
+    markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
     if (loc !== href) {
       navigateInstant(router as AppRouterInstance, href, { replace: true, scroll: false, immediate: true })
     }
@@ -60,7 +95,15 @@ export function navigateFromNavDrawerToCategory(
     return
   }
 
-  navigateInstant(router as AppRouterInstance, href, { scroll: false, immediate: true })
+  if (scrollSlug !== FULL_MENU_ALL_SLUG) {
+    markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
+    markPendingMenuCatScroll(scrollSlug)
+    navigateInstant(router as AppRouterInstance, href, { scroll: false, immediate: true })
+    scheduleMenuCategoryScrollAfterNav(scrollSlug)
+    return
+  }
+
+  navigateInstant(router as AppRouterInstance, href, { immediate: true })
 }
 
 /** Клік по чіпу категорії (capture + React) — один обробник у AppClient. */
@@ -88,9 +131,8 @@ export function navigateToFullMenuCategory(
   const loc = currentMenuLocationHref()
   const onMenu = pathname === '/menu' || loc === '/menu' || loc.startsWith('/menu?')
 
-  markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
-
   if (onMenu) {
+    markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
     if (loc !== href) {
       navigateInstant(router as AppRouterInstance, href, { replace: true, scroll: false, immediate: true })
     }
@@ -98,10 +140,21 @@ export function navigateToFullMenuCategory(
     return
   }
 
-  if (scrollSlug !== FULL_MENU_ALL_SLUG) {
-    markPendingMenuCatScroll(scrollSlug)
+  if (isHomePathname(pathname)) {
+    cancelRouteScrollToTopOnNavigation()
+    runUntilScrollSuccess(() => scrollHomeCatalogToCategory(scrollSlug))
+    return
   }
-  navigateInstant(router as AppRouterInstance, href, { scroll: false, immediate: true })
+
+  if (scrollSlug !== FULL_MENU_ALL_SLUG) {
+    markMenuCategoryNavigation({ restoreCompact: isWattaCompactChromeViewport() })
+    markPendingMenuCatScroll(scrollSlug)
+    navigateInstant(router as AppRouterInstance, href, { scroll: false, immediate: true })
+    scheduleMenuCategoryScrollAfterNav(scrollSlug)
+    return
+  }
+
+  navigateInstant(router as AppRouterInstance, href, { immediate: true })
 }
 
 /** Клік по стрічці категорій на `/menu` — скрол до секції в каталозі. */
@@ -121,6 +174,7 @@ export function dispatchFullMenuScrollToCategory(
   if (typeof window === 'undefined') return
   const trimmed = slug.trim()
   if (!trimmed) return
+  cancelRouteScrollToTopOnNavigation()
   const instant = options?.instant !== false
   window.dispatchEvent(new CustomEvent('wattaMenuCategoryHighlight', { detail: { slug: trimmed } }))
   window.dispatchEvent(

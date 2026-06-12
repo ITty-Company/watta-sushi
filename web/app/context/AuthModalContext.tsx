@@ -12,6 +12,8 @@ import {
 import AuthNinjaFlow from '@/app/components/auth/AuthNinjaFlow'
 import { registerWattaAuthModalOpener, type OpenWattaAuthOptions } from '@/lib/openWattaAuth'
 import { useWattaNavDrawerOpenSync } from '@/hooks/useWattaNavDrawerOpenSync'
+import { lockMobileViewportHeight } from '@/lib/lockMobileViewportHeight'
+import { isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 
 export type AuthModalContextValue = {
   open: (options?: OpenWattaAuthOptions) => void
@@ -50,12 +52,41 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
     if (isOpen) {
       root.setAttribute('data-watta-auth-modal-open', '')
       body.classList.add('watta-auth-modal-open')
-      const prev = body.style.overflow
+      lockMobileViewportHeight(true)
+      const isPhone = isWattaPhoneViewport()
+      const scrollY = isPhone ? window.scrollY : 0
+      const prevOverflow = body.style.overflow
+      const prevPosition = body.style.position
+      const prevTop = body.style.top
+      const prevWidth = body.style.width
+      const prevLeft = body.style.left
+      const prevRight = body.style.right
+      const prevMinHeight = body.style.minHeight
+      const prevBackground = body.style.backgroundColor
       body.style.overflow = 'hidden'
+      if (isPhone) {
+        body.style.position = 'fixed'
+        body.style.top = `-${scrollY}px`
+        body.style.left = '0'
+        body.style.right = '0'
+        body.style.width = '100%'
+        body.style.minHeight = '100lvh'
+        body.style.backgroundColor = '#0f172a'
+      }
       return () => {
         root.removeAttribute('data-watta-auth-modal-open')
         body.classList.remove('watta-auth-modal-open')
-        body.style.overflow = prev
+        body.style.overflow = prevOverflow
+        body.style.position = prevPosition
+        body.style.top = prevTop
+        body.style.width = prevWidth
+        body.style.left = prevLeft
+        body.style.right = prevRight
+        body.style.minHeight = prevMinHeight
+        body.style.backgroundColor = prevBackground
+        if (isPhone) {
+          window.scrollTo(0, scrollY)
+        }
       }
     }
     root.removeAttribute('data-watta-auth-modal-open')

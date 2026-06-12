@@ -10,7 +10,6 @@ import {
   prefetchHref,
 } from '@/lib/instantNav'
 import { tryOpenAuthModalFromHref } from '@/lib/openWattaAuth'
-
 type NavigateOptions = Parameters<AppRouterInstance['push']>[1]
 
 function markSkipBootSplashForHome(href: string): void {
@@ -36,7 +35,10 @@ export function useInstantRouter(): AppRouterInstance {
         if (tryOpenAuthModalFromHref(target)) return
         markSkipBootSplashForHome(target)
         prefetchHref(router, target)
-        const push = () => router.push(target, options)
+        const navOptions = { ...options, scroll: false as const }
+        const push = () => {
+          router.push(target, navOptions)
+        }
         if (isInstantNavPath(target)) push()
         else startTransition(push)
       },
@@ -46,7 +48,10 @@ export function useInstantRouter(): AppRouterInstance {
         if (tryOpenAuthModalFromHref(target)) return
         markSkipBootSplashForHome(target)
         prefetchHref(router, target)
-        const replace = () => router.replace(target, options)
+        const navOptions = { ...options, scroll: false as const }
+        const replace = () => {
+          router.replace(target, navOptions)
+        }
         if (isInstantNavPath(target)) replace()
         else startTransition(replace)
       },

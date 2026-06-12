@@ -69,13 +69,13 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.35;
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
   cursor: pointer;
   transition: color 0.15s ease;
 }
 
 .watta-cart-checkout-login-card__btn:hover {
-  color: var(--watta-brand-mint-hover, #50800c);
+  color: var(--watta-brand-action-hover);
 }
 
 @media (min-width: 768px) {
@@ -490,14 +490,14 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip:not(.watta-cart-date-chip--active):hover {
   border-color: rgba(122, 181, 21, 0.35);
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip--active,
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip--active:hover,
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-chip--active:focus-visible {
   border-color: transparent;
-  background: var(--watta-brand-mint, #5c9010);
+  background: var(--watta-brand-action);
   color: #ffffff;
   -webkit-text-fill-color: #ffffff;
   box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.45);
@@ -603,8 +603,8 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   height: 2.15rem;
   flex-shrink: 0;
   border-radius: 0.65rem;
-  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 14%, #ffffff);
-  color: var(--watta-brand-mint, #5c9010);
+  background: color-mix(in srgb, var(--watta-brand-action) 14%, #ffffff);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-date-picker__calendar-kicker {
@@ -664,7 +664,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip:not(.watta-cart-slot-chip--active):hover {
   border-color: rgba(122, 181, 21, 0.35);
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--active,
@@ -672,7 +672,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--active:focus-visible,
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-slot-chip--asap.watta-cart-slot-chip--active {
   border-color: transparent;
-  background: var(--watta-brand-mint, #5c9010);
+  background: var(--watta-brand-action);
   color: #ffffff;
   -webkit-text-fill-color: #ffffff;
   box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.42);
@@ -680,12 +680,12 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-city-pill:not(.watta-checkout-city-pill--active):hover {
   border-color: rgba(122, 181, 21, 0.28);
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-cart-fee-pill:not(.watta-cart-fee-pill--error):not(.watta-cart-fee-pill--muted) {
   border-color: rgba(122, 181, 21, 0.28);
-  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 11%, #ffffff);
+  background: color-mix(in srgb, var(--watta-brand-action) 11%, #ffffff);
   color: #145142;
 }
 
@@ -758,15 +758,16 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   position: relative;
 }
 
+/* Телефон: спочатку «Ваш заказ», потім форма контактів */
 .watta-cart-checkout-layout--v2 .watta-cart-checkout-aside {
-  order: 2;
+  order: 1;
   min-width: 0;
   max-width: 100%;
   overflow: visible;
 }
 
 .watta-cart-checkout-layout--v2 .watta-cart-checkout-main {
-  order: 1;
+  order: 2;
   min-width: 0;
   max-width: 100%;
   position: relative;
@@ -930,7 +931,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-city-pill--active {
   border-color: transparent;
-  background: var(--watta-brand-mint, #5c9010);
+  background: var(--watta-brand-action);
   color: var(--watta-brand-mint-ink, #ffffff);
   box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.45);
 }
@@ -975,15 +976,15 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-saved-address--active svg {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-saved-address--new.watta-checkout-saved-address--active {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-saved-address-active svg {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-checkout-saved-address--new {
@@ -1044,7 +1045,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn:not(.watta-checkout-fulfillment__btn--active):hover {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn:active {
@@ -1053,14 +1054,14 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn--active {
   background: #ffffff;
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
   box-shadow:
     0 2px 10px -4px rgba(122, 181, 21, 0.28),
     0 1px 3px rgba(20, 81, 66, 0.08);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-fulfillment__btn--active svg {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-field:focus {
@@ -1216,7 +1217,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   width: 0.9rem;
   height: 0.9rem;
   flex-shrink: 0;
-  accent-color: var(--watta-brand-mint, #5c9010);
+  accent-color: var(--watta-brand-action);
   cursor: pointer;
 }
 
@@ -1225,7 +1226,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 }
 
 .watta-cart-checkout-page--v2 #cart-delivery-time .watta-checkout-option-check:has(input:focus-visible) {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-order-panel .watta-cart-aside-lines__title {
@@ -1396,7 +1397,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 .watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:hover,
 .watta-cart-checkout-page--v2 .watta-checkout-pay-tile--active:focus-visible {
   border-color: transparent;
-  background: var(--watta-brand-mint, #5c9010);
+  background: var(--watta-brand-action);
   box-shadow: 0 4px 14px -6px rgba(122, 181, 21, 0.42);
 }
 
@@ -1433,8 +1434,8 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   width: 1.85rem;
   height: 1.85rem;
   border-radius: 0.55rem;
-  color: var(--watta-brand-mint, #5c9010);
-  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 12%, #ffffff);
+  color: var(--watta-brand-action);
+  background: color-mix(in srgb, var(--watta-brand-action) 12%, #ffffff);
 }
 
 .watta-checkout-pay-tile__icon {
@@ -1544,7 +1545,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   padding: 0.45rem 0.55rem;
   border-radius: 0.65rem;
   border: 1px solid rgba(122, 181, 21, 0.18);
-  background: color-mix(in srgb, var(--watta-brand-mint, #5c9010) 8%, #ffffff);
+  background: color-mix(in srgb, var(--watta-brand-action) 8%, #ffffff);
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.35;
@@ -1677,7 +1678,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 }
 
 .watta-cart-checkout-page--v2 .watta-checkout-pay-feedback--success {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-checkout-section--pay .watta-cart-checkout-total {
@@ -1703,7 +1704,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 }
 
 .watta-cart-checkout-page--v2 .watta-cart-checkout-total__row--accent {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
   font-weight: 700;
 }
 
@@ -1724,7 +1725,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   width: 0.95rem;
   height: 0.95rem;
   flex-shrink: 0;
-  accent-color: var(--watta-brand-mint, #5c9010);
+  accent-color: var(--watta-brand-action);
   cursor: pointer;
 }
 
@@ -1742,7 +1743,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 }
 
 .watta-cart-checkout-page--v2 .watta-cart-checkout-total__amount {
-  color: var(--watta-brand-mint, #5c9010);
+  color: var(--watta-brand-action);
 }
 
 .watta-cart-aside-sticky .watta-cart-checkout-total {
@@ -1765,7 +1766,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   width: 100%;
   border: none;
   border-radius: 0.95rem;
-  background: #50800c;
+  background: var(--watta-brand-action);
   color: var(--watta-brand-mint-ink, #ffffff);
   font-size: 1rem;
   font-weight: 800;
@@ -1779,13 +1780,13 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 
 @media (hover: hover) {
   .watta-cart-checkout-page--v2 .watta-cart-checkout-submit:hover:not(:disabled) {
-    background: #446b0a;
+    background: var(--watta-brand-action-hover);
   }
 }
 
 .watta-cart-checkout-page--v2 .watta-cart-checkout-submit:active:not(:disabled) {
   transform: scale(0.99);
-  background: #52800e;
+  background: var(--watta-brand-action-active);
 }
 
 .watta-cart-checkout-page--v2 .watta-cart-checkout-submit:disabled {
@@ -2049,7 +2050,7 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
   font-weight: 800;
   letter-spacing: 0.03em;
   color: #ffffff;
-  background: var(--watta-brand-mint, #5c9010);
+  background: var(--watta-brand-action);
   box-shadow: 0 4px 12px -6px rgba(122, 181, 21, 0.45);
   cursor: pointer;
   transition:
@@ -2059,12 +2060,12 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 }
 
 .watta-cart-checkout-page--v2 .watta-cart-checkout-promo-btn:hover {
-  background: var(--watta-brand-mint-hover, #50800c);
+  background: var(--watta-brand-action-hover);
 }
 
 .watta-cart-checkout-page--v2 .watta-cart-checkout-promo-btn:active {
   transform: scale(0.98);
-  background: var(--watta-brand-mint-active, #446b0a);
+  background: var(--watta-brand-action-active);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2644,6 +2645,94 @@ html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.w
 
 .watta-cart-page--empty .watta-cart-checkout-lead {
   margin-bottom: 0.35rem;
+}
+
+/* Телефон: порожній /cart — картка по центру екрана, текст по центру */
+@media (max-width: 767px) {
+  .watta-cart-page--empty.watta-cart-checkout-page--v2.watta-cart-page {
+    flex: 1 1 auto;
+    min-height: calc(
+      100dvh - var(--watta-sticky-chrome-flow-h, var(--watta-sticky-chrome-measured-h, 148px))
+    );
+  }
+
+  .watta-cart-page--empty .watta-cart-page__content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+    padding-left: max(1rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .watta-cart-page--empty .watta-cart-checkout-lead {
+    flex: 0 0 auto;
+    width: 100%;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .watta-cart-page--empty .watta-cart-checkout-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty-shell {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty.watta-cart-drawer-empty {
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__art {
+    margin-inline: auto;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__copy {
+    width: 100%;
+    max-width: 20rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__kicker,
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__title,
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__hint {
+    text-align: center;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__hint {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__cta {
+    display: inline-flex;
+    justify-content: center;
+    margin-inline: auto;
+  }
 }
 
 @media (min-width: 768px) {

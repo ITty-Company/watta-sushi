@@ -4133,7 +4133,7 @@ html.watta-light-chrome body {
   box-shadow: none;
 }
 
-/* Під marquee — без окремої смуги/тіні: одразу фон сторінки й контент */
+/* Під marquee — без окремої смуги/тіні: одразу фон сторінки й контент (на головній photo-first — у menu-stellar-hero-background.css) */
 #menu-cinematic-block.menu-cinematic-block--ribbon::before {
   content: none;
   display: none;
@@ -4157,17 +4157,60 @@ html.watta-light-chrome body {
   .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
     .delivery-page-home-flow:has(.watta-home-photo-first-screen)
     > #menu-cinematic-block {
-    margin-top: clamp(0px, 0.4vh, 4px) !important;
-    padding-top: clamp(4px, 0.6vh, 8px) !important;
+    margin-top: 0 !important;
+    padding-top: clamp(1.25rem, 4.5vh, 2rem) !important;
     min-height: 0 !important;
+    position: relative;
+    z-index: 12;
+    background: transparent;
   }
 
   .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page):has(#home-after-hero-intro)
     .delivery-page-home-flow:has(.watta-home-photo-first-screen)
     > #menu-cinematic-block {
-    margin-top: clamp(0px, 0.4vh, 4px) !important;
-    padding-top: clamp(4px, 0.6vh, 8px) !important;
+    margin-top: 0 !important;
+    padding-top: clamp(1.25rem, 4.5vh, 2rem) !important;
     min-height: 0 !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    > #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-ready-block,
+  .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    > #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-ready-head {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: clamp(0.4rem, 1.2vh, 0.65rem) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    > #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-ready-title-stack {
+    gap: clamp(0.28rem, 0.9vh, 0.42rem) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    > #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-cinematic-strip-stack {
+    gap: clamp(0.85rem, 2.2vh, 1.15rem) !important;
+  }
+
+  .menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page)
+    .delivery-page-home-flow:has(.watta-home-photo-first-screen)
+    > #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-ready-eyebrow {
+    margin-top: clamp(0.35rem, 1vh, 0.55rem) !important;
+    margin-bottom: clamp(0.1rem, 0.4vh, 0.25rem) !important;
   }
 }
 
@@ -4294,6 +4337,45 @@ html.watta-light-chrome body {
   > div.relative.z-10 {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+}
+
+/* Головна, телефон: повітря між «Наши хиты» і картками */
+@media (max-width: 767px) {
+  .menu-page-web:not(.watta-full-menu-page) #menu-cinematic-block .cinematic-footer-wrap--compact .footer-ready-head--mobile {
+    padding-bottom: clamp(0.45rem, 1.3vh, 0.7rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-ready-block
+    + .footer-cinematic-strip-stack {
+    margin-top: clamp(0.35rem, 1.1vh, 0.6rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-cinematic-strip-stack {
+    gap: clamp(0.85rem, 2.2vh, 1.15rem) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-cinematic-rail--recommended
+    .footer-promo-card--watta-grid {
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-cinematic-rail--recommended
+    .footer-promo-card--watta-grid::before {
+    border-radius: 1.05rem;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -6929,6 +7011,40 @@ html.watta-light-chrome body {
 
 /* Телефон: категорії на головній — одна картка в ряд (як /favorites), без горизонтальної стрічки */
 @media (max-width: 767px) {
+  .menu-page-web {
+    --watta-home-product-side-gutter: clamp(1rem, 4.2vw, 1.35rem);
+  }
+
+  .menu-page-web #home-menu-catalog.home-menu-catalog-section-web,
+  .menu-page-web .watta-full-menu-page .home-menu-catalog-section-web {
+    padding-left: var(--watta-home-product-side-gutter) !important;
+    padding-right: var(--watta-home-product-side-gutter) !important;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page) #menu-cinematic-block {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .footer-ready-block {
+    padding-left: max(var(--watta-home-product-side-gutter), env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(var(--watta-home-product-side-gutter), env(safe-area-inset-right, 0px)) !important;
+    box-sizing: border-box;
+  }
+
+  .menu-page-web:not(.watta-full-menu-page)
+    #menu-cinematic-block
+    .cinematic-footer-wrap--compact
+    .cinematic-footer-wrapper
+    > div.relative.z-10 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
   #home-menu-catalog .home-menu-category-grid-phone-web,
   #home-menu-catalog .home-menu-category-grid-phone-inner-web {
     width: 100% !important;
@@ -11101,8 +11217,8 @@ html.watta-html-home-hero
   .categories-panel-web {
     --cat-gap: 4px;
     --cat-edge: 8px;
-    /* Рівно 5 чіпів у видимій зоні */
-    --watta-cat-peek: 5;
+    /* Рівно 6 чіпів у видимій зоні */
+    --watta-cat-peek: 6;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
@@ -11236,7 +11352,7 @@ html.watta-html-home-hero
   }
 }
 
-/* Альбомний телефон 481–767: повна ширина; 5 чіпів у видимій зоні, решта — свайп */
+/* Альбомний телефон 481–767: повна ширина; 6 чіпів у видимій зоні, решта — свайп */
 @media (min-width: 481px) and (max-width: 767px) {
   .categories-panel-wrapper-web,
   .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
@@ -11266,7 +11382,7 @@ html.watta-html-home-hero
   .categories-panel-web {
     --cat-gap: 5px;
     --cat-edge: 10px;
-    --watta-cat-peek: 5;
+    --watta-cat-peek: 6;
     max-width: none !important;
     width: 100% !important;
     margin: 0 !important;
@@ -11287,16 +11403,16 @@ html.watta-html-home-hero
   .category-button-web {
     flex: 0 0
       calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 6)
       ) !important;
     min-width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 6)
     ) !important;
     width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 6)
     ) !important;
     max-width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 5px)) / var(--watta-cat-peek, 6)
     ) !important;
     aspect-ratio: 1 / 1 !important;
     align-self: center;
@@ -11365,7 +11481,7 @@ html.watta-html-home-hero
   .menu-page-web .content-web > .categories-panel-wrapper-web .categories-panel-web {
     --cat-gap: 6px;
     --cat-edge: 12px;
-    --watta-cat-peek: 5;
+    --watta-cat-peek: 6;
     align-items: center;
     flex: 0 1 auto !important;
     min-width: 0 !important;
@@ -11397,16 +11513,16 @@ html.watta-html-home-hero
   .menu-page-web .category-button-web {
     flex: 0 0
       calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 6)
       ) !important;
     min-width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 6)
     ) !important;
     width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 6)
     ) !important;
     max-width: calc(
-      (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 5)
+      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 6px)) / var(--watta-cat-peek, 6)
     ) !important;
     aspect-ratio: 1 / 1 !important;
     align-self: center !important;
@@ -11529,7 +11645,7 @@ html.watta-html-home-hero
   .categories-panel-web {
     --cat-gap: 5px !important;
     --cat-edge: 10px !important;
-    --watta-cat-peek: 5 !important;
+    --watta-cat-peek: 6 !important;
     display: flex !important;
     max-width: min(calc(100vw - 48px), 100%) !important;
     width: min(calc(100vw - 48px), 100%) !important;
@@ -11575,12 +11691,12 @@ html.watta-html-home-hero
     .categories-panel-web {
       --cat-gap: 4px !important;
       --cat-edge: 6px !important;
-      --watta-cat-peek: 5 !important;
+      --watta-cat-peek: 6 !important;
       width: min(calc(100vw - 48px), 100%) !important;
       max-width: min(calc(100vw - 48px), 100%) !important;
       flex: 0 0 auto !important;
       flex-shrink: 0 !important;
-      padding: 3px var(--cat-edge) !important;
+      padding: 5px var(--cat-edge) !important;
     }
 
     .watta-full-menu-sticky-chrome .categories-panel-wrapper-web,
@@ -11594,27 +11710,27 @@ html.watta-html-home-hero
 
     .watta-full-menu-sticky-chrome .categories-panel-web,
     .watta-public-sticky-chrome .categories-panel-web {
-      --watta-cat-peek: 5 !important;
+      --watta-cat-peek: 6 !important;
       width: min(calc(100vw - 36px), 100%) !important;
       max-width: min(calc(100vw - 36px), 100%) !important;
       flex: 0 0 auto !important;
       flex-shrink: 0 !important;
-      padding: 3px 6px !important;
+      padding: 5px 6px !important;
     }
 
     .category-button-web {
       flex: 0 0
         calc(
-          (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+          (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
         ) !important;
       width: calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
       ) !important;
       min-width: calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
       ) !important;
       max-width: calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
       ) !important;
       min-height: 0 !important;
       aspect-ratio: 1 / 1 !important;
@@ -11712,16 +11828,16 @@ html.watta-html-home-hero
     .category-button-web {
       flex: 0 0
         calc(
-          (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+          (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
         ) !important;
       min-width: calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
       ) !important;
       width: calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
       ) !important;
       max-width: calc(
-        (100% - (var(--watta-cat-peek, 5) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 5)
+        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
       ) !important;
       min-height: 0 !important;
       aspect-ratio: 1 / 1 !important;
@@ -13163,7 +13279,7 @@ html[data-watta-nav-drawer-open] .floating-contact-buttons-root {
 /* Перехід з drawer — без затримки анімації закриття */
 html[data-watta-nav-drawer-instant-close] .watta-nav-sidebar-overlay,
 html[data-watta-nav-drawer-instant-close]
-  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer) {
+  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer):not(#watta-notifications-drawer) {
   transition-duration: 0ms !important;
   transition-delay: 0ms !important;
 }
@@ -13293,7 +13409,7 @@ html[data-watta-nav-drawer-instant-close]
     min-height: -webkit-fill-available;
   }
 
-  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer) {
+  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer):not(#watta-notifications-drawer) {
     top: 0;
     right: 0;
     bottom: 0;
@@ -13314,24 +13430,12 @@ html[data-watta-nav-drawer-instant-close]
     overflow: hidden;
   }
 
-  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer).is-open::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 6;
-    height: max(48px, calc(env(safe-area-inset-bottom, 0px) + 28px));
-    background: #ffffff;
-    pointer-events: none;
-  }
-
-  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer):not(.is-open) {
+  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer):not(#watta-notifications-drawer):not(.is-open) {
     transform: translate3d(100%, 0, 0);
     opacity: 0;
   }
 
-  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer).is-open {
+  .watta-nav-sidebar-drawer--sheet:not(#watta-cart-drawer):not(#watta-notifications-drawer).is-open {
     transform: translate3d(0, 0, 0);
     opacity: 1;
   }

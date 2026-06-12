@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react'
 import { useLanguage } from '../context/LanguageContext'
-import { WATTA_BOOT_SPLASH_ENDED_EVENT } from '@/lib/wattaHeroVideo'
+import { useBootSplashDone } from '@/hooks/useBootSplashDone'
 
 function subscribeMdUp(onStoreChange: () => void) {
   if (typeof window === 'undefined') return () => {}
@@ -15,40 +15,6 @@ function subscribeMdUp(onStoreChange: () => void) {
 function getMdUp() {
   if (typeof window === 'undefined') return false
   return window.matchMedia('(min-width: 768px)').matches
-}
-
-function isHomePathname() {
-  if (typeof window === 'undefined') return false
-  const p = window.location.pathname || '/'
-  return p === '/' || p === ''
-}
-
-function isBootSplashVisible() {
-  if (typeof document === 'undefined') return false
-  if (!isHomePathname()) return false
-  const root = document.documentElement
-  if (root.getAttribute('data-watta-boot-splash-pending') === '1') return true
-  if (root.getAttribute('data-watta-boot-splash') !== '1') return false
-  return Boolean(document.querySelector('.watta-boot-splash-viewport--react'))
-}
-
-function subscribeBootSplashDone(onStoreChange: () => void) {
-  if (typeof window === 'undefined') return () => {}
-  const handler = () => onStoreChange()
-  window.addEventListener(WATTA_BOOT_SPLASH_ENDED_EVENT, handler)
-  const observer = new MutationObserver(handler)
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-watta-boot-splash', 'data-watta-boot-splash-pending'],
-  })
-  return () => {
-    window.removeEventListener(WATTA_BOOT_SPLASH_ENDED_EVENT, handler)
-    observer.disconnect()
-  }
-}
-
-function getBootSplashDone() {
-  return !isBootSplashVisible()
 }
 
 type WattaBrandWordmarkProps = {
@@ -70,7 +36,7 @@ export default function WattaBrandWordmark({
 }: WattaBrandWordmarkProps) {
   const { t } = useLanguage()
   const mdUp = useSyncExternalStore(subscribeMdUp, getMdUp, () => false)
-  const splashDone = useSyncExternalStore(subscribeBootSplashDone, getBootSplashDone, () => true)
+  const splashDone = useBootSplashDone()
 
   if (!active) return null
   if (mdUpOnly && !mdUp) return null

@@ -7,6 +7,7 @@ import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { useCartBarSnapshot } from '@/hooks/useCartBarSnapshot'
 import { openWattaCart } from '@/lib/openWattaCart'
 import { useOptionalCartDrawer } from '../context/CartDrawerContext'
+import { isMobileCartBarHiddenPath } from '@/hooks/useMobileCartBarGate'
 import {
   formatMobileCartBarAria,
   WattaMobileCartBarSummary,
@@ -21,9 +22,7 @@ export default function WattaMobileCartBar() {
   const cs = t.cartSection
   const { pieces, total, hasItems } = useCartBarSnapshot()
 
-  // Phone UX: keep the bottom cart bar visible even when empty,
-  // so users always have a clear "cart entry point".
-  if (pathname === '/cart' || pathname.startsWith('/admin')) {
+  if (isMobileCartBarHiddenPath(pathname) || cartDrawer?.isOpen) {
     return null
   }
 
@@ -55,7 +54,7 @@ export default function WattaMobileCartBar() {
         amountTemplate={cs.mobileBarSummaryAmount}
       />
       <span className="watta-mobile-cart-bar__cta">
-        {t.siteAria.cart}
+        {hasItems ? cs.drawerTitle : t.siteAria.cart}
         <ShoppingBag className="watta-mobile-cart-bar__ico" strokeWidth={2.25} aria-hidden />
       </span>
     </button>

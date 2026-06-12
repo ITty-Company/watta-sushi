@@ -89,7 +89,7 @@ type MarqueeRowProps = {
   maxEagerSlots?: number
 }
 
-function MarqueeRow({ rolls, rowClass, scrollSpeed, reverse, maxEagerSlots = 6 }: MarqueeRowProps) {
+function MarqueeRow({ rolls, rowClass, scrollSpeed, reverse, maxEagerSlots = 2 }: MarqueeRowProps) {
   const repeated = useMemo(() => [...rolls, ...rolls], [rolls])
 
   return (

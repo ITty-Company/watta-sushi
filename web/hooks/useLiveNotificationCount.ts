@@ -6,6 +6,7 @@ import {
   subscribeLiveNotifications,
   type LiveNotificationsSnapshot,
 } from '@/lib/liveNotificationsStore'
+import { readIsLoggedInFromStorage } from '@/lib/isAdminRole'
 
 export type LiveNotificationSnapshot = {
   unreadCount: number
@@ -20,8 +21,10 @@ export function useLiveNotificationCount(_pollMs?: number): LiveNotificationSnap
     () => getLiveNotificationsSnapshot(),
   )
 
+  const loggedIn = readIsLoggedInFromStorage()
+
   return {
-    unreadCount: snapshot.unreadCount,
-    latestUnread: snapshot.latestUnread,
+    unreadCount: loggedIn ? snapshot.unreadCount : 0,
+    latestUnread: loggedIn ? snapshot.latestUnread : null,
   }
 }

@@ -37,9 +37,11 @@ export function subscribeFavoriteIds(onStoreChange: () => void): () => void {
     if (e.key === 'favorites') onStoreChange()
   }
   window.addEventListener('favoritesUpdated', onStoreChange)
+  window.addEventListener('userChanged', onStoreChange)
   window.addEventListener('storage', onStorage)
   return () => {
     window.removeEventListener('favoritesUpdated', onStoreChange)
+    window.removeEventListener('userChanged', onStoreChange)
     window.removeEventListener('storage', onStorage)
   }
 }
@@ -62,6 +64,17 @@ export function syncFavoriteIdsToStorage(ids: number[]) {
 export function notifyFavoritesUpdated() {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('favoritesUpdated'))
+}
+
+/** Після виходу з акаунта — обране не повинно світитися в хромі. */
+export function clearFavoritesStorage(): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem('favorites')
+    notifyFavoritesUpdated()
+  } catch {
+    /* ignore */
+  }
 }
 
 function isAuthedForFavorites(): boolean {
