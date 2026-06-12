@@ -326,6 +326,31 @@ export function useWattaChromeScrollCompact(enabled = true) {
       minIntervalMs: touchPerf ? TOUCH_SCROLL_EVAL_MIN_MS : 0,
     })
 
+    /**
+     * Після першого паінта (rAF) синхронізувати lastY з реальною позицією скролу.
+     * Це виправляє ситуації, коли:
+     * - навігація зберегла scroll-position (поп, категорії) — lastY=0, реально 400px
+     * - програмний скрол до секції (/menu?cat=) змінив позицію після ініціалізації
+     */
+    const syncScrollBaselineAfterPaint = () => {
+      requestAnimationFrame(() => {
+        const actualY = readCachedScrollTop()
+        if (actualY === lastY) {
+          // lastY вже було оновлено через rAF всередині syncCompact(false).
+          // Але це означає, що логіка «сховати шапку при >64px» не виконалась —
+          // виправляємо це додатковою перевіркою.
+          if (actualY > TOP_ALWAYS_EXPAND_PX && !compact && !isProductPhoneChrome()) {
+            syncCompact(true)
+          }
+          return
+        }
+        lastY = actualY
+        if (actualY > TOP_ALWAYS_EXPAND_PX && !compact && !isProductPhoneChrome()) {
+          syncCompact(true)
+        }
+      })
+    }
+
     const syncInitial = () => {
       lastY = readCachedScrollTop()
       resetPendingScroll()
@@ -333,6 +358,8 @@ export function useWattaChromeScrollCompact(enabled = true) {
       // (або scroll-подія) сховає її, якщо scrollTop > 64px.
       // Без цього хук читає scrollTop СТАРОЇ сторінки → невірно ховає шапку.
       if (!isProductPhoneChrome()) syncCompact(false)
+      // На наступному кадрі підправити lastY — якщо скрол вже на >64, сховати шапку
+      syncScrollBaselineAfterPaint()
     }
 
     const unbindScroll = bindAppVerticalScroll(onScroll)
@@ -347,25 +374,22 @@ export function useWattaChromeScrollCompact(enabled = true) {
 
     if (consumeRestoreChromeCompact()) {
       lastY = readCachedScrollTop()
-      restoredCompact = true
-      topAutoExpandArmed = false
-      if (lastY <= TOP_ALWAYS_EXPAND_PX) {
+      if (isProductPhoneChrome()) {
+        // /product на телефоні: завжди compact при вході
+        compact = true
+        topAutoExpandArmed = true
+        applyWattaProductChromeEntry()
+      } else {
+        // Після навігації завжди показувати шапку — скрол-івент (або
+        // syncScrollBaselineAfterPaint) сховає її, якщо реально >64px.
+        // Без restoredCompact, щоб evaluateScroll працював звичайним шляхом.
+        compact = false
         restoredCompact = false
         topAutoExpandArmed = true
-        compact = false
-        if (isProductPhoneChrome()) {
-          setWattaProductChromeHeaderExpanded(true)
-        } else {
-          applyCompactAttr(false)
-        }
-      } else {
-        compact = true
-        if (isProductPhoneChrome()) {
-          applyWattaProductChromeEntry()
-        } else {
-          applyCompactAttr(true)
-        }
+        applyCompactAttr(false)
       }
+      // На наступному кадрі підправити lastY
+      syncScrollBaselineAfterPaint()
     } else if (isProductPage) {
       applyWattaProductChromeEntry()
       if (isProductPhoneChrome()) {

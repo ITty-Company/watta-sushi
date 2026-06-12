@@ -73,6 +73,21 @@
   stroke: var(--watta-brand-mint-ink) !important;
 }
 
+#watta-cart-drawer {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#watta-cart-drawer ::selection {
+  background: transparent;
+  color: inherit;
+}
+
+#watta-cart-drawer .watta-cart-drawer-head__title,
+#watta-cart-drawer .watta-cart-drawer-head__meta {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Бічна панель кошика — Watta brand sheet */
 #watta-cart-drawer.watta-nav-sidebar-drawer--sheet {
   font-family: var(--font-brand-inter, 'Inter'), system-ui, sans-serif;

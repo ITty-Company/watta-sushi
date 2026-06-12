@@ -77,6 +77,11 @@ export default function WattaCartDrawer() {
 
   useEffect(() => {
     if (!isOpen) return
+    window.getSelection?.()?.removeAllRanges?.()
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
     rightNavDrawer?.close()
     notificationsDrawer?.close()
   }, [isOpen, notificationsDrawer, rightNavDrawer])

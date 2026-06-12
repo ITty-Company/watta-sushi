@@ -33,14 +33,19 @@ export function CartDrawerProvider({
   const [isOpen, setOpen] = useState(false)
 
   const open = useCallback(() => {
-    if (enabled) setOpen(true)
+    if (!enabled) return
+    window.getSelection?.()?.removeAllRanges?.()
+    setOpen(true)
   }, [enabled])
 
   const close = useCallback(() => setOpen(false), [])
 
   const toggle = useCallback(() => {
     if (!enabled) return
-    setOpen((o) => !o)
+    setOpen((o) => {
+      if (!o) window.getSelection?.()?.removeAllRanges?.()
+      return !o
+    })
   }, [enabled])
 
   useEffect(() => {

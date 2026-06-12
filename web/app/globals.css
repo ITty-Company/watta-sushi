@@ -61,6 +61,11 @@
   .back-button-web {
     touch-action: manipulation;
   }
+
+  ::selection {
+    background: transparent;
+    color: inherit;
+  }
 }
 
 /* Утилиты для скрытия скроллбара */

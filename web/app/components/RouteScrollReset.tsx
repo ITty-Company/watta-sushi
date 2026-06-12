@@ -57,6 +57,7 @@ export default function RouteScrollReset() {
       markInternalNavBackAvailable()
     }
     if (prev === pathname) return
+    window.getSelection?.()?.removeAllRanges?.()
     runRouteScrollReset(pathname, wasPopNavigation)
   }, [pathname])
 

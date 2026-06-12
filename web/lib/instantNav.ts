@@ -242,13 +242,6 @@ export function installInstantNavPointerDown(router: AppRouterInstance): () => v
     const el = e.target as Element | null
     if (shouldSkipInstantNav(el)) return
     if (el?.closest?.('[data-watta-cat], .categories-scroll-btn-web')) {
-      const catBtn = el?.closest?.('[data-watta-cat]') as HTMLElement | null
-      const slug = catBtn?.getAttribute('data-watta-cat')?.trim()
-      if (slug) {
-        window.dispatchEvent(
-          new CustomEvent('wattaCategoryStripSelect', { detail: { slug } }),
-        )
-      }
       prefetchFromIntentTarget(router, el)
       return
     }

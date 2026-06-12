@@ -53,6 +53,7 @@ export default function CartDrawerEmptyIllustration({ play }: Props) {
             alt=""
             width={1166}
             height={222}
+            draggable={false}
             className="watta-cart-drawer-empty__brand-wordmark"
             sizes="(max-width: 480px) 52vw, 10rem"
           />
@@ -100,6 +101,7 @@ export default function CartDrawerEmptyIllustration({ play }: Props) {
                 alt=""
                 width={256}
                 height={256}
+                draggable={false}
                 className={`watta-cart-drawer-empty__roll watta-cart-drawer-empty__roll--${roll.mod}`}
                 sizes="(max-width: 480px) 28vw, 4.5rem"
               />

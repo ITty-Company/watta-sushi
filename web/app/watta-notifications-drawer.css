@@ -69,7 +69,7 @@
 }
 
 #watta-notifications-drawer ::selection {
-  background: rgba(20, 81, 66, 0.1);
+  background: transparent;
   color: inherit;
 }
 

@@ -512,6 +512,8 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
     scrollActiveChipIntoView(key)
   }
 
+  /** Стабільні handler'и — без перестворення при зміні menuCategories, щоб уникнути
+   * перерендера всіх ~15 кнопок при швидких кліках (завантаження/оновлення категорій). */
   const categoryHandlersByKey = useMemo(() => {
     const keys = [FULL_MENU_ALL_SLUG, ...menuCategories.map((c) => c.key)]
     const map = new Map<
@@ -531,7 +533,12 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
         onPointerDown: (e) => {
           prefetchFullMenuCategory(prefetchRouter, key)
           categoryTapStartRef.current = { x: e.clientX, y: e.clientY }
-          if (e.defaultPrevented || e.button !== 0 || e.pointerType === 'touch') return
+          if (e.defaultPrevented || e.button !== 0) return
+          // Миша: навігація миттєво на pointerdown.
+          // Touch: префетч + запис позиції; навігація на pointerup (з перевіркою скролу).
+          // Панель має touch-action: pan-x pan-y — браузер не дає pointerup після
+          // свайпу, тому випадкового переходу при скролі ленти не буде.
+          if (e.pointerType === 'touch') return
           categoryPointerHandledRef.current = true
           categoryClickRef.current(key)
         },
@@ -571,7 +578,7 @@ function WattaMenuCategoryStripInner({ menuCatQuery = null }: WattaMenuCategoryS
       })
     }
     return map
-  }, [menuCategories, prefetchRouter])
+  }, [menuCategories, prefetchRouter]) /** menuCategories змінюється рідко — це ок. */
 
   const getCategoryHandlers = useCallback(
     (key: string) => categoryHandlersByKey.get(key)!,

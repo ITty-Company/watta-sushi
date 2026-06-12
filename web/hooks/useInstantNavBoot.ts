@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+
 import { usePathname, useRouter } from 'next/navigation'
 import {
   installInstantNavClick,
   installInstantNavIntent,
   installInstantNavPointerDown,
-  prefetchPriorityPublicRoutes,
+
   prefetchPublicRoutes,
 } from '@/lib/instantNav'
 import { bindWattaScrollTapGuard } from '@/lib/wattaScrollTapGuard'
@@ -22,13 +22,9 @@ import {
   warmSecondaryPublicRouteCaches,
 } from '@/lib/publicRouteWarmCache'
 import { isWattaHomeHeroPathname } from '@/lib/wattaHtmlRouteClass'
-import { WATTA_HERO_VIDEO_READY_EVENT } from '@/lib/wattaHeroVideo'
 
-/** Повний prefetch на головній — після hero, але не довше ~2.5 с. */
-const HOME_FULL_PREFETCH_MAX_MS = 2500
-/** Другорядні API-кеші — ще +3 с після hero. */
-const HOME_SECONDARY_WARM_DELAY_MS = 3000
-/** На головній — усе після hero + idle, щоб не зависав перший кадр. */
+
+/** На головній — JS chunks + warm кешів після idle, щоб не зʼїдати смугу mp4. */
 const HOME_BOOT_IDLE_MS = 500
 
 type IdleWindow = Window & {
@@ -47,112 +43,36 @@ function runWhenIdle(cb: () => void, timeoutMs: number): () => void {
   return () => window.clearTimeout(id)
 }
 
-function runPriorityPrefetch(router: AppRouterInstance, light: boolean): void {
-  prefetchPriorityRouteChunks(light ? { light: true } : undefined)
-  if (!light) prefetchPriorityPublicRoutes(router)
-  void warmPriorityNavPageCaches()
-}
-
-function scheduleDeferredHomeWarmCaches(run: () => void): () => void {
-  let ran = false
-  let cancelIdle = () => {}
-  const fire = () => {
-    if (ran) return
-    ran = true
-    run()
-  }
-
-  const onHeroReady = () => {
-    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-    cancelIdle = runWhenIdle(fire, HOME_BOOT_IDLE_MS)
-  }
-
-  window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-  const failSafeId = window.setTimeout(() => {
-    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-    cancelIdle()
-    fire()
-  }, HOME_FULL_PREFETCH_MAX_MS)
-
-  return () => {
-    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-    window.clearTimeout(failSafeId)
-    cancelIdle()
-  }
-}
-
-function scheduleFullRoutePrefetch(router: AppRouterInstance, waitForHero: boolean): () => void {
-  let ran = false
-  const run = () => {
-    if (ran) return
-    ran = true
-    prefetchPublicRoutes(router)
-    scheduleIdleRouteChunkPrefetch()
-  }
-
-  if (!waitForHero) {
-    return runWhenIdle(run, 800)
-  }
-
-  let cancelIdle = () => {}
-  const fire = () => {
-    cancelIdle()
-    return runWhenIdle(run, 2000)
-  }
-
-  const onHeroReady = () => {
-    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-    cancelIdle = fire()
-  }
-
-  window.addEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-  const failSafeId = window.setTimeout(() => {
-    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-    cancelIdle()
-    run()
-  }, HOME_FULL_PREFETCH_MAX_MS)
-
-  return () => {
-    window.removeEventListener(WATTA_HERO_VIDEO_READY_EVENT, onHeroReady)
-    window.clearTimeout(failSafeId)
-    cancelIdle()
-  }
-}
-
-/**
- * Prefetch публічних маршрутів + warm caches.
- * На головній — усе після hero + idle, щоб не зависав перший кадр.
- */
+/** Всі публічні маршрути (RSC prefetch) — одразу; JS chunks + кеші — на idle. */
 export function useInstantNavBoot(): void {
   const router = useRouter()
   const pathname = usePathname() || '/'
   const deferForHomeHero = isWattaHomeHeroPathname(pathname)
 
   useEffect(() => {
-    prefetchPriorityPublicRoutes(router)
-
-    const warmCaches = () => {
-      void warmMenuCatalogCache()
-      window.setTimeout(() => {
-        void warmSecondaryPublicRouteCaches()
-      }, HOME_SECONDARY_WARM_DELAY_MS)
-    }
+    // RSC prefetch для всіх публічних маршрутів — малі текстові payload'и, без очікування
+    prefetchPublicRoutes(router)
 
     if (deferForHomeHero) {
-      const cancelWarm = scheduleDeferredHomeWarmCaches(() => {
-        runWhenIdle(() => runPriorityPrefetch(router, true), HOME_BOOT_IDLE_MS)()
-        warmCaches()
-      })
-      const cancelPrefetch = scheduleFullRoutePrefetch(router, true)
-      return () => {
-        cancelWarm()
-        cancelPrefetch()
-      }
+      // На головній: JS chunks + warm кешів на idle, щоб не зʼїдати смугу hero-video
+      return runWhenIdle(() => {
+        prefetchPriorityRouteChunks({ light: true })
+        scheduleIdleRouteChunkPrefetch()
+        void warmPriorityNavPageCaches()
+        void warmMenuCatalogCache()
+        void warmSecondaryPublicRouteCaches()
+      }, HOME_BOOT_IDLE_MS)
     }
 
-    runWhenIdle(() => runPriorityPrefetch(router, false), 400)()
-    warmCaches()
-    return scheduleFullRoutePrefetch(router, false)
+    // Решта сторінок: JS chunks + кеші на idle
+    const cancelRun = runWhenIdle(() => {
+      prefetchPriorityRouteChunks()
+      scheduleIdleRouteChunkPrefetch()
+      void warmPriorityNavPageCaches()
+      void warmMenuCatalogCache()
+      void warmSecondaryPublicRouteCaches()
+    }, 400)
+    return cancelRun
   }, [router, deferForHomeHero])
 
   useEffect(() => {

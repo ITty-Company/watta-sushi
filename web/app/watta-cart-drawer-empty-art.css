@@ -1,5 +1,24 @@
 /* Порожній drawer корзини — сцена як /favorites, суші випадають із сумки */
 
+.watta-cart-drawer-empty__art,
+.watta-cart-drawer-empty__art * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.watta-cart-drawer-empty__art ::selection,
+.watta-cart-drawer-empty__art *::selection {
+  background: transparent;
+  color: inherit;
+}
+
+.watta-cart-drawer-empty__art img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
+}
+
 .watta-cart-drawer-empty {
   flex: 0 0 auto;
   display: flex;
