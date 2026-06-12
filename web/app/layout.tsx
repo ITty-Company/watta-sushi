@@ -22,10 +22,7 @@ import {
   WATTA_ROUTE_NOTIFICATIONS_CLASS,
   wattaHtmlRouteClassNames,
 } from '@/lib/wattaHtmlRouteClass'
-import {
-  WATTA_HERO_PRIMARY_MP4,
-  WATTA_HOME_HERO_POSTER,
-} from '@/lib/wattaHeroVideo'
+import { WATTA_HERO_PRIMARY_MP4 } from '@/lib/wattaHeroVideo'
 import { WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT } from '@/lib/lockMobileViewportHeight'
 import { bootSplashLoadingLabel } from '@/lib/wattaBootSplashLabel'
 import { getPublicSiteOrigin, getPublicSiteUrl } from '@/lib/siteUrl'
@@ -123,12 +120,6 @@ export default async function RootLayout({
             <link rel="preconnect" href={publicSiteOrigin} crossOrigin="anonymous" />
           </>
         ) : null}
-        {/* Preload Open Graph изображения — используется на всех страницах как соц-превью */}
-        <link rel="preload" href="/watta-sushi.jpg" as="image" fetchPriority="high" />
-        {isHeroVideoRoute ? (
-          <link rel="preload" href={WATTA_HOME_HERO_POSTER} as="image" fetchPriority="high" />
-        ) : null}
-
         <script dangerouslySetInnerHTML={{ __html: WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: WATTA_HTML_ROUTE_BOOT_SCRIPT }} />
         <style dangerouslySetInnerHTML={{ __html: WATTA_BOOT_SPLASH_CRITICAL_CSS }} />
