@@ -42,7 +42,7 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
     border: none !important;
   }
 
-  /* Без зазору шапка→категорії — категорії одразу під safe-area; scroll компенсується в JS. */
+  /* Без зазору шапка→категорії — категорії одразу під safe-area. */
   html[data-watta-chrome-compact='true']
     body
     .watta-sticky-chrome-portal
@@ -299,5 +299,47 @@ html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-ico {
     .watta-chrome-categories-row-web {
     padding-left: max(var(--watta-chrome-compact-edge), env(safe-area-inset-left, 0px)) !important;
     padding-right: max(var(--watta-chrome-compact-edge), env(safe-area-inset-right, 0px)) !important;
+  }
+}
+
+/*
+ * /menu + головна (телефон): шапка — data-watta-menu-header-visible (true/false).
+ * Після compact-правил; скрол вгору одразу показує лого + нав на будь-якій категорії.
+ */
+@media (max-width: 767px) {
+  html[data-watta-menu-header-visible='false']
+    .watta-sticky-chrome-portal
+    .watta-chrome-top-band-web {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(calc(-100% - 4px)) !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  html[data-watta-menu-header-visible='true']:not([data-watta-chrome-compact='true'])
+    .watta-sticky-chrome-portal
+    .watta-chrome-top-band-web {
+    max-height: 140px !important;
+    min-height: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+    margin: revert !important;
+    padding: revert !important;
+    border: revert !important;
+  }
+
+  html[data-watta-menu-header-visible='true']:not([data-watta-chrome-compact='true'])
+    body
+    .watta-sticky-chrome-portal
+    .watta-chrome-categories-row-web
+    .categories-panel-wrapper-web {
+    margin-top: var(--watta-chrome-header-cat-gap, clamp(10px, 1.25vh, 14px)) !important;
   }
 }

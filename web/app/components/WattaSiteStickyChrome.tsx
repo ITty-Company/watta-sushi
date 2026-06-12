@@ -11,6 +11,8 @@ import WattaGlobalSiteHeader from './WattaGlobalSiteHeader'
 import { WattaMenuCategoryStrip } from './WattaMenuCategoryStrip'
 import WattaStickyChromeLayout from './WattaStickyChromeLayout'
 import { dispatchWattaChromeGoHome } from '@/lib/wattaChromeGoHome'
+import { useWattaMenuHeaderScroll } from '@/hooks/useWattaMenuHeaderScroll'
+import { isWattaMenuHeaderScrollPathname } from '@/lib/wattaHtmlRouteClass'
 
 type Props = {
   /** Поправка резерву висоти в потоці (на головній — 0). */
@@ -30,6 +32,8 @@ export default function WattaSiteStickyChrome({
   const pathname = usePathname() || '/'
   const isHome = pathname === '/'
   const isMenuHeroPage = pathname === '/menu' || pathname.startsWith('/menu/')
+  const isMenuHeaderScrollPage = isWattaMenuHeaderScrollPathname(pathname)
+  useWattaMenuHeaderScroll(isMenuHeaderScrollPage, pathname)
   /** Hero photo-first: головна та /menu — контент під fixed chrome без стрибка anchor. */
   const isHeroOverlayPage = isHome || isMenuHeroPage
   const isChromeHeroPage = isHeroOverlayPage || pathname === '/contacts'

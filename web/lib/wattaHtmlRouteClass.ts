@@ -57,6 +57,18 @@ export function isWattaHomeOrMenuPathname(pathname: string): boolean {
   return p === '/' || p === '' || p === '/menu'
 }
 
+/** Телефон: скрол шапки (вниз ховає / вгору показує) — головна + /menu, усі категорії. */
+export function isWattaMenuHeaderScrollPathname(pathname: string): boolean {
+  const p = pathname || '/'
+  return p === '/' || p === '' || p === '/menu' || p.startsWith('/menu/')
+}
+
+/** Сторінка повного меню з каталогом товарів — без compact при скролі (інакше стрибає контент). */
+export function isWattaFullMenuPathname(pathname: string): boolean {
+  const p = pathname || '/'
+  return p === '/menu' || p.startsWith('/menu/')
+}
+
 export function isWattaAuthPathname(pathname: string): boolean {
   const p = pathname || '/'
   return p === '/login' || p === '/register'

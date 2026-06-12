@@ -1,4 +1,5 @@
 import { cancelRouteScrollToTopOnNavigation } from '@/lib/menuScroll'
+import { isWattaMenuHeaderScrollPathname } from '@/lib/wattaHtmlRouteClass'
 import { isWattaCompactChromeViewport, isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR, WATTA_ROUTE_PRODUCT_CLASS } from '@/lib/wattaProductChrome'
 
@@ -184,18 +185,92 @@ export function applyRestoreChromeCompactIfNeeded(): void {
   ensureWattaChromeExpanded()
 }
 
+/** /menu: явний прапорець «шапка видима» — перебиває compact у CSS. */
+export const WATTA_MENU_HEADER_VISIBLE_ATTR = 'wattaMenuHeaderVisible'
+
+function isWattaMenuHeaderScrollRoute(): boolean {
+  if (typeof window === 'undefined') return false
+  return isWattaMenuHeaderScrollPathname(window.location.pathname || '/')
+}
+
+function clearWattaChromeCompactLockNow(): void {
+  if (typeof document === 'undefined') return
+  window.clearTimeout(compactLockTimer)
+  delete document.documentElement.dataset.wattaChromeCompactLock
+}
+
 /** Повна шапка + панель категорій (без compact) — головна та /menu при вході. */
 export function ensureWattaChromeExpanded(): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   delete root.dataset.wattaChromeCompact
   delete root.dataset.wattaProductHeaderExpanded
+  if (isWattaMenuHeaderScrollRoute()) {
+    root.setAttribute('data-watta-menu-header-visible', 'true')
+  } else {
+    root.removeAttribute('data-watta-menu-header-visible')
+  }
   try {
     sessionStorage.removeItem(WATTA_RESTORE_CHROME_COMPACT_KEY)
   } catch {
     /* ignore */
   }
   window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
+}
+
+/** Головна + /menu (телефон): показати верхню шапку + категорії. */
+export function revealWattaMenuHeaderBand(): void {
+  if (typeof document === 'undefined') return
+  if (!isWattaMenuHeaderScrollRoute()) return
+  clearWattaChromeCompactLockNow()
+  const root = document.documentElement
+  root.setAttribute('data-watta-menu-header-visible', 'true')
+  delete root.dataset.wattaChromeCompact
+  delete root.dataset.wattaProductHeaderExpanded
+  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
+}
+
+/** Головна + /menu (телефон): шапка схована — лише стрічка категорій. */
+export function hideWattaMenuHeaderBand(): void {
+  if (typeof document === 'undefined') return
+  if (!isWattaPhoneViewport()) return
+  if (!isWattaMenuHeaderScrollRoute()) return
+  const root = document.documentElement
+  if (root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS)) return
+  root.setAttribute('data-watta-menu-header-visible', 'false')
+  root.dataset.wattaChromeCompact = 'true'
+  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: true } }))
+}
+
+export function isWattaMenuHeaderBandHidden(): boolean {
+  if (typeof document === 'undefined') return false
+  if (!isWattaMenuHeaderScrollRoute()) return false
+  const root = document.documentElement
+  if (root.getAttribute('data-watta-menu-header-visible') === 'true') return false
+  return (
+    root.getAttribute('data-watta-menu-header-visible') === 'false' ||
+    root.dataset.wattaChromeCompact === 'true'
+  )
+}
+
+export function clearWattaMenuHeaderBandState(): void {
+  if (typeof document === 'undefined') return
+  document.documentElement.removeAttribute('data-watta-menu-header-visible')
+}
+
+/** /menu (телефон): сховати верхню шапку, лишити категорії. */
+export function compactWattaChromeHeader(): void {
+  if (isWattaMenuHeaderScrollRoute()) {
+    hideWattaMenuHeaderBand()
+    return
+  }
+  if (typeof document === 'undefined') return
+  if (!isWattaPhoneViewport()) return
+  const root = document.documentElement
+  if (root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS)) return
+  if (root.dataset.wattaChromeCompact === 'true') return
+  root.dataset.wattaChromeCompact = 'true'
+  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: true } }))
 }
 
 export function consumeRestoreChromeCompact(): boolean {
@@ -212,17 +287,25 @@ export function consumeRestoreChromeCompact(): boolean {
 /** Під час програмного скролу — не перемикати compact/expand (зберігає поточний режим). */
 export function lockWattaChromeCompactMutation(ms = 720): void {
   if (typeof document === 'undefined') return
+  if (isWattaMenuHeaderScrollRoute()) return
   const root = document.documentElement
   const wasCompact = isWattaChromeCompact()
   root.dataset.wattaChromeCompactLock = 'true'
   if (wasCompact) {
     root.dataset.wattaChromeCompact = 'true'
+    if (isWattaMenuHeaderScrollRoute()) {
+      root.setAttribute('data-watta-menu-header-visible', 'false')
+    }
   }
   window.clearTimeout(compactLockTimer)
   compactLockTimer = window.setTimeout(() => {
     delete root.dataset.wattaChromeCompactLock
     // Не повертати compact, якщо користувач уже розгорнув шапку скролом вгору.
     if (wasCompact && isWattaChromeCompact()) {
+      if (isWattaMenuHeaderScrollRoute() && root.getAttribute('data-watta-menu-header-visible') === 'true') {
+        delete root.dataset.wattaChromeCompact
+        return
+      }
       root.dataset.wattaChromeCompact = 'true'
       window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: true } }))
     }
@@ -233,32 +316,13 @@ export function lockWattaChromeCompactMutation(ms = 720): void {
  * Перед скролом до hero /menu («Всё меню в одном месте»): завжди повна шапка,
  * без compact — інакше intro ховається під капсулою категорій.
  */
-export function beginFullMenuHeroScrollChromeLock(ms = 720): void {
-  if (typeof document === 'undefined') return
-  const root = document.documentElement
-  root.dataset.wattaChromeCompactLock = 'true'
-  delete root.dataset.wattaChromeCompact
-  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
-  window.clearTimeout(compactLockTimer)
-  compactLockTimer = window.setTimeout(() => {
-    delete root.dataset.wattaChromeCompactLock
-  }, ms)
+export function beginFullMenuHeroScrollChromeLock(_ms = 720): void {
+  revealWattaMenuHeaderBand()
 }
 
-/**
- * Перед скролом до категорії на /menu: повна шапка + блок compact,
- * щоб заголовок секції не «стрибав» і не ховався під різні висоти chrome.
- */
-export function beginMenuCategoryScrollChromeLock(ms = 1400): void {
-  if (typeof document === 'undefined') return
-  const root = document.documentElement
-  root.dataset.wattaChromeCompactLock = 'true'
-  delete root.dataset.wattaChromeCompact
-  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
-  window.clearTimeout(compactLockTimer)
-  compactLockTimer = window.setTimeout(() => {
-    delete root.dataset.wattaChromeCompactLock
-  }, ms)
+/** Перед скролом до категорії — повна шапка; ручний скрол вгору/вниз не блокується. */
+export function beginMenuCategoryScrollChromeLock(_ms = 1400): void {
+  revealWattaMenuHeaderBand()
 }
 
 export function preserveWattaChromeCompact<T>(fn: () => T): T {

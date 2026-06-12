@@ -9,7 +9,9 @@ import {
 } from '@/lib/menuScroll'
 import {
   consumeRestoreChromeCompact,
+  compactWattaChromeHeader,
   ensureWattaChromeExpanded,
+  isWattaChromeCompact,
   isWattaChromeCompactLocked,
 } from '@/lib/wattaChromeScroll'
 import { createRafScrollListener } from '@/lib/scrollSync'
@@ -18,7 +20,7 @@ import {
   isWattaTouchScrollPerfViewport,
   WATTA_PHONE_VIEWPORT_MQ,
 } from '@/lib/wattaTouchViewport'
-import { isWattaCartCheckoutPathname, isWattaHomeOrMenuPathname, isWattaProductPathname, isWattaProfilePathname } from '@/lib/wattaHtmlRouteClass'
+import { isWattaCartCheckoutPathname, isWattaFullMenuPathname, isWattaHomeOrMenuPathname, isWattaMenuHeaderScrollPathname, isWattaProductPathname, isWattaProfilePathname } from '@/lib/wattaHtmlRouteClass'
 import {
   applyWattaProductChromeEntry,
   clearWattaProductChromeEntry,
@@ -37,6 +39,10 @@ const SCROLL_UP_THRESHOLD_PX = 1
 const PHONE_SCROLL_DOWN_THRESHOLD_PX = 24
 /** Телефон /menu: невеликий гістерезис — інакше інерція iOS смикає compact ↔ expand. */
 const PHONE_SCROLL_UP_THRESHOLD_PX = 10
+/** /menu: коротша пауза після compact — менше «залипання» при скролі вгору. */
+const MENU_COMPACT_TOGGLE_COOLDOWN_MS = 96
+/** /menu: поріг жесту вниз перед compact. */
+const MENU_SCROLL_DOWN_THRESHOLD_PX = 20
 /** Тач: рідше вимірюємо scrollTop — менше layout під час свайпу вниз. */
 const TOUCH_SCROLL_EVAL_MIN_MS = 16
 /** /product (телефон): накопичений зсув вгору перед розгортанням шапки (гістерезис). */
@@ -132,6 +138,8 @@ export function useWattaChromeScrollCompact(enabled = true) {
   const pathname = usePathname() || '/'
   const isProductPage = isWattaProductPathname(pathname)
   const isHomeOrMenuPage = isWattaHomeOrMenuPathname(pathname)
+  const isMenuHeaderScrollPage = isWattaMenuHeaderScrollPathname(pathname)
+  const isFullMenuPage = isWattaFullMenuPathname(pathname)
   const isCartCheckoutPage = isWattaCartCheckoutPathname(pathname)
   const isProfilePage = isWattaProfilePathname(pathname)
   const isPhone = useSyncExternalStore(subscribePhoneViewport, readPhoneViewport, () => false)
@@ -141,8 +149,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
 
     /** /cart і /profile: без compact — компенсація scrollTop б’ється з жестом на телефоні. */
     if (isCartCheckoutPage || isProfilePage) {
-      delete document.documentElement.dataset.wattaChromeCompact
-      window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
+      ensureWattaChromeExpanded()
       return
     }
 
@@ -154,6 +161,11 @@ export function useWattaChromeScrollCompact(enabled = true) {
           clearWattaProductChromeEntry()
         }
       }
+    }
+
+    /** Головна + /menu: scroll шапки — useWattaMenuHeaderScroll (усі категорії). */
+    if (isMenuHeaderScrollPage) {
+      return
     }
 
     if (isHomeOrMenuPage) {
@@ -193,7 +205,8 @@ export function useWattaChromeScrollCompact(enabled = true) {
     }
 
     const syncCompact = (next: boolean) => {
-      if (next === compact) return
+      const domCompact = readDomCompact()
+      if (next === compact && next === domCompact) return
       compact = next
       if (isProductPhoneChrome()) {
         setWattaProductChromeHeaderExpanded(!next)
@@ -203,15 +216,15 @@ export function useWattaChromeScrollCompact(enabled = true) {
       const cooldown = next
         ? isProductPhoneChrome()
           ? PRODUCT_COMPACT_TOGGLE_COOLDOWN_MS
-          : COMPACT_TOGGLE_COOLDOWN_MS
+          : isFullMenuPage
+            ? MENU_COMPACT_TOGGLE_COOLDOWN_MS
+            : COMPACT_TOGGLE_COOLDOWN_MS
         : EXPAND_COMPACT_TOGGLE_COOLDOWN_MS
       suppressUntil = performance.now() + cooldown
       resetPendingScroll()
-      if (lastY === readCachedScrollTop()) {
-        requestAnimationFrame(() => {
-          lastY = readCachedScrollTop()
-        })
-      }
+      requestAnimationFrame(() => {
+        lastY = readCachedScrollTop()
+      })
       window.clearTimeout(suppressFlushTimer)
       suppressFlushTimer = window.setTimeout(() => {
         lastY = readCachedScrollTop()
@@ -234,6 +247,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
     }
 
     const readUpThreshold = (isPhone: boolean) => {
+      if (isFullMenuPage && isPhone) return MENU_PHONE_SCROLL_UP_THRESHOLD_PX
       if (isPhone && isProductPhoneChrome()) return PRODUCT_PHONE_SCROLL_UP_THRESHOLD_PX
       if (isPhone) return PHONE_SCROLL_UP_THRESHOLD_PX
       if (isProductPhoneChrome()) return PRODUCT_SCROLL_UP_THRESHOLD_PX
@@ -245,9 +259,25 @@ export function useWattaChromeScrollCompact(enabled = true) {
       return SCROLL_DOWN_THRESHOLD_PX
     }
 
-    /** Телефон (не /product): скрол вгору в compact — повна шапка + категорії. */
+    /** Скрол вгору в compact — повна шапка + категорії. */
     const shouldExpandChromeOnScrollUp = () =>
-      compact && isWattaPhoneViewport() && !isProductPhoneChrome()
+      compact && (isFullMenuPage || (isWattaPhoneViewport() && !isProductPhoneChrome()))
+
+    /** /menu: розгорнути, якщо шапка схована (JS або DOM). */
+    const isMenuHeaderHidden = () =>
+      isFullMenuPage && (compact || readDomCompact())
+
+    const revealFullChromeOnScrollUp = () => {
+      if (isFullMenuPage) {
+        if (!isMenuHeaderHidden()) return false
+      } else if (!shouldExpandChromeOnScrollUp()) {
+        return false
+      }
+      pendingUpPx = 0
+      pendingDownPx = 0
+      syncCompact(false)
+      return true
+    }
 
     const applyScrollDelta = (delta: number, downThreshold: number, upThreshold: number) => {
       if (delta > 0) {
@@ -260,9 +290,13 @@ export function useWattaChromeScrollCompact(enabled = true) {
         return
       }
       if (delta < 0) {
+        if (isFullMenuPage && isMenuHeaderHidden()) {
+          revealFullChromeOnScrollUp()
+          return
+        }
         pendingUpPx += -delta
         pendingDownPx = 0
-        if (pendingUpPx >= upThreshold) {
+        if (compact && pendingUpPx >= upThreshold) {
           pendingUpPx = 0
           syncCompact(false)
         }
@@ -283,16 +317,14 @@ export function useWattaChromeScrollCompact(enabled = true) {
       const y = readCachedScrollTop()
       const isPhone = isWattaPhoneViewport()
 
+      if (isFullMenuPage && readDomCompact() !== compact) {
+        compact = readDomCompact()
+      }
+
       if (isWattaChromeCompactLocked()) {
         const deltaDuringLock = y - lastY
         lastY = y
-        if (deltaDuringLock < 0 && shouldExpandChromeOnScrollUp()) {
-          pendingUpPx += -deltaDuringLock
-          pendingDownPx = 0
-          if (pendingUpPx >= readUpThreshold(isPhone)) {
-            pendingUpPx = 0
-            syncCompact(false)
-          }
+        if (deltaDuringLock < 0 && revealFullChromeOnScrollUp()) {
           return
         }
         if (expandChromeAtPageTop(y)) {
@@ -307,21 +339,23 @@ export function useWattaChromeScrollCompact(enabled = true) {
       if (performance.now() < suppressUntil) {
         const deltaDuringSuppress = y - lastY
         lastY = y
-        if (deltaDuringSuppress < 0 && shouldExpandChromeOnScrollUp()) {
-          pendingUpPx += -deltaDuringSuppress
-          pendingDownPx = 0
-          if (pendingUpPx >= readUpThreshold(isPhone)) {
-            pendingUpPx = 0
-            syncCompact(false)
-          }
+        if (deltaDuringSuppress < 0 && revealFullChromeOnScrollUp()) {
           return
         }
         if (deltaDuringSuppress > 0) {
           pendingDownPx += deltaDuringSuppress
           pendingUpPx = 0
+          if (pendingDownPx >= readDownThreshold(isPhone)) {
+            pendingDownPx = 0
+            syncCompact(true)
+          }
         } else if (deltaDuringSuppress < 0) {
           pendingUpPx += -deltaDuringSuppress
           pendingDownPx = 0
+          if (compact && pendingUpPx >= readUpThreshold(isPhone)) {
+            pendingUpPx = 0
+            syncCompact(false)
+          }
         }
         return
       }
@@ -348,6 +382,10 @@ export function useWattaChromeScrollCompact(enabled = true) {
 
       const delta = y - lastY
       lastY = y
+      if (delta < 0 && isFullMenuPage && isMenuHeaderHidden()) {
+        revealFullChromeOnScrollUp()
+        return
+      }
       applyScrollDelta(delta, downThreshold, upThreshold)
     }
 
@@ -384,6 +422,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
     }
 
     if (isHomeOrMenuPage) {
+      ensureWattaChromeExpanded()
       syncInitial()
     } else if (consumeRestoreChromeCompact()) {
       lastY = readCachedScrollTop()
@@ -561,5 +600,5 @@ export function useWattaChromeScrollCompact(enabled = true) {
         clearWattaProductChromeEntry()
       }
     }
-  }, [enabled, isCartCheckoutPage, isHomeOrMenuPage, isProductPage, isProfilePage, isPhone, pathname])
+  }, [enabled, isCartCheckoutPage, isFullMenuPage, isHomeOrMenuPage, isMenuHeaderScrollPage, isProductPage, isProfilePage, isPhone, pathname])
 }
