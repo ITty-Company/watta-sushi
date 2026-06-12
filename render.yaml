@@ -47,10 +47,14 @@ services:
       # Додаткові Origin для CORS через кому (кастомний домен диплому тощо).
       - key: CORS_ORIGINS
         sync: false
-      # Google Sheets (опційно): JSON сервісного акаунта в один рядок; без цього замовлення в таблицю не пишуться.
+      # Google Sheets: JSON сервісного акаунта в один рядок (GOOGLE_CREDS або GOOGLE_CREDSS).
       - key: GOOGLE_CREDS
         sync: false
+      - key: GOOGLE_CREDSS
+        sync: false
       - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_CRM_SHEET_TITLE
         sync: false
       # LiqPay (рекомендовано для UA/EU) або Stripe — без ключів у кошику лише готівка
       - key: LIQPAY_PUBLIC_KEY
@@ -97,4 +101,7 @@ services:
           envVarKey: RENDER_EXTERNAL_URL
       # Той самий Client ID, що GOOGLE_OAUTH_CLIENT_ID на бекенді (вшивається в білд)
       - key: NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      # Публічний URL сайту (SEO, preconnect). На Render: https://watta-sushi-web.onrender.com
+      - key: NEXT_PUBLIC_SITE_URL
         sync: false

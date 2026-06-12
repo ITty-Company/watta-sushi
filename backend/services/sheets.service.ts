@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { GoogleSpreadsheet, type GoogleSpreadsheetWorksheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import type { PrismaClient } from '@prisma/client';
 import type { CustomerAggregate } from '../lib/crmCustomers.js';
@@ -17,10 +17,7 @@ const serviceAccountPath = join(
   '../google-service-account.json',
 );
 
-const SCOPES = [
-  'https://www.googleapis.com/auth/spreadsheets',
-  'https://www.googleapis.com/auth/drive.file',
-];
+const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 function getCrmSheetTitleValue(): string {
   return process.env.GOOGLE_CRM_SHEET_TITLE?.trim() || 'Клиенты';
@@ -28,13 +25,19 @@ function getCrmSheetTitleValue(): string {
 
 let jwtClient: JWT | null | undefined;
 
+function getGoogleCredsJson(): string | null {
+  const raw = process.env.GOOGLE_CREDS?.trim() || process.env.GOOGLE_CREDSS?.trim();
+  return raw || null;
+}
+
 function loadServiceAccountCreds(): Record<string, string> | null {
-  if (process.env.GOOGLE_CREDS) {
+  const credsJson = getGoogleCredsJson();
+  if (credsJson) {
     try {
-      return JSON.parse(process.env.GOOGLE_CREDS) as Record<string, string>;
+      return JSON.parse(credsJson) as Record<string, string>;
     } catch {
       console.warn(
-        'Google Sheets: GOOGLE_CREDS не є валідним JSON — експорт у таблицю вимкнено.',
+        'Google Sheets: GOOGLE_CREDS / GOOGLE_CREDSS не є валідним JSON — експорт у таблицю вимкнено.',
       );
       return null;
     }
@@ -45,7 +48,7 @@ function loadServiceAccountCreds(): Record<string, string> | null {
   } catch {
     if (process.env.NODE_ENV === 'production') {
       console.warn(
-        'Google Sheets: немає облікових даних (GOOGLE_CREDS або backend/google-service-account.json). Експорт замовлень у таблицю вимкнено.',
+        'Google Sheets: немає облікових даних (GOOGLE_CREDS, GOOGLE_CREDSS або backend/google-service-account.json). Експорт замовлень у таблицю вимкнено.',
       );
     }
     return null;
@@ -79,6 +82,141 @@ export function getGoogleSpreadsheetUrl(): string | null {
 
 export function getCrmSheetTitle(): string {
   return getCrmSheetTitleValue();
+}
+
+export function getGoogleServiceAccountEmail(): string | null {
+  const creds = loadServiceAccountCreds();
+  return creds?.client_email?.trim() || null;
+}
+
+function getHttpStatus(error: unknown): number | null {
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  return typeof status === 'number' ? status : null;
+}
+
+export function formatGoogleSheetsSyncError(error: unknown): string {
+  const email = getGoogleServiceAccountEmail();
+  const status = getHttpStatus(error);
+  const sheetTitle = getCrmSheetTitleValue();
+
+  if (status === 403) {
+    return [
+      'Нет доступа к Google Таблице (403).',
+      email
+        ? `Откройте таблицу → «Настройки доступа» → добавьте ${email} как Редактор (Editor).`
+        : 'Проверьте GOOGLE_CREDS / GOOGLE_CREDSS на Render и доступ service account к таблице.',
+      `Вкладка CRM: «${sheetTitle}». Имя должно совпадать с GOOGLE_CRM_SHEET_TITLE.`,
+      'Снимите защиту листа: Данные → Защищённые листы и диапазоны.',
+    ].join(' ');
+  }
+
+  if (status === 404) {
+    return 'Google Таблица не найдена. Проверьте GOOGLE_SHEET_ID на Render.';
+  }
+
+  const message = (error as { message?: string })?.message?.trim();
+  if (message?.includes('GOOGLE_CREDS')) return message;
+  if (message) return message;
+
+  return 'Ошибка синхронизации с Google Таблицей';
+}
+
+async function clearWorksheetRows(sheet: GoogleSpreadsheetWorksheet): Promise<void> {
+  try {
+    await sheet.clear();
+    return;
+  } catch (error) {
+    if (getHttpStatus(error) !== 403) throw error;
+  }
+
+  await sheet.loadHeaderRow();
+  let rows = await sheet.getRows();
+  while (rows.length > 0) {
+    await Promise.all(rows.map((row) => row.delete()));
+    rows = await sheet.getRows();
+  }
+}
+
+async function ensureCrmWorksheet(
+  doc: GoogleSpreadsheet,
+  crmSheetTitle: string,
+): Promise<GoogleSpreadsheetWorksheet> {
+  let sheet = doc.sheetsByTitle[crmSheetTitle];
+  if (!sheet) {
+    return doc.addSheet({ title: crmSheetTitle, headerValues: CRM_HEADER_VALUES });
+  }
+
+  try {
+    await clearWorksheetRows(sheet);
+    return sheet;
+  } catch (error) {
+    if (getHttpStatus(error) !== 403) throw error;
+    const sheetId = sheet.sheetId;
+    await doc.deleteSheet(sheetId);
+    return doc.addSheet({ title: crmSheetTitle, headerValues: CRM_HEADER_VALUES });
+  }
+}
+
+export async function probeGoogleSheetsWriteAccess(): Promise<{
+  ok: boolean;
+  serviceAccountEmail: string | null;
+  spreadsheetTitle?: string;
+  crmSheetTitle: string;
+  crmSheetExists: boolean;
+  error?: string;
+}> {
+  const crmSheetTitle = getCrmSheetTitleValue();
+  const serviceAccountEmail = getGoogleServiceAccountEmail();
+
+  if (!isGoogleSheetsConfigured()) {
+    return {
+      ok: false,
+      serviceAccountEmail,
+      crmSheetTitle,
+      crmSheetExists: false,
+      error: 'Google Таблицы не настроены (GOOGLE_CREDS / GOOGLE_CREDSS + GOOGLE_SHEET_ID).',
+    };
+  }
+
+  try {
+    const doc = await getSpreadsheetDoc();
+    if (!doc) {
+      return {
+        ok: false,
+        serviceAccountEmail,
+        crmSheetTitle,
+        crmSheetExists: false,
+        error: 'Не удалось открыть Google Таблицу.',
+      };
+    }
+
+    const crmSheetExists = Boolean(doc.sheetsByTitle[crmSheetTitle]);
+    const probeTitle = '__watta_access_probe__';
+    const existingProbe = doc.sheetsByTitle[probeTitle];
+    if (existingProbe) {
+      await doc.deleteSheet(existingProbe.sheetId);
+    }
+
+    const probeSheet = await doc.addSheet({ title: probeTitle, headerValues: ['probe'] });
+    await probeSheet.addRow({ probe: 'ok' });
+    await doc.deleteSheet(probeSheet.sheetId);
+
+    return {
+      ok: true,
+      serviceAccountEmail,
+      crmSheetTitle,
+      crmSheetExists,
+      spreadsheetTitle: doc.title,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      serviceAccountEmail,
+      crmSheetTitle,
+      crmSheetExists: false,
+      error: formatGoogleSheetsSyncError(error),
+    };
+  }
 }
 
 async function getSpreadsheetDoc(): Promise<GoogleSpreadsheet | null> {
@@ -126,12 +264,7 @@ export async function syncCrmCustomersToSheet(
   const crmSheetTitle = getCrmSheetTitleValue();
 
   try {
-    let sheet = doc.sheetsByTitle[crmSheetTitle];
-    if (!sheet) {
-      sheet = await doc.addSheet({ title: crmSheetTitle, headerValues: CRM_HEADER_VALUES });
-    }
-
-    await sheet.clear();
+    const sheet = await ensureCrmWorksheet(doc, crmSheetTitle);
     await sheet.setHeaderRow(CRM_HEADER_VALUES);
 
     const syncedAt = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Kyiv' });
