@@ -37,6 +37,7 @@ import {
   addDaysToDateKey,
 } from '@/lib/deliverySlotsAmsterdam'
 import { WATTA_CART_FOCUS_CHECKOUT_KEY } from '@/lib/openWattaCart'
+import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { resolveCheckoutErrorFocus } from '@/lib/checkoutErrorFocus'
 import {
   clearKitchenClosedModalDismissed,
@@ -1711,6 +1712,11 @@ export default function CartView({
     !isEmpty,
   )
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
+  }, [isEmpty])
+
   const checkoutMobileFoot =
     !isEmpty && checkoutFootMounted ? (
       <div
@@ -1736,7 +1742,9 @@ export default function CartView({
     ) : null
 
   return (
-    <div className="watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col max-md:overflow-x-clip font-sans">
+    <div
+      className={`watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col max-md:overflow-x-clip font-sans${isEmpty ? ' watta-cart-page--empty' : ''}`}
+    >
       <div className="watta-cart-page__content relative z-10 mx-auto flex w-full min-w-0 max-w-[1180px] flex-col pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pb-8 md:pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))]">
         <WattaInViewFadeHeader className="watta-cart-checkout-lead">
           <div className="watta-cart-checkout-lead__toolbar">
@@ -1747,23 +1755,25 @@ export default function CartView({
           </div>
           <div className="watta-cart-checkout-lead__copy">
             {!isEmpty ? (
-              <p className="watta-cart-checkout-lead__meta">{cartMetaText}</p>
-            ) : null}
-            <WattaPageHeroStagger
-              title={cs.checkoutTitle}
-              titleId="cart-checkout-title"
-              titleClassName="watta-cart-checkout-lead__title"
-              subtitle={isUserLoggedIn() ? cs.checkoutProfileHint : cs.checkoutGuestHint}
-              subtitleClassName="watta-cart-checkout-lead__sub"
-            />
-            {!isUserLoggedIn() ? (
-              <button
-                type="button"
-                className="watta-cart-checkout-lead__login watta-cart-checkout-lead__login--hero"
-                onClick={() => openCartAuth()}
-              >
-                {cs.checkoutLoginLink}
-              </button>
+              <>
+                <p className="watta-cart-checkout-lead__meta">{cartMetaText}</p>
+                <WattaPageHeroStagger
+                  title={cs.checkoutTitle}
+                  titleId="cart-checkout-title"
+                  titleClassName="watta-cart-checkout-lead__title"
+                  subtitle={isUserLoggedIn() ? cs.checkoutProfileHint : cs.checkoutGuestHint}
+                  subtitleClassName="watta-cart-checkout-lead__sub"
+                />
+                {!isUserLoggedIn() ? (
+                  <button
+                    type="button"
+                    className="watta-cart-checkout-lead__login watta-cart-checkout-lead__login--hero"
+                    onClick={() => openCartAuth()}
+                  >
+                    {cs.checkoutLoginLink}
+                  </button>
+                ) : null}
+              </>
             ) : null}
           </div>
         </WattaInViewFadeHeader>
@@ -1773,8 +1783,8 @@ export default function CartView({
         <>
 
           {cartItems.length === 0 ? (
-            <WattaInViewFadeDiv role="status" className="flex flex-col pb-2 pt-1">
-              <div className="relative mx-auto w-full max-w-lg overflow-visible rounded-[22px] border border-[#145142]/18 bg-white/95 px-4 py-6 shadow-[0_20px_48px_-28px_rgba(20,81,66,0.4)] backdrop-blur-[2px] sm:rounded-[32px] sm:px-8 sm:py-10">
+            <WattaInViewFadeDiv role="status" className="watta-cart-page-empty-stage flex flex-col pb-2 pt-1">
+              <div className="watta-cart-page-empty-shell relative mx-auto w-full overflow-visible rounded-[22px] border border-[#145142]/18 bg-white/95 px-4 py-5 shadow-[0_20px_48px_-28px_rgba(20,81,66,0.4)] backdrop-blur-[2px] sm:rounded-[32px] sm:px-6 sm:py-6">
                 <div
                   className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#ff6b35]/12 blur-2xl"
                   aria-hidden

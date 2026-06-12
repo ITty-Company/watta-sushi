@@ -405,14 +405,14 @@
 }
 
 .watta-cart-page-empty .watta-cart-drawer-empty__art {
-  width: min(100%, 22rem);
-  margin-bottom: 12px;
+  width: min(100%, 19rem, 28dvh);
+  margin-bottom: 10px;
 }
 
 @media (min-width: 640px) {
   .watta-cart-page-empty .watta-cart-drawer-empty__art {
-    width: min(100%, 26rem);
-    margin: 0.35rem auto 16px;
+    width: min(100%, 22rem, 32dvh);
+    margin: 0.25rem auto 12px;
   }
 
   .watta-cart-page-empty .watta-cart-drawer-empty__brand {
@@ -428,6 +428,104 @@
 @media (min-width: 1024px) {
   .watta-cart-page-empty .watta-cart-drawer-empty__brand {
     top: 20%;
+  }
+}
+
+/* /cart порожній — вся сцена в viewport (ілюстрація + текст + кнопка) */
+.watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__art {
+  width: min(100%, 19rem, 28dvh);
+  margin-inline: auto;
+  margin-bottom: 8px;
+}
+
+@media (min-width: 640px) {
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__art {
+    width: min(100%, 22rem, 32dvh);
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-cart-page--empty {
+    --cart-empty-art-w: min(40%, 17.5rem);
+    --cart-empty-art-gap: clamp(2rem, 4vw, 3rem);
+    --cart-empty-title-size: clamp(1.45rem, 2.1vw, 1.85rem);
+    --cart-empty-hint-size: clamp(0.9rem, 1.05vw, 1.02rem);
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty.watta-cart-drawer-empty {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cart-empty-art-gap);
+    padding: 0.1rem 0.05rem 0.2rem;
+    text-align: left;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__art {
+    flex: 0 0 var(--cart-empty-art-w);
+    width: var(--cart-empty-art-w);
+    max-width: var(--cart-empty-art-w);
+    margin: 0;
+    padding-inline-end: clamp(0.5rem, 1.25vw, 1rem);
+    margin-inline-end: clamp(0.75rem, 1.75vw, 1.35rem);
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__copy {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    margin-top: 0;
+    padding-inline-start: clamp(0.35rem, 1vw, 0.75rem);
+    text-align: left;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__title {
+    font-size: var(--cart-empty-title-size);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__hint {
+    max-width: none;
+    font-size: var(--cart-empty-hint-size);
+    line-height: 1.45;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty .watta-cart-drawer-empty__cta {
+    justify-content: flex-start;
+    margin-top: 1.1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-page--empty {
+    --cart-empty-art-w: min(42%, 20rem);
+    --cart-empty-art-gap: clamp(2.25rem, 4.25vw, 3.35rem);
+    --cart-empty-title-size: clamp(1.6rem, 1.85vw, 2rem);
+    --cart-empty-hint-size: clamp(0.95rem, 1vw, 1.0625rem);
+  }
+}
+
+@media (min-width: 1280px) {
+  .watta-cart-page--empty {
+    --cart-empty-art-w: min(44%, 22rem);
+    --cart-empty-art-gap: clamp(2.5rem, 4.5vw, 3.75rem);
+    --cart-empty-title-size: clamp(1.75rem, 1.65vw, 2.15rem);
+    --cart-empty-hint-size: clamp(1rem, 0.95vw, 1.125rem);
+  }
+}
+
+@media (min-width: 768px) and (max-height: 920px) {
+  .watta-cart-page--empty {
+    --cart-empty-art-w: min(38%, 15rem);
+    --cart-empty-art-gap: clamp(1.5rem, 3vw, 2.25rem);
+    --cart-empty-title-size: clamp(1.3rem, 2vw, 1.55rem);
+    --cart-empty-hint-size: clamp(0.875rem, 1vw, 0.95rem);
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty-shell {
+    padding-top: 1.2rem;
+    padding-bottom: 1.2rem;
   }
 }
 

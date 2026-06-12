@@ -25259,8 +25259,18 @@ body.admin-watta-overlay-open .site-footer-watta {
   padding-top: clamp(10px, 2vh, 18px) !important;
 }
 
-.watta-app-shell-root:has(.watta-cart-page) .watta-chrome-categories-row-web {
+.watta-app-shell-root:has(.watta-cart-page:not(.watta-cart-page--empty)) .watta-chrome-categories-row-web {
   display: none !important;
+}
+
+.watta-app-shell-root:has(.watta-cart-page--empty) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+  margin-bottom: clamp(6px, 1.25vh, 12px);
+}
+
+@media (max-width: 767px) {
+  .watta-app-shell-root:has(.watta-cart-page--empty) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-bottom: clamp(10px, 2.5vh, 16px);
+  }
 }
 
 @media (max-width: 767px) {

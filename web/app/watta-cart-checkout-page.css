@@ -32,7 +32,8 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) body {
   background: #ffffff !important;
 }
 
-html.watta-light-chrome:has(.watta-cart-checkout-page--v2) .watta-chrome-categories-row-web {
+html.watta-light-chrome:has(.watta-cart-page.watta-cart-checkout-page--v2:not(.watta-cart-page--empty))
+  .watta-chrome-categories-row-web {
   display: none !important;
 }
 
@@ -2621,7 +2622,80 @@ html.watta-light-chrome:has(.watta-cart-checkout-page--v2) .watta-chrome-categor
 }
 
 @media (min-width: 768px) {
-  .watta-app-shell-root:has(.watta-cart-checkout-page--v2) .floating-contact-buttons-root {
+  .watta-app-shell-root:has(.watta-cart-checkout-page--v2:not(.watta-cart-page--empty)) .floating-contact-buttons-root {
     display: none !important;
+  }
+}
+
+/* —— Порожній /cart: категорії + збалансована картка на планшеті / ПК —— */
+.watta-cart-page--empty .watta-cart-page__content {
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px)) !important;
+}
+
+.watta-cart-page--empty .watta-cart-page-empty-shell {
+  width: min(100%, 32rem);
+  max-width: 32rem;
+}
+
+.watta-cart-page--empty .watta-cart-page-empty-stage {
+  width: 100%;
+  min-width: 0;
+}
+
+.watta-cart-page--empty .watta-cart-checkout-lead {
+  margin-bottom: 0.35rem;
+}
+
+@media (min-width: 768px) {
+  .watta-cart-page--empty {
+    --cart-empty-shell-w: min(52rem, 94vw);
+  }
+
+  .watta-cart-page--empty .watta-cart-page__content {
+    padding-top: clamp(8px, 1.25vh, 14px) !important;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .watta-cart-page--empty .watta-cart-checkout-lead {
+    width: 100%;
+    max-width: var(--cart-empty-shell-w);
+    margin-inline: auto;
+    margin-bottom: 0.5rem;
+  }
+
+  .watta-cart-page--empty .watta-cart-checkout-lead__title {
+    display: none;
+  }
+
+  .watta-cart-page--empty .watta-cart-checkout-lead__sub {
+    display: none;
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty-stage {
+    display: flex;
+    justify-content: center;
+    padding-top: clamp(0.15rem, 0.75vh, 0.5rem);
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty-shell {
+    width: var(--cart-empty-shell-w);
+    max-width: var(--cart-empty-shell-w);
+    padding: 1.5rem 1.65rem 1.55rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .watta-cart-page--empty {
+    --cart-empty-shell-w: min(56rem, 92vw);
+  }
+
+  .watta-cart-page--empty .watta-cart-page-empty-shell {
+    padding: 1.65rem 1.85rem 1.7rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .watta-cart-page--empty {
+    --cart-empty-shell-w: min(60rem, 90vw);
   }
 }
