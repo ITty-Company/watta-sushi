@@ -40,6 +40,16 @@ export function readChromeHeaderBandHeightPx(): number {
   return w <= 767 ? 76 : 86
 }
 
+/** Зсув scrollTop при compact ↔ expand: шапка + зазор до категорій (margin-top зникає в compact). */
+export function readChromeCompactScrollDeltaPx(): number {
+  if (typeof document === 'undefined') return readChromeHeaderBandHeightPx()
+  const cs = getComputedStyle(document.documentElement)
+  const gap = parseFloat(cs.getPropertyValue('--watta-chrome-header-cat-gap'))
+  const header = readChromeHeaderBandHeightPx()
+  const safeGap = Number.isFinite(gap) && gap > 0 ? Math.round(gap) : 0
+  return header + safeGap
+}
+
 /** Зсув під повну шапку (без compact) — для scroll-margin на /menu, щоб не стрибало при зміні compact. */
 export function readExpandedStickyChromeScrollOffset(): number {
   if (typeof document === 'undefined') return 148
@@ -206,7 +216,8 @@ export function lockWattaChromeCompactMutation(ms = 720): void {
   window.clearTimeout(compactLockTimer)
   compactLockTimer = window.setTimeout(() => {
     delete root.dataset.wattaChromeCompactLock
-    if (wasCompact) {
+    // Не повертати compact, якщо користувач уже розгорнув шапку скролом вгору.
+    if (wasCompact && isWattaChromeCompact()) {
       root.dataset.wattaChromeCompact = 'true'
       window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: true } }))
     }

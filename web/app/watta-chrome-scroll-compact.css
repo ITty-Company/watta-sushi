@@ -41,6 +41,15 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
     padding: 0 !important;
     border: none !important;
   }
+
+  /* Без зазору шапка→категорії — категорії одразу під safe-area; scroll компенсується в JS. */
+  html[data-watta-chrome-compact='true']
+    body
+    .watta-sticky-chrome-portal
+    .watta-chrome-categories-row-web
+    .categories-panel-wrapper-web {
+    margin-top: 0 !important;
+  }
 }
 
 /* Планшет/ПК: шапка завжди видима — без стрибків при скролі */
@@ -91,15 +100,6 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
     border: revert !important;
   }
 
-  html.watta-route-product:not([data-watta-product-header-expanded='true'])
-    .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
-    min-height: calc(
-      var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
-    ) !important;
-    height: calc(
-      var(--watta-chrome-categories-band-h, 56px) + env(safe-area-inset-top, 0px) + 12px
-    ) !important;
-  }
 }
 
 html[data-watta-chrome-compact='true'] {

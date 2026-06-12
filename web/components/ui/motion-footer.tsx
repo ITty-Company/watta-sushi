@@ -11,6 +11,7 @@ import { useLanguage } from '@/app/context/LanguageContext'
 import { WattaMenuProductCard } from '@/app/components/WattaMenuProductCard'
 import { WattaInViewFadeDiv } from '@/app/components/WattaInViewFade'
 import { FooterReadyAnimatedHead } from '@/app/components/FooterReadyAnimatedHead'
+import { usePhoneMenuOneColumn } from '@/hooks/usePhoneMenuOneColumn'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
@@ -1772,6 +1773,8 @@ export type CinematicFooterAdminProduct = {
   emoji?: string
   /** Під назвою (вага / мл) */
   subtitleLine?: string
+  /** Склад з адмінки — як у картках #home-menu-catalog */
+  ingredientIds?: number[]
 }
 
 export type CinematicFooterProps = {
@@ -1826,6 +1829,7 @@ function AdminProductStrip({
   stripKind = 'promo',
   layoutMode = 'rail',
   seeAllLink,
+  useHomeCatalogCardLayout = false,
 }: {
   title: string
   ariaLabel: string
@@ -1848,9 +1852,12 @@ function AdminProductStrip({
   stripKind?: 'recommended' | 'promo'
   layoutMode?: 'rail' | 'stack'
   seeAllLink?: { href: string; label: string }
+  /** Головна «Наші хіти»: ті самі картки й сітка, що в #home-menu-catalog */
+  useHomeCatalogCardLayout?: boolean
 }) {
   if (items.length === 0) return null
   const isRec = stripKind === 'recommended'
+  const phoneOneCol = usePhoneMenuOneColumn()
 
   const stripHeading =
     title.trim().length > 0 ? (
@@ -1864,41 +1871,82 @@ function AdminProductStrip({
       ? 'footer-promo-card footer-promo-card--watta-grid w-full max-w-lg text-left'
       : 'footer-promo-card footer-promo-card--watta-grid text-left'
 
-  const productCards = items.map((p, index) => {
+  const renderProductCard = (p: CinematicFooterAdminProduct, index: number) => {
     const promoPct = p.discountPercent && p.discountPercent > 0 ? Math.round(p.discountPercent) : undefined
     return (
-      <div key={p.id} className={cardShellClass}>
-        <WattaMenuProductCard
-          variant="grid"
-          className={cn('min-w-0 w-full shadow-sm', isRec && 'footer-rec-watta-card')}
-          product={{
-            id: p.id,
-            name: (p.label || '').trim() || '—',
-            description: p.description ?? '',
-            price: p.price ?? 0,
-            emoji: p.emoji ?? '🍣',
-            imageUrl: p.imageUrl,
-            isTop: p.isPopular === true,
-            isMenuNew: p.isMenuNew === true,
-            promoDiscountPercent: promoPct,
-          }}
-          subtitleLine={p.subtitleLine}
-          onAddToCart={(cardProduct) =>
-            onProductAddToCart({
-              id: cardProduct.id,
-              name: cardProduct.name,
-              description: cardProduct.description,
-              price: cardProduct.price,
-              emoji: cardProduct.emoji,
-              imageUrl: cardProduct.imageUrl,
-              promoDiscountPercent: cardProduct.promoDiscountPercent,
-            })
-          }
-          onBeforeNavigateToProduct={onBeforeNavigateToProduct}
-        />
+      <WattaMenuProductCard
+        variant="grid"
+        imagePriority={index < 4}
+        className="min-w-0 w-full shadow-sm"
+        product={{
+          id: p.id,
+          name: (p.label || '').trim() || '—',
+          description: p.description ?? '',
+          price: p.price ?? 0,
+          emoji: p.emoji ?? '🍣',
+          imageUrl: p.imageUrl,
+          isTop: p.isPopular === true,
+          isMenuNew: p.isMenuNew === true,
+          isHomeHit: p.isHomeHit === true,
+          promoDiscountPercent: promoPct,
+          ingredientIds: p.ingredientIds,
+        }}
+        subtitleLine={p.subtitleLine}
+        onAddToCart={(cardProduct) =>
+          onProductAddToCart({
+            id: cardProduct.id,
+            name: cardProduct.name,
+            description: cardProduct.description,
+            price: cardProduct.price,
+            emoji: cardProduct.emoji,
+            imageUrl: cardProduct.imageUrl,
+            promoDiscountPercent: cardProduct.promoDiscountPercent,
+          })
+        }
+        onBeforeNavigateToProduct={onBeforeNavigateToProduct}
+      />
+    )
+  }
+
+  if (useHomeCatalogCardLayout && isRec) {
+    const homeCatalogGrid = phoneOneCol ? (
+      <div className="home-menu-category-grid-phone-web">
+        <div className="home-menu-category-grid-phone-inner-web" role="region" aria-label={ariaLabel}>
+          {items.map((p, index) => (
+            <div key={p.id}>{renderProductCard(p, index)}</div>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div className="home-menu-category-grid-tablet-web">
+        <div className="home-menu-category-grid-tablet-inner-web" role="region" aria-label={ariaLabel}>
+          {items.map((p, index) => (
+            <div key={p.id}>{renderProductCard(p, index)}</div>
+          ))}
+        </div>
       </div>
     )
-  })
+
+    return (
+      <div className="footer-cinematic-rail--recommended w-full" role="region" aria-label={ariaLabel}>
+        {stripHeading}
+        {homeCatalogGrid}
+        {seeAllLink ? (
+          <div className="home-menu-cat-view-all-wrap-web">
+            <Link href={seeAllLink.href} className="home-menu-cat-view-all-btn-web">
+              {seeAllLink.label}
+            </Link>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  const productCards = items.map((p, index) => (
+    <div key={p.id} className={cardShellClass}>
+      {renderProductCard(p, index)}
+    </div>
+  ))
 
   if (layoutMode === 'stack' && isRec) {
     return (
@@ -2269,6 +2317,7 @@ export function CinematicFooter({
                         stripKind="recommended"
                         layoutMode={recLayoutMode}
                         seeAllLink={recSeeAll}
+                        useHomeCatalogCardLayout={Boolean(homeRecommendedStack)}
                       />
                     </WattaInViewFadeDiv>
                   ) : (
@@ -2286,6 +2335,7 @@ export function CinematicFooter({
                       stripKind="recommended"
                       layoutMode={recLayoutMode}
                       seeAllLink={recSeeAll}
+                      useHomeCatalogCardLayout={Boolean(homeRecommendedStack)}
                     />
                   )}
 

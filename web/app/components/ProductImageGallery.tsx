@@ -672,7 +672,7 @@ export function ProductImageGallery({
             ref={scrollerRef}
             className={cn(
               'flex w-full snap-x snap-mandatory overflow-x-auto scroll-smooth overscroll-x-contain',
-              '[touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch]',
+              '[touch-action:pan_x] [-webkit-overflow-scrolling:touch]',
               '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
             )}
           >

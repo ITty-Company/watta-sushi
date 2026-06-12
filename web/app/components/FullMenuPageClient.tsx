@@ -104,6 +104,8 @@ export default function FullMenuPageClient() {
   const catScrollAfterLoadRef = useRef<string | null>(null)
   const catScrollGenerationRef = useRef(0)
   const catScrollSettledRef = useRef(false)
+  /** Після кліку по чіпу — не скасовувати програмний скрол дрібним touchmove (iOS). */
+  const categoryScrollGraceUntilRef = useRef(0)
   const itemsRef = useRef<MenuItem[]>([])
   itemsRef.current = items
   const visibleCategoriesRef = useRef<MenuCategoryRow[]>([])
@@ -573,6 +575,11 @@ export default function FullMenuPageClient() {
     [findCategoryScrollTarget, pinSectionMountCluster],
   )
 
+  const armCategoryScrollGrace = useCallback((ms = 520) => {
+    categoryScrollGraceUntilRef.current = performance.now() + ms
+    setMenuCatalogScrollLock(true)
+  }, [])
+
   const requestScrollToCategory = useCallback(
     (slug: string, options?: { smooth?: boolean }) => {
       const trimmed = slug.trim()
@@ -583,8 +590,8 @@ export default function FullMenuPageClient() {
       const useEasedScroll = Boolean(options?.smooth && !reduceMotion)
       cancelMenuScrollAnimation()
       catScrollSettledRef.current = false
+      armCategoryScrollGrace(useEasedScroll ? 900 : 520)
       beginMenuCategoryScrollChromeLock(useEasedScroll ? 900 : 380)
-      setMenuCatalogScrollLock(true)
       const generation = ++catScrollGenerationRef.current
       runUntilScrollSuccess(
         () => scrollToCategoryOnce(trimmed, generation, useEasedScroll),
@@ -594,7 +601,7 @@ export default function FullMenuPageClient() {
       )
       window.setTimeout(() => setMenuCatalogScrollLock(false), useEasedScroll ? 720 : 280)
     },
-    [scrollToCategoryOnce],
+    [scrollToCategoryOnce, armCategoryScrollGrace],
   )
 
   useEffect(() => {
@@ -603,20 +610,17 @@ export default function FullMenuPageClient() {
       const slug = detail?.slug?.trim()
       if (!slug) return
       initialCatScrollDoneRef.current = null
+      catScrollSettledRef.current = false
       const instant = detail?.instant !== false
-      const run = () => requestScrollToCategory(slug, { smooth: !instant })
-      if (instant) {
-        requestAnimationFrame(() => requestAnimationFrame(run))
-      } else {
-        run()
-      }
+      armCategoryScrollGrace(instant ? 520 : 900)
+      requestScrollToCategory(slug, { smooth: !instant })
     }
     window.addEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
     return () => {
       window.removeEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onScrollRequest)
       catScrollGenerationRef.current += 1
     }
-  }, [requestScrollToCategory])
+  }, [requestScrollToCategory, armCategoryScrollGrace])
 
   const prevCatFromUrlRef = useRef('')
 
@@ -665,6 +669,7 @@ export default function FullMenuPageClient() {
     requestScrollToCategory,
     visibleCategories.length,
     pinSectionMountCluster,
+    armCategoryScrollGrace,
   ])
 
   useEffect(() => {
@@ -677,6 +682,8 @@ export default function FullMenuPageClient() {
     if (!targetCategorySlug || typeof window === 'undefined') return
     const cancelPendingCatScroll = () => {
       if (catScrollSettledRef.current) return
+      if (isMenuCatalogScrollLocked()) return
+      if (performance.now() < categoryScrollGraceUntilRef.current) return
       catScrollGenerationRef.current += 1
     }
     const opts: AddEventListenerOptions = { passive: true, capture: true }

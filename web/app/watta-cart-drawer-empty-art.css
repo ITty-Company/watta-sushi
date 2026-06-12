@@ -569,6 +569,61 @@
   justify-content: center;
 }
 
+/* Телефон: порожній drawer — один текстовий блок по центру панелі */
+@media (max-width: 767px) {
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-head {
+    justify-content: flex-end;
+    border-bottom: none;
+    padding: 14px 16px 0;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-head__text {
+    display: none;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-panel {
+    justify-content: center;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-empty {
+    flex: 0 0 auto;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 0.5rem 1.25rem max(1.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-empty__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 20rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-empty__kicker {
+    display: none;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-empty__title,
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-empty__hint {
+    width: 100%;
+    text-align: center;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-empty__hint {
+    margin-top: 0.5rem;
+    margin-inline: auto;
+  }
+
+  #watta-cart-drawer:has(.watta-cart-drawer-empty) .watta-cart-drawer-empty__cta {
+    margin-top: 1rem;
+    margin-inline: auto;
+  }
+}
+
 #watta-cart-drawer .watta-cart-drawer-empty__art {
   width: min(100%, 26rem, 46dvh);
 }

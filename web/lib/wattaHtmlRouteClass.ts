@@ -56,6 +56,18 @@ export function isWattaAuthPathname(pathname: string): boolean {
   return p === '/login' || p === '/register'
 }
 
+/** Сторінка оформлення замовлення `/cart`. */
+export function isWattaCartCheckoutPathname(pathname: string): boolean {
+  const p = pathname || '/'
+  return p === '/cart'
+}
+
+/** Публічний профіль `/profile` та вкладені маршрути. */
+export function isWattaProfilePathname(pathname: string): boolean {
+  const p = pathname || '/'
+  return p === '/profile' || p.startsWith('/profile/')
+}
+
 /** Сторінка товару `/product/:id`. */
 export function isWattaProductPathname(pathname: string): boolean {
   const p = pathname || '/'

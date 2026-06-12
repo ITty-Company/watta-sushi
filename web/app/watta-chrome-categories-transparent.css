@@ -1342,7 +1342,7 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     body:not(.watta-route-home)
     .watta-app-main-grow
     > .watta-product-page {
-    padding-top: var(--watta-mobile-cat-below-gap-product-expanded) !important;
+    padding-top: var(--watta-mobile-cat-below-gap-product) !important;
   }
 
   html:not(.watta-html-home-hero)

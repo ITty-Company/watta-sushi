@@ -6,6 +6,9 @@
   --watta-cart-bar-side: max(14px, env(safe-area-inset-left, 0px));
   --watta-cart-bar-side-right: max(14px, env(safe-area-inset-right, 0px));
   --watta-cart-bar-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  --watta-checkout-foot-clearance: calc(
+    3.25rem + 0.85rem + max(12px, env(safe-area-inset-bottom, 0px)) + 2.25rem
+  );
   --watta-mobile-cart-bar-green: var(--watta-brand-mint);
   --watta-mobile-cart-bar-green-active: var(--watta-brand-mint-hover);
   --watta-mobile-cart-bar-green-pressed: var(--watta-brand-mint-active);
@@ -204,6 +207,12 @@ html[data-watta-nav-drawer-open]::after {
       0 calc(2px * var(--watta-cart-bar-progress, 0)) calc(6px * var(--watta-cart-bar-progress, 0))
         rgba(0, 0, 0, 0.08);
     will-change: transform, opacity;
+  }
+
+  /* /cart checkout — без нижнього градієнта (лише fixed CTA «Заказать»). */
+  html.watta-light-chrome:has(.watta-cart-checkout-page--v2:not(.watta-cart-page--empty))::after {
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 
   /* Базова м’яка тінь знизу — завжди на місці, не стрибає; зникає коли смуга виїжджає */
@@ -716,8 +725,23 @@ html[data-watta-nav-drawer-open]::after {
     display: none;
   }
 
+  html.watta-light-chrome:has(.watta-cart-checkout-page--v2:not(.watta-cart-page--empty)) {
+    scroll-padding-top: calc(var(--watta-sticky-chrome-flow-h, 120px) + 12px);
+    scroll-padding-bottom: var(--watta-checkout-foot-clearance);
+  }
+
   .watta-cart-checkout-page--v2 .watta-cart-page__content {
-    padding-bottom: calc(3.75rem + max(12px, env(safe-area-inset-bottom, 0px)) + 0.35rem);
+    padding-bottom: var(--watta-checkout-foot-clearance);
+  }
+
+  .watta-cart-checkout-page--v2 .watta-cart-form-section,
+  .watta-cart-checkout-page--v2 .watta-cart-checkout-section--pay,
+  .watta-cart-checkout-page--v2 [id^='cart-checkout'],
+  .watta-cart-checkout-page--v2 input[autocomplete='street-address'],
+  .watta-cart-checkout-page--v2 input[autocomplete='postal-code'],
+  .watta-cart-checkout-page--v2 .watta-checkout-field {
+    scroll-margin-top: calc(var(--watta-sticky-chrome-flow-h, 120px) + 12px);
+    scroll-margin-bottom: var(--watta-checkout-foot-clearance);
   }
 
   /* Одна кнопка оформлення — лише нижня смуга, без дубля «Оформити замовлення» у формі */

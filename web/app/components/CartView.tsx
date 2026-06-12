@@ -40,6 +40,10 @@ import { WATTA_CART_FOCUS_CHECKOUT_KEY } from '@/lib/openWattaCart'
 import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { resolveCheckoutErrorFocus } from '@/lib/checkoutErrorFocus'
 import {
+  scrollCheckoutFieldIntoView,
+  scrollCheckoutSectionIntoView,
+} from '@/lib/checkoutScroll'
+import {
   clearKitchenClosedModalDismissed,
   isKitchenClosedModalDismissed,
 } from '@/lib/kitchenClosedModal'
@@ -357,7 +361,8 @@ export default function CartView({
     setDeliverySlot(slot)
     toast.success(cs.kitchenClosed.preorderToast)
     requestAnimationFrame(() => {
-      document.getElementById('cart-delivery-time')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const section = document.getElementById('cart-delivery-time')
+      if (section) scrollCheckoutSectionIntoView(section, 'smooth')
     })
   }, [cs.kitchenClosed.preorderToast, cs.slotAsap])
 
@@ -370,7 +375,7 @@ export default function CartView({
   const scrollCheckoutToField = useCallback((el: HTMLElement | null | undefined) => {
     if (!el) return
     requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      scrollCheckoutFieldIntoView(el, 'smooth')
       try {
         el.focus({ preventScroll: true })
       } catch {
@@ -384,13 +389,14 @@ export default function CartView({
       const section = document.getElementById(sectionId)
       if (!section) return
       requestAnimationFrame(() => {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' })
         if (focusSelector) {
           const focusEl = section.querySelector(focusSelector)
           if (focusEl instanceof HTMLElement) {
             scrollCheckoutToField(focusEl)
+            return
           }
         }
+        scrollCheckoutSectionIntoView(section, 'smooth')
       })
     },
     [scrollCheckoutToField],
@@ -1677,6 +1683,37 @@ export default function CartView({
     setCheckoutFootMounted(true)
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || isEmpty || !checkoutFootMounted) return
+
+    const root = document.documentElement
+    const foot = document.querySelector('[data-watta-cart-checkout-foot]')
+    if (!foot) return
+
+    const syncFootClearance = () => {
+      const rect = foot.getBoundingClientRect()
+      const bottomGap = Math.max(
+        12,
+        parseFloat(getComputedStyle(root).getPropertyValue('--watta-cart-bar-bottom')) || 12,
+      )
+      root.style.setProperty(
+        '--watta-checkout-foot-clearance',
+        `${Math.ceil(rect.height + bottomGap + 20)}px`,
+      )
+    }
+
+    syncFootClearance()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncFootClearance) : null
+    ro?.observe(foot)
+    window.addEventListener('resize', syncFootClearance, { passive: true })
+
+    return () => {
+      ro?.disconnect()
+      window.removeEventListener('resize', syncFootClearance)
+      root.style.removeProperty('--watta-checkout-foot-clearance')
+    }
+  }, [isEmpty, checkoutFootMounted, belowMinimumOrder, mobileCheckoutFootLabel])
+
   useCheckoutRailPin(
     checkoutLayoutRef,
     checkoutAsideRef,
@@ -1716,7 +1753,7 @@ export default function CartView({
 
   return (
     <div
-      className={`watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col max-md:overflow-x-clip font-sans${isEmpty ? ' watta-cart-page--empty' : ''}`}
+      className={`watta-cart-page watta-cart-checkout-page--v2 menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] shrink-0 flex-col font-sans${isEmpty ? ' watta-cart-page--empty' : ''}`}
     >
       <div className="watta-cart-page__content relative z-10 mx-auto flex w-full min-w-0 max-w-[1180px] flex-col pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pb-8 md:pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+4.5rem))]">
         <WattaInViewFadeHeader className="watta-cart-checkout-lead">

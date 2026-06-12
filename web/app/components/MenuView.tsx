@@ -46,7 +46,6 @@ import {
   readScrollTop,
   runUntilScrollSuccess,
   scrollEntireAppToTop,
-  scrollHomeCatalogToCategory,
   writeScrollTop,
 } from '@/lib/menuScroll'
 import { filterNonAggregateMenuCategories } from '@/lib/menuCategoryFilters'
@@ -1674,6 +1673,7 @@ export default function MenuView() {
         isHomeHit: true,
         isMenuNew: item.isMenuNew === true,
         emoji: item.emoji,
+        ingredientIds: item.ingredientIds,
         discountPercent: (item.promoDiscountPercent ?? 0) > 0 ? item.promoDiscountPercent : undefined,
         subtitleLine: cinematicWeightSubtitle(item.description, wf, t.productDetail.piecesFallback, language),
       }))

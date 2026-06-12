@@ -25,7 +25,7 @@ import {
   WATTA_PRODUCT_DETAIL_CACHED_EVENT,
   warmupProductDetail,
 } from '@/lib/fetchProductById'
-// На `/menu` — скрол до заголовка секції; на головній та інших маршрутах → `/menu`.
+// На `/menu` — скрол до секції; з будь-якої іншої сторінки → `/menu?cat=`.
 
 type MenuCategory = {
   id: string

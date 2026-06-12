@@ -23,13 +23,15 @@ export function useCheckoutRailPin(
   useLayoutEffect(() => {
     if (!enabled) return
 
+    const mq = window.matchMedia(DESKTOP_MQ)
+    if (!mq.matches) return
+
     const layout = layoutRef.current
     const aside = asideRef.current
     const rail = railRef.current
     const spacer = spacerRef.current
     if (!layout || !aside || !rail || !spacer) return
 
-    const mq = window.matchMedia(DESKTOP_MQ)
     let raf = 0
 
     const resetRail = () => {

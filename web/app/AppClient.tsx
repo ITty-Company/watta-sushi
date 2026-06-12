@@ -47,7 +47,7 @@ import { resetHomepageLikeLogoClick, WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/li
 import { bindHeroScrollPerf } from '@/lib/heroScrollPerf'
 import { bindHeroVideoKeepAlive } from '@/lib/heroVideoKeepAlive'
 import { warmHeroVideoCache } from '@/lib/warmHeroVideoCache'
-import { isWattaHomeHeroPathname, isWattaHomeHeroVideoPathname } from '@/lib/wattaHtmlRouteClass'
+import { isWattaHomeHeroPathname, isWattaHomeHeroVideoPathname, isWattaProfilePathname } from '@/lib/wattaHtmlRouteClass'
 import RouteScrollReset from './components/RouteScrollReset'
 import {
   navigateToFullMenuCategory,
@@ -70,6 +70,7 @@ export default function AppClient({
   const isAuthRoute = pathname === '/login' || pathname === '/register'
   const isNotificationsRoute = pathname === '/notifications'
   const isCartCheckoutRoute = pathname === '/cart'
+  const isProfileRoute = isWattaProfilePathname(pathname ?? '/')
   const isAdminShellRoute = pathname === '/admin' || pathname?.startsWith('/admin/')
   const hidePublicSiteChromeExtras = useSyncExternalStore(
     (onStoreChange) => {
@@ -114,11 +115,12 @@ export default function AppClient({
     window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
   }, [isAuthRoute])
 
-  /** /cart — без стрічки категорій; перерахувати резерв fixed chrome. */
+  /** /cart і /profile — повна шапка без compact; перерахувати резерв fixed chrome. */
   useLayoutEffect(() => {
-    if (!isCartCheckoutRoute || typeof document === 'undefined') return
+    if ((!isCartCheckoutRoute && !isProfileRoute) || typeof document === 'undefined') return
+    delete document.documentElement.dataset.wattaChromeCompact
     window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
-  }, [isCartCheckoutRoute])
+  }, [isCartCheckoutRoute, isProfileRoute])
 
   /** Клік по чіпу категорії — перехід на /menu?cat= і скрол до секції. */
   useEffect(() => {

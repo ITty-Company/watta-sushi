@@ -41,12 +41,14 @@
 }
 
 .watta-profile-page--soft.menu-page-web {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   padding-top: 0 !important;
   background: #ffffff !important;
+  overflow: visible;
+  touch-action: pan-y;
 }
 
 .watta-profile-page--soft.watta-page-bg {
@@ -59,7 +61,7 @@
 }
 
 .watta-profile-page__content {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   width: 100%;
   max-width: 640px;
   padding-top: clamp(20px, 3vh, 32px);
@@ -1298,5 +1300,32 @@
 @media (hover: hover) {
   .watta-profile-order-card__reorder-btn:hover {
     background: var(--watta-brand-action-hover);
+  }
+}
+
+/* —— Телефон: один скрол body, зазор під нижню смугу кошика —— */
+@media (max-width: 767px) {
+  #profile-page-root,
+  .watta-profile-page--soft.menu-page-web {
+    overflow: visible !important;
+    max-width: 100%;
+  }
+
+  #profile-page-root .watta-profile-page__content {
+    padding-bottom: calc(
+      var(--watta-cart-compact-min-h, 3.25rem) + var(--watta-cart-bar-bottom, 12px) + 1.25rem
+    );
+  }
+
+  .watta-app-shell-root:has(.watta-profile-page) .watta-profile-page__shell,
+  .watta-app-shell-root:has(.watta-profile-page) .watta-profile-page__main,
+  .watta-app-shell-root:has(.watta-profile-page) .watta-profile-stage,
+  .watta-app-shell-root:has(.watta-profile-page) .watta-profile-stage__inner {
+    overflow: visible;
+    min-height: auto;
+  }
+
+  html.watta-light-chrome:has(.watta-profile-page) {
+    scroll-padding-top: calc(var(--watta-sticky-chrome-flow-h, 120px) + 12px);
   }
 }

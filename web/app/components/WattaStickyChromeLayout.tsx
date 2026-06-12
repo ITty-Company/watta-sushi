@@ -96,10 +96,18 @@ export default function WattaStickyChromeLayout({
   }
 
   /**
-   * Резерв висоти в потоці при compact: на /product — лише під видиму смугу категорій.
+   * Резерв висоти в потоці при compact.
+   * /product (телефон): anchor завжди на повну висоту chrome — лише fixed-шапка ховається/з’являється.
    * /menu з photo-first hero — як на головній: anchor не стискається, інакше контент «стрибає».
    */
-  const preserveExpandedChromeHeightInCompact = () => !isProductCategoriesOnlyChrome()
+  const preserveExpandedChromeHeightInCompact = () => {
+    if (typeof document === 'undefined') return !isProductCategoriesOnlyChrome()
+    const root = document.documentElement
+    if (isWattaPhoneViewport() && root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS)) {
+      return true
+    }
+    return !isProductCategoriesOnlyChrome()
+  }
   const expandedHeaderRef = useRef(0)
   /** Кеш опублікованих значень — setProperty на <html> інакше перераховує стилі всього документа. */
   const publishedCssVarsRef = useRef({
@@ -270,9 +278,6 @@ export default function WattaStickyChromeLayout({
 
   const anchorFlowH = (() => {
     if (flowAnchorHeaderOnly && headerFlowH >= 8) return headerFlowH
-    if (isProductCategoriesOnlyChrome() && flowH >= 8) {
-      return flowH + Math.max(0, flowAnchorSafetyPx)
-    }
     const expanded =
       preserveExpandedChromeHeightInCompact() && expandedRawRef.current >= 8
         ? Math.ceil(expandedRawRef.current)

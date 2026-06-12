@@ -279,7 +279,7 @@ export default function ProfilePublicPageLayout({
   return (
     <div
       id="profile-page-root"
-      className="watta-profile-page watta-profile-page--soft menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col overflow-x-clip bg-white font-sans"
+      className="watta-profile-page watta-profile-page--soft menu-page-web watta-public-page-shell relative flex w-full max-w-[100vw] min-w-0 flex-1 flex-col bg-white font-sans"
     >
       <div className="watta-profile-page__content relative z-10 mx-auto flex w-full min-w-0 flex-col px-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:px-4 sm:pb-8 md:px-6 lg:px-8 xl:px-10">
         <div className="watta-profile-page__shell">
