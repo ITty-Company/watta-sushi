@@ -39,6 +39,8 @@ const SCROLL_UP_THRESHOLD_PX = 1
 const PHONE_SCROLL_DOWN_THRESHOLD_PX = 24
 /** Телефон /menu: невеликий гістерезис — інакше інерція iOS смикає compact ↔ expand. */
 const PHONE_SCROLL_UP_THRESHOLD_PX = 10
+/** /menu (телефон): швидке розгортання шапки при скролі вгору. */
+const MENU_PHONE_SCROLL_UP_THRESHOLD_PX = 1
 /** /menu: коротша пауза після compact — менше «залипання» при скролі вгору. */
 const MENU_COMPACT_TOGGLE_COOLDOWN_MS = 96
 /** /menu: поріг жесту вниз перед compact. */
