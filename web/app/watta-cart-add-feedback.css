@@ -90,6 +90,9 @@
   border-radius: 9999px;
   background: var(--watta-brand-mint, #5c9010);
   color: #ffffff;
+  box-shadow: none;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .watta-cart-added-inline-toast__text {
@@ -119,40 +122,70 @@
   animation: watta-cart-added-toast-in-product 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Тост «додано в кошик» під зеленою кнопкою кошика на сторінці товару (телефон) */
+/* Тост «додано в кошик» — окремий рядок під ціною/кнопками. */
 .watta-product-page__buy-toast {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 0.45rem);
-  z-index: 12;
+  width: 100%;
+  margin-top: 0.35rem;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   pointer-events: none;
 }
 
-.watta-product-page__buy-toast .watta-cart-added-inline-toast {
+/* Сторінка товару: без тіней/градієнтів — інакше сіра «пляма» біля галочки. */
+.watta-cart-added-inline-toast--product {
   position: static;
   transform: none;
   max-width: 100%;
   white-space: normal;
   text-align: left;
-  animation: watta-cart-added-toast-in-product 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  background: #ffffff;
+  background-image: none;
+  border: 1px solid color-mix(in srgb, var(--watta-brand-mint, #5c9010) 18%, #e2ebe6);
+  border-radius: 0.75rem;
+  box-shadow: none;
+  filter: none;
+  animation: watta-cart-added-toast-fade-product 0.24s ease both;
 }
 
-.watta-product-page__buy-toast .watta-cart-added-inline-toast__text {
+.watta-cart-added-inline-toast--product .watta-cart-added-inline-toast__text {
   overflow: visible;
   text-overflow: clip;
+}
+
+.watta-cart-added-inline-toast--product .watta-cart-added-inline-toast__check {
+  box-shadow: none;
+  filter: none;
+  isolation: auto;
+}
+
+.watta-cart-added-inline-toast__check--css::after {
+  content: '';
+  display: block;
+  width: 0.34rem;
+  height: 0.58rem;
+  margin-top: -0.05rem;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 @keyframes watta-cart-added-toast-in-product {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.96);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
+  }
+}
+
+@keyframes watta-cart-added-toast-fade-product {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -221,7 +254,8 @@
     animation: none;
   }
 
-  .watta-cart-added-inline-toast {
+  .watta-cart-added-inline-toast,
+  .watta-cart-added-inline-toast--product {
     animation: none;
   }
 }

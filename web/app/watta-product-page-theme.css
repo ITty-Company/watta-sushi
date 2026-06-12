@@ -166,10 +166,11 @@
 .watta-product-page__buy-mobile {
   position: relative;
   flex-direction: row;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.65rem;
   margin-top: 0.5rem;
+  overflow: visible;
 }
 
 .watta-product-page__buy-mobile--in-cart {

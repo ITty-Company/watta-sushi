@@ -1018,12 +1018,12 @@ export default function ProductView({ productId, initialProductRow, onBack, onCa
                     <Heart className={cn('h-5 w-5', isFavorite && 'fill-red-500 text-red-500')} />
                   </button>
                 </div>
-                {showAddedToast ? (
-                  <div className="watta-product-page__buy-toast">
-                    <CartAddedInlineToast message={pd.addedHint} />
-                  </div>
-                ) : null}
               </div>
+              {showAddedToast ? (
+                <div className="watta-product-page__buy-toast">
+                  <CartAddedInlineToast message={pd.addedHint} variant="product" />
+                </div>
+              ) : null}
             </div>
 
             <div className="hidden flex-wrap items-center gap-2 sm:flex md:hidden">
