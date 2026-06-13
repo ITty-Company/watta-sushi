@@ -62,13 +62,15 @@
    * зміні висоти (ресайз зображень, lazy-load, дозавантаження).
    */
   /*
-   * /menu: overflow-anchor увімкнено — браузер утримує позицію при lazy-mount секцій.
-   * Інші блоки лишаються без anchor (менше «плисті» при зміні висоти chrome).
+   * /menu: overflow-anchor вимкнено — на телефоні при скролі вгору зображення
+   * завантажуються й overflow-anchor змушує браузер перераховувати layout,
+   * що викликає стрибки/смикання карток товарів. При скролі вниз проблеми немає,
+   * тому що контент вже завантажений.
    */
   .watta-full-menu-page,
   .watta-full-menu-page .home-menu-cat-list-web,
   .watta-full-menu-page .watta-menu-category-section {
-    overflow-anchor: auto;
+    overflow-anchor: none;
   }
 
   .menu-page-web,
