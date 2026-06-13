@@ -1231,7 +1231,7 @@ export interface SiteTranslations {
       orderNum: string; noComment: string; payment: string; cash: string; online: string;
       paid: string; error: string; waiting: string; hintConfirmed: string; hintCooking: string; hintDelivering: string; 
       hintCompleted: string; hintCancel: string;
-      btnConfirmed: string; btnCooking: string; btnDelivering: string; btnCompleted: string; btnCancel: string;
+      btnConfirmed: string; btnCooking: string; btnDelivering: string; btnCompleted: string; btnCancel: string; btnReprint: string;
       readyTimeTitleAccept: string; readyTimeTitleCooking: string; readyTimePickupHint: string; readyTimeDeliveryHint: string;
       readyTimeNotifyHint: string; readyTimeLabel: string; readyTimeMinutes: string; readyTimeRequired: string;
       readyTimeSubmitAccept: string; readyTimeSubmitCooking: string; readyAtPickup: string; readyAtDelivery: string;

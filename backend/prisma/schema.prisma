@@ -270,6 +270,9 @@ model Order {
   /// другий отримує P2002 і повертає 409 замість дублікату замовлення.
   clientRequestId String? @unique
 
+  /// Позначка, що чек надруковано на термопринтері (локальний print-server)
+  receiptPrinted Boolean @default(false)
+
   // Связь с пользователем (опционально, так как заказ может сделать гость)
   userId Int?
   user   User? @relation(fields: [userId], references: [id])

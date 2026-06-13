@@ -2245,6 +2245,30 @@ export default function AdminView({ onBack }: AdminViewProps) {
     })
   }
 
+  // --- ПЕРЕДРУК ЧЕКА ---
+  const requestOrderReprint = async (orderId: number) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      notifyError(t.adminPage.auth.notAuthorized)
+      return
+    }
+    try {
+      const res = await fetch(`/api/orders/${orderId}/reprint-receipt`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        notifySuccess(t.adminPage.common.statusUpdated)
+        refreshTab('orders')
+      } else {
+        const err = await res.json().catch(() => ({ message: t.adminPage.common.updateError }))
+        notifyError(err.message || t.adminPage.common.updateError)
+      }
+    } catch {
+      notifyError(ap.common.networkError)
+    }
+  }
+
   // --- ЛОГИКА ГОРОДОВ ---
   const resetCityForm = useCallback(() => {
     setNewCityName('')
@@ -4186,6 +4210,9 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 onStatusChange={(row, status) => {
                   const order = orders.find((o) => o.id === row.id)
                   if (order) requestOrderStatusChange(order, status)
+                }}
+                onReprintReceipt={(orderId) => {
+                  requestOrderReprint(orderId)
                 }}
               />
             </div>

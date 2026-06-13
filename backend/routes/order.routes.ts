@@ -954,4 +954,143 @@ router.patch('/:id/status', checkAdmin, async (req: Request, res: Response) => {
   }
 });
 
+// ==========================================
+// 6. Print server endpoints (для локального термопринтера через Tailscale)
+// ==========================================
+
+/**
+ * Проста HMAC-авторизація для print-server.
+ * Клієнт передає токен PRINT_SERVER_TOKEN у заголовку Authorization: Bearer <token>.
+ * Токен задається в .env / Render secrets.
+ */
+function requirePrintServerAuth(req: Request, res: Response): boolean {
+  const expected = process.env.PRINT_SERVER_TOKEN?.trim()
+  if (!expected) {
+    res.status(503).json({ message: 'PRINT_SERVER_TOKEN не заданий на сервері' })
+    return false
+  }
+  const auth = req.headers.authorization
+  if (!auth || !auth.startsWith('Bearer ')) {
+    res.status(401).json({ message: 'Немає токена авторизації print-server' })
+    return false
+  }
+  const token = auth.slice(7)
+  if (token !== expected) {
+    res.status(403).json({ message: 'Невірний токен print-server' })
+    return false
+  }
+  return true
+}
+
+/**
+ * GET /api/orders/ready-to-print?since=0
+ *
+ * Повертає замовлення з paymentStatus='PAID', які ще не надруковані (receiptPrinted=false)
+ * та мають ID > since. Локальний print-server викликає цей ендпоінт кожні 3-5 секунд.
+ */
+router.get('/ready-to-print', async (req: Request, res: Response) => {
+  if (!requirePrintServerAuth(req, res)) return
+
+  try {
+    const since = Math.max(0, parseInt(String(req.query.since || '0'), 10) || 0)
+
+    const orders = await prisma.order.findMany({
+      where: {
+        paymentStatus: 'PAID',
+        receiptPrinted: false,
+        id: { gt: since },
+      },
+      orderBy: { id: 'asc' },
+      take: 20,
+      include: {
+        items: {
+          include: { product: true },
+        },
+      },
+    })
+
+    res.json({ orders, lastId: orders.length > 0 ? orders[orders.length - 1].id : since })
+  } catch (error) {
+    console.error('[PrintServer] ready-to-print error:', error)
+    res.status(500).json({ message: 'Помилка отримання замовлень для друку' })
+  }
+})
+
+/**
+ * POST /api/orders/:id/reprint-receipt
+ *
+ * Скидає receiptPrinted = false для замовлення, щоб print-server знову підхопив
+ * його при наступному опитуванні. Використовується з адмін-панелі (кнопка «Передрукувати чек»).
+ * Доступно тільки адмінам (checkAdmin).
+ */
+router.post('/:id/reprint-receipt', checkAdmin, async (req: Request, res: Response) => {
+  try {
+    const orderId = parseInt(String(req.params.id), 10)
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      res.status(400).json({ message: 'Некоректний ID замовлення' })
+      return
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { paymentStatus: true },
+    })
+
+    if (!order) {
+      res.status(404).json({ message: 'Замовлення не знайдено' })
+      return
+    }
+
+    if (order.paymentStatus !== 'PAID') {
+      res.status(400).json({ message: 'Можна передрукувати тільки оплачені замовлення' })
+      return
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { receiptPrinted: false },
+    })
+
+    console.log(`[Reprint] Замовлення #${orderId} позначено для передруку`)
+    res.json({ ok: true, orderId })
+  } catch (error) {
+    console.error('[Reprint] Помилка:', error)
+    res.status(500).json({ message: 'Помилка передруку чека' })
+  }
+})
+
+/**
+ * POST /api/orders/mark-printed
+ *
+ * Позначає замовлення як надруковані (після успішного друку локальним print-server).
+ * Тіло: { orderIds: number[] }
+ */
+router.post('/mark-printed', async (req: Request, res: Response) => {
+  if (!requirePrintServerAuth(req, res)) return
+
+  try {
+    const { orderIds } = req.body as { orderIds?: number[] }
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      res.status(400).json({ message: 'Потрібен масив orderIds' })
+      return
+    }
+
+    const cleanIds = orderIds.filter((id) => Number.isFinite(id) && id > 0)
+    if (cleanIds.length === 0) {
+      res.status(400).json({ message: 'Немає валідних ID замовлень' })
+      return
+    }
+
+    const result = await prisma.order.updateMany({
+      where: { id: { in: cleanIds } },
+      data: { receiptPrinted: true },
+    })
+
+    res.json({ marked: result.count })
+  } catch (error) {
+    console.error('[PrintServer] mark-printed error:', error)
+    res.status(500).json({ message: 'Помилка позначення замовлень' })
+  }
+})
+
 export default router;

@@ -8,6 +8,7 @@ import {
   ChevronDown,
   MapPin,
   Phone,
+  Printer,
   Truck,
   User,
   XCircle,
@@ -32,6 +33,7 @@ export type AdminOrdersTableRow = {
   scheduledForSlot?: string | null
   paymentMethod: 'CASH' | 'CARD' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'IDEAL'
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED'
+  receiptPrinted?: boolean
 }
 
 type Props = {
@@ -40,6 +42,7 @@ type Props = {
   emptyLabel: string
   emptyHint?: string
   onStatusChange: (order: AdminOrdersTableRow, status: string) => void
+  onReprintReceipt?: (orderId: number) => void
 }
 
 function adminOrderStatusChipClass(status: string): string {
@@ -81,6 +84,7 @@ export default function AdminOrdersTablePanel({
   emptyLabel,
   emptyHint,
   onStatusChange,
+  onReprintReceipt,
 }: Props) {
   const { t, adminUiLanguage } = useLanguage()
   const ao = t.adminPanel.orders
@@ -310,6 +314,20 @@ export default function AdminOrdersTablePanel({
                             <span>{ao.btnCancel}</span>
                           </button>
                         </div>
+
+                        {order.paymentStatus === 'PAID' && onReprintReceipt ? (
+                          <div className="admin-orders-table__actions admin-orders-table__actions--print">
+                            <button
+                              type="button"
+                              onClick={() => onReprintReceipt(order.id)}
+                              className="admin-watta-status-btn admin-watta-status-btn--reprint"
+                              title={ao.btnReprint}
+                            >
+                              <Printer size={16} className="shrink-0" />
+                              <span>{ao.btnReprint}</span>
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

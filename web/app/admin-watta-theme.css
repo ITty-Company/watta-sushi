@@ -2751,6 +2751,23 @@
   background: rgba(196, 92, 74, 0.14);
 }
 
+.admin-watta-status-btn--reprint {
+  border-color: rgba(26, 107, 88, 0.28);
+  background: rgba(26, 107, 88, 0.08);
+  color: var(--watta-brand-action);
+}
+
+.admin-watta-status-btn--reprint:hover {
+  border-color: rgba(26, 107, 88, 0.4);
+  background: rgba(26, 107, 88, 0.14);
+}
+
+.admin-orders-table__actions--print {
+  margin-top: 0.35rem;
+  padding-top: 0.5rem;
+  border-top-color: color-mix(in srgb, var(--admin-brand) 6%, transparent);
+}
+
 .admin-watta-filter-bar {
   display: flex;
   width: 100%;

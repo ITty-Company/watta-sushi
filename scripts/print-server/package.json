@@ -1,0 +1,11 @@
+{
+  "name": "watta-print-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Локальный print-server для друку чеків Watta Sushi на термопринтері",
+  "type": "module",
+  "main": "print-server.js",
+  "dependencies": {
+    "node-thermal-printer": "^4.1.2"
+  }
+}

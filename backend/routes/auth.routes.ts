@@ -223,16 +223,18 @@ function phonePlaceholderEmail(cleanPhone: string): string {
 }
 
 async function sendAuthVerificationSms(cleanPhone: string, code: string) {
-  const smsPhone = formatPhoneOut(cleanPhone);
+  const smsPhone = formatPhoneOut(cleanPhone)
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('>>> AUTH SMS CODE:', code, 'для', smsPhone, '<<<')
+  }
   try {
-    await sendSms(smsPhone, `Код подтверждения Watta Sushi: ${code}`);
+    await sendSms(smsPhone, `Код подтверждения Watta Sushi: ${code}`)
   } catch (smsError) {
     console.error('Ошибка отправки СМС:', smsError);
     if (process.env.NODE_ENV !== 'production') {
-      console.log('>>> AUTH SMS CODE:', code, 'для', smsPhone, '<<<');
-      return;
+      return
     }
-    throw smsError;
+    throw smsError
   }
 }
 
