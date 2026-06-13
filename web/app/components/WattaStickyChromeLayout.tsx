@@ -10,11 +10,14 @@ import {
   type RefObject,
 } from 'react'
 import clsx from 'clsx'
+import { usePathname } from 'next/navigation'
 import { useWattaChromeScrollCompact } from '@/hooks/useWattaChromeScrollCompact'
 import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { isWattaChromeCompact } from '@/lib/wattaChromeScroll'
+import { isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
 import { isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
-import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR, WATTA_ROUTE_PRODUCT_CLASS } from '@/lib/wattaProductChrome'
+import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR } from '@/lib/wattaProductChrome'
+
 
 type WattaStickyChromeLayoutProps = {
   children: ReactNode
@@ -43,6 +46,24 @@ type WattaStickyChromeLayoutProps = {
  * залишали в потоці на ~1–2 px зайвого місця, інколи виглядали як 10–32 px «повітря» до героя.
  */
 const defaultFlowHeightFudgePx = 10
+/** /product на телефоні: додатковий fudge, щоб контент був щільно під чіпами категорій. */
+const PRODUCT_PHONE_FUDGE_PX = 18
+
+function readProductPhoneFlowAnchorPx(): number {
+  if (typeof document === 'undefined') return 0
+  const root = document.documentElement
+  const cs = getComputedStyle(root)
+  const safe = Math.max(0, parseFloat(cs.getPropertyValue('env(safe-area-inset-top)')) || 0)
+  const expanded = root.dataset[WATTA_PRODUCT_HEADER_EXPANDED_ATTR] === 'true'
+  if (expanded) {
+    const measured = parseFloat(cs.getPropertyValue('--watta-sticky-chrome-measured-h'))
+    const chrome = Number.isFinite(measured) && measured >= 72 ? measured : 140
+    return Math.round(chrome + safe)
+  }
+  const band = parseFloat(cs.getPropertyValue('--watta-chrome-categories-band-h'))
+  const categories = Number.isFinite(band) && band >= 36 ? band : 54
+  return Math.round(categories + safe)
+}
 /** Захист від рідких стрибків виміру (ResizeObserver/WebKit), що створювали величезний порожній відступ. */
 const DEFAULT_FLOW_LAYOUT_MAX_PX = 320
 /** Планшет/ПК: квантуємо вимір chrome — інакше ±1px у ResizeObserver смикає flow-anchor і картки. */
@@ -76,6 +97,9 @@ export default function WattaStickyChromeLayout({
   /** Усі публічні сторінки: скрол вниз — ховає шапку, вгору — показує (усі viewport). */
   useWattaChromeScrollCompact(true)
 
+  const pathname = usePathname() || '/'
+  const isProductPage = isWattaProductPathname(pathname)
+
   const [flowH, setFlowH] = useState(0)
   const [rawChromeH, setRawChromeH] = useState(0)
   const [headerFlowH, setHeaderFlowH] = useState(0)
@@ -84,30 +108,8 @@ export default function WattaStickyChromeLayout({
   /** Повна висота chrome до compact — flow-anchor не стискається, інакше scroll «зависає». */
   const expandedRawRef = useRef(0)
 
-  /** /product (лише чіпи): резерв під фактичну висоту категорій, не під сховану шапку. */
-  const isProductCategoriesOnlyChrome = () => {
-    if (typeof document === 'undefined') return false
-    const root = document.documentElement
-    return (
-      isWattaPhoneViewport() &&
-      root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS) &&
-      root.dataset[WATTA_PRODUCT_HEADER_EXPANDED_ATTR] !== 'true'
-    )
-  }
-
-  /**
-   * Резерв висоти в потоці при compact.
-   * /product (телефон): anchor завжди на повну висоту chrome — лише fixed-шапка ховається/з’являється.
-   * /menu з photo-first hero — як на головній: anchor не стискається, інакше контент «стрибає».
-   */
-  const preserveExpandedChromeHeightInCompact = () => {
-    if (typeof document === 'undefined') return !isProductCategoriesOnlyChrome()
-    const root = document.documentElement
-    if (isWattaPhoneViewport() && root.classList.contains(WATTA_ROUTE_PRODUCT_CLASS)) {
-      return true
-    }
-    return !isProductCategoriesOnlyChrome()
-  }
+  /** Anchor стискається під фактичну висоту compact — без порожнього відступу. */
+  const preserveExpandedChromeHeightInCompact = () => false
   const expandedHeaderRef = useRef(0)
   /** Кеш опублікованих значень — setProperty на <html> інакше перераховує стилі всього документа. */
   const publishedCssVarsRef = useRef({
@@ -172,10 +174,23 @@ export default function WattaStickyChromeLayout({
       if (el) {
         const isCompact = isWattaChromeCompact()
         const raw = el.offsetHeight
+        const headerEl = el.querySelector<HTMLElement>('.watta-chrome-top-band-web')
+        const headerRaw = headerEl?.offsetHeight ?? 0
+        /**
+         * На /product: useLayoutEffect ще не додав watta-route-product class,
+         * тому CSS html.watta-route-product .watta-chrome-top-band-web { max-height:0 }
+         * не ховає header. Віднімаємо висоту header, щоб flow-anchor одразу отримав
+         * компактну висоту (тільки категорії) без 140px-стрибка.
+         */
+        /** Тільки телефон: на /product CSS ховає header до useLayoutEffect. */
+        const productPhoneCompact = isProductPage && !isCompact && headerRaw >= 8 && isWattaPhoneViewport()
+        const productRaw = productPhoneCompact
+          ? Math.max(8, raw - headerRaw)
+          : raw
         if (!isCompact && raw >= 8) expandedRawRef.current = raw
         const keepExpanded = preserveExpandedChromeHeightInCompact()
         const effectiveRaw =
-          isCompact && keepExpanded && expandedRawRef.current >= 8 ? expandedRawRef.current : raw
+          isCompact && keepExpanded && expandedRawRef.current >= 8 ? expandedRawRef.current : productRaw
         const layoutRaw =
           isCompact &&
           preserveExpandedChromeHeightInCompact() &&
@@ -183,7 +198,9 @@ export default function WattaStickyChromeLayout({
             ? expandedRawRef.current
             : effectiveRaw
         const quantizedLayoutRaw = quantizeChromeMeasurePx(layoutRaw)
-        const h = toFlowLayoutHeight(quantizedLayoutRaw)
+        const isProductPhone = isProductPage && isWattaPhoneViewport()
+        const productExtraFudge = isProductPhone ? PRODUCT_PHONE_FUDGE_PX : 0
+        const h = toFlowLayoutHeight(Math.max(8, quantizedLayoutRaw - productExtraFudge))
         if (quantizedLayoutRaw >= 8) {
           setRawChromeH((prev) => (shouldPublishFlowHeight(prev, quantizedLayoutRaw) ? quantizedLayoutRaw : prev))
         }
@@ -193,7 +210,7 @@ export default function WattaStickyChromeLayout({
         syncMeasuredCssVars(el)
       }
     },
-    [innerRef, toFlowLayoutHeight, syncMeasuredCssVars],
+    [innerRef, isProductPage, toFlowLayoutHeight, syncMeasuredCssVars],
   )
 
   useLayoutEffect(() => {
@@ -225,7 +242,9 @@ export default function WattaStickyChromeLayout({
           ? expandedRawRef.current
           : effectiveRaw
       const quantizedLayoutRaw = quantizeChromeMeasurePx(layoutRaw)
-      const h = toFlowLayoutHeight(quantizedLayoutRaw)
+      const productExtraFudge =
+        isProductPage && isWattaPhoneViewport() && isCompact ? PRODUCT_PHONE_FUDGE_PX : 0
+      const h = toFlowLayoutHeight(Math.max(8, quantizedLayoutRaw - productExtraFudge))
       if (quantizedLayoutRaw >= 8) {
         setRawChromeH((prev) => (shouldPublishFlowHeight(prev, quantizedLayoutRaw) ? quantizedLayoutRaw : prev))
       }
@@ -278,6 +297,8 @@ export default function WattaStickyChromeLayout({
 
   const anchorFlowH = (() => {
     if (flowAnchorHeaderOnly && headerFlowH >= 8) return headerFlowH
+    /** /product (телефон): резерв лише під стрічку категорій; при розгорнутій шапці — повний chrome. */
+    if (isProductPage && isWattaPhoneViewport()) return readProductPhoneFlowAnchorPx()
     const expanded =
       preserveExpandedChromeHeightInCompact() && expandedRawRef.current >= 8
         ? Math.ceil(expandedRawRef.current)

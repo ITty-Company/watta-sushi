@@ -25718,9 +25718,17 @@ html.watta-light-chrome:has(.watta-profile-page) body {
   min-height: clamp(0.25rem, 0.5vw, 0.5rem) !important;
 }
 
-/* /product — зазор між панеллю категорій і рядком «назад + чіп» (телефон — див. --watta-mobile-cat-below-gap-product) */
-.watta-app-shell-root:has(.watta-product-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
-  margin-bottom: clamp(12px, 1.5vh, 18px);
+/* /product — зазор між панеллю категорій і рядком «назад + чіп» (телефон — flow-anchor + --watta-mobile-cat-below-gap-product) */
+@media (max-width: 767px) {
+  .watta-app-shell-root:has(.watta-product-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-bottom: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .watta-app-shell-root:has(.watta-product-page) .watta-full-menu-sticky-chrome .categories-panel-wrapper-web {
+    margin-bottom: clamp(12px, 1.5vh, 18px);
+  }
 }
 
 @media (min-width: 768px) {

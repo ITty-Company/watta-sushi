@@ -1204,9 +1204,26 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
 @media (max-width: 767px) {
   :root {
     --watta-mobile-cat-below-gap: clamp(14px, 1.85vh, 22px);
-    /* /product: зазор панель категорій → «назад + чіп» */
-    --watta-mobile-cat-below-gap-product: clamp(28px, 3.6vh, 42px);
-    --watta-mobile-cat-below-gap-product-expanded: clamp(32px, 4.2vh, 48px);
+    /* /product: невеликий зазор панель категорій → «назад + чіп» (резерв chrome — flow-anchor). */
+    --watta-mobile-cat-below-gap-product: clamp(8px, 1vh, 14px);
+    --watta-mobile-cat-below-gap-product-expanded: clamp(10px, 1.2vh, 16px);
+  }
+
+  /* /product compact: резерв лише під стрічку категорій, не повну 140px шапку. */
+  html.watta-route-product:not([data-watta-product-header-expanded='true'])
+    .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+    min-height: calc(
+      var(--watta-chrome-categories-band-h, 54px) + env(safe-area-inset-top, 0px)
+    ) !important;
+    height: auto !important;
+  }
+
+  html.watta-route-product[data-watta-product-header-expanded='true']
+    .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+    min-height: calc(
+      var(--watta-sticky-chrome-measured-h, 140px) + env(safe-area-inset-top, 0px)
+    ) !important;
+    height: auto !important;
   }
 
   html:not(.watta-html-home-hero)
@@ -1355,14 +1372,14 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
   html.watta-route-product[data-watta-product-header-expanded='true']:not(.watta-html-home-hero)
     body:not(.watta-route-home)
     .watta-product-page__toolbar {
-    margin-top: clamp(10px, 1.35vh, 16px) !important;
+    margin-top: clamp(4px, 0.55vh, 8px) !important;
   }
 
   html.watta-route-product[data-watta-product-header-expanded='true']:not(.watta-html-home-hero)
     body:not(.watta-route-home)
     .watta-app-main-grow
     > .watta-product-page {
-    padding-top: var(--watta-mobile-cat-below-gap-product) !important;
+    padding-top: var(--watta-mobile-cat-below-gap-product-expanded) !important;
   }
 
   html:not(.watta-html-home-hero)
