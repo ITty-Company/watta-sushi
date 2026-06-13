@@ -120,16 +120,6 @@ function readPhoneViewport(): boolean {
   return window.matchMedia(WATTA_PHONE_VIEWPORT_MQ).matches
 }
 
-/** Планшет/ПК: повна шапка без compact при скролі — інакше сторінка «стрибає». */
-function ensureDesktopFullChrome(isProductPage: boolean): void {
-  const root = document.documentElement
-  delete root.dataset.wattaChromeCompact
-  delete root.dataset.wattaProductHeaderExpanded
-  if (isProductPage) {
-    applyWattaProductChromeEntry()
-  }
-  window.dispatchEvent(new CustomEvent('wattaChromeCompactChange', { detail: { compact: false } }))
-}
 
 /**
  * Публічний сайт (усі маршрути з WattaStickyChromeLayout), усі viewport.
@@ -149,18 +139,9 @@ export function useWattaChromeScrollCompact(enabled = true) {
   useLayoutEffect(() => {
     if (!enabled || typeof window === 'undefined') return
 
-    if (!isPhone) {
-      ensureDesktopFullChrome(isProductPage)
-      return () => {
-        const nextPath = window.location.pathname || '/'
-        if (!isWattaProductPathname(nextPath)) {
-          clearWattaProductChromeEntry()
-        }
-      }
-    }
-
-    /** Головна + /menu: scroll шапки — useWattaMenuHeaderScroll (усі категорії). */
-    if (isMenuHeaderScrollPage) {
+    /** Головна + /menu (телефон): scroll шапки — useWattaMenuHeaderScroll.
+     *  Десктоп + планшет: compact chrome через цей хук. */
+    if (isPhone && isMenuHeaderScrollPage) {
       return
     }
 
@@ -206,6 +187,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
       compact = next
       if (isProductPhoneChrome()) {
         setWattaProductChromeHeaderExpanded(!next)
+        applyCompactAttr(next)
       } else {
         applyCompactAttr(next)
       }
@@ -257,7 +239,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
 
     /** Скрол вгору в compact — повна шапка + категорії. */
     const shouldExpandChromeOnScrollUp = () =>
-      compact && (isFullMenuPage || (isWattaPhoneViewport() && !isProductPhoneChrome()))
+      compact && (!isWattaPhoneViewport() || isFullMenuPage || !isProductPhoneChrome())
 
     /** /menu: розгорнути, якщо шапка схована (JS або DOM). */
     const isMenuHeaderHidden = () =>
@@ -425,6 +407,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
       if (isProductPhoneChrome()) {
         // /product на телефоні: завжди compact при вході
         compact = true
+        applyCompactAttr(true)
         topAutoExpandArmed = true
         applyWattaProductChromeEntry()
       } else {
@@ -443,6 +426,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
       if (isProductPhoneChrome()) {
         const alreadyOnProduct = isWattaProductChromeActive()
         compact = true
+        applyCompactAttr(true)
         lastY = readCachedScrollTop()
         topAutoExpandArmed = true
         suppressUntil =

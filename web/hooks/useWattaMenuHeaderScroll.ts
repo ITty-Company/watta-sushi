@@ -15,8 +15,12 @@ import { WATTA_PHONE_VIEWPORT_MQ } from '@/lib/wattaTouchViewport'
 
 const TOP_ALWAYS_EXPAND_PX = 64
 /** Накопичений зсув вниз перед hide — гістерезис проти смикання на iOS. */
-const SCROLL_DOWN_HIDE_PX = 14
+const SCROLL_DOWN_HIDE_PX = 6
 const TOUCH_HIDE_PX = 10
+/** Поріг скролу вгору перед появою шапки — без цього шапка вистрибує миттєво
+    і штовхає товари вниз, створюючи ефект «стрибка». */
+const SCROLL_UP_SHOW_PX = 24
+const TOUCH_SHOW_PX = 12
 /** Після кліку по категорії — не ховати шапку від програмного скролу. */
 const NAV_SCROLL_SUPPRESS_MS = 420
 
@@ -50,6 +54,7 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
 
     let lastScrollY = readAppScrollTop()
     let pendingDownPx = 0
+    let pendingUpPx = 0
     let lastTouchY = 0
     let touchOnCategoryPanel = false
     let suppressUntil = 0
@@ -75,6 +80,7 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
     const reveal = () => {
       revealWattaMenuHeaderBand()
       pendingDownPx = 0
+      pendingUpPx = 0
       syncScrollBaseline()
     }
 
@@ -84,6 +90,7 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
       if (isWattaMenuHeaderBandHidden()) return
       hideWattaMenuHeaderBand()
       pendingDownPx = 0
+      pendingUpPx = 0
       syncScrollBaseline()
     }
 
@@ -97,17 +104,19 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
         return
       }
 
-      /* Вгору — одразу, навіть під час suppress після зміни категорії. */
-      if (delta < 0) {
-        reveal()
+      if (delta > 0) {
+        pendingDownPx += delta
+        pendingUpPx = 0
+        if (pendingDownPx >= SCROLL_DOWN_HIDE_PX) hide()
         return
       }
 
-      if (performance.now() < suppressUntil) return
-
-      if (delta > 0) {
-        pendingDownPx += delta
-        if (pendingDownPx >= SCROLL_DOWN_HIDE_PX) hide()
+      if (delta < 0) {
+        pendingUpPx += -delta
+        pendingDownPx = 0
+        if (pendingUpPx >= SCROLL_UP_SHOW_PX) {
+          reveal()
+        }
       }
     }
 
@@ -129,16 +138,17 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
       if (y == null) return
       const dy = y - lastTouchY
       lastTouchY = y
-      if (dy > 0) {
+      if (dy > TOUCH_SHOW_PX) {
         reveal()
         return
       }
+      if (dy > 0) return
       if (performance.now() < suppressUntil) return
       if (dy < -TOUCH_HIDE_PX) hide()
     }
 
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0) {
+      if (e.deltaY < -SCROLL_UP_SHOW_PX) {
         reveal()
         return
       }

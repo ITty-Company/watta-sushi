@@ -52,23 +52,27 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
   }
 }
 
-/* Планшет/ПК: шапка завжди видима — без стрибків при скролі */
+/* Планшет/ПК: compact — ховаємо шапку, лишаємо панель категорій */
 @media (min-width: 768px) {
   html[data-watta-chrome-compact='true'] .watta-sticky-chrome-portal .watta-chrome-top-band-web {
-    max-height: 140px !important;
-    min-height: auto !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateY(0) !important;
-    pointer-events: auto !important;
-    margin: revert !important;
-    padding: revert !important;
-    border: revert !important;
+    max-height: 0 !important;
+    min-height: 0 !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(calc(-100% - 4px));
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
   }
 
-  html[data-watta-chrome-compact='true'] .watta-chrome-compact-cart-web,
-  html[data-watta-chrome-compact='true'] .watta-chrome-compact-back-web {
-    display: none !important;
+  /* Без зазору шапка→категорії. */
+  html[data-watta-chrome-compact='true']
+    body
+    .watta-sticky-chrome-portal
+    .watta-chrome-categories-row-web
+    .categories-panel-wrapper-web {
+    margin-top: 0 !important;
   }
 }
 
@@ -100,6 +104,13 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
     border: revert !important;
   }
 
+  /* Без зазору категорії→контент на /product при compact */
+  html.watta-route-product:not([data-watta-product-header-expanded='true'])
+    .watta-sticky-chrome-portal
+    .watta-chrome-categories-row-web
+    .categories-panel-wrapper-web {
+    margin-top: 0 !important;
+  }
 }
 
 html[data-watta-chrome-compact='true'] {
