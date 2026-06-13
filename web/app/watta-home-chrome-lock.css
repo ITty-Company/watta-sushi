@@ -1489,22 +1489,14 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web {
-    flex: 0 0
-      calc(
-        (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
-      ) !important;
-    width: calc(
-      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
-    ) !important;
-    min-width: calc(
-      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
-    ) !important;
-    max-width: calc(
-      (100% - (var(--watta-cat-peek, 6) - 1) * var(--cat-gap, 4px)) / var(--watta-cat-peek, 6)
-    ) !important;
-    height: auto !important;
-    min-height: 0 !important;
-    aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
+    flex: 0 0 var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
+    width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
+    min-width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
+    max-width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
+    height: var(--watta-cat-mobile-chip-height, auto) !important;
+    min-height: var(--watta-cat-mobile-chip-height, 0) !important;
+    aspect-ratio: unset !important;
+    border-radius: 0 !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web {
@@ -2036,4 +2028,47 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-we
   max-height: 2.4em !important;
   -webkit-line-clamp: unset !important;
   -webkit-box-orient: unset !important;
+}
+
+/* Телефон: активний чіп — коло на іконці, не овал на всій кнопці */
+@media (max-width: 767px) {
+  .categories-panel-web .category-button-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web,
+  .categories-panel-web .category-button-active-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-active-web {
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+
+  .categories-panel-web .category-button-icon-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web {
+    width: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
+    height: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
+    min-width: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
+    min-height: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
+    border-radius: 50% !important;
+    border: 1px solid transparent !important;
+    box-sizing: border-box !important;
+  }
+
+  .categories-panel-web .category-button-active-web .category-button-icon-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web .category-button-icon-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+    -webkit-box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+  }
 }
