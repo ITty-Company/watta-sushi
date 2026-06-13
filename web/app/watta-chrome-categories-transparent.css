@@ -663,7 +663,13 @@ body .watta-sticky-chrome-portal .categories-panel-web {
     font-size: 10px !important;
     line-height: 1.12 !important;
     font-weight: 700 !important;
-    max-height: 2.3em !important;
+    max-height: 1.25em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    hyphens: none !important;
+    word-break: normal !important;
+    display: block !important;
   }
 }
 
@@ -788,11 +794,13 @@ body .watta-sticky-chrome-portal .categories-panel-web {
     line-height: 1.12 !important;
     font-weight: 700 !important;
     text-align: center;
-    max-height: 2.55em !important;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    max-height: 1.25em !important;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    hyphens: none;
+    word-break: normal;
+    display: block;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack,
@@ -855,7 +863,13 @@ body .watta-sticky-chrome-portal .categories-panel-web {
   .watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
     font-size: 13.5px !important;
     line-height: 1.14 !important;
-    max-height: 2.6em !important;
+    max-height: 1.25em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    hyphens: none !important;
+    word-break: normal !important;
+    display: block !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-strip-icon-stack,
@@ -1306,7 +1320,13 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
     font-size: 10px !important;
     line-height: 1.12 !important;
     font-weight: 700 !important;
-    max-height: 2.3em !important;
+    max-height: 1.25em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    hyphens: none !important;
+    word-break: normal !important;
+    display: block !important;
   }
 
   /* Зазор «панель → контент» (як padding-top __content на /favorites) */
@@ -1618,6 +1638,12 @@ html:has(.menu-page-web.watta-site-hero-page-web:not(.watta-full-menu-page))
   .watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
     font-size: 10px !important;
     line-height: 1.12 !important;
-    max-height: 2.3em !important;
+    max-height: 1.25em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    hyphens: none !important;
+    word-break: normal !important;
+    display: block !important;
   }
 }

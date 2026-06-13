@@ -39,8 +39,13 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
 .categories-panel-web .category-button-label-web {
   font-size: 9.5px !important;
   line-height: 1.1 !important;
-  max-height: 2.2em !important;
-  -webkit-line-clamp: 2 !important;
+  max-height: 1.2em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  hyphens: none !important;
+  word-break: normal !important;
+  -webkit-line-clamp: unset !important;
 }
 
 /* Телефон: рівно 6 чіпів у видимій зоні, решта — свайп */
@@ -119,9 +124,7 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-label-web,
   .categories-panel-web .category-button-label-web {
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    -webkit-line-clamp: 2 !important;
+    display: block !important;
     width: 100% !important;
     text-align: center !important;
     align-self: center !important;
@@ -131,9 +134,15 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     color: #2f2f2f !important;
     opacity: 1 !important;
     visibility: visible !important;
-    max-height: 2.3em !important;
+    max-height: 1.25em !important;
     overflow: hidden !important;
-    white-space: normal !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    hyphens: none !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
   }
 }
 

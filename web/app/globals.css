@@ -11450,16 +11450,15 @@ html.watta-html-home-hero
   .category-button-label-web {
     font-size: 9px;
     line-height: 1.06;
-    white-space: normal;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    hyphens: auto;
-    max-width: 100%;
-    max-height: 2.35em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+    max-width: 100%;
+    max-height: 1.2em;
+    display: block;
     text-align: center;
     font-weight: 600;
     letter-spacing: -0.02em;
@@ -11552,11 +11551,13 @@ html.watta-html-home-hero
   .category-button-label-web {
     font-size: 10px;
     line-height: 1.12;
-    max-height: 2.5em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    max-height: 1.2em;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    hyphens: none;
+    word-break: normal;
+    display: block;
     text-align: center;
   }
 
@@ -11663,11 +11664,13 @@ html.watta-html-home-hero
   .menu-page-web .category-button-label-web {
     font-size: 9px !important;
     line-height: 1.1 !important;
-    max-height: 2.5em !important;
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    -webkit-line-clamp: 2 !important;
+    max-height: 1.2em !important;
+    white-space: nowrap !important;
     overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    hyphens: none !important;
+    word-break: normal !important;
+    display: block !important;
     text-align: center !important;
   }
 }
@@ -11998,16 +12001,15 @@ html.watta-html-home-hero
   .category-button-label-web {
     font-size: 13px !important;
     line-height: 1.16 !important;
-    white-space: normal !important;
-    overflow-wrap: break-word !important;
-    word-break: break-word !important;
-    hyphens: auto !important;
-    max-width: 100% !important;
-    max-height: 2.65em !important;
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    -webkit-line-clamp: 2 !important;
+    white-space: nowrap !important;
     overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    hyphens: none !important;
+    max-width: 100% !important;
+    max-height: 1.25em !important;
+    display: block !important;
     text-align: center !important;
     font-weight: 600 !important;
     letter-spacing: -0.02em !important;
@@ -12145,10 +12147,12 @@ html.watta-html-home-hero
   font-weight: 700;
   color: #555555;
   text-align: center;
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
   line-height: 1.15;
   align-self: stretch;
   width: 100%;

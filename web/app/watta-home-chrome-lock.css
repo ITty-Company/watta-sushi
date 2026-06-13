@@ -1513,9 +1513,7 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web {
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    -webkit-line-clamp: 2 !important;
+    display: block !important;
     text-align: center !important;
     font-size: 11px !important;
     line-height: 1.12 !important;
@@ -1523,7 +1521,15 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     color: #2f2f2f !important;
     opacity: 1 !important;
     visibility: visible !important;
-    max-height: 2.3em !important;
+    max-height: 1.25em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    hyphens: none !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
   }
 
   html.watta-html-home-hero
@@ -1994,4 +2000,20 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     -webkit-box-shadow: none !important;
     filter: none !important;
   }
+}
+
+/* Підписи категорій — одна строка, без переносів і дефісів (усі viewport) */
+.categories-panel-web .category-button-label-web,
+body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
+.watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
+.watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  hyphens: none !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: unset !important;
 }
