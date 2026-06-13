@@ -4750,10 +4750,15 @@ html.watta-light-chrome body {
   contain-intrinsic-size: auto;
 }
 
-/* Монтування сітки не зсуває viewport: scroll anchoring увімкнено (auto),
-   браузер компенсує приріст висоти при дозавантаженні секцій. */
+/* Десктоп: scroll anchoring компенсує дозавантаження секцій. Телефон — none (watta-mobile-scroll-stable.css). */
 .watta-full-menu-section__grid {
   overflow-anchor: auto;
+}
+
+@media (max-width: 767px) {
+  .watta-full-menu-section__grid {
+    overflow-anchor: none;
+  }
 }
 
 .watta-full-menu-section__anchor {

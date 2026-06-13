@@ -73,6 +73,16 @@
     overflow-anchor: none;
   }
 
+  /*
+   * /menu: flow-anchor не стискається при hide шапки — інакше картки стрибають при скролі вгору.
+   */
+  html:has(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+    min-height: calc(
+      var(--watta-sticky-chrome-measured-h, 140px) + env(safe-area-inset-top, 0px)
+    ) !important;
+    height: auto !important;
+  }
+
   .menu-page-web,
   #home-menu-catalog,
   #menu-cinematic-block,
@@ -106,7 +116,8 @@
    */
   .home-menu-product-card-web,
   .watta-menu-product-card {
-    contain: layout style paint;
+    /* paint containment ламав стабільність висоти карток при скролі вгору на iOS */
+    contain: layout style;
   }
 
   /* Нижні fixed-елементи — без transition під час скролу (менше repaint). */

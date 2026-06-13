@@ -14,7 +14,7 @@ import { usePathname } from 'next/navigation'
 import { useWattaChromeScrollCompact } from '@/hooks/useWattaChromeScrollCompact'
 import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { isWattaChromeCompact } from '@/lib/wattaChromeScroll'
-import { isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
+import { isWattaFullMenuPathname, isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
 import { isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR } from '@/lib/wattaProductChrome'
 
@@ -48,6 +48,16 @@ type WattaStickyChromeLayoutProps = {
 const defaultFlowHeightFudgePx = 10
 /** /product на телефоні: додатковий fudge, щоб контент був щільно під чіпами категорій. */
 const PRODUCT_PHONE_FUDGE_PX = 18
+
+/** /menu (телефон): стабільний резерв під повний chrome — шапка fixed, без стрибка товарів. */
+function readMenuPhoneFlowAnchorPx(): number {
+  if (typeof document === 'undefined') return 0
+  const cs = getComputedStyle(document.documentElement)
+  const safe = Math.max(0, parseFloat(cs.getPropertyValue('env(safe-area-inset-top)')) || 0)
+  const measured = parseFloat(cs.getPropertyValue('--watta-sticky-chrome-measured-h'))
+  const chrome = Number.isFinite(measured) && measured >= 72 ? measured : 140
+  return Math.round(chrome + safe)
+}
 
 function readProductPhoneFlowAnchorPx(): number {
   if (typeof document === 'undefined') return 0
@@ -99,6 +109,7 @@ export default function WattaStickyChromeLayout({
 
   const pathname = usePathname() || '/'
   const isProductPage = isWattaProductPathname(pathname)
+  const isFullMenuPage = isWattaFullMenuPathname(pathname)
 
   const [flowH, setFlowH] = useState(0)
   const [rawChromeH, setRawChromeH] = useState(0)
@@ -108,8 +119,9 @@ export default function WattaStickyChromeLayout({
   /** Повна висота chrome до compact — flow-anchor не стискається, інакше scroll «зависає». */
   const expandedRawRef = useRef(0)
 
-  /** Anchor стискається під фактичну висоту compact — без порожнього відступу. */
-  const preserveExpandedChromeHeightInCompact = () => false
+  /** /menu (телефон): не стискати flow-anchor при hide шапки — інакше товари стрибають вгору. */
+  const preserveExpandedChromeHeightInCompact = () =>
+    isFullMenuPage && isWattaPhoneViewport()
   const expandedHeaderRef = useRef(0)
   /** Кеш опублікованих значень — setProperty на <html> інакше перераховує стилі всього документа. */
   const publishedCssVarsRef = useRef({
@@ -297,6 +309,11 @@ export default function WattaStickyChromeLayout({
 
   const anchorFlowH = (() => {
     if (flowAnchorHeaderOnly && headerFlowH >= 8) return headerFlowH
+    /** /menu (телефон): фіксований резерв — hide/show шапки не зсуває каталог. */
+    if (isFullMenuPage && isWattaPhoneViewport()) {
+      const stable = readMenuPhoneFlowAnchorPx()
+      if (stable >= 8) return stable + Math.max(0, flowAnchorSafetyPx)
+    }
     /** /product (телефон): резерв лише під стрічку категорій; при розгорнутій шапці — повний chrome. */
     if (isProductPage && isWattaPhoneViewport()) return readProductPhoneFlowAnchorPx()
     const expanded =
