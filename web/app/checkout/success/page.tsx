@@ -15,20 +15,11 @@ import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { getBearerAuthHeaders } from '../../../lib/authHeaders'
 import { openWattaNotifications } from '@/lib/openWattaNotifications'
 import { WATTA_NOTIFICATIONS_CHANGED_EVENT } from '@/lib/userNotificationsApi'
+import { clearCartStorage } from '@/lib/cartStorage'
 import '@/app/watta-checkout-success.css'
 
 const SMS_INTRO_MS = 2200
 const SMS_EXIT_MS = 420
-
-function clearClientCart() {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.removeItem('cart')
-    window.dispatchEvent(new CustomEvent('cartUpdated'))
-  } catch {
-    /* ignore */
-  }
-}
 
 function CheckoutSuccessContent() {
   const { t } = useLanguage()
