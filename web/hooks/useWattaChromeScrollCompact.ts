@@ -149,12 +149,6 @@ export function useWattaChromeScrollCompact(enabled = true) {
   useLayoutEffect(() => {
     if (!enabled || typeof window === 'undefined') return
 
-    /** /cart і /profile: без compact — компенсація scrollTop б’ється з жестом на телефоні. */
-    if (isCartCheckoutPage || isProfilePage) {
-      ensureWattaChromeExpanded()
-      return
-    }
-
     if (!isPhone) {
       ensureDesktopFullChrome(isProductPage)
       return () => {

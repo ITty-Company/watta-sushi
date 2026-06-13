@@ -124,12 +124,6 @@ export default function AppClient({
     window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
   }, [isHomeOrMenuRoute])
 
-  /** /cart і /profile — повна шапка без compact; перерахувати резерв fixed chrome. */
-  useLayoutEffect(() => {
-    if ((!isCartCheckoutRoute && !isProfileRoute) || typeof document === 'undefined') return
-    delete document.documentElement.dataset.wattaChromeCompact
-    window.dispatchEvent(new Event(WATTA_CHROME_LAYOUT_SYNC_EVENT))
-  }, [isCartCheckoutRoute, isProfileRoute])
 
   /** Клік по чіпу категорії — перехід на /menu?cat= і скрол до секції. */
   useEffect(() => {

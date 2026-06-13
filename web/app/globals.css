@@ -3420,12 +3420,12 @@ html.watta-light-chrome body {
   margin-top: 0;
 }
 
-/* Scroll anchoring УВІМКНЕНО: коли секції вище змінюють висоту (content-visibility
-   оцінка 720px ↔ реальна висота, ленивий монтаж сіток, дозавантаження зображень),
-   браузер утримує поточну позицію. Без цього сторінку «смикає» при скролі. */
+/* Scroll anchoring вимкнено — на телефоні overflow-anchor викликає стрибки
+   карток товарів при скролі вгору (зображення завантажуються й браузер
+   перераховує layout). На десктопі теж безпечніше без нього. */
 .watta-full-menu-page,
 .watta-full-menu-page .home-menu-cat-list-web {
-  overflow-anchor: auto;
+  overflow-anchor: none;
 }
 
 /* /menu і public: верхня зона — position fixed + резерв висоти в WattaStickyChromeLayout */
