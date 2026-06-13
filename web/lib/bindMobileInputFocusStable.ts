@@ -19,6 +19,13 @@ function isAuthModalOpen(): boolean {
   return document.documentElement.hasAttribute(WATTA_AUTH_MODAL_OPEN_ATTR)
 }
 
+/** /cart checkout: не блокуємо вертикальний скрол під час заповнення форми. */
+function isCartCheckoutScrollPage(): boolean {
+  return Boolean(
+    document.querySelector('.watta-cart-checkout-page--v2:not(.watta-cart-page--empty)'),
+  )
+}
+
 function clearAuthKeyboardShade() {
   document.documentElement.style.removeProperty(WATTA_AUTH_KEYBOARD_SHADE_VAR)
 }
@@ -102,7 +109,9 @@ export function bindMobileInputFocusStable(): () => void {
     if (!isTextLikeField(event.target)) return
     focusDepth += 1
     setFocused(true)
-    pinDocumentScroll()
+    if (!isCartCheckoutScrollPage()) {
+      pinDocumentScroll()
+    }
     if (isAuthModalOpen() && !authKeyboardShadeBound) {
       bindAuthKeyboardShade()
       authKeyboardShadeBound = true
@@ -124,6 +133,7 @@ export function bindMobileInputFocusStable(): () => void {
 
   const onScrollWhileFocused = () => {
     if (focusDepth <= 0) return
+    if (isCartCheckoutScrollPage()) return
     window.clearTimeout(scrollRestoreTimer)
     scrollRestoreTimer = window.setTimeout(pinDocumentScroll, 0)
   }

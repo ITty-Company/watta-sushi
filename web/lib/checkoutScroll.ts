@@ -5,6 +5,7 @@ import {
   writeScrollTop,
 } from '@/lib/menuScroll'
 import { readStickyChromeScrollOffset } from '@/lib/wattaChromeScroll'
+import { isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 
 const CHECKOUT_FOOT_SELECTOR = '[data-watta-cart-checkout-foot]'
 
@@ -41,6 +42,8 @@ export function scrollCheckoutFieldIntoView(
   el: HTMLElement,
   behavior: ScrollBehavior = 'smooth',
 ): void {
+  const phone = typeof window !== 'undefined' && isWattaPhoneViewport()
+  const scrollBehavior: ScrollBehavior = phone ? 'auto' : behavior
   const headerOffset = readStickyChromeScrollOffset() + 10
   const footerInset = readCheckoutMobileFootInsetPx()
   const rect = el.getBoundingClientRect()
@@ -54,7 +57,7 @@ export function scrollCheckoutFieldIntoView(
     delta = rect.bottom - maxBottom
   } else if (rect.top < minTop) {
     delta = rect.top - minTop
-  } else {
+  } else if (!phone) {
     const safeH = maxBottom - minTop
     const idealTop = minTop + Math.max(0, (safeH - rect.height) / 2)
     if (rect.top > maxBottom - rect.height || rect.top < minTop + 24) {
@@ -62,7 +65,7 @@ export function scrollCheckoutFieldIntoView(
     }
   }
 
-  scrollByDelta(delta, behavior)
+  scrollByDelta(delta, scrollBehavior)
 }
 
 /** Scroll a checkout section heading under sticky chrome. */

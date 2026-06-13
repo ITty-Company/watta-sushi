@@ -3,10 +3,20 @@
 import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { type CSSProperties } from 'react'
+import { usePhoneMenuOneColumn } from '@/hooks/usePhoneMenuOneColumn'
 import '@/app/watta-cart-drawer-empty-art.css'
 import '@/app/watta-checkout-success.css'
 
-const ROLLS = [
+type RollSpec = {
+  key: string
+  src: string
+  mod: string
+  drop: number
+  tx: string
+}
+
+/** Телефон: повна сцена як у порожній корзині. */
+const PHONE_SUCCESS_ROLLS: RollSpec[] = [
   { key: 'left', src: '/favorites-empty/inside-roll-left.webp', mod: 'left', drop: 0, tx: '-1.25rem' },
   { key: 'rear', src: '/favorites-empty/inside-roll-rear.webp', mod: 'rear', drop: 1, tx: '-0.5rem' },
   { key: 'back', src: '/favorites-empty/inside-roll.webp', mod: 'back', drop: 2, tx: '0' },
@@ -17,13 +27,27 @@ const ROLLS = [
   { key: 'accent', src: '/favorites-empty/inside-accent-roll.webp', mod: 'accent', drop: 7, tx: '0.85rem' },
   { key: 'gunkan-ikura', src: '/favorites-empty/inside-gunkan-ikura.webp', mod: 'gunkan-ikura', drop: 8, tx: '0.15rem' },
   { key: 'gunkan-baked', src: '/favorites-empty/inside-gunkan-baked.webp', mod: 'gunkan-baked', drop: 9, tx: '1rem' },
-] as const
+]
+
+/** Планшет / ноут / десктоп: три ролли по одному, без передніх і без гunkan з ікрою. */
+const DESKTOP_SUCCESS_ROLLS: RollSpec[] = [
+  { key: 'left', src: '/favorites-empty/inside-roll-left.webp', mod: 'left', drop: 0, tx: '-1.25rem' },
+  { key: 'rear', src: '/favorites-empty/inside-roll-rear.webp', mod: 'rear', drop: 1, tx: '-0.5rem' },
+  { key: 'back', src: '/favorites-empty/inside-roll.webp', mod: 'back', drop: 2, tx: '0' },
+]
 
 /** Ілюстрація успішного замовлення — ролли «падають» як у порожній корзині, галочка замість сумки. */
 export default function CheckoutSuccessIllustration() {
+  const phoneOneCol = usePhoneMenuOneColumn()
+  const rolls = phoneOneCol ? PHONE_SUCCESS_ROLLS : DESKTOP_SUCCESS_ROLLS
+
   return (
     <div className="watta-checkout-success__art" aria-hidden>
-      <div className="watta-cart-drawer-empty__scene watta-cart-drawer-empty__scene--play watta-checkout-success__scene">
+      <div
+        className={`watta-cart-drawer-empty__scene watta-cart-drawer-empty__scene--play watta-checkout-success__scene${
+          phoneOneCol ? '' : ' watta-checkout-success__scene--desktop-three'
+        }`}
+      >
         <svg
           className="watta-checkout-success__blob-svg"
           viewBox="-10 -8 248 178"
@@ -38,7 +62,7 @@ export default function CheckoutSuccessIllustration() {
           <Check strokeWidth={3} />
         </div>
 
-        {ROLLS.map((roll) => (
+        {rolls.map((roll) => (
           <div
             key={roll.key}
             className={`watta-cart-drawer-empty__roll-slot watta-cart-drawer-empty__roll-slot--${roll.mod}`}

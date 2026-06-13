@@ -25585,7 +25585,8 @@ html.watta-light-chrome:has(.watta-cart-page) body {
   overscroll-behavior-y: auto;
 }
 
-.watta-app-shell-root:has(.watta-cart-page) .cart-upsell-rail-scroll {
+.watta-app-shell-root:has(.watta-cart-page) .cart-upsell-rail-scroll,
+.watta-app-shell-root:has(.watta-cart-page) .watta-cart-date-rail {
   touch-action: pan-x pan-y;
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;

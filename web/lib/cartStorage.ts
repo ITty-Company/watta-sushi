@@ -186,6 +186,11 @@ export function writeCartToStorage(lines: CartStorageLine[]): void {
   window.dispatchEvent(new CustomEvent('cartUpdated'))
 }
 
+/** Порожній кошик: localStorage, in-memory кеш і лічильник у шапці. */
+export function clearCartStorage(): void {
+  writeCartToStorage([])
+}
+
 export type MenuCartProductInput = {
   id: number
   name: string

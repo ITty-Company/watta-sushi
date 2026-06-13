@@ -7,6 +7,12 @@
     touch-action: manipulation;
   }
 
+  /* /cart checkout: pan-y — інакше вертикальний свайп «залипає» над формою */
+  html.watta-light-chrome:has(.watta-cart-checkout-page--v2:not(.watta-cart-page--empty)),
+  html.watta-light-chrome:has(.watta-cart-checkout-page--v2:not(.watta-cart-page--empty)) body {
+    touch-action: pan-y;
+  }
+
   /* iOS Safari: font-size < 16px → auto-zoom; дублюємо для модалок і checkout */
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']):not([type='hidden']):not([type='color']),
   textarea,

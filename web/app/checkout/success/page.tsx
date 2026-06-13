@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { Bell } from '@/lib/wattaInlineIcons'
@@ -42,8 +42,8 @@ function CheckoutSuccessContent() {
   const [smsExiting, setSmsExiting] = useState(false)
   const [showMainCard, setShowMainCard] = useState(false)
 
-  useEffect(() => {
-    clearClientCart()
+  useLayoutEffect(() => {
+    clearCartStorage()
     window.dispatchEvent(new Event(WATTA_NOTIFICATIONS_CHANGED_EVENT))
   }, [])
 
@@ -165,7 +165,7 @@ function CheckoutSuccessContent() {
           </WattaLink>
           <WattaLink
             href="/menu"
-            onClick={clearClientCart}
+            onClick={clearCartStorage}
             className="watta-checkout-success-page__btn watta-checkout-success-page__btn--link"
           >
             {cs.checkoutBackToMenu}

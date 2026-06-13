@@ -54,6 +54,17 @@
   overflow: visible;
 }
 
+/* Планшет / ноут / десктоп: лише 3 ролли — компактніша сцена */
+@media (min-width: 768px) {
+  .watta-checkout-success__scene--desktop-three {
+    aspect-ratio: 248 / 148;
+  }
+
+  .watta-checkout-success__scene--desktop-three .watta-checkout-success__check {
+    top: 24%;
+  }
+}
+
 .watta-checkout-success__blob-svg {
   position: absolute;
   inset: 0;

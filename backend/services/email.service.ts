@@ -36,7 +36,7 @@ function buildReceiptHtml(order: ReceiptOrder) {
       return `<tr>
         <td style="padding:8px 0;color:#1f2937;">${name}</td>
         <td style="padding:8px 0;color:#6b7280;text-align:center;">x${qty}</td>
-        <td style="padding:8px 0;color:#145142;text-align:right;font-weight:700;">${lineTotal} ₴</td>
+        <td style="padding:8px 0;color:#145142;text-align:right;font-weight:700;">${lineTotal} €</td>
       </tr>`;
     })
     .join('');
@@ -51,7 +51,7 @@ function buildReceiptHtml(order: ReceiptOrder) {
       </table>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
         <span style="color:#111827;font-size:18px;font-weight:700;">Итого:</span>
-        <span style="color:#145142;font-size:24px;font-weight:800;">${Number(order.totalPrice || 0).toFixed(2)} ₴</span>
+        <span style="color:#145142;font-size:24px;font-weight:800;">${Number(order.totalPrice || 0).toFixed(2)} €</span>
       </div>
       <p style="margin-top:18px;color:#6b7280;">Watta Sushi благодарит вас за доверие. Приятного аппетита!</p>
     </div>

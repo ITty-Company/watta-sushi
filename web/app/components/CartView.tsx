@@ -77,9 +77,9 @@ import {
   type WattaDeliveryZoneSelection,
 } from '@/lib/wattaDeliveryZoneSelection'
 import {
+  clearCartStorage,
   getCartTotalPieceCount,
   lineQuantity,
-  invalidateCartMemoryCache,
   readCartFromStorage,
   writeCartToStorage,
   refreshCartProductMediaFromCatalog,
@@ -1401,12 +1401,14 @@ export default function CartView({
 
       if (effectivePaymentMethod === 'CARD') {
         if (typeof orderData.stripeUrl === 'string' && orderData.stripeUrl) {
+          clearCartStorage()
           setIsLoading(false)
           window.location.assign(orderData.stripeUrl)
           return
         }
         const liqpay = orderData.liqpay as { data?: string; signature?: string } | undefined
         if (liqpay?.data && liqpay?.signature) {
+          clearCartStorage()
           setIsLoading(false)
           submitLiqPayCheckout(liqpay.data, liqpay.signature)
           return
@@ -1415,9 +1417,7 @@ export default function CartView({
 
       // === Готівка: сторінка успішного замовлення ===
       void loadSavedAddresses()
-      localStorage.removeItem('cart')
-      invalidateCartMemoryCache()
-      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      clearCartStorage()
       window.location.href = `/checkout/success?orderId=${orderData.id}`;
       return;
 

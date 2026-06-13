@@ -82,6 +82,10 @@ function formatMoney(amount: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')
 }
 
+function formatOrderEur(amount: number): string {
+  return `${formatMoney(amount)} €`
+}
+
 function buildCommentBlock(order: {
   fulfillmentType?: string | null
   scheduledForDate?: string | null
@@ -155,7 +159,7 @@ export function formatOrderTelegramMessage(
   const deliveryFeeBlock = isPickup
     ? ''
     : deliveryFee > 0
-      ? `\n🚛 <b>Стоимость доставки:</b> +${formatMoney(deliveryFee)} ₴`
+      ? `\n🚛 <b>Стоимость доставки:</b> +${formatOrderEur(deliveryFee)}`
       : `\n🚛 <b>Стоимость доставки:</b> Бесплатно`
 
   const addressLabel = isPickup
@@ -165,7 +169,7 @@ export function formatOrderTelegramMessage(
   const itemsList = items
     .map((item) => {
       const lineTotal = Number(item.price) * Number(item.quantity)
-      return `— ${escapeHtml(itemName(item))} x${item.quantity} (${formatMoney(lineTotal)} ₴)`
+      return `— ${escapeHtml(itemName(item))} x${item.quantity} (${formatOrderEur(lineTotal)})`
     })
     .join('\n')
 
@@ -190,6 +194,6 @@ ${addressForMessage}
 🛒 <b>Заказ:</b>
 ${itemsList || '—'}
 
-💵 <b>ИТОГО: ${formatMoney(Number(order.totalPrice) || 0)} ₴</b>
+💵 <b>ИТОГО: ${formatOrderEur(Number(order.totalPrice) || 0)}</b>
   `.trim()
 }
