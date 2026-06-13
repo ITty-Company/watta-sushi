@@ -43,6 +43,7 @@ import {
   scrollCheckoutFieldIntoView,
   scrollCheckoutSectionIntoView,
 } from '@/lib/checkoutScroll'
+import { stashCheckoutSuccessLineCount } from '@/lib/checkoutSuccessSession'
 import {
   clearKitchenClosedModalDismissed,
   isKitchenClosedModalDismissed,
@@ -1401,6 +1402,7 @@ export default function CartView({
 
       if (effectivePaymentMethod === 'CARD') {
         if (typeof orderData.stripeUrl === 'string' && orderData.stripeUrl) {
+          stashCheckoutSuccessLineCount(orderItems.length)
           clearCartStorage()
           setIsLoading(false)
           window.location.assign(orderData.stripeUrl)
@@ -1408,6 +1410,7 @@ export default function CartView({
         }
         const liqpay = orderData.liqpay as { data?: string; signature?: string } | undefined
         if (liqpay?.data && liqpay?.signature) {
+          stashCheckoutSuccessLineCount(orderItems.length)
           clearCartStorage()
           setIsLoading(false)
           submitLiqPayCheckout(liqpay.data, liqpay.signature)
@@ -1417,6 +1420,7 @@ export default function CartView({
 
       // === Готівка: сторінка успішного замовлення ===
       void loadSavedAddresses()
+      stashCheckoutSuccessLineCount(orderItems.length)
       clearCartStorage()
       window.location.href = `/checkout/success?orderId=${orderData.id}`;
       return;

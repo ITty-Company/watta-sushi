@@ -54,6 +54,30 @@
   overflow: visible;
 }
 
+/* Планшет / ноут / десктоп: один товар — один великий рол по центру */
+@media (min-width: 768px) {
+  .watta-checkout-success__art--single {
+    width: min(100%, 18rem);
+  }
+
+  .watta-checkout-success__scene--single {
+    aspect-ratio: 248 / 150;
+  }
+
+  .watta-checkout-success__scene--single .watta-checkout-success__check {
+    top: 16%;
+  }
+
+  .watta-checkout-success__scene--single .watta-cart-drawer-empty__roll-slot--single-hero {
+    left: 50%;
+    top: 56%;
+    z-index: 4;
+    width: 70%;
+    max-width: 13rem;
+    transform: translate(-50%, -50%);
+  }
+}
+
 /* Планшет / ноут / десктоп: лише 3 ролли — компактніша сцена */
 @media (min-width: 768px) {
   .watta-checkout-success__scene--desktop-three {

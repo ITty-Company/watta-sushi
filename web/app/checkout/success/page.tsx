@@ -16,6 +16,7 @@ import { getBearerAuthHeaders } from '../../../lib/authHeaders'
 import { openWattaNotifications } from '@/lib/openWattaNotifications'
 import { WATTA_NOTIFICATIONS_CHANGED_EVENT } from '@/lib/userNotificationsApi'
 import { clearCartStorage } from '@/lib/cartStorage'
+import { consumeCheckoutSuccessLineCount } from '@/lib/checkoutSuccessSession'
 import '@/app/watta-checkout-success.css'
 
 const SMS_INTRO_MS = 2200
@@ -32,10 +33,13 @@ function CheckoutSuccessContent() {
   const [showSmsIntro, setShowSmsIntro] = useState(true)
   const [smsExiting, setSmsExiting] = useState(false)
   const [showMainCard, setShowMainCard] = useState(false)
+  const [orderLineCount, setOrderLineCount] = useState<number | null>(null)
 
   useLayoutEffect(() => {
     clearCartStorage()
     window.dispatchEvent(new Event(WATTA_NOTIFICATIONS_CHANGED_EVENT))
+    const count = consumeCheckoutSuccessLineCount()
+    if (count != null) setOrderLineCount(count)
   }, [])
 
   useEffect(() => {
@@ -74,6 +78,25 @@ function CheckoutSuccessContent() {
   }, [orderId])
 
   useEffect(() => {
+    if (orderLineCount != null || !orderId) return
+    const authHeaders = getBearerAuthHeaders()
+    if (Object.keys(authHeaders).length === 0) return
+    void fetch(`/api/orders/my/${orderId}`, {
+      headers: authHeaders,
+      cache: 'no-store',
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((order: { items?: unknown[] } | null) => {
+        if (order && Array.isArray(order.items) && order.items.length > 0) {
+          setOrderLineCount(order.items.length)
+        }
+      })
+      .catch(() => {
+        /* ignore */
+      })
+  }, [orderId, orderLineCount])
+
+  useEffect(() => {
     const authHeaders = getBearerAuthHeaders()
     if (Object.keys(authHeaders).length === 0) {
       setIsFirstOrder(false)
@@ -109,7 +132,7 @@ function CheckoutSuccessContent() {
           showMainCard ? ' watta-checkout-success-page__card--visible' : ''
         }`}
       >
-        <CheckoutSuccessIllustration />
+        <CheckoutSuccessIllustration orderLineCount={orderLineCount} />
 
         <h1 className="watta-checkout-success-page__title">{title}</h1>
         <p className="watta-checkout-success-page__subtitle">{subtitle}</p>

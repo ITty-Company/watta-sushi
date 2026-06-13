@@ -29,24 +29,50 @@ const PHONE_SUCCESS_ROLLS: RollSpec[] = [
   { key: 'gunkan-baked', src: '/favorites-empty/inside-gunkan-baked.webp', mod: 'gunkan-baked', drop: 9, tx: '1rem' },
 ]
 
-/** Планшет / ноут / десктоп: три ролли по одному, без передніх і без гunkan з ікрою. */
+/** Планшет / ноут / десктоп: три ролли по одному, без передніх і без gunkan з ікрою. */
 const DESKTOP_SUCCESS_ROLLS: RollSpec[] = [
   { key: 'left', src: '/favorites-empty/inside-roll-left.webp', mod: 'left', drop: 0, tx: '-1.25rem' },
   { key: 'rear', src: '/favorites-empty/inside-roll-rear.webp', mod: 'rear', drop: 1, tx: '-0.5rem' },
   { key: 'back', src: '/favorites-empty/inside-roll.webp', mod: 'back', drop: 2, tx: '0' },
 ]
 
+/** Один товар у замовленні — один великий рол по центру. */
+const SINGLE_SUCCESS_ROLL: RollSpec = {
+  key: 'hero',
+  src: '/favorites-empty/inside-roll-front.webp',
+  mod: 'single-hero',
+  drop: 0,
+  tx: '0',
+}
+
+type Props = {
+  orderLineCount?: number | null
+}
+
 /** Ілюстрація успішного замовлення — ролли «падають» як у порожній корзині, галочка замість сумки. */
-export default function CheckoutSuccessIllustration() {
+export default function CheckoutSuccessIllustration({ orderLineCount = null }: Props) {
   const phoneOneCol = usePhoneMenuOneColumn()
-  const rolls = phoneOneCol ? PHONE_SUCCESS_ROLLS : DESKTOP_SUCCESS_ROLLS
+  /** Один великий рол — лише планшет / ноут / десктоп; телефон завжди повна сцена. */
+  const isSingleItemDesktop = !phoneOneCol && orderLineCount === 1
+  const rolls = phoneOneCol
+    ? PHONE_SUCCESS_ROLLS
+    : isSingleItemDesktop
+      ? [SINGLE_SUCCESS_ROLL]
+      : DESKTOP_SUCCESS_ROLLS
+
+  const sceneMod = phoneOneCol
+    ? ''
+    : isSingleItemDesktop
+      ? ' watta-checkout-success__scene--single'
+      : ' watta-checkout-success__scene--desktop-three'
 
   return (
-    <div className="watta-checkout-success__art" aria-hidden>
+    <div
+      className={`watta-checkout-success__art${isSingleItemDesktop ? ' watta-checkout-success__art--single' : ''}`}
+      aria-hidden
+    >
       <div
-        className={`watta-cart-drawer-empty__scene watta-cart-drawer-empty__scene--play watta-checkout-success__scene${
-          phoneOneCol ? '' : ' watta-checkout-success__scene--desktop-three'
-        }`}
+        className={`watta-cart-drawer-empty__scene watta-cart-drawer-empty__scene--play watta-checkout-success__scene${sceneMod}`}
       >
         <svg
           className="watta-checkout-success__blob-svg"
@@ -82,7 +108,11 @@ export default function CheckoutSuccessIllustration() {
                 width={256}
                 height={256}
                 className={`watta-cart-drawer-empty__roll watta-cart-drawer-empty__roll--${roll.mod}`}
-                sizes="(max-width: 480px) 28vw, 4.5rem"
+                sizes={
+                  isSingleItemDesktop
+                    ? '12rem'
+                    : '(max-width: 480px) 28vw, 4.5rem'
+                }
               />
             </div>
           </div>
