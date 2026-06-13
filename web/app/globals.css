@@ -11450,14 +11450,14 @@ html.watta-html-home-hero
   .category-button-label-web {
     font-size: 9px;
     line-height: 1.06;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
     overflow-wrap: normal;
     word-break: normal;
     hyphens: none;
     max-width: 100%;
-    max-height: 1.2em;
+    max-height: 2.4em;
     display: block;
     text-align: center;
     font-weight: 600;
@@ -11551,10 +11551,10 @@ html.watta-html-home-hero
   .category-button-label-web {
     font-size: 10px;
     line-height: 1.12;
-    max-height: 1.2em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-height: 2.4em;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
     hyphens: none;
     word-break: normal;
     display: block;
@@ -11664,10 +11664,10 @@ html.watta-html-home-hero
   .menu-page-web .category-button-label-web {
     font-size: 9px !important;
     line-height: 1.1 !important;
-    max-height: 1.2em !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    max-height: 2.4em !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
     hyphens: none !important;
     word-break: normal !important;
     display: block !important;
@@ -12001,14 +12001,14 @@ html.watta-html-home-hero
   .category-button-label-web {
     font-size: 13px !important;
     line-height: 1.16 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
     overflow-wrap: normal !important;
     word-break: normal !important;
     hyphens: none !important;
     max-width: 100% !important;
-    max-height: 1.25em !important;
+    max-height: 2.4em !important;
     display: block !important;
     text-align: center !important;
     font-weight: 600 !important;
@@ -12147,9 +12147,9 @@ html.watta-html-home-hero
   font-weight: 700;
   color: #555555;
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
@@ -12157,6 +12157,7 @@ html.watta-html-home-hero
   align-self: stretch;
   width: 100%;
   max-width: 100%;
+  max-height: 2.4em;
   box-sizing: border-box;
   letter-spacing: 0.25px;
   position: relative;

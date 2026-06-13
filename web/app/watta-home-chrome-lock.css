@@ -1521,10 +1521,10 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     color: #2f2f2f !important;
     opacity: 1 !important;
     visibility: visible !important;
-    max-height: 1.25em !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    max-height: 2.4em !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
     hyphens: none !important;
     word-break: normal !important;
     overflow-wrap: normal !important;
@@ -2002,18 +2002,19 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   }
 }
 
-/* Підписи категорій — одна строка, без переносів і дефісів (усі viewport) */
+/* Підписи категорій — повний текст без «…»; при потребі — другий рядок */
 .categories-panel-web .category-button-label-web,
 body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
 .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
 .watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
   display: block !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
   hyphens: none !important;
   word-break: normal !important;
   overflow-wrap: normal !important;
+  max-height: 2.4em !important;
   -webkit-line-clamp: unset !important;
   -webkit-box-orient: unset !important;
 }
