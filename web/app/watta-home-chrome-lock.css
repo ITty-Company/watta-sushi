@@ -1489,14 +1489,17 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web {
-    flex: 0 0 var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-    width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-    min-width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-    max-width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-    height: var(--watta-cat-mobile-chip-height, auto) !important;
-    min-height: var(--watta-cat-mobile-chip-height, 0) !important;
-    aspect-ratio: unset !important;
-    border-radius: 0 !important;
+    flex: 0 0 var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+    width: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+    min-width: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+    max-width: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+    height: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+    min-height: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+    aspect-ratio: 1 !important;
+    border-radius: 50% !important;
+    gap: 2px !important;
+    box-sizing: border-box !important;
+    border: 1px solid transparent !important;
   }
 
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web {
@@ -2030,17 +2033,54 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-we
   -webkit-box-orient: unset !important;
 }
 
-/* Телефон: активний чіп — коло на іконці, не овал на всій кнопці */
+/* Телефон: кругле виділення на всю кнопку (іконка + підпис), менший зазор */
 @media (max-width: 767px) {
   .categories-panel-web .category-button-web,
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-web {
+    border-radius: 50% !important;
+    gap: 2px !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+
   .categories-panel-web .category-button-active-web,
   body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web,
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-active-web {
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+    -webkit-box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+  }
+
+  .categories-panel-web .category-button-icon-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web {
+    width: 100% !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: 1.5em !important;
     border-radius: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+
+  .categories-panel-web .category-button-active-web .category-button-icon-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web .category-button-icon-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web {
     background: transparent !important;
     background-color: transparent !important;
     border: none !important;
@@ -2048,27 +2088,10 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-we
     -webkit-box-shadow: none !important;
   }
 
-  .categories-panel-web .category-button-icon-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-icon-web,
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-icon-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-icon-web {
-    width: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
-    height: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
-    min-width: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
-    min-height: var(--watta-cat-mobile-icon-ring, 2.375rem) !important;
-    border-radius: 50% !important;
-    border: 1px solid transparent !important;
-    box-sizing: border-box !important;
-  }
-
-  .categories-panel-web .category-button-active-web .category-button-icon-web,
-  body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-web .category-button-icon-web,
-  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web,
-  .watta-public-sticky-chrome .categories-panel-web .category-button-active-web .category-button-icon-web {
-    background: #ffffff !important;
-    background-color: #ffffff !important;
-    border: 1px solid rgba(0, 0, 0, 0.08) !important;
-    box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
-    -webkit-box-shadow: 0 1px 4px rgba(15, 36, 30, 0.08) !important;
+  .categories-panel-web .category-button-label-web,
+  body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-web,
+  .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
+  .watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
+    line-height: 1.05 !important;
   }
 }

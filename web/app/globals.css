@@ -11951,14 +11951,17 @@ html.watta-html-home-hero
 
   @media (max-width: 767px) {
     .category-button-web {
-      flex: 0 0 var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-      min-width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-      width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-      max-width: var(--watta-cat-mobile-chip-width, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.15)) !important;
-      height: var(--watta-cat-mobile-chip-height, auto) !important;
-      min-height: var(--watta-cat-mobile-chip-height, 0) !important;
-      aspect-ratio: unset !important;
-      border-radius: 0 !important;
+      flex: 0 0 var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+      min-width: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+      width: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+      max-width: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+      height: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+      min-height: var(--watta-cat-mobile-chip-size, calc(var(--watta-cat-mobile-chip-slot, 52px) * 1.12)) !important;
+      aspect-ratio: 1 !important;
+      border-radius: 50% !important;
+      gap: 2px !important;
+      box-sizing: border-box !important;
+      border: 1px solid transparent !important;
     }
   }
 

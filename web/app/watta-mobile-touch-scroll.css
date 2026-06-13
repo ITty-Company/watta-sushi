@@ -139,4 +139,13 @@
     height: auto !important;
     -webkit-overflow-scrolling: auto;
   }
+
+  /* /menu: scroll-padding на body — Safari узгоджує з scroll-margin секцій. */
+  html:has(.watta-full-menu-page) body {
+    scroll-padding-top: calc(148px + env(safe-area-inset-top, 0px));
+    scroll-padding-bottom: var(
+      --watta-floating-fab-clearance,
+      calc(4.75rem + env(safe-area-inset-bottom, 0px))
+    );
+  }
 }
