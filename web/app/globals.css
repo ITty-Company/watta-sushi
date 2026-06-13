@@ -1813,17 +1813,19 @@
 html.watta-light-chrome {
   color-scheme: only light;
   background: var(--watta-page-gradient) !important;
-  /* visible: горизонтальні стрічки товарів (full-bleed) не обрізаються по краях вікна; clip ламав «вилазання» карток */
-  overflow-x: visible;
+  /* clip: без горизонтального скролу документа; full-bleed стрічки лишаються всередині вікна */
+  overflow-x: clip;
   overflow-y: visible;
+  overscroll-behavior-x: none;
   overscroll-behavior-y: none;
+  max-width: 100%;
 }
 
-/* Оболонка AppClient: не overflow-x-hidden — інакше sticky-шапка/категорії не липнуть до вікна при скролі body */
+/* Оболонка AppClient: clip по X — без горизонтального скролу; sticky chrome у fixed portal */
 .watta-app-shell-root {
-  overflow-x: visible;
+  overflow-x: clip;
   overflow-y: visible;
-  max-width: 100vw;
+  max-width: 100%;
   --watta-floating-fab-size: 3.25rem;
   --watta-floating-fab-lift: calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + 8px);
   --watta-floating-fab-clearance: calc(
@@ -1841,15 +1843,16 @@ html.watta-light-chrome {
   }
 }
 
-/* Герой (100vw + margin) може виходити за flex-min ширину; не кліпаємо main — інакше смуги по боках відео */
+/* main: clip по X узгоджено з html/body — без «білого поля» при свайпі вліво/вправо */
 .watta-app-shell-root > main {
-  overflow-x: visible;
+  overflow-x: clip;
   position: relative;
   z-index: 1;
   flex: 1 1 0%;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  max-width: 100%;
 }
 
 /* Контент між chrome і підвалом — займає всю вільну висоту вікна */
@@ -1859,7 +1862,7 @@ html.watta-light-chrome {
   flex-direction: column;
   min-height: 0;
   width: 100%;
-  max-width: 100vw;
+  max-width: 100%;
 }
 
 /* Головна: .app-web → .content-web з внутрішнім скролом і підвалом */
@@ -2106,10 +2109,11 @@ html.watta-light-chrome body {
   padding: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  /* visible: узгоджено з html/.app-web — інакше full-bleed rail (100vw) обрізався по body */
-  overflow-x: visible;
+  overflow-x: clip;
   overflow-y: auto;
+  max-width: 100%;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: none;
   overscroll-behavior-y: auto;
   touch-action: pan-y;
 }
