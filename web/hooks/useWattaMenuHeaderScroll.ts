@@ -14,8 +14,9 @@ import { isWattaMenuHeaderScrollPathname } from '@/lib/wattaHtmlRouteClass'
 import { WATTA_PHONE_VIEWPORT_MQ } from '@/lib/wattaTouchViewport'
 
 const TOP_ALWAYS_EXPAND_PX = 64
-const SCROLL_DOWN_HIDE_PX = 8
-const TOUCH_HIDE_PX = 6
+/** Накопичений зсув вниз перед hide — гістерезис проти смикання на iOS. */
+const SCROLL_DOWN_HIDE_PX = 14
+const TOUCH_HIDE_PX = 10
 /** Після кліку по категорії — не ховати шапку від програмного скролу. */
 const NAV_SCROLL_SUPPRESS_MS = 420
 
@@ -50,6 +51,7 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
     let lastScrollY = readAppScrollTop()
     let pendingDownPx = 0
     let lastTouchY = 0
+    let touchOnCategoryPanel = false
     let suppressUntil = 0
     let baselineSyncTimer = 0
 
@@ -111,9 +113,18 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
 
     const onTouchStart = (e: TouchEvent) => {
       lastTouchY = e.touches[0]?.clientY ?? 0
+      const target = e.target
+      touchOnCategoryPanel =
+        target instanceof Element &&
+        Boolean(target.closest('.categories-panel-web, .categories-panel-wrapper-web'))
+    }
+
+    const onTouchEnd = () => {
+      touchOnCategoryPanel = false
     }
 
     const onTouchMove = (e: TouchEvent) => {
+      if (touchOnCategoryPanel) return
       const y = e.touches[0]?.clientY
       if (y == null) return
       const dy = y - lastTouchY
@@ -136,17 +147,15 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
     }
 
     const passiveCapture: AddEventListenerOptions = { passive: true, capture: true }
-    const passive: AddEventListenerOptions = { passive: true }
 
     const { onScroll, cancel: cancelRaf } = createRafScrollListener(evaluateScroll, {
       minIntervalMs: 16,
     })
     const unbindScroll = bindAppVerticalScroll(onScroll)
-    window.addEventListener('scroll', onScroll, passive)
     document.addEventListener('touchstart', onTouchStart, passiveCapture)
     document.addEventListener('touchmove', onTouchMove, passiveCapture)
-    window.addEventListener('touchstart', onTouchStart, passiveCapture)
-    window.addEventListener('touchmove', onTouchMove, passiveCapture)
+    document.addEventListener('touchend', onTouchEnd, passiveCapture)
+    document.addEventListener('touchcancel', onTouchEnd, passiveCapture)
     window.addEventListener('wheel', onWheel, passiveCapture)
     window.addEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onCategoryNavigation)
 
@@ -156,11 +165,10 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
       cancelRaf()
       window.clearTimeout(baselineSyncTimer)
       unbindScroll()
-      window.removeEventListener('scroll', onScroll, passive)
       document.removeEventListener('touchstart', onTouchStart, passiveCapture)
       document.removeEventListener('touchmove', onTouchMove, passiveCapture)
-      window.removeEventListener('touchstart', onTouchStart, passiveCapture)
-      window.removeEventListener('touchmove', onTouchMove, passiveCapture)
+      document.removeEventListener('touchend', onTouchEnd, passiveCapture)
+      document.removeEventListener('touchcancel', onTouchEnd, passiveCapture)
       window.removeEventListener('wheel', onWheel, passiveCapture)
       window.removeEventListener(WATTA_MENU_REQUEST_SCROLL_TO_CAT, onCategoryNavigation)
       if (!isWattaMenuHeaderScrollPathname(window.location.pathname || '/')) {

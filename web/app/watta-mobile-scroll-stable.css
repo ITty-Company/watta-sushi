@@ -61,14 +61,22 @@
    * На телефоні overflow-anchor змушує браузер перераховувати layout при кожній
    * зміні висоти (ресайз зображень, lazy-load, дозавантаження).
    */
-  .menu-page-web,
+  /*
+   * /menu: overflow-anchor увімкнено — браузер утримує позицію при lazy-mount секцій.
+   * Інші блоки лишаються без anchor (менше «плисті» при зміні висоти chrome).
+   */
   .watta-full-menu-page,
+  .watta-full-menu-page .home-menu-cat-list-web,
+  .watta-full-menu-page .watta-menu-category-section {
+    overflow-anchor: auto;
+  }
+
+  .menu-page-web,
   #home-menu-catalog,
   #menu-cinematic-block,
   .home-menu-product-card-web,
   .watta-menu-product-card,
   .home-menu-category-rail-web,
-  .watta-full-menu-page .watta-menu-category-section,
   .watta-full-menu-page .watta-full-menu-section,
   .site-footer-watta,
   .delivery-page-home-flow,
@@ -80,11 +88,10 @@
   }
 
   /*
-   * Категорії /menu: contain щоб браузер знав, що ці блоки не впливають на layout
-   * сусідів. Без content-visibility (були білі дірки), лише contain.
+   * Категорії /menu: contain без paint — менше артефактів при швидкому скролі на телефоні.
    */
   .watta-full-menu-page .watta-menu-category-section {
-    contain: layout style paint;
+    contain: layout style;
   }
 
   .watta-full-menu-page .watta-full-menu-section {
