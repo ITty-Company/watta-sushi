@@ -6,17 +6,17 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-web,
 .watta-full-menu-sticky-chrome .categories-panel-web .category-button-web,
 .watta-public-sticky-chrome .categories-panel-web .category-button-web {
   box-sizing: border-box !important;
-  flex: 0 0 var(--watta-cat-chip-size, 58px) !important;
-  width: var(--watta-cat-chip-size, 58px) !important;
-  min-width: var(--watta-cat-chip-size, 58px) !important;
-  max-width: var(--watta-cat-chip-size, 58px) !important;
-  height: var(--watta-cat-chip-size, 58px) !important;
-  min-height: var(--watta-cat-chip-size, 58px) !important;
+  flex: 0 0 var(--watta-cat-chip-size, 64px) !important;
+  width: var(--watta-cat-chip-size, 64px) !important;
+  min-width: var(--watta-cat-chip-size, 64px) !important;
+  max-width: var(--watta-cat-chip-size, 64px) !important;
+  height: var(--watta-cat-chip-size, 64px) !important;
+  min-height: var(--watta-cat-chip-size, 64px) !important;
   aspect-ratio: 1 !important;
   border-radius: 50% !important;
-  padding: 5px 4px !important;
+  padding: 5px 2px !important;
   gap: 2px !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   background: transparent !important;
   background-color: transparent !important;
   border: none !important;
@@ -37,8 +37,13 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
 }
 
 .categories-panel-web .category-button-label-web {
-  font-size: 9.5px !important;
+  display: inline-block !important;
+  width: auto !important;
+  max-width: 100% !important;
+  align-self: center !important;
+  font-size: 9px !important;
   line-height: 1.1 !important;
+  letter-spacing: -0.04em !important;
   max-height: 2.4em !important;
   white-space: normal !important;
   overflow: visible !important;
@@ -81,7 +86,7 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     height: auto !important;
     min-height: 0 !important;
     aspect-ratio: var(--watta-cat-mobile-chip-aspect, 5 / 4) !important;
-    padding: 3px 2px !important;
+    padding: 3px 0 !important;
     gap: 4px !important;
     overflow: visible !important;
   }
@@ -124,12 +129,14 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
   .watta-full-menu-sticky-chrome .categories-panel-web .category-button-label-web,
   .watta-public-sticky-chrome .categories-panel-web .category-button-label-web,
   .categories-panel-web .category-button-label-web {
-    display: block !important;
-    width: 100% !important;
+    display: inline-block !important;
+    width: auto !important;
+    max-width: 100% !important;
     text-align: center !important;
     align-self: center !important;
-    font-size: 11px !important;
-    line-height: 1.12 !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.04em !important;
     font-weight: 700 !important;
     color: #2f2f2f !important;
     opacity: 1 !important;
@@ -185,12 +192,12 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-active-w
     .watta-sticky-chrome-portal
     .categories-panel-web
     .category-button-active-web {
-    flex: 0 0 var(--watta-cat-chip-size, 58px) !important;
-    width: var(--watta-cat-chip-size, 58px) !important;
-    min-width: var(--watta-cat-chip-size, 58px) !important;
-    max-width: var(--watta-cat-chip-size, 58px) !important;
-    height: var(--watta-cat-chip-size, 58px) !important;
-    min-height: var(--watta-cat-chip-size, 58px) !important;
+    flex: 0 0 var(--watta-cat-chip-size, 64px) !important;
+    width: var(--watta-cat-chip-size, 64px) !important;
+    min-width: var(--watta-cat-chip-size, 64px) !important;
+    max-width: var(--watta-cat-chip-size, 64px) !important;
+    height: var(--watta-cat-chip-size, 64px) !important;
+    min-height: var(--watta-cat-chip-size, 64px) !important;
     aspect-ratio: 1 !important;
     border-radius: 50% !important;
     border: none !important;

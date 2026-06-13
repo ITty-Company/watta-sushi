@@ -11942,7 +11942,7 @@ html.watta-html-home-hero
     border-radius: 12px !important;
     gap: 2px !important;
     justify-content: center !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     border-width: 1.5px !important;
     box-shadow:
       0 1px 5px rgba(0, 0, 0, 0.1),
@@ -12143,7 +12143,7 @@ html.watta-html-home-hero
 }
 
 .category-button-label-web {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   color: #555555;
   text-align: center;
@@ -12153,13 +12153,13 @@ html.watta-html-home-hero
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
-  line-height: 1.15;
-  align-self: stretch;
-  width: 100%;
+  line-height: 1.1;
+  align-self: center;
+  width: auto;
   max-width: 100%;
   max-height: 2.4em;
   box-sizing: border-box;
-  letter-spacing: 0.25px;
+  letter-spacing: -0.04em;
   position: relative;
   z-index: 1;
   text-shadow: none;
@@ -12167,15 +12167,15 @@ html.watta-html-home-hero
 
 @media (max-width: 480px) {
   .category-button-label-web {
-    font-size: 11px;
-    letter-spacing: 0.2px;
+    font-size: 10px;
+    letter-spacing: -0.04em;
   }
 }
 
 @media (min-width: 481px) {
   .category-button-label-web {
     font-size: 10.5px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 }
 
