@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import AppClient from './AppClient'
 import DevNoiseCleanup from './components/DevNoiseCleanup'
-import './fonts.local'
+import { inter, playfairDisplay, marckScript, cormorantGaramond } from './fonts.local'
 import './globals.css'
 /* Агреговані CSS-файли — 28 окремих файлів об'єднано у 2 для зменшення числа запитів.
    Порядок імпортів збережено: спочатку база (chrome + layout), потім компоненти (UI + модалки).
@@ -70,6 +70,10 @@ export default async function RootLayout({
   /** Клас hero-маршруту на SSR — boot script + WattaHtmlRouteClass дублюють на клієнті. */
   const pathname = headers().get('x-watta-pathname') || '/'
   const htmlClassName = [
+    inter.variable,
+    playfairDisplay.variable,
+    marckScript.variable,
+    cormorantGaramond.variable,
     wattaHtmlRouteClassNames(pathname),
     isWattaNotificationsPathname(pathname) ? WATTA_ROUTE_NOTIFICATIONS_CLASS : '',
   ]

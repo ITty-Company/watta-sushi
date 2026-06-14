@@ -1,4 +1,4 @@
-/* Inter підключається локально (fonts.local.ts + @fontsource/inter), без Google під час build */
+/* Шрифти підключаються через next/font/google (self-hosted при build, без запитів до gstatic.com) */
 /* Теми сторінок — у route layouts / view imports (див. app/styles/). */
 @tailwind base;
 @tailwind components;
@@ -7,11 +7,11 @@
 /* shadcn-совместимые токены (Tailwind: bg-background, text-primary, …) */
 @layer base {
   :root {
-    /* Брендові шрифти: локальні файли з npm (див. app/fonts.local.ts) */
-    --font-brand-cormorant: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-    --font-brand-inter: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --font-brand-playfair: 'Playfair Display', Georgia, 'Times New Roman', serif;
-    --font-brand-marck: 'Marck Script', cursive;
+    /* Брендові шрифти: CSS-змінні next/font/google, задаються класами на <html> (fonts.local.ts) */
+    --font-brand-inter: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-brand-playfair: var(--font-playfair-display), 'Playfair Display', Georgia, 'Times New Roman', serif;
+    --font-brand-marck: var(--font-marck-script), 'Marck Script', cursive;
+    --font-brand-cormorant: var(--font-cormorant-garamond), 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
     /* Сторінка: білий фон (див. .watta-page-gradient) */
     --background: 0 0% 100%;
     --foreground: 160 28% 14%;

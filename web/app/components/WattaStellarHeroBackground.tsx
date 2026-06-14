@@ -54,6 +54,7 @@ export default function WattaStellarHeroBackground({
             height={1080}
             sizes="100vw"
             priority
+            quality={60}
             className={coverClassName}
           />
         </picture>
@@ -68,6 +69,7 @@ export default function WattaStellarHeroBackground({
         height={1080}
         sizes="100vw"
         priority
+        quality={60}
         className={coverClassName}
       />
     )
@@ -85,6 +87,7 @@ export default function WattaStellarHeroBackground({
             height={1080}
             sizes="100vw"
             priority
+            quality={60}
             className={containClassName}
           />
         </picture>
@@ -99,6 +102,7 @@ export default function WattaStellarHeroBackground({
         height={1080}
         sizes="100vw"
         priority
+        quality={60}
         className={containClassName}
       />
     )

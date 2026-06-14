@@ -84,6 +84,7 @@
   transform-origin: center center;
   pointer-events: none;
   opacity: 0;
+  will-change: transform, opacity;
 }
 
 .watta-cart-drawer-empty__bag svg {
