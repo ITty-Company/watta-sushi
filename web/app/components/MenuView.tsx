@@ -92,7 +92,6 @@ import { readBannersWarmCache, writeBannersWarmCache } from '@/lib/publicRouteWa
 import { ensureCountriesCatalog } from '@/lib/fetchCountriesCatalog'
 import { ensureIngredientsCatalog } from '@/lib/wattaIngredientsCatalog'
 import { productGalleryFromApi } from '@/lib/productGallery'
-import { preloadImageUrls } from '@/lib/preloadImages'
 
 /**
  * Усе, що показується тільки при `activePage !== null` — тягнемо `next/dynamic` без SSR.
@@ -634,40 +633,6 @@ export default function MenuView() {
     () => (banners.length > 0 ? banners : DEFAULT_HOME_BANNERS),
     [banners]
   )
-
-  /**
-   * Підвантаження зображень банерів. Перший (видимий) — high priority одразу;
-   * решта — low priority через requestIdleCallback, щоб не тригерити warning
-   * «preloaded but not used» і не змагатись за мережу з hero/LCP.
-   */
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const seen = new Set<string>()
-    const urls: string[] = []
-    for (const b of displayBanners) {
-      const url = b.imageUrl?.trim()
-      if (!url || seen.has(url)) continue
-      seen.add(url)
-      urls.push(url)
-    }
-    if (urls.length === 0) return
-
-    preloadImageUrls(urls.length > 0 ? [urls[0]] : [], { limit: 1, highPriorityCount: 1 })
-    if (urls.length === 1) return
-
-    type IdleWindow = Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
-      cancelIdleCallback?: (id: number) => void
-    }
-    const w = window as IdleWindow
-    const rest = () => preloadImageUrls(urls.slice(1), { limit: urls.length, highPriorityCount: 0 })
-    if (typeof w.requestIdleCallback === 'function') {
-      const id = w.requestIdleCallback(rest, { timeout: 3000 })
-      return () => w.cancelIdleCallback?.(id)
-    }
-    const id = window.setTimeout(rest, 1200)
-    return () => window.clearTimeout(id)
-  }, [displayBanners])
 
   useEffect(() => {
     setCurrentBannerIndex((idx) => {

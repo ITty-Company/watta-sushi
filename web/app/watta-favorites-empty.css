@@ -399,7 +399,6 @@
 
   .watta-favorites-empty {
     --fav-empty-art: clamp(28rem, 42vw, 34rem);
-    --fav-roll-k: calc(var(--fav-empty-art) / 22rem);
     --fav-empty-art-pad-x: clamp(0.75rem, 1.5vw, 1.25rem);
     --fav-empty-art-pad-y: clamp(0.45rem, 1vw, 0.75rem);
     --fav-empty-art-gap: clamp(2rem, 4vh, 3rem);
@@ -420,49 +419,49 @@
 
   .watta-favorites-empty__heart-slot {
     top: 12%;
-    width: calc(0.68rem * var(--fav-roll-k, 1));
+    width: calc(0.68 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__brand-wordmark {
-    height: calc(2.75rem * var(--fav-roll-k));
-    max-width: min(92vw, calc(14rem * var(--fav-roll-k)));
+    height: calc(2.75 / 22 * var(--fav-empty-art));
+    max-width: min(92vw, calc(14 / 22 * var(--fav-empty-art)));
   }
 
   .watta-favorites-empty__inside-roll--nigiri {
-    max-width: calc(6.5rem * var(--fav-roll-k));
+    max-width: calc(6.5 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--left {
-    max-width: calc(8.1rem * var(--fav-roll-k));
+    max-width: calc(8.1 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--rear {
-    max-width: calc(9rem * var(--fav-roll-k));
+    max-width: calc(9 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--back {
-    max-width: calc(8rem * var(--fav-roll-k));
+    max-width: calc(8 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--front,
   .watta-favorites-empty__inside-roll--bottom {
-    max-width: calc(9.25rem * var(--fav-roll-k));
+    max-width: calc(9.25 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--mussel {
-    max-width: calc(11.25rem * var(--fav-roll-k));
+    max-width: calc(11.25 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--gunkan-baked {
-    max-width: calc(4.35rem * var(--fav-roll-k));
+    max-width: calc(4.35 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--accent {
-    max-width: calc(4.25rem * var(--fav-roll-k));
+    max-width: calc(4.25 / 22 * var(--fav-empty-art));
   }
 
   .watta-favorites-empty__inside-roll--gunkan-ikura {
-    max-width: calc(4.5rem * var(--fav-roll-k));
+    max-width: calc(4.5 / 22 * var(--fav-empty-art));
     top: 72.5%;
   }
 
@@ -526,7 +525,7 @@
   }
 
   .watta-favorites-empty__heart-slot {
-    width: calc(0.75rem * var(--fav-roll-k, 1));
+    width: calc(0.75 / 22 * var(--fav-empty-art));
   }
 }
 

@@ -13,18 +13,10 @@ import './watta-mobile-input-stable.css'
 import { getRequestLocale } from '@/lib/i18n/serverLocale'
 import { buildRootMetadata, getJsonLdDescription } from '@/lib/i18n/seo'
 import { wattaToHtmlLang } from '@/lib/i18n/language'
-import { headers } from 'next/headers'
 import {
-  isWattaAuthPathname,
-  isWattaHomeHeroPathname,
-  isWattaHomeHeroVideoPathname,
-  isWattaNotificationsPathname,
   WATTA_HOME_HERO_CRITICAL_CSS,
   WATTA_HTML_ROUTE_BOOT_SCRIPT,
-  WATTA_ROUTE_NOTIFICATIONS_CLASS,
-  wattaHtmlRouteClassNames,
 } from '@/lib/wattaHtmlRouteClass'
-import { WATTA_HERO_PRIMARY_MP4 } from '@/lib/wattaHeroVideo'
 import { WATTA_MOBILE_VH_LOCK_BOOT_SCRIPT } from '@/lib/lockMobileViewportHeight'
 import { bootSplashLoadingLabel } from '@/lib/wattaBootSplashLabel'
 import { getPublicSiteOrigin, getPublicSiteUrl } from '@/lib/siteUrl'
@@ -67,27 +59,12 @@ export default async function RootLayout({
   const lang = await getRequestLocale()
   const htmlLang = wattaToHtmlLang(lang)
   const jsonLdDescription = getJsonLdDescription(lang)
-  /** Клас hero-маршруту на SSR — boot script + WattaHtmlRouteClass дублюють на клієнті. */
-  const pathname = headers().get('x-watta-pathname') || '/'
   const htmlClassName = [
     inter.variable,
     playfairDisplay.variable,
     marckScript.variable,
     cormorantGaramond.variable,
-    wattaHtmlRouteClassNames(pathname),
-    isWattaNotificationsPathname(pathname) ? WATTA_ROUTE_NOTIFICATIONS_CLASS : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-  const isHeroVideoRoute = isWattaHomeHeroVideoPathname(pathname)
-  const isHomeRoute = isWattaHomeHeroPathname(pathname)
-  const isHomeRollHeroRoute = isHomeRoute
-  const bodyClassName = [
-    isWattaHomeHeroPathname(pathname) ? 'watta-route-home' : '',
-    isWattaAuthPathname(pathname) ? 'watta-auth-route' : '',
-  ]
-    .filter(Boolean)
-    .join(' ') || undefined
+  ].join(' ')
 
   const bootSplashLabel = bootSplashLoadingLabel(htmlLang)
   const publicSiteOrigin = getPublicSiteOrigin()
@@ -114,8 +91,6 @@ export default async function RootLayout({
     <html
       lang={htmlLang}
       className={htmlClassName}
-      {...(isHeroVideoRoute ? { 'data-watta-client-hero': '1' } : {})}
-      {...(isHeroVideoRoute ? { 'data-watta-preroll-retired': '1' } : {})}
       suppressHydrationWarning
     >
       <head>
@@ -133,13 +108,8 @@ export default async function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: WATTA_BOOT_SPLASH_CRITICAL_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: WATTA_HOME_HERO_CRITICAL_CSS }} />
 
-        {isHeroVideoRoute && !isHomeRollHeroRoute ? (
-          <>
-            <link rel="preload" href={WATTA_HERO_PRIMARY_MP4} as="video" type="video/mp4" fetchPriority="high" />
-          </>
-        ) : null}
       </head>
-      <body className={bodyClassName} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <div className="watta-boot-splash-viewport watta-boot-splash-viewport--static" aria-hidden suppressHydrationWarning>
           <div className="watta-load-screen-root watta-load-screen-root--boot-splash" role="status" aria-live="polite">
             <div className="watta-load-screen-stack">
