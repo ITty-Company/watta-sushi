@@ -4,7 +4,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useSyncExternalStore
 import dynamic from 'next/dynamic'
 import './styles/watta-site-hero-delivery.css'
 import MenuView from './components/MenuView'
-const Footer = dynamic(() => import('./components/Footer'), { ssr: false })
+import Footer from './components/Footer'
 import { WattaInViewFadeDiv } from './components/WattaInViewFade'
 import WattaBootSplashGate from './components/WattaBootSplashGate'
 import { scrollEntireAppToTop, markHomeScrollReady, readAppScrollTop } from '@/lib/menuScroll'

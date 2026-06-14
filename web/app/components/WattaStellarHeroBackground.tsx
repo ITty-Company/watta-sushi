@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { WATTA_MENU_HERO_LANDSCAPE } from '@/lib/wattaMenuHeroVideo'
 import WattaStellarHeroFades from './WattaStellarHeroFades'
 
@@ -30,7 +31,6 @@ export default function WattaStellarHeroBackground({
   imageFit = 'cover',
 }: WattaStellarHeroBackgroundProps) {
   const contain = imageFit === 'contain'
-  const desktopSrcSet = buildSrcSet(backgroundSrc, backgroundSrcHiRes)
   const mobileSrcSet =
     backgroundSrcMobile != null && backgroundSrcMobile.length > 0
       ? buildSrcSet(backgroundSrcMobile, backgroundSrcMobileHiRes)
@@ -47,14 +47,13 @@ export default function WattaStellarHeroBackground({
       return (
         <picture className="watta-stellar-hero-bg__picture menu-stellar-hero-bg__picture absolute inset-x-0 bottom-0 block h-full w-full">
           <source media="(max-width: 767px)" srcSet={mobileSrcSet} sizes="100vw" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={backgroundSrcHiRes ?? backgroundSrc}
-            srcSet={desktopSrcSet}
-            sizes="100vw"
             alt=""
-            decoding="async"
-            fetchPriority="high"
+            width={1920}
+            height={1080}
+            sizes="100vw"
+            priority
             className={coverClassName}
           />
         </picture>
@@ -62,14 +61,13 @@ export default function WattaStellarHeroBackground({
     }
 
     return (
-      /* eslint-disable-next-line @next/next/no-img-element */
-      <img
+      <Image
         src={backgroundSrcHiRes ?? backgroundSrc}
-        srcSet={desktopSrcSet}
-        sizes="100vw"
         alt=""
-        decoding="async"
-        fetchPriority="high"
+        width={1920}
+        height={1080}
+        sizes="100vw"
+        priority
         className={coverClassName}
       />
     )
@@ -80,14 +78,13 @@ export default function WattaStellarHeroBackground({
       return (
         <picture className="watta-stellar-hero-bg__picture menu-stellar-hero-bg__picture block h-full w-full">
           <source media="(max-width: 767px)" srcSet={mobileSrcSet} sizes="100vw" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={backgroundSrcHiRes ?? backgroundSrc}
-            srcSet={desktopSrcSet}
-            sizes="100vw"
             alt=""
-            decoding="async"
-            fetchPriority="high"
+            width={1920}
+            height={1080}
+            sizes="100vw"
+            priority
             className={containClassName}
           />
         </picture>
@@ -95,14 +92,13 @@ export default function WattaStellarHeroBackground({
     }
 
     return (
-      /* eslint-disable-next-line @next/next/no-img-element */
-      <img
+      <Image
         src={backgroundSrcHiRes ?? backgroundSrc}
-        srcSet={desktopSrcSet}
-        sizes="100vw"
         alt=""
-        decoding="async"
-        fetchPriority="high"
+        width={1920}
+        height={1080}
+        sizes="100vw"
+        priority
         className={containClassName}
       />
     )

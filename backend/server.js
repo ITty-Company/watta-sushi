@@ -217,7 +217,8 @@ app.use((req, res, next) => {
 app.use(
   '/uploads',
   express.static(uploadsPublicDir, {
-    maxAge: isProd ? '7d' : 0,
+    maxAge: isProd ? '365d' : 0,
+    immutable: isProd,
     index: false,
     fallthrough: true,
   }),
@@ -227,7 +228,8 @@ if (legacyUploadsDir !== uploadsPublicDir && fs.existsSync(legacyUploadsDir)) {
   app.use(
     '/uploads',
     express.static(legacyUploadsDir, {
-      maxAge: isProd ? '7d' : 0,
+      maxAge: isProd ? '365d' : 0,
+      immutable: isProd,
       index: false,
       fallthrough: true,
     }),

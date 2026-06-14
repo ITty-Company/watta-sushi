@@ -1,7 +1,6 @@
 'use client'
 
 import { ReactNode, Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
-import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { LazyMotion } from 'framer-motion'
 import { loadFramerFeatures } from '@/lib/framerLazyFeatures'
@@ -9,7 +8,7 @@ import type { WattaLanguage } from '@/lib/i18n/language'
 import LanguageProviderWrapper from './components/LanguageProviderWrapper'
 import FloatingContactButtons from './components/FloatingContactButtons'
 import ServiceWorkerRegister from './components/ServiceWorkerRegister'
-const Footer = dynamic(() => import('./components/Footer'), { ssr: false })
+import Footer from './components/Footer'
 import WattaRightNavDrawer from './components/WattaRightNavDrawer'
 import WattaCartDrawer from './components/WattaCartDrawer'
 import WattaNotificationsPanel from './components/WattaNotificationsPanel'
