@@ -2227,7 +2227,7 @@ export default function MenuView() {
                 height={720}
                 className={`hero-banner-slide-img-web${isActive ? ' hero-banner-slide-img-web--active' : ''}`}
                 style={{ objectPosition: homeBannerObjectPosition(b) }}
-                sizes="(max-width: 1280px) 100vw, 1280px"
+                sizes="(max-width: 768px) 380px, 1280px"
                 priority={isActive}
                 draggable={false}
               />
@@ -2430,7 +2430,7 @@ export default function MenuView() {
                   id={`home-menu-cat-${cat.key}`}
                   className="home-menu-cat-block-web"
                   mountIndex={catIndex}
-                  eagerCount={menuCategoriesWithItems.length}
+                  eagerCount={2}
                 >
                   <div className="home-menu-cat-band-web">
                     <Link

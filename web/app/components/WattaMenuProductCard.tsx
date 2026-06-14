@@ -241,7 +241,7 @@ export function WattaMenuProductCardInner({
                     width={600}
                     height={720}
                     className="home-menu-product-card-img-web home-menu-product-card-img-web--grid-natural"
-                    sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
+                    sizes="(max-width: 768px) 160px, (max-width: 1024px) 250px, 240px"
                     priority={imagePriority}
                     onError={() => setImageError(true)}
                   />
@@ -251,7 +251,7 @@ export function WattaMenuProductCardInner({
                     alt=""
                     fill
                     className="home-menu-product-card-img-web"
-                    sizes="(max-width: 767px) 45vw, (max-width: 1023px) 30vw, 240px"
+                    sizes="(max-width: 768px) 160px, (max-width: 1024px) 250px, 240px"
                     priority={imagePriority}
                     onError={() => setImageError(true)}
                   />

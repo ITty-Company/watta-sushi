@@ -24,8 +24,8 @@ export default function WattaSushiRoll({ roll, eager = false, priority = false }
         <Image
           src={roll.imageUrl}
           alt={roll.title}
-          width={156}
-          height={156}
+          width={130}
+          height={130}
           className="watta-roll__img"
           loading={eager ? 'eager' : 'lazy'}
           priority={priority}
