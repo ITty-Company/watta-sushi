@@ -246,15 +246,8 @@ const nextConfig = {
       { source: '/watta-page-texture.png', headers: longImmutable },
       { source: '/location-picker-mascot.png', headers: longImmutable },
       { source: '/category-icons/:path*', headers: longImmutable },
-      {
-        source: '/uploads/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=2592000, stale-while-revalidate=2592000, immutable',
-          },
-        ],
-      },
+      { source: '/uploads/:path*', headers: longImmutable },
+      { source: '/watta-hero-rolls/:path*', headers: longImmutable },
       // Не кешировать API: иначе CDN/edge отдаёт чужие или устаревшие 401/403 и ломает админку.
       {
         source: '/api/:path*',

@@ -180,6 +180,7 @@ export default function WattaGlobalSiteHeader({
           width={50}
           height={50}
           className="logo-image-web"
+          sizes="(max-width: 480px) 44px, 50px"
           priority
           style={{ objectFit: 'contain' }}
         />

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Image from 'next/image'
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 const BUNDLED_CATEGORY_ICON_RE = /\/category-icons\//
 
@@ -31,27 +32,21 @@ export function CategoryStripIcon({
       }
       aria-hidden
     >
-      <img
+      <Image
         src={defaultSrc}
         alt=""
         width={20}
         height={20}
         className="category-strip-icon-img category-strip-icon-img--default"
-        loading="lazy"
-        decoding="async"
-        fetchPriority="low"
         draggable={false}
       />
       {hoverSrc && hoverSrc !== defaultSrc ? (
-        <img
+        <Image
           src={hoverSrc}
           alt=""
           width={20}
           height={20}
           className="category-strip-icon-img category-strip-icon-img--hover"
-          loading="lazy"
-          decoding="async"
-          fetchPriority="low"
           draggable={false}
         />
       ) : null}

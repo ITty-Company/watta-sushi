@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import type { WattaSushiRollData } from '@/lib/wattaSushiRolls'
 
 type WattaSushiRollProps = {
@@ -20,14 +21,15 @@ export default function WattaSushiRoll({ roll, eager = false, priority = false }
     <div className="watta-roll watta-roll--product">
       <span className="watta-roll__shadow" aria-hidden />
       <div className="watta-roll__media">
-        <img
+        <Image
           src={roll.imageUrl}
           alt={roll.title}
+          width={156}
+          height={156}
           className="watta-roll__img"
           loading={eager ? 'eager' : 'lazy'}
-          decoding="async"
+          priority={priority}
           draggable={false}
-          fetchPriority={priority ? 'high' : 'auto'}
           onError={() => setHidden(true)}
         />
       </div>

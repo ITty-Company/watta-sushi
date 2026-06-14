@@ -11,6 +11,7 @@ import React, {
 } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { navigateInstant } from '@/lib/instantNav'
@@ -2218,7 +2219,7 @@ export default function MenuView() {
               if (!nearActive) return null
               const isActive = i === currentBannerIndex
               return (
-              <img
+              <Image
                 key={`${b.id}:${b.imageUrl}`}
                 src={b.imageUrl}
                 alt=""
@@ -2226,9 +2227,8 @@ export default function MenuView() {
                 height={720}
                 className={`hero-banner-slide-img-web${isActive ? ' hero-banner-slide-img-web--active' : ''}`}
                 style={{ objectPosition: homeBannerObjectPosition(b) }}
-                loading={isActive ? 'eager' : 'lazy'}
-                fetchPriority={isActive ? 'high' : 'low'}
-                decoding="async"
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                priority={isActive}
                 draggable={false}
               />
               )

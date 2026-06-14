@@ -57,6 +57,7 @@ import { fetchPublicApiFresh } from '@/lib/publicApiFetch'
 import { usePhoneMenuOneColumn } from '@/hooks/usePhoneMenuOneColumn'
 import { WattaInViewFadeSection } from './WattaInViewFade'
 import WattaLink from './WattaLink'
+import Image from 'next/image'
 
 const PRODUCT_RECOMMENDATIONS_PREVIEW_MAX = 5
 
@@ -128,12 +129,11 @@ function ProductIngredientChip({
     <div className="watta-product-page__ing-chip" title={label}>
       <div className="watta-product-page__ing-media">
         {showImg ? (
-          <img
+          <Image
             src={photoSrc}
             alt={label}
             width={128}
             height={128}
-            decoding="async"
             loading="lazy"
             onError={() => {
               markBrokenUploadUrl(photoSrc)

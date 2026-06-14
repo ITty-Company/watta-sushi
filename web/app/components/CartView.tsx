@@ -48,7 +48,9 @@ import {
   clearKitchenClosedModalDismissed,
   isKitchenClosedModalDismissed,
 } from '@/lib/kitchenClosedModal'
-import KitchenClosedModal from './KitchenClosedModal'
+import dynamic from 'next/dynamic'
+import Image from 'next/image'
+const KitchenClosedModal = dynamic(() => import('./KitchenClosedModal'))
 import CartDrawerEmptyIllustration from './CartDrawerEmptyIllustration'
 import WattaCartSwipeLine from './WattaCartSwipeLine'
 import '../watta-cart-drawer-empty-art.css'
@@ -2567,8 +2569,10 @@ export default function CartView({
                           >
                             <div className="relative h-full w-full overflow-hidden bg-neutral-100">
                               {item.imageUrl ? (
-                                <img
-                                  src={resolveCatalogMediaUrl(item.imageUrl) ?? undefined}
+                                <Image
+                                  src={resolveCatalogMediaUrl(item.imageUrl) ?? ''}
+                                  width={64}
+                                  height={64}
                                   className="h-full w-full object-cover"
                                   alt=""
                                 />

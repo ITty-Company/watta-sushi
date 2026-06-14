@@ -154,8 +154,8 @@ export default function Footer({ className }: FooterProps) {
               <Image
                 src="/logo.png"
                 alt=""
-                width={96}
-                height={96}
+                width={64}
+                height={64}
                 className="site-footer-watta__logo-img object-contain"
               />
             </WattaLink>
