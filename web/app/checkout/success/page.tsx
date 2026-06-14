@@ -17,6 +17,7 @@ import { openWattaNotifications } from '@/lib/openWattaNotifications'
 import { WATTA_NOTIFICATIONS_CHANGED_EVENT } from '@/lib/userNotificationsApi'
 import { clearCartStorage } from '@/lib/cartStorage'
 import { consumeCheckoutSuccessLineCount } from '@/lib/checkoutSuccessSession'
+import { consumePixelPurchase, trackPurchase } from '@/lib/metaPixel'
 import '@/app/watta-checkout-success.css'
 
 const SMS_INTRO_MS = 2200
@@ -40,6 +41,10 @@ function CheckoutSuccessContent() {
     window.dispatchEvent(new Event(WATTA_NOTIFICATIONS_CHANGED_EVENT))
     const count = consumeCheckoutSuccessLineCount()
     if (count != null) setOrderLineCount(count)
+    const purchase = consumePixelPurchase()
+    if (purchase) {
+      trackPurchase(purchase.orderId, purchase.value, purchase.numItems, purchase.contentIds)
+    }
   }, [])
 
   useEffect(() => {

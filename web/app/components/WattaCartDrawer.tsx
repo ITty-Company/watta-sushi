@@ -13,6 +13,7 @@ import { useOptionalRightNavDrawerActions } from '../context/RightNavDrawerConte
 import { useLanguage } from '../context/LanguageContext'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
 import { openWattaCheckout } from '@/lib/openWattaCart'
+import { trackInitiateCheckout } from '@/lib/metaPixel'
 import type { WattaLanguage } from '@/lib/i18n/language'
 import {
   parseProductSpecsFromDescription,
@@ -159,10 +160,15 @@ export default function WattaCartDrawer() {
       e?.preventDefault()
       e?.stopPropagation()
       if (cartItems.length === 0) return
+      trackInitiateCheckout(
+        cartItems.length,
+        subtotal,
+        cartItems.map((i) => String(i.id)),
+      )
       close()
       openWattaCheckout(router)
     },
-    [cartItems.length, close, router],
+    [cartItems, subtotal, close, router],
   )
 
   const handleOpenMenu = useCallback(() => {

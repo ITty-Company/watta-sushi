@@ -23,6 +23,7 @@ import { useOptionalNotificationsDrawer } from '../../context/NotificationsDrawe
 import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
 import { productGalleryFromApi } from '@/lib/productGallery'
 import { preloadImageUrls } from '@/lib/preloadImages'
+import { trackViewContent } from '@/lib/metaPixel'
 
 type ProductPageClientProps = {
   productId: string
@@ -59,6 +60,14 @@ export default function ProductPageClient({
         .map((u) => resolveCatalogMediaUrl(u) ?? u)
         .filter((u) => u.length > 0)
       preloadImageUrls(gallery, { limit: 8, highPriorityCount: 2 })
+      const pid = Number(initialProduct.id)
+      const pname = String(
+        (initialProduct.name_ru ?? initialProduct.name_ua ?? initialProduct.name_en ?? '') as string,
+      ).trim()
+      const pprice = Number(initialProduct.price)
+      if (Number.isFinite(pid) && Number.isFinite(pprice) && pname) {
+        trackViewContent(pid, pname, pprice)
+      }
     }
   }, [initialProduct, initialIngredientsCatalog])
 

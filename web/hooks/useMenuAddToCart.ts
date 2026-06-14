@@ -4,6 +4,7 @@ import { useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { addMenuProductToCart, type MenuCartProductInput } from '@/lib/cartStorage'
 import { useLanguage } from '@/app/context/LanguageContext'
+import { trackAddToCart } from '@/lib/metaPixel'
 
 export type MenuAddToCartResult = 'ok' | 'max' | 'auth_redirect'
 
@@ -18,6 +19,7 @@ export function useMenuAddToCart() {
         toast.error(t.appToasts.maxCartQty)
         return 'max'
       }
+      trackAddToCart(product.id, product.name, product.price)
       toast.success(t.productDetail.addedHint)
       return 'ok'
     },

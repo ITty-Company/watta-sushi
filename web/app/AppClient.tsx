@@ -54,6 +54,7 @@ import {
   navigateToFullMenuCategory,
   WATTA_CATEGORY_STRIP_SELECT,
 } from '@/lib/fullMenuCategoryNav'
+import { trackPageView } from '@/lib/metaPixel'
 export default function AppClient({
   children,
   initialLocale,
@@ -65,6 +66,10 @@ export default function AppClient({
   const router = useInstantRouter()
   useInstantNavBoot()
   useScrollReveal(pathname)
+
+  useEffect(() => {
+    trackPageView()
+  }, [pathname])
   const isHomeRoute = pathname === '/'
   const isHomeOrMenuRoute = isWattaHomeOrMenuPathname(pathname ?? '/')
   const isHomeRollHero = isWattaHomeHeroPathname(pathname ?? '/')
