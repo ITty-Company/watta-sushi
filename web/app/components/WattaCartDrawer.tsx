@@ -42,8 +42,6 @@ import {
 import { WattaMobileCartBarSummary } from './WattaMobileCartBarSummary'
 import CartDrawerEmptyIllustration from './CartDrawerEmptyIllustration'
 import WattaCartSwipeLine from './WattaCartSwipeLine'
-import '../watta-cart-drawer-empty-art.css'
-
 function lineSubtotal(line: CartStorageLine): number {
   return cartLineChargeUnitPrice(line) * lineQuantity(line)
 }

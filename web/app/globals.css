@@ -1517,6 +1517,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px 8px 12px;
+  min-height: 40px;
+  min-width: 120px;
   border-radius: 999px;
   border: 1.5px solid rgba(20, 81, 66, 0.22);
   background: linear-gradient(
@@ -4869,6 +4871,7 @@ html.watta-light-chrome body {
 .app-header-web {
   background: #ffffff;
   padding: 8px 20px;
+  min-height: 66px;
   border-bottom: none;
   position: relative;
   z-index: 1;
@@ -5112,7 +5115,8 @@ html.watta-light-chrome body {
   gap: 10px;
   cursor: pointer;
   flex-shrink: 0;
-  min-width: 0;
+  min-width: 52px;
+  min-height: 52px;
   padding: 4px 8px;
   border-radius: 0;
   background: transparent;

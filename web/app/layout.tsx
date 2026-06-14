@@ -10,9 +10,9 @@ import './watta-base.css'
 import './watta-components.css'
 import './watta-mobile-scroll-stable.css'
 import './watta-mobile-input-stable.css'
-import { getRequestLocale } from '@/lib/i18n/serverLocale'
+import './watta-cart-drawer-empty-art.css'
 import { buildRootMetadata, getJsonLdDescription } from '@/lib/i18n/seo'
-import { wattaToHtmlLang } from '@/lib/i18n/language'
+import { wattaToHtmlLang, WATTA_DEFAULT_SITE_LANGUAGE } from '@/lib/i18n/language'
 import {
   WATTA_HOME_HERO_CRITICAL_CSS,
   WATTA_HTML_ROUTE_BOOT_SCRIPT,
@@ -32,9 +32,8 @@ html:not([data-watta-boot-splash='1']) .watta-boot-splash-viewport--react{displa
 html[data-watta-boot-splash-pending='1'] body{overflow:hidden!important}
 `
 
-export async function generateMetadata(): Promise<Metadata> {
-  const lang = await getRequestLocale()
-  return buildRootMetadata(lang)
+export function generateMetadata(): Metadata {
+  return buildRootMetadata(WATTA_DEFAULT_SITE_LANGUAGE)
 }
 
 export const viewport: Viewport = {
@@ -51,12 +50,12 @@ export const viewport: Viewport = {
   colorScheme: 'only light',
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const lang = await getRequestLocale()
+  const lang = WATTA_DEFAULT_SITE_LANGUAGE
   const htmlLang = wattaToHtmlLang(lang)
   const jsonLdDescription = getJsonLdDescription(lang)
   const htmlClassName = [

@@ -53,7 +53,6 @@ import Image from 'next/image'
 const KitchenClosedModal = dynamic(() => import('./KitchenClosedModal'))
 import CartDrawerEmptyIllustration from './CartDrawerEmptyIllustration'
 import WattaCartSwipeLine from './WattaCartSwipeLine'
-import '../watta-cart-drawer-empty-art.css'
 import toast from 'react-hot-toast'
 import { getBearerAuthHeaders } from '@/lib/authHeaders'
 import { isUserLoggedIn } from '@/lib/authGate'

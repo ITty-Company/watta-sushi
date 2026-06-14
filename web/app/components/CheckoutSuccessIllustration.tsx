@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { type CSSProperties } from 'react'
 import { usePhoneMenuOneColumn } from '@/hooks/usePhoneMenuOneColumn'
-import '@/app/watta-cart-drawer-empty-art.css'
 import '@/app/watta-checkout-success.css'
 
 type RollSpec = {
