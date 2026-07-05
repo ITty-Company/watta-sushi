@@ -69,14 +69,18 @@
    */
   .watta-full-menu-page,
   .watta-full-menu-page .home-menu-cat-list-web,
-  .watta-full-menu-page .watta-menu-category-section {
+  .watta-full-menu-page .watta-menu-category-section,
+  .favorites-page-products-grid,
+  .favorites-page-products-grid > *,
+  .watta-product-page__rec-stack {
     overflow-anchor: none;
   }
 
   /*
-   * /menu: flow-anchor не стискається при hide шапки — інакше картки стрибають при скролі вгору.
+   * /menu + головна: flow-anchor не стискається при hide шапки — інакше картки стрибають при скролі вгору.
    */
-  html:has(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+  html:has(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only),
+  html.watta-html-home-hero .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
     min-height: calc(
       var(--watta-sticky-chrome-measured-h, 140px) + env(safe-area-inset-top, 0px)
     ) !important;

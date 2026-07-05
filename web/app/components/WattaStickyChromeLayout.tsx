@@ -14,7 +14,7 @@ import { usePathname } from 'next/navigation'
 import { useWattaChromeScrollCompact } from '@/hooks/useWattaChromeScrollCompact'
 import { WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
 import { isWattaChromeCompact } from '@/lib/wattaChromeScroll'
-import { isWattaFullMenuPathname, isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
+import { isWattaFullMenuPathname, isWattaHomeHeroPathname, isWattaProductPathname } from '@/lib/wattaHtmlRouteClass'
 import { isWattaPhoneViewport } from '@/lib/wattaTouchViewport'
 import { WATTA_PRODUCT_HEADER_EXPANDED_ATTR } from '@/lib/wattaProductChrome'
 
@@ -119,9 +119,11 @@ export default function WattaStickyChromeLayout({
   /** Повна висота chrome до compact — flow-anchor не стискається, інакше scroll «зависає». */
   const expandedRawRef = useRef(0)
 
-  /** /menu (телефон): не стискати flow-anchor при hide шапки — інакше товари стрибають вгору. */
-  const preserveExpandedChromeHeightInCompact = () =>
-    isFullMenuPage && isWattaPhoneViewport()
+  /** Головна + /menu (телефон): не стискати flow-anchor при hide шапки — інакше товари стрибають. */
+  const preserveExpandedChromeHeightInCompact = () => {
+    if (!isWattaPhoneViewport() || isProductPage) return false
+    return isFullMenuPage || isWattaHomeHeroPathname(pathname)
+  }
   const expandedHeaderRef = useRef(0)
   /** Кеш опублікованих значень — setProperty на <html> інакше перераховує стилі всього документа. */
   const publishedCssVarsRef = useRef({
@@ -269,8 +271,17 @@ export default function WattaStickyChromeLayout({
       syncMeasuredCssVars(el)
     }
     measure()
-    const ro = new ResizeObserver(() => {
+    let scrollMeasureTimer = 0
+    const scheduleMeasure = () => {
+      if (typeof document !== 'undefined' && document.documentElement.dataset.wattaScrolling === 'true') {
+        window.clearTimeout(scrollMeasureTimer)
+        scrollMeasureTimer = window.setTimeout(scheduleMeasure, 180)
+        return
+      }
       requestAnimationFrame(measure)
+    }
+    const ro = new ResizeObserver(() => {
+      scheduleMeasure()
     })
     ro.observe(el)
     const onResize = () => {
@@ -292,6 +303,7 @@ export default function WattaStickyChromeLayout({
     window.addEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
     window.addEventListener('wattaChromeCompactChange', onCompactChange)
     return () => {
+      window.clearTimeout(scrollMeasureTimer)
       ro.disconnect()
       window.removeEventListener('resize', onResize)
       window.removeEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
@@ -309,8 +321,12 @@ export default function WattaStickyChromeLayout({
 
   const anchorFlowH = (() => {
     if (flowAnchorHeaderOnly && headerFlowH >= 8) return headerFlowH
-    /** /menu (телефон): фіксований резерв — hide/show шапки не зсуває каталог. */
-    if (isFullMenuPage && isWattaPhoneViewport()) {
+    /** /menu + головна (телефон): фіксований резерв — hide/show шапки не зсуває каталог. */
+    if (
+      isWattaPhoneViewport() &&
+      !isProductPage &&
+      (isFullMenuPage || isWattaHomeHeroPathname(pathname))
+    ) {
       const stable = readMenuPhoneFlowAnchorPx()
       if (stable >= 8) return stable + Math.max(0, flowAnchorSafetyPx)
     }

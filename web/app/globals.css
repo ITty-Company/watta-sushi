@@ -7347,27 +7347,25 @@ html.watta-light-chrome body {
 
 @media (max-width: 767px) {
   .home-menu-product-card--grid-web .home-menu-product-card-media-frame-web {
-    aspect-ratio: auto;
+    aspect-ratio: var(--watta-product-card-photo-aspect, 5 / 6);
     height: auto;
     background: #ffffff;
   }
 
   .home-menu-product-card--grid-web .home-menu-product-card-media-web--grid-natural {
-    position: relative;
-    inset: auto;
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: auto;
+    height: 100%;
     background: #ffffff;
   }
 
   .home-menu-product-card--grid-web .home-menu-product-card-img-web--grid-natural {
-    position: static;
-    display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
     max-height: none;
     object-fit: contain;
-    object-position: center top;
+    object-position: center;
   }
 }
 
@@ -25798,15 +25796,15 @@ html.watta-light-chrome:has(.watta-profile-page) body {
   }
 
   .watta-product-page__composition-scroll {
-    touch-action: auto;
-    overscroll-behavior-x: auto;
-    scroll-snap-type: none;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 0;
+    padding-bottom: 0.2rem;
   }
 
   .watta-product-page__ing-chip {
-    scroll-snap-align: unset;
+    scroll-snap-align: start;
   }
 
   .watta-product-page__ing-chip .line-clamp-2 {
