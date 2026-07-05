@@ -25798,15 +25798,15 @@ html.watta-light-chrome:has(.watta-profile-page) body {
   }
 
   .watta-product-page__composition-scroll {
-    touch-action: pan-x pan-y;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
+    touch-action: auto;
+    overscroll-behavior-x: auto;
+    scroll-snap-type: none;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.15rem;
+    padding-bottom: 0;
   }
 
   .watta-product-page__ing-chip {
-    scroll-snap-align: start;
+    scroll-snap-align: unset;
   }
 
   .watta-product-page__ing-chip .line-clamp-2 {

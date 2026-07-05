@@ -21,6 +21,7 @@ import {
   ensureIngredientsCatalog,
   enrichProductRow,
   parseIngredientIds,
+  readIngredientsCatalogSync,
 } from '@/lib/wattaIngredientsCatalog'
 import { getMenuCategoryDisplayName } from '@/lib/i18n/getMenuCategoryDisplayName'
 import { enrichProductCategoryFromCache } from '@/lib/wattaProductCategory'
@@ -33,7 +34,7 @@ import { clampPromoPercent, effectiveUnitPrice } from '@/lib/productPricing'
 import { useProductFavorite } from '@/hooks/useProductFavorite'
 import { WattaMenuProductCard } from './WattaMenuProductCard'
 import { ProductImageGallery } from './ProductImageGallery'
-import { resolveCatalogMediaUrl } from '@/lib/catalogMediaUrl'
+import { resolveCatalogMediaUrl, isNextImageOptimizableCatalogUrl } from '@/lib/catalogMediaUrl'
 import { markBrokenUploadUrl, isBrokenUploadUrl } from '@/lib/brokenUploadUrlCache'
 import { preloadImageUrls } from '@/lib/preloadImages'
 import { productGalleryFromApi } from '@/lib/productGallery'
@@ -124,22 +125,41 @@ function ProductIngredientChip({
 }) {
   const [imgFailed, setImgFailed] = useState(() => !photoSrc || isBrokenUploadUrl(photoSrc))
   const showImg = photoSrc.length > 0 && !imgFailed
+  const useNextImage = showImg && isNextImageOptimizableCatalogUrl(photoSrc)
+
+  useEffect(() => {
+    setImgFailed(!photoSrc || isBrokenUploadUrl(photoSrc))
+  }, [photoSrc])
 
   return (
     <div className="watta-product-page__ing-chip" title={label}>
       <div className="watta-product-page__ing-media">
         {showImg ? (
-          <Image
-            src={photoSrc}
-            alt={label}
-            width={128}
-            height={128}
-            loading="lazy"
-            onError={() => {
-              markBrokenUploadUrl(photoSrc)
-              setImgFailed(true)
-            }}
-          />
+          useNextImage ? (
+            <Image
+              src={photoSrc}
+              alt={label}
+              width={128}
+              height={128}
+              loading="lazy"
+              onError={() => {
+                markBrokenUploadUrl(photoSrc)
+                setImgFailed(true)
+              }}
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photoSrc}
+              alt={label}
+              loading="lazy"
+              decoding="async"
+              onError={() => {
+                markBrokenUploadUrl(photoSrc)
+                setImgFailed(true)
+              }}
+            />
+          )
         ) : (
           <span className="watta-product-page__ing-fallback" aria-hidden>
             🥢
@@ -682,12 +702,38 @@ export default function ProductView({ productId, initialProductRow, onBack, onCa
   }, [product, catalogRefreshKey])
 
   const ingredientsWithPhotos = useMemo(() => {
-    const list = product?.ingredients?.length ? product.ingredients : []
-    return list.map((ing) => ({
-      ...ing,
-      photoSrc: resolveCatalogMediaUrl(ing.imageUrl) ?? '',
-    }))
-  }, [product?.ingredients, catalogRefreshKey])
+    const catalog = readIngredientsCatalogSync()
+    const row = product as (Product & { ingredientIds?: number[] }) | null
+
+    let list: IngredientRow[] = row?.ingredients?.length ? [...row.ingredients] : []
+
+    if (list.length === 0 && row) {
+      const ids = parseIngredientIds(row as unknown as Record<string, unknown>)
+      if (catalog && ids.length > 0) {
+        list = ids
+          .map((id) => catalog.get(id))
+          .filter((ing): ing is IngredientRow => Boolean(ing))
+      }
+    }
+
+    return list.map((ing) => {
+      const catalogUrl = catalog?.get(ing.id)?.imageUrl
+      const rawUrl = String(ing.imageUrl ?? catalogUrl ?? '').trim()
+      return {
+        ...ing,
+        photoSrc: resolveCatalogMediaUrl(rawUrl) ?? '',
+      }
+    })
+  }, [product, catalogRefreshKey])
+
+  useEffect(() => {
+    if (!product) return
+    const enriched = enrichProductRow(product as unknown as Record<string, unknown>)
+    if (!enriched || !cacheHasIngredients(enriched)) return
+    if (product.ingredients?.length) return
+    setProduct(rowToProduct(enriched))
+    setCompositionPending(false)
+  }, [catalogRefreshKey, product])
 
   useEffect(() => {
     const el = ingScrollRef.current

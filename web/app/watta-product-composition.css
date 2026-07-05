@@ -164,6 +164,70 @@
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+/* Телефон: усі інгредієнти зліва в ряд, без каруселі */
+@media (max-width: 767px) {
+  .watta-product-page__composition {
+    text-align: left;
+  }
+
+  .watta-product-page__composition-head {
+    justify-content: flex-start;
+  }
+
+  .watta-product-page__composition-nav {
+    display: none !important;
+  }
+
+  .watta-product-page__composition-scroll {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 0.65rem 0.55rem;
+    overflow: visible !important;
+    scroll-snap-type: none !important;
+    padding-bottom: 0;
+  }
+
+  .watta-product-page__ing-chip {
+    flex: 0 1 4.85rem !important;
+    width: 4.85rem !important;
+    min-width: 4.35rem !important;
+    max-width: 5.25rem !important;
+    gap: 0.35rem;
+    scroll-snap-align: unset;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .watta-product-page__ing-media {
+    width: min(100%, 3.85rem);
+    height: auto;
+    aspect-ratio: 1;
+    margin-inline: 0;
+  }
+
+  .watta-product-page__ing-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .watta-product-page__ing-label {
+    max-width: none !important;
+    width: 100%;
+    font-size: 0.625rem;
+    line-height: 1.2;
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: none;
+  }
+}
+
 @media (min-width: 640px) {
   .watta-product-page__composition {
     padding: 0.5rem 0 0.65rem;
