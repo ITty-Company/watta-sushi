@@ -106,10 +106,10 @@
 }
 
 /**
- * Телефон: один вертикальний скрол (window/body) на всіх публічних сторінках.
+ * Телефон + планшет: один вертикальний скрол (window/body) на всіх публічних сторінках.
  * Вкладений overflow на .app-web / .content-web ловить свайп і дає «залипання».
  */
-@media (max-width: 767px) {
+@media (max-width: 1024px) {
   html.watta-light-chrome,
   html.watta-light-chrome body {
     overflow-y: auto !important;

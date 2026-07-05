@@ -69,8 +69,13 @@ html.watta-html-home-hero {
   );
   --watta-cat-glass-bg: #ffffff;
   --watta-cat-glass-bg-hero: #ffffff;
-  /* Дуже тонкий контур капсули категорій (ледь помітний зелений) */
-  --watta-cat-panel-outline: 0.5px solid rgba(20, 81, 66, 0.07);
+  /* Тонкий зелений контур панелей chrome (бренд #145142) */
+  --watta-chrome-panel-outline-color: rgba(20, 81, 66, 0.42);
+  --watta-chrome-panel-outline-width: 1px;
+  --watta-chrome-panel-outline: var(--watta-chrome-panel-outline-width) solid
+    var(--watta-chrome-panel-outline-color);
+  --watta-chrome-header-bottom-radius: clamp(14px, 3.2vw, 20px);
+  --watta-cat-panel-outline: var(--watta-chrome-panel-outline);
   --watta-cat-glass-shadow:
     0 6px 22px rgba(20, 81, 66, 0.09),
     inset 0 1px 0 rgba(255, 255, 255, 0.88);
@@ -107,6 +112,9 @@ body .watta-sticky-chrome-portal .watta-chrome-top-band-web,
   filter: none !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible;
 }
 
 /* Лого та біла смуга шапки — без скла, тіні й свічення (усі viewport) */
@@ -379,8 +387,6 @@ html:has(#reviews-page-container) .watta-public-sticky-chrome .categories-panel-
   .watta-public-sticky-chrome .categories-panel-web {
     width: fit-content !important;
     border-radius: 9999px !important;
-    border-left: none !important;
-    border-right: none !important;
     padding: 5px 12px !important;
   }
 }
@@ -487,8 +493,6 @@ html:has(#reviews-page-container) .watta-public-sticky-chrome .categories-panel-
     width: fit-content !important;
     flex: 0 1 auto !important;
     border-radius: 9999px !important;
-    border-left: none !important;
-    border-right: none !important;
   }
 }
 

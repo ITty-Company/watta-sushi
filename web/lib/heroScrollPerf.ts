@@ -3,6 +3,7 @@
  * Watchdog завжди підстраховує autoplay, поки вкладка видима.
  */
 
+import { recoverDocumentScrollIfStuck } from '@/lib/bindDocumentScrollUnlockWatchdog'
 import { retireHomeHeroEntryShell } from '@/lib/wattaHeroVideo'
 import { markScrollGesture } from '@/lib/wattaScrollTapGuard'
 
@@ -122,6 +123,7 @@ function onScrollStart(): void {
 function onScrollIdle(): void {
   userScrolling = false
   setScrollingAttr(false)
+  recoverDocumentScrollIfStuck()
 }
 
 /** Підключити один раз на hero-сторінках. */

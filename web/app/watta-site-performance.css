@@ -176,8 +176,22 @@ html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--1,
 html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--2,
 html[data-watta-scrolling='true'] .auth-watta-cinema__orbit-chip--3,
 html[data-watta-scrolling='true'] .delivery-page-hero-wave__svg--front,
-html[data-watta-scrolling='true'] .delivery-page-hero-wave__svg--back {
+html[data-watta-scrolling='true'] .delivery-page-hero-wave__svg--back,
+html[data-watta-scrolling='true'] .profile-hero-background-web,
+html[data-watta-scrolling='true'] .profile-shape-web,
+html[data-watta-scrolling='true'] .profile-avatar-ring-web,
+html[data-watta-scrolling='true'] .watta-roll-marquee-track,
+html[data-watta-scrolling='true'] .delivery-watta-noise,
+html[data-watta-scrolling='true'] .animate-pulse-slow,
+html[data-watta-scrolling='true'] .animate-spin-slow,
+html[data-watta-scrolling='true'] .hamster,
+html[data-watta-scrolling='true'] .hamster-enhanced,
+html[data-watta-scrolling='true'] .cinematic-footer-wrapper * {
   animation-play-state: paused !important;
+}
+
+html[data-watta-scrolling='true'] {
+  scroll-behavior: auto !important;
 }
 
 html[data-watta-scrolling='true'] [data-watta-in-view-fade] {
@@ -306,7 +320,14 @@ html[data-watta-scrolling='true'] .watta-menu-product-card,
 html[data-watta-scrolling='true'] .home-menu-category-rail-web,
 html[data-watta-scrolling='true'] .watta-full-menu-page .watta-menu-category-section,
 html[data-watta-scrolling='true'] .site-footer-watta,
-html[data-watta-scrolling='true'] .watta-roll-marquee-track {
+html[data-watta-scrolling='true'] .watta-roll-marquee-track,
+html[data-watta-scrolling='true'] .watta-product-page,
+html[data-watta-scrolling='true'] .watta-delivery-page,
+html[data-watta-scrolling='true'] .watta-profile-page,
+html[data-watta-scrolling='true'] .watta-cart-page,
+html[data-watta-scrolling='true'] .contact-page-web,
+html[data-watta-scrolling='true'] .watta-sticky-chrome-portal,
+html[data-watta-scrolling='true'] .watta-sticky-chrome-portal * {
   transition: none !important;
 }
 
@@ -316,12 +337,7 @@ html[data-watta-scrolling='true'] .watta-sticky-chrome-portal {
   backface-visibility: hidden;
 }
 
-html:not([data-watta-scrolling='true']) .watta-sticky-chrome-portal {
-  will-change: auto;
-  transform: none;
-}
-
-/* Телефон: compositing chrome не перемикається — override у watta-mobile-scroll-stable.css */
+/* Не знімаємо GPU-шар chrome між скролами — менше «стрибка» при старті/стопі. */
 
 /* Планшет / ноут / ПК: стабільний compositing шару chrome — без «стрибка» при data-watta-scrolling. */
 @media (min-width: 768px) {

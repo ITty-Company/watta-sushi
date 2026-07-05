@@ -44,6 +44,7 @@ import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { isDocumentReloadNavigation } from '@/lib/menuBrowseRestore'
 import { resetInternalNavBack } from '@/lib/wattaInternalNavBack'
 import { resetHomepageLikeLogoClick, WATTA_CHROME_LAYOUT_SYNC_EVENT } from '@/lib/wattaChromeGoHome'
+import { bindDocumentScrollUnlockWatchdog } from '@/lib/bindDocumentScrollUnlockWatchdog'
 import { bindHeroScrollPerf } from '@/lib/heroScrollPerf'
 import { bindHeroVideoKeepAlive } from '@/lib/heroVideoKeepAlive'
 import { warmHeroVideoCache } from '@/lib/warmHeroVideoCache'
@@ -231,6 +232,9 @@ export default function AppClient({
 
   /** Пауза декоративних анімацій під час скролу на всіх сторінках (менше jank). */
   useEffect(() => bindHeroScrollPerf(), [])
+
+  /** Якщо drawer/модалка закрилась, а overflow:hidden лишився — зняти блокування. */
+  useEffect(() => bindDocumentScrollUnlockWatchdog(), [])
 
   /** Памʼять скролу для back/forward — «Назад» повертає позицію, а не стрибає наверх. */
   useEffect(() => bindWattaScrollMemory(), [])

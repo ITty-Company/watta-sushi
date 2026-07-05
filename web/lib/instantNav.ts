@@ -9,7 +9,10 @@ import {
 import { normalizeInternalHref, normalizeInternalPath } from '@/lib/internalHref'
 import { prefetchRouteChunk } from '@/lib/prefetchRouteChunks'
 import { parseProductIdFromHref, warmProductRouteData } from '@/lib/fetchProductById'
-import { consumePointerScrollGesture } from '@/lib/wattaScrollTapGuard'
+import {
+  consumePointerScrollGesture,
+  shouldSuppressTapNavigation,
+} from '@/lib/wattaScrollTapGuard'
 
 /** Публічні маршрути — префетч при старті, щоб тап відчувався миттєво. */
 export const WATTA_PUBLIC_PREFETCH_ROUTES = [
@@ -32,6 +35,9 @@ export const WATTA_PUBLIC_PREFETCH_ROUTES = [
   '/register',
   '/checkout/success',
 ] as const
+
+/** Цільовий бюджет SPA-переходу (prefetch + push + paint). */
+export const WATTA_NAV_BUDGET_MS = 1000
 
 /** Центр шапки (desktop): Доставка / Про нас / Контакти — максимально швидкий перехід. */
 export const HEADER_CENTER_NAV_PATHS = ['/delivery', '/about', '/contacts'] as const
@@ -82,8 +88,54 @@ export function markRecentPointerNav(href: string): void {
   recentPointerNavAt = Date.now()
 }
 
-export function wasRecentPointerNav(href: string, withinMs = 480): boolean {
+export function wasRecentPointerNav(href: string, withinMs = 640): boolean {
   return recentPointerNavKey === href && Date.now() - recentPointerNavAt < withinMs
+}
+
+const POINTER_TAP_MOVE_PX = 10
+
+type PendingPointerNav = {
+  pointerId: number
+  href: string
+  moved: boolean
+  startX: number
+  startY: number
+}
+
+let pendingPointerNav: PendingPointerNav | null = null
+
+function clearPendingPointerNav(pointerId?: number): void {
+  if (pointerId == null || pendingPointerNav?.pointerId === pointerId) {
+    pendingPointerNav = null
+  }
+}
+
+function beginPendingPointerNav(e: PointerEvent, href: string): void {
+  pendingPointerNav = {
+    pointerId: e.pointerId,
+    href,
+    moved: false,
+    startX: e.clientX,
+    startY: e.clientY,
+  }
+}
+
+function markPendingPointerMoved(e: PointerEvent): void {
+  if (!pendingPointerNav || pendingPointerNav.pointerId !== e.pointerId) return
+  const dx = e.clientX - pendingPointerNav.startX
+  const dy = e.clientY - pendingPointerNav.startY
+  if (Math.abs(dx) > POINTER_TAP_MOVE_PX || Math.abs(dy) > POINTER_TAP_MOVE_PX) {
+    pendingPointerNav.moved = true
+  }
+}
+
+function tryNavigateFromPendingPointer(router: AppRouterInstance, e: PointerEvent): void {
+  if (!pendingPointerNav || pendingPointerNav.pointerId !== e.pointerId) return
+  const nav = pendingPointerNav
+  pendingPointerNav = null
+  if (nav.moved || shouldSuppressTapNavigation()) return
+  if (nav.href === currentPathWithSearch()) return
+  navigateInstant(router, nav.href, { immediate: true })
 }
 
 export { normalizeInternalHref, normalizeInternalPath }
@@ -233,7 +285,7 @@ function isModifiedPointerNav(e: PointerEvent): boolean {
   return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
 }
 
-/** pointerdown: prefetch раніше за click (кнопки з data-href, звичайні <a>). Навігація — лише на click. */
+/** pointerdown: prefetch; pointerup: миттєвий push на тап (раніше за click ~50–120 ms). */
 export function installInstantNavPointerDown(router: AppRouterInstance): () => void {
   if (typeof document === 'undefined') return () => {}
 
@@ -241,17 +293,42 @@ export function installInstantNavPointerDown(router: AppRouterInstance): () => v
     if (e.defaultPrevented || isModifiedPointerNav(e)) return
     const el = e.target as Element | null
     if (shouldSkipInstantNav(el)) return
-    if (el?.closest?.('[data-watta-cat], .categories-scroll-btn-web')) {
-      prefetchFromIntentTarget(router, el)
+    prefetchFromIntentTarget(router, el)
+    if (el?.closest?.('[data-watta-cat], .categories-scroll-btn-web')) return
+
+    const href = resolveClickNavHref(el)
+    const target = href ? normalizeInternalHref(href) : null
+    if (!target || target === currentPathWithSearch()) {
+      clearPendingPointerNav(e.pointerId)
       return
     }
-
-    prefetchFromIntentTarget(router, el)
+    beginPendingPointerNav(e, target)
   }
+
+  const onPointerMove = (e: PointerEvent) => markPendingPointerMoved(e)
+
+  const onPointerUp = (e: PointerEvent) => {
+    if (e.defaultPrevented || isModifiedPointerNav(e)) {
+      clearPendingPointerNav(e.pointerId)
+      return
+    }
+    tryNavigateFromPendingPointer(router, e)
+  }
+
+  const onPointerCancel = (e: PointerEvent) => clearPendingPointerNav(e.pointerId)
 
   const opts = { capture: true, passive: true } as const
   document.addEventListener('pointerdown', onPointerDown, opts)
-  return () => document.removeEventListener('pointerdown', onPointerDown, opts)
+  document.addEventListener('pointermove', onPointerMove, opts)
+  document.addEventListener('pointerup', onPointerUp, opts)
+  document.addEventListener('pointercancel', onPointerCancel, opts)
+  return () => {
+    document.removeEventListener('pointerdown', onPointerDown, opts)
+    document.removeEventListener('pointermove', onPointerMove, opts)
+    document.removeEventListener('pointerup', onPointerUp, opts)
+    document.removeEventListener('pointercancel', onPointerCancel, opts)
+    pendingPointerNav = null
+  }
 }
 
 export function installInstantNavIntent(router: AppRouterInstance): () => void {
@@ -296,7 +373,11 @@ export function installInstantNavClick(router: AppRouterInstance): () => void {
     const href = resolveClickNavHref(el)
     const target = href ? normalizeInternalHref(href) : null
     if (!target || target === currentPathWithSearch()) return
-    if (wasRecentPointerNav(target)) return
+    if (wasRecentPointerNav(target)) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
 
     e.preventDefault()
     e.stopPropagation()

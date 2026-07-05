@@ -19,7 +19,7 @@ import {
   wasRecentPointerNav,
 } from '@/lib/instantNav'
 import { primeProductPageChrome } from '@/lib/wattaProductChrome'
-import { consumePointerScrollGesture } from '@/lib/wattaScrollTapGuard'
+import { consumePointerScrollGesture, shouldSuppressTapNavigation } from '@/lib/wattaScrollTapGuard'
 
 type WattaLinkProps = ComponentProps<typeof Link>
 
@@ -39,12 +39,20 @@ function isModifiedClick(e: MouseEvent<HTMLAnchorElement>): boolean {
   return e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
 }
 
+function currentPathWithSearch(): string {
+  if (typeof window === 'undefined') return '/'
+  return `${window.location.pathname}${window.location.search}`
+}
+
 const WattaLink = forwardRef<HTMLAnchorElement, WattaLinkProps>(function WattaLink(
-  { href, prefetch = true, scroll, onPointerEnter, onPointerDown, onFocus, onClick, ...rest },
+  { href, prefetch = true, scroll, onPointerEnter, onPointerDown, onPointerUp, onFocus, onClick, ...rest },
   ref,
 ) {
   const router = useRouter()
   const pressedNavRef = useRef<string | null>(null)
+  const pointerTapRef = useRef<{ id: number; href: string; moved: boolean; x: number; y: number } | null>(
+    null,
+  )
 
   const warm = useCallback(() => {
     const target = hrefToPrefetchString(href)
@@ -64,8 +72,47 @@ const WattaLink = forwardRef<HTMLAnchorElement, WattaLinkProps>(function WattaLi
       if (isProductNavPath(target)) {
         primeProductPageChrome()
       }
+      const normalized = normalizeInternalHref(target)
+      if (normalized && normalized !== currentPathWithSearch()) {
+        pointerTapRef.current = {
+          id: e.pointerId,
+          href: normalized,
+          moved: false,
+          x: e.clientX,
+          y: e.clientY,
+        }
+      } else {
+        pointerTapRef.current = null
+      }
     },
     [href, onPointerDown, warm],
+  )
+
+  const handlePointerMove = useCallback((e: PointerEvent<HTMLAnchorElement>) => {
+    const tap = pointerTapRef.current
+    if (!tap || tap.id !== e.pointerId) return
+    const dx = e.clientX - tap.x
+    const dy = e.clientY - tap.y
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) tap.moved = true
+  }, [])
+
+  const handlePointerUp = useCallback(
+    (e: PointerEvent<HTMLAnchorElement>) => {
+      onPointerUp?.(e)
+      if (e.defaultPrevented || e.button !== 0) {
+        pointerTapRef.current = null
+        return
+      }
+      const tap = pointerTapRef.current
+      pointerTapRef.current = null
+      if (!tap || tap.id !== e.pointerId || tap.moved || shouldSuppressTapNavigation()) return
+      if (tap.href === currentPathWithSearch()) return
+      navigateInstant(router, tap.href, {
+        scroll: scroll !== false,
+        immediate: isInstantNavPath(tap.href),
+      })
+    },
+    [onPointerUp, router, scroll],
   )
 
   const handleClick = useCallback(
@@ -109,6 +156,8 @@ const WattaLink = forwardRef<HTMLAnchorElement, WattaLinkProps>(function WattaLi
         onPointerEnter?.(e)
       }}
       onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
       onFocus={(e) => {
         warm()
         onFocus?.(e)

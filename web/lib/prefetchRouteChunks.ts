@@ -141,8 +141,8 @@ export function scheduleIdleRouteChunkPrefetch(): void {
   }
   const w = window as IdleWindow
   if (typeof w.requestIdleCallback === 'function') {
-    w.requestIdleCallback(runRest, { timeout: 600 })
+    w.requestIdleCallback(runRest, { timeout: 200 })
   } else {
-    window.setTimeout(runRest, 200)
+    window.setTimeout(runRest, 80)
   }
 }

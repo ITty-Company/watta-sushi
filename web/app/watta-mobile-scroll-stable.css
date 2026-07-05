@@ -168,6 +168,8 @@
   .watta-delivery-page,
   .watta-about-page,
   .contact-page-web,
+  .watta-public-page-shell,
+  .watta-promotions-route,
   .content-web,
   .app-web {
     overflow-anchor: none;

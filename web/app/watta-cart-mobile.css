@@ -261,6 +261,16 @@ html[data-watta-nav-drawer-open]::after {
     display: flex !important;
   }
 
+  html[data-watta-cart-bar-gated='1']:not([data-watta-cart-bar-visible='1']):not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1'])
+    .floating-contact-buttons-root {
+    position: fixed !important;
+    top: auto !important;
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom, 0px)) + 8px) !important;
+    right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+    left: auto !important;
+    transform: none !important;
+  }
+
   html:not([data-watta-cart-bar-visible='1']):not([data-watta-past-hero='1']):not([data-watta-home-past-hero='1'])
     .floating-contact-buttons-root {
     bottom: calc(

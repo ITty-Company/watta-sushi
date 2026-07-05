@@ -10,7 +10,15 @@ import {
   revealWattaMenuHeaderBand,
 } from '@/lib/wattaChromeScroll'
 import { WATTA_MENU_REQUEST_SCROLL_TO_CAT } from '@/lib/fullMenuCategoryNav'
-import { isWattaMenuHeaderScrollPathname } from '@/lib/wattaHtmlRouteClass'
+import {
+  isWattaHomeHeroPathname,
+  isWattaMenuHeaderScrollPathname,
+} from '@/lib/wattaHtmlRouteClass'
+import {
+  WATTA_CART_BAR_GATED_ATTR,
+  WATTA_CART_BAR_VISIBLE_ATTR,
+  WATTA_PAST_HERO_ATTR,
+} from '@/hooks/useMobileCartBarGate'
 import { WATTA_PHONE_VIEWPORT_MQ } from '@/lib/wattaTouchViewport'
 
 const TOP_ALWAYS_EXPAND_PX = 64
@@ -23,6 +31,19 @@ const SCROLL_UP_SHOW_PX = 24
 const TOUCH_SHOW_PX = 12
 /** Після кліку по категорії — не ховати шапку від програмного скролу. */
 const NAV_SCROLL_SUPPRESS_MS = 420
+const LEGACY_HOME_PAST_HERO_ATTR = 'data-watta-home-past-hero'
+
+/** Головна (телефон): у hero лише шапка — compact лише після другої секції. */
+function isHomeHeroCategoriesGateClosed(pathname: string): boolean {
+  if (!isWattaHomeHeroPathname(pathname)) return false
+  const root = document.documentElement
+  return (
+    root.getAttribute(WATTA_CART_BAR_GATED_ATTR) === '1' &&
+    !root.hasAttribute(WATTA_CART_BAR_VISIBLE_ATTR) &&
+    !root.hasAttribute(WATTA_PAST_HERO_ATTR) &&
+    !root.hasAttribute(LEGACY_HOME_PAST_HERO_ATTR)
+  )
+}
 
 function isPhone(): boolean {
   if (typeof window === 'undefined') return false
@@ -87,6 +108,7 @@ export function useWattaMenuHeaderScroll(enabled = true, pathname = '/') {
     const hide = () => {
       if (performance.now() < suppressUntil) return
       if (readAppScrollTop() <= TOP_ALWAYS_EXPAND_PX) return
+      if (isHomeHeroCategoriesGateClosed(pathname)) return
       if (isWattaMenuHeaderBandHidden()) return
       hideWattaMenuHeaderBand()
       pendingDownPx = 0

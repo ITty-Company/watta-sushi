@@ -22,7 +22,7 @@ html.watta-html-home-hero body .watta-sticky-chrome-portal .watta-chrome-categor
 html.watta-html-home-hero body .watta-sticky-chrome-portal .categories-panel-web,
 html.watta-html-home-hero body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-panel-web,
 html.watta-html-home-hero body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel-web {
-  border: var(--watta-cat-panel-outline, 0.5px solid rgba(20, 81, 66, 0.07)) !important;
+  border: var(--watta-cat-panel-outline, 1px solid rgba(20, 81, 66, 0.42)) !important;
   background: var(--watta-cat-glass-bg-hero, var(--watta-cat-glass-bg)) !important;
   background-color: #ffffff !important;
   box-shadow: var(--watta-cat-glass-shadow) !important;
@@ -1360,7 +1360,7 @@ body .watta-sticky-chrome-portal .categories-panel-web,
 body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-panel-web,
 body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel-web {
   margin-inline: auto !important;
-  border: var(--watta-cat-panel-outline, 0.5px solid rgba(20, 81, 66, 0.07)) !important;
+  border: var(--watta-cat-panel-outline, 1px solid rgba(20, 81, 66, 0.42)) !important;
   background: var(--watta-cat-glass-bg-hero, var(--watta-cat-glass-bg)) !important;
   background-color: #ffffff !important;
   box-shadow: var(--watta-cat-glass-shadow) !important;
@@ -1432,9 +1432,12 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   :root {
     --watta-cat-peek: 6;
     --watta-chrome-header-cat-gap: clamp(18px, 2.6vh, 30px);
+    --watta-home-chrome-flow-anchor-min-h: 162px;
     --watta-home-chrome-flow-anchor-cap: calc(
-      var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)) +
-        env(safe-area-inset-top, 0px)
+      max(
+        var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)),
+        var(--watta-home-chrome-flow-anchor-min-h, 162px)
+      ) + env(safe-area-inset-top, 0px)
     );
   }
 
@@ -1452,9 +1455,9 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   /* Головна `/` (marquee): locked vh — без стрибків при хованні адресного рядка Safari. */
   html.watta-html-home-hero
     .watta-home-photo-first-screen:not(:has(.watta-menu-photo-hero--no-marquee)) {
-    /* Трохи піднімаємо текст і обидва ряди роллів вище на телефоні. */
-    --watta-home-roll-content-push: clamp(6px, 1.4vh, 16px);
-    --watta-home-split-stack-lift: var(--watta-home-roll-content-push);
+    /* Зазор під капсулою категорій — не піднімаємо текст до шапки. */
+    --watta-home-roll-content-push: 0px;
+    --watta-home-split-stack-lift: 0px;
     --watta-home-hero-viewport-h: var(--watta-screen-min-h, 100vh);
     height: var(--watta-home-hero-viewport-h) !important;
     min-height: var(--watta-home-hero-viewport-h) !important;
@@ -1469,8 +1472,15 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
     inset: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     align-items: stretch !important;
+    padding-top: calc(
+      max(
+        var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)),
+        var(--watta-home-chrome-flow-anchor-min-h, 162px)
+      ) + var(--watta-home-mobile-below-cats-gap, clamp(24px, 3.2vh, 36px))
+    ) !important;
+    box-sizing: border-box !important;
     min-height: 100% !important;
     height: 100% !important;
     overflow: hidden !important;
@@ -1534,8 +1544,27 @@ body .watta-sticky-chrome-portal.watta-full-menu-sticky-chrome .categories-panel
   html.watta-html-home-hero
     .watta-home-photo-first-screen:not(:has(.watta-menu-photo-hero--no-marquee))
     .watta-home-hero-overlay-stack.delivery-page-hero-stack--roll-first {
-    justify-content: center !important;
+    justify-content: flex-start !important;
     padding-bottom: 0 !important;
+  }
+
+  /* Головна hero: капсула категорій завжди видима до past-hero. */
+  html.watta-html-home-hero:not([data-watta-home-past-hero='1']):not([data-watta-past-hero='1'])
+    body
+    .watta-sticky-chrome-portal
+    .watta-chrome-categories-row-web,
+  html.watta-html-home-hero:not([data-watta-home-past-hero='1']):not([data-watta-past-hero='1'])
+    body
+    .watta-sticky-chrome-portal
+    .categories-panel-wrapper-web,
+  html.watta-html-home-hero:not([data-watta-home-past-hero='1']):not([data-watta-past-hero='1'])
+    body
+    .watta-sticky-chrome-portal
+    .categories-panel-web {
+    opacity: 1 !important;
+    visibility: visible !important;
+    max-height: none !important;
+    pointer-events: auto !important;
   }
 
   html.watta-html-home-hero
@@ -2094,4 +2123,33 @@ body .watta-sticky-chrome-portal .categories-panel-web .category-button-label-we
   .watta-public-sticky-chrome .categories-panel-web .category-button-label-web {
     line-height: 1.05 !important;
   }
+}
+
+/*
+ * Останній шар: тонкий зелений контур капсули категорій — усі viewport.
+ */
+body .watta-sticky-chrome-portal .categories-panel-web,
+body .watta-sticky-chrome-portal .watta-chrome-categories-row-web .categories-panel-web,
+.watta-full-menu-sticky-chrome .categories-panel-web,
+.watta-public-sticky-chrome .categories-panel-web,
+.watta-full-menu-sticky-chrome .watta-chrome-categories-row-web .categories-panel-web,
+.watta-public-sticky-chrome .watta-chrome-categories-row-web .categories-panel-web {
+  border: var(--watta-cat-panel-outline, 1px solid rgba(20, 81, 66, 0.42)) !important;
+  outline: none !important;
+}
+
+/*
+ * Верхняя панель — без зелёного контура (все viewport, в т.ч. телефон).
+ */
+body .watta-sticky-chrome-portal .watta-chrome-top-band-web,
+.watta-sticky-chrome-portal .watta-chrome-top-band-web,
+.watta-full-menu-sticky-chrome .watta-chrome-top-band-web,
+.watta-public-sticky-chrome .watta-chrome-top-band-web {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  overflow: visible;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
 }

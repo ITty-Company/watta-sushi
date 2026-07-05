@@ -24,8 +24,9 @@ import {
 import { isWattaHomeHeroPathname } from '@/lib/wattaHtmlRouteClass'
 
 
-/** На головній — JS chunks + warm кешів після idle, щоб не зʼїдати смугу mp4. */
-const HOME_BOOT_IDLE_MS = 500
+/** На головній — вторинні чанки/кеші після першого paint (не блокуємо prefetch пріоритету). */
+const HOME_SECONDARY_BOOT_IDLE_MS = 120
+const SECONDARY_BOOT_IDLE_MS = 64
 
 type IdleWindow = Window & {
   requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
@@ -43,36 +44,24 @@ function runWhenIdle(cb: () => void, timeoutMs: number): () => void {
   return () => window.clearTimeout(id)
 }
 
-/** Всі публічні маршрути (RSC prefetch) — одразу; JS chunks + кеші — на idle. */
+/** Всі публічні маршрути — RSC + JS chunks одразу; вторинні кеші — короткий idle. */
 export function useInstantNavBoot(): void {
   const router = useRouter()
   const pathname = usePathname() || '/'
   const deferForHomeHero = isWattaHomeHeroPathname(pathname)
 
   useEffect(() => {
-    // RSC prefetch для всіх публічних маршрутів — малі текстові payload'и, без очікування
+    // RSC + JS chunks пріоритетних маршрутів — одразу (бюджет переходу ≤1 с).
     prefetchPublicRoutes(router)
+    prefetchPriorityRouteChunks()
+    void warmPriorityNavPageCaches()
+    void warmMenuCatalogCache()
 
-    if (deferForHomeHero) {
-      // На головній: JS chunks + warm кешів на idle, щоб не зʼїдати смугу hero-video
-      return runWhenIdle(() => {
-        prefetchPriorityRouteChunks({ light: true })
-        scheduleIdleRouteChunkPrefetch()
-        void warmPriorityNavPageCaches()
-        void warmMenuCatalogCache()
-        void warmSecondaryPublicRouteCaches()
-      }, HOME_BOOT_IDLE_MS)
-    }
-
-    // Решта сторінок: JS chunks + кеші на idle
-    const cancelRun = runWhenIdle(() => {
-      prefetchPriorityRouteChunks()
+    const cancelSecondary = runWhenIdle(() => {
       scheduleIdleRouteChunkPrefetch()
-      void warmPriorityNavPageCaches()
-      void warmMenuCatalogCache()
       void warmSecondaryPublicRouteCaches()
-    }, 400)
-    return cancelRun
+    }, deferForHomeHero ? HOME_SECONDARY_BOOT_IDLE_MS : SECONDARY_BOOT_IDLE_MS)
+    return cancelSecondary
   }, [router, deferForHomeHero])
 
   useEffect(() => {

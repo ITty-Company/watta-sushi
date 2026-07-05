@@ -16,7 +16,7 @@ body .watta-sticky-chrome-portal .categories-panel-web,
 .watta-public-sticky-chrome .categories-panel-web {
   background: #ffffff !important;
   background-color: #ffffff !important;
-  border: var(--watta-cat-panel-outline, 0.5px solid rgba(20, 81, 66, 0.07)) !important;
+  border: var(--watta-cat-panel-outline, 1px solid rgba(20, 81, 66, 0.42)) !important;
   outline: none !important;
 }
 

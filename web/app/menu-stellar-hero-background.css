@@ -760,9 +760,9 @@ html:not([data-watta-home-past-hero='1'])
   max-width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  --watta-home-hero-chrome-overlap: var(
-    --watta-sticky-chrome-measured-h,
-    var(--watta-sticky-chrome-flow-h, 148px)
+  --watta-home-hero-chrome-overlap: max(
+    var(--watta-sticky-chrome-measured-h, var(--watta-sticky-chrome-flow-h, 148px)),
+    162px
   );
   --watta-home-hero-viewport-h: var(--watta-screen-min-h, 100vh);
   height: var(--watta-home-hero-viewport-h) !important;
@@ -1282,7 +1282,7 @@ html:not([data-watta-home-past-hero='1'])
     --watta-home-hero-top-fade-push: clamp(6px, 1vh, 12px);
     --watta-home-hero-bottom-fade-push: 0;
     --watta-home-hero-overlay-pad-top: calc(
-      var(--watta-home-hero-chrome-overlap) + clamp(-14px, -1.2vh, -2px)
+      var(--watta-home-hero-chrome-overlap) + clamp(12px, 1.6vh, 20px)
     );
     --watta-home-hero-overlay-pad-bottom: 0;
   }
