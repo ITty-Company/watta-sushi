@@ -47,8 +47,10 @@ const MENU_COMPACT_TOGGLE_COOLDOWN_MS = 96
 const MENU_SCROLL_DOWN_THRESHOLD_PX = 20
 /** Тач: рідше вимірюємо scrollTop — менше layout під час свайпу вниз. */
 const TOUCH_SCROLL_EVAL_MIN_MS = 16
-/** /product (телефон): накопичений зсув вгору перед розгортанням шапки (гістерезис). */
-const PRODUCT_PHONE_SCROLL_UP_THRESHOLD_PX = 20
+/** /product (телефон): накопичений зсув вгору перед розгортанням шапки (лише жест у верхній зоні). */
+const PRODUCT_PHONE_SCROLL_UP_THRESHOLD_PX = 48
+/** /product (телефон): більший поріг вниз — менше смикання при інерції iOS. */
+const PRODUCT_PHONE_SCROLL_DOWN_THRESHOLD_PX = 56
 /** /product (десктоп): поріг жесту вгору. */
 const PRODUCT_SCROLL_UP_THRESHOLD_PX = 1
 /** Після розгортання шапки — без паузи, щоб вгору реагувало миттєво. */
@@ -212,7 +214,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
         const downThreshold = readDownThreshold(isPhone)
         if (pendingUpPx >= upThreshold) {
           pendingUpPx = 0
-          syncCompact(false)
+          if (shouldExpandChromeOnScrollUp()) syncCompact(false)
           return
         }
         if (pendingDownPx >= downThreshold) {
@@ -233,13 +235,25 @@ export function useWattaChromeScrollCompact(enabled = true) {
     }
 
     const readDownThreshold = (isPhone: boolean) => {
+      if (isPhone && isProductPhoneChrome()) return PRODUCT_PHONE_SCROLL_DOWN_THRESHOLD_PX
       if (isPhone) return PHONE_SCROLL_DOWN_THRESHOLD_PX
       return SCROLL_DOWN_THRESHOLD_PX
     }
 
-    /** Скрол вгору в compact — повна шапка + категорії. */
+    /** Скрол вгору в compact — повна шапка + категорії. /product (телефон): лише жест у chrome-зоні. */
     const shouldExpandChromeOnScrollUp = () =>
       compact && (!isWattaPhoneViewport() || isFullMenuPage || !isProductPhoneChrome())
+
+    const tryExpandChromeOnScrollUp = (upThreshold: number) => {
+      if (!compact || pendingUpPx < upThreshold) return false
+      if (!shouldExpandChromeOnScrollUp()) {
+        pendingUpPx = 0
+        return false
+      }
+      pendingUpPx = 0
+      syncCompact(false)
+      return true
+    }
 
     /** /menu: розгорнути, якщо шапка схована (JS або DOM). */
     const isMenuHeaderHidden = () =>
@@ -274,10 +288,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
         }
         pendingUpPx += -delta
         pendingDownPx = 0
-        if (compact && pendingUpPx >= upThreshold) {
-          pendingUpPx = 0
-          syncCompact(false)
-        }
+        tryExpandChromeOnScrollUp(upThreshold)
       }
     }
 
@@ -285,9 +296,8 @@ export function useWattaChromeScrollCompact(enabled = true) {
       if (y > TOP_ALWAYS_EXPAND_PX) return false
       restoredCompact = false
       topAutoExpandArmed = true
-      if (!isProductPhoneChrome() || compact) {
-        syncCompact(false)
-      }
+      if (isProductPhoneChrome()) return true
+      if (compact) syncCompact(false)
       return true
     }
 
@@ -330,10 +340,7 @@ export function useWattaChromeScrollCompact(enabled = true) {
         } else if (deltaDuringSuppress < 0) {
           pendingUpPx += -deltaDuringSuppress
           pendingDownPx = 0
-          if (compact && pendingUpPx >= readUpThreshold(isPhone)) {
-            pendingUpPx = 0
-            syncCompact(false)
-          }
+          tryExpandChromeOnScrollUp(readUpThreshold(isPhone))
         }
         return
       }

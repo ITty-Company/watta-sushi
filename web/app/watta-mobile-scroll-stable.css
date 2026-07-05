@@ -80,7 +80,8 @@
    * /menu + головна: flow-anchor не стискається при hide шапки — інакше картки стрибають при скролі вгору.
    */
   html:has(.watta-full-menu-page) .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only),
-  html.watta-html-home-hero .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
+  html.watta-html-home-hero .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only),
+  html.watta-route-product .watta-sticky-chrome-flow-anchor:not(.watta-sticky-chrome-flow-anchor--header-only) {
     min-height: calc(
       var(--watta-sticky-chrome-measured-h, 140px) + env(safe-area-inset-top, 0px)
     ) !important;
@@ -167,6 +168,14 @@
 
   /* overflow-anchor — на всіх основних сторінках, не лише /menu */
   .watta-product-page,
+  .watta-product-page__main,
+  .watta-product-page__composition,
+  .watta-product-page__composition-scroll,
+  .watta-product-page__recs,
+  .watta-product-page__rec-stack,
+  .watta-product-page__gallery {
+    overflow-anchor: none;
+  }
   .watta-cart-page,
   .watta-profile-page,
   .watta-delivery-page,
