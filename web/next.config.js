@@ -89,6 +89,8 @@ const nextConfig = {
   
   // Оптимизация изображений
   images: {
+    // Cloudflare Workers: /_next/image там немає без платного Cloudflare Images — віддаємо оригінали.
+    unoptimized: process.env.WATTA_CLOUDFLARE === '1',
     // Тільки WebP: AVIF дає ~20% менший файл, але кодується в рази довше CPU.
     // На Render (обмежений CPU) перша оптимізація кожного фото з AVIF — головна
     // причина повільних картинок каталогу. WebP кодується швидко → фото з'являються одразу.
