@@ -275,6 +275,35 @@ function homeBannerObjectPosition(b: { focalX?: number; focalY?: number }): stri
   return `${fx}% ${fy}%`
 }
 
+interface Banner {
+  id: number
+  title_ru: string
+  title_ua?: string
+  title_en?: string
+  title_nl?: string
+  imageUrl: string
+  order: number
+  isActive: boolean
+  focalX?: number
+  focalY?: number
+}
+
+const readCachedBanners = (): Banner[] => {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw =
+      localStorage.getItem('watta_banners_v1') || sessionStorage.getItem('banners') || ''
+    if (raw) {
+      const data = JSON.parse(raw) as unknown
+      if (Array.isArray(data) && data.length > 0) return data as Banner[]
+    }
+    const warm = readBannersWarmCache()
+    if (warm && warm.length > 0) return warm as Banner[]
+    return []
+  } catch {
+    return []
+  }
+}
 
 export default function MenuView() {
   const router = useInstantRouter()
@@ -372,13 +401,14 @@ export default function MenuView() {
     [homeHeroVideoUrls],
   )
 
+  /** Перебудовуємо плейлист лише коли змінився склад URL, а не посилання на масив. */
   const homeHeroPlaylist = useMemo(
-    () => buildHomeHeroPlaylist(homeHeroVideoUrls),
+    () => buildHomeHeroPlaylist(homeHeroVideoUrlsKey ? homeHeroVideoUrlsKey.split('\0') : []),
     [homeHeroVideoUrlsKey],
   )
 
   const heroVideoSources = useMemo(
-    () => buildHomeHeroVideoSources(homeHeroVideoUrls),
+    () => buildHomeHeroVideoSources(homeHeroVideoUrlsKey ? homeHeroVideoUrlsKey.split('\0') : []),
     [homeHeroVideoUrlsKey],
   )
 
@@ -407,7 +437,7 @@ export default function MenuView() {
     const id = selectedCityId ?? cityIdPreferAmsterdam(list) ?? list[0].id
     const city = list.find((c) => c.id === id) ?? list[0]
     return getLocalized(city, 'name') || city.name
-  }, [deliveryCities, selectedCityId, getLocalized, t.menuView.homeAfterHeroIntroCityPlaceholder, language])
+  }, [deliveryCities, selectedCityId, getLocalized, t.menuView.homeAfterHeroIntroCityPlaceholder])
 
   const fillHomeAfterHeroCity = useCallback(
     (template: string) => template.replace(/\{\{city\}\}/g, homeAfterHeroCityDisplay),
@@ -584,6 +614,8 @@ export default function MenuView() {
     window.addEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
     window.addEventListener('settingsUpdated', onSettingsUpdated)
     return () => {
+      // Скасовуємо саме останній probe (ref тримає AbortController, не DOM-вузол).
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       homeHeroProbeRef.current?.abort()
       window.removeEventListener(WATTA_HOME_HERO_VIDEO_UPDATED_EVENT, onHeroUpdated)
       window.removeEventListener('settingsUpdated', onSettingsUpdated)
@@ -591,36 +623,6 @@ export default function MenuView() {
   }, [])
 
   // --- ЗАГРУЗКА БАННЕРОВ ---
-  interface Banner {
-    id: number
-    title_ru: string
-    title_ua?: string
-    title_en?: string
-    title_nl?: string
-    imageUrl: string
-    order: number
-    isActive: boolean
-    focalX?: number
-    focalY?: number
-  }
-
-  const readCachedBanners = (): Banner[] => {
-    if (typeof window === 'undefined') return []
-    try {
-      const raw =
-        localStorage.getItem('watta_banners_v1') || sessionStorage.getItem('banners') || ''
-      if (raw) {
-        const data = JSON.parse(raw) as unknown
-        if (Array.isArray(data) && data.length > 0) return data as Banner[]
-      }
-      const warm = readBannersWarmCache()
-      if (warm && warm.length > 0) return warm as Banner[]
-      return []
-    } catch {
-      return []
-    }
-  }
-
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
 

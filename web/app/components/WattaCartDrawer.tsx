@@ -270,6 +270,7 @@ export default function WattaCartDrawer() {
                       onClick={close}
                     >
                       {item.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- фото каталогу резолвиться в довільний URL з бекенду
                         <img
                           src={resolveCatalogMediaUrl(item.imageUrl) ?? undefined}
                           alt=""

@@ -226,6 +226,7 @@ export default function PromotionsDetailView({
           {gallery.length > 0 ? (
             <WattaInViewFadeDiv className="watta-promo-detail-card__hero">
               <div className="watta-promo-detail-card__hero-frame" aria-label={p.galleryAria}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- URL фото акції з бекенду, не обмежений remotePatterns */}
                 <img
                   src={gallery[0]}
                   alt=""
@@ -252,6 +253,7 @@ export default function PromotionsDetailView({
                   <div className="watta-promo-detail-card__gallery-track">
                     {gallery.slice(1).map((url, i) => (
                       <div key={`${url}-${i}`} className="watta-promo-detail-card__slide watta-promo-detail-card__slide--thumb">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- URL фото акції з бекенду, не обмежений remotePatterns */}
                         <img src={url} alt="" className="watta-promo-detail-card__slide-img" loading="lazy" />
                       </div>
                     ))}

@@ -159,6 +159,7 @@ function AdminProductCoverImage({
       }
     >
       {!showPlaceholder ? (
+        // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
         <img
           key={coverSrc}
           src={coverSrc}
@@ -790,7 +791,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       onBack()
       return true
     },
-    [onBack]
+    [ap, onBack]
   )
 
   const fetchSettings = useCallback(async (headers: { Authorization: string }) => {
@@ -1025,9 +1026,12 @@ export default function AdminView({ onBack }: AdminViewProps) {
     [
       activeTab,
       adminAuthHeaders,
+      ap,
       banners.length,
       fetchSettings,
       handleAdminAuthDenied,
+      ingredients.length,
+      menuCategories.length,
       orderStats,
       orders.length,
       products.length,
@@ -1059,7 +1063,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     } finally {
       setIsRefreshing(false)
     }
-  }, [adminAuthHeaders, fetchTabData, onBack])
+  }, [adminAuthHeaders, ap, fetchTabData, onBack])
 
   useWattaCatalogSync(() => {
     if (skipCatalogRefetchRef.current) return
@@ -1440,7 +1444,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
     } finally {
       setCityMapSearchLoading(false)
     }
-  }, [newCityName, newCityNameUa, newCityNameEn, newCityNameNl, newCityCountryId, countries])
+  }, [ap, newCityName, newCityNameUa, newCityNameEn, newCityNameNl, newCityCountryId, countries])
 
   // --- БЛОК НОВОСТЕЙ (NEWS SYSTEM) ---
   interface NewsItem {
@@ -2989,43 +2993,6 @@ export default function AdminView({ onBack }: AdminViewProps) {
   }
 
   // --- ЛОГИКА БАННЕРОВ ---
-  const onBannerFocalPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!bannerFormData.imageUrl || e.button !== 0) return;
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      
-      // Включаем флаг активности перетаскивания
-      bannerFocalDragRef.current = {
-        active: true,
-        pointerId: e.pointerId,
-      };
-
-      // Сразу обновляем позицию при первом клике (чтобы точка прыгнула к курсору)
-      updateFocalPosition(e);
-    },
-    [bannerFormData.imageUrl]
-  );
-
-  const onBannerFocalPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const d = bannerFocalDragRef.current;
-    if (!d?.active || d.pointerId !== e.pointerId) return;
-    
-    // Обновляем позицию при движении
-    updateFocalPosition(e);
-  }, []);
-
-  const endBannerFocalDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const d = bannerFocalDragRef.current;
-    if (!d || d.pointerId !== e.pointerId) return;
-    bannerFocalDragRef.current = null;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   // Новая вспомогательная функция, которая считает точные проценты
   const updateFocalPosition = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const el = bannerFocalPreviewRef.current;
@@ -3042,6 +3009,43 @@ export default function AdminView({ onBack }: AdminViewProps) {
     const ny = Math.max(0, Math.min(100, (y / rect.height) * 100));
 
     setBannerFormData((prev) => ({ ...prev, focalX: nx, focalY: ny }));
+  }, []);
+
+  const onBannerFocalPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!bannerFormData.imageUrl || e.button !== 0) return;
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      
+      // Включаем флаг активности перетаскивания
+      bannerFocalDragRef.current = {
+        active: true,
+        pointerId: e.pointerId,
+      };
+
+      // Сразу обновляем позицию при первом клике (чтобы точка прыгнула к курсору)
+      updateFocalPosition(e);
+    },
+    [bannerFormData.imageUrl, updateFocalPosition]
+  );
+
+  const onBannerFocalPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const d = bannerFocalDragRef.current;
+    if (!d?.active || d.pointerId !== e.pointerId) return;
+    
+    // Обновляем позицию при движении
+    updateFocalPosition(e);
+  }, [updateFocalPosition]);
+
+  const endBannerFocalDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const d = bannerFocalDragRef.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    bannerFocalDragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const openCreateBannerModal = () => {
@@ -3094,7 +3098,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
       }))
     }
     reader.readAsDataURL(file)
-  }, [])
+  }, [ap])
 
   const handleBannerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -3321,7 +3325,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
         setBannerReorderBusy(false)
       }
     },
-    [banners, bannerReorderBusy, refreshTab, t],
+    [ap, banners, bannerReorderBusy, refreshTab, t],
   )
 
   // --- ЛОГИКА КОМАНДЫ ---
@@ -4311,7 +4315,8 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 {newsItems.map(item => (
                     <div key={item.id} className="admin-watta-news-card">
                       <div className="h-40 bg-gray-200 relative">
-                        {item.imageUrl && <img src={item.imageUrl} className="w-full h-full object-cover"/>}
+                        {/* eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду */}
+                        {item.imageUrl && <img src={item.imageUrl} alt="" className="w-full h-full object-cover"/>}
                       </div>
                       <div className="p-4">
                           <h3>{item.title}</h3>
@@ -4460,6 +4465,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                           accept="image/*"
                         />
                         {ingDraft.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
                           <img src={ingDraft.imageUrl} alt="" className="h-full w-full object-contain p-2" />
                         ) : (
                           <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-watta-action/45">
@@ -4538,6 +4544,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                         </button>
                       </div>
                       <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#f6faf8] to-white shadow-inner ring-1 ring-watta-action/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду */}
                         <img
                           src={ing.imageUrl}
                           alt={ingredientLabelForSite(ing)}
@@ -5414,6 +5421,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#f6faf8] to-white ring-1 ring-watta-action/12 sm:h-16 sm:w-16">
                         {category.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
                           <img
                             src={resolveCatalogMediaUrl(category.imageUrl) ?? category.imageUrl}
                             alt=""
@@ -5674,6 +5682,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                   <div key={member.id} className="admin-watta-entity-card admin-watta-hover-lift relative overflow-hidden p-4 sm:p-6">
                     <div className="relative mb-4" style={{ width: '100%', paddingTop: '75%', background: 'linear-gradient(135deg, rgba(20,81,66,0.1) 0%, rgba(20,81,66,0.05) 100%)', borderRadius: '16px', overflow: 'hidden' }}>
                       {member.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
                         <img src={member.imageUrl} alt={member.name_ru} className="absolute inset-0 w-full h-full object-cover" />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-watta-action to-watta-action-hover">
@@ -6408,6 +6417,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     onClick={() => productImageInputRef.current?.click()}
                     className="w-full h-32 sm:h-40 overflow-hidden rounded-[12px] sm:rounded-[15px] border border-watta-action/20 bg-[#f6faf7] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-watta-action/40"
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду */}
                     <img
                       src={adminProductPreviewSrc(formData.imageUrls[0])}
                       alt="Обкладинка"
@@ -6431,6 +6441,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                       key={`${i}-${url.slice(0, 32)}`}
                       className="relative h-20 w-20 overflow-hidden rounded-lg border border-watta-action/20 bg-white"
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду */}
                       <img
                         src={adminProductPreviewSrc(url)}
                         alt=""
@@ -6731,6 +6742,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                               }`}
                             >
                               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f6faf8] ring-1 ring-watta-action/8">
+                                {/* eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду */}
                                 <img
                                   src={ing.imageUrl}
                                   className="h-7 w-7 object-contain"
@@ -6867,6 +6879,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <span className="mb-1 block text-xs font-semibold text-watta-action/70">{t.adminPanel.categories.mainIcon}</span>
                     <label className="group relative flex h-28 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[12px] border-2 border-dashed border-watta-action/25 bg-watta-action/[0.04] transition hover:bg-watta-action/[0.07]">
                       {categoryFormData.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
                         <img
                           src={resolveCatalogMediaUrl(categoryFormData.imageUrl) ?? categoryFormData.imageUrl}
                           alt=""
@@ -6904,6 +6917,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     <span className="mb-1 block text-xs font-semibold text-watta-action/70">{t.adminPanel.categories.hoverIcon}</span>
                     <label className="group relative flex h-28 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[12px] border-2 border-dashed border-watta-action/25 bg-watta-action/[0.04] transition hover:bg-watta-action/[0.07]">
                       {categoryFormData.hoverImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
                         <img
                           src={resolveCatalogMediaUrl(categoryFormData.hoverImageUrl) ?? categoryFormData.hoverImageUrl}
                           alt=""
@@ -7104,6 +7118,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                     }`}
                   >
                     {bannerFormData.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
                       <img
                         src={bannerFormData.imageUrl}
                         alt=""
@@ -7447,6 +7462,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
               <div className="flex justify-center mb-3 sm:mb-4">
                 <label className="cursor-pointer w-full h-48 sm:h-56 md:h-64 border-2 border-dashed border-watta-action/30 rounded-[12px] sm:rounded-[15px] flex flex-col items-center justify-center hover:bg-watta-action/5 transition relative overflow-hidden group p-2 bg-white/40 backdrop-blur-sm">
                   {teamFormData.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду
                     <img 
                       src={teamFormData.imageUrl} 
                       alt="Preview" 
@@ -7613,6 +7629,7 @@ export default function AdminView({ onBack }: AdminViewProps) {
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
                   {newsDraft.galleryUrls.map((url, idx) => (
                     <div key={`${url}-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- admin preview: blob/data URL або довільний URL з бекенду */}
                       <img src={url} alt="" className="w-full h-full object-cover" />
                       <button
                         type="button"

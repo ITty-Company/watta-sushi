@@ -144,10 +144,10 @@ export default function WattaStickyChromeLayout({
   const expandedRawRef = useRef(0)
 
   /** Головна + /menu + /product (телефон): flow-anchor не стискається при hide шапки. */
-  const preserveExpandedChromeHeightInCompact = () => {
+  const preserveExpandedChromeHeightInCompact = useCallback(() => {
     if (!isWattaPhoneViewport()) return false
     return isFullMenuPage || isWattaHomeHeroPathname(pathname) || isProductPage
-  }
+  }, [isFullMenuPage, isProductPage, pathname])
   const expandedHeaderRef = useRef(0)
   /** Кеш опублікованих значень — setProperty на <html> інакше перераховує стилі всього документа. */
   const publishedCssVarsRef = useRef({
@@ -200,7 +200,7 @@ export default function WattaStickyChromeLayout({
         )
       }
     },
-    [setRootCssVar],
+    [preserveExpandedChromeHeightInCompact, setRootCssVar],
   )
 
   const setInnerNode = useCallback(
@@ -251,7 +251,7 @@ export default function WattaStickyChromeLayout({
         syncMeasuredCssVars(el)
       }
     },
-    [innerRef, isProductPage, toFlowLayoutHeight, syncMeasuredCssVars],
+    [innerRef, isProductPage, preserveExpandedChromeHeightInCompact, toFlowLayoutHeight, syncMeasuredCssVars],
   )
 
   useLayoutEffect(() => {
@@ -340,7 +340,7 @@ export default function WattaStickyChromeLayout({
       window.removeEventListener(WATTA_CHROME_LAYOUT_SYNC_EVENT, onLayoutSync)
       window.removeEventListener('wattaChromeCompactChange', onCompactChange)
     }
-  }, [chromeClassName, toFlowLayoutHeight, syncMeasuredCssVars])
+  }, [chromeClassName, isProductPage, preserveExpandedChromeHeightInCompact, toFlowLayoutHeight, syncMeasuredCssVars])
 
   useLayoutEffect(() => {
     if (!localRef.current) return

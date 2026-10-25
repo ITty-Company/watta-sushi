@@ -193,7 +193,7 @@ export default function WelcomeHeroSection({
     }
 
     video.addEventListener('playing', finish, { once: true })
-  }, [finalizeClientHeroHandoff, heroVideoRef, isHomeHeroCard, syncClientHeroFromPreroll])
+  }, [finalizeClientHeroHandoff, heroVideoLoop, heroVideoRef, isHomeHeroCard, syncClientHeroFromPreroll])
 
   const tryCommitClientHeroHandoff = useCallback(() => {
     commitClientHeroHandoff()
@@ -233,7 +233,7 @@ export default function WelcomeHeroSection({
     }
     const video = heroVideoRef.current
     if (video) syncClientHeroFromPreroll(video)
-  }, [enableClientHero, isHomeHeroCard, syncClientHeroFromPreroll])
+  }, [enableClientHero, heroVideoRef, isHomeHeroCard, syncClientHeroFromPreroll])
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return
@@ -513,6 +513,7 @@ export default function WelcomeHeroSection({
               style={isHomeHeroCard ? heroPosterLayerStyle(posterUrl) : heroPosterLayerStyle(posterUrl)}
             >
               {!isHomeHeroCard ? (
+                // eslint-disable-next-line @next/next/no-img-element -- той самий URL, що й CSS-фон постера (вже в кеші); /_next/image завантажив би копію
                 <img
                   src={posterUrl}
                   alt=""

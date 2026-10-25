@@ -108,6 +108,8 @@ export function WattaMenuProductCardInner({
 
   const ingredientsLine = useMemo(
     () => productCompositionLine(product.description, lang, product.ingredientIds),
+    // ingredientsCatalogReady — ключ інвалідації: склад читається з модульного кешу інгредієнтів.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [product.description, product.ingredientIds, lang, ingredientsCatalogReady],
   )
 
@@ -257,6 +259,7 @@ export function WattaMenuProductCardInner({
                   />
                 )
               ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- фото каталогу: свій пайплайн завантаження, без /_next/image
                 <img
                   src={photoSrc ?? undefined}
                   alt=""

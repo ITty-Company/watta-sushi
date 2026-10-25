@@ -41,6 +41,7 @@ export default function WattaLoadScreen({
     >
       <div className="watta-load-screen-stack">
         <div className="watta-load-screen-logo-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element -- той самий URL, що й SSR-splash у layout.tsx (вже в кеші) */}
           <img
             src="/logo-splash-1x.webp"
             srcSet="/logo-splash-1x.webp 1x, /logo-splash.webp 2x"

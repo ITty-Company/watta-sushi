@@ -4,6 +4,7 @@ import '../profile-page-theme.css'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { m, useReducedMotion, type Variants } from 'framer-motion'
 import { useInstantRouter } from '@/hooks/useInstantRouter'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useLanguage } from '../context/LanguageContext'
 import { useOptionalRightNavDrawerActions } from '../context/RightNavDrawerContext'
@@ -494,7 +495,7 @@ export default function ProfileView({
           onClick={onBack}
           className="flex min-w-0 items-center gap-2.5 rounded-xl py-1 pr-2 transition hover:bg-gray-50 sm:gap-3 sm:pr-3"
         >
-          <img src="/logo.png" alt="" className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
+          <Image src="/logo.png" alt="" width={40} height={40} className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10" />
           <div className="hidden min-w-0 flex-col text-left sm:flex">
             <span className="text-[11px] font-medium text-gray-500">{t.clientProfile.backHome}</span>
             <span className="truncate text-sm font-bold text-watta-action">{t.clientProfile.brandSubtitle}</span>

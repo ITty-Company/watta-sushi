@@ -164,7 +164,7 @@ export default function WattaBootSplashGate({ children, onEnded }: WattaBootSpla
       )
       warmHeroVideoCache()
     }
-  }, [])
+  }, [signalSplashEnded])
 
   /** React-оверлей накриває static — знімаємо pending лише після paint (без стрибка). */
   useLayoutEffect(() => {

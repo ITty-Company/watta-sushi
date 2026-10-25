@@ -388,6 +388,7 @@ export default function WattaNavDrawerPanel(props: WattaNavDrawerPanelProps) {
       finishDrawerNav()
     },
     [
+      cartDrawer?.enabled,
       cartDrawer?.open,
       notificationsDrawer?.open,
       drawerNavHref,

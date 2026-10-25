@@ -81,7 +81,7 @@ export default function WattaNotificationWatcher() {
     )
 
     prevUnreadRef.current = unreadCount
-  }, [loggedIn, latestUnread, notificationsDrawer?.open, router, t.notifications, unreadCount])
+  }, [loggedIn, latestUnread, notificationsDrawer?.open, router, t.notifications, t.siteAria.close, unreadCount])
 
   return null
 }

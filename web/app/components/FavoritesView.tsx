@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Trash2 } from 'lucide-react'
 import { ArrowLeft, Heart, Plus, ShoppingBag } from '@/lib/wattaInlineIcons'
+import Image from 'next/image'
 import LogoBackground from './LogoBackground'
 import toast from 'react-hot-toast'
 import { useLanguage } from '@/app/context/LanguageContext'
@@ -79,7 +80,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
         </button>
         
         <div className="flex items-center gap-2 select-none">
-          <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+          <Image src="/logo.png" alt="Logo" width={40} height={40} className="h-10 w-10 object-contain" />
           <WattaBrandWordmark
             className="h-6 w-auto object-contain logo-text-image-web"
             deferUntilSplashEnd={false}
@@ -134,6 +135,7 @@ export default function FavoritesView({ onBack, onMenuClick }: FavoritesViewProp
                   {/* Изображение */}
                   <div className="w-full h-[200px] bg-gray-100 rounded-[20px] overflow-hidden mb-4 relative">
                     {item.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- URL фото з бекенду, не обмежений remotePatterns
                       <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-6xl">

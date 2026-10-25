@@ -289,20 +289,29 @@ export default function ProductView({ productId, initialProductRow, onBack, onCa
   const lang = language as WattaLanguage
   const phoneRecStack = usePhoneMenuOneColumn()
 
-  const getName = (p: Product) => getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang)
-  const getDesc = (p: Product) =>
-    getLocalizedField(p as unknown as Record<string, unknown>, 'description', lang) || (p.description_ru ?? '')
+  const getName = useCallback(
+    (p: Product) => getLocalizedField(p as unknown as Record<string, unknown>, 'name', lang),
+    [lang],
+  )
+  const getDesc = useCallback(
+    (p: Product) =>
+      getLocalizedField(p as unknown as Record<string, unknown>, 'description', lang) || (p.description_ru ?? ''),
+    [lang],
+  )
   const getIngName = (ing: IngredientRow) =>
     getLocalizedField(ing as unknown as Record<string, unknown>, 'name', lang)
-  const getCategoryLabel = (p: Product) => {
-    const c = p.category
-    if (!c) return ''
-    return getMenuCategoryDisplayName(
-      c as unknown as Record<string, unknown>,
-      lang,
-      t.categories as Record<string, string>,
-    )
-  }
+  const getCategoryLabel = useCallback(
+    (p: Product) => {
+      const c = p.category
+      if (!c) return ''
+      return getMenuCategoryDisplayName(
+        c as unknown as Record<string, unknown>,
+        lang,
+        t.categories as Record<string, string>,
+      )
+    },
+    [lang, t.categories],
+  )
 
   const categoryPill = useMemo(() => {
     if (!product?.category) return null
@@ -328,6 +337,8 @@ export default function ProductView({ productId, initialProductRow, onBack, onCa
       label: label || slug,
       href: slug ? `/menu?cat=${encodeURIComponent(slug)}` : null,
     }
+    // catalogRefreshKey — ключ інвалідації: категорія береться з модульного кешу каталогу.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.category, lang, t.categories, catalogRefreshKey])
 
   useEffect(() => {
@@ -576,7 +587,7 @@ export default function ProductView({ productId, initialProductRow, onBack, onCa
       imageUrl: cover,
       promoDiscountPercent: product.promoDiscountPercent,
     }
-  }, [product, lang, t.categories])
+  }, [product, getName, getDesc, getCategoryLabel])
 
   const showCartAddedFeedback = useCallback(() => {
     if (!product) return
@@ -699,6 +710,8 @@ export default function ProductView({ productId, initialProductRow, onBack, onCa
     return productGalleryFromApi(product)
       .map((u) => resolveCatalogMediaUrl(u) ?? u)
       .filter((u) => u.length > 0)
+    // catalogRefreshKey — ключ інвалідації: URL медіа резолвляться з кешу каталогу.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, catalogRefreshKey])
 
   const ingredientsWithPhotos = useMemo(() => {
@@ -724,6 +737,8 @@ export default function ProductView({ productId, initialProductRow, onBack, onCa
         photoSrc: resolveCatalogMediaUrl(rawUrl) ?? '',
       }
     })
+    // catalogRefreshKey — ключ інвалідації: інгредієнти читаються з модульного кешу каталогу.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, catalogRefreshKey])
 
   useEffect(() => {

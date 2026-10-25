@@ -84,7 +84,6 @@ type AuthGoogleButtonProps = {
 
 export default function AuthGoogleButton({
   disabled = false,
-  isRegister = false,
   onCredential,
 }: AuthGoogleButtonProps) {
   const { t, language } = useLanguage()
@@ -131,7 +130,7 @@ export default function AuthGoogleButton({
       locale: GIS_LOCALE[language] ?? 'en',
     })
     setGisReady(true)
-  }, [isRegister, language])
+  }, [language])
 
   useEffect(() => {
     if (!scriptReady || disabled || !isConfigured) return

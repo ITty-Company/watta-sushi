@@ -52,7 +52,7 @@ export default function DeliveryWelcomeHeroSection({
       heroVideoRef.current = el
       if (el) primeHeroVideoElement(el, { loop: heroVideoLoop, urgent: true })
     },
-    [heroVideoRef],
+    [heroVideoLoop, heroVideoRef],
   )
 
   useEffect(() => {

@@ -247,7 +247,7 @@ export default function FullMenuPageClient() {
     } catch {
       applyRows(fallbackRows)
     }
-  }, [language, mapApiToCategoryRows, t.categories])
+  }, [mapApiToCategoryRows, t.categories])
 
   const refreshProductsInBackground = useCallback(
     async (scopedUrl: string, cacheKey: string, hasCity: boolean, fetchFn: typeof fetchPublicApi) => {

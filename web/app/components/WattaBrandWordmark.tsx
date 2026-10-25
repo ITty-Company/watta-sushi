@@ -43,6 +43,7 @@ export default function WattaBrandWordmark({
   if (deferUntilSplashEnd && !splashDone) return null
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- розмір задає CSS-клас, файл 20 КБ; монтується лише коли видимий
     <img
       src="/1.jpg"
       alt={t.common.brandName}
