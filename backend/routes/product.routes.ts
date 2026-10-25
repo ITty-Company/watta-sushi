@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { Prisma, PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC, PUBLIC_CACHE_MENU_SEC } from '../lib/publicApiCache.js';
 import { clearCatalogCache, getCached, setCached } from '../lib/memoryCache.js';
@@ -20,7 +21,6 @@ import {
 } from '../lib/categorySlug.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const MAX_PRODUCT_GALLERY = 24;
 const MAX_IMAGE_URL_LENGTH = 2048;

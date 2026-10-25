@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, PromoType } from '@prisma/client';
+import { PromoType } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // 1. Проверить код (для Клиента)
 router.post('/check', async (req: Request, res: Response) => {

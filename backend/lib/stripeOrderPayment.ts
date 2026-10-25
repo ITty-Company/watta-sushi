@@ -1,12 +1,11 @@
 import Stripe from 'stripe'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './prisma.ts'
 import { sendOrderReceipt } from '../services/email.service.js'
 import { sendTelegramNotification } from '../services/telegram.service.js'
 import { addOrderToSheet, scheduleCrmSheetsSync } from '../services/sheets.service.js'
 import { awardOrderCashbackIfEligible } from './bonusCashback.js'
 import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service.js'
 
-const prisma = new PrismaClient()
 
 export function getStripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY?.trim()

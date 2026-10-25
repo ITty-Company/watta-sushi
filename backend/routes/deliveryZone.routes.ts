@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Получить все зоны доставки города
 router.get('/city/:cityId', async (req, res) => {

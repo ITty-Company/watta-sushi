@@ -1,12 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../lib/jwtSecret.js';
 import { syncStripeOrderPayment } from '../lib/stripeOrderPayment.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 function getAuthUserId(req: Request): number | null {
   try {

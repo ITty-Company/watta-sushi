@@ -1,9 +1,8 @@
 import cron from 'node-cron';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { generatePersonalPromo } from '../utils/promoGenerator';
 import { sendSms } from '../utils/smsSender';
 
-const prisma = new PrismaClient();
 
 // Запуск каждый день в 10:00 утра
 cron.schedule('0 10 * * *', async () => {

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import path from 'path';
 import fs from 'fs';
@@ -8,7 +8,6 @@ import { getUploadsDir } from '../lib/uploadsDir.js';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /** Після збереження в БД лише короткі шляхи /uploads/… або зовнішні URL */
 const MAX_IMAGE_URL_LENGTH = 2048;

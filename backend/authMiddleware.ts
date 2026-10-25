@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './lib/prisma.ts'
 import { getJwtSecret } from './lib/jwtSecret'
 import { hasAdminAccess } from './lib/adminPhones.js'
 
-const prisma = new PrismaClient()
 
 export interface AuthRequest extends Request {
   user?: { id: number; role?: string; email?: string | null; name?: string | null }

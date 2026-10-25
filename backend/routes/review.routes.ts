@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import jwt from 'jsonwebtoken';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
@@ -8,7 +8,6 @@ import { clearCachedKey, getCached, setCached } from '../lib/memoryCache.js';
 const REVIEWS_CACHE_KEY = 'reviews:public';
 
 const router = Router();
-const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || 'secret-key';
 
 function getAuthUserId(req: Request): number | null {

@@ -1,12 +1,11 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import multer from 'multer';
 import path from 'path';
 import { getUploadsDir } from '../lib/uploadsDir.js';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 
-const prisma = new PrismaClient();
 const router = Router();
 let promoGalleryUrlsMissing = false;
 let promoProductOffersMissing = false;

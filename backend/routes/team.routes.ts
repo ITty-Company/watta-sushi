@@ -1,9 +1,8 @@
 import express from 'express'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import { checkAdmin } from '../authMiddleware.js'
 
 const router = express.Router()
-const prisma = new PrismaClient()
 
 // GET /api/team - Получить всех членов команды
 router.get('/', async (req: any, res: any) => {

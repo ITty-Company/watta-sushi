@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../lib/jwtSecret';
@@ -43,7 +43,6 @@ import {
 } from '../lib/orderPricing.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 function getAuthUserId(req: Request): number | null {
   try {
     const authHeader = req.headers.authorization;

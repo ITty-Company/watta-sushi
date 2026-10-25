@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 import path from 'path';
@@ -35,7 +35,6 @@ function formatPublicPost(
 }
 
 const router = Router();
-const prisma = new PrismaClient();
 const uploadDir = getUploadsDir();
 
 const blogImageDiskUpload = multer({

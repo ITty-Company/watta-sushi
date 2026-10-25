@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import { checkAdmin } from '../authMiddleware'
 import multer from 'multer'
 import path from 'path'
@@ -21,7 +21,6 @@ import {
 import { clampCashbackPercent, DEFAULT_BONUS_CASHBACK_PERCENT } from '../lib/bonusCashback.js'
 
 const router = Router()
-const prisma = new PrismaClient()
 
 const uploadDir = getUploadsDir()
 const DEFAULT_HOME_HERO_VIDEO = '/watta-sushi-2-hero.mp4'

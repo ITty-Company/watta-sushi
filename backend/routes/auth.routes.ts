@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendSms } from '../utils/smsSender';
@@ -25,7 +25,6 @@ import {
 import { verifyGoogleIdToken } from '../lib/googleOAuth.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 function normalizeEmail(email: string): string {
   return String(email ?? '').trim().toLowerCase();

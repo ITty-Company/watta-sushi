@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../lib/jwtSecret';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 function getAuthUserId(req: Request): number | null {
   try {
