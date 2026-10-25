@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { getUploadsDir } from './uploadsDir.js';
+import { saveUploadSync } from './fileStorage.js';
+import { isWorkersRuntime } from './runtime.js';
 
 const uploadDir = getUploadsDir();
 
@@ -20,10 +22,19 @@ export const PRODUCT_UPLOAD_PRESET = {
   maxBytes: 2 * 1024 * 1024,
 };
 
+function sniffImageExt(buf) {
+  if (buf[0] === 0x89 && buf[1] === 0x50) return 'png';
+  if (buf[0] === 0x47 && buf[1] === 0x49) return 'gif';
+  if (buf.length > 11 && buf.toString('ascii', 8, 12) === 'WEBP') return 'webp';
+  return 'jpg';
+}
+
 export const INGREDIENT_OPTIMIZE_MIN_BYTES = 180 * 1024;
 export const PRODUCT_OPTIMIZE_MIN_BYTES = 420 * 1024;
 
 export async function compressImageBuffer(buf, preset = INGREDIENT_UPLOAD_PRESET) {
+  // Workers: sharp (нативний модуль) недоступний — без стиснення.
+  if (isWorkersRuntime) return { buf, ext: sniffImageExt(buf), width: undefined, height: undefined };
   const base = sharp(buf, { failOn: 'none' }).rotate();
   const meta = await base.metadata();
   const resizeOpts = {
@@ -57,12 +68,12 @@ export async function writeCompressedUpload(buf, prefix, preset = INGREDIENT_UPL
   if (!buf?.length) return null;
   const { buf: compressed, ext } = await compressImageBuffer(buf, preset);
   const name = `${prefix}-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-  const fp = path.join(uploadDir, name);
-  fs.writeFileSync(fp, compressed);
+  saveUploadSync(name, compressed);
   return `/uploads/${name}`;
 }
 
 async function optimizeUploadFileOnDisk(publicPath, prefix, preset, minBytes) {
+  if (isWorkersRuntime) return null;
   const trimmed = String(publicPath || '').trim();
   const prefixPath = `/uploads/${prefix}-`;
   if (!trimmed.startsWith(prefixPath)) return null;
@@ -114,6 +125,7 @@ export function optimizeProductFileOnDisk(publicPath) {
 
 /** Стискає multipart-файл на диску; повертає новий `/uploads/…` або старий при помилці. */
 export async function compressUploadedFileOnDisk(filename, prefix, preset) {
+  if (isWorkersRuntime) return null;
   const base = path.basename(String(filename || '').trim());
   if (!base) return null;
   const fp = path.join(uploadDir, base);

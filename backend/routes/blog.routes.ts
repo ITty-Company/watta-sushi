@@ -19,6 +19,7 @@ import {
   primaryBlogLocalized,
 } from '../lib/blogI18n.js';
 import { translateBlogFromUkrainian } from '../lib/blogTranslate.js';
+import { saveUploadSync, uploadStorage } from '../lib/fileStorage.js';
 
 const RESERVED_SLUGS = new Set(['upload-image', 'all', 'translate']);
 
@@ -38,7 +39,7 @@ const router = Router();
 const uploadDir = getUploadsDir();
 
 const blogImageDiskUpload = multer({
-  storage: multer.diskStorage({
+  storage: uploadStorage(multer, {
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
       const rawExt = path.extname(file.originalname || '').toLowerCase();

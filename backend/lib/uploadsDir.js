@@ -13,7 +13,11 @@ export function getUploadsDir() {
   const dir = fromEnv
     ? path.resolve(fromEnv)
     : path.resolve(__dirname, '../uploads')
-  fs.mkdirSync(dir, { recursive: true })
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+  } catch {
+    /* Cloudflare Workers: постійного диска немає, файли в KV (lib/fileStorage.js) */
+  }
   cachedDir = dir
   return dir
 }

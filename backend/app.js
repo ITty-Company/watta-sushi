@@ -16,8 +16,8 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { prisma, requestPrismaMiddleware } from './lib/prisma.ts';
+import { lazyRateLimit } from './rateLimiter.ts';
 import { isWorkersRuntime } from './lib/runtime.js';
 import fs from 'fs';
 import shopRoutes from './routes/shop.routes.ts';
@@ -46,6 +46,7 @@ import cartUpsellRoutes from './routes/cartUpsell.routes.ts';
 import stripeWebhookRouter from './routes/stripe-webhook.routes.ts';
 import { getUploadsDir } from './lib/uploadsDir.js';
 import { getStorageHealthSnapshot } from './lib/storageHealth.js';
+import { readUpload } from './lib/fileStorage.js';
 import cookieParser from 'cookie-parser'
 ;
 const uploadsPublicDir = getUploadsDir();
@@ -138,7 +139,8 @@ const corsOptions = isProd
 app.use(cors(corsOptions));
 
 // Gzip/Brotli-friendly smaller JSON over the wire — faster TTFB on slow links (Next proxy → API).
-app.use(
+// Workers: Cloudflare стискає відповіді сам — не витрачаємо ліміт CPU на zlib.
+if (!isWorkersRuntime) app.use(
   compression({
     threshold: 1024,
     level: isProd ? 6 : 3,
@@ -180,7 +182,7 @@ app.get('/health/storage', async (_req, res) => {
 });
 
 // Лимит запросов: в dev админка дергает десятки эндпоинтов подряд — 200/15мин даёт 429
-const limiter = rateLimit({
+const limiter = lazyRateLimit({
   windowMs: 15 * 60 * 1000,
   max: isProd ? 200 : 8000,
   message: 'Слишком много запросов, попробуйте позже',
@@ -213,6 +215,21 @@ app.use((req, res, next) => {
   console.log(`📡 [${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
   next();
 });
+
+// Workers: файли з адмінки лежать у KV (lib/fileStorage.js).
+if (isWorkersRuntime) {
+  app.get('/uploads/:name', async (req, res, next) => {
+    try {
+      const file = await readUpload(req.params.name);
+      if (!file) return next();
+      res.setHeader('Content-Type', file.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.end(file.body);
+    } catch (e) {
+      next(e);
+    }
+  });
+}
 
 // Статика завантажених файлів (Next на проді проксує /uploads сюди)
 app.use(

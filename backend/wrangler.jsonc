@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "watta-sushi-api",
+  "main": "worker.ts",
+  "compatibility_date": "2025-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Нативний модуль — на Workers замінено заглушкою (стиснення фото пропускається).
+  "alias": { "sharp": "./lib/stubs/sharp.js" },
+  // У бандлі Workers import.meta.url порожній, а модулі рахують через нього __dirname.
+  "define": { "import.meta.url": "\"file:///bundle/worker.js\"" },
+  "vars": { "NODE_ENV": "production" },
+  // Файли з адмінки (/uploads/*) — див. lib/fileStorage.js
+  "kv_namespaces": [{ "binding": "UPLOADS", "id": "local-dev-placeholder" }],
+  "observability": { "enabled": true }
+}

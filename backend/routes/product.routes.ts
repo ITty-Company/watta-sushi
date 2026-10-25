@@ -19,6 +19,7 @@ import {
   categorySlugFromNames,
   resolveUniqueCategorySlug,
 } from '../lib/categorySlug.js';
+import { saveUploadSync, uploadStorage } from '../lib/fileStorage.js';
 
 const router = Router();
 
@@ -27,7 +28,7 @@ const MAX_IMAGE_URL_LENGTH = 2048;
 const uploadDir = getUploadsDir();
 
 const categoryImageDiskUpload = multer({
-  storage: multer.diskStorage({
+  storage: uploadStorage(multer, {
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
       const rawExt = path.extname(file.originalname || '').toLowerCase();
@@ -48,7 +49,7 @@ const categoryImageDiskUpload = multer({
 });
 
 const productImageDiskUpload = multer({
-  storage: multer.diskStorage({
+  storage: uploadStorage(multer, {
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
       const rawExt = path.extname(file.originalname || '').toLowerCase();
@@ -85,9 +86,8 @@ function persistDataUrlProductImage(dataUrl: string): string | null {
   if (buf.length < 24 || buf.length > 12 * 1024 * 1024) return null;
 
   const name = `product-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-  const fp = path.join(uploadDir, name);
   try {
-    fs.writeFileSync(fp, buf);
+    saveUploadSync(name, buf);
   } catch (e) {
     console.error('Product image write failed:', e);
     return null;
@@ -121,9 +121,8 @@ function persistDataUrlCategoryImage(dataUrl: string): string | null {
   if (buf.length < 24 || buf.length > 8 * 1024 * 1024) return null;
 
   const name = `category-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-  const fp = path.join(uploadDir, name);
   try {
-    fs.writeFileSync(fp, buf);
+    saveUploadSync(name, buf);
   } catch (e) {
     console.error('Category image write failed:', e);
     return null;
