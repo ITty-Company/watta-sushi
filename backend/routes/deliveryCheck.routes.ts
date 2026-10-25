@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import {
   WATTA_KITCHEN_AMSTERDAM,
   deliveryFeeSteppedEur,
@@ -16,7 +16,6 @@ import {
 import { signDeliveryQuote } from '../lib/deliveryQuote.js'
 
 const router = Router()
-const prisma = new PrismaClient()
 
 function parsePolygon(raw: string): { lat: number; lng: number }[] {
   try {

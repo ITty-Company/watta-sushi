@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { authenticateUser, AuthRequest } from '../authMiddleware';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /** Публічно: скільки користувачів додали товар у обране (для лічильника на картці). ids=1,2,3 */
 router.get('/counts-by-product', async (req, res) => {

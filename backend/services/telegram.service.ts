@@ -1,11 +1,10 @@
 import fetch from 'node-fetch'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import { formatOrderTelegramMessage } from '../lib/orderTelegramMessage.js'
 
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
-const prisma = new PrismaClient()
 
 export const sendTelegramNotification = async (order: any, items: any[]) => {
   if (!TG_TOKEN || !TG_CHAT_ID) return

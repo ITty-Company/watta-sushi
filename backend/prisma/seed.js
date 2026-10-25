@@ -1,8 +1,7 @@
 import { execSync } from 'child_process'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Start seeding...')

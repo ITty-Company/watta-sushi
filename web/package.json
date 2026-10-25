@@ -25,13 +25,17 @@
     "start": "next start",
     "lint": "next lint",
     "compress:hero": "bash scripts/compress-hero-video.sh",
-    "compress:menu-hero": "bash scripts/compress-menu-hero-video.sh"
+    "compress:menu-hero": "bash scripts/compress-menu-hero-video.sh",
+    "cf:build": "WATTA_CLOUDFLARE=1 opennextjs-cloudflare build",
+    "cf:preview": "WATTA_CLOUDFLARE=1 opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "WATTA_CLOUDFLARE=1 opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/marck-script": "^5.2.8",
     "@fontsource/playfair-display": "^5.2.8",
+    "@opennextjs/cloudflare": "1.15.1",
     "@types/node": "^20.0.0",
     "autoprefixer": "^10.4.22",
     "balloons-js": "^0.0.3",
@@ -41,7 +45,7 @@
     "gsap": "^3.14.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.555.0",
-    "next": "^14.0.0",
+    "next": "^14.2.35",
     "postcss": "^8.5.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -50,7 +54,8 @@
     "sharp": "0.33.5",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^3.4.18",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "wrangler": "^4.152.0"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.9",

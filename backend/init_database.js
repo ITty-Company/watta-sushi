@@ -1,7 +1,6 @@
 import { PrismaClient } from './generated/prisma/index.js';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
 
 async function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');

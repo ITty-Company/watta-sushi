@@ -1,19 +1,19 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import multer from 'multer';
 import path from 'path';
 import { getUploadsDir } from '../lib/uploadsDir.js';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
+import { saveUploadSync, uploadStorage } from '../lib/fileStorage.js';
 
-const prisma = new PrismaClient();
 const router = Router();
 let promoGalleryUrlsMissing = false;
 let promoProductOffersMissing = false;
 
 const uploadDir = getUploadsDir();
 
-const storage = multer.diskStorage({
+const storage = uploadStorage(multer, {
   destination: (_req: any, _file: any, cb: any) => {
     cb(null, uploadDir);
   },

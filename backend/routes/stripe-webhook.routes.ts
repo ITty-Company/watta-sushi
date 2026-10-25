@@ -13,12 +13,11 @@
 
 import { Router, Request, Response } from 'express'
 import Stripe from 'stripe'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import { fulfillStripeCheckoutSession, requireStripeClient } from '../lib/stripeOrderPayment.js'
 import { notifyUserOrderStatusChange } from '../services/orderUserNotification.service.js'
 
 const router = Router()
-const prisma = new PrismaClient()
 
 // ---------------------------------------------------------------------------
 // Вспомогательные функции

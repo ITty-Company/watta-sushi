@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 import path from 'path';
@@ -19,6 +19,7 @@ import {
   primaryBlogLocalized,
 } from '../lib/blogI18n.js';
 import { translateBlogFromUkrainian } from '../lib/blogTranslate.js';
+import { saveUploadSync, uploadStorage } from '../lib/fileStorage.js';
 
 const RESERVED_SLUGS = new Set(['upload-image', 'all', 'translate']);
 
@@ -35,11 +36,10 @@ function formatPublicPost(
 }
 
 const router = Router();
-const prisma = new PrismaClient();
 const uploadDir = getUploadsDir();
 
 const blogImageDiskUpload = multer({
-  storage: multer.diskStorage({
+  storage: uploadStorage(multer, {
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
       const rawExt = path.extname(file.originalname || '').toLowerCase();

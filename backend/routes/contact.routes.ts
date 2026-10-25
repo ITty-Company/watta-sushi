@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,7 +10,6 @@ const __dirname = path.dirname(__filename);
 const logPath = path.join(__dirname, '../data/contact-inquiries.log');
 
 const router = Router();
-const prisma = new PrismaClient();
 
 let logImportAttempted = false;
 

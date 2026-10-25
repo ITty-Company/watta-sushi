@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  // Без Rust-рушія (TS query compiler + driver adapter): менше CPU/розміру в Cloudflare Workers.
+  engineType = "client"
 }
 
 datasource db {

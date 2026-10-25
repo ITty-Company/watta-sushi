@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { sendNewsletterEmail } from '../utils/mailer';
 import { checkAdmin } from '../authMiddleware';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 function escapeHtml(s: string): string {
   return String(s)

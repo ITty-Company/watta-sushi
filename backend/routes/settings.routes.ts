@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import { checkAdmin } from '../authMiddleware'
 import multer from 'multer'
 import path from 'path'
@@ -19,9 +19,10 @@ import {
   canProcessCardPayment,
 } from '../lib/paymentProviders.js'
 import { clampCashbackPercent, DEFAULT_BONUS_CASHBACK_PERCENT } from '../lib/bonusCashback.js'
+import { saveUploadSync, uploadStorage } from '../lib/fileStorage.js'
+import { isWorkersRuntime } from '../lib/runtime.js'
 
 const router = Router()
-const prisma = new PrismaClient()
 
 const uploadDir = getUploadsDir()
 const DEFAULT_HOME_HERO_VIDEO = '/watta-sushi-2-hero.mp4'
@@ -33,7 +34,7 @@ const MAX_VIDEO_URL_LENGTH = 2048
 const MAX_HOME_HERO_VIDEOS = 100
 
 const heroVideoUpload = multer({
-  storage: multer.diskStorage({
+  storage: uploadStorage(multer, {
     destination: (_req, _file, cb) => {
       cb(null, uploadDir)
     },
@@ -73,9 +74,8 @@ function persistDataUrlHeroVideo(dataUrl: string): string | null {
   if (buf.length > 120 * 1024 * 1024) return null
 
   const name = `hero-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext === 'webm' ? 'webm' : ext === 'mov' ? 'mov' : 'mp4'}`
-  const fp = path.join(uploadDir, name)
   try {
-    fs.writeFileSync(fp, buf)
+    saveUploadSync(name, buf)
   } catch (e) {
     console.error('Hero video write failed:', e)
     return null
@@ -133,6 +133,8 @@ function uploadVideoFileExists(url: string): boolean {
   if (!trimmed.startsWith('/uploads/')) return true
   const base = path.basename(trimmed.split('?')[0] ?? '')
   if (!base || base.includes('..')) return false
+  // Workers: файли в KV не зникають між деплоями — перевірка диска не потрібна.
+  if (isWorkersRuntime) return true
   try {
     return fs.existsSync(path.join(uploadDir, base))
   } catch {
@@ -442,6 +444,8 @@ router.post('/home-hero-video/upload', checkAdmin, (req, res) => {
     }
     const file = req.file
     if (!file) return res.status(400).json({ error: 'no_file' })
+    // Workers: ffmpeg недоступний, файл уже в KV — віддаємо як є.
+    if (isWorkersRuntime) return res.json({ url: `/uploads/${file.filename}` })
     const fp = path.join(uploadDir, file.filename)
     try {
       const result = await compressHeroVideoOnDisk(fp)

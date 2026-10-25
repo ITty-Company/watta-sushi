@@ -1,14 +1,15 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { getUploadsDir } from '../lib/uploadsDir.js';
+import { saveUploadSync } from '../lib/fileStorage.js';
+import { isWorkersRuntime } from '../lib/runtime.js';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /** Після збереження в БД лише короткі шляхи /uploads/… або зовнішні URL */
 const MAX_IMAGE_URL_LENGTH = 2048;
@@ -33,9 +34,8 @@ function persistDataUrlBannerImage(dataUrl: string): string | null {
   if (buf.length > 12 * 1024 * 1024) return null;
 
   const name = `banner-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-  const fp = path.join(uploadDir, name);
   try {
-    fs.writeFileSync(fp, buf);
+    saveUploadSync(name, buf);
   } catch (e) {
     console.error('Banner image write failed:', e);
     return null;
@@ -53,6 +53,8 @@ function bannerImageMissing(url: unknown): boolean {
   if (!trimmed.startsWith('/uploads/')) return false;
   const base = path.basename(trimmed.split('?')[0] ?? '');
   if (!base || base.includes('..')) return true;
+  // Workers: файли в KV не зникають між деплоями — перевірка диска не потрібна.
+  if (isWorkersRuntime) return false;
   try {
     return !fs.existsSync(path.join(uploadDir, base));
   } catch {

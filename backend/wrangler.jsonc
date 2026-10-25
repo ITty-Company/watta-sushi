@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "watta-sushi-api",
+  "main": "worker.ts",
+  "compatibility_date": "2025-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Нативний модуль — на Workers замінено заглушкою (стиснення фото пропускається).
+  "alias": { "sharp": "./lib/stubs/sharp.js" },
+  // У бандлі Workers import.meta.url порожній, а модулі рахують через нього __dirname.
+  "define": { "import.meta.url": "\"file:///bundle/worker.js\"" },
+  "vars": { "NODE_ENV": "production" },
+  // Файли з адмінки (/uploads/*) — див. lib/fileStorage.js
+  // Postgres (Supabase) через Hyperdrive; локально wrangler dev ходить у docker-БД.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "4c848a821e72492da519dbe9c3d38681",
+      "localConnectionString": "postgresql://watta:watta@127.0.0.1:55432/watta_sushi"
+    }
+  ],
+  "kv_namespaces": [{ "binding": "UPLOADS", "id": "e01da0b271f1427c89e4cbca56178d8e" }],
+  "observability": { "enabled": true }
+}

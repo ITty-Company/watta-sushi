@@ -19,12 +19,14 @@ const smtpPort = Number(process.env.SMTP_PORT || 587);
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
 
-const transporter = nodemailer.createTransport({
+// Транспорт створюється при першій відправці: у Cloudflare Workers I/O на рівні модуля заборонене.
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+const getTransporter = () => (transporter ??= nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
   secure: smtpPort === 465,
   auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
-});
+}));
 
 function buildReceiptHtml(order: ReceiptOrder) {
   const rows = (order.items || [])
@@ -62,7 +64,7 @@ export async function sendOrderReceipt(order: ReceiptOrder, userEmail: string) {
   if (!userEmail || !smtpHost || !smtpUser || !smtpPass) return;
 
   const html = buildReceiptHtml(order);
-  await transporter.sendMail({
+  await getTransporter().sendMail({
     from: `"Watta Sushi" <${smtpUser}>`,
     to: userEmail,
     subject: `Ваш чек по заказу #${order.id}`,
@@ -77,7 +79,7 @@ export async function sendMassPromo(emails: string[], subject: string, htmlConte
 
   await Promise.allSettled(
     valid.map((email) =>
-      transporter.sendMail({
+      getTransporter().sendMail({
         from: `"Watta Sushi" <${smtpUser}>`,
         to: email,
         subject,

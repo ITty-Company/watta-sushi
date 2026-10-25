@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { Prisma, PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts';
 import { checkAdmin } from '../authMiddleware';
 import { cachePublicGet, PUBLIC_CACHE_CATALOG_SEC } from '../lib/publicApiCache.js';
 import { optimizeIngredientFileOnDisk } from '../lib/compressUploadImage.js';
@@ -10,7 +11,6 @@ import {
 } from '../lib/ingredientImage.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 function normalizeIngredientNames(body: Record<string, unknown>): {
   name_ru: string;

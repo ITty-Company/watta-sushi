@@ -3,6 +3,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { getUploadsDir } from './uploadsDir.js';
 import { writeCompressedUpload } from './compressUploadImage.js';
+import { saveUploadSync } from './fileStorage.js';
 
 const MAX_IMAGE_URL_LENGTH = 2048;
 const uploadDir = getUploadsDir();
@@ -28,8 +29,7 @@ export async function persistDataUrlIngredientImage(dataUrl: string): Promise<st
     let ext = m[1].toLowerCase();
     if (ext === 'jpeg') ext = 'jpg';
     const name = `ingredient-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-    const fp = path.join(uploadDir, name);
-    fs.writeFileSync(fp, buf);
+    saveUploadSync(name, buf);
     return `/uploads/${name}`;
   }
 }
