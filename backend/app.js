@@ -18,7 +18,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import { prisma, requestPrismaMiddleware } from './lib/prisma.ts';
 import { lazyRateLimit } from './rateLimiter.ts';
-import { isWorkersRuntime } from './lib/runtime.js';
+import { isWorkersRuntime, workersDatabaseUrl } from './lib/runtime.js';
 import fs from 'fs';
 import shopRoutes from './routes/shop.routes.ts';
 import orderRoutes from './routes/order.routes.ts';
@@ -71,10 +71,13 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
 
 // Проверка DATABASE_URL
-if (!process.env.DATABASE_URL?.trim()) {
-  throw new Error('❌ КРИТИЧЕСКАЯ ОШИБКА: DATABASE_URL не установлен!');
+// Workers: БД підключається через Hyperdrive у межах запиту (lib/prisma.ts).
+if (!isWorkersRuntime) {
+  if (!process.env.DATABASE_URL?.trim()) {
+    throw new Error('❌ КРИТИЧЕСКАЯ ОШИБКА: DATABASE_URL не установлен!');
+  }
+  console.log('✅ DATABASE_URL найден');
 }
-console.log('✅ DATABASE_URL найден');
 console.log('📁 Uploads directory:', uploadsPublicDir, process.env.UPLOAD_DIR ? '(UPLOAD_DIR)' : '(default)');
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -95,7 +98,7 @@ app.set('trust proxy', 1);
 
 // Workers: окреме з'єднання з БД на кожен запит (див. lib/prisma.ts).
 if (isWorkersRuntime) {
-  app.use(requestPrismaMiddleware(process.env.DATABASE_URL));
+  app.use(requestPrismaMiddleware(workersDatabaseUrl));
 }
 
 // --- 1. БЕЗОПАСНОСТЬ (Security Middleware) ---

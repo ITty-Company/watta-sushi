@@ -1,25 +1,31 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import type { Pool as PgPool } from 'pg'
 import { isWorkersRuntime } from './runtime.js'
 
 /**
  * Один спільний Prisma-клієнт для всіх модулів.
  *
  * Node: звичайний singleton (як було з `new PrismaClient()` у кожному файлі, але одне з'єднання).
- * Cloudflare Workers: TCP-з'єднання не можна переносити між запитами, тому клієнт
- * створюється на кожен запит (`withRequestPrisma`) і береться з AsyncLocalStorage.
+ * Cloudflare Workers: TCP-сокет не можна переносити між запитами, а створювати PrismaClient
+ * (WASM-рушій) на кожен запит — дорого по CPU. Тому клієнт один на isolate, а його pg-пул
+ * переадресовує запити в пул поточного запиту з AsyncLocalStorage (requestPrismaMiddleware).
  */
-const requestClient = new AsyncLocalStorage<PrismaClient>()
+const requestPool = new AsyncLocalStorage<PgPool>()
 let nodeClient: PrismaClient | null = null
+let workersClient: PrismaClient | null = null
 
 function currentClient(): PrismaClient {
-  const scoped = requestClient.getStore()
-  if (scoped) return scoped
-  if (isWorkersRuntime) {
-    throw new Error('Prisma у Workers доступна лише всередині запиту (withRequestPrisma)')
+  if (!isWorkersRuntime) {
+    // queryCompiler (без Rust-рушія) працює лише через driver adapter — і в Node теж.
+    nodeClient ??= new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
+    return nodeClient
   }
-  nodeClient ??= new PrismaClient()
-  return nodeClient
+  if (!workersClient || !requestPool.getStore()) {
+    throw new Error('Prisma у Workers доступна лише всередині запиту (requestPrismaMiddleware)')
+  }
+  return workersClient
 }
 
 export const prisma = new Proxy({} as PrismaClient, {
@@ -30,22 +36,46 @@ export const prisma = new Proxy({} as PrismaClient, {
   },
 })
 
-/** Express-middleware для Workers: увесь ланцюжок обробників запиту бачить свій клієнт. */
-export function requestPrismaMiddleware(connectionString: string) {
+async function getWorkersClient(): Promise<PrismaClient> {
+  if (workersClient) return workersClient
+  const { Pool } = await import('pg')
+
+  /** PrismaPg вимагає instanceof Pool; реальні з'єднання — у пулі поточного запиту. */
+  class RequestScopedPool extends Pool {
+    private current(): PgPool {
+      const pool = requestPool.getStore()
+      if (!pool) throw new Error('Немає pg-пулу поточного запиту')
+      return pool
+    }
+    query(...args: unknown[]) {
+      return (this.current().query as (...a: unknown[]) => unknown)(...args) as never
+    }
+    connect(...args: unknown[]) {
+      return (this.current().connect as (...a: unknown[]) => unknown)(...args) as never
+    }
+  }
+
+  workersClient ??= new PrismaClient({ adapter: new PrismaPg(new RequestScopedPool()) })
+  return workersClient
+}
+
+/** Express-middleware для Workers: увесь ланцюжок обробників запиту бачить своє з'єднання. */
+export function requestPrismaMiddleware(getConnectionString: () => Promise<string | undefined>) {
   return (_req: unknown, res: { on: (e: string, cb: () => void) => void }, next: (err?: unknown) => void) => {
     import('pg').then(async ({ Pool }) => {
-      const { PrismaPg } = await import('@prisma/adapter-pg')
+      const connectionString = await getConnectionString()
+      if (!connectionString) throw new Error('DATABASE_URL / HYPERDRIVE не налаштовано')
+      await getWorkersClient()
       const pool = new Pool({ connectionString, max: 1 })
-      const client = new PrismaClient({ adapter: new PrismaPg(pool) })
       let closed = false
       const close = () => {
         if (closed) return
         closed = true
-        void client.$disconnect().catch(() => {}).finally(() => pool.end().catch(() => {}))
+        void pool.end().catch(() => {})
       }
       res.on('finish', close)
       res.on('close', close)
-      requestClient.run(client, next)
+      requestPool.run(pool, next)
     }, next)
   }
 }

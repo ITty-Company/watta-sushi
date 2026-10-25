@@ -10,6 +10,14 @@
   "define": { "import.meta.url": "\"file:///bundle/worker.js\"" },
   "vars": { "NODE_ENV": "production" },
   // Файли з адмінки (/uploads/*) — див. lib/fileStorage.js
-  "kv_namespaces": [{ "binding": "UPLOADS", "id": "local-dev-placeholder" }],
+  // Postgres (Supabase) через Hyperdrive; локально wrangler dev ходить у docker-БД.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "4c848a821e72492da519dbe9c3d38681",
+      "localConnectionString": "postgresql://watta:watta@127.0.0.1:55432/watta_sushi"
+    }
+  ],
+  "kv_namespaces": [{ "binding": "UPLOADS", "id": "e01da0b271f1427c89e4cbca56178d8e" }],
   "observability": { "enabled": true }
 }

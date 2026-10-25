@@ -3,13 +3,12 @@
  * Стиснути /uploads/product-* і оновити imageUrl / imageUrls у БД.
  * npm run compress:products   (з кореня репо або cd backend)
  */
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts'
 import fs from 'fs';
 import path from 'path';
 import { getUploadsDir } from '../lib/uploadsDir.js';
 import { optimizeProductFileOnDisk } from '../lib/compressUploadImage.js';
 
-const prisma = new PrismaClient();
 const uploadDir = getUploadsDir();
 
 function collectUrls(product) {

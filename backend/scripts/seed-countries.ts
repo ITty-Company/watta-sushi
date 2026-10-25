@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 
-const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌍 Начало заполнения начальных данных...')

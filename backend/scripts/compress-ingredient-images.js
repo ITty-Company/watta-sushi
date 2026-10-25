@@ -5,11 +5,10 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.ts'
 import { getUploadsDir } from '../lib/uploadsDir.js';
 import { optimizeIngredientFileOnDisk } from '../lib/compressUploadImage.js';
 
-const prisma = new PrismaClient();
 const uploadDir = getUploadsDir();
 
 async function main() {

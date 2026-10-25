@@ -1,10 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma.ts'
 import { execSync, spawnSync } from 'child_process'
 import { readdirSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
-const prisma = new PrismaClient()
 const backendRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 /**
