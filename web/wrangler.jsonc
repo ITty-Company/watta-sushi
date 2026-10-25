@@ -1,7 +1,15 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "watta-sushi-web",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2025-03-25",
+  "compatibility_date": "2025-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // Runtime для Route Handlers / rewrites; NEXT_PUBLIC_* додатково вшиваються під час `npm run cf:build`.
+  "vars": {
+    "BACKEND_URL": "https://watta-sushi-api.krasnovaanastasiia.workers.dev",
+    "NEXT_PUBLIC_API_URL": "https://watta-sushi-api.krasnovaanastasiia.workers.dev",
+    "NEXT_PUBLIC_SITE_URL": "https://watta-sushi-web.krasnovaanastasiia.workers.dev"
+  },
+  "observability": { "enabled": true }
 }
